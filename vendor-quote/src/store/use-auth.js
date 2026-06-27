@@ -5,60 +5,38 @@ import {
 } from "../api/auth.api";
 
 export const useAuth = () => {
-  // Fetch current user - will return 401 when not authenticated (expected)
-  const {
-    data: user,
-    isLoading,
-    isError,
-    refetch,
-    error,
-  } = useMeQuery(undefined, {
-    // Optional: you can skip the query in certain cases, but usually we want it to run
-    // to know the current auth state
-  });
+  const { data, isLoading, isError, refetch, error } = useMeQuery();
+
+  const user = data?.user ?? null; // Simplified
 
   const [loginMutation] = useLoginMutation();
   const [logoutMutation] = useLogoutMutation();
 
   const login = async (email, password) => {
-    try {
-      const result = await loginMutation({ email, password }).unwrap();
+    const result = await loginMutation({ email, password }).unwrap();
 
-      console.log(result);
+    localStorage.setItem("token", result.token);
+    await refetch(); // Important: Refresh me query
 
-      // Save JWT
-      localStorage.setItem("token", result.token);
-
-      // Refetch user
-      await refetch();
-
-      return result;
-    } catch (err) {
-      throw err;
-    }
+    return result;
   };
 
   const logout = async () => {
     try {
       await logoutMutation().unwrap();
-      await refetch(); // Clear user data after logout
-    } catch (err) {
-      console.error("Logout failed:", err);
-      // Still try to clear local state
+    } finally {
+      localStorage.removeItem("token");
       await refetch();
     }
   };
 
-  // Improved isAuthenticated logic
-  const isAuthenticated = !!user && !isError;
-
   return {
-    user: user ?? null,
+    user,
     login,
     logout,
     isLoading,
-    isAuthenticated,
+    isAuthenticated: !!user && !isError,
     refetchUser: refetch,
-    error, // expose error if needed for debugging
+    error,
   };
 };

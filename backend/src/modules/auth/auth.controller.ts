@@ -5,14 +5,15 @@ import {
   Post,
   Req,
   Res,
-  UnauthorizedException,
-  ValidationPipe,
+  UseGuards,
   UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
-
-import type { Request, Response } from 'express';
+import type { Request } from 'express';
 import { AuthService } from './auth.service';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import { IsEmail, IsString } from 'class-validator';
+import type { RequestWithUser } from '@/common/interfaces/request-with-user-interfaces';
 
 class LoginDto {
   @IsEmail()
@@ -28,47 +29,22 @@ export class AuthController {
 
   @Post('login')
   @UsePipes(new ValidationPipe({ whitelist: true }))
-  async login(
-    @Body() dto: LoginDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const result = await this.authService.login(dto.email, dto.password);
-
-    res.cookie('access_token', result.token, {
-      httpOnly: true,
-      sameSite: 'strict',
-      secure: false,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    return result;
+  async login(@Body() dto: LoginDto) {
+    return this.authService.login(dto.email, dto.password); // Return as is
   }
 
   @Get('me')
-  async me(@Req() req: Request) {
-    const auth = req.headers.authorization;
-
-    if (!auth) {
-      throw new UnauthorizedException('No Authorization header');
-    }
-
-    const token = auth.replace('Bearer ', '');
-
-    return this.authService.getCurrentUser(token);
+  @UseGuards(JwtAuthGuard)
+  async me(@Req() req: RequestWithUser) {
+    return { user: req.user }; // Keep this
   }
 
   @Post('logout')
-  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const token = req.cookies?.access_token;
+  @UseGuards(JwtAuthGuard)
+  async logout(@Req() req: RequestWithUser) {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (token) await this.authService.logout(token);
 
-    if (token) {
-      await this.authService.logout(token);
-    }
-
-    res.clearCookie('access_token');
-
-    return {
-      success: true,
-    };
+    return { success: true };
   }
 }

@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import api from "../../utils/api";
+import { useGetProjectByIdQuery } from "../../api/project.api"; // Adjust path as per your structure
+
 import {
   formatCurrency,
   formatDate,
   getStatusConfig,
 } from "../../utils/helpers";
+
 import {
   ArrowLeft,
   Eye,
-  Edit,
   FolderOpen,
   TrendingUp,
   Clock,
@@ -20,21 +21,27 @@ import {
 export default function ProjectDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [project, setProject] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    api
-      .get(`/projects/${id}`)
-      .then(({ data }) => setProject(data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [id]);
+  // RTK Query
+  const {
+    data: project,
+    isLoading,
+    error,
+  } = useGetProjectByIdQuery(id, {
+    skip: !id,
+  });
 
-  if (loading)
-    return <div className="p-6 text-sm text-gray-400">Loading...</div>;
-  if (!project)
-    return <div className="p-6 text-sm text-red-500">Project not found</div>;
+  if (isLoading) {
+    return <div className="p-6 text-sm text-gray-400">Loading project...</div>;
+  }
+
+  if (error || !project) {
+    return (
+      <div className="p-6 text-sm text-red-500">
+        {error ? "Failed to load project" : "Project not found"}
+      </div>
+    );
+  }
 
   const { summary = {} } = project;
   const statusCfg = getStatusConfig(project.status);
@@ -107,7 +114,7 @@ export default function ProjectDetail() {
           {[
             {
               label: "Total Quotations",
-              value: summary.total || 0,
+              value: summary.total ?? project.quotation_count ?? 0,
               icon: FolderOpen,
               color: "text-gray-600",
               bg: "bg-gray-100",
@@ -151,13 +158,16 @@ export default function ProjectDetail() {
               </div>
             </div>
           ))}
+
           <div className="bg-white border border-[#E5E7EB] rounded-lg p-3 flex items-center gap-3">
             <div className="w-9 h-9 rounded-md flex items-center justify-center bg-green-50">
               <TrendingUp className="w-4 h-4 text-green-600" />
             </div>
             <div>
               <div className="text-base font-bold text-green-700">
-                {formatCurrency(summary.approved_value || 0)}
+                {formatCurrency(
+                  summary.approved_value ?? project.approved_value ?? 0,
+                )}
               </div>
               <div className="text-xs text-gray-400">Approved Value</div>
             </div>
@@ -172,6 +182,7 @@ export default function ProjectDetail() {
             Project Quotations
           </h2>
         </div>
+
         {!project.quotations?.length ? (
           <div className="px-4 py-8 text-center text-sm text-gray-400">
             No quotations linked to this project

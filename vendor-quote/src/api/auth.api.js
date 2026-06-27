@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
+import { API_URL } from "../lib/config";
 const baseQuery = fetchBaseQuery({
-  baseUrl: "http://localhost:3000/api/v1", // change to your backend URL
+  baseUrl: API_URL, // change to your backend URL
   credentials: "include", // IMPORTANT for cookie-based auth
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("token"); // Your token key

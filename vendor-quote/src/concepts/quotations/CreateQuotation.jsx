@@ -349,34 +349,57 @@ export default function CreateQuotation() {
   }, [settingsData, isEdit]);
 
   // Load quotation data if editing
+  // Load quotation data if editing
   useEffect(() => {
     if (isEdit && quotationData) {
+      const q = quotationData; // Your API response (matches the JSON you shared)
+
       setForm({
-        quotation_number: quotationData.quotation_number,
-        quotation_date: quotationData.quotation_date,
-        project_id: quotationData.project_id,
-        project_name: quotationData.project_snapshot?.name || "",
-        site_location: quotationData.project_snapshot?.site_location || "",
-        vendor_id: quotationData.vendor_id,
-        vendor_name: quotationData.vendor_snapshot?.name || "",
-        vendor_contact: quotationData.vendor_snapshot?.contact_number || "",
-        vendor_address: quotationData.vendor_snapshot?.address || "",
-        vendor_company: quotationData.vendor_snapshot?.company_name || "",
-        items: quotationData.items?.length
-          ? quotationData.items
+        quotation_number: q.quotationNumber || "Auto-generated",
+        quotation_date:
+          q.quotationDate || new Date().toISOString().split("T")[0],
+
+        // Project
+        project_id: q.project_id || q.project?.id || "",
+        project_name: q.projectSnapshot?.name || q.project?.name || "",
+        site_location:
+          q.projectSnapshot?.site_location || q.project?.site_location || "",
+
+        // Vendor
+        vendor_id: q.vendor_id || q.vendor?.id || "",
+        vendor_name: q.vendorSnapshot?.name || q.vendor?.name || "",
+        vendor_contact:
+          q.vendorSnapshot?.contact_number || q.vendor?.contact_number || "",
+        vendor_address: q.vendorSnapshot?.address || q.vendor?.address || "",
+        vendor_company:
+          q.vendorSnapshot?.company_name || q.vendor?.company_name || "",
+
+        // Items
+        items: q.items?.length
+          ? q.items.map((item, index) => ({
+              ...item,
+              sno: index + 1,
+              rate: Number(item.rate) || 0,
+              quantity: Number(item.quantity) || 0,
+              amount: Number(item.amount) || 0,
+            }))
           : [emptyItem(1)],
-        subtotal: quotationData.subtotal || 0,
-        additional_charges: quotationData.additional_charges || 0,
-        discount: quotationData.discount || 0,
-        tax: quotationData.tax || 0,
-        total_amount: quotationData.total_amount || 0,
-        terms_conditions: quotationData.terms_conditions || "",
+
+        // Amounts
+        subtotal: Number(q.subtotal) || 0,
+        additional_charges: Number(q.additionalCharges) || 0,
+        discount: Number(q.discount) || 0,
+        tax: Number(q.taxPercent) || 0, // or q.taxAmount if you store amount
+        total_amount: Number(q.totalAmount) || 0,
+
+        terms_conditions: q.termsConditions || "",
       });
-      setProjectSearch(quotationData.project_snapshot?.name || "");
-      setVendorSearch(quotationData.vendor_snapshot?.name || "");
+
+      // Set search fields for dropdowns
+      setProjectSearch(q.projectSnapshot?.name || q.project?.name || "");
+      setVendorSearch(q.vendorSnapshot?.name || q.vendor?.name || "");
     }
   }, [isEdit, quotationData]);
-
   useEffect(() => {
     recalculate();
     // eslint-disable-next-line react-hooks/exhaustive-deps

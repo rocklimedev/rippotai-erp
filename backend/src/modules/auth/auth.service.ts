@@ -140,7 +140,34 @@ export class AuthService {
       role_id: authToken.user.role_id,
     };
   }
+  // In AuthService class
+  async getCurrentUserFromPayload(payload: any) {
+    const tokenHash = createHash('sha256').update(payload.jti).digest('hex');
 
+    const authToken = await this.authTokensService.findByHash(tokenHash);
+
+    if (!authToken) {
+      throw new UnauthorizedException('Invalid or revoked token');
+    }
+
+    if (authToken.revoked_at) {
+      throw new UnauthorizedException('Token revoked');
+    }
+
+    if (new Date(authToken.expires_at) < new Date()) {
+      throw new UnauthorizedException('Token expired');
+    }
+
+    await this.authTokensService.touchLastUsed(authToken.id);
+
+    return {
+      id: authToken.user.id,
+      name: authToken.user.name,
+      email: authToken.user.email,
+      role: authToken.user.role?.name,
+      role_id: authToken.user.role_id,
+    };
+  }
   async logout(token: string) {
     try {
       const payload = jwt.verify(token, process.env.JWT_SECRET!) as any;

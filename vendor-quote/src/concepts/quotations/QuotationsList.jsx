@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   useGetQuotationsQuery,
@@ -7,6 +7,7 @@ import {
 
 import { useGetProjectsQuery } from "../../api/project.api";
 import { useGetVendorsQuery } from "../../api/vendor.api";
+import { useGetUsersQuery } from "../../api/user.api"; // ← Added
 
 import {
   formatCurrency,
@@ -40,8 +41,6 @@ export default function QuotationsList() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-
-  const [employees, setEmployees] = useState([]);
 
   const [filters, setFilters] = useState({
     search: searchParams.get("search") || "",
@@ -78,25 +77,18 @@ export default function QuotationsList() {
     status: "active",
   });
 
+  // ✅ Using RTK Query instead of fetch
+  const { data: usersData, isLoading: usersLoading } = useGetUsersQuery({
+    role: "employee",
+    is_active: true,
+  });
+
   const [deleteQuotation] = useSoftDeleteQuotationMutation();
 
   const setViewPref = (v) => {
     setView(v);
     localStorage.setItem("quotations_view", v);
   };
-
-  // Fetch Employees (Admin only)
-  useEffect(() => {
-    if (user?.role === "ADMIN") {
-      fetch("/api/v1/users")
-        .then((r) => r.json())
-        .then((res) => {
-          const users = res?.data || res || [];
-          setEmployees(users.filter((u) => u.role === "employee"));
-        })
-        .catch((err) => console.error("Error fetching employees:", err));
-    }
-  }, [user?.role]);
 
   const updateFilter = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
@@ -144,6 +136,12 @@ export default function QuotationsList() {
 
   const projects = projectsData?.data || projectsData || [];
   const vendors = vendorsData?.data || vendorsData || [];
+
+  // Derived employees list
+  const employees = useMemo(() => {
+    const users = usersData || usersData || [];
+    return users;
+  }, [usersData]);
 
   return (
     <div className="p-6">
@@ -246,10 +244,12 @@ export default function QuotationsList() {
             onChange={(e) => updateFilter("to_date", e.target.value)}
             className="py-2 px-3 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#E31E24]"
           />
+
           {user?.role === "ADMIN" && (
             <select
               value={filters.employee_id}
               onChange={(e) => updateFilter("employee_id", e.target.value)}
+              disabled={usersLoading}
               className="py-2 px-3 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#E31E24]"
             >
               <option value="">All Employees</option>
@@ -459,18 +459,15 @@ export default function QuotationsList() {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          {(q.status === "draft" ||
-                            q.status === "returned_for_editing") && (
-                            <button
-                              onClick={() =>
-                                navigate(`/quotations/${q.id}/edit`)
-                              }
-                              className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-[#333333]"
-                              title="Edit"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                          )}
+
+                          <button
+                            onClick={() => navigate(`/quotations/${q.id}/edit`)}
+                            className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-[#333333]"
+                            title="Edit"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+
                           {(user?.role === "ADMIN" ||
                             ((q.status === "draft" ||
                               q.status === "returned_for_editing") &&

@@ -1,6 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import api, { formatApiError } from "../../utils/api";
+import {
+  useGetQuotationByIdQuery,
+  useApproveQuotationMutation,
+  useReturnQuotationMutation,
+  useDeclineQuotationMutation,
+  useSoftDeleteQuotationMutation,
+} from "../../api/quotation.api"; // Adjust import path as needed
+
 import {
   formatCurrency,
   formatDate,
@@ -14,15 +21,12 @@ import {
   CheckCircle,
   RotateCcw,
   XCircle,
-  Clock,
-  AlertCircle,
-  FileText,
   ArrowLeft,
-  History,
   Trash2,
+  AlertCircle,
 } from "lucide-react";
 
-// Confirmation Dialog
+// ====================== CONFIRM DIALOG ======================
 function ConfirmDialog({
   title,
   message,
@@ -32,6 +36,7 @@ function ConfirmDialog({
   requireText = false,
 }) {
   const [remarks, setRemarks] = useState("");
+
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg w-full max-w-md shadow-xl">
@@ -71,9 +76,8 @@ function ConfirmDialog({
   );
 }
 
-// Print layout
-function PrintableQuotation({ quotation, settings }) {
-  const sig = quotation?.signature_data;
+// ====================== PRINTABLE QUOTATION ======================
+function PrintableQuotation({ quotation }) {
   const isApproved = quotation?.status === "approved";
   const isDraft = !["approved"].includes(quotation?.status);
 
@@ -87,9 +91,7 @@ function PrintableQuotation({ quotation, settings }) {
         <h1 className="text-xl font-bold text-[#333333]">QUOTATION</h1>
         <div className="text-sm text-gray-600 mt-1">
           {quotation?.quotation_number}{" "}
-          {quotation?.current_version > 0
-            ? `| V${quotation?.current_version}`
-            : ""}
+          {quotation?.current_version > 0 && `| V${quotation?.current_version}`}
           {isDraft && (
             <span className="ml-2 text-red-600 font-bold">[DRAFT]</span>
           )}
@@ -121,7 +123,7 @@ function PrintableQuotation({ quotation, settings }) {
         </div>
       </div>
 
-      {/* Items */}
+      {/* Items Table */}
       <table className="w-full border-collapse text-sm mb-4">
         <thead>
           <tr className="bg-gray-100">
@@ -187,7 +189,7 @@ function PrintableQuotation({ quotation, settings }) {
         </div>
       </div>
 
-      {/* Terms */}
+      {/* Terms & Conditions */}
       {quotation?.terms_conditions && (
         <div className="mb-6">
           <div className="font-semibold text-sm mb-1">Terms & Conditions:</div>
@@ -201,16 +203,18 @@ function PrintableQuotation({ quotation, settings }) {
       <div className="grid grid-cols-2 gap-8 mt-8">
         <div className="border-t-2 border-[#333333] pt-2">
           <div className="text-xs font-semibold mb-1">Approved By</div>
-          {isApproved && sig?.signature_base64 && (
+          {isApproved && quotation?.signature_data?.signature_base64 && (
             <div>
               <img
-                src={`data:image/png;base64,${sig.signature_base64}`}
+                src={`data:image/png;base64,${quotation.signature_data.signature_base64}`}
                 alt="Signature"
                 style={{ maxHeight: "60px", maxWidth: "150px" }}
               />
-              <div className="text-xs mt-1">{sig.signer_name}</div>
+              <div className="text-xs mt-1">
+                {quotation.signature_data.signer_name}
+              </div>
               <div className="text-xs text-gray-500">
-                {sig.signer_designation}
+                {quotation.signature_data.signer_designation}
               </div>
               <div className="text-xs text-gray-400">
                 {formatDateTime(quotation?.approved_at)}
@@ -232,122 +236,110 @@ function PrintableQuotation({ quotation, settings }) {
   );
 }
 
+// ====================== MAIN COMPONENT ======================
 export default function QuotationDetail() {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [quotation, setQuotation] = useState(null);
-  const [settings, setSettings] = useState({});
-  const [loading, setLoading] = useState(true);
+
   const [activeTab, setActiveTab] = useState("details");
   const [dialog, setDialog] = useState(null);
-  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
   const printRef = useRef();
 
-  useEffect(() => {
-    fetchData();
-  }, [id]);
+  // RTK Query
+  const {
+    data: quotation,
+    isLoading,
+    error: queryError,
+  } = useGetQuotationByIdQuery(id);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [qRes, sRes] = await Promise.all([
-        api.get(`/quotations/${id}`),
-        api.get("/settings"),
-      ]);
-      setQuotation(qRes.data);
-      setSettings(sRes.data);
-    } catch (err) {
-      setError(formatApiError(err));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [approveQuotation, { isLoading: approving }] =
+    useApproveQuotationMutation();
+  const [returnQuotation, { isLoading: returning }] =
+    useReturnQuotationMutation();
+  const [declineQuotation, { isLoading: declining }] =
+    useDeclineQuotationMutation();
+  const [softDeleteQuotation, { isLoading: deleting }] =
+    useSoftDeleteQuotationMutation();
+
+  const actionLoading = approving || returning || declining || deleting;
 
   const handleApprove = async (remarks) => {
-    setActionLoading(true);
     try {
-      const { data } = await api.post(`/quotations/${id}/approve`, { remarks });
-      setQuotation(data);
+      await approveQuotation({ id, remarks }).unwrap();
       setDialog(null);
     } catch (err) {
-      setError(formatApiError(err));
-    } finally {
-      setActionLoading(false);
+      setError(err?.data?.message || "Failed to approve");
     }
   };
 
   const handleReturn = async (remarks) => {
-    if (!remarks.trim()) return;
-    setActionLoading(true);
+    if (!remarks?.trim()) return;
     try {
-      const { data } = await api.post(`/quotations/${id}/return`, { remarks });
-      setQuotation(data);
+      await returnQuotation({ id, remarks }).unwrap();
       setDialog(null);
     } catch (err) {
-      setError(formatApiError(err));
-    } finally {
-      setActionLoading(false);
+      setError(err?.data?.message || "Failed to return");
     }
   };
 
   const handleDecline = async (remarks) => {
-    if (!remarks.trim()) return;
-    setActionLoading(true);
+    if (!remarks?.trim()) return;
     try {
-      const { data } = await api.post(`/quotations/${id}/decline`, { remarks });
-      setQuotation(data);
+      await declineQuotation({ id, remarks }).unwrap();
       setDialog(null);
     } catch (err) {
-      setError(formatApiError(err));
-    } finally {
-      setActionLoading(false);
+      setError(err?.data?.message || "Failed to decline");
     }
   };
 
   const handleDelete = async () => {
-    setActionLoading(true);
     try {
-      await api.delete(`/quotations/${id}`);
+      await softDeleteQuotation({ id, deleted_by: user?.id }).unwrap();
       navigate("/quotations");
     } catch (err) {
-      setError(formatApiError(err));
-    } finally {
-      setActionLoading(false);
+      setError(err?.data?.message || "Failed to delete");
     }
   };
 
   const handlePrint = () => window.print();
 
-  if (loading)
-    return <div className="p-6 text-sm text-gray-400">Loading...</div>;
-  if (!quotation)
+  if (isLoading)
+    return (
+      <div className="p-6 text-sm text-gray-400">Loading quotation...</div>
+    );
+  if (!quotation) {
     return (
       <div className="p-6 text-sm text-red-500">
-        {error || "Quotation not found"}
+        {error || queryError?.data?.message || "Quotation not found"}
       </div>
     );
+  }
 
   const cfg = getStatusConfig(quotation.status);
   const canEdit =
     (quotation.status === "draft" ||
       quotation.status === "returned_for_editing") &&
     (user?.role === "admin" || quotation.created_by === user?.id);
+
   const canDelete =
     user?.role === "admin" ||
     ((quotation.status === "draft" ||
       quotation.status === "returned_for_editing") &&
       quotation.created_by === user?.id);
+
   const canApprove =
     user?.role === "admin" &&
     ["submitted", "resubmitted"].includes(quotation.status);
+
   const latestVersion = quotation.versions?.length
     ? quotation.versions[quotation.versions.length - 1]
     : null;
 
   return (
     <div className="p-6">
+      {/* Dialogs */}
       {dialog === "approve" && (
         <ConfirmDialog
           title="Approve Quotation"
@@ -415,24 +407,23 @@ export default function QuotationDetail() {
         <div className="flex items-center gap-2 no-print">
           {canEdit && (
             <button
-              data-testid="edit-quotation-btn"
               onClick={() => navigate(`/quotations/${id}/edit`)}
               className="flex items-center gap-1.5 border border-[#E5E7EB] text-sm font-medium px-3 py-2 rounded-md hover:bg-gray-50 text-[#333333]"
             >
               <Edit className="w-4 h-4" /> Edit
             </button>
           )}
+
           <button
-            data-testid="print-quotation-btn"
             onClick={handlePrint}
             className="flex items-center gap-1.5 border border-[#E5E7EB] text-sm font-medium px-3 py-2 rounded-md hover:bg-gray-50 text-[#333333]"
           >
             <Printer className="w-4 h-4" /> Print / PDF
           </button>
+
           {canApprove && (
             <>
               <button
-                data-testid="approve-btn"
                 onClick={() => setDialog("approve")}
                 disabled={actionLoading}
                 className="flex items-center gap-1.5 bg-green-600 text-white text-sm font-medium px-3 py-2 rounded-md hover:bg-green-700 disabled:opacity-60"
@@ -440,7 +431,6 @@ export default function QuotationDetail() {
                 <CheckCircle className="w-4 h-4" /> Approve
               </button>
               <button
-                data-testid="return-btn"
                 onClick={() => setDialog("return")}
                 disabled={actionLoading}
                 className="flex items-center gap-1.5 bg-blue-600 text-white text-sm font-medium px-3 py-2 rounded-md hover:bg-blue-700 disabled:opacity-60"
@@ -448,7 +438,6 @@ export default function QuotationDetail() {
                 <RotateCcw className="w-4 h-4" /> Return
               </button>
               <button
-                data-testid="decline-btn"
                 onClick={() => setDialog("decline")}
                 disabled={actionLoading}
                 className="flex items-center gap-1.5 bg-red-600 text-white text-sm font-medium px-3 py-2 rounded-md hover:bg-red-700 disabled:opacity-60"
@@ -457,9 +446,9 @@ export default function QuotationDetail() {
               </button>
             </>
           )}
+
           {canDelete && (
             <button
-              data-testid="delete-quotation-btn"
               onClick={() => setDialog("delete")}
               disabled={actionLoading}
               className="flex items-center gap-1.5 border border-red-200 text-red-600 text-sm font-medium px-3 py-2 rounded-md hover:bg-red-50 disabled:opacity-60"
@@ -476,14 +465,18 @@ export default function QuotationDetail() {
         </div>
       )}
 
-      {/* Admin remarks banner */}
+      {/* Admin Remarks */}
       {latestVersion?.admin_remarks && (
         <div
-          className={`flex items-start gap-3 px-4 py-3 rounded-lg border mb-5 ${quotation.status === "returned_for_editing" ? "bg-blue-50 border-blue-200" : quotation.status === "declined" ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200"}`}
+          className={`flex items-start gap-3 px-4 py-3 rounded-lg border mb-5 ${
+            quotation.status === "returned_for_editing"
+              ? "bg-blue-50 border-blue-200"
+              : quotation.status === "declined"
+                ? "bg-red-50 border-red-200"
+                : "bg-green-50 border-green-200"
+          }`}
         >
-          <AlertCircle
-            className={`w-4 h-4 mt-0.5 flex-shrink-0 ${quotation.status === "returned_for_editing" ? "text-blue-500" : quotation.status === "declined" ? "text-red-500" : "text-green-500"}`}
-          />
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-blue-500" />
           <div>
             <div className="text-xs font-semibold text-gray-700">
               Admin Remarks
@@ -507,7 +500,11 @@ export default function QuotationDetail() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm font-medium capitalize border-b-2 transition-colors ${activeTab === tab ? "border-[#E31E24] text-[#E31E24]" : "border-transparent text-gray-500 hover:text-[#333333]"}`}
+            className={`px-4 py-2 text-sm font-medium capitalize border-b-2 transition-colors ${
+              activeTab === tab
+                ? "border-[#E31E24] text-[#E31E24]"
+                : "border-transparent text-gray-500 hover:text-[#333333]"
+            }`}
           >
             {tab === "versions"
               ? `Version History (${quotation.versions?.length || 0})`
@@ -516,15 +513,17 @@ export default function QuotationDetail() {
         ))}
       </div>
 
+      {/* Details Tab */}
       {activeTab === "details" && (
         <div
           className={`${!["approved"].includes(quotation.status) ? "draft-watermark-wrap" : ""}`}
           ref={printRef}
         >
-          <PrintableQuotation quotation={quotation} settings={settings} />
+          <PrintableQuotation quotation={quotation} />
         </div>
       )}
 
+      {/* Versions Tab */}
       {activeTab === "versions" && (
         <div className="bg-white border border-[#E5E7EB] rounded-lg overflow-hidden">
           {!quotation.versions?.length ? (

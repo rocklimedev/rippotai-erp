@@ -1,9 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
+import { API_URL } from "../lib/config";
 export const projectsApi = createApi({
   reducerPath: "projectsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:3000/api/v1",
+    baseUrl: API_URL,
     credentials: "include", // Remove if using Bearer token
     prepareHeaders: (headers) => {
       const token = localStorage.getItem("accessToken");
