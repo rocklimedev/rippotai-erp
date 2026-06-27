@@ -1,0 +1,50 @@
+name: Deploy Rippotai ERP API
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: rocklimedev
+          password: ${{ secrets.RIPPOTAIERPAPI_GHCR_TOKEN }}
+
+      - name: Build and push API image
+        run: |
+          docker build --no-cache \
+            -t ghcr.io/rocklimedev/rippotai-erp-api:latest \
+            ./backend
+
+          docker push ghcr.io/rocklimedev/rippotai-erp-api:latest
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: 66.116.204.81
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            cd /opt/apps/rippotai-erp-api
+
+            echo "${{ secrets.RIPPOTAIERPAPI_GHCR_TOKEN }}" | docker login ghcr.io \
+              -u rocklimedev --password-stdin
+
+            docker compose pull backend
+            docker compose up -d backend --force-recreate --remove-orphans
+
+            docker image prune -f

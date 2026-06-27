@@ -16,12 +16,12 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   app.enableCors({
-    origin: true, // or specify your frontend URL like 'http://localhost:5173'
+    origin: true,
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
   });
 
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 5000;
   await app.listen(port);
 
   console.log(`Rippotai ERP API running on http://localhost:${port}/api/v1`);
