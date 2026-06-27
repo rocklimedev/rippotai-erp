@@ -486,15 +486,25 @@ export default function CreateQuotation() {
       return { ...p, items: items.map((item, i) => ({ ...item, sno: i + 1 })) };
     });
   };
-
   const moveRow = (idx, dir) => {
     setUnsavedChanges(true);
-    setForm((p) => {
-      const items = [...p.items];
+
+    setForm((prev) => {
+      const items = [...prev.items];
       const newIdx = idx + dir;
-      if (newIdx < 0 || newIdx >= items.length) return p;
+
+      if (newIdx < 0 || newIdx >= items.length) return prev;
+
+      // Swap items
       [items[idx], items[newIdx]] = [items[newIdx], items[idx]];
-      return { ...p, items: items.map((item, i) => ({ ...item, sno: i + 1 })) };
+
+      // Re-number sno correctly
+      const updatedItems = items.map((item, i) => ({
+        ...item,
+        sno: i + 1,
+      }));
+
+      return { ...prev, items: updatedItems };
     });
   };
 

@@ -1,52 +1,50 @@
-import React, { useState, useEffect } from "react";
-import api from "../../utils/api";
+import React, { useState } from "react";
 import { formatCurrency } from "../../utils/helpers";
 import { useAuth } from "../../store/use-auth";
 import { BarChart2, TrendingUp, Package, Users, User } from "lucide-react";
+
+// Import RTK Query hooks
+import {
+  useGetReportsOverviewQuery,
+  useGetReportsByProjectQuery,
+  useGetReportsByVendorQuery,
+  useGetReportsByStatusQuery,
+  useGetReportsByEmployeeQuery,
+} from "../../api/reports.api";
 
 const TABS = ["overview", "by-project", "by-vendor", "by-status"];
 
 export default function Reports() {
   const { user } = useAuth();
   const [tab, setTab] = useState("overview");
-  const [overview, setOverview] = useState(null);
-  const [byProject, setByProject] = useState([]);
-  const [byVendor, setByVendor] = useState([]);
-  const [byEmployee, setByEmployee] = useState([]);
-  const [byStatus, setByStatus] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    fetchAll();
-  }, []);
+  // RTK Query Hooks
+  const { data: overview, isLoading: overviewLoading } =
+    useGetReportsOverviewQuery();
 
-  const fetchAll = async () => {
-    setLoading(true);
-    try {
-      const promises = [
-        api.get("/reports/overview"),
-        api.get("/reports/by-project"),
-        api.get("/reports/by-vendor"),
-        api.get("/reports/by-status"),
-      ];
-      if (user?.role === "admin")
-        promises.push(api.get("/reports/by-employee"));
-      const results = await Promise.all(promises);
-      setOverview(results[0].data);
-      setByProject(results[1].data);
-      setByVendor(results[2].data);
-      setByStatus(results[3].data);
-      if (user?.role === "admin" && results[4]) setByEmployee(results[4].data);
-    } catch (err) {
-      console.error("Error fetching reports:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: byProject = [], isLoading: projectLoading } =
+    useGetReportsByProjectQuery();
 
-  if (loading)
+  const { data: byVendor = [], isLoading: vendorLoading } =
+    useGetReportsByVendorQuery();
+
+  const { data: byStatus = [], isLoading: statusLoading } =
+    useGetReportsByStatusQuery();
+
+  const { data: byEmployee = [], isLoading: employeeLoading } =
+    useGetReportsByEmployeeQuery(undefined, { skip: user?.role !== "ADMIN" });
+
+  // Overall loading state
+  const isLoading =
+    overviewLoading ||
+    projectLoading ||
+    vendorLoading ||
+    statusLoading ||
+    (user?.role === "ADMIN" && employeeLoading);
+
+  if (isLoading) {
     return <div className="p-6 text-sm text-gray-400">Loading reports...</div>;
+  }
 
   return (
     <div className="p-6">
@@ -54,27 +52,37 @@ export default function Reports() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-[#E5E7EB] mb-5 overflow-x-auto">
-        {TABS.filter((t) => t !== "by-employee" || user?.role === "admin").map(
+        {TABS.filter((t) => t !== "by-employee" || user?.role === "ADMIN").map(
           (t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors capitalize ${tab === t ? "border-[#E31E24] text-[#E31E24]" : "border-transparent text-gray-500 hover:text-[#333333]"}`}
+              className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors capitalize ${
+                tab === t
+                  ? "border-[#E31E24] text-[#E31E24]"
+                  : "border-transparent text-gray-500 hover:text-[#333333]"
+              }`}
             >
               {t.replace(/-/g, " ")}
             </button>
           ),
         )}
-        {user?.role === "admin" && (
+
+        {user?.role === "ADMIN" && (
           <button
             onClick={() => setTab("by-employee")}
-            className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${tab === "by-employee" ? "border-[#E31E24] text-[#E31E24]" : "border-transparent text-gray-500 hover:text-[#333333]"}`}
+            className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+              tab === "by-employee"
+                ? "border-[#E31E24] text-[#E31E24]"
+                : "border-transparent text-gray-500 hover:text-[#333333]"
+            }`}
           >
             By Employee
           </button>
         )}
       </div>
 
+      {/* Overview Tab */}
       {tab === "overview" && overview && (
         <div className="space-y-5">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -117,6 +125,7 @@ export default function Reports() {
               </div>
             ))}
           </div>
+
           <div className="bg-white border border-[#E5E7EB] rounded-lg p-5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-green-50 rounded-md flex items-center justify-center">
@@ -135,6 +144,7 @@ export default function Reports() {
         </div>
       )}
 
+      {/* By Project Tab */}
       {tab === "by-project" && (
         <div className="bg-white border border-[#E5E7EB] rounded-lg overflow-hidden">
           <table className="w-full text-sm">
@@ -202,6 +212,7 @@ export default function Reports() {
         </div>
       )}
 
+      {/* By Vendor Tab - Similar structure */}
       {tab === "by-vendor" && (
         <div className="bg-white border border-[#E5E7EB] rounded-lg overflow-hidden">
           <table className="w-full text-sm">
@@ -269,6 +280,7 @@ export default function Reports() {
         </div>
       )}
 
+      {/* By Status Tab */}
       {tab === "by-status" && (
         <div className="bg-white border border-[#E5E7EB] rounded-lg overflow-hidden">
           <table className="w-full text-sm">
@@ -307,7 +319,8 @@ export default function Reports() {
         </div>
       )}
 
-      {tab === "by-employee" && user?.role === "admin" && (
+      {/* By Employee Tab */}
+      {tab === "by-employee" && user?.role === "ADMIN" && (
         <div className="bg-white border border-[#E5E7EB] rounded-lg overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-[#F9FAFB] border-b border-[#E5E7EB]">

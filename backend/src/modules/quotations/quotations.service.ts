@@ -20,6 +20,7 @@ import { QuotationStatus } from '../../common/enums';
 const EDITABLE_STATUSES = [
   QuotationStatus.DRAFT,
   QuotationStatus.RETURNED_FOR_EDITING,
+  QuotationStatus.SUBMITTED, // 👈 allow editing submitted too
 ];
 
 @Injectable()

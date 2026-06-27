@@ -10,6 +10,7 @@ import { notificationsApi } from "../api/notification.api";
 import { activityLogsApi } from "../api/activity-logs.api";
 import { projectsApi } from "../api/project.api";
 import { settingsApi } from "../api/settings.api";
+import { reportsApi } from "../api/reports.api";
 // -------------------------------
 // API LIST (clean management layer)
 // -------------------------------
@@ -23,6 +24,7 @@ const apiReducers = {
   [activityLogsApi.reducerPath]: activityLogsApi.reducer,
   [projectsApi.reducerPath]: projectsApi.reducer,
   [settingsApi.reducerPath]: settingsApi.reducer,
+  [reportsApi.reducerPath]: reportsApi.reducer,
 };
 
 const apiMiddlewares = [
@@ -35,6 +37,7 @@ const apiMiddlewares = [
   activityLogsApi.middleware,
   projectsApi.middleware,
   settingsApi.middleware,
+  reportsApi.middleware,
 ];
 
 // -------------------------------

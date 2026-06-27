@@ -76,8 +76,43 @@ export enum NotificationType {
 }
 
 export enum ActivityAction {
+  // =====================
+  // AUTH
+  // =====================
   LOGIN = 'login',
   LOGOUT = 'logout',
+  LOGIN_FAILED = 'login_failed',
+  PASSWORD_CHANGED = 'password_changed',
+  PASSWORD_RESET_REQUESTED = 'password_reset_requested',
+  PASSWORD_RESET_COMPLETED = 'password_reset_completed',
+  TOKEN_REFRESHED = 'token_refreshed',
+
+  // =====================
+  // USER MANAGEMENT
+  // =====================
+  USER_CREATED = 'user_created',
+  USER_UPDATED = 'user_updated',
+  USER_DEACTIVATED = 'user_deactivated',
+  USER_REACTIVATED = 'user_reactivated',
+  USER_DELETED = 'user_deleted',
+  USER_ROLE_CHANGED = 'user_role_changed',
+  USER_PERMISSION_UPDATED = 'user_permission_updated',
+
+  // =====================
+  // PROJECTS
+  // =====================
+  PROJECT_CREATED = 'project_created',
+  PROJECT_UPDATED = 'project_updated',
+  PROJECT_ARCHIVED = 'project_archived',
+  PROJECT_RESTORED = 'project_restored',
+  PROJECT_DELETED = 'project_deleted',
+  PROJECT_MEMBER_ADDED = 'project_member_added',
+  PROJECT_MEMBER_REMOVED = 'project_member_removed',
+  PROJECT_STATUS_CHANGED = 'project_status_changed',
+
+  // =====================
+  // QUOTATIONS
+  // =====================
   QUOTATION_CREATED = 'quotation_created',
   QUOTATION_UPDATED = 'quotation_updated',
   QUOTATION_SUBMITTED = 'quotation_submitted',
@@ -85,14 +120,46 @@ export enum ActivityAction {
   QUOTATION_RETURNED = 'quotation_returned',
   QUOTATION_DECLINED = 'quotation_declined',
   QUOTATION_DELETED = 'quotation_deleted',
-  PROJECT_CREATED = 'project_created',
-  PROJECT_UPDATED = 'project_updated',
-  PROJECT_ARCHIVED = 'project_archived',
+  QUOTATION_REVISION_CREATED = 'quotation_revision_created',
+  QUOTATION_SENT_TO_CLIENT = 'quotation_sent_to_client',
+
+  // =====================
+  // VENDORS
+  // =====================
   VENDOR_CREATED = 'vendor_created',
   VENDOR_UPDATED = 'vendor_updated',
   VENDOR_DELETED = 'vendor_deleted',
+  VENDOR_APPROVED = 'vendor_approved',
+  VENDOR_REJECTED = 'vendor_rejected',
+
+  // =====================
+  // SETTINGS / CONFIG
+  // =====================
   SETTINGS_UPDATED = 'settings_updated',
-  USER_CREATED = 'user_created',
-  USER_UPDATED = 'user_updated',
-  USER_DEACTIVATED = 'user_deactivated',
+  SYSTEM_CONFIG_CHANGED = 'system_config_changed',
+  BILLING_SETTINGS_UPDATED = 'billing_settings_updated',
+
+  // =====================
+  // FILES / DOCUMENTS
+  // =====================
+  FILE_UPLOADED = 'file_uploaded',
+  FILE_DELETED = 'file_deleted',
+  FILE_DOWNLOADED = 'file_downloaded',
+  DOCUMENT_GENERATED = 'document_generated',
+
+  // =====================
+  // FINANCE (ERP EXPANSION)
+  // =====================
+  INVOICE_CREATED = 'invoice_created',
+  INVOICE_UPDATED = 'invoice_updated',
+  INVOICE_PAID = 'invoice_paid',
+  PAYMENT_RECEIVED = 'payment_received',
+
+  // =====================
+  // SYSTEM / SECURITY
+  // =====================
+  DATA_EXPORTED = 'data_exported',
+  DATA_IMPORTED = 'data_imported',
+  PERMISSION_DENIED = 'permission_denied',
+  UNAUTHORIZED_ACCESS_ATTEMPT = 'unauthorized_access_attempt',
 }

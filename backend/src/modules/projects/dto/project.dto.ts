@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
 import {
   IsEnum,
@@ -31,6 +32,7 @@ export class CreateProjectDto {
   status?: ProjectStatus;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   approved_value?: number;

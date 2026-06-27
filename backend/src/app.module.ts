@@ -12,6 +12,7 @@ import { SequelizeModuleOptions } from '@nestjs/sequelize';
 import { ActivityLogsModule } from './modules/engagement/activity-logs.module';
 import { NotificationsModule } from './modules/engagement/notifications.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ReportsModule } from './modules/reports/reports.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -29,6 +30,7 @@ import { AuthModule } from './modules/auth/auth.module';
     AuthModule,
     RolesModule,
     ActivityLogsModule,
+    ReportsModule,
     UsersModule,
     NotificationsModule,
     SettingsModule,

@@ -1,27 +1,65 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
+
 import { Project } from './models/projects.model';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { ProjectStatus } from '../../common/enums';
-
+import { ActivityLogForProjectService } from '../engagement/services/activity-log-project.service';
 @Injectable()
 export class ProjectsService {
   constructor(
     @InjectModel(Project)
     private readonly projectModel: typeof Project,
-  ) {}
 
-  create(dto: CreateProjectDto): Promise<Project> {
-    return this.projectModel.create({ ...dto } as any);
+    private readonly activityLogForProjectService: ActivityLogForProjectService,
+  ) {
+    console.log(
+      'ActivityLogForProjectService injected:',
+      !!this.activityLogForProjectService,
+    );
   }
+  // =========================
+  // CREATE PROJECT
+  // =========================
+  async create(dto: CreateProjectDto, userId?: string): Promise<Project> {
+    console.log('➡️ CREATE PROJECT STARTED');
+    console.log('DTO:', dto);
+    console.log('UserId:', userId);
 
+    const project = await this.projectModel.create({ ...dto } as any);
+
+    console.log('✅ PROJECT CREATED:', project.id);
+
+    try {
+      console.log('📌 TRIGGERING AUDIT LOG...');
+
+      await this.activityLogForProjectService.logProjectCreated(
+        project,
+        userId,
+      );
+
+      console.log('✅ AUDIT LOG SUCCESS');
+    } catch (err) {
+      console.error('❌ AUDIT LOG FAILED:', err);
+    }
+
+    console.log('🏁 CREATE PROJECT END');
+
+    return project;
+  }
+  // =========================
+  // GET ALL PROJECTS
+  // =========================
   findAll(
     filters: { status?: ProjectStatus; includeArchived?: boolean } = {},
   ): Promise<Project[]> {
     const where: Record<string, any> = {};
+
     if (filters.status) where.status = filters.status;
-    if (!filters.includeArchived) where.archived_at = { [Op.is]: null };
+    if (!filters.includeArchived) {
+      where.archived_at = { [Op.is]: null };
+    }
 
     return this.projectModel.findAll({
       where,
@@ -29,41 +67,79 @@ export class ProjectsService {
     });
   }
 
+  // =========================
+  // GET SINGLE PROJECT
+  // =========================
   async findOne(id: string): Promise<Project> {
     const project = await this.projectModel.findByPk(id, {
       include: ['creator', 'updater'],
     });
-    if (!project) throw new NotFoundException(`Project ${id} not found`);
+
+    if (!project) {
+      throw new NotFoundException(`Project ${id} not found`);
+    }
+
     return project;
   }
 
-  async update(id: string, dto: UpdateProjectDto): Promise<Project> {
+  // =========================
+  // UPDATE PROJECT
+  // =========================
+  async update(
+    id: string,
+    dto: UpdateProjectDto,
+    userId?: string,
+  ): Promise<Project> {
     const project = await this.findOne(id);
+
+    const changes = { ...dto };
+
     await project.update({ ...dto });
+
+    await this.activityLogForProjectService.logProjectUpdated(
+      project,
+      userId,
+      changes,
+    );
+
     return project;
   }
 
-  async archive(id: string, archived_by?: string): Promise<Project> {
+  // =========================
+  // ARCHIVE PROJECT
+  // =========================
+  async archive(id: string, userId?: string): Promise<Project> {
     const project = await this.findOne(id);
+
     await project.update({
       archived_at: new Date(),
-      archived_by,
       status: ProjectStatus.INACTIVE,
     });
+
+    await this.activityLogForProjectService.logProjectArchived(project, userId);
+
     return project;
   }
 
-  async restore(id: string): Promise<Project> {
+  // =========================
+  // RESTORE PROJECT
+  // =========================
+  async restore(id: string, userId?: string): Promise<Project> {
     const project = await this.findOne(id);
+
     await project.update({
       archived_at: null,
-      archived_by: null,
       status: ProjectStatus.ACTIVE,
     });
+
+    await this.activityLogForProjectService.logProjectRestored(project, userId);
+
     return project;
   }
 
-  /** Recompute the denormalized quotation_count / approved_value rollups. */
+  // =========================
+  // ROLLUPS UPDATE
+  // =========================
   async refreshRollups(
     id: string,
     quotation_count: number,
@@ -75,8 +151,14 @@ export class ProjectsService {
     );
   }
 
-  async remove(id: string): Promise<void> {
+  // =========================
+  // DELETE PROJECT
+  // =========================
+  async remove(id: string, userId?: string): Promise<void> {
     const project = await this.findOne(id);
+
+    await this.activityLogForProjectService.logProjectDeleted(id, userId);
+
     await project.destroy();
   }
 }

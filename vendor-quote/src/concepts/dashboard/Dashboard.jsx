@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../../utils/api";
 import {
   formatCurrency,
   formatDate,
@@ -20,32 +19,31 @@ import {
   ArrowRight,
 } from "lucide-react";
 
+// RTK Query
+import { useGetQuotationsQuery } from "../../api/quotation.api";
+import { useGetReportsOverviewQuery } from "../../api/reports.api"; // ✅ NEW
+
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [stats, setStats] = useState(null);
-  const [recentQuotations, setRecentQuotations] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  // Quotations
+  const { data: quotationsData = [], isLoading: isQuotationsLoading } =
+    useGetQuotationsQuery({
+      limit: 5,
+      page: 1,
+    });
 
-  const fetchDashboardData = async () => {
-    try {
-      const [statsRes, quotationsRes] = await Promise.all([
-        api.get("/reports/overview"),
-        api.get("/quotations?limit=5&page=1"),
-      ]);
-      setStats(statsRes.data);
-      setRecentQuotations(quotationsRes.data.quotations || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // ✅ Reports Overview (RTK Query)
+  const {
+    data: stats,
+    isLoading: loadingStats,
+    isError,
+  } = useGetReportsOverviewQuery();
+
+  const recentQuotations = quotationsData;
+
+  const isLoading = isQuotationsLoading || loadingStats;
 
   const STAT_CARDS = stats
     ? [
@@ -99,12 +97,13 @@ export default function Dashboard() {
       ]
     : [];
 
-  if (loading)
+  if (isLoading) {
     return (
       <div className="p-6 flex items-center justify-center h-64">
         <div className="text-sm text-gray-400">Loading dashboard...</div>
       </div>
     );
+  }
 
   return (
     <div className="p-6">
@@ -118,7 +117,6 @@ export default function Dashboard() {
         </div>
         <Link
           to="/quotations/create"
-          data-testid="create-quotation-btn"
           className="flex items-center gap-2 bg-[#E31E24] text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -126,14 +124,15 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* Stats */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
         {STAT_CARDS.map((card) => (
           <div
             key={card.label}
             onClick={() => card.link && navigate(card.link)}
-            className={`bg-white border border-[#E5E7EB] rounded-lg p-4 ${card.link ? "cursor-pointer hover:border-gray-300" : ""} transition-colors`}
-            data-testid={`stat-${card.label.toLowerCase().replace(/ /g, "-")}`}
+            className={`bg-white border border-[#E5E7EB] rounded-lg p-4 ${
+              card.link ? "cursor-pointer hover:border-gray-300" : ""
+            } transition-colors`}
           >
             <div
               className={`inline-flex items-center justify-center w-9 h-9 rounded-md ${card.bg} mb-3`}
@@ -143,9 +142,7 @@ export default function Dashboard() {
             <div className={`text-2xl font-bold ${card.color}`}>
               {card.value}
             </div>
-            <div className="text-xs text-gray-500 mt-0.5 leading-tight">
-              {card.label}
-            </div>
+            <div className="text-xs text-gray-500 mt-0.5">{card.label}</div>
           </div>
         ))}
       </div>
@@ -169,7 +166,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Recent Quotations */}
+      {/* Recent Quotations (unchanged) */}
       <div className="bg-white border border-[#E5E7EB] rounded-lg">
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#E5E7EB]">
           <h2 className="text-sm font-semibold text-[#333333]">
@@ -199,22 +196,22 @@ export default function Dashboard() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">
                     Quotation #
                   </th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">
                     Project
                   </th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">
                     Vendor
                   </th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">
                     Amount
                   </th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">
                     Status
                   </th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">
                     Date
                   </th>
                 </tr>
@@ -222,6 +219,7 @@ export default function Dashboard() {
               <tbody>
                 {recentQuotations.map((q) => {
                   const cfg = getStatusConfig(q.status);
+
                   return (
                     <tr
                       key={q.id}
@@ -229,21 +227,16 @@ export default function Dashboard() {
                       className="border-b border-[#F3F4F6] hover:bg-gray-50 cursor-pointer"
                     >
                       <td className="px-4 py-3 font-medium text-[#E31E24]">
-                        {q.quotation_number}
-                        {q.current_version > 0 && (
-                          <span className="text-gray-400 ml-1">
-                            V{q.current_version}
-                          </span>
-                        )}
+                        {q.quotationNumber}
                       </td>
                       <td className="px-4 py-3 text-gray-600">
-                        {q.project_name || "-"}
+                        {q.projectSnapshot?.name || "-"}
                       </td>
                       <td className="px-4 py-3 text-gray-600">
-                        {q.vendor_name || "-"}
+                        {q.vendorSnapshot?.name || "-"}
                       </td>
                       <td className="px-4 py-3 font-medium text-[#333333]">
-                        {formatCurrency(q.total_amount)}
+                        {formatCurrency(q.totalAmount)}
                       </td>
                       <td className="px-4 py-3">
                         <span
@@ -253,7 +246,7 @@ export default function Dashboard() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-gray-500">
-                        {formatDate(q.quotation_date)}
+                        {formatDate(q.quotationDate)}
                       </td>
                     </tr>
                   );
@@ -280,6 +273,7 @@ export default function Dashboard() {
             <div className="text-xs text-gray-400">Create a quotation</div>
           </div>
         </Link>
+
         <Link
           to="/projects"
           className="flex items-center gap-3 bg-white border border-[#E5E7EB] rounded-lg p-4 hover:border-[#E31E24] transition-colors group"
@@ -292,6 +286,7 @@ export default function Dashboard() {
             <div className="text-xs text-gray-400">Manage projects</div>
           </div>
         </Link>
+
         <Link
           to="/vendors"
           className="flex items-center gap-3 bg-white border border-[#E5E7EB] rounded-lg p-4 hover:border-[#E31E24] transition-colors group"

@@ -22,11 +22,12 @@ export const useAuth = () => {
   };
 
   const logout = async () => {
+    localStorage.removeItem("token");
+
     try {
       await logoutMutation().unwrap();
-    } finally {
-      localStorage.removeItem("token");
-      await refetch();
+    } catch (err) {
+      console.log(err);
     }
   };
 

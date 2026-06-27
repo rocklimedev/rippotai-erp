@@ -906,7 +906,7 @@ export default function VendorsList() {
                     >
                       <Edit className="w-3.5 h-3.5" />
                     </button>
-                    {user?.role === "admin" && (
+                    {user?.role === "ADMIN" && (
                       <button
                         onClick={() => handleDelete(v.id)}
                         className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"
@@ -1041,7 +1041,7 @@ export default function VendorsList() {
                           >
                             <Edit className="w-4 h-4" />
                           </button>
-                          {user?.role === "admin" && (
+                          {user?.role === "ADMIN" && (
                             <button
                               onClick={() => handleDelete(v.id)}
                               className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"
