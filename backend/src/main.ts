@@ -18,15 +18,13 @@ async function bootstrap() {
   // Improved CORS configuration
   app.enableCors({
     origin: [
-      'https://vendors-quote.rippotaiarchitecture.com',
       'http://localhost:5173',
-      // Add more as needed (e.g. for development),
       'http://localhost:3000',
       'http://localhost:3001',
-      'https://your-other-frontend.rippotaiarchitecture.com',
+      'https://vendors-quote.rippotaiarchitecture.com',
     ],
-    credentials: true, // Important if you're using cookies / Authorization headers
-    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Content-Type',
       'Authorization',
@@ -35,9 +33,11 @@ async function bootstrap() {
       'Origin',
       'Access-Control-Request-Method',
       'Access-Control-Request-Headers',
+
+      // ADD THIS
+      'X-CDN-Secret',
+      'x-cdn-secret',
     ],
-    exposedHeaders: ['Content-Length', 'Content-Type'], // optional
-    maxAge: 3600, // Cache preflight for 1 hour (optional but recommended)
   });
 
   const port = process.env.PORT || 5000;

@@ -9,6 +9,10 @@ const baseQuery = fetchBaseQuery({
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);
     }
+    const cdnToken = import.meta.env.VITE_CDN_TOKEN;
+    if (cdnToken) {
+      headers.set("x-cdn-secret", cdnToken);
+    }
 
     return headers;
   },
@@ -17,7 +21,7 @@ const baseQuery = fetchBaseQuery({
 export const quotationApi = createApi({
   reducerPath: "quotationApi",
   baseQuery,
-  tagTypes: ["Quotations", "QuotationItems"],
+  tagTypes: ["Quotations", "QuotationItems", "QuotationVersions"],
 
   endpoints: (builder) => ({
     // =========================
@@ -181,6 +185,60 @@ export const quotationApi = createApi({
       }),
       invalidatesTags: ["QuotationItems"],
     }),
+
+    // =========================
+    // QUOTATION VERSIONS
+    // =========================
+
+    // List versions for a quotation
+    getQuotationVersions: builder.query({
+      query: (quotationId) => `/quotations/${quotationId}/versions`,
+      providesTags: (result, error, quotationId) =>
+        result
+          ? [
+              ...result.map((v) => ({
+                type: "QuotationVersions",
+                id: v.id,
+              })),
+              { type: "QuotationVersions", id: `LIST_${quotationId}` },
+            ]
+          : [{ type: "QuotationVersions", id: `LIST_${quotationId}` }],
+    }),
+
+    // Create a new version (snapshot)
+    createQuotationVersion: builder.mutation({
+      query: ({ quotationId, created_by, remarks }) => ({
+        url: `/quotations/${quotationId}/versions`,
+        method: "POST",
+        body: { created_by, remarks },
+      }),
+      invalidatesTags: ["Quotations", "QuotationItems", "QuotationVersions"],
+    }),
+
+    // Get a single version by id
+    getQuotationVersion: builder.query({
+      query: (id) => `/quotations/versions/${id}`,
+      providesTags: (result, error, id) => [{ type: "QuotationVersions", id }],
+    }),
+
+    // Delete a version
+    deleteQuotationVersion: builder.mutation({
+      query: (id) => ({
+        url: `/quotations/versions/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["QuotationVersions"],
+    }),
+
+    // Restore a version into the quotation
+    restoreQuotationVersion: builder.mutation({
+      query: ({ id, restored_by }) => ({
+        url: `/quotations/versions/${id}/restore`,
+        method: "POST",
+        body: { restored_by },
+      }),
+      invalidatesTags: ["Quotations", "QuotationItems", "QuotationVersions"],
+    }),
   }),
 });
 
@@ -209,4 +267,11 @@ export const {
   useReplaceQuotationItemsMutation,
   useUpdateQuotationItemMutation,
   useDeleteQuotationItemMutation,
+
+  // versions
+  useGetQuotationVersionsQuery,
+  useCreateQuotationVersionMutation,
+  useGetQuotationVersionQuery,
+  useDeleteQuotationVersionMutation,
+  useRestoreQuotationVersionMutation,
 } = quotationApi;

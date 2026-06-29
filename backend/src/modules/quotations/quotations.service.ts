@@ -16,11 +16,12 @@ import {
   ReviewQuotationDto,
 } from './dto/quotation.dto';
 import { QuotationStatus } from '../../common/enums';
+import { QuotationVersionsService } from './quotation-versions.service';
 
 const EDITABLE_STATUSES = [
   QuotationStatus.DRAFT,
   QuotationStatus.RETURNED_FOR_EDITING,
-  QuotationStatus.SUBMITTED, // 👈 allow editing submitted too
+  QuotationStatus.SUBMITTED, // allow editing submitted too
 ];
 
 @Injectable()
@@ -31,6 +32,7 @@ export class QuotationsService {
 
     private readonly projectsService: ProjectsService,
     private readonly vendorsService: VendorsService,
+    private readonly versionsService: QuotationVersionsService,
   ) {}
 
   private async generateQuotationNumber(): Promise<string> {
@@ -39,7 +41,7 @@ export class QuotationsService {
 
     const countToday = await this.quotationModel.count({
       where: {
-        quotationNumber: { [Op.like]: `QTN-${datePart}-%` }, // ← Correct camelCase
+        quotationNumber: { [Op.like]: `QTN-${datePart}-%` },
       },
     });
 
@@ -50,7 +52,8 @@ export class QuotationsService {
   private computeTotals(
     items: { rate: number; quantity: number; amount?: number }[],
     additional_charges = 0,
-    discount = 0,
+    global_discount_type: 'fixed' | 'percentage' = 'fixed',
+    global_discount_value = 0,
     tax_percent = 0,
   ) {
     const subtotal = items.reduce((sum, item) => {
@@ -58,12 +61,20 @@ export class QuotationsService {
       return sum + Number(amount);
     }, 0);
 
-    const taxable = subtotal + additional_charges - discount;
+    const discount =
+      global_discount_type === 'percentage'
+        ? Math.round(((subtotal * global_discount_value) / 100) * 100) / 100
+        : global_discount_value;
+
+    const taxable = subtotal + Number(additional_charges) - Number(discount);
+
     const tax_amount = Math.round(((taxable * tax_percent) / 100) * 100) / 100;
+
     const total_amount = Math.round((taxable + tax_amount) * 100) / 100;
 
     return {
       subtotal: Math.round(subtotal * 100) / 100,
+      discount,
       tax_amount,
       total_amount,
     };
@@ -74,16 +85,17 @@ export class QuotationsService {
     const vendor = await this.vendorsService.findOne(dto.vendor_id);
 
     const additional_charges = dto.additional_charges ?? 0;
-    const discount = dto.discount ?? 0;
+    const global_discount_type = dto.global_discount_type ?? 'fixed';
+    const global_discount_value = dto.global_discount_value ?? 0;
     const tax_percent = dto.tax_percent ?? 0;
 
-    const { subtotal, tax_amount, total_amount } = this.computeTotals(
+    const { subtotal, discount, tax_amount, total_amount } = this.computeTotals(
       dto.items,
       additional_charges,
-      discount,
+      global_discount_type,
+      global_discount_value,
       tax_percent,
     );
-
     const quotation_number =
       dto.quotation_number ?? (await this.generateQuotationNumber());
 
@@ -99,6 +111,8 @@ export class QuotationsService {
         subtotal,
         additionalCharges: additional_charges,
         discount,
+        globalDiscountType: global_discount_type,
+        globalDiscountValue: global_discount_value,
         taxPercent: tax_percent,
         taxAmount: tax_amount,
         totalAmount: total_amount,
@@ -120,6 +134,13 @@ export class QuotationsService {
             quotation_id: quotation.id,
           } as any),
         ),
+      );
+
+      // Create initial version
+      await this.versionsService.createVersion(
+        quotation.id,
+        dto.created_by ?? null,
+        'Initial version',
       );
 
       return this.findOne(quotation.id);
@@ -159,7 +180,7 @@ export class QuotationsService {
     const quotation = await this.quotationModel.findOne({
       where: {
         id,
-        deletedAt: null, // ← Fixed: Use null directly
+        deletedAt: null,
       },
       include: ['items', 'project', 'vendor'],
     });
@@ -184,18 +205,24 @@ export class QuotationsService {
 
     const additional_charges =
       dto.additional_charges ?? quotation.additionalCharges;
-    const discount = dto.discount ?? quotation.discount;
-    const tax_percent = dto.tax_percent ?? quotation.taxPercent;
+
+    const global_discount_type =
+      dto.global_discount_type ?? quotation.globalDiscountType;
+
+    const global_discount_value =
+      dto.global_discount_value ?? Number(quotation.globalDiscountValue);
+
+    const tax_percent = dto.tax_percent ?? Number(quotation.taxPercent);
 
     const items = dto.items ?? quotation.items;
 
-    const { subtotal, tax_amount, total_amount } = this.computeTotals(
+    const { subtotal, discount, tax_amount, total_amount } = this.computeTotals(
       items as any,
       Number(additional_charges),
-      Number(discount),
+      global_discount_type,
+      Number(global_discount_value),
       Number(tax_percent),
     );
-
     // Update items if provided
     if (dto.items) {
       await QuotationItem.destroy({ where: { quotation_id: id } });
@@ -219,6 +246,10 @@ export class QuotationsService {
     await quotation.update({
       quotationDate: dto.quotation_date ?? quotation.quotationDate,
       additionalCharges: additional_charges,
+
+      globalDiscountType: global_discount_type,
+      globalDiscountValue: global_discount_value,
+
       discount,
       taxPercent: tax_percent,
       subtotal,
@@ -227,6 +258,13 @@ export class QuotationsService {
       termsConditions: dto.terms_conditions ?? quotation.termsConditions,
       updatedBy: dto.updated_by,
     });
+
+    // Create version after update
+    await this.versionsService.createVersion(
+      id,
+      dto.updated_by ?? null,
+      'Updated quotation',
+    );
 
     return this.findOne(id);
   }
@@ -241,6 +279,12 @@ export class QuotationsService {
       submittedBy: submitted_by,
     });
 
+    await this.versionsService.createVersion(
+      id,
+      submitted_by ?? null,
+      'Submitted',
+    );
+
     return this.findOne(id);
   }
 
@@ -253,6 +297,12 @@ export class QuotationsService {
       reviewedBy: dto.reviewed_by,
       reviewRemarks: dto.review_remarks,
     });
+
+    await this.versionsService.createVersion(
+      id,
+      dto.reviewed_by ?? null,
+      'Approved',
+    );
 
     return this.findOne(id);
   }
@@ -270,6 +320,12 @@ export class QuotationsService {
       reviewRemarks: dto.review_remarks,
     });
 
+    await this.versionsService.createVersion(
+      id,
+      dto.reviewed_by ?? null,
+      'Returned for editing',
+    );
+
     return this.findOne(id);
   }
 
@@ -282,6 +338,12 @@ export class QuotationsService {
       reviewedBy: dto.reviewed_by,
       reviewRemarks: dto.review_remarks,
     });
+
+    await this.versionsService.createVersion(
+      id,
+      dto.reviewed_by ?? null,
+      'Declined',
+    );
 
     return this.findOne(id);
   }
@@ -303,6 +365,12 @@ export class QuotationsService {
       status: QuotationStatus.CANCELLED,
       updatedBy: updated_by,
     });
+
+    await this.versionsService.createVersion(
+      id,
+      updated_by ?? null,
+      'Cancelled',
+    );
 
     return this.findOne(id);
   }
@@ -326,6 +394,12 @@ export class QuotationsService {
       deletedAt: new Date(),
       deletedBy: deleted_by,
     });
+
+    await this.versionsService.createVersion(
+      id,
+      deleted_by ?? null,
+      'Soft deleted',
+    );
   }
 
   async restore(id: string): Promise<Quotation> {
@@ -340,8 +414,12 @@ export class QuotationsService {
       deletedBy: null,
     });
 
+    // Create a version to reflect restore
+    await this.versionsService.createVersion(id, null, 'Restored');
+
     return this.findOne(id);
   }
+
   async remove(id: string): Promise<void> {
     const quotation = await this.quotationModel.findByPk(id);
     if (!quotation) throw new NotFoundException(`Quotation ${id} not found`);

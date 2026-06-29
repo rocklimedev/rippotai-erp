@@ -10,6 +10,7 @@ import {
   CreateQuotationItemDto,
   UpdateQuotationItemDto,
 } from './dto/quotation-item.dto';
+import { QuotationVersionsService } from './quotation-versions.service';
 
 const computeAmount = (rate: number, quantity: number) =>
   Math.round(rate * quantity * 100) / 100;
@@ -19,6 +20,8 @@ export class QuotationItemsService {
   constructor(
     @InjectModel(QuotationItem)
     private readonly quotationItemModel: typeof QuotationItem,
+
+    private readonly versionsService: QuotationVersionsService,
   ) {}
 
   async create(
@@ -26,11 +29,20 @@ export class QuotationItemsService {
     dto: CreateQuotationItemDto,
   ): Promise<QuotationItem> {
     try {
-      return await this.quotationItemModel.create({
+      const item = await this.quotationItemModel.create({
         ...dto,
         quotation_id,
         amount: dto.amount ?? computeAmount(dto.rate, dto.quantity),
       } as any);
+
+      // Create a new version for the quotation after adding an item.
+      await this.versionsService.createVersion(
+        quotation_id,
+        (dto as any).created_by ?? null,
+        `Added item #${dto.sno}`,
+      );
+
+      return item;
     } catch (err) {
       if (err instanceof UniqueConstraintError) {
         throw new ConflictException(
@@ -65,6 +77,14 @@ export class QuotationItemsService {
       ...dto,
       amount: dto.amount ?? computeAmount(Number(rate), Number(quantity)),
     });
+
+    // Create version for quotation after modifying an item
+    await this.versionsService.createVersion(
+      item.quotation_id,
+      (dto as any).updated_by ?? null,
+      `Updated item ${id}`,
+    );
+
     return item;
   }
 
@@ -73,21 +93,42 @@ export class QuotationItemsService {
     quotation_id: string,
     items: CreateQuotationItemDto[],
   ): Promise<QuotationItem[]> {
+    // remove and add all, then create version
     await this.quotationItemModel.destroy({ where: { quotation_id } });
     const rows = items.map((item) => ({
       ...item,
       quotation_id,
       amount: item.amount ?? computeAmount(item.rate, item.quantity),
     }));
-    return this.quotationItemModel.bulkCreate(rows as any);
+    const created = await this.quotationItemModel.bulkCreate(rows as any);
+
+    await this.versionsService.createVersion(
+      quotation_id,
+      null,
+      'Replaced all items',
+    );
+
+    return created;
   }
 
   async remove(id: string): Promise<void> {
     const item = await this.findOne(id);
+    const quotationId = item.quotation_id;
     await item.destroy();
+
+    await this.versionsService.createVersion(
+      quotationId,
+      null,
+      `Removed item ${id}`,
+    );
   }
 
   async removeAllForQuotation(quotation_id: string): Promise<void> {
     await this.quotationItemModel.destroy({ where: { quotation_id } });
+    await this.versionsService.createVersion(
+      quotation_id,
+      null,
+      'Removed all items',
+    );
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   useGetQuotationsQuery,
@@ -7,7 +7,7 @@ import {
 
 import { useGetProjectsQuery } from "../../api/project.api";
 import { useGetVendorsQuery } from "../../api/vendor.api";
-import { useGetUsersQuery } from "../../api/user.api"; // ← Added
+import { useGetUsersQuery } from "../../api/user.api";
 
 import {
   formatCurrency,
@@ -42,19 +42,55 @@ export default function QuotationsList() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Local filters state
   const [filters, setFilters] = useState({
-    search: searchParams.get("search") || "",
-    status: searchParams.get("status") || "",
-    project_id: searchParams.get("project_id") || "",
-    vendor_id: searchParams.get("vendor_id") || "",
-    employee_id: searchParams.get("employee_id") || "",
-    from_date: searchParams.get("from_date") || "",
-    to_date: searchParams.get("to_date") || "",
-    page: parseInt(searchParams.get("page") || "1"),
+    search: "",
+    status: "",
+    project_id: "",
+    vendor_id: "",
+    employee_id: "",
+    from_date: "",
+    to_date: "",
+    page: 1,
     limit: 15,
   });
 
-  const [view, setView] = useState("list");
+  const [view, setView] = useState(
+    localStorage.getItem("quotations_view") || "list",
+  );
+
+  // ==================== SYNC URL PARAMS WITH FILTERS ====================
+
+  // URL → Filters (This fixes sidebar links like ?status=approved)
+  useEffect(() => {
+    setFilters({
+      search: searchParams.get("search") || "",
+      status: searchParams.get("status") || "",
+      project_id: searchParams.get("project_id") || "",
+      vendor_id: searchParams.get("vendor_id") || "",
+      employee_id: searchParams.get("employee_id") || "",
+      from_date: searchParams.get("from_date") || "",
+      to_date: searchParams.get("to_date") || "",
+      page: parseInt(searchParams.get("page") || "1"),
+      limit: 15,
+    });
+  }, [searchParams]);
+
+  // Filters → URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+
+    if (filters.search) params.set("search", filters.search);
+    if (filters.status) params.set("status", filters.status);
+    if (filters.project_id) params.set("project_id", filters.project_id);
+    if (filters.vendor_id) params.set("vendor_id", filters.vendor_id);
+    if (filters.employee_id) params.set("employee_id", filters.employee_id);
+    if (filters.from_date) params.set("from_date", filters.from_date);
+    if (filters.to_date) params.set("to_date", filters.to_date);
+    if (filters.page > 1) params.set("page", filters.page);
+
+    setSearchParams(params, { replace: true });
+  }, [filters, setSearchParams]);
 
   // ==================== RTK Query ====================
   const {
@@ -77,7 +113,6 @@ export default function QuotationsList() {
     status: "active",
   });
 
-  // ✅ Using RTK Query instead of fetch
   const { data: usersData, isLoading: usersLoading } = useGetUsersQuery({
     role: "employee",
     is_active: true,
@@ -85,13 +120,13 @@ export default function QuotationsList() {
 
   const [deleteQuotation] = useSoftDeleteQuotationMutation();
 
+  const updateFilter = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
+  };
+
   const setViewPref = (v) => {
     setView(v);
     localStorage.setItem("quotations_view", v);
-  };
-
-  const updateFilter = (key, value) => {
-    setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
   };
 
   const handleDelete = async (id, quotationNumber) => {
@@ -136,12 +171,7 @@ export default function QuotationsList() {
 
   const projects = projectsData?.data || projectsData || [];
   const vendors = vendorsData?.data || vendorsData || [];
-
-  // Derived employees list
-  const employees = useMemo(() => {
-    const users = usersData || usersData || [];
-    return users;
-  }, [usersData]);
+  const employees = usersData?.data || usersData || [];
 
   return (
     <div className="p-6">
@@ -165,6 +195,7 @@ export default function QuotationsList() {
               <LayoutGrid className="w-4 h-4" />
             </button>
           </div>
+
           <button
             data-testid="create-quotation-btn"
             onClick={() => navigate("/quotations/create")}

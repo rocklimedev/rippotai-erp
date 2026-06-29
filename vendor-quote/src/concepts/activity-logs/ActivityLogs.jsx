@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../../utils/api";
 import { formatDateTime } from "../../utils/helpers";
-import { ClipboardList, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ClipboardList, ChevronLeft, ChevronRight } from "lucide-react";
+import { useGetActivityLogsQuery } from "../../api/activity-logs.api";
 
 const ACTION_COLORS = {
   "Quotation Created": "bg-blue-100 text-blue-700",
@@ -17,36 +17,26 @@ const ACTION_COLORS = {
 
 export default function ActivityLogs() {
   const navigate = useNavigate();
-  const [logs, setLogs] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+
   const [page, setPage] = useState(1);
   const [entityType, setEntityType] = useState("");
+
   const limit = 30;
 
-  const fetchLogs = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ page, limit });
-      if (entityType) params.set("entity_type", entityType);
-      const { data } = await api.get(`/activity-logs?${params.toString()}`);
-      setLogs(data.logs || []);
-      setTotal(data.total || 0);
-    } catch (err) {
-      console.error("Error fetching activity logs:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, entityType]);
+  const { data, isLoading, isFetching } = useGetActivityLogsQuery({
+    entity_type: entityType || undefined,
+  });
 
-  useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
+  // ⚠️ backend currently doesn't handle pagination via RTK query
+  // so we fallback to slicing OR extend API later
+  const logs = data?.logs || [];
+  const total = data?.total || 0;
 
   const totalPages = Math.ceil(total / limit);
 
   return (
     <div className="p-6">
+      {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <ClipboardList className="w-5 h-5 text-[#333333]" />
@@ -73,8 +63,9 @@ export default function ActivityLogs() {
         </select>
       </div>
 
+      {/* Table */}
       <div className="bg-white border border-[#E5E7EB] rounded-lg overflow-hidden">
-        {loading ? (
+        {isLoading || isFetching ? (
           <div className="px-4 py-8 text-center text-sm text-gray-400">
             Loading...
           </div>
@@ -103,10 +94,12 @@ export default function ActivityLogs() {
                 </th>
               </tr>
             </thead>
+
             <tbody>
               {logs.map((log) => {
                 const actionColor =
                   ACTION_COLORS[log.action] || "bg-gray-100 text-gray-600";
+
                 return (
                   <tr
                     key={log.id}
@@ -119,18 +112,21 @@ export default function ActivityLogs() {
                         {log.action}
                       </span>
                     </td>
+
                     <td className="px-4 py-3">
                       <div className="text-[#333333] font-medium">
-                        {log.user_name}
+                        {log.user_email}
                       </div>
                       <div className="text-xs text-gray-400 capitalize">
                         {log.user_role}
                       </div>
                     </td>
+
                     <td className="px-4 py-3">
                       <div className="text-gray-600 capitalize">
                         {log.entity_type}
                       </div>
+
                       {log.entity_id && log.entity_type === "quotation" && (
                         <button
                           onClick={() =>
@@ -142,20 +138,15 @@ export default function ActivityLogs() {
                         </button>
                       )}
                     </td>
+
                     <td className="px-4 py-3 text-xs text-gray-500 max-w-xs">
-                      {log.new_value && (
-                        <div>
-                          <span className="text-gray-400">Value:</span>{" "}
-                          {log.new_value}
-                        </div>
-                      )}
-                      {log.old_value && (
-                        <div>
-                          <span className="text-gray-400">Previous:</span>{" "}
-                          {log.old_value}
-                        </div>
+                      {log.changes && (
+                        <pre className="whitespace-pre-wrap">
+                          {JSON.stringify(log.changes, null, 2)}
+                        </pre>
                       )}
                     </td>
+
                     <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
                       {formatDateTime(log.created_at)}
                     </td>
@@ -166,12 +157,13 @@ export default function ActivityLogs() {
           </table>
         )}
 
-        {/* Pagination */}
+        {/* Pagination (still local for now) */}
         {totalPages > 1 && (
           <div className="px-4 py-3 border-t border-[#E5E7EB] flex items-center justify-between">
             <span className="text-xs text-gray-500">
               Page {page} of {totalPages}
             </span>
+
             <div className="flex gap-1">
               <button
                 onClick={() => setPage((p) => p - 1)}
@@ -180,6 +172,7 @@ export default function ActivityLogs() {
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
+
               <button
                 onClick={() => setPage((p) => p + 1)}
                 disabled={page >= totalPages}

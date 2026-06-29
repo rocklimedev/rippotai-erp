@@ -12,17 +12,17 @@ import { ActivityAction } from '../../../common/enums';
 export class CreateActivityLogDto {
   @IsOptional()
   @IsUUID()
-  user_id?: string;
+  user_id?: string | null;
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
-  user_email: string;
+  user_email?: string;
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
-  user_role: string;
+  user_role?: string;
 
   @IsEnum(ActivityAction)
   action: ActivityAction;

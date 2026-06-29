@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { formatCurrency } from "../../utils/helpers";
 import { useAuth } from "../../store/use-auth";
@@ -13,7 +13,6 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-// Import RTK Query hooks
 import {
   useCreateQuotationMutation,
   useGetQuotationByIdQuery,
@@ -24,8 +23,12 @@ import {
   useCreateVendorMutation,
   useGetVendorsQuery,
 } from "../../api/vendor.api";
-import { useGetProjectsQuery } from "../../api/project.api"; // Assuming you have this
-import { useGetSettingsQuery } from "../../api/settings.api";
+import { useGetProjectsQuery } from "../../api/project.api";
+import {
+  useGetSettingsQuery,
+  useGetSettingByKeyQuery,
+} from "../../api/settings.api";
+
 const emptyItem = (sno) => ({
   sno,
   particular: "",
@@ -35,7 +38,9 @@ const emptyItem = (sno) => ({
   remarks: "",
 });
 
+// ---------------------------------------------------------------------------
 // Add Vendor Modal
+// ---------------------------------------------------------------------------
 function AddVendorModal({ onClose, onSave }) {
   const [form, setForm] = useState({
     name: "",
@@ -90,8 +95,6 @@ function AddVendorModal({ onClose, onSave }) {
   const checkDuplicates = useCallback(async () => {
     if (!form.contact_number) return;
     try {
-      // TODO: You need to create a check-duplicate endpoint in your API
-      // For now, we'll skip this or implement it later
       setDuplicates([]);
     } catch {}
   }, [form.contact_number]);
@@ -275,11 +278,18 @@ function AddVendorModal({ onClose, onSave }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Main Component
+// ---------------------------------------------------------------------------
 export default function CreateQuotation() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = !!id;
+
+  // Ref to skip the recalc effect right after loading edit data from the API,
+  // so the backend values are not immediately overwritten by a stale recalc.
+  const isLoadingEdit = useRef(false);
 
   const [form, setForm] = useState({
     quotation_number: "",
@@ -295,8 +305,11 @@ export default function CreateQuotation() {
     items: [emptyItem(1)],
     subtotal: 0,
     additional_charges: 0,
+    global_discount_type: "fixed",
+    global_discount_value: 0,
     discount: 0,
-    tax: 0,
+    tax_percent: 0,
+    tax_amount: 0,
     total_amount: 0,
     terms_conditions: "",
   });
@@ -308,7 +321,6 @@ export default function CreateQuotation() {
   const [showProjectDD, setShowProjectDD] = useState(false);
   const [showVendorDD, setShowVendorDD] = useState(false);
   const [showAddVendor, setShowAddVendor] = useState(false);
-  const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [unsavedChanges, setUnsavedChanges] = useState(false);
@@ -320,52 +332,74 @@ export default function CreateQuotation() {
   const { data: quotationData } = useGetQuotationByIdQuery(id, {
     skip: !isEdit,
   });
+  const { data: termsSetting } = useGetSettingByKeyQuery("terms", {
+    skip: isEdit,
+  });
 
   const [createQuotation] = useCreateQuotationMutation();
   const [updateQuotation] = useUpdateQuotationMutation();
   const [submitQuotation] = useSubmitQuotationMutation();
 
-  // Sync RTK Query data to component state
+  // Sync projects
   useEffect(() => {
-    if (projectsData?.length) {
-      setProjects(projectsData);
-    }
+    if (projectsData?.length) setProjects(projectsData);
   }, [projectsData]);
 
+  // Sync vendors
   useEffect(() => {
-    if (vendorsData?.length) {
-      setVendors(vendorsData);
-    }
+    if (vendorsData?.length) setVendors(vendorsData);
   }, [vendorsData]);
 
+  // Default terms for new quotations only
   useEffect(() => {
-    if (settingsData?.terms) {
-      setSettings(settingsData);
-      if (!isEdit) {
-        const terms = settingsData.terms.default_terms || "";
-        setForm((p) => ({ ...p, terms_conditions: terms }));
-      }
+    if (!isEdit && termsSetting?.value?.default_terms) {
+      setForm((p) => ({
+        ...p,
+        terms_conditions: termsSetting.value.default_terms,
+      }));
     }
-  }, [settingsData, isEdit]);
+  }, [termsSetting, isEdit]);
 
-  // Load quotation data if editing
-  // Load quotation data if editing
+  // Load quotation data when editing.
+  // We set isLoadingEdit = true so the recalc effect below skips one run
+  // and does NOT overwrite the correct values we just loaded from the API.
   useEffect(() => {
     if (isEdit && quotationData) {
-      const q = quotationData; // Your API response (matches the JSON you shared)
+      const q = quotationData;
+
+      const items = q.items?.length
+        ? q.items.map((item, index) => ({
+            ...item,
+            sno: index + 1,
+            rate: Number(item.rate) || 0,
+            quantity: Number(item.quantity) || 0,
+            amount: Number(item.amount) || 0,
+          }))
+        : [emptyItem(1)];
+
+      // Use the pre-computed values from the backend directly.
+      const subtotal = Number(q.subtotal) || 0;
+      const additional_charges = Number(q.additionalCharges) || 0;
+      const global_discount_type =
+        q.globalDiscountType || q.global_discount_type || "fixed";
+      const global_discount_value =
+        Number(q.globalDiscountValue ?? q.global_discount_value) || 0;
+      const discount = Number(q.discount) || 0;
+      const tax_percent = Number(q.taxPercent ?? q.tax_percent) || 0;
+      const tax_amount = Number(q.taxAmount ?? q.tax_amount) || 0;
+      const total_amount = Number(q.totalAmount) || 0;
+
+      // Block the recalc effect from firing and overwriting these values.
+      isLoadingEdit.current = true;
 
       setForm({
         quotation_number: q.quotationNumber || "Auto-generated",
         quotation_date:
           q.quotationDate || new Date().toISOString().split("T")[0],
-
-        // Project
         project_id: q.project_id || q.project?.id || "",
         project_name: q.projectSnapshot?.name || q.project?.name || "",
         site_location:
           q.projectSnapshot?.site_location || q.project?.site_location || "",
-
-        // Vendor
         vendor_id: q.vendor_id || q.vendor?.id || "",
         vendor_name: q.vendorSnapshot?.name || q.vendor?.name || "",
         vendor_contact:
@@ -373,87 +407,83 @@ export default function CreateQuotation() {
         vendor_address: q.vendorSnapshot?.address || q.vendor?.address || "",
         vendor_company:
           q.vendorSnapshot?.company_name || q.vendor?.company_name || "",
-
-        // Items
-        items: q.items?.length
-          ? q.items.map((item, index) => ({
-              ...item,
-              sno: index + 1,
-              rate: Number(item.rate) || 0,
-              quantity: Number(item.quantity) || 0,
-              amount: Number(item.amount) || 0,
-            }))
-          : [emptyItem(1)],
-
-        // Amounts
-        subtotal: Number(q.subtotal) || 0,
-        additional_charges: Number(q.additionalCharges) || 0,
-        discount: Number(q.discount) || 0,
-        tax: Number(q.taxPercent) || 0, // or q.taxAmount if you store amount
-        total_amount: Number(q.totalAmount) || 0,
-
+        items,
+        subtotal,
+        additional_charges,
+        global_discount_type,
+        global_discount_value,
+        discount,
+        tax_percent,
+        tax_amount,
+        total_amount,
         terms_conditions: q.termsConditions || "",
       });
 
-      // Set search fields for dropdowns
       setProjectSearch(q.projectSnapshot?.name || q.project?.name || "");
       setVendorSearch(q.vendorSnapshot?.name || q.vendor?.name || "");
     }
   }, [isEdit, quotationData]);
-  useEffect(() => {
-    recalculate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.items, form.additional_charges, form.discount, form.tax, settings]);
 
-  const recalculate = () => {
+  // Recalculate totals whenever items or amount fields change.
+  // Skips once after the edit data is loaded (isLoadingEdit guard) so the
+  // backend values are not immediately zeroed out.
+  useEffect(() => {
+    if (isLoadingEdit.current) {
+      isLoadingEdit.current = false;
+      return;
+    }
+
     const subtotal = form.items.reduce(
       (sum, item) => sum + (Number(item.amount) || 0),
       0,
     );
-    const amtSettings = settings?.amount_settings || {};
-    const addl = amtSettings.show_additional_charges
-      ? Number(form.additional_charges) || 0
-      : 0;
-    const disc = amtSettings.show_discount ? Number(form.discount) || 0 : 0;
-    const taxPct = amtSettings.show_tax
-      ? Number(amtSettings.tax_percentage || form.tax || 0)
-      : 0;
-    const taxAmt = ((subtotal + addl - disc) * taxPct) / 100;
-    const total = subtotal + addl - disc + taxAmt;
-    setForm((p) => ({ ...p, subtotal, total_amount: Math.max(0, total) }));
-  };
+    const addl = Number(form.additional_charges) || 0;
+    const discountValue = Number(form.global_discount_value) || 0;
+    const discount =
+      form.global_discount_type === "percentage"
+        ? Math.round(((subtotal * discountValue) / 100) * 100) / 100
+        : discountValue;
+    const taxPct = Number(form.tax_percent) || 0;
+    const taxableAmount = subtotal + addl - discount;
+    const taxAmt = Math.round(((taxableAmount * taxPct) / 100) * 100) / 100;
+    const total = taxableAmount + taxAmt;
 
+    setForm((p) => ({
+      ...p,
+      subtotal,
+      discount,
+      tax_amount: taxAmt,
+      total_amount: Math.max(0, total),
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    JSON.stringify(form.items),
+    form.additional_charges,
+    form.global_discount_type,
+    form.global_discount_value,
+    form.tax_percent,
+  ]);
+
+  // ---------------------------------------------------------------------------
+  // Item helpers
+  // ---------------------------------------------------------------------------
   const updateItem = (idx, field, value) => {
     setUnsavedChanges(true);
-
     setForm((p) => {
       const items = [...p.items];
-      let parsedValue = null;
-
       if (field === "rate" || field === "quantity" || field === "amount") {
-        // Allow empty during typing, but convert to number for storage
-        parsedValue = value === "" ? 0 : Number(value);
-
-        // Prevent NaN
-        if (isNaN(parsedValue)) parsedValue = 0;
-
-        items[idx] = {
-          ...items[idx],
-          [field]: parsedValue,
-        };
-
-        // Auto-calculate amount
+        let parsed = value === "" ? 0 : Number(value);
+        if (isNaN(parsed)) parsed = 0;
+        items[idx] = { ...items[idx], [field]: parsed };
         if (field === "rate" || field === "quantity") {
-          const rate = field === "rate" ? parsedValue : Number(items[idx].rate);
+          const rate = field === "rate" ? parsed : Number(items[idx].rate);
           const qty =
-            field === "quantity" ? parsedValue : Number(items[idx].quantity);
+            field === "quantity" ? parsed : Number(items[idx].quantity);
           items[idx].amount = Math.round(rate * qty * 100) / 100;
         }
       } else {
-        // For text fields (particular, remarks)
         items[idx] = { ...items[idx], [field]: value };
       }
-
       return { ...p, items };
     });
   };
@@ -486,28 +516,24 @@ export default function CreateQuotation() {
       return { ...p, items: items.map((item, i) => ({ ...item, sno: i + 1 })) };
     });
   };
+
   const moveRow = (idx, dir) => {
     setUnsavedChanges(true);
-
     setForm((prev) => {
       const items = [...prev.items];
       const newIdx = idx + dir;
-
       if (newIdx < 0 || newIdx >= items.length) return prev;
-
-      // Swap items
       [items[idx], items[newIdx]] = [items[newIdx], items[idx]];
-
-      // Re-number sno correctly
-      const updatedItems = items.map((item, i) => ({
-        ...item,
-        sno: i + 1,
-      }));
-
-      return { ...prev, items: updatedItems };
+      return {
+        ...prev,
+        items: items.map((item, i) => ({ ...item, sno: i + 1 })),
+      };
     });
   };
 
+  // ---------------------------------------------------------------------------
+  // Vendor / Project selection
+  // ---------------------------------------------------------------------------
   const selectProject = (project) => {
     setForm((p) => ({
       ...p,
@@ -540,6 +566,9 @@ export default function CreateQuotation() {
     setShowAddVendor(false);
   };
 
+  // ---------------------------------------------------------------------------
+  // Save / Submit
+  // ---------------------------------------------------------------------------
   const getPayload = () => ({
     quotation_date: form.quotation_date,
     project_id: form.project_id,
@@ -547,8 +576,11 @@ export default function CreateQuotation() {
     items: form.items,
     subtotal: form.subtotal,
     additional_charges: form.additional_charges,
+    global_discount_type: form.global_discount_type,
+    global_discount_value: form.global_discount_value,
     discount: form.discount,
-    tax: form.tax,
+    tax_percent: form.tax_percent,
+    tax_amount: form.tax_amount,
     total_amount: form.total_amount,
     terms_conditions: form.terms_conditions,
     vendor_contact: form.vendor_contact,
@@ -619,7 +651,9 @@ export default function CreateQuotation() {
     }
   };
 
-  const amtSettings = settings?.amount_settings || {};
+  // ---------------------------------------------------------------------------
+  // Derived filter lists
+  // ---------------------------------------------------------------------------
   const filteredProjects = projects.filter((p) =>
     p.name.toLowerCase().includes(projectSearch.toLowerCase()),
   );
@@ -633,6 +667,9 @@ export default function CreateQuotation() {
           .includes(vendorSearch.toLowerCase()),
     );
 
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
   return (
     <div className="p-6 max-w-5xl mx-auto">
       {showAddVendor && (
@@ -730,6 +767,7 @@ export default function CreateQuotation() {
                       }
                     }}
                     onFocus={() => setShowVendorDD(true)}
+                    onBlur={() => setTimeout(() => setShowVendorDD(false), 150)}
                     placeholder="Search vendor..."
                     className="w-full pl-9 pr-3 py-2 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#E31E24]"
                   />
@@ -845,6 +883,7 @@ export default function CreateQuotation() {
                     }
                   }}
                   onFocus={() => setShowProjectDD(true)}
+                  onBlur={() => setTimeout(() => setShowProjectDD(false), 150)}
                   placeholder="Search project..."
                   className="w-full pl-9 pr-3 py-2 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#E31E24]"
                 />
@@ -938,7 +977,7 @@ export default function CreateQuotation() {
                         type="number"
                         min="0"
                         step="0.01"
-                        value={item.rate ?? ""} // Use ?? instead of ||
+                        value={item.rate ?? ""}
                         onChange={(e) =>
                           updateItem(idx, "rate", e.target.value)
                         }
@@ -1026,65 +1065,122 @@ export default function CreateQuotation() {
           {/* Totals */}
           <div className="mt-4 border-t border-[#E5E7EB] pt-4">
             <div className="flex justify-end">
-              <div className="w-72 space-y-2">
+              <div className="w-80 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Subtotal</span>
                   <span className="font-medium text-[#333333]">
                     {formatCurrency(form.subtotal)}
                   </span>
                 </div>
-                {amtSettings.show_additional_charges && (
-                  <div className="flex justify-between text-sm items-center">
-                    <span className="text-gray-500">Additional Charges</span>
+
+                <div className="flex justify-between text-sm items-center">
+                  <span className="text-gray-500">Additional Charges</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.additional_charges || ""}
+                    onChange={(e) => {
+                      setForm((p) => ({
+                        ...p,
+                        additional_charges: Number(e.target.value),
+                      }));
+                      setUnsavedChanges(true);
+                    }}
+                    className="w-28 border border-[#E5E7EB] rounded px-2 py-1 text-sm text-right focus:outline-none focus:border-[#E31E24]"
+                  />
+                </div>
+
+                {/* Discount */}
+                <div className="flex justify-between text-sm items-center">
+                  <span className="text-gray-500">Discount</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex border border-[#E5E7EB] rounded overflow-hidden">
+                      <button
+                        type="button"
+                        data-testid="discount-type-fixed"
+                        onClick={() => {
+                          setForm((p) => ({
+                            ...p,
+                            global_discount_type: "fixed",
+                          }));
+                          setUnsavedChanges(true);
+                        }}
+                        className={`px-2 py-1 text-xs font-semibold transition-colors ${
+                          form.global_discount_type === "fixed"
+                            ? "bg-[#E31E24] text-white"
+                            : "bg-white text-gray-500 hover:bg-gray-50"
+                        }`}
+                      >
+                        ₹
+                      </button>
+                      <button
+                        type="button"
+                        data-testid="discount-type-percentage"
+                        onClick={() => {
+                          setForm((p) => ({
+                            ...p,
+                            global_discount_type: "percentage",
+                          }));
+                          setUnsavedChanges(true);
+                        }}
+                        className={`px-2 py-1 text-xs font-semibold border-l border-[#E5E7EB] transition-colors ${
+                          form.global_discount_type === "percentage"
+                            ? "bg-[#E31E24] text-white"
+                            : "bg-white text-gray-500 hover:bg-gray-50"
+                        }`}
+                      >
+                        %
+                      </button>
+                    </div>
                     <input
                       type="number"
                       min="0"
-                      value={form.additional_charges || ""}
+                      step="0.01"
+                      data-testid="discount-value-input"
+                      value={form.global_discount_value || ""}
                       onChange={(e) => {
                         setForm((p) => ({
                           ...p,
-                          additional_charges: Number(e.target.value),
+                          global_discount_value: Number(e.target.value),
                         }));
                         setUnsavedChanges(true);
                       }}
-                      className="w-28 border border-[#E5E7EB] rounded px-2 py-1 text-sm text-right focus:outline-none focus:border-[#E31E24]"
+                      className="w-20 border border-[#E5E7EB] rounded px-2 py-1 text-sm text-right focus:outline-none focus:border-[#E31E24]"
                     />
                   </div>
-                )}
-                {amtSettings.show_discount && (
-                  <div className="flex justify-between text-sm items-center">
-                    <span className="text-gray-500">Discount</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={form.discount || ""}
-                      onChange={(e) => {
-                        setForm((p) => ({
-                          ...p,
-                          discount: Number(e.target.value),
-                        }));
-                        setUnsavedChanges(true);
-                      }}
-                      className="w-28 border border-[#E5E7EB] rounded px-2 py-1 text-sm text-right focus:outline-none focus:border-[#E31E24]"
-                    />
+                </div>
+                {form.discount > 0 && (
+                  <div className="flex justify-between text-xs text-gray-400">
+                    <span>Discount applied</span>
+                    <span>- {formatCurrency(form.discount)}</span>
                   </div>
                 )}
-                {amtSettings.show_tax && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">
-                      Tax ({amtSettings.tax_percentage || 18}%)
-                    </span>
-                    <span className="font-medium text-[#333333]">
-                      {formatCurrency(
-                        ((form.subtotal +
-                          (form.additional_charges || 0) -
-                          (form.discount || 0)) *
-                          (amtSettings.tax_percentage || 18)) /
-                          100,
-                      )}
-                    </span>
-                  </div>
-                )}
+
+                {/* Tax */}
+                <div className="flex justify-between text-sm items-center">
+                  <span className="text-gray-500">Tax (%)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    data-testid="tax-percent-input"
+                    value={form.tax_percent ?? ""}
+                    onChange={(e) => {
+                      setForm((p) => ({
+                        ...p,
+                        tax_percent:
+                          e.target.value === "" ? 0 : Number(e.target.value),
+                      }));
+                      setUnsavedChanges(true);
+                    }}
+                    className="w-28 border border-[#E5E7EB] rounded px-2 py-1 text-sm text-right focus:outline-none focus:border-[#E31E24]"
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-gray-400">
+                  <span>Tax amount</span>
+                  <span>{formatCurrency(form.tax_amount)}</span>
+                </div>
+
                 <div className="flex justify-between text-sm font-bold border-t border-[#E5E7EB] pt-2">
                   <span className="text-[#333333]">Grand Total</span>
                   <span className="text-[#E31E24] text-base">

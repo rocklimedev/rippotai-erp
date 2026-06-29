@@ -13,7 +13,7 @@ import { Project } from '@/modules/projects/models/projects.model';
 import { Vendor } from '@/modules/vendors/models/vendors.model';
 import { User } from '@/modules/users/models/user.model';
 import { QuotationItem } from './quotation-items.model';
-
+import { QuotationVersion } from './quotation-versions.model';
 export enum QuotationStatus {
   DRAFT = 'draft',
   SUBMITTED = 'submitted',
@@ -22,7 +22,10 @@ export enum QuotationStatus {
   DECLINED = 'declined',
   CANCELLED = 'cancelled',
 }
-
+export enum GlobalDiscountType {
+  FIXED = 'fixed',
+  PERCENTAGE = 'percentage',
+}
 @Table({
   tableName: 'quotations',
   timestamps: true,
@@ -122,12 +125,27 @@ export class Quotation extends Model<Quotation> {
   declare additionalCharges: number;
 
   @Column({
+    field: 'global_discount_type',
+    type: DataType.ENUM(...Object.values(GlobalDiscountType)),
+    allowNull: false,
+    defaultValue: GlobalDiscountType.FIXED,
+  })
+  declare globalDiscountType: GlobalDiscountType;
+
+  @Column({
+    field: 'global_discount_value',
+    type: DataType.DECIMAL(15, 2),
+    allowNull: false,
+    defaultValue: 0,
+  })
+  declare globalDiscountValue: number;
+
+  @Column({
     type: DataType.DECIMAL(15, 2),
     allowNull: false,
     defaultValue: 0,
   })
   declare discount: number;
-
   @Column({
     field: 'tax_percent',
     type: DataType.DECIMAL(5, 2),
@@ -226,7 +244,15 @@ export class Quotation extends Model<Quotation> {
     allowNull: true,
   })
   declare updatedBy: string | null;
-
+  @Column({
+    field: 'current_version',
+    type: DataType.INTEGER,
+    allowNull: false,
+    defaultValue: 1,
+  })
+  declare currentVersion: number;
+  @HasMany(() => QuotationVersion)
+  declare versions: QuotationVersion[];
   @BelongsTo(() => Project)
   declare project: Project;
 

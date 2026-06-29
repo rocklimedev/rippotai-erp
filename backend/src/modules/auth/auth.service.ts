@@ -52,9 +52,6 @@ export class AuthService {
 
     const tokenHash = createHash('sha256').update(rawToken).digest('hex');
 
-    console.log('RAW TOKEN:', rawToken);
-    console.log('HASH SAVED:', tokenHash);
-
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     await this.authTokensService.create({
@@ -95,63 +92,17 @@ export class AuthService {
     };
   }
 
-  async getCurrentUser(token: string) {
-    if (!token) {
-      throw new UnauthorizedException('No token');
-    }
-
-    let payload: any;
-
-    try {
-      payload = jwt.verify(token, process.env.JWT_SECRET!);
-    } catch {
-      throw new UnauthorizedException('Invalid JWT');
-    }
-
-    console.log('JWT PAYLOAD:', payload);
-
-    const tokenHash = createHash('sha256').update(payload.jti).digest('hex');
-
-    console.log('HASH LOOKUP:', tokenHash);
-
-    const authToken = await this.authTokensService.findByHash(tokenHash);
-
-    console.log('TOKEN FROM DB:', authToken);
-
-    if (!authToken) {
-      throw new UnauthorizedException('Invalid or revoked token');
-    }
-
-    if (authToken.revoked_at) {
-      throw new UnauthorizedException('Token revoked');
-    }
-
-    if (new Date(authToken.expires_at) < new Date()) {
-      throw new UnauthorizedException('Token expired');
-    }
-
-    await this.authTokensService.touchLastUsed(authToken.id);
-
-    return {
-      id: authToken.user.id,
-      name: authToken.user.name,
-      email: authToken.user.email,
-      role: authToken.user.role?.name,
-      role_id: authToken.user.role_id,
-    };
-  }
-  // In AuthService class
   async getCurrentUserFromPayload(payload: any) {
     const tokenHash = createHash('sha256').update(payload.jti).digest('hex');
 
     const authToken = await this.authTokensService.findByHash(tokenHash);
 
     if (!authToken) {
-      throw new UnauthorizedException('Invalid or revoked token');
+      throw new UnauthorizedException('Token not found in database');
     }
 
     if (authToken.revoked_at) {
-      throw new UnauthorizedException('Token revoked');
+      throw new UnauthorizedException('Token has been revoked');
     }
 
     if (new Date(authToken.expires_at) < new Date()) {
@@ -161,12 +112,26 @@ export class AuthService {
     await this.authTokensService.touchLastUsed(authToken.id);
 
     return {
-      id: authToken.user.id,
-      name: authToken.user.name,
-      email: authToken.user.email,
-      role: authToken.user.role?.name,
-      role_id: authToken.user.role_id,
+      id: authToken.user?.id,
+      name: authToken.user?.name,
+      email: authToken.user?.email,
+      role: authToken.user?.role?.name,
+      role_id: authToken.user?.role_id,
     };
+  }
+
+  // Also update getCurrentUser similarly for consistency
+  async getCurrentUser(token: string) {
+    if (!token) throw new UnauthorizedException('No token provided');
+
+    let payload: any;
+    try {
+      payload = jwt.verify(token, process.env.JWT_SECRET!);
+    } catch (err: any) {
+      throw new UnauthorizedException(`Invalid JWT: ${err.name}`);
+    }
+
+    return this.getCurrentUserFromPayload(payload);
   }
   async logout(token: string) {
     try {

@@ -7,74 +7,83 @@ import { Project } from '@/modules/projects/models/projects.model';
 export class ActivityLogForProjectService {
   constructor(private readonly activityLogsService: ActivityLogsService) {}
 
-  /**
-   * Project Created Event
-   */
-  async logProjectCreated(project: Project, userId?: string): Promise<void> {
+  // =========================
+  // CREATED
+  // =========================
+  async logProjectCreated(project: Project, user?: any) {
     await this.activityLogsService.log({
-      user_id: userId,
+      user_id: user?.id ?? null,
+      user_email: user?.email,
+      user_role: user?.role,
       action: ActivityAction.PROJECT_CREATED,
       entity_type: 'PROJECT',
       entity_id: project.id,
-      metadata: {
+      changes: {
         name: project.name,
         status: project.status,
       },
-    } as any);
+    });
   }
 
-  /**
-   * Project Updated Event
-   */
-  async logProjectUpdated(
-    project: Project,
-    userId?: string,
-    changes?: Record<string, any>,
-  ): Promise<void> {
+  // =========================
+  // UPDATED
+  // =========================
+  async logProjectUpdated(project: Project, user?: any, changes?: any) {
     await this.activityLogsService.log({
-      user_id: userId,
+      user_id: user?.id ?? null,
+      user_email: user?.email,
+      user_role: user?.role,
       action: ActivityAction.PROJECT_UPDATED,
       entity_type: 'PROJECT',
       entity_id: project.id,
-      metadata: {
-        changes,
+      changes: {
+        updated_fields: changes,
       },
-    } as any);
+    });
   }
 
-  /**
-   * Project Archived Event
-   */
-  async logProjectArchived(project: Project, userId?: string): Promise<void> {
+  // =========================
+  // ARCHIVED
+  // =========================
+  async logProjectArchived(project: Project, user?: any) {
     await this.activityLogsService.log({
-      user_id: userId,
+      user_id: user?.id ?? null,
+      user_email: user?.email,
+      user_role: user?.role,
       action: ActivityAction.PROJECT_ARCHIVED,
       entity_type: 'PROJECT',
       entity_id: project.id,
-    } as any);
+      changes: { archived: true },
+    });
   }
 
-  /**
-   * Project Restored Event
-   */
-  async logProjectRestored(project: Project, userId?: string): Promise<void> {
+  // =========================
+  // RESTORED
+  // =========================
+  async logProjectRestored(project: Project, user?: any) {
     await this.activityLogsService.log({
-      user_id: userId,
+      user_id: user?.id ?? null,
+      user_email: user?.email,
+      user_role: user?.role,
       action: ActivityAction.PROJECT_RESTORED,
       entity_type: 'PROJECT',
       entity_id: project.id,
-    } as any);
+      changes: { restored: true },
+    });
   }
 
-  /**
-   * Project Deleted Event
-   */
-  async logProjectDeleted(projectId: string, userId?: string): Promise<void> {
+  // =========================
+  // DELETED
+  // =========================
+  async logProjectDeleted(projectId: string, user?: any) {
     await this.activityLogsService.log({
-      user_id: userId,
+      user_id: user?.id ?? null,
+      user_email: user?.email,
+      user_role: user?.role,
       action: ActivityAction.PROJECT_DELETED,
       entity_type: 'PROJECT',
       entity_id: projectId,
-    } as any);
+      changes: { deleted: true },
+    });
   }
 }

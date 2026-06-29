@@ -6,10 +6,14 @@ export const projectsApi = createApi({
     baseUrl: API_URL,
     credentials: "include", // Remove if using Bearer token
     prepareHeaders: (headers) => {
-      const token = localStorage.getItem("accessToken");
+      const token = localStorage.getItem("token"); // Your token key
 
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
+      }
+      const cdnToken = import.meta.env.VITE_CDN_TOKEN;
+      if (cdnToken) {
+        headers.set("x-cdn-secret", cdnToken);
       }
 
       return headers;

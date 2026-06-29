@@ -11,6 +11,10 @@ const baseQuery = fetchBaseQuery({
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);
     }
+    const cdnToken = import.meta.env.VITE_CDN_TOKEN;
+    if (cdnToken) {
+      headers.set("x-cdn-secret", cdnToken);
+    }
 
     return headers;
   },

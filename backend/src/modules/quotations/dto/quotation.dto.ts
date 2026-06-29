@@ -12,7 +12,12 @@ import {
   IsInt,
   ValidateNested,
 } from 'class-validator';
+import { IsEnum } from 'class-validator';
 
+export enum GlobalDiscountType {
+  FIXED = 'fixed',
+  PERCENTAGE = 'percentage',
+}
 export class CreateQuotationItemDto {
   @IsOptional()
   @IsInt()
@@ -72,7 +77,14 @@ export class CreateQuotationDto {
   @IsNumber()
   @Min(0)
   discount?: number;
+  @IsOptional()
+  @IsEnum(GlobalDiscountType)
+  global_discount_type?: GlobalDiscountType;
 
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  global_discount_value?: number;
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -107,7 +119,14 @@ export class UpdateQuotationDto {
   @IsNumber()
   @Min(0)
   discount?: number;
+  @IsOptional()
+  @IsEnum(GlobalDiscountType)
+  global_discount_type?: GlobalDiscountType;
 
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  global_discount_value?: number;
   @IsOptional()
   @IsNumber()
   @Min(0)
