@@ -40,14 +40,21 @@ export class QuotationsService {
     const today = new Date();
     const datePart = today.toISOString().slice(0, 10).replace(/-/g, '');
 
-    const countToday = await this.quotationModel.count({
-      where: {
-        quotationNumber: { [Op.like]: `QTN-${datePart}-%` },
-      },
+    // Use highest existing sequence, not a row count — row counts collide
+    // with gaps from soft-deletes or concurrent inserts.
+    const lastQuotation = await this.quotationModel.findOne({
+      where: { quotationNumber: { [Op.like]: `QTN-${datePart}-%` } },
+      order: [['quotationNumber', 'DESC']],
+      paranoid: false, // include soft-deleted rows so numbers are never reused
     });
 
-    const sequence = String(countToday + 1).padStart(4, '0');
-    return `QTN-${datePart}-${sequence}`;
+    let nextSeq = 1;
+    if (lastQuotation) {
+      const lastSeq = parseInt(lastQuotation.quotationNumber.split('-')[2], 10);
+      if (!Number.isNaN(lastSeq)) nextSeq = lastSeq + 1;
+    }
+
+    return `QTN-${datePart}-${String(nextSeq).padStart(4, '0')}`;
   }
 
   private computeTotals(
@@ -97,69 +104,87 @@ export class QuotationsService {
       global_discount_value,
       tax_percent,
     );
-    const quotation_number =
-      dto.quotation_number ?? (await this.generateQuotationNumber());
 
-    try {
-      const quotation = await this.quotationModel.create({
-        quotationNumber: quotation_number,
-        quotationDate: dto.quotation_date,
-        status: QuotationStatus.DRAFT,
-        projectId: dto.project_id,
-        vendorId: dto.vendor_id,
-        projectSnapshot: project.toJSON(),
-        vendorSnapshot: vendor.toJSON(),
-        subtotal,
-        additionalCharges: additional_charges,
-        discount,
-        globalDiscountType: global_discount_type,
-        globalDiscountValue: global_discount_value,
-        taxPercent: tax_percent,
-        taxAmount: tax_amount,
-        totalAmount: total_amount,
-        termsConditions: dto.terms_conditions,
-        createdBy: dto.created_by,
-      } as any);
+    const MAX_ATTEMPTS = 5;
+    let attempt = 0;
+    let quotation: Quotation;
 
-      // Create quotation items
-      await Promise.all(
-        dto.items.map((item, idx) =>
-          QuotationItem.create({
-            sno: item.sno ?? idx + 1,
-            particular: item.particular,
-            rate: item.rate,
-            quantity: item.quantity,
-            amount:
-              item.amount ?? Math.round(item.rate * item.quantity * 100) / 100,
-            remarks: item.remarks,
-            quotation_id: quotation.id,
-          } as any),
-        ),
-      );
+    while (true) {
+      attempt++;
+      const quotation_number =
+        dto.quotation_number ?? (await this.generateQuotationNumber());
 
-      // Create initial version
-      await this.versionsService.createVersion(
-        quotation.id,
-        dto.created_by ?? null,
-        'Initial version',
-      );
-
-      const created = await this.findOne(quotation.id);
-
-      await this.activityLogForQuotationService.logQuotationCreated(
-        created,
-        user,
-      );
-
-      return created;
-    } catch (err) {
-      if (err instanceof UniqueConstraintError) {
-        throw new ConflictException(
-          `Quotation number "${quotation_number}" already exists`,
-        );
+      try {
+        quotation = await this.quotationModel.create({
+          quotationNumber: quotation_number,
+          quotationDate: dto.quotation_date,
+          status: QuotationStatus.DRAFT,
+          projectId: dto.project_id,
+          vendorId: dto.vendor_id,
+          projectSnapshot: project.toJSON(),
+          vendorSnapshot: vendor.toJSON(),
+          subtotal,
+          additionalCharges: additional_charges,
+          discount,
+          globalDiscountType: global_discount_type,
+          globalDiscountValue: global_discount_value,
+          taxPercent: tax_percent,
+          taxAmount: tax_amount,
+          totalAmount: total_amount,
+          termsConditions: dto.terms_conditions,
+          createdBy: dto.created_by,
+        } as any);
+        break; // success
+      } catch (err) {
+        if (err instanceof UniqueConstraintError) {
+          // If the caller explicitly supplied a quotation_number, don't
+          // silently override it — fail fast with a clear 409 instead.
+          if (dto.quotation_number) {
+            throw new ConflictException(
+              `Quotation number "${quotation_number}" already exists`,
+            );
+          }
+          // Auto-generated number collided with a concurrent insert — retry
+          // with a freshly computed number rather than failing the request.
+          if (attempt < MAX_ATTEMPTS) {
+            continue;
+          }
+          throw new ConflictException(
+            `Could not generate a unique quotation number after ${MAX_ATTEMPTS} attempts`,
+          );
+        }
+        throw err;
       }
-      throw err;
     }
+
+    // Create quotation items
+    await Promise.all(
+      dto.items.map((item, idx) =>
+        QuotationItem.create({
+          sno: item.sno ?? idx + 1,
+          particular: item.particular,
+          rate: item.rate,
+          quantity: item.quantity,
+          amount:
+            item.amount ?? Math.round(item.rate * item.quantity * 100) / 100,
+          remarks: item.remarks,
+          quotation_id: quotation.id,
+        } as any),
+      ),
+    );
+
+    await this.versionsService.createVersion(
+      quotation.id,
+      dto.created_by ?? null,
+      'Initial version',
+    );
+
+    const created = await this.findOne(quotation.id);
+    await this.activityLogForQuotationService.logQuotationCreated(
+      created,
+      user,
+    );
+    return created;
   }
 
   findAll(
