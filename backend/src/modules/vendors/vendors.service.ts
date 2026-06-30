@@ -6,15 +6,21 @@ import { VendorStatus } from '@/common/enums';
 import { VendorCategory } from './models/vendor-category.model';
 import { VendorBusinessType } from './models/vendor-business-type.model';
 import { Quotation } from '../quotations/models/quotations.model';
+import { ActivityLogForVendorService } from '../engagement/services/activity-log-vendors.service';
 @Injectable()
 export class VendorsService {
   constructor(
     @InjectModel(Vendor)
     private readonly vendorModel: typeof Vendor,
+    private readonly activityLogForVendorService: ActivityLogForVendorService,
   ) {}
 
-  create(dto: CreateVendorDto): Promise<Vendor> {
-    return this.vendorModel.create({ ...dto } as any);
+  async create(dto: CreateVendorDto, user?: any): Promise<Vendor> {
+    const vendor = await this.vendorModel.create({ ...dto } as any);
+
+    await this.activityLogForVendorService.logVendorCreated(vendor, user);
+
+    return vendor;
   }
 
   findAll(
@@ -86,20 +92,36 @@ export class VendorsService {
     return quotations;
   }
 
-  async update(id: string, dto: UpdateVendorDto): Promise<Vendor> {
+  async update(id: string, dto: UpdateVendorDto, user?: any): Promise<Vendor> {
     const vendor = await this.findOne(id);
     await vendor.update({ ...dto });
-    return this.findOne(id);
+    const updated = await this.findOne(id);
+
+    await this.activityLogForVendorService.logVendorUpdated(updated, user, dto);
+
+    return updated;
   }
 
-  async setStatus(id: string, status: VendorStatus): Promise<Vendor> {
+  async setStatus(
+    id: string,
+    status: VendorStatus,
+    user?: any,
+  ): Promise<Vendor> {
     const vendor = await this.findOne(id);
     await vendor.update({ status });
-    return this.findOne(id);
+    const updated = await this.findOne(id);
+
+    await this.activityLogForVendorService.logVendorUpdated(updated, user, {
+      status,
+    });
+
+    return updated;
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, user?: any): Promise<void> {
     const vendor = await this.findOne(id);
     await vendor.destroy();
+
+    await this.activityLogForVendorService.logVendorDeleted(id, user);
   }
 }

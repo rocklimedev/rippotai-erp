@@ -7,24 +7,22 @@ import {
   Body,
   Param,
   Query,
-  Req,
   HttpCode,
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
+
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { ProjectStatus } from '../../common/enums';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
-
+import { CurrentUser } from '@/common/decorator/current-user.decorator';
 type AuthUser = {
   id: string;
+  name?: string;
   email?: string;
   role?: string;
-};
-
-type AuthRequest = Request & {
-  user?: AuthUser;
+  role_id?: string;
 };
 
 @Controller('projects')
@@ -33,8 +31,8 @@ export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
   @Post()
-  create(@Body() dto: CreateProjectDto, @Req() req: AuthRequest) {
-    return this.projectsService.create(dto, req.user?.id);
+  create(@Body() dto: CreateProjectDto, @CurrentUser() user: AuthUser) {
+    return this.projectsService.create(dto, user);
   }
 
   @Get()
@@ -57,24 +55,24 @@ export class ProjectsController {
   update(
     @Param('id') id: string,
     @Body() dto: UpdateProjectDto,
-    @Req() req: AuthRequest,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.projectsService.update(id, dto, req.user?.id);
+    return this.projectsService.update(id, dto, user);
   }
 
   @Patch(':id/archive')
-  archive(@Param('id') id: string, @Req() req: AuthRequest) {
-    return this.projectsService.archive(id, req.user?.id);
+  archive(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.projectsService.archive(id, user);
   }
 
   @Patch(':id/restore')
-  restore(@Param('id') id: string, @Req() req: AuthRequest) {
-    return this.projectsService.restore(id, req.user?.id);
+  restore(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.projectsService.restore(id, user);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string, @Req() req: AuthRequest) {
-    return this.projectsService.remove(id, req.user?.id);
+  remove(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.projectsService.remove(id, user);
   }
 }

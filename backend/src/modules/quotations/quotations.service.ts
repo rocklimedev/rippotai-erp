@@ -17,7 +17,7 @@ import {
 } from './dto/quotation.dto';
 import { QuotationStatus } from '../../common/enums';
 import { QuotationVersionsService } from './quotation-versions.service';
-
+import { ActivityLogForQuotationService } from '../engagement/services/activity-log-quotation.service';
 const EDITABLE_STATUSES = [
   QuotationStatus.DRAFT,
   QuotationStatus.RETURNED_FOR_EDITING,
@@ -33,6 +33,7 @@ export class QuotationsService {
     private readonly projectsService: ProjectsService,
     private readonly vendorsService: VendorsService,
     private readonly versionsService: QuotationVersionsService,
+    private readonly activityLogForQuotationService: ActivityLogForQuotationService,
   ) {}
 
   private async generateQuotationNumber(): Promise<string> {
@@ -80,7 +81,7 @@ export class QuotationsService {
     };
   }
 
-  async create(dto: CreateQuotationDto): Promise<Quotation> {
+  async create(dto: CreateQuotationDto, user?: any): Promise<Quotation> {
     const project = await this.projectsService.findOne(dto.project_id);
     const vendor = await this.vendorsService.findOne(dto.vendor_id);
 
@@ -143,7 +144,14 @@ export class QuotationsService {
         'Initial version',
       );
 
-      return this.findOne(quotation.id);
+      const created = await this.findOne(quotation.id);
+
+      await this.activityLogForQuotationService.logQuotationCreated(
+        created,
+        user,
+      );
+
+      return created;
     } catch (err) {
       if (err instanceof UniqueConstraintError) {
         throw new ConflictException(
@@ -199,7 +207,11 @@ export class QuotationsService {
     }
   }
 
-  async update(id: string, dto: UpdateQuotationDto): Promise<Quotation> {
+  async update(
+    id: string,
+    dto: UpdateQuotationDto,
+    user?: any,
+  ): Promise<Quotation> {
     const quotation = await this.findOne(id);
     this.assertEditable(quotation);
 
@@ -266,10 +278,22 @@ export class QuotationsService {
       'Updated quotation',
     );
 
-    return this.findOne(id);
+    const updated = await this.findOne(id);
+
+    await this.activityLogForQuotationService.logQuotationUpdated(
+      updated,
+      user,
+      dto,
+    );
+
+    return updated;
   }
 
-  async submit(id: string, submitted_by?: string): Promise<Quotation> {
+  async submit(
+    id: string,
+    submitted_by?: string,
+    user?: any,
+  ): Promise<Quotation> {
     const quotation = await this.findOne(id);
     this.assertEditable(quotation);
 
@@ -285,10 +309,21 @@ export class QuotationsService {
       'Submitted',
     );
 
-    return this.findOne(id);
+    const submitted = await this.findOne(id);
+
+    await this.activityLogForQuotationService.logQuotationSubmitted(
+      submitted,
+      user,
+    );
+
+    return submitted;
   }
 
-  async approve(id: string, dto: ReviewQuotationDto): Promise<Quotation> {
+  async approve(
+    id: string,
+    dto: ReviewQuotationDto,
+    user?: any,
+  ): Promise<Quotation> {
     const quotation = await this.requireStatus(id, QuotationStatus.SUBMITTED);
 
     await quotation.update({
@@ -304,12 +339,21 @@ export class QuotationsService {
       'Approved',
     );
 
-    return this.findOne(id);
+    const approved = await this.findOne(id);
+
+    await this.activityLogForQuotationService.logQuotationApproved(
+      approved,
+      user,
+      dto.review_remarks,
+    );
+
+    return approved;
   }
 
   async returnForEditing(
     id: string,
     dto: ReviewQuotationDto,
+    user?: any,
   ): Promise<Quotation> {
     const quotation = await this.requireStatus(id, QuotationStatus.SUBMITTED);
 
@@ -326,10 +370,22 @@ export class QuotationsService {
       'Returned for editing',
     );
 
-    return this.findOne(id);
+    const returned = await this.findOne(id);
+
+    await this.activityLogForQuotationService.logQuotationReturnedForEditing(
+      returned,
+      user,
+      dto.review_remarks,
+    );
+
+    return returned;
   }
 
-  async decline(id: string, dto: ReviewQuotationDto): Promise<Quotation> {
+  async decline(
+    id: string,
+    dto: ReviewQuotationDto,
+    user?: any,
+  ): Promise<Quotation> {
     const quotation = await this.requireStatus(id, QuotationStatus.SUBMITTED);
 
     await quotation.update({
@@ -345,10 +401,22 @@ export class QuotationsService {
       'Declined',
     );
 
-    return this.findOne(id);
+    const declined = await this.findOne(id);
+
+    await this.activityLogForQuotationService.logQuotationDeclined(
+      declined,
+      user,
+      dto.review_remarks,
+    );
+
+    return declined;
   }
 
-  async cancel(id: string, updated_by?: string): Promise<Quotation> {
+  async cancel(
+    id: string,
+    updated_by?: string,
+    user?: any,
+  ): Promise<Quotation> {
     const quotation = await this.findOne(id);
 
     if (
@@ -372,7 +440,14 @@ export class QuotationsService {
       'Cancelled',
     );
 
-    return this.findOne(id);
+    const cancelled = await this.findOne(id);
+
+    await this.activityLogForQuotationService.logQuotationCancelled(
+      cancelled,
+      user,
+    );
+
+    return cancelled;
   }
 
   private async requireStatus(
@@ -388,7 +463,7 @@ export class QuotationsService {
     return quotation;
   }
 
-  async softDelete(id: string, deleted_by?: string): Promise<void> {
+  async softDelete(id: string, deleted_by?: string, user?: any): Promise<void> {
     const quotation = await this.findOne(id);
     await quotation.update({
       deletedAt: new Date(),
@@ -400,9 +475,11 @@ export class QuotationsService {
       deleted_by ?? null,
       'Soft deleted',
     );
+
+    await this.activityLogForQuotationService.logQuotationDeleted(id, user);
   }
 
-  async restore(id: string): Promise<Quotation> {
+  async restore(id: string, user?: any): Promise<Quotation> {
     const quotation = await this.quotationModel.findByPk(id);
 
     if (!quotation) {
@@ -417,7 +494,14 @@ export class QuotationsService {
     // Create a version to reflect restore
     await this.versionsService.createVersion(id, null, 'Restored');
 
-    return this.findOne(id);
+    const restored = await this.findOne(id);
+
+    await this.activityLogForQuotationService.logQuotationRestored(
+      restored,
+      user,
+    );
+
+    return restored;
   }
 
   async remove(id: string): Promise<void> {

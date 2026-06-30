@@ -59,7 +59,7 @@ export default function Reports() {
               onClick={() => setTab(t)}
               className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors capitalize ${
                 tab === t
-                  ? "border-[#E31E24] text-[#E31E24]"
+                  ? "border-[#1A3C34] text-[#1A3C34]"
                   : "border-transparent text-gray-500 hover:text-[#333333]"
               }`}
             >
@@ -73,7 +73,7 @@ export default function Reports() {
             onClick={() => setTab("by-employee")}
             className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
               tab === "by-employee"
-                ? "border-[#E31E24] text-[#E31E24]"
+                ? "border-[#1A3C34] text-[#1A3C34]"
                 : "border-transparent text-gray-500 hover:text-[#333333]"
             }`}
           >

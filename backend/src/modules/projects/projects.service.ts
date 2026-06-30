@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
 
@@ -33,7 +37,13 @@ export class ProjectsService {
   // =========================
   // GET ALL
   // =========================
-  findAll(filters: { status?: ProjectStatus; includeArchived?: boolean } = {}) {
+  findAll(
+    filters: {
+      status?: ProjectStatus;
+      includeArchived?: boolean;
+      includeDeleted?: boolean; // New option
+    } = {},
+  ) {
     const where: any = {};
 
     if (filters.status) where.status = filters.status;
@@ -41,6 +51,7 @@ export class ProjectsService {
 
     return this.projectModel.findAll({
       where,
+      paranoid: !filters.includeDeleted, // Important for soft delete
       order: [['created_at', 'DESC']],
     });
   }
@@ -48,8 +59,10 @@ export class ProjectsService {
   // =========================
   // FIND ONE
   // =========================
-  async findOne(id: string): Promise<Project> {
-    const project = await this.projectModel.findByPk(id);
+  async findOne(id: string, includeDeleted = false): Promise<Project> {
+    const project = await this.projectModel.findByPk(id, {
+      paranoid: !includeDeleted,
+    });
 
     if (!project) {
       throw new NotFoundException(`Project ${id} not found`);
@@ -108,13 +121,28 @@ export class ProjectsService {
   }
 
   // =========================
-  // DELETE
+  // DELETE (Soft Delete)
+  // =========================
+  // =========================
+  // DELETE (Soft Delete)
   // =========================
   async remove(id: string, user?: any): Promise<void> {
     const project = await this.findOne(id);
 
-    await this.activityLogForProjectService.logProjectDeleted(project.id, user);
+    try {
+      await this.activityLogForProjectService.logProjectDeleted(
+        project.id,
+        user,
+      );
+    } catch (err) {
+      console.error('AUDIT LOG FAILED:', err);
+    }
 
-    await project.destroy();
+    await project.update({
+      deleted_by: user?.id ?? null,
+      status: ProjectStatus.INACTIVE,
+    });
+
+    await project.destroy(); // sets deleted_at automatically
   }
 }

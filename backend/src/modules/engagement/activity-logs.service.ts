@@ -12,16 +12,29 @@ export class ActivityLogsService {
     private readonly activityLogModel: typeof ActivityLog,
   ) {}
 
-  /** Fire-and-forget style log write - never throws back into business logic callers. */
-  async log(dto: CreateActivityLogDto): Promise<ActivityLog | void> {
+  async log(dto: Partial<CreateActivityLogDto>): Promise<ActivityLog | void> {
     try {
-      return await this.activityLogModel.create({ ...dto } as any);
-    } catch {
-      // Swallow logging failures so they never break the primary operation.
+      // Fill defaults
+      const data = {
+        user_email: dto.user_email || 'system@internal',
+        user_role: dto.user_role || 'SYSTEM',
+        entity_type: dto.entity_type || null,
+        entity_id: dto.entity_id || null,
+        ...dto,
+      };
+
+      return await this.activityLogModel.create(data as any);
+    } catch (err: any) {
+      console.error('Activity Log Failed:', {
+        action: dto.action,
+        entity_type: dto.entity_type,
+        entity_id: dto.entity_id,
+        error: err.message,
+        stack: err.stack?.substring(0, 500),
+      });
       return undefined;
     }
   }
-
   findAll(
     filters: {
       user_id?: string;

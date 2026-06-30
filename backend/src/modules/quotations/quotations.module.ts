@@ -15,12 +15,14 @@ import { VendorsModule } from '../vendors/vendors.module';
 import { QuotationVersion } from './models/quotation-versions.model';
 import { QuotationVersionsService } from './quotation-versions.service';
 import { QuotationVersionsController } from './quotation-versions.controller';
+import { ActivityLogsModule } from '../engagement/activity-logs.module';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([Quotation, QuotationItem, QuotationVersion]),
     ProjectsModule,
     VendorsModule,
+    ActivityLogsModule,
   ],
 
   controllers: [

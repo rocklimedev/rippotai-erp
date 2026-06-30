@@ -17,8 +17,10 @@ import { ProjectStatus } from '@/common/enums';
 @Table({
   tableName: 'projects',
   timestamps: true,
+  paranoid: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
+  deletedAt: 'deleted_at',
 })
 export class Project extends Model<Project> {
   @PrimaryKey
@@ -111,7 +113,13 @@ export class Project extends Model<Project> {
     as: 'archiver',
   })
   declare archiver: User;
-
+  @ForeignKey(() => User)
+  @Column({
+    type: DataType.CHAR(36),
+    allowNull: true,
+    field: 'deleted_by',
+  })
+  declare deleted_by: string | null;
   @HasMany(() => Quotation, {
     foreignKey: 'project_id',
   })

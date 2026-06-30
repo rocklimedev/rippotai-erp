@@ -196,7 +196,7 @@ function VendorFormModal({ vendor, onClose, onSave, onSubmit, categories }) {
                   key={cat.id}
                   type="button"
                   onClick={() => setCategoryId(cat.id)}
-                  className={`py-2.5 text-sm font-semibold rounded-md border-2 transition-all ${categoryId === cat.id ? "bg-[#E31E24] text-white border-[#E31E24]" : "border-[#E5E7EB] text-gray-600 hover:border-[#E31E24] hover:text-[#E31E24]"}`}
+                  className={`py-2.5 text-sm font-semibold rounded-md border-2 transition-all ${categoryId === cat.id ? "bg-[#1A3C34] text-white border-[#1A3C34]" : "border-[#E5E7EB] text-gray-600 hover:border-[#1A3C34] hover:text-[#1A3C34]"}`}
                 >
                   {cat.name}
                 </button>
@@ -220,7 +220,7 @@ function VendorFormModal({ vendor, onClose, onSave, onSubmit, categories }) {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, name: e.target.value }))
                 }
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#E31E24]"
+                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34]"
               />
             </div>
 
@@ -233,7 +233,7 @@ function VendorFormModal({ vendor, onClose, onSave, onSubmit, categories }) {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, company_name: e.target.value }))
                 }
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#E31E24]"
+                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34]"
               />
             </div>
 
@@ -246,7 +246,7 @@ function VendorFormModal({ vendor, onClose, onSave, onSubmit, categories }) {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, position: e.target.value }))
                 }
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#E31E24]"
+                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34]"
               />
             </div>
 
@@ -263,7 +263,7 @@ function VendorFormModal({ vendor, onClose, onSave, onSubmit, categories }) {
                   customMode ? "__custom__" : (form.business_type_id ?? "")
                 }
                 onChange={handleTypeSelect}
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#E31E24]"
+                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34]"
               >
                 <option value="">
                   {categoryId ? `Select type...` : "Select category first..."}
@@ -289,7 +289,7 @@ function VendorFormModal({ vendor, onClose, onSave, onSubmit, categories }) {
                     }));
                   }}
                   placeholder="Enter custom business type..."
-                  className="w-full mt-1.5 border border-[#E31E24] rounded px-3 py-1.5 text-sm focus:outline-none"
+                  className="w-full mt-1.5 border border-[#1A3C34] rounded px-3 py-1.5 text-sm focus:outline-none"
                 />
               )}
             </div>
@@ -304,7 +304,7 @@ function VendorFormModal({ vendor, onClose, onSave, onSubmit, categories }) {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, contact_number: e.target.value }))
                 }
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#E31E24]"
+                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34]"
               />
             </div>
 
@@ -317,7 +317,7 @@ function VendorFormModal({ vendor, onClose, onSave, onSubmit, categories }) {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, alternate_contact: e.target.value }))
                 }
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#E31E24]"
+                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34]"
               />
             </div>
 
@@ -330,7 +330,7 @@ function VendorFormModal({ vendor, onClose, onSave, onSubmit, categories }) {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, status: e.target.value }))
                 }
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#E31E24]"
+                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34]"
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -347,7 +347,7 @@ function VendorFormModal({ vendor, onClose, onSave, onSubmit, categories }) {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, notes: e.target.value }))
                 }
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#E31E24]"
+                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34]"
               />
             </div>
 
@@ -361,7 +361,7 @@ function VendorFormModal({ vendor, onClose, onSave, onSubmit, categories }) {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, address: e.target.value }))
                 }
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#E31E24] resize-none"
+                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34] resize-none"
               />
             </div>
           </div>
@@ -378,7 +378,7 @@ function VendorFormModal({ vendor, onClose, onSave, onSubmit, categories }) {
               data-testid="save-vendor-modal-btn"
               type="submit"
               disabled={loading}
-              className="flex-1 bg-[#E31E24] text-white text-sm py-2 rounded hover:bg-red-700 disabled:opacity-60"
+              className="flex-1 bg-[#1A3C34] text-white text-sm py-2 rounded hover:bg-red-700 disabled:opacity-60"
             >
               {loading ? "Saving..." : isEdit ? "Update" : "Create Vendor"}
             </button>
@@ -495,7 +495,7 @@ function ExcelImportModal({ onClose, onImported }) {
                   handleFile(e.dataTransfer.files[0]);
                 }}
                 onClick={() => fileRef.current?.click()}
-                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${dragOver ? "border-[#E31E24] bg-red-50" : "border-[#E5E7EB] hover:border-[#E31E24] hover:bg-gray-50"}`}
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${dragOver ? "border-[#1A3C34] bg-red-50" : "border-[#E5E7EB] hover:border-[#1A3C34] hover:bg-gray-50"}`}
               >
                 <Upload className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                 {file ? (
@@ -552,7 +552,7 @@ function ExcelImportModal({ onClose, onImported }) {
                   data-testid="import-vendors-btn"
                   onClick={handleImport}
                   disabled={!file || loading}
-                  className="flex-1 bg-[#E31E24] text-white text-sm py-2 rounded hover:bg-red-700 disabled:opacity-60"
+                  className="flex-1 bg-[#1A3C34] text-white text-sm py-2 rounded hover:bg-red-700 disabled:opacity-60"
                 >
                   {loading
                     ? "Importing..."
@@ -597,7 +597,7 @@ function ExcelImportModal({ onClose, onImported }) {
               )}
               <button
                 onClick={onClose}
-                className="w-full bg-[#E31E24] text-white text-sm py-2 rounded hover:bg-red-700"
+                className="w-full bg-[#1A3C34] text-white text-sm py-2 rounded hover:bg-red-700"
               >
                 Done
               </button>
@@ -711,12 +711,6 @@ export default function VendorsList() {
           categories={categories}
         />
       )}
-      {showImport && (
-        <ExcelImportModal
-          onClose={() => setShowImport(false)}
-          onImported={() => refetch()}
-        />
-      )}
 
       {/* Page Header */}
       <div className="flex items-center justify-between mb-5">
@@ -725,30 +719,24 @@ export default function VendorsList() {
           <div className="flex items-center border border-[#E5E7EB] rounded-md overflow-hidden">
             <button
               onClick={() => setViewPref("list")}
-              className={`p-2 ${view === "list" ? "bg-[#E31E24] text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
+              className={`p-2 ${view === "list" ? "bg-[#1A3C34] text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
               title="List view"
             >
               <LayoutList className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewPref("grid")}
-              className={`p-2 ${view === "grid" ? "bg-[#E31E24] text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
+              className={`p-2 ${view === "grid" ? "bg-[#1A3C34] text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
               title="Grid view"
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
           </div>
-          <button
-            data-testid="import-excel-btn"
-            onClick={() => setShowImport(true)}
-            className="flex items-center gap-2 border border-[#E5E7EB] text-sm font-medium px-3 py-2 rounded-md hover:bg-gray-50 text-gray-600"
-          >
-            <Upload className="w-4 h-4" /> Import Excel
-          </button>
+
           <button
             data-testid="add-vendor-btn"
             onClick={() => setModal({ type: "add" })}
-            className="flex items-center gap-2 bg-[#E31E24] text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-red-700"
+            className="flex items-center gap-2 bg-[#1A3C34] text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-red-700"
           >
             <Plus className="w-4 h-4" /> Add Vendor
           </button>
@@ -771,7 +759,7 @@ export default function VendorsList() {
           <button
             key={cat.id}
             onClick={() => handleCategoryClick(cat.id)}
-            className={`px-5 py-2 text-sm font-semibold rounded-md border-2 transition-all ${categoryFilter === cat.id ? "bg-[#E31E24] text-white border-[#E31E24]" : "border-[#E5E7EB] text-gray-600 hover:border-[#E31E24] hover:text-[#E31E24]"}`}
+            className={`px-5 py-2 text-sm font-semibold rounded-md border-2 transition-all ${categoryFilter === cat.id ? "bg-[#1A3C34] text-white border-[#1A3C34]" : "border-[#E5E7EB] text-gray-600 hover:border-[#1A3C34] hover:text-[#1A3C34]"}`}
           >
             {cat.name}
           </button>
@@ -791,7 +779,7 @@ export default function VendorsList() {
             <button
               key={t.id}
               onClick={() => setTypeFilter(typeFilter === t.id ? "" : t.id)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${typeFilter === t.id ? "bg-[#E31E24] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${typeFilter === t.id ? "bg-[#1A3C34] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
             >
               {t.name}
             </button>
@@ -808,13 +796,13 @@ export default function VendorsList() {
             placeholder="Search by name, type, address..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-3 py-2 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#E31E24] w-64"
+            className="pl-9 pr-3 py-2 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#1A3C34] w-64"
           />
         </div>
         <select
           value={""} // keep status filter UI but not wired to server in this example
           onChange={() => {}}
-          className="py-2 px-3 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#E31E24] text-gray-600"
+          className="py-2 px-3 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#1A3C34] text-gray-600"
         >
           <option value="">All Status</option>
           <option value="active">Active</option>
@@ -830,7 +818,7 @@ export default function VendorsList() {
           <p className="text-sm text-gray-400">No vendors found</p>
           <button
             onClick={() => setModal({ type: "add" })}
-            className="mt-2 text-sm text-[#E31E24] hover:underline"
+            className="mt-2 text-sm text-[#1A3C34] hover:underline"
           >
             Add your first vendor
           </button>
@@ -848,7 +836,7 @@ export default function VendorsList() {
               >
                 <div className="flex items-start justify-between mb-2 gap-2">
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-[#333333] text-sm truncate group-hover:text-[#E31E24] transition-colors">
+                    <div className="font-semibold text-[#333333] text-sm truncate group-hover:text-[#1A3C34] transition-colors">
                       {v.name}
                     </div>
                     {v.position && (
@@ -962,7 +950,8 @@ export default function VendorsList() {
                   return (
                     <tr
                       key={v.id}
-                      className="border-b border-[#F3F4F6] hover:bg-gray-50"
+                      onClick={() => navigate(`/vendors/${v.id}`)}
+                      className="border-b border-[#F3F4F6] hover:bg-gray-50 cursor-pointer"
                     >
                       <td className="px-4 py-3 text-gray-400">{idx + 1}</td>
                       <td className="px-4 py-3">

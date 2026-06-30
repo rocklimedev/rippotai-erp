@@ -122,7 +122,7 @@ export enum ActivityAction {
   QUOTATION_DELETED = 'quotation_deleted',
   QUOTATION_REVISION_CREATED = 'quotation_revision_created',
   QUOTATION_SENT_TO_CLIENT = 'quotation_sent_to_client',
-
+  QUOTATION_RESTORED = 'quotation_restored',
   // =====================
   // VENDORS
   // =====================

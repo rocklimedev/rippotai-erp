@@ -182,14 +182,14 @@ export default function QuotationsList() {
           <div className="flex items-center border border-[#E5E7EB] rounded-md overflow-hidden">
             <button
               onClick={() => setViewPref("list")}
-              className={`p-2 ${view === "list" ? "bg-[#E31E24] text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
+              className={`p-2 ${view === "list" ? "bg-[#1A3C34] text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
               title="List view"
             >
               <LayoutList className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewPref("grid")}
-              className={`p-2 ${view === "grid" ? "bg-[#E31E24] text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
+              className={`p-2 ${view === "grid" ? "bg-[#1A3C34] text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
               title="Grid view"
             >
               <LayoutGrid className="w-4 h-4" />
@@ -199,7 +199,7 @@ export default function QuotationsList() {
           <button
             data-testid="create-quotation-btn"
             onClick={() => navigate("/quotations/create")}
-            className="flex items-center gap-2 bg-[#E31E24] text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
+            className="flex items-center gap-2 bg-[#1A3C34] text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
             New Quotation
@@ -217,14 +217,14 @@ export default function QuotationsList() {
               placeholder="Search quotation, vendor, project..."
               value={filters.search}
               onChange={(e) => updateFilter("search", e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#E31E24] focus:ring-1 focus:ring-[#E31E24]"
+              className="w-full pl-9 pr-3 py-2 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#1A3C34] focus:ring-1 focus:ring-[#1A3C34]"
             />
           </div>
 
           <select
             value={filters.status}
             onChange={(e) => updateFilter("status", e.target.value)}
-            className="py-2 px-3 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#E31E24]"
+            className="py-2 px-3 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#1A3C34]"
           >
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -237,7 +237,7 @@ export default function QuotationsList() {
             value={filters.project_id}
             onChange={(e) => updateFilter("project_id", e.target.value)}
             disabled={projectsLoading}
-            className="py-2 px-3 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#E31E24]"
+            className="py-2 px-3 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#1A3C34]"
           >
             <option value="">All Projects</option>
             {projects.map((p) => (
@@ -251,7 +251,7 @@ export default function QuotationsList() {
             value={filters.vendor_id}
             onChange={(e) => updateFilter("vendor_id", e.target.value)}
             disabled={vendorsLoading}
-            className="py-2 px-3 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#E31E24]"
+            className="py-2 px-3 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#1A3C34]"
           >
             <option value="">All Vendors</option>
             {vendors.map((v) => (
@@ -267,13 +267,13 @@ export default function QuotationsList() {
             type="date"
             value={filters.from_date}
             onChange={(e) => updateFilter("from_date", e.target.value)}
-            className="py-2 px-3 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#E31E24]"
+            className="py-2 px-3 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#1A3C34]"
           />
           <input
             type="date"
             value={filters.to_date}
             onChange={(e) => updateFilter("to_date", e.target.value)}
-            className="py-2 px-3 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#E31E24]"
+            className="py-2 px-3 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#1A3C34]"
           />
 
           {user?.role === "ADMIN" && (
@@ -281,7 +281,7 @@ export default function QuotationsList() {
               value={filters.employee_id}
               onChange={(e) => updateFilter("employee_id", e.target.value)}
               disabled={usersLoading}
-              className="py-2 px-3 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#E31E24]"
+              className="py-2 px-3 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#1A3C34]"
             >
               <option value="">All Employees</option>
               {employees.map((e) => (
@@ -331,7 +331,7 @@ export default function QuotationsList() {
                 >
                   <div className="flex items-start justify-between mb-2 gap-2">
                     <div>
-                      <div className="font-bold text-[#E31E24] text-sm group-hover:text-red-700">
+                      <div className="font-bold text-[#1A3C34] text-sm group-hover:text-red-700">
                         {q.quotation_number}
                       </div>
                       {q.current_version > 0 && (
@@ -443,7 +443,7 @@ export default function QuotationsList() {
                       className="border-b border-[#F3F4F6] hover:bg-gray-50"
                     >
                       <td className="px-4 py-3">
-                        <div className="font-medium text-[#E31E24]">
+                        <div className="font-medium text-[#1A3C34]">
                           {q.quotation_number}
                         </div>
                         {q.current_version > 0 && (

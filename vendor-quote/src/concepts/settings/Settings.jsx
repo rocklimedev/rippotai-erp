@@ -28,7 +28,7 @@ import {
 import { useAuth } from "../../store/use-auth";
 
 const TABS = [
-  { id: "numbering", label: "Quotation Numbering", icon: Hash },
+  { id: "numbering", label: "Quotation No.", icon: Hash },
   { id: "terms", label: "Terms & Conditions", icon: FileText },
   { id: "signature", label: "E-Signature", icon: Pen },
   { id: "amount", label: "Amount Settings", icon: Calculator },
@@ -246,7 +246,7 @@ export default function Settings() {
                 onClick={() => setTab(t.id)}
                 className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm border-b border-[#F3F4F6] last:border-0 transition-colors ${
                   tab === t.id
-                    ? "bg-red-50 text-[#E31E24] font-medium"
+                    ? "bg-red-50 text-[#1A3C34] font-medium"
                     : "text-gray-600 hover:bg-gray-50"
                 }`}
               >
@@ -278,7 +278,7 @@ export default function Settings() {
                         numbering: { ...num, prefix: e.target.value },
                       }))
                     }
-                    className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#E31E24]"
+                    className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#1A3C34]"
                     placeholder="QT"
                   />
                   <p className="text-xs text-gray-400 mt-1">
@@ -301,7 +301,7 @@ export default function Settings() {
                         },
                       }))
                     }
-                    className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#E31E24]"
+                    className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#1A3C34]"
                   >
                     {[3, 4, 5, 6].map((n) => (
                       <option key={n} value={n}>
@@ -334,7 +334,7 @@ export default function Settings() {
 
                 <div className="bg-gray-50 border border-[#E5E7EB] rounded px-3 py-2">
                   <div className="text-xs text-gray-500 mb-1">Preview</div>
-                  <div className="font-mono text-sm font-medium text-[#E31E24]">
+                  <div className="font-mono text-sm font-medium text-[#1A3C34]">
                     {num.prefix}-{num.include_year !== false ? "2026-" : ""}
                     {"1".padStart(num.padding || 4, "0")}
                   </div>
@@ -344,7 +344,7 @@ export default function Settings() {
                   data-testid="save-numbering-btn"
                   onClick={() => saveSettings("numbering", num)}
                   disabled={saving}
-                  className="bg-[#E31E24] text-white text-sm font-medium px-5 py-2 rounded-md hover:bg-red-700 disabled:opacity-60"
+                  className="bg-[#1A3C34] text-white text-sm font-medium px-5 py-2 rounded-md hover:bg-red-700 disabled:opacity-60"
                 >
                   {saving ? "Saving..." : "Save"}
                 </button>
@@ -377,7 +377,7 @@ export default function Settings() {
                     }}
                     rows={12}
                     placeholder="Enter default terms and conditions..."
-                    className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#E31E24] resize-y"
+                    className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#1A3C34] resize-y"
                   />
                   <p className="text-xs text-gray-400 mt-2">
                     These terms will auto-populate in new quotations. They can
@@ -387,7 +387,7 @@ export default function Settings() {
                     data-testid="save-terms-btn"
                     onClick={handleSaveTerms}
                     disabled={saving}
-                    className="mt-3 bg-[#E31E24] text-white text-sm font-medium px-5 py-2 rounded-md hover:bg-red-700 disabled:opacity-60"
+                    className="mt-3 bg-[#1A3C34] text-white text-sm font-medium px-5 py-2 rounded-md hover:bg-red-700 disabled:opacity-60"
                   >
                     {saving ? "Saving..." : "Save Terms"}
                   </button>
@@ -415,7 +415,7 @@ export default function Settings() {
                         signature: { ...sig, signer_name: e.target.value },
                       }))
                     }
-                    className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#E31E24]"
+                    className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#1A3C34]"
                     placeholder="Admin Name"
                   />
                 </div>
@@ -435,7 +435,7 @@ export default function Settings() {
                         },
                       }))
                     }
-                    className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#E31E24]"
+                    className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#1A3C34]"
                     placeholder="e.g. Administrator"
                   />
                 </div>
@@ -475,7 +475,7 @@ export default function Settings() {
                     <div className="flex gap-2 mt-3">
                       <button
                         onClick={() => sigFileRef.current?.click()}
-                        className="flex items-center gap-1.5 text-xs text-[#E31E24] border border-red-200 bg-white px-3 py-1.5 rounded hover:bg-red-50"
+                        className="flex items-center gap-1.5 text-xs text-[#1A3C34] border border-red-200 bg-white px-3 py-1.5 rounded hover:bg-red-50"
                       >
                         <Upload className="w-3.5 h-3.5" /> Replace
                       </button>
@@ -491,7 +491,7 @@ export default function Settings() {
                 ) : (
                   <div
                     onClick={() => sigFileRef.current?.click()}
-                    className="border-2 border-dashed border-[#E5E7EB] rounded-lg p-8 text-center cursor-pointer hover:border-[#E31E24] hover:bg-red-50/30 transition-colors"
+                    className="border-2 border-dashed border-[#E5E7EB] rounded-lg p-8 text-center cursor-pointer hover:border-[#1A3C34] hover:bg-red-50/30 transition-colors"
                   >
                     <Upload className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                     <div className="text-sm text-gray-500">
@@ -515,7 +515,7 @@ export default function Settings() {
                   data-testid="save-signature-settings-btn"
                   onClick={() => saveSettings("signature", sig)}
                   disabled={saving}
-                  className="bg-[#E31E24] text-white text-sm font-medium px-5 py-2 rounded-md hover:bg-red-700 disabled:opacity-60"
+                  className="bg-[#1A3C34] text-white text-sm font-medium px-5 py-2 rounded-md hover:bg-red-700 disabled:opacity-60"
                 >
                   {saving ? "Saving..." : "Save Settings"}
                 </button>
@@ -618,7 +618,7 @@ export default function Settings() {
                           },
                         }))
                       }
-                      className="w-32 border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#E31E24]"
+                      className="w-32 border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#1A3C34]"
                     />
                   </div>
                 )}
@@ -627,7 +627,7 @@ export default function Settings() {
                   data-testid="save-amount-settings-btn"
                   onClick={() => saveSettings("amount_settings", amt)}
                   disabled={saving}
-                  className="bg-[#E31E24] text-white text-sm font-medium px-5 py-2 rounded-md hover:bg-red-700 disabled:opacity-60"
+                  className="bg-[#1A3C34] text-white text-sm font-medium px-5 py-2 rounded-md hover:bg-red-700 disabled:opacity-60"
                 >
                   {saving ? "Saving..." : "Save Settings"}
                 </button>

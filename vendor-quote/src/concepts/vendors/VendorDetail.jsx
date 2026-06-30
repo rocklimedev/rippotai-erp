@@ -245,7 +245,7 @@ export default function VendorDetail() {
                     key={q.id}
                     className="border-b border-[#F3F4F6] hover:bg-gray-50"
                   >
-                    <td className="px-4 py-3 font-medium text-[#E31E24]">
+                    <td className="px-4 py-3 font-medium text-[#1A3C34]">
                       {q.quotation_number || q.quotationNumber}
                     </td>
                     <td className="px-4 py-3 text-gray-600">

@@ -117,7 +117,7 @@ export default function Dashboard() {
         </div>
         <Link
           to="/quotations/create"
-          className="flex items-center gap-2 bg-[#E31E24] text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
+          className="flex items-center gap-2 bg-[#1A3C34] text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-[#245247] transition-colors"
         >
           <Plus className="w-4 h-4" />
           New Quotation
@@ -174,7 +174,7 @@ export default function Dashboard() {
           </h2>
           <Link
             to="/quotations"
-            className="text-xs text-[#E31E24] hover:underline flex items-center gap-1"
+            className="text-xs text-[#1A3C34] hover:underline flex items-center gap-1"
           >
             View all <ArrowRight className="w-3 h-3" />
           </Link>
@@ -186,7 +186,7 @@ export default function Dashboard() {
             <p className="text-sm text-gray-400">No quotations yet</p>
             <Link
               to="/quotations/create"
-              className="inline-block mt-3 text-sm text-[#E31E24] hover:underline"
+              className="inline-block mt-3 text-sm text-[#1A3C34] hover:underline"
             >
               Create your first quotation
             </Link>
@@ -226,7 +226,7 @@ export default function Dashboard() {
                       onClick={() => navigate(`/quotations/${q.id}`)}
                       className="border-b border-[#F3F4F6] hover:bg-gray-50 cursor-pointer"
                     >
-                      <td className="px-4 py-3 font-medium text-[#E31E24]">
+                      <td className="px-4 py-3 font-medium text-[#1A3C34]">
                         {q.quotationNumber}
                       </td>
                       <td className="px-4 py-3 text-gray-600">
@@ -261,10 +261,10 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
         <Link
           to="/quotations/create"
-          className="flex items-center gap-3 bg-white border border-[#E5E7EB] rounded-lg p-4 hover:border-[#E31E24] transition-colors group"
+          className="flex items-center gap-3 bg-white border border-[#E5E7EB] rounded-lg p-4 hover:border-[#1A3C34] transition-colors group"
         >
-          <div className="w-9 h-9 bg-red-50 rounded-md flex items-center justify-center group-hover:bg-red-100">
-            <Plus className="w-4 h-4 text-[#E31E24]" />
+          <div className="w-9 h-9 bg-[#E8F0EE] rounded-md flex items-center justify-center group-hover:bg-[#D6E6E1]">
+            <Plus className="w-4 h-4 text-[#1A3C34]" />
           </div>
           <div>
             <div className="text-sm font-medium text-[#333333]">
@@ -273,10 +273,9 @@ export default function Dashboard() {
             <div className="text-xs text-gray-400">Create a quotation</div>
           </div>
         </Link>
-
         <Link
           to="/projects"
-          className="flex items-center gap-3 bg-white border border-[#E5E7EB] rounded-lg p-4 hover:border-[#E31E24] transition-colors group"
+          className="flex items-center gap-3 bg-white border border-[#E5E7EB] rounded-lg p-4 hover:border-[#1A3C34] transition-colors group"
         >
           <div className="w-9 h-9 bg-blue-50 rounded-md flex items-center justify-center group-hover:bg-blue-100">
             <FolderOpen className="w-4 h-4 text-blue-500" />
@@ -289,7 +288,7 @@ export default function Dashboard() {
 
         <Link
           to="/vendors"
-          className="flex items-center gap-3 bg-white border border-[#E5E7EB] rounded-lg p-4 hover:border-[#E31E24] transition-colors group"
+          className="flex items-center gap-3 bg-white border border-[#E5E7EB] rounded-lg p-4 hover:border-[#1A3C34] transition-colors group"
         >
           <div className="w-9 h-9 bg-green-50 rounded-md flex items-center justify-center group-hover:bg-green-100">
             <Users className="w-4 h-4 text-green-500" />

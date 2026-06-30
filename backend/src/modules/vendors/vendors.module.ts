@@ -12,10 +12,11 @@ import { VendorBusinessTypesController } from './vendor-business-types.controlle
 import { VendorsService } from './vendors.service';
 import { VendorCategoriesService } from './vendor-categories.service';
 import { VendorBusinessTypesService } from './vendor-business-types.service';
-
+import { ActivityLogsModule } from '../engagement/activity-logs.module';
 @Module({
   imports: [
     SequelizeModule.forFeature([Vendor, VendorCategory, VendorBusinessType]),
+    ActivityLogsModule, // ✅ ADD THIS
   ],
   controllers: [
     VendorsController,

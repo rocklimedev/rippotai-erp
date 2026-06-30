@@ -13,14 +13,16 @@ export class ActivityLogForProjectService {
   async logProjectCreated(project: Project, user?: any) {
     await this.activityLogsService.log({
       user_id: user?.id ?? null,
-      user_email: user?.email,
-      user_role: user?.role,
+      user_email: user?.email || 'system@internal',
+      user_role: user?.role || 'SYSTEM',
       action: ActivityAction.PROJECT_CREATED,
       entity_type: 'PROJECT',
       entity_id: project.id,
+      entity_label: project.name,
       changes: {
         name: project.name,
         status: project.status,
+        site_location: project.site_location,
       },
     });
   }
@@ -78,12 +80,14 @@ export class ActivityLogForProjectService {
   async logProjectDeleted(projectId: string, user?: any) {
     await this.activityLogsService.log({
       user_id: user?.id ?? null,
-      user_email: user?.email,
-      user_role: user?.role,
+      user_email: user?.email || 'system@internal',
+      user_role: user?.role || 'SYSTEM',
       action: ActivityAction.PROJECT_DELETED,
       entity_type: 'PROJECT',
       entity_id: projectId,
-      changes: { deleted: true },
+      changes: {
+        deleted: true,
+      },
     });
   }
 }

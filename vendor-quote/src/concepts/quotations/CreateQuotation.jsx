@@ -174,8 +174,8 @@ function AddVendorModal({ onClose, onSave }) {
                   }
                   className={`py-2 text-sm font-semibold rounded-md border-2 transition-all ${
                     form.vendor_category === cat
-                      ? "bg-[#E31E24] text-white border-[#E31E24]"
-                      : "border-[#E5E7EB] text-gray-600 hover:border-[#E31E24] hover:text-[#E31E24]"
+                      ? "bg-[#1A3C34] text-white border-[#1A3C34]"
+                      : "border-[#E5E7EB] text-gray-600 hover:border-[#1A3C34] hover:text-[#1A3C34]"
                   }`}
                 >
                   {cat}
@@ -194,7 +194,7 @@ function AddVendorModal({ onClose, onSave }) {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, name: e.target.value }))
                 }
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#E31E24]"
+                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34]"
               />
             </div>
             <div>
@@ -206,7 +206,7 @@ function AddVendorModal({ onClose, onSave }) {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, company_name: e.target.value }))
                 }
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#E31E24]"
+                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34]"
               />
             </div>
             <div>
@@ -219,7 +219,7 @@ function AddVendorModal({ onClose, onSave }) {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, contact_number: e.target.value }))
                 }
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#E31E24]"
+                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34]"
               />
             </div>
             <div className="col-span-2">
@@ -232,7 +232,7 @@ function AddVendorModal({ onClose, onSave }) {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, type_of_business: e.target.value }))
                 }
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#E31E24]"
+                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34]"
               >
                 <option value="">Select type...</option>
                 {availableTypes.map((t) => (
@@ -251,7 +251,7 @@ function AddVendorModal({ onClose, onSave }) {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, address: e.target.value }))
                 }
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#E31E24]"
+                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34]"
               />
             </div>
           </div>
@@ -267,7 +267,7 @@ function AddVendorModal({ onClose, onSave }) {
               data-testid="save-vendor-btn"
               type="submit"
               disabled={loading}
-              className="flex-1 bg-[#E31E24] text-white text-sm font-medium py-2 rounded hover:bg-red-700 disabled:opacity-60"
+              className="flex-1 bg-[#1A3C34] text-white text-sm font-medium py-2 rounded hover:bg-red-700 disabled:opacity-60"
             >
               {loading ? "Saving..." : "Save Vendor"}
             </button>
@@ -737,7 +737,7 @@ export default function CreateQuotation() {
                   setForm((p) => ({ ...p, quotation_date: e.target.value }));
                   setUnsavedChanges(true);
                 }}
-                className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#E31E24]"
+                className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#1A3C34]"
               />
             </div>
 
@@ -769,7 +769,7 @@ export default function CreateQuotation() {
                     onFocus={() => setShowVendorDD(true)}
                     onBlur={() => setTimeout(() => setShowVendorDD(false), 150)}
                     placeholder="Search vendor..."
-                    className="w-full pl-9 pr-3 py-2 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#E31E24]"
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#1A3C34]"
                   />
                   {showVendorDD && (
                     <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#E5E7EB] rounded-md shadow-lg z-20 max-h-48 overflow-y-auto">
@@ -821,7 +821,7 @@ export default function CreateQuotation() {
                       }));
                       setUnsavedChanges(true);
                     }}
-                    className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#E31E24]"
+                    className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#1A3C34]"
                   />
                 </div>
                 <div>
@@ -847,7 +847,7 @@ export default function CreateQuotation() {
                       }));
                       setUnsavedChanges(true);
                     }}
-                    className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#E31E24]"
+                    className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#1A3C34]"
                   />
                 </div>
               </>
@@ -885,7 +885,7 @@ export default function CreateQuotation() {
                   onFocus={() => setShowProjectDD(true)}
                   onBlur={() => setTimeout(() => setShowProjectDD(false), 150)}
                   placeholder="Search project..."
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#E31E24]"
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#1A3C34]"
                 />
                 {showProjectDD && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#E5E7EB] rounded-md shadow-lg z-20 max-h-48 overflow-y-auto">
@@ -969,7 +969,7 @@ export default function CreateQuotation() {
                         onChange={(e) =>
                           updateItem(idx, "particular", e.target.value)
                         }
-                        className="w-full border border-[#E5E7EB] rounded px-2 py-1 text-sm focus:outline-none focus:border-[#E31E24] resize-none min-h-[32px]"
+                        className="w-full border border-[#E5E7EB] rounded px-2 py-1 text-sm focus:outline-none focus:border-[#1A3C34] resize-none min-h-[32px]"
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -981,7 +981,7 @@ export default function CreateQuotation() {
                         onChange={(e) =>
                           updateItem(idx, "rate", e.target.value)
                         }
-                        className="w-full border border-[#E5E7EB] rounded px-2 py-1 text-sm focus:outline-none focus:border-[#E31E24] text-right"
+                        className="w-full border border-[#E5E7EB] rounded px-2 py-1 text-sm focus:outline-none focus:border-[#1A3C34] text-right"
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -993,7 +993,7 @@ export default function CreateQuotation() {
                         onChange={(e) =>
                           updateItem(idx, "quantity", e.target.value)
                         }
-                        className="w-full border border-[#E5E7EB] rounded px-2 py-1 text-sm focus:outline-none focus:border-[#E31E24] text-right"
+                        className="w-full border border-[#E5E7EB] rounded px-2 py-1 text-sm focus:outline-none focus:border-[#1A3C34] text-right"
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -1005,7 +1005,7 @@ export default function CreateQuotation() {
                         onChange={(e) =>
                           updateItem(idx, "amount", e.target.value)
                         }
-                        className="w-full border border-[#E5E7EB] rounded px-2 py-1 text-sm focus:outline-none focus:border-[#E31E24] text-right"
+                        className="w-full border border-[#E5E7EB] rounded px-2 py-1 text-sm focus:outline-none focus:border-[#1A3C34] text-right"
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -1014,7 +1014,7 @@ export default function CreateQuotation() {
                         onChange={(e) =>
                           updateItem(idx, "remarks", e.target.value)
                         }
-                        className="w-full border border-[#E5E7EB] rounded px-2 py-1 text-sm focus:outline-none focus:border-[#E31E24]"
+                        className="w-full border border-[#E5E7EB] rounded px-2 py-1 text-sm focus:outline-none focus:border-[#1A3C34]"
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -1057,7 +1057,7 @@ export default function CreateQuotation() {
           <button
             data-testid="add-item-btn"
             onClick={addRow}
-            className="mt-3 flex items-center gap-1.5 text-sm text-[#E31E24] hover:text-red-700 font-medium"
+            className="mt-3 flex items-center gap-1.5 text-sm text-[#1A3C34] hover:text-red-700 font-medium"
           >
             <Plus className="w-4 h-4" /> Add Row
           </button>
@@ -1086,7 +1086,7 @@ export default function CreateQuotation() {
                       }));
                       setUnsavedChanges(true);
                     }}
-                    className="w-28 border border-[#E5E7EB] rounded px-2 py-1 text-sm text-right focus:outline-none focus:border-[#E31E24]"
+                    className="w-28 border border-[#E5E7EB] rounded px-2 py-1 text-sm text-right focus:outline-none focus:border-[#1A3C34]"
                   />
                 </div>
 
@@ -1107,7 +1107,7 @@ export default function CreateQuotation() {
                         }}
                         className={`px-2 py-1 text-xs font-semibold transition-colors ${
                           form.global_discount_type === "fixed"
-                            ? "bg-[#E31E24] text-white"
+                            ? "bg-[#1A3C34] text-white"
                             : "bg-white text-gray-500 hover:bg-gray-50"
                         }`}
                       >
@@ -1125,7 +1125,7 @@ export default function CreateQuotation() {
                         }}
                         className={`px-2 py-1 text-xs font-semibold border-l border-[#E5E7EB] transition-colors ${
                           form.global_discount_type === "percentage"
-                            ? "bg-[#E31E24] text-white"
+                            ? "bg-[#1A3C34] text-white"
                             : "bg-white text-gray-500 hover:bg-gray-50"
                         }`}
                       >
@@ -1145,7 +1145,7 @@ export default function CreateQuotation() {
                         }));
                         setUnsavedChanges(true);
                       }}
-                      className="w-20 border border-[#E5E7EB] rounded px-2 py-1 text-sm text-right focus:outline-none focus:border-[#E31E24]"
+                      className="w-20 border border-[#E5E7EB] rounded px-2 py-1 text-sm text-right focus:outline-none focus:border-[#1A3C34]"
                     />
                   </div>
                 </div>
@@ -1173,7 +1173,7 @@ export default function CreateQuotation() {
                       }));
                       setUnsavedChanges(true);
                     }}
-                    className="w-28 border border-[#E5E7EB] rounded px-2 py-1 text-sm text-right focus:outline-none focus:border-[#E31E24]"
+                    className="w-28 border border-[#E5E7EB] rounded px-2 py-1 text-sm text-right focus:outline-none focus:border-[#1A3C34]"
                   />
                 </div>
                 <div className="flex justify-between text-xs text-gray-400">
@@ -1183,7 +1183,7 @@ export default function CreateQuotation() {
 
                 <div className="flex justify-between text-sm font-bold border-t border-[#E5E7EB] pt-2">
                   <span className="text-[#333333]">Grand Total</span>
-                  <span className="text-[#E31E24] text-base">
+                  <span className="text-[#1A3C34] text-base">
                     {formatCurrency(form.total_amount)}
                   </span>
                 </div>
@@ -1205,7 +1205,7 @@ export default function CreateQuotation() {
               setUnsavedChanges(true);
             }}
             placeholder="Enter terms and conditions..."
-            className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#E31E24] resize-y"
+            className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#1A3C34] resize-y"
           />
         </div>
 
@@ -1223,7 +1223,7 @@ export default function CreateQuotation() {
             data-testid="submit-approval-btn"
             onClick={handleSubmitForApproval}
             disabled={loading}
-            className="bg-[#E31E24] text-white text-sm font-medium px-5 py-2 rounded-md hover:bg-red-700 disabled:opacity-60"
+            className="bg-[#1A3C34] text-white text-sm font-medium px-5 py-2 rounded-md hover:bg-red-700 disabled:opacity-60"
           >
             {loading ? "Submitting..." : "Submit for Approval"}
           </button>

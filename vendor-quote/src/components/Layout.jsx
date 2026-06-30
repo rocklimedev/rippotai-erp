@@ -1,174 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../store/use-auth";
-import {
-  LayoutDashboard,
-  FileText,
-  FolderOpen,
-  Users,
-  BarChart2,
-  ClipboardList,
-  Settings,
-  ChevronDown,
-  ChevronRight,
-  Bell,
-  LogOut,
-  Menu,
-  X,
-  Plus,
-  CheckCircle,
-  RotateCcw,
-  XCircle,
-} from "lucide-react";
+import { ChevronDown, Bell, LogOut, Menu, X } from "lucide-react";
 
 import {
   useGetUserNotificationsQuery,
   useMarkAllAsReadMutation,
 } from "../api/notification.api";
 
-const NAV_ITEMS = [
-  { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  {
-    label: "Quotations",
-    icon: FileText,
-    children: [
-      { path: "/quotations", label: "All Quotations" },
-      { path: "/quotations/create", label: "Create Quotation", icon: Plus },
-      { path: "/quotations?status=submitted", label: "Pending Approval" },
-      { path: "/quotations?status=resubmitted", label: "Resubmitted" },
-      { path: "/quotations?status=returned", label: "Returned" },
-      { path: "/quotations?status=approved", label: "Approved" },
-      { path: "/quotations?status=declined", label: "Declined" },
-    ],
-  },
-  { path: "/projects", icon: FolderOpen, label: "Projects" },
-  { path: "/vendors", icon: Users, label: "Vendors" },
-  { path: "/reports", icon: BarChart2, label: "Reports" },
-  {
-    path: "/activity-logs",
-    icon: ClipboardList,
-    label: "Activity Logs",
-    adminOnly: true,
-  },
-  { path: "/settings", icon: Settings, label: "Settings", adminOnly: true },
-];
-
-const NOTIF_ICONS = {
-  quotation_submitted: <Bell className="w-4 h-4 text-yellow-500" />,
-  quotation_approved: <CheckCircle className="w-4 h-4 text-green-500" />,
-  quotation_returned: <RotateCcw className="w-4 h-4 text-blue-500" />,
-  quotation_declined: <XCircle className="w-4 h-4 text-red-500" />,
-};
-
-const SidebarContent = ({
-  sidebarOpen,
-  expandedItems,
-  toggleExpand,
-  isActive,
-  navItems,
-  user,
-  onLinkClick,
-}) => (
-  <div className="flex flex-col h-full">
-    {/* Logo */}
-    <div className="flex items-center gap-3 px-4 py-4 border-b border-[#E5E7EB]">
-      <div className="w-8 h-8 bg-[#E31E24] rounded-md flex items-center justify-center flex-shrink-0">
-        <FileText className="w-4 h-4 text-white" />
-      </div>
-      {sidebarOpen && (
-        <div>
-          <div className="text-sm font-bold text-[#333333] leading-tight">
-            Quotation
-          </div>
-          <div className="text-xs text-gray-500 leading-tight">Management</div>
-        </div>
-      )}
-    </div>
-
-    {/* Navigation */}
-    <nav className="flex-1 overflow-y-auto py-3 px-2">
-      {navItems.map((item) => {
-        if (item.children) {
-          const isExpanded = expandedItems[item.label] ?? true;
-          const hasActive = item.children.some((c) => isActive(c.path));
-
-          return (
-            <div key={item.label} className="mb-0.5">
-              <button
-                onClick={() => toggleExpand(item.label)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  hasActive
-                    ? "text-[#E31E24]"
-                    : "text-gray-600 hover:text-[#333333] hover:bg-gray-100"
-                }`}
-              >
-                <item.icon className="w-4 h-4 flex-shrink-0" />
-                {sidebarOpen && (
-                  <>
-                    <span className="flex-1 text-left">{item.label}</span>
-                    {isExpanded ? (
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    ) : (
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    )}
-                  </>
-                )}
-              </button>
-
-              {sidebarOpen && isExpanded && (
-                <div className="mt-0.5 ml-6 pl-2 border-l border-[#E5E7EB]">
-                  {item.children.map((child) => (
-                    <Link
-                      key={child.path}
-                      to={child.path}
-                      onClick={onLinkClick}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                        isActive(child.path)
-                          ? "text-[#E31E24] bg-red-50"
-                          : "text-gray-500 hover:text-[#333333] hover:bg-gray-100"
-                      }`}
-                    >
-                      {child.icon && <child.icon className="w-3.5 h-3.5" />}
-                      {child.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        }
-
-        return (
-          <Link
-            key={item.path}
-            to={item.path}
-            onClick={onLinkClick}
-            className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors mb-0.5 ${
-              isActive(item.path)
-                ? "text-[#E31E24] bg-red-50"
-                : "text-gray-600 hover:text-[#333333] hover:bg-gray-100"
-            }`}
-          >
-            <item.icon className="w-4 h-4 flex-shrink-0" />
-            {sidebarOpen && <span>{item.label}</span>}
-          </Link>
-        );
-      })}
-    </nav>
-
-    {/* User Info */}
-    {sidebarOpen && user && (
-      <div className="px-4 py-3 border-t border-[#E5E7EB]">
-        <div className="text-xs font-medium text-gray-400 uppercase tracking-wider">
-          {user.role}
-        </div>
-        <div className="text-sm font-medium text-[#333333] mt-0.5 truncate">
-          {user.name}
-        </div>
-      </div>
-    )}
-  </div>
-);
+import { NAV_ITEMS, NOTIF_ICONS, SidebarContent } from "./Sidebar";
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
@@ -212,11 +52,9 @@ export default function Layout({ children }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login", { replace: true });
+  const handleLogout = () => {
+    logout(true); // no need for navigate
   };
-
   const isActive = (path) => {
     if (path.includes("?")) {
       const [base, query] = path.split("?");
@@ -311,7 +149,7 @@ export default function Layout({ children }) {
               >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#E31E24] text-white text-[10px] rounded-full flex items-center justify-center font-medium">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#1A3C34] text-white text-[10px] rounded-full flex items-center justify-center font-medium">
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
@@ -328,7 +166,7 @@ export default function Layout({ children }) {
                         onClick={async () => {
                           if (user?.id) await markAllAsRead(user.id);
                         }}
-                        className="text-xs text-[#E31E24] hover:underline"
+                        className="text-xs text-[#1A3C34] hover:underline"
                       >
                         Mark all read
                       </button>
@@ -371,7 +209,7 @@ export default function Layout({ children }) {
                             </p>
                           </div>
                           {!n.is_read && (
-                            <div className="w-2 h-2 rounded-full bg-[#E31E24] mt-2" />
+                            <div className="w-2 h-2 rounded-full bg-[#1A3C34] mt-2" />
                           )}
                         </div>
                       ))
@@ -387,7 +225,7 @@ export default function Layout({ children }) {
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-gray-100"
               >
-                <div className="w-8 h-8 bg-[#E31E24] rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                <div className="w-8 h-8 bg-[#1A3C34] rounded-full flex items-center justify-center text-white text-sm font-semibold">
                   {user?.name?.charAt(0)?.toUpperCase() || "U"}
                 </div>
                 <div className="hidden sm:block text-left">
@@ -409,7 +247,7 @@ export default function Layout({ children }) {
                   </div>
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 hover:text-red-600"
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#1A3C34]"
                   >
                     <LogOut className="w-4 h-4" />
                     Sign out

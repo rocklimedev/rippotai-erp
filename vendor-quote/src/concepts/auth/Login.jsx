@@ -35,7 +35,7 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-[#E31E24] rounded-xl mb-4">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-[#1A3C34] rounded-xl mb-4">
             <FileText className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-[#333333]">
@@ -67,7 +67,7 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="admin@example.com"
-                className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm text-[#333333] focus:outline-none focus:border-[#E31E24] focus:ring-1 focus:ring-[#E31E24] transition-all"
+                className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 text-sm text-[#333333] focus:outline-none focus:border-[#1A3C34] focus:ring-1 focus:ring-[#1A3C34] transition-all"
               />
             </div>
 
@@ -83,7 +83,7 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 pr-10 text-sm text-[#333333] focus:outline-none focus:border-[#E31E24] focus:ring-1 focus:ring-[#E31E24] transition-all"
+                  className="w-full border border-[#E5E7EB] rounded-md px-3 py-2 pr-10 text-sm text-[#333333] focus:outline-none focus:border-[#1A3C34] focus:ring-1 focus:ring-[#1A3C34] transition-all"
                 />
                 <button
                   type="button"
@@ -103,7 +103,7 @@ export default function Login() {
               data-testid="login-submit-button"
               type="submit"
               disabled={loading}
-              className="w-full bg-[#E31E24] text-white font-medium py-2.5 rounded-md hover:bg-red-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm"
+              className="w-full bg-[#1A3C34] text-white font-medium py-2.5 rounded-md hover:bg-red-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm"
             >
               {loading ? "Signing in..." : "Sign In"}
             </button>
@@ -122,7 +122,7 @@ export default function Login() {
                 }}
                 className="w-full text-left px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded text-xs text-gray-600 transition-colors"
               >
-                <span className="font-medium text-[#E31E24]">Admin:</span>{" "}
+                <span className="font-medium text-[#1A3C34]">Admin:</span>{" "}
                 admin@example.com / Admin@123
               </button>
               <button

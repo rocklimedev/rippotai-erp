@@ -3,23 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { formatDateTime } from "../../utils/helpers";
 import { ClipboardList, ChevronLeft, ChevronRight } from "lucide-react";
 import { useGetActivityLogsQuery } from "../../api/activity-logs.api";
-
-const ACTION_COLORS = {
-  "Quotation Created": "bg-blue-100 text-blue-700",
-  "Quotation Submitted": "bg-yellow-100 text-yellow-700",
-  "Quotation Approved": "bg-green-100 text-green-700",
-  "Quotation Returned for Editing": "bg-orange-100 text-orange-700",
-  "Quotation Declined": "bg-red-100 text-red-700",
-  "Quotation Updated": "bg-gray-100 text-gray-600",
-  "Project Created": "bg-purple-100 text-purple-700",
-  "Vendor Created": "bg-teal-100 text-teal-700",
-};
+import ActivityDetailsModal, {
+  ACTION_COLORS,
+  formatActionLabel,
+} from "../../components/activity-logs/ActivityDetailsModal";
 
 export default function ActivityLogs() {
   const navigate = useNavigate();
 
   const [page, setPage] = useState(1);
   const [entityType, setEntityType] = useState("");
+  const [selectedLog, setSelectedLog] = useState(null);
 
   const limit = 30;
 
@@ -29,7 +23,7 @@ export default function ActivityLogs() {
 
   // ⚠️ backend currently doesn't handle pagination via RTK query
   // so we fallback to slicing OR extend API later
-  const logs = data?.logs || [];
+  const logs = data || [];
   const total = data?.total || 0;
 
   const totalPages = Math.ceil(total / limit);
@@ -53,7 +47,7 @@ export default function ActivityLogs() {
             setEntityType(e.target.value);
             setPage(1);
           }}
-          className="py-2 px-3 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#E31E24] text-gray-600"
+          className="py-2 px-3 text-sm border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#1A3C34] text-gray-600"
         >
           <option value="">All Activities</option>
           <option value="quotation">Quotations</option>
@@ -97,8 +91,9 @@ export default function ActivityLogs() {
 
             <tbody>
               {logs.map((log) => {
+                const actionLabel = formatActionLabel(log.action);
                 const actionColor =
-                  ACTION_COLORS[log.action] || "bg-gray-100 text-gray-600";
+                  ACTION_COLORS[actionLabel] || "bg-gray-100 text-gray-600";
 
                 return (
                   <tr
@@ -109,7 +104,7 @@ export default function ActivityLogs() {
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${actionColor}`}
                       >
-                        {log.action}
+                        {actionLabel}
                       </span>
                     </td>
 
@@ -127,23 +122,29 @@ export default function ActivityLogs() {
                         {log.entity_type}
                       </div>
 
-                      {log.entity_id && log.entity_type === "quotation" && (
-                        <button
-                          onClick={() =>
-                            navigate(`/quotations/${log.entity_id}`)
-                          }
-                          className="text-xs text-[#E31E24] hover:underline"
-                        >
-                          View
-                        </button>
-                      )}
+                      {log.entity_id &&
+                        log.entity_type?.toLowerCase() === "quotation" && (
+                          <button
+                            onClick={() =>
+                              navigate(`/quotations/${log.entity_id}`)
+                            }
+                            className="text-xs text-[#1A3C34] hover:underline"
+                          >
+                            View
+                          </button>
+                        )}
                     </td>
 
-                    <td className="px-4 py-3 text-xs text-gray-500 max-w-xs">
-                      {log.changes && (
-                        <pre className="whitespace-pre-wrap">
-                          {JSON.stringify(log.changes, null, 2)}
-                        </pre>
+                    <td className="px-4 py-3 text-xs">
+                      {log.changes ? (
+                        <button
+                          onClick={() => setSelectedLog(log)}
+                          className="text-[#1A3C34] hover:underline font-medium"
+                        >
+                          View Details
+                        </button>
+                      ) : (
+                        <span className="text-gray-400">—</span>
                       )}
                     </td>
 
@@ -184,6 +185,11 @@ export default function ActivityLogs() {
           </div>
         )}
       </div>
+
+      <ActivityDetailsModal
+        log={selectedLog}
+        onClose={() => setSelectedLog(null)}
+      />
     </div>
   );
 }
