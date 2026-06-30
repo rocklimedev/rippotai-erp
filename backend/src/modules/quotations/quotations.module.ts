@@ -9,17 +9,25 @@ import { QuotationItemsController } from './quotation-items.controller';
 
 import { Quotation } from './models/quotations.model';
 import { QuotationItem } from './models/quotation-items.model';
+import { QuotationVersion } from './models/quotation-versions.model';
 
+import { Unit } from '../metas/models/unit.model';
 import { ProjectsModule } from '../projects/projects.module';
 import { VendorsModule } from '../vendors/vendors.module';
-import { QuotationVersion } from './models/quotation-versions.model';
+import { ActivityLogsModule } from '../engagement/activity-logs.module';
+
 import { QuotationVersionsService } from './quotation-versions.service';
 import { QuotationVersionsController } from './quotation-versions.controller';
-import { ActivityLogsModule } from '../engagement/activity-logs.module';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Quotation, QuotationItem, QuotationVersion]),
+    SequelizeModule.forFeature([
+      Quotation,
+      QuotationItem,
+      QuotationVersion,
+      Unit, // 🔥 REQUIRED for belongsTo relation
+    ]),
+
     ProjectsModule,
     VendorsModule,
     ActivityLogsModule,
@@ -33,14 +41,10 @@ import { ActivityLogsModule } from '../engagement/activity-logs.module';
 
   providers: [
     QuotationsService,
-    QuotationItemsService, // 🔥 REQUIRED FIX
+    QuotationItemsService,
     QuotationVersionsService,
   ],
 
-  exports: [
-    QuotationsService,
-    QuotationItemsService, // optional but recommended
-    QuotationVersionsService,
-  ],
+  exports: [QuotationsService, QuotationItemsService, QuotationVersionsService],
 })
 export class QuotationsModule {}

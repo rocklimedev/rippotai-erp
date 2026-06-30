@@ -12,7 +12,7 @@ import {
   Search,
   AlertCircle,
 } from "lucide-react";
-
+import { useGetUnitsQuery } from "../../api/unit.api";
 import {
   useCreateQuotationMutation,
   useGetQuotationByIdQuery,
@@ -324,7 +324,7 @@ export default function CreateQuotation() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [unsavedChanges, setUnsavedChanges] = useState(false);
-
+  const { data: units = [] } = useGetUnitsQuery();
   // RTK Query hooks
   const { data: projectsData = [] } = useGetProjectsQuery();
   const { data: vendorsData = [] } = useGetVendorsQuery();
@@ -339,7 +339,10 @@ export default function CreateQuotation() {
   const [createQuotation] = useCreateQuotationMutation();
   const [updateQuotation] = useUpdateQuotationMutation();
   const [submitQuotation] = useSubmitQuotationMutation();
-
+  const getUnitLabel = (unitId) => {
+    const unit = units.find((u) => u.id === unitId);
+    return unit ? `${unit.code}` : "";
+  };
   // Sync projects
   useEffect(() => {
     if (projectsData?.length) setProjects(projectsData);
@@ -947,6 +950,9 @@ export default function CreateQuotation() {
                   <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 border-b border-[#E5E7EB] w-20">
                     Qty
                   </th>
+                  <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 border-b border-[#E5E7EB] w-24">
+                    Unit
+                  </th>
                   <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 border-b border-[#E5E7EB] w-28">
                     Amount (₹)
                   </th>
@@ -995,6 +1001,22 @@ export default function CreateQuotation() {
                         }
                         className="w-full border border-[#E5E7EB] rounded px-2 py-1 text-sm focus:outline-none focus:border-[#1A3C34] text-right"
                       />
+                    </td>
+                    <td className="px-3 py-2">
+                      <select
+                        value={item.unit_id || ""}
+                        onChange={(e) =>
+                          updateItem(idx, "unit_id", e.target.value)
+                        }
+                        className="w-full border border-[#E5E7EB] rounded px-2 py-1 text-sm focus:outline-none focus:border-[#1A3C34]"
+                      >
+                        <option value="">Select</option>
+                        {units.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.code}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                     <td className="px-3 py-2">
                       <input

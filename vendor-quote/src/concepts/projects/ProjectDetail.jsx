@@ -215,23 +215,31 @@ export default function ProjectDetail() {
             <tbody>
               {project.quotations.map((q) => {
                 const cfg = getStatusConfig(q.status);
+
                 return (
                   <tr
                     key={q.id}
                     className="border-b border-[#F3F4F6] hover:bg-gray-50"
                   >
+                    {/* Quotation Number */}
                     <td className="px-4 py-3 font-medium text-[#1A3C34]">
-                      {q.quotation_number}
+                      {q.quotationNumber}
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{q.vendor_name}</td>
-                    <td className="px-4 py-3 text-gray-500">
-                      {q.current_version > 0
-                        ? `V${q.current_version}`
-                        : "Draft"}
+
+                    {/* Vendor */}
+                    <td className="px-4 py-3 text-gray-600">
+                      {q.vendor?.company_name || q.vendor?.name || "—"}
                     </td>
+
+                    {/* Version (NOT in your API, so safe fallback) */}
+                    <td className="px-4 py-3 text-gray-500">Draft</td>
+
+                    {/* Amount */}
                     <td className="px-4 py-3 font-medium">
-                      {formatCurrency(q.total_amount)}
+                      {formatCurrency(q.totalAmount)}
                     </td>
+
+                    {/* Status */}
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${cfg.bg} ${cfg.text} ${cfg.border}`}
@@ -239,9 +247,13 @@ export default function ProjectDetail() {
                         {cfg.label}
                       </span>
                     </td>
+
+                    {/* Date */}
                     <td className="px-4 py-3 text-gray-500 text-xs">
-                      {formatDate(q.quotation_date)}
+                      {formatDate(q.quotationDate)}
                     </td>
+
+                    {/* Action */}
                     <td className="px-4 py-3">
                       <button
                         onClick={() => navigate(`/quotations/${q.id}`)}

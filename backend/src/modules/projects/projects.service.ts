@@ -5,12 +5,13 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
-
+import { fn, col, literal } from 'sequelize';
+import { Quotation } from '@/modules/quotations/models/quotations.model';
 import { Project } from './models/projects.model';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { ProjectStatus } from '../../common/enums';
 import { ActivityLogForProjectService } from '../engagement/services/activity-log-project.service';
-
+import { Vendor } from '../vendors/models/vendors.model';
 @Injectable()
 export class ProjectsService {
   constructor(
@@ -41,7 +42,7 @@ export class ProjectsService {
     filters: {
       status?: ProjectStatus;
       includeArchived?: boolean;
-      includeDeleted?: boolean; // New option
+      includeDeleted?: boolean;
     } = {},
   ) {
     const where: any = {};
@@ -51,7 +52,42 @@ export class ProjectsService {
 
     return this.projectModel.findAll({
       where,
-      paranoid: !filters.includeDeleted, // Important for soft delete
+
+      attributes: {
+        include: [
+          // TOTAL QUOTATION VALUE
+          [
+            fn('COALESCE', fn('SUM', col('quotations.total_amount')), 0),
+            'quotation_total',
+          ],
+
+          // APPROVED VALUE ONLY
+          [
+            fn(
+              'COALESCE',
+              fn(
+                'SUM',
+                literal(
+                  `CASE WHEN quotations.status = 'approved' THEN quotations.total_amount ELSE 0 END`,
+                ),
+              ),
+              0,
+            ),
+            'approved_value',
+          ],
+        ],
+      },
+
+      include: [
+        {
+          model: Quotation,
+          attributes: [],
+          required: false,
+        },
+      ],
+
+      group: ['Project.id'],
+      paranoid: !filters.includeDeleted,
       order: [['created_at', 'DESC']],
     });
   }
@@ -61,6 +97,86 @@ export class ProjectsService {
   // =========================
   async findOne(id: string, includeDeleted = false): Promise<Project> {
     const project = await this.projectModel.findByPk(id, {
+      attributes: {
+        include: [
+          // TOTAL QUOTATION VALUE
+          [
+            fn('COALESCE', fn('SUM', col('quotations.total_amount')), 0),
+            'quotation_total',
+          ],
+
+          // APPROVED VALUE ONLY
+          [
+            fn(
+              'COALESCE',
+              fn(
+                'SUM',
+                literal(
+                  `CASE WHEN quotations.status = 'approved' THEN quotations.total_amount ELSE 0 END`,
+                ),
+              ),
+              0,
+            ),
+            'approved_value',
+          ],
+        ],
+      },
+
+      include: [
+        // =========================
+        // QUOTATIONS (LIGHT VERSION)
+        // =========================
+        {
+          model: Quotation,
+          attributes: [
+            'id',
+            'quotationNumber',
+            'status',
+            'quotationDate',
+            'totalAmount',
+            'subtotal',
+            'taxAmount',
+            'vendorId',
+          ],
+          required: false,
+        },
+
+        // =========================
+        // VENDOR (FULL RELATIONS)
+        // =========================
+        {
+          model: Quotation,
+          attributes: [],
+          required: false,
+          include: [
+            {
+              model: Vendor,
+              attributes: [
+                'id',
+                'name',
+                'company_name',
+                'contact_number',
+                'alternate_contact',
+                'address',
+                'status',
+                'notes',
+              ],
+              include: [
+                {
+                  association: 'vendorCategory',
+                  attributes: ['id', 'name'],
+                },
+                {
+                  association: 'businessType',
+                  attributes: ['id', 'name'],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+
+      group: ['Project.id'],
       paranoid: !includeDeleted,
     });
 

@@ -12,6 +12,7 @@ import { projectsApi } from "../api/project.api";
 import { settingsApi } from "../api/settings.api";
 import { reportsApi } from "../api/reports.api";
 import { userSignatureApi } from "../api/user-signatures.api";
+import { unitApi } from "../api/unit.api";
 // -------------------------------
 // API LIST (clean management layer)
 // -------------------------------
@@ -27,6 +28,7 @@ const apiReducers = {
   [settingsApi.reducerPath]: settingsApi.reducer,
   [reportsApi.reducerPath]: reportsApi.reducer,
   [userSignatureApi.reducerPath]: userSignatureApi.reducer,
+  [unitApi.reducerPath]: unitApi.reducer,
 };
 
 const apiMiddlewares = [
@@ -41,6 +43,7 @@ const apiMiddlewares = [
   settingsApi.middleware,
   reportsApi.middleware,
   userSignatureApi.middleware,
+  unitApi.middleware,
 ];
 
 // -------------------------------

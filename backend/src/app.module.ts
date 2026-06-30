@@ -13,6 +13,7 @@ import { ActivityLogsModule } from './modules/engagement/activity-logs.module';
 import { NotificationsModule } from './modules/engagement/notifications.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { UnitsModule } from './modules/metas/units.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -32,6 +33,7 @@ import { ReportsModule } from './modules/reports/reports.module';
     ActivityLogsModule,
     ReportsModule,
     UsersModule,
+    UnitsModule,
     NotificationsModule,
     SettingsModule,
     ProjectsModule,

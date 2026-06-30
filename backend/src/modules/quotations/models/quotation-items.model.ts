@@ -10,7 +10,7 @@ import {
 } from 'sequelize-typescript';
 
 import { Quotation } from './quotations.model';
-
+import { Unit } from '@/modules/metas/models/unit.model';
 @Table({
   tableName: 'quotation_items',
   timestamps: false,
@@ -19,6 +19,10 @@ import { Quotation } from './quotations.model';
       unique: true,
       fields: ['quotation_id', 'sno'],
       name: 'uk_quotation_sno',
+    },
+    {
+      fields: ['unit_id'],
+      name: 'idx_quotation_items_unit_id',
     },
   ],
 })
@@ -36,6 +40,14 @@ export class QuotationItem extends Model<QuotationItem> {
     allowNull: false,
   })
   declare quotation_id: string;
+
+  // ✅ NEW: Unit relation
+  @ForeignKey(() => Unit)
+  @Column({
+    type: DataType.CHAR(36),
+    allowNull: true,
+  })
+  declare unit_id: string | null;
 
   @Column({
     type: DataType.SMALLINT,
@@ -76,6 +88,10 @@ export class QuotationItem extends Model<QuotationItem> {
   })
   declare remarks: string | null;
 
+  // 🔗 Relations
   @BelongsTo(() => Quotation)
   declare quotation: Quotation;
+
+  @BelongsTo(() => Unit)
+  declare unit: Unit;
 }
