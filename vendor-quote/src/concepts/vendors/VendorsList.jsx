@@ -749,21 +749,29 @@ export default function VendorsList() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-1">
-                          {v.vendor_category && (
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold w-fit ${v.vendor_category === "Material" ? "bg-blue-50 text-blue-700" : "bg-purple-50 text-purple-700"}`}
-                            >
-                              {v.vendor_category}
-                            </span>
-                          )}
-                          {v.type_of_business && (
-                            <span className="text-xs text-gray-500">
-                              {v.type_of_business}
-                            </span>
-                          )}
-                          {!v.vendor_category && !v.type_of_business && (
-                            <span className="text-gray-300">—</span>
-                          )}
+                          <div className="flex flex-col gap-1">
+                            {v.vendorCategory?.name && (
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold w-fit ${
+                                  v.vendorCategory.name === "Material"
+                                    ? "bg-blue-50 text-blue-700"
+                                    : "bg-purple-50 text-purple-700"
+                                }`}
+                              >
+                                {v.vendorCategory.name}
+                              </span>
+                            )}
+
+                            {v.businessType?.name && (
+                              <span className="text-xs text-gray-500">
+                                {v.businessType.name}
+                              </span>
+                            )}
+
+                            {!v.vendorCategory && !v.businessType && (
+                              <span className="text-gray-300">—</span>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-3">

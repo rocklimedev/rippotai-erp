@@ -67,16 +67,13 @@ export default function PrintableQuotation({
         </div>
       </div>
 
-      {/* Double rule */}
       <div
         className="mb-5"
         style={{
-          borderTop: "3px solid #1A1A1A",
           borderBottom: "1px solid #1A1A1A",
           height: 6,
         }}
       />
-
       {/* Vendor / Project info boxes */}
       <div className="flex gap-2 mb-6">
         <div
@@ -195,16 +192,15 @@ export default function PrintableQuotation({
             <span className="font-bold">Subtotal</span>
             <span>{formatCurrency(q.subtotal)}</span>
           </div>
+
           {q.additional_charges > 0 && (
             <div className="flex justify-between text-sm py-1">
               <span className="text-gray-600">Additional Charges</span>
               <span>{formatCurrency(q.additional_charges)}</span>
             </div>
           )}
-          <div
-            className="flex justify-between text-sm py-1"
-            style={{ borderTop: "1.5px solid #1A1A1A" }}
-          >
+
+          <div className="flex justify-between text-sm py-1">
             <span className="font-bold">
               Discount
               {q.global_discount_type === "percentage" &&
@@ -218,13 +214,18 @@ export default function PrintableQuotation({
                 : formatCurrency(0)}
             </span>
           </div>
+
           {q.tax_percent > 0 && (
             <div className="flex justify-between text-sm py-1">
               <span className="text-gray-600">Tax ({q.tax_percent}%)</span>
               <span>{formatCurrency(q.tax_amount)}</span>
             </div>
           )}
-          <div className="flex justify-between text-sm py-1.5 font-bold">
+
+          <div
+            className="flex justify-between text-sm py-1.5 font-bold"
+            style={{ borderTop: "1.5px solid #1A1A1A" }}
+          >
             <span>Grand Total</span>
             <span>{formatCurrency(q.total_amount)}</span>
           </div>

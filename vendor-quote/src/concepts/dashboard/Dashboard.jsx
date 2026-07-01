@@ -205,16 +205,23 @@ export default function Dashboard() {
                     Project Name
                   </th>
                   <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">
+                    Site Location
+                  </th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">
                     Status
                   </th>
                   <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">
-                    Client
+                    Quotations
+                  </th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">
+                    Approved Value
                   </th>
                   <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">
                     Created Date
                   </th>
                 </tr>
               </thead>
+
               <tbody>
                 {recentProjects.map((project) => (
                   <tr
@@ -225,16 +232,33 @@ export default function Dashboard() {
                     <td className="px-4 py-3 font-medium text-[#1A3C34]">
                       {project.name}
                     </td>
+
+                    <td className="px-4 py-3 text-gray-600">
+                      {project.site_location || "-"}
+                    </td>
+
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                        {project.status || "Active"}
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                          project.status === "active"
+                            ? "bg-green-50 text-green-700 border-green-200"
+                            : "bg-gray-50 text-gray-700 border-gray-200"
+                        }`}
+                      >
+                        {project.status}
                       </span>
                     </td>
+
                     <td className="px-4 py-3 text-gray-600">
-                      {project.client?.name || project.clientName || "-"}
+                      {project.quotation_count}
                     </td>
+
+                    <td className="px-4 py-3 text-gray-600">
+                      ₹{Number(project.approved_value).toLocaleString()}
+                    </td>
+
                     <td className="px-4 py-3 text-gray-500">
-                      {formatDate(project.createdAt || project.created_at)}
+                      {formatDate(project.created_at)}
                     </td>
                   </tr>
                 ))}

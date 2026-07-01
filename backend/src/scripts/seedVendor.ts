@@ -171,11 +171,7 @@ async function seedVendors() {
         null;
 
       return {
-        name: String(item.name ?? item.company ?? '').trim(),
-
-        company_name: item.company ? String(item.company).trim() : null,
-
-        position: item.designation ? String(item.designation).trim() : null,
+        name: String(item.name ?? '').trim(),
 
         vendor_category_id: categoryId,
 
@@ -185,13 +181,7 @@ async function seedVendors() {
           .replace(/\s+/g, '')
           .trim(),
 
-        alternate_contact: item.alternate_number
-          ? String(item.alternate_number).replace(/\s+/g, '').trim()
-          : null,
-
         address: item.address ? String(item.address).trim() : null,
-
-        notes: item.description ? String(item.description).trim() : null,
 
         status: VendorStatus.ACTIVE,
       };
