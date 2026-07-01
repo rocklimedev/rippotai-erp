@@ -24,8 +24,4 @@ export class CreateNotificationDto {
   @IsString()
   @IsNotEmpty()
   message: string;
-
-  @IsOptional()
-  @IsUUID()
-  quotation_id?: string;
 }

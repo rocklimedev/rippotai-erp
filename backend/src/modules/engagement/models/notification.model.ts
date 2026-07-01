@@ -10,7 +10,6 @@ import {
 } from 'sequelize-typescript';
 
 import { User } from '@/modules/users/models/user.model';
-import { Quotation } from '@/modules/quotations/models/quotations.model';
 import { NotificationType } from '@/common/enums';
 
 @Table({
@@ -52,12 +51,18 @@ export class Notification extends Model<Notification> {
   })
   declare message: string;
 
-  @ForeignKey(() => Quotation)
+  // Optional: which entity this notification belongs to
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: true,
+  })
+  declare entity_type: string | null;
+
   @Column({
     type: DataType.CHAR(36),
     allowNull: true,
   })
-  declare quotation_id: string | null;
+  declare entity_id: string | null;
 
   @Column({
     type: DataType.TINYINT,
@@ -74,7 +79,4 @@ export class Notification extends Model<Notification> {
 
   @BelongsTo(() => User)
   declare user: User;
-
-  @BelongsTo(() => Quotation)
-  declare quotation: Quotation;
 }

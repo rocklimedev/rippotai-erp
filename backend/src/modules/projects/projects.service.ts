@@ -1,23 +1,21 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
-import { fn, col, literal } from 'sequelize';
+import { Op, fn, col, literal } from 'sequelize';
 import { Quotation } from '@/modules/quotations/models/quotations.model';
 import { Project } from './models/projects.model';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { ProjectStatus } from '../../common/enums';
 import { ActivityLogForProjectService } from '../engagement/services/activity-log-project.service';
+import { NotificationForProjectService } from '../engagement/services/notification-project.service';
 import { Vendor } from '../vendors/models/vendors.model';
+
 @Injectable()
 export class ProjectsService {
   constructor(
     @InjectModel(Project)
     private readonly projectModel: typeof Project,
     private readonly activityLogForProjectService: ActivityLogForProjectService,
+    private readonly notificationForProjectService: NotificationForProjectService,
   ) {}
 
   // =========================
@@ -30,6 +28,17 @@ export class ProjectsService {
       await this.activityLogForProjectService.logProjectCreated(project, user);
     } catch (err) {
       console.error('AUDIT LOG FAILED:', err);
+    }
+
+    if (user?.id) {
+      try {
+        await this.notificationForProjectService.notifyProjectCreated(
+          project,
+          user.id,
+        );
+      } catch (err) {
+        console.error('NOTIFICATION FAILED:', err);
+      }
     }
 
     return project;
@@ -201,6 +210,17 @@ export class ProjectsService {
       dto,
     );
 
+    if (user?.id) {
+      try {
+        await this.notificationForProjectService.notifyProjectUpdated(
+          project,
+          user.id,
+        );
+      } catch (err) {
+        console.error('NOTIFICATION FAILED:', err);
+      }
+    }
+
     return project;
   }
 
@@ -216,6 +236,17 @@ export class ProjectsService {
     });
 
     await this.activityLogForProjectService.logProjectArchived(project, user);
+
+    if (user?.id) {
+      try {
+        await this.notificationForProjectService.notifyProjectArchived(
+          project,
+          user.id,
+        );
+      } catch (err) {
+        console.error('NOTIFICATION FAILED:', err);
+      }
+    }
 
     return project;
   }
@@ -233,17 +264,26 @@ export class ProjectsService {
 
     await this.activityLogForProjectService.logProjectRestored(project, user);
 
+    if (user?.id) {
+      try {
+        await this.notificationForProjectService.notifyProjectRestored(
+          project,
+          user.id,
+        );
+      } catch (err) {
+        console.error('NOTIFICATION FAILED:', err);
+      }
+    }
+
     return project;
   }
 
   // =========================
   // DELETE (Soft Delete)
   // =========================
-  // =========================
-  // DELETE (Soft Delete)
-  // =========================
   async remove(id: string, user?: any): Promise<void> {
     const project = await this.findOne(id);
+    const projectName = project.name; // capture before destroy wipes access
 
     try {
       await this.activityLogForProjectService.logProjectDeleted(
@@ -260,5 +300,16 @@ export class ProjectsService {
     });
 
     await project.destroy(); // sets deleted_at automatically
+
+    if (user?.id) {
+      try {
+        await this.notificationForProjectService.notifyProjectDeleted(
+          projectName,
+          user.id,
+        );
+      } catch (err) {
+        console.error('NOTIFICATION FAILED:', err);
+      }
+    }
   }
 }

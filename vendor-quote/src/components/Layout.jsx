@@ -7,6 +7,7 @@ import {
   useGetUserNotificationsQuery,
   useMarkAllAsReadMutation,
 } from "../api/notification.api";
+import { useNotificationSocket } from "../hooks/useNotificationSocket";
 
 import { NAV_ITEMS, NOTIF_ICONS, SidebarContent } from "./Sidebar";
 
@@ -26,10 +27,17 @@ export default function Layout({ children }) {
   const notifRef = useRef(null);
   const userRef = useRef(null);
 
-  // RTK Query Notifications
+  // Real-time push: invalidates the notifications cache whenever
+  // the server emits a new one, so the badge/list update instantly
+  // instead of waiting for the next poll.
+  useNotificationSocket(user?.id);
+
+  // RTK Query Notifications — polling kept as a fallback in case the
+  // socket drops (flaky network, tab backgrounded, etc). Bumped to 60s
+  // since the socket now handles the real-time case.
   const { data: notifData } = useGetUserNotificationsQuery(
     { userId: user?.id || "", unreadOnly: false },
-    { skip: !user?.id, pollingInterval: 30000 },
+    { skip: !user?.id, pollingInterval: 60000 },
   );
 
   const [markAllAsRead] = useMarkAllAsReadMutation();
@@ -53,8 +61,9 @@ export default function Layout({ children }) {
   }, []);
 
   const handleLogout = () => {
-    logout(true); // no need for navigate
+    logout(true);
   };
+
   const isActive = (path) => {
     if (path.includes("?")) {
       const [base, query] = path.split("?");
@@ -123,7 +132,6 @@ export default function Layout({ children }) {
         {/* Header */}
         <header className="bg-white border-b border-[#E5E7EB] px-4 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
-            {/* Desktop Collapse Button */}
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               className="hidden md:block p-1.5 rounded-md hover:bg-gray-100 text-gray-500"
@@ -131,7 +139,6 @@ export default function Layout({ children }) {
               <Menu className="w-5 h-5" />
             </button>
 
-            {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileOpen(true)}
               className="md:hidden p-1.5 rounded-md hover:bg-gray-100 text-gray-500"

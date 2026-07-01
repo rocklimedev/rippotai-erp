@@ -199,7 +199,7 @@ export default function QuotationsList() {
           <button
             data-testid="create-quotation-btn"
             onClick={() => navigate("/quotations/create")}
-            className="flex items-center gap-2 bg-[#1A3C34] text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
+            className="flex items-center gap-2 bg-[#1A3C34] text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-[#122B25] transition-colors"
           >
             <Plus className="w-4 h-4" />
             New Quotation
@@ -331,7 +331,7 @@ export default function QuotationsList() {
                 >
                   <div className="flex items-start justify-between mb-2 gap-2">
                     <div>
-                      <div className="font-bold text-[#1A3C34] text-sm group-hover:text-red-700">
+                      <div className="font-bold text-[#1A3C34] text-sm group-hover:text-[#0F241F]">
                         {q.quotation_number}
                       </div>
                       {q.current_version > 0 && (
@@ -388,7 +388,7 @@ export default function QuotationsList() {
                           q.created_by === user?.id)) && (
                         <button
                           onClick={() => handleDelete(q.id, q.quotation_number)}
-                          className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"
+                          className="p-1 rounded hover:bg-[#E7F0EC] text-gray-400 hover:text-[#1A3C34]"
                           title="Delete"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -507,7 +507,7 @@ export default function QuotationsList() {
                               onClick={() =>
                                 handleDelete(q.id, q.quotation_number)
                               }
-                              className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"
+                              className="p-1.5 rounded hover:bg-[#E7F0EC] text-gray-400 hover:text-[#1A3C34]"
                               title="Delete"
                             >
                               <Trash2 className="w-4 h-4" />

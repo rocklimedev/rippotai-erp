@@ -69,10 +69,61 @@ export enum QuotationStatus {
 }
 
 export enum NotificationType {
+  // =========================
+  // QUOTATIONS
+  // =========================
+  QUOTATION_CREATED = 'quotation_created',
   QUOTATION_SUBMITTED = 'quotation_submitted',
   QUOTATION_APPROVED = 'quotation_approved',
   QUOTATION_RETURNED = 'quotation_returned',
   QUOTATION_DECLINED = 'quotation_declined',
+  QUOTATION_UPDATED = 'quotation_updated',
+  QUOTATION_ARCHIVED = 'quotation_archived',
+  QUOTATION_RESTORED = 'quotation_restored',
+  QUOTATION_DELETED = 'quotation_deleted',
+
+  // =========================
+  // PROJECTS
+  // =========================
+  PROJECT_CREATED = 'project_created',
+  PROJECT_UPDATED = 'project_updated',
+  PROJECT_ARCHIVED = 'project_archived',
+  PROJECT_RESTORED = 'project_restored',
+  PROJECT_DELETED = 'project_deleted',
+
+  // =========================
+  // VENDORS
+  // =========================
+  VENDOR_CREATED = 'vendor_created',
+  VENDOR_UPDATED = 'vendor_updated',
+  VENDOR_ARCHIVED = 'vendor_archived',
+  VENDOR_RESTORED = 'vendor_restored',
+  VENDOR_DELETED = 'vendor_deleted',
+
+  // =========================
+  // USERS
+  // =========================
+  USER_CREATED = 'user_created',
+  USER_UPDATED = 'user_updated',
+  USER_DELETED = 'user_deleted',
+  USER_ROLE_CHANGED = 'user_role_changed',
+  USER_STATUS_CHANGED = 'user_status_changed',
+
+  // =========================
+  // PURCHASE ORDERS
+  // =========================
+  PURCHASE_ORDER_CREATED = 'purchase_order_created',
+  PURCHASE_ORDER_UPDATED = 'purchase_order_updated',
+  PURCHASE_ORDER_APPROVED = 'purchase_order_approved',
+  PURCHASE_ORDER_REJECTED = 'purchase_order_rejected',
+  PURCHASE_ORDER_CANCELLED = 'purchase_order_cancelled',
+
+  // =========================
+  // GENERAL
+  // =========================
+  SYSTEM = 'system',
+  REMINDER = 'reminder',
+  ANNOUNCEMENT = 'announcement',
 }
 
 export enum ActivityAction {

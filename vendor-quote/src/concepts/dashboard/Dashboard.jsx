@@ -21,7 +21,8 @@ import {
 
 // RTK Query
 import { useGetQuotationsQuery } from "../../api/quotation.api";
-import { useGetReportsOverviewQuery } from "../../api/reports.api"; // ✅ NEW
+import { useGetReportsOverviewQuery } from "../../api/reports.api";
+import { useGetProjectsQuery } from "../../api/project.api"; // ✅ Added
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -34,16 +35,20 @@ export default function Dashboard() {
       page: 1,
     });
 
-  // ✅ Reports Overview (RTK Query)
-  const {
-    data: stats,
-    isLoading: loadingStats,
-    isError,
-  } = useGetReportsOverviewQuery();
+  // Projects
+  const { data: projectsData = [], isLoading: isProjectsLoading } =
+    useGetProjectsQuery({
+      limit: 5,
+      page: 1,
+    });
+
+  // Reports Overview
+  const { data: stats, isLoading: loadingStats } = useGetReportsOverviewQuery();
 
   const recentQuotations = quotationsData;
+  const recentProjects = projectsData;
 
-  const isLoading = isQuotationsLoading || loadingStats;
+  const isLoading = isQuotationsLoading || isProjectsLoading || loadingStats;
 
   const STAT_CARDS = stats
     ? [
@@ -166,7 +171,80 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Recent Quotations (unchanged) */}
+      {/* ==================== RECENT PROJECTS ==================== */}
+      <div className="bg-white border border-[#E5E7EB] rounded-lg mb-6">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#E5E7EB]">
+          <h2 className="text-sm font-semibold text-[#333333]">
+            Recent Projects
+          </h2>
+          <Link
+            to="/projects"
+            className="text-xs text-[#1A3C34] hover:underline flex items-center gap-1"
+          >
+            View all <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
+
+        {recentProjects.length === 0 ? (
+          <div className="px-4 py-8 text-center">
+            <FolderOpen className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+            <p className="text-sm text-gray-400">No projects yet</p>
+            <Link
+              to="/projects/create"
+              className="inline-block mt-3 text-sm text-[#1A3C34] hover:underline"
+            >
+              Create your first project
+            </Link>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">
+                    Project Name
+                  </th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">
+                    Status
+                  </th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">
+                    Client
+                  </th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">
+                    Created Date
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentProjects.map((project) => (
+                  <tr
+                    key={project.id}
+                    onClick={() => navigate(`/projects/${project.id}`)}
+                    className="border-b border-[#F3F4F6] hover:bg-gray-50 cursor-pointer"
+                  >
+                    <td className="px-4 py-3 font-medium text-[#1A3C34]">
+                      {project.name}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                        {project.status || "Active"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {project.client?.name || project.clientName || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {formatDate(project.createdAt || project.created_at)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* ==================== RECENT QUOTATIONS ==================== */}
       <div className="bg-white border border-[#E5E7EB] rounded-lg">
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#E5E7EB]">
           <h2 className="text-sm font-semibold text-[#333333]">
@@ -273,6 +351,7 @@ export default function Dashboard() {
             <div className="text-xs text-gray-400">Create a quotation</div>
           </div>
         </Link>
+
         <Link
           to="/projects"
           className="flex items-center gap-3 bg-white border border-[#E5E7EB] rounded-lg p-4 hover:border-[#1A3C34] transition-colors group"

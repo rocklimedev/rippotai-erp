@@ -132,7 +132,7 @@ export default function QuotationDetail() {
 
   if (!quotation) {
     return (
-      <div className="p-6 text-sm text-red-500">
+      <div className="p-6 text-sm text-[#1A3C34]">
         {error || queryError?.data?.message || "Quotation not found"}
       </div>
     );
@@ -244,21 +244,21 @@ export default function QuotationDetail() {
               <button
                 onClick={() => setDialog("approve")}
                 disabled={actionLoading}
-                className="flex items-center gap-1.5 bg-green-600 text-white text-sm font-medium px-3 py-2 rounded-md hover:bg-green-700 disabled:opacity-60"
+                className="flex items-center gap-1.5 bg-[#1A3C34] text-white text-sm font-medium px-3 py-2 rounded-md hover:bg-[#122B25] disabled:opacity-60"
               >
                 <CheckCircle className="w-4 h-4" /> Approve
               </button>
               <button
                 onClick={() => setDialog("return")}
                 disabled={actionLoading}
-                className="flex items-center gap-1.5 bg-blue-600 text-white text-sm font-medium px-3 py-2 rounded-md hover:bg-blue-700 disabled:opacity-60"
+                className="flex items-center gap-1.5 bg-[#4C7A6B] text-white text-sm font-medium px-3 py-2 rounded-md hover:bg-[#3D6459] disabled:opacity-60"
               >
                 <RotateCcw className="w-4 h-4" /> Return
               </button>
               <button
                 onClick={() => setDialog("decline")}
                 disabled={actionLoading}
-                className="flex items-center gap-1.5 bg-red-600 text-white text-sm font-medium px-3 py-2 rounded-md hover:bg-red-700 disabled:opacity-60"
+                className="flex items-center gap-1.5 bg-[#0F241F] text-white text-sm font-medium px-3 py-2 rounded-md hover:bg-[#0A1815] disabled:opacity-60"
               >
                 <XCircle className="w-4 h-4" /> Decline
               </button>
@@ -269,7 +269,7 @@ export default function QuotationDetail() {
             <button
               onClick={() => setDialog("delete")}
               disabled={actionLoading}
-              className="flex items-center gap-1.5 border border-red-200 text-red-600 text-sm font-medium px-3 py-2 rounded-md hover:bg-red-50 disabled:opacity-60"
+              className="flex items-center gap-1.5 border border-[#1A3C34]/30 text-[#1A3C34] text-sm font-medium px-3 py-2 rounded-md hover:bg-[#E7F0EC] disabled:opacity-60"
             >
               <Trash2 className="w-4 h-4" /> Delete
             </button>
@@ -278,7 +278,7 @@ export default function QuotationDetail() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-2 rounded mb-4 no-print">
+        <div className="bg-[#E7F0EC] border border-[#1A3C34]/20 text-[#1A3C34] text-sm px-4 py-2 rounded mb-4 no-print">
           {error}
         </div>
       )}
