@@ -36,7 +36,7 @@ export class AuthTokensService {
    * Find token by SHA256 hash - This is the critical method for auth
    */
   async findByHash(hash: string): Promise<AuthToken | null> {
-    return this.authTokenModel.findOne({
+    const result = await this.authTokenModel.findOne({
       where: { token_hash: hash },
       include: [
         {
@@ -45,9 +45,11 @@ export class AuthTokensService {
           include: [{ model: Role, as: 'role', attributes: ['id', 'name'] }],
         },
       ],
+      logging: console.log, // shows the actual SQL + JOINs executed
     });
-  }
 
+    return result;
+  }
   async touchLastUsed(id: string): Promise<void> {
     await this.authTokenModel.update(
       { last_used_at: new Date() },

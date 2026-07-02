@@ -440,7 +440,8 @@ export default function QuotationsList() {
                   return (
                     <tr
                       key={q.id}
-                      className="border-b border-[#F3F4F6] hover:bg-gray-50"
+                      onClick={() => navigate(`/quotations/${q.id}`)}
+                      className="border-b border-[#F3F4F6] hover:bg-gray-50 cursor-pointer"
                     >
                       <td className="px-4 py-3">
                         <div className="font-medium text-[#1A3C34]">
@@ -466,11 +467,11 @@ export default function QuotationsList() {
                       <td className="px-4 py-3 text-gray-600">
                         {q.vendor_name || "-"}
                       </td>
-                      {user?.role === "ADMIN" && (
-                        <td className="px-4 py-3 text-gray-500 text-xs">
-                          {q.created_by_name || "-"}
-                        </td>
-                      )}
+
+                      <td className="px-4 py-3 text-gray-500 text-xs">
+                        {q?.creator?.name || "-"}
+                      </td>
+
                       <td className="px-4 py-3 font-medium text-[#333333] whitespace-nowrap">
                         {formatCurrency(q.total_amount)}
                       </td>
@@ -484,7 +485,10 @@ export default function QuotationsList() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => navigate(`/quotations/${q.id}`)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/quotations/${q.id}`);
+                            }}
                             className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-[#333333]"
                             title="View"
                           >
@@ -492,7 +496,10 @@ export default function QuotationsList() {
                           </button>
 
                           <button
-                            onClick={() => navigate(`/quotations/${q.id}/edit`)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/quotations/${q.id}/edit`);
+                            }}
                             className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-[#333333]"
                             title="Edit"
                           >
@@ -504,9 +511,10 @@ export default function QuotationsList() {
                               q.status === "returned_for_editing") &&
                               q.created_by === user?.id)) && (
                             <button
-                              onClick={() =>
-                                handleDelete(q.id, q.quotation_number)
-                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(q.id, q.quotation_number);
+                              }}
                               className="p-1.5 rounded hover:bg-[#E7F0EC] text-gray-400 hover:text-[#1A3C34]"
                               title="Delete"
                             >

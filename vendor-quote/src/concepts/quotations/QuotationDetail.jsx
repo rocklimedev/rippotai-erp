@@ -114,10 +114,22 @@ export default function QuotationDetail() {
     const originalContent = document.body.innerHTML;
 
     document.body.innerHTML = `
-      <div style="margin:0; padding:0; background:white;">
-        ${printContent}
-      </div>
-    `;
+    <style>
+      @page {
+        size: auto;
+        margin: 0;
+      }
+      @media print {
+        html, body {
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+      }
+    </style>
+    <div style="margin:0; padding:40px; background:white;">
+      ${printContent}
+    </div>
+  `;
 
     window.print();
     document.body.innerHTML = originalContent;

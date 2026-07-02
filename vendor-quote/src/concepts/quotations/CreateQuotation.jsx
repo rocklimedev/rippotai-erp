@@ -791,7 +791,10 @@ export default function CreateQuotation() {
                               {v.name}
                             </div>
                             <div className="text-xs text-gray-400">
-                              {v.company_name} · {v.contact_number}
+                              {v.company_name}
+                              {v.businessType?.name &&
+                                ` • ${v.businessType.name}`}
+                              {v.contact_number && ` • ${v.contact_number}`}
                             </div>
                           </button>
                         ))

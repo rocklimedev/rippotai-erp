@@ -58,13 +58,7 @@ export default function PrintableQuotation({
         >
           QUOTATION
         </h1>
-        <div className="text-base mt-0.5">
-          {q.quotation_number}
-          {q.current_version > 0 && ` | V${q.current_version}`}
-          {!isApproved && (
-            <span className="ml-2 text-red-600 font-bold text-sm">[DRAFT]</span>
-          )}
-        </div>
+        <div className="text-base mt-0.5">{q.quotation_number}</div>
       </div>
 
       <div
@@ -275,10 +269,6 @@ export default function PrintableQuotation({
           />
           <span className="text-xs tracking-wide">CONTRACTOR'S SIGNATURE</span>
         </div>
-      </div>
-
-      <div className="text-xs text-gray-400 text-center mt-8">
-        Generated on {formatDateTime(new Date().toISOString())}
       </div>
     </div>
   );

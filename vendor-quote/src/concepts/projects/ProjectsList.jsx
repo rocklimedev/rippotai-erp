@@ -274,22 +274,31 @@ export default function ProjectsList() {
                         <div className="flex items-center gap-1">
                           <button
                             data-testid={`view-project-${p.id}`}
-                            onClick={() => navigate(`/projects/${p.id}`)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/projects/${p.id}`);
+                            }}
                             className="p-1.5 rounded hover:bg-gray-100 text-gray-500"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
+
                           <button
-                            onClick={() =>
-                              setModal({ type: "edit", project: p })
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setModal({ type: "edit", project: p });
+                            }}
                             className="p-1.5 rounded hover:bg-gray-100 text-gray-500"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
+
                           {user?.role === "ADMIN" && (
                             <button
-                              onClick={() => handleDelete(p.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(p.id);
+                              }}
                               className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"
                             >
                               <Trash2 className="w-4 h-4" />

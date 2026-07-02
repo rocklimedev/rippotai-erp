@@ -36,6 +36,19 @@ export class QuotationsService {
     private readonly activityLogForQuotationService: ActivityLogForQuotationService,
   ) {}
 
+  /**
+   * Resolve the "actor" id for audit fields (createdBy/updatedBy/etc).
+   * Always prefer the authenticated user from the request over anything
+   * the client claims in the DTO body — the DTO value is only used as a
+   * fallback for system/service-account calls where `user` is not present.
+   */
+  private resolveActorId(
+    user?: any,
+    fallback?: string | null,
+  ): string | undefined {
+    return user?.id ?? fallback ?? undefined;
+  }
+
   private async generateQuotationNumber(): Promise<string> {
     const today = new Date();
     const datePart = today.toISOString().slice(0, 10).replace(/-/g, '');
@@ -87,7 +100,6 @@ export class QuotationsService {
       total_amount,
     };
   }
-
   async create(dto: CreateQuotationDto, user?: any): Promise<Quotation> {
     const project = await this.projectsService.findOne(dto.project_id);
     const vendor = await this.vendorsService.findOne(dto.vendor_id);
@@ -96,6 +108,10 @@ export class QuotationsService {
     const global_discount_type = dto.global_discount_type ?? 'fixed';
     const global_discount_value = dto.global_discount_value ?? 0;
     const tax_percent = dto.tax_percent ?? 0;
+
+    // Always derive from the authenticated user; dto.created_by is only a
+    // fallback for system/service-account callers with no request user.
+    const createdBy = this.resolveActorId(user, dto.created_by);
 
     const { subtotal, discount, tax_amount, total_amount } = this.computeTotals(
       dto.items,
@@ -132,7 +148,7 @@ export class QuotationsService {
           taxAmount: tax_amount,
           totalAmount: total_amount,
           termsConditions: dto.terms_conditions,
-          createdBy: dto.created_by,
+          createdBy,
         } as any);
         break; // success
       } catch (err) {
@@ -175,7 +191,7 @@ export class QuotationsService {
 
     await this.versionsService.createVersion(
       quotation.id,
-      dto.created_by ?? null,
+      createdBy ?? null,
       'Initial version',
     );
 
@@ -205,7 +221,13 @@ export class QuotationsService {
     return this.quotationModel.findAll({
       where,
       order: [['quotationDate', 'DESC']],
-      include: ['items'],
+      include: [
+        'items',
+        {
+          association: 'creator',
+          attributes: ['id', 'name', 'email'],
+        },
+      ],
     });
   }
 
@@ -253,6 +275,8 @@ export class QuotationsService {
 
     const items = dto.items ?? quotation.items;
 
+    const updatedBy = this.resolveActorId(user, dto.updated_by);
+
     const { subtotal, discount, tax_amount, total_amount } = this.computeTotals(
       items as any,
       Number(additional_charges),
@@ -293,13 +317,13 @@ export class QuotationsService {
       taxAmount: tax_amount,
       totalAmount: total_amount,
       termsConditions: dto.terms_conditions ?? quotation.termsConditions,
-      updatedBy: dto.updated_by,
+      updatedBy,
     });
 
     // Create version after update
     await this.versionsService.createVersion(
       id,
-      dto.updated_by ?? null,
+      updatedBy ?? null,
       'Updated quotation',
     );
 
@@ -322,15 +346,17 @@ export class QuotationsService {
     const quotation = await this.findOne(id);
     this.assertEditable(quotation);
 
+    const submittedBy = this.resolveActorId(user, submitted_by);
+
     await quotation.update({
       status: QuotationStatus.SUBMITTED,
       submittedAt: new Date(),
-      submittedBy: submitted_by,
+      submittedBy,
     });
 
     await this.versionsService.createVersion(
       id,
-      submitted_by ?? null,
+      submittedBy ?? null,
       'Submitted',
     );
 
@@ -351,16 +377,18 @@ export class QuotationsService {
   ): Promise<Quotation> {
     const quotation = await this.requireStatus(id, QuotationStatus.SUBMITTED);
 
+    const reviewedBy = this.resolveActorId(user, dto.reviewed_by);
+
     await quotation.update({
       status: QuotationStatus.APPROVED,
       reviewedAt: new Date(),
-      reviewedBy: dto.reviewed_by,
+      reviewedBy,
       reviewRemarks: dto.review_remarks,
     });
 
     await this.versionsService.createVersion(
       id,
-      dto.reviewed_by ?? null,
+      reviewedBy ?? null,
       'Approved',
     );
 
@@ -382,16 +410,18 @@ export class QuotationsService {
   ): Promise<Quotation> {
     const quotation = await this.requireStatus(id, QuotationStatus.SUBMITTED);
 
+    const reviewedBy = this.resolveActorId(user, dto.reviewed_by);
+
     await quotation.update({
       status: QuotationStatus.RETURNED_FOR_EDITING,
       reviewedAt: new Date(),
-      reviewedBy: dto.reviewed_by,
+      reviewedBy,
       reviewRemarks: dto.review_remarks,
     });
 
     await this.versionsService.createVersion(
       id,
-      dto.reviewed_by ?? null,
+      reviewedBy ?? null,
       'Returned for editing',
     );
 
@@ -413,16 +443,18 @@ export class QuotationsService {
   ): Promise<Quotation> {
     const quotation = await this.requireStatus(id, QuotationStatus.SUBMITTED);
 
+    const reviewedBy = this.resolveActorId(user, dto.reviewed_by);
+
     await quotation.update({
       status: QuotationStatus.DECLINED,
       reviewedAt: new Date(),
-      reviewedBy: dto.reviewed_by,
+      reviewedBy,
       reviewRemarks: dto.review_remarks,
     });
 
     await this.versionsService.createVersion(
       id,
-      dto.reviewed_by ?? null,
+      reviewedBy ?? null,
       'Declined',
     );
 
@@ -454,14 +486,16 @@ export class QuotationsService {
       );
     }
 
+    const updatedBy = this.resolveActorId(user, updated_by);
+
     await quotation.update({
       status: QuotationStatus.CANCELLED,
-      updatedBy: updated_by,
+      updatedBy,
     });
 
     await this.versionsService.createVersion(
       id,
-      updated_by ?? null,
+      updatedBy ?? null,
       'Cancelled',
     );
 
@@ -490,14 +524,17 @@ export class QuotationsService {
 
   async softDelete(id: string, deleted_by?: string, user?: any): Promise<void> {
     const quotation = await this.findOne(id);
+
+    const deletedBy = this.resolveActorId(user, deleted_by);
+
     await quotation.update({
       deletedAt: new Date(),
-      deletedBy: deleted_by,
+      deletedBy,
     });
 
     await this.versionsService.createVersion(
       id,
-      deleted_by ?? null,
+      deletedBy ?? null,
       'Soft deleted',
     );
 
@@ -517,7 +554,11 @@ export class QuotationsService {
     });
 
     // Create a version to reflect restore
-    await this.versionsService.createVersion(id, null, 'Restored');
+    await this.versionsService.createVersion(
+      id,
+      this.resolveActorId(user) ?? null,
+      'Restored',
+    );
 
     const restored = await this.findOne(id);
 

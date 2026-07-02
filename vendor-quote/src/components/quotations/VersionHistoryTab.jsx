@@ -7,19 +7,13 @@ import {
   getStatusConfig,
 } from "../../utils/helpers";
 import { normaliseQuotation } from "../../utils/normaliseQuotation";
-// ---------------------------------------------------------------------------
-// Version History Tab
-// ---------------------------------------------------------------------------
+
 export default function VersionHistoryTab({ quotationId }) {
   const [expandedId, setExpandedId] = useState(null);
 
-  // Assumes your quotation API has a versions endpoint.
-  // If not yet implemented, this shows a graceful empty state.
   const { data: versions = [], isLoading } = useGetQuotationVersionsQuery(
     quotationId,
-    {
-      skip: !quotationId,
-    },
+    { skip: !quotationId },
   );
 
   if (isLoading) {
@@ -48,7 +42,9 @@ export default function VersionHistoryTab({ quotationId }) {
   return (
     <div className="space-y-3">
       {versions.map((v, idx) => {
-        const normV = normaliseQuotation(v);
+        // v = audit record { id, quotationId, version, snapshot, remarks, created_at }
+        // The actual quotation data lives in v.snapshot, not on v itself.
+        const normV = normaliseQuotation(v.snapshot);
         const cfg = getStatusConfig(normV.status);
         const isExpanded = expandedId === v.id;
         const isLatest = idx === 0;
@@ -58,7 +54,6 @@ export default function VersionHistoryTab({ quotationId }) {
             key={v.id}
             className="bg-white border border-[#E5E7EB] rounded-lg overflow-hidden"
           >
-            {/* Version Header — always visible */}
             <button
               className="w-full text-left px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
               onClick={() => setExpandedId(isExpanded ? null : v.id)}
@@ -69,11 +64,9 @@ export default function VersionHistoryTab({ quotationId }) {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
+                    {/* Use the audit record's own version number, not snapshot.currentVersion */}
                     <span className="text-sm font-semibold text-[#333333]">
-                      Version{" "}
-                      {normV.current_version > 0
-                        ? normV.current_version
-                        : idx + 1}
+                      Version {v.version}
                     </span>
                     {isLatest && (
                       <span className="text-xs bg-[#1A3C34] text-white px-1.5 py-0.5 rounded font-medium">
@@ -87,7 +80,13 @@ export default function VersionHistoryTab({ quotationId }) {
                     </span>
                   </div>
                   <div className="text-xs text-gray-400 mt-0.5">
-                    {formatDateTime(normV.updated_at || normV.created_at)}
+                    {/* Use this audit record's own timestamp */}
+                    {formatDateTime(v.created_at)}
+                    {/* v.remarks = audit action label (Submitted/Approved/Returned...) */}
+                    {v.remarks && (
+                      <span className="ml-2 text-gray-500">· {v.remarks}</span>
+                    )}
+                    {/* normV.review_remarks = admin's written remarks on approve/return/decline */}
                     {normV.review_remarks && (
                       <span className="ml-2 text-amber-600">
                         · Remarks: {normV.review_remarks}
@@ -108,10 +107,8 @@ export default function VersionHistoryTab({ quotationId }) {
               </div>
             </button>
 
-            {/* Expanded Detail */}
             {isExpanded && (
               <div className="border-t border-[#E5E7EB] px-5 py-4 bg-gray-50">
-                {/* Items mini-table */}
                 <div className="overflow-x-auto mb-4">
                   <table className="w-full text-sm border border-[#E5E7EB] rounded overflow-hidden bg-white">
                     <thead className="bg-[#F9FAFB]">
@@ -138,7 +135,10 @@ export default function VersionHistoryTab({ quotationId }) {
                     </thead>
                     <tbody>
                       {normV.items.map((item, i) => (
-                        <tr key={i} className="border-b border-[#F3F4F6]">
+                        <tr
+                          key={item.id || i}
+                          className="border-b border-[#F3F4F6]"
+                        >
                           <td className="px-3 py-2 text-gray-400 text-center">
                             {item.sno}
                           </td>
@@ -163,7 +163,6 @@ export default function VersionHistoryTab({ quotationId }) {
                   </table>
                 </div>
 
-                {/* Version Totals */}
                 <div className="flex justify-end">
                   <div className="w-64 space-y-1 text-sm">
                     <div className="flex justify-between">
