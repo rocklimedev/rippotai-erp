@@ -49,27 +49,57 @@ export class QuotationsService {
     return user?.id ?? fallback ?? undefined;
   }
 
-  private async generateQuotationNumber(): Promise<string> {
-    const today = new Date();
-    const datePart = today.toISOString().slice(0, 10).replace(/-/g, '');
+  /**
+   * Derive a 2-letter client slug from a client's full name.
+   * "Dhruv Verma" -> "DV" (first letter of first + second word)
+   * "Dhruv" (single word) -> "DH" (first two letters of the single word)
+   */
+  private getClientSlug(clientName: string): string {
+    const parts = clientName.trim().split(/\s+/).filter(Boolean);
 
-    // Use highest existing sequence, not a row count — row counts collide
-    // with gaps from soft-deletes or concurrent inserts.
-    const lastQuotation = await this.quotationModel.findOne({
-      where: { quotationNumber: { [Op.like]: `QTN-${datePart}-%` } },
-      order: [['quotationNumber', 'DESC']],
-      paranoid: false, // include soft-deleted rows so numbers are never reused
-    });
+    if (parts.length === 0) return 'XX';
 
-    let nextSeq = 1;
-    if (lastQuotation) {
-      const lastSeq = parseInt(lastQuotation.quotationNumber.split('-')[2], 10);
-      if (!Number.isNaN(lastSeq)) nextSeq = lastSeq + 1;
+    if (parts.length === 1) {
+      return parts[0].slice(0, 2).toUpperCase().padEnd(2, 'X');
     }
 
-    return `QTN-${datePart}-${String(nextSeq).padStart(4, '0')}`;
+    return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
+  /**
+   * NOTE ON SLUG COLLISIONS:
+   * The 2-letter slug is derived from initials only, so it is NOT unique —
+   * "Dhruv Verma" and "David Verma" both produce "DV". Because of this we
+   * must NOT use the slug (or any LIKE match on the quotationNumber string)
+   * to compute the next sequence number — doing so would let two unrelated
+   * clients' quotations collide or skip numbers.
+   *
+   * Instead, the sequence is simply "how many quotations this project
+   * already has" — i.e. project.quotations.length + 1 — scoped by
+   * project_id, which is guaranteed unique. This mirrors "the Nth
+   * quotation raised for this project" rather than parsing any existing
+   * quotationNumber string or relying on a sortable timestamp/id column.
+   */
+  private async generateQuotationNumber(
+    projectId: string,
+    projectName: string,
+  ): Promise<string> {
+    const today = new Date();
+
+    const datePart = today.toISOString().slice(0, 10).replace(/-/g, '');
+
+    // ✅ use project name instead of vendor
+    const projectSlug = this.getClientSlug(projectName);
+
+    const existingCount = await this.quotationModel.count({
+      where: { projectId },
+      paranoid: false,
+    });
+
+    const nextSeq = existingCount + 1;
+
+    return `QT-${projectSlug}-${datePart}-${String(nextSeq).padStart(3, '0')}`;
+  }
   private computeTotals(
     items: { rate: number; quantity: number; amount?: number }[],
     additional_charges = 0,
@@ -127,9 +157,14 @@ export class QuotationsService {
 
     while (true) {
       attempt++;
-      const quotation_number =
-        dto.quotation_number ?? (await this.generateQuotationNumber());
 
+      // Re-derived fresh on every attempt — generateQuotationNumber() re-runs
+      // count() from scratch each time, so if a concurrent insert landed
+      // between our last count() and our failed create(), this attempt will
+      // pick up the new true count instead of repeating a stale value.
+      const quotation_number =
+        dto.quotation_number ??
+        (await this.generateQuotationNumber(dto.project_id, project.name));
       try {
         quotation = await this.quotationModel.create({
           quotationNumber: quotation_number,
@@ -160,8 +195,9 @@ export class QuotationsService {
               `Quotation number "${quotation_number}" already exists`,
             );
           }
-          // Auto-generated number collided with a concurrent insert — retry
-          // with a freshly computed number rather than failing the request.
+          // Auto-generated number collided with a concurrent insert for the
+          // same project — retry with a freshly re-counted number rather
+          // than failing the request outright.
           if (attempt < MAX_ATTEMPTS) {
             continue;
           }
@@ -202,7 +238,6 @@ export class QuotationsService {
     );
     return created;
   }
-
   findAll(
     filters: {
       status?: QuotationStatus;

@@ -28,7 +28,7 @@ import {
   useGetSettingsQuery,
   useGetSettingByKeyQuery,
 } from "../../api/settings.api";
-
+import VendorFormModal from "../../components/vendors/VendorFormModal";
 const emptyItem = (sno) => ({
   sno,
   particular: "",
@@ -37,246 +37,6 @@ const emptyItem = (sno) => ({
   amount: 0,
   remarks: "",
 });
-
-// ---------------------------------------------------------------------------
-// Add Vendor Modal
-// ---------------------------------------------------------------------------
-function AddVendorModal({ onClose, onSave }) {
-  const [form, setForm] = useState({
-    name: "",
-    company_name: "",
-    position: "",
-    vendor_category: "",
-    type_of_business: "",
-    contact_number: "",
-    alternate_contact: "",
-    address: "",
-    notes: "",
-    status: "active",
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [duplicates, setDuplicates] = useState([]);
-
-  const [createVendor] = useCreateVendorMutation();
-
-  const VENDOR_CATEGORIES = {
-    Material: [
-      "Paint",
-      "Wiring",
-      "Glass",
-      "Metal",
-      "Tiles",
-      "Cement",
-      "Sand",
-      "Steel",
-      "Wood",
-      "Flooring",
-      "Plumbing Materials",
-      "Electrical Materials",
-      "Hardware",
-    ],
-    Contractor: [
-      "Labour",
-      "Labour Contractor",
-      "Civil Contractor",
-      "Electrician",
-      "Plumbing Contractor",
-      "Painter",
-      "Polishing",
-      "AC Work",
-      "Interior Contractor",
-      "Carpenter",
-      "Mason",
-      "Material Contractor",
-    ],
-  };
-
-  const checkDuplicates = useCallback(async () => {
-    if (!form.contact_number) return;
-    try {
-      setDuplicates([]);
-    } catch {}
-  }, [form.contact_number]);
-
-  useEffect(() => {
-    const t = setTimeout(checkDuplicates, 600);
-    return () => clearTimeout(t);
-  }, [checkDuplicates]);
-
-  const availableTypes = form.vendor_category
-    ? VENDOR_CATEGORIES[form.vendor_category] || []
-    : [...VENDOR_CATEGORIES.Material, ...VENDOR_CATEGORIES.Contractor];
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    try {
-      const result = await createVendor(form).unwrap();
-      onSave(result);
-    } catch (err) {
-      setError(err?.data?.message || "Failed to create vendor");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[#E5E7EB]">
-          <h3 className="text-sm font-semibold text-[#333333]">
-            Add New Vendor
-          </h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-4 space-y-3">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2 rounded">
-              {error}
-            </div>
-          )}
-          {duplicates.length > 0 && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
-              <div className="flex items-center gap-1.5 text-yellow-700 text-xs font-medium mb-1">
-                <AlertCircle className="w-3.5 h-3.5" />
-                Possible duplicates found
-              </div>
-              {duplicates.map((d) => (
-                <div key={d.id} className="text-xs text-yellow-600">
-                  {d.name} - {d.contact_number}
-                </div>
-              ))}
-            </div>
-          )}
-          {/* Category */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              Vendor Category
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {["Material", "Contractor"].map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() =>
-                    setForm((p) => ({
-                      ...p,
-                      vendor_category: cat,
-                      type_of_business: "",
-                    }))
-                  }
-                  className={`py-2 text-sm font-semibold rounded-md border-2 transition-all ${
-                    form.vendor_category === cat
-                      ? "bg-[#1A3C34] text-white border-[#1A3C34]"
-                      : "border-[#E5E7EB] text-gray-600 hover:border-[#1A3C34] hover:text-[#1A3C34]"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Vendor Name *
-              </label>
-              <input
-                required
-                value={form.name}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, name: e.target.value }))
-                }
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Company Name
-              </label>
-              <input
-                value={form.company_name}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, company_name: e.target.value }))
-                }
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Contact Number *
-              </label>
-              <input
-                required
-                value={form.contact_number}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, contact_number: e.target.value }))
-                }
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34]"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Type of Business
-                {form.vendor_category ? ` (${form.vendor_category})` : ""}
-              </label>
-              <select
-                value={form.type_of_business}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, type_of_business: e.target.value }))
-                }
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34]"
-              >
-                <option value="">Select type...</option>
-                {availableTypes.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Address
-              </label>
-              <input
-                value={form.address}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, address: e.target.value }))
-                }
-                className="w-full border border-[#E5E7EB] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[#1A3C34]"
-              />
-            </div>
-          </div>
-          <div className="flex gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 border border-[#E5E7EB] text-sm font-medium py-2 rounded hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              data-testid="save-vendor-btn"
-              type="submit"
-              disabled={loading}
-              className="flex-1 bg-[#1A3C34] text-white text-sm font-medium py-2 rounded hover:bg-red-700 disabled:opacity-60"
-            >
-              {loading ? "Saving..." : "Save Vendor"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Main Component
@@ -599,31 +359,6 @@ export default function CreateQuotation() {
     return null;
   };
 
-  const handleSaveDraft = async () => {
-    const err = validate();
-    if (err) {
-      setError(err);
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      if (isEdit) {
-        await updateQuotation({ id, ...getPayload() }).unwrap();
-        setUnsavedChanges(false);
-        navigate(`/quotations/${id}`);
-      } else {
-        const result = await createQuotation(getPayload()).unwrap();
-        setUnsavedChanges(false);
-        navigate(`/quotations/${result.id}`, { replace: true });
-      }
-    } catch (err) {
-      setError(err?.data?.message || "Failed to save quotation");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSubmitForApproval = async () => {
     const err = validate();
     if (err) {
@@ -676,7 +411,7 @@ export default function CreateQuotation() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       {showAddVendor && (
-        <AddVendorModal
+        <VendorFormModal
           onClose={() => setShowAddVendor(false)}
           onSave={handleNewVendor}
         />
@@ -1236,14 +971,6 @@ export default function CreateQuotation() {
 
         {/* Actions */}
         <div className="bg-white border border-[#E5E7EB] rounded-lg p-4 flex flex-wrap gap-3">
-          <button
-            data-testid="save-draft-btn"
-            onClick={handleSaveDraft}
-            disabled={loading}
-            className="border border-[#E5E7EB] text-sm font-medium px-5 py-2 rounded-md hover:bg-gray-50 text-[#333333] disabled:opacity-60"
-          >
-            Save as Draft
-          </button>
           <button
             data-testid="submit-approval-btn"
             onClick={handleSubmitForApproval}

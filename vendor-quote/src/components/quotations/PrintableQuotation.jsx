@@ -36,15 +36,16 @@ export default function PrintableQuotation({
       }}
     >
       {/* Header: logo + date */}
-      <div className="flex items-start justify-between">
-        <div className="flex flex-col items-center">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center">
           <img
             src={logoUrl}
             alt={companyName}
-            style={{ width: 70, height: 70, objectFit: "contain" }}
+            style={{ width: 80, height: 80, objectFit: "contain" }}
           />
         </div>
-        <div className="text-sm mt-2">
+
+        <div className="text-sm">
           Date:{" "}
           <span className="font-medium">{formatDate(q.quotation_date)}</span>
         </div>
@@ -246,6 +247,8 @@ export default function PrintableQuotation({
             style={{ borderTop: "2px solid #1A1A1A" }}
             className="pt-1.5 mb-1"
           >
+            <span className="text-xs tracking-wide">APPROVED BY</span>
+
             {isApproved && adminSignature?.signature_url && (
               <img
                 src={adminSignature.signature_url}
@@ -254,13 +257,6 @@ export default function PrintableQuotation({
               />
             )}
           </div>
-          <span className="text-xs tracking-wide">APPROVED BY</span>
-          {isApproved && adminSignature && (
-            <div className="text-xs text-gray-500 mt-0.5">
-              {adminSignature.signer_name || q.approved_by_name}
-              {q.approved_at && <> · {formatDateTime(q.approved_at)}</>}
-            </div>
-          )}
         </div>
         <div className="w-2/5">
           <div

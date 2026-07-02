@@ -43,7 +43,6 @@ export class ProjectsService {
 
     return project;
   }
-
   // =========================
   // GET ALL
   // =========================
@@ -62,26 +61,45 @@ export class ProjectsService {
     return this.projectModel.findAll({
       where,
 
+      subQuery: false,
+
       attributes: {
+        // Drop the stale stored columns so they don't collide with
+        // (or shadow) the live-computed literals below.
+        exclude: ['quotation_count', 'approved_value'],
+
         include: [
-          // TOTAL QUOTATION VALUE
+          // QUOTATION COUNT
           [
-            fn('COALESCE', fn('SUM', col('quotations.total_amount')), 0),
+            literal(`(
+            SELECT COUNT(*)
+            FROM quotations q
+            WHERE q.project_id = Project.id
+            AND q.deleted_at IS NULL
+          )`),
+            'quotation_count',
+          ],
+
+          // TOTAL QUOTATIONS
+          [
+            literal(`(
+            SELECT COALESCE(SUM(q.total_amount), 0)
+            FROM quotations q
+            WHERE q.project_id = Project.id
+            AND q.deleted_at IS NULL
+          )`),
             'quotation_total',
           ],
 
-          // APPROVED VALUE ONLY
+          // APPROVED ONLY
           [
-            fn(
-              'COALESCE',
-              fn(
-                'SUM',
-                literal(
-                  `CASE WHEN quotations.status = 'approved' THEN quotations.total_amount ELSE 0 END`,
-                ),
-              ),
-              0,
-            ),
+            literal(`(
+            SELECT COALESCE(SUM(q.total_amount), 0)
+            FROM quotations q
+            WHERE q.project_id = Project.id
+            AND q.status = 'approved'
+            AND q.deleted_at IS NULL
+          )`),
             'approved_value',
           ],
         ],
@@ -90,39 +108,39 @@ export class ProjectsService {
       include: [
         {
           model: Quotation,
-          attributes: [],
+          as: 'quotations',
           required: false,
+          attributes: [], // only for relation existence, not aggregation
         },
       ],
 
-      group: ['Project.id'],
       paranoid: !filters.includeDeleted,
       order: [['created_at', 'DESC']],
     });
   }
-
   // =========================
   // FIND ONE
   // =========================
   async findOne(id: string, includeDeleted = false): Promise<Project> {
     const project = await this.projectModel.findByPk(id, {
+      subQuery: false,
+
       attributes: {
         include: [
-          // TOTAL QUOTATION VALUE
           [
             fn('COALESCE', fn('SUM', col('quotations.total_amount')), 0),
             'quotation_total',
           ],
-
-          // APPROVED VALUE ONLY
           [
             fn(
               'COALESCE',
               fn(
                 'SUM',
-                literal(
-                  `CASE WHEN quotations.status = 'approved' THEN quotations.total_amount ELSE 0 END`,
-                ),
+                literal(`CASE 
+                WHEN quotations.status = 'approved' 
+                THEN quotations.total_amount 
+                ELSE 0 
+              END`),
               ),
               0,
             ),
@@ -132,9 +150,6 @@ export class ProjectsService {
       },
 
       include: [
-        // =========================
-        // QUOTATIONS (LIGHT VERSION)
-        // =========================
         {
           model: Quotation,
           attributes: [
@@ -148,15 +163,7 @@ export class ProjectsService {
             'vendorId',
           ],
           required: false,
-        },
 
-        // =========================
-        // VENDOR (FULL RELATIONS)
-        // =========================
-        {
-          model: Quotation,
-          attributes: [],
-          required: false,
           include: [
             {
               model: Vendor,
@@ -185,7 +192,7 @@ export class ProjectsService {
         },
       ],
 
-      group: ['Project.id'],
+      group: ['Project.id', 'quotations.id', 'quotations->vendor.id'],
       paranoid: !includeDeleted,
     });
 
