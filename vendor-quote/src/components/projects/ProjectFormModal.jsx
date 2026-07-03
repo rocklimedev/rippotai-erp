@@ -121,7 +121,7 @@ export default function ProjectFormModal({ project, onClose, onSave }) {
               data-testid="save-project-btn"
               type="submit"
               disabled={loading}
-              className="flex-1 bg-[#1A3C34] text-white text-sm py-2 rounded hover:bg-red-700 disabled:opacity-60"
+              className="flex-1 bg-[#1A3C34] text-white text-sm py-2 rounded hover:bg-[#16352F] disabled:opacity-60 transition-colors"
             >
               {loading ? "Saving..." : isEdit ? "Update" : "Create Project"}
             </button>

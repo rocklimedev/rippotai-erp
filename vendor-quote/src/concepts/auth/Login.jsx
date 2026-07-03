@@ -103,40 +103,11 @@ export default function Login() {
               data-testid="login-submit-button"
               type="submit"
               disabled={loading}
-              className="w-full bg-[#1A3C34] text-white font-medium py-2.5 rounded-md hover:bg-red-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm"
+              className="w-full bg-[#1A3C34] text-white font-medium py-2.5 rounded-md hover:bg-[#1A3C34] transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm"
             >
               {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
-
-          {/* Demo credentials */}
-          <div className="mt-4 pt-4 border-t border-[#E5E7EB]">
-            <p className="text-xs text-gray-400 text-center mb-2">
-              Demo Credentials
-            </p>
-            <div className="space-y-1.5">
-              <button
-                onClick={() => {
-                  setEmail("admin@example.com");
-                  setPassword("Admin@123");
-                }}
-                className="w-full text-left px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded text-xs text-gray-600 transition-colors"
-              >
-                <span className="font-medium text-[#1A3C34]">Admin:</span>{" "}
-                admin@example.com / Admin@123
-              </button>
-              <button
-                onClick={() => {
-                  setEmail("employee@example.com");
-                  setPassword("Employee@123");
-                }}
-                className="w-full text-left px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded text-xs text-gray-600 transition-colors"
-              >
-                <span className="font-medium">Employee:</span>{" "}
-                employee@example.com / Employee@123
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -151,7 +151,7 @@ export default function VendorsList() {
           <button
             data-testid="add-vendor-btn"
             onClick={() => setModal({ type: "add" })}
-            className="flex items-center gap-2 bg-[#1A3C34] text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-red-700"
+            className="flex items-center gap-2 bg-[#1A3C34] text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-[#16352F] transition-colors"
           >
             <Plus className="w-4 h-4" /> Add Vendor
           </button>
@@ -465,7 +465,7 @@ export default function VendorsList() {
                                 e.stopPropagation();
                                 handleDelete(v.id);
                               }}
-                              className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"
+                              className="p-1.5 rounded text-gray-400 hover:text-[#1A3C34] hover:bg-[#1A3C34]/10 transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>

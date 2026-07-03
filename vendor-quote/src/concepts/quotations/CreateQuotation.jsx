@@ -975,7 +975,7 @@ export default function CreateQuotation() {
             data-testid="submit-approval-btn"
             onClick={handleSubmitForApproval}
             disabled={loading}
-            className="bg-[#1A3C34] text-white text-sm font-medium px-5 py-2 rounded-md hover:bg-red-700 disabled:opacity-60"
+            className="bg-[#1A3C34] text-white text-sm font-medium px-5 py-2 rounded-md hover:bg-[#1A3C34] disabled:opacity-60"
           >
             {loading ? "Submitting..." : "Submit for Approval"}
           </button>

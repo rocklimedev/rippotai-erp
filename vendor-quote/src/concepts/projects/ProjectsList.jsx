@@ -101,7 +101,7 @@ export default function ProjectsList() {
           <button
             data-testid="add-project-btn"
             onClick={() => setModal({ type: "add" })}
-            className="flex items-center gap-2 bg-[#1A3C34] text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-red-700"
+            className="flex items-center gap-2 bg-[#1A3C34] text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-[#16352F] transition-colors"
           >
             <Plus className="w-4 h-4" /> Add Project
           </button>
@@ -299,7 +299,7 @@ export default function ProjectsList() {
                                 e.stopPropagation();
                                 handleDelete(p.id);
                               }}
-                              className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"
+                              className="p-1.5 rounded hover:bg-[#1A3C34]/10 text-gray-400 hover:text-[#1A3C34]"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>

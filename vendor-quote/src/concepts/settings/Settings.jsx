@@ -246,7 +246,7 @@ export default function Settings() {
                 onClick={() => setTab(t.id)}
                 className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm border-b border-[#F3F4F6] last:border-0 transition-colors ${
                   tab === t.id
-                    ? "bg-red-50 text-[#1A3C34] font-medium"
+                    ? "bg-[#1A3C34]/10 text-[#1A3C34] font-medium"
                     : "text-gray-600 hover:bg-gray-50"
                 }`}
               >
