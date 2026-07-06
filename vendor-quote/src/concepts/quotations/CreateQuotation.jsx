@@ -6,8 +6,7 @@ import {
   Plus,
   Trash2,
   Copy,
-  ArrowUp,
-  ArrowDown,
+  GripVertical,
   X,
   Search,
   AlertCircle,
@@ -84,6 +83,12 @@ export default function CreateQuotation() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [unsavedChanges, setUnsavedChanges] = useState(false);
+
+  // Row drag-reorder + right-click context menu state
+  const [contextMenu, setContextMenu] = useState(null); // { idx, x, y }
+  const dragItemIndex = useRef(null);
+  const [dragOverIdx, setDragOverIdx] = useState(null);
+
   const { data: units = [] } = useGetUnitsQuery();
   // RTK Query hooks
   const { data: projectsData = [] } = useGetProjectsQuery();
@@ -227,6 +232,18 @@ export default function CreateQuotation() {
     form.tax_percent,
   ]);
 
+  // Close the right-click context menu on any outside click
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    window.addEventListener("click", close);
+    window.addEventListener("scroll", close, true);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("scroll", close, true);
+    };
+  }, [contextMenu]);
+
   // ---------------------------------------------------------------------------
   // Item helpers
   // ---------------------------------------------------------------------------
@@ -280,18 +297,57 @@ export default function CreateQuotation() {
     });
   };
 
-  const moveRow = (idx, dir) => {
+  const reorderRow = (fromIdx, toIdx) => {
+    if (fromIdx === toIdx || fromIdx == null || toIdx == null) return;
     setUnsavedChanges(true);
     setForm((prev) => {
       const items = [...prev.items];
-      const newIdx = idx + dir;
-      if (newIdx < 0 || newIdx >= items.length) return prev;
-      [items[idx], items[newIdx]] = [items[newIdx], items[idx]];
+      const [moved] = items.splice(fromIdx, 1);
+      items.splice(toIdx, 0, moved);
       return {
         ...prev,
         items: items.map((item, i) => ({ ...item, sno: i + 1 })),
       };
     });
+  };
+
+  // ---------------------------------------------------------------------------
+  // Drag-to-reorder + right-click menu handlers (grip icon)
+  // ---------------------------------------------------------------------------
+  const handleGripDragStart = (idx) => (e) => {
+    dragItemIndex.current = idx;
+    e.dataTransfer.effectAllowed = "move";
+    // Some browsers require data to be set for drag to work
+    e.dataTransfer.setData("text/plain", String(idx));
+  };
+
+  const handleRowDragOver = (idx) => (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dragOverIdx !== idx) setDragOverIdx(idx);
+  };
+
+  const handleRowDragLeave = (idx) => () => {
+    setDragOverIdx((cur) => (cur === idx ? null : cur));
+  };
+
+  const handleRowDrop = (idx) => (e) => {
+    e.preventDefault();
+    const fromIdx = dragItemIndex.current;
+    dragItemIndex.current = null;
+    setDragOverIdx(null);
+    reorderRow(fromIdx, idx);
+  };
+
+  const handleGripDragEnd = () => {
+    dragItemIndex.current = null;
+    setDragOverIdx(null);
+  };
+
+  const handleGripContextMenu = (idx) => (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ idx, x: e.clientX, y: e.clientY });
   };
 
   // ---------------------------------------------------------------------------
@@ -676,7 +732,7 @@ export default function CreateQuotation() {
             <table className="w-full text-sm border border-[#E5E7EB] rounded-md overflow-hidden">
               <thead className="bg-[#F9FAFB]">
                 <tr>
-                  <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 border-b border-[#E5E7EB] w-10">
+                  <th className="text-center px-3 py-2 text-xs font-semibold text-gray-500 border-b border-[#E5E7EB] w-16">
                     #
                   </th>
                   <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 border-b border-[#E5E7EB] min-w-48">
@@ -697,14 +753,38 @@ export default function CreateQuotation() {
                   <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 border-b border-[#E5E7EB] min-w-32">
                     Remarks
                   </th>
-                  <th className="px-3 py-2 border-b border-[#E5E7EB] w-24"></th>
                 </tr>
               </thead>
               <tbody>
                 {form.items.map((item, idx) => (
-                  <tr key={item.sno} className="border-b border-[#F3F4F6]">
-                    <td className="px-3 py-2 text-gray-400 text-center">
-                      {item.sno}
+                  <tr
+                    key={item.sno}
+                    onDragOver={handleRowDragOver(idx)}
+                    onDragLeave={handleRowDragLeave(idx)}
+                    onDrop={handleRowDrop(idx)}
+                    className={`border-b border-[#F3F4F6] ${
+                      dragOverIdx === idx
+                        ? "bg-[#F0F7F5] border-t-2 border-t-[#1A3C34]"
+                        : ""
+                    }`}
+                  >
+                    <td className="px-3 py-2">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          type="button"
+                          draggable
+                          onDragStart={handleGripDragStart(idx)}
+                          onDragEnd={handleGripDragEnd}
+                          onContextMenu={handleGripContextMenu(idx)}
+                          title="Drag to reorder • right-click for options"
+                          className="cursor-grab active:cursor-grabbing p-0.5 rounded hover:bg-gray-100 text-gray-400 flex-shrink-0 flex items-center justify-center"
+                        >
+                          <GripVertical className="w-4 h-4" />
+                        </button>
+                        <span className="text-gray-400 text-xs leading-none">
+                          {item.sno}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-3 py-2">
                       <textarea
@@ -776,37 +856,6 @@ export default function CreateQuotation() {
                         }
                         className="w-full border border-[#E5E7EB] rounded px-2 py-1 text-sm focus:outline-none focus:border-[#1A3C34]"
                       />
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-0.5">
-                        <button
-                          onClick={() => moveRow(idx, -1)}
-                          disabled={idx === 0}
-                          className="p-1 rounded hover:bg-gray-100 text-gray-400 disabled:opacity-30"
-                        >
-                          <ArrowUp className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => moveRow(idx, 1)}
-                          disabled={idx === form.items.length - 1}
-                          className="p-1 rounded hover:bg-gray-100 text-gray-400 disabled:opacity-30"
-                        >
-                          <ArrowDown className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => duplicateRow(idx)}
-                          className="p-1 rounded hover:bg-gray-100 text-gray-400"
-                        >
-                          <Copy className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => deleteRow(idx)}
-                          disabled={form.items.length === 1}
-                          className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 disabled:opacity-30"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 ))}
@@ -981,6 +1030,35 @@ export default function CreateQuotation() {
           </button>
         </div>
       </div>
+
+      {/* Right-click dropdown for the row grip icon */}
+      {contextMenu && (
+        <div
+          className="fixed z-50 bg-white border border-[#E5E7EB] rounded-md shadow-lg py-1 w-36"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => {
+              duplicateRow(contextMenu.idx);
+              setContextMenu(null);
+            }}
+            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-600"
+          >
+            <Copy className="w-3.5 h-3.5" /> Duplicate
+          </button>
+          <button
+            onClick={() => {
+              deleteRow(contextMenu.idx);
+              setContextMenu(null);
+            }}
+            disabled={form.items.length === 1}
+            className="w-full text-left px-3 py-2 text-sm hover:bg-red-50 text-red-500 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Delete
+          </button>
+        </div>
+      )}
     </div>
   );
 }

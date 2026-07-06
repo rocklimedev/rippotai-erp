@@ -159,6 +159,7 @@ export default function QuotationsList() {
     current_version: q.current_version || 0,
     created_by: q.createdBy || q.created_by,
     created_by_name: q.created_by_name,
+    creator: q.creator,
   });
 
   const rawQuotations = Array.isArray(quotationsData)

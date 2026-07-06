@@ -294,31 +294,6 @@ export default function VendorsList() {
                     {v.contact_number}
                   </div>
                 </div>
-                <div
-                  className="mt-2 flex items-center justify-between text-xs text-gray-400"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <span>
-                    {v.quotation_count || 0} quotation
-                    {v.quotation_count !== 1 ? "s" : ""}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => setModal({ type: "edit", vendor: v })}
-                      className="p-1 rounded hover:bg-gray-100 text-gray-400"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                    </button>
-                    {user?.role === "ADMIN" && (
-                      <button
-                        onClick={() => handleDelete(v.id)}
-                        className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
               </div>
             );
           })}
@@ -351,9 +326,7 @@ export default function VendorsList() {
                   <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase bg-[#F9FAFB]">
                     Status
                   </th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase bg-[#F9FAFB]">
-                    Quotations
-                  </th>
+
                   <th className="px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase bg-[#F9FAFB]">
                     Actions
                   </th>
@@ -433,9 +406,7 @@ export default function VendorsList() {
                           {cfg.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center font-medium text-[#333333]">
-                        {v.quotation_count || 0}
-                      </td>
+
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
                           <button
