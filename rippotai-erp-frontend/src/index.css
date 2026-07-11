@@ -1,0 +1,502 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Nunito+Sans:wght@400;500;600&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: "Nunito Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  background: #ffffff;
+  color: var(--ink-green);
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Poppins", "Arial", sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--ink-green);
+}
+input,
+select,
+textarea,
+button {
+  font-size: 16px;
+}
+table th {
+  font-size: 14px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+table td {
+  font-size: 15px;
+}
+
+@layer base {
+  :root {
+    --ink-green: #1f453b;
+    --ink: #0f1f1a;
+    --sage: #b5c4b6;
+    --sage-soft: #d8e0da;
+    --mist: #eaeef0;
+    --mist-soft: #f4f6f7;
+    --paper: #ffffff;
+    --bg-base: #ffffff;
+    --muted: #6b7b7c;
+    --stroke: rgba(31, 69, 59, 0.12);
+    --shadow: rgba(15, 31, 26, 0.06);
+
+    --background: 200 12% 93%;
+    --foreground: 165 38% 20%;
+    --card: 0 0% 100%;
+    --card-foreground: 165 38% 20%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 165 38% 20%;
+    --primary: 165 38% 20%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 120 10% 87%;
+    --secondary-foreground: 165 38% 20%;
+    --muted: 200 6% 79%;
+    --muted-foreground: 190 4% 45%;
+    --accent: 120 10% 87%;
+    --accent-foreground: 165 38% 20%;
+    --destructive: 165 38% 20%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 165 38% 88%;
+    --input: 165 38% 88%;
+    --ring: 165 38% 20%;
+    --radius: 0.625rem;
+  }
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.bg-page {
+  background: #ffffff;
+}
+.bg-paper {
+  background: var(--paper);
+}
+.bc-card {
+  background: var(--paper);
+  border-radius: 16px;
+  border: 1.5px solid rgba(31, 69, 59, 0.14);
+  box-shadow:
+    0 4px 12px rgba(15, 31, 26, 0.05),
+    0 1px 2px rgba(15, 31, 26, 0.04);
+}
+.nm-raised {
+  background: var(--paper);
+  border: 1.5px solid rgba(31, 69, 59, 0.14);
+  box-shadow:
+    0 4px 12px rgba(15, 31, 26, 0.05),
+    0 1px 2px rgba(15, 31, 26, 0.04);
+}
+/* Header, modals, dropdowns, table containers */
+header,
+.top-header,
+.app-header {
+  border-bottom: 1px solid rgba(31, 69, 59, 0.1);
+}
+[role="dialog"],
+[data-radix-popper-content-wrapper] > * {
+  border: 1px solid rgba(31, 69, 59, 0.12);
+}
+.table-container {
+  border: 1.5px solid rgba(31, 69, 59, 0.14);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.bc-btn-primary {
+  background: var(--ink-green);
+  color: #fff;
+  border-radius: 10px;
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.15s ease;
+}
+.bc-btn-primary:hover {
+  background: #163229;
+}
+.bc-btn-secondary {
+  background: var(--paper);
+  color: var(--ink-green);
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.bc-btn-secondary:hover {
+  background: var(--mist-soft);
+}
+@layer components {
+  .bc-input {
+    background: var(--paper);
+    color: var(--ink-green);
+    border: 1px solid var(--stroke);
+    border-radius: 10px;
+    padding: 10px 14px;
+    width: 100%;
+    font-size: 15px;
+    outline: none;
+  }
+  .bc-input:focus {
+    border-color: var(--ink-green);
+    box-shadow: 0 0 0 2px rgba(31, 69, 59, 0.18);
+  }
+}
+.eyebrow {
+  font-family: "Poppins", "Arial", sans-serif;
+  font-size: 11.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.app-tile {
+  background: var(--paper);
+  border-radius: 18px;
+  box-shadow:
+    0 6px 20px var(--shadow),
+    0 1px 2px rgba(15, 31, 26, 0.06);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.app-tile:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 12px 30px rgba(15, 31, 26, 0.12),
+    0 2px 4px rgba(15, 31, 26, 0.06);
+}
+
+.nav-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 15px;
+  color: var(--ink-green);
+  cursor: pointer;
+}
+.nav-dropdown-item:hover {
+  background: var(--mist-soft);
+}
+.nav-dropdown-item.active {
+  background: var(--ink-green);
+  color: #fff;
+}
+
+@keyframes bc-jiggle {
+  0%,
+  100% {
+    transform: rotate(-0.4deg);
+  }
+  50% {
+    transform: rotate(0.4deg);
+  }
+}
+.widget-jiggle {
+  animation: bc-jiggle 1.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .widget-jiggle {
+    animation: none;
+  }
+}
+
+.react-grid-item.react-grid-placeholder {
+  background: var(--ink-green) !important;
+  opacity: 0.08 !important;
+  border-radius: 14px;
+}
+
+/* --- Phase 4 BOQ Workspace styles --- */
+.boq-cell {
+  padding: 8px 10px;
+  vertical-align: middle;
+  max-width: 380px;
+}
+.boq-cell > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.boq-cell.editable {
+  cursor: text;
+}
+.boq-cell.editable:hover {
+  background: #f3f6f4;
+}
+.boq-cell.editing input {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #1f453b;
+  border-radius: 4px;
+  padding: 2px 6px;
+  outline: none;
+}
+.boq-cell-locked {
+  cursor: not-allowed;
+}
+.boq-row-attention {
+  box-shadow: inset 3px 0 0 #d97706;
+}
+.boq-row-hidden td {
+  text-decoration: line-through;
+  color: #6b7b7c;
+}
+.boq-category-row {
+  background: #eaeef0;
+}
+.boq-category-row td {
+  padding: 10px 12px;
+}
+.font-serif-bc {
+  font-family: "Fraunces", "Instrument Serif", Georgia, serif;
+}
+
+/* =========================================================
+   Global overlap / clipping / truncation fixes (audit pass)
+   Non-invasive: adds utilities + tames known offenders.
+   ========================================================= */
+
+/* 1) Universal min-width:0 for flex/grid children so `truncate` actually works */
+.bc-card > * {
+  min-width: 0;
+}
+
+/* 2) Line clamps (Tailwind ships these but keep them explicit) */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 3) Table hygiene — every table cell in a bc-card gets min-w-0, headers no-wrap */
+.bc-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+}
+.bc-table thead th {
+  white-space: nowrap;
+  text-align: left;
+}
+.bc-table th,
+.bc-table td {
+  vertical-align: middle;
+}
+.bc-table td.truncate-cell,
+.bc-table th.truncate-cell {
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bc-table td.nowrap,
+.bc-table th.nowrap {
+  white-space: nowrap;
+}
+.bc-table td.num,
+.bc-table th.num {
+  text-align: right;
+  white-space: nowrap;
+  min-width: 112px;
+  font-variant-numeric: tabular-nums;
+}
+.bc-table td.actions,
+.bc-table th.actions {
+  width: 120px;
+  white-space: nowrap;
+}
+.bc-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+/* 4) Chips + badges — never overflow parent */
+.bc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.bc-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+.bc-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* 5) Widget large numbers — never wrap, ellipsis on overflow */
+.bc-stat-number {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1;
+}
+
+/* 6) Toast body — clamp long messages */
+[data-sonner-toast] [data-content] {
+  max-width: 24rem;
+}
+[data-sonner-toast] [data-content] > * {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 7) Dropdown / popover — cap width so long labels truncate rather than blow layout */
+[role="menu"],
+[data-radix-popper-content-wrapper] > * {
+  max-width: min(92vw, 480px);
+}
+
+/* 8) Header — long app names truncate instead of pushing right-side avatar off */
+.bc-header-app-name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 9) Modal / dialog body scroll instead of overflow */
+[role="dialog"] {
+  max-height: 90vh;
+}
+[role="dialog"] > * {
+  max-width: 100%;
+}
+
+/* 10) BOQ workspace — description clamp + amount nowrap */
+.boq-cell-desc {
+  max-width: 320px;
+}
+.boq-cell-desc .boq-desc-inner {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.boq-cell.num,
+.boq-cell.amount {
+  white-space: nowrap;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  min-width: 100px;
+}
+.boq-cell.rate {
+  min-width: 108px;
+}
+.boq-category-row td .boq-cat-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.boq-category-row td .boq-cat-title > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* 11) Recharts — legend text truncate + tick label overflow allowance */
+.recharts-legend-item-text {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
+}
+.recharts-cartesian-axis-tick-value tspan {
+  font-size: 11px;
+}
+
+/* 12) Empty-state paragraphs never sprawl */
+.bc-empty-state {
+  max-width: 28rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+.bc-empty-state p {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 13) Forms — 2-col rows stack under 640, long labels ellipsize */
+@media (max-width: 640px) {
+  .bc-form-2col {
+    grid-template-columns: 1fr !important;
+  }
+}
+.bc-form-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* 14) Universal safety net — anything explicitly marked to truncate should */
+.truncate,
+.bc-truncate {
+  min-width: 0;
+}

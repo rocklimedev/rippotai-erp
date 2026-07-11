@@ -8,6 +8,7 @@ import { ProjectStatus } from '../../common/enums';
 import { ActivityLogForProjectService } from '../engagement/services/activity-log-project.service';
 import { NotificationForProjectService } from '../engagement/services/notification-project.service';
 import { Vendor } from '../vendors/models/vendors.model';
+import { ClientsService } from '../clients/clients.service';
 
 @Injectable()
 export class ProjectsService {
@@ -16,13 +17,24 @@ export class ProjectsService {
     private readonly projectModel: typeof Project,
     private readonly activityLogForProjectService: ActivityLogForProjectService,
     private readonly notificationForProjectService: NotificationForProjectService,
+    private readonly clientsService: ClientsService,
   ) {}
 
   // =========================
   // CREATE PROJECT
   // =========================
   async create(dto: CreateProjectDto, user?: any): Promise<Project> {
-    const project = await this.projectModel.create({ ...dto } as any);
+    if (dto.client_id) {
+      const clientExists = await this.clientsService.exists(dto.client_id);
+      if (!clientExists) {
+        throw new NotFoundException(`Client ${dto.client_id} not found`);
+      }
+    }
+
+    const project = await this.projectModel.create({
+      ...dto,
+      created_by: user?.id ?? null,
+    } as any);
 
     try {
       await this.activityLogForProjectService.logProjectCreated(project, user);
@@ -43,6 +55,7 @@ export class ProjectsService {
 
     return project;
   }
+
   // =========================
   // GET ALL
   // =========================
@@ -51,11 +64,13 @@ export class ProjectsService {
       status?: ProjectStatus;
       includeArchived?: boolean;
       includeDeleted?: boolean;
+      client_id?: string;
     } = {},
   ) {
     const where: any = {};
 
     if (filters.status) where.status = filters.status;
+    if (filters.client_id) where.client_id = filters.client_id;
     if (!filters.includeArchived) where.archived_at = { [Op.is]: null };
 
     return this.projectModel.findAll({
@@ -72,34 +87,34 @@ export class ProjectsService {
           // QUOTATION COUNT
           [
             literal(`(
-            SELECT COUNT(*)
-            FROM quotations q
-            WHERE q.project_id = Project.id
-            AND q.deleted_at IS NULL
-          )`),
+              SELECT COUNT(*)
+              FROM quotations q
+              WHERE q.project_id = Project.id
+              AND q.deleted_at IS NULL
+            )`),
             'quotation_count',
           ],
 
           // TOTAL QUOTATIONS
           [
             literal(`(
-            SELECT COALESCE(SUM(q.total_amount), 0)
-            FROM quotations q
-            WHERE q.project_id = Project.id
-            AND q.deleted_at IS NULL
-          )`),
+              SELECT COALESCE(SUM(q.total_amount), 0)
+              FROM quotations q
+              WHERE q.project_id = Project.id
+              AND q.deleted_at IS NULL
+            )`),
             'quotation_total',
           ],
 
           // APPROVED ONLY
           [
             literal(`(
-            SELECT COALESCE(SUM(q.total_amount), 0)
-            FROM quotations q
-            WHERE q.project_id = Project.id
-            AND q.status = 'approved'
-            AND q.deleted_at IS NULL
-          )`),
+              SELECT COALESCE(SUM(q.total_amount), 0)
+              FROM quotations q
+              WHERE q.project_id = Project.id
+              AND q.status = 'approved'
+              AND q.deleted_at IS NULL
+            )`),
             'approved_value',
           ],
         ],
@@ -112,12 +127,30 @@ export class ProjectsService {
           required: false,
           attributes: [], // only for relation existence, not aggregation
         },
+        {
+          association: 'client',
+          attributes: [
+            'id',
+            'name',
+            'slug',
+            'contact_person',
+            'email',
+            'phone',
+          ],
+          required: false,
+        },
+        {
+          association: 'project_type',
+          attributes: ['id', 'name', 'slug'],
+          required: false,
+        },
       ],
 
       paranoid: !filters.includeDeleted,
       order: [['created_at', 'DESC']],
     });
   }
+
   // =========================
   // FIND ONE
   // =========================
@@ -136,11 +169,11 @@ export class ProjectsService {
               'COALESCE',
               fn(
                 'SUM',
-                literal(`CASE 
-                WHEN quotations.status = 'approved' 
-                THEN quotations.total_amount 
-                ELSE 0 
-              END`),
+                literal(`CASE
+                  WHEN quotations.status = 'approved'
+                  THEN quotations.total_amount
+                  ELSE 0
+                END`),
               ),
               0,
             ),
@@ -178,21 +211,57 @@ export class ProjectsService {
                 'notes',
               ],
               include: [
-                {
-                  association: 'vendorCategory',
-                  attributes: ['id', 'name'],
-                },
-                {
-                  association: 'businessType',
-                  attributes: ['id', 'name'],
-                },
+                { association: 'vendorCategory', attributes: ['id', 'name'] },
+                { association: 'businessType', attributes: ['id', 'name'] },
               ],
             },
           ],
         },
+        {
+          association: 'client',
+          attributes: [
+            'id',
+            'name',
+            'slug',
+            'contact_person',
+            'email',
+            'phone',
+            'address',
+          ],
+          required: false,
+        },
+        {
+          association: 'project_type',
+          attributes: ['id', 'name', 'slug', 'description'],
+          required: false,
+        },
+        {
+          association: 'creator',
+          attributes: ['id', 'name', 'email'],
+          required: false,
+        },
+        {
+          association: 'updater',
+          attributes: ['id', 'name', 'email'],
+          required: false,
+        },
+        {
+          association: 'archiver',
+          attributes: ['id', 'name', 'email'],
+          required: false,
+        },
       ],
 
-      group: ['Project.id', 'quotations.id', 'quotations->vendor.id'],
+      group: [
+        'Project.id',
+        'quotations.id',
+        'quotations->vendor.id',
+        'client.id',
+        'project_type.id',
+        'creator.id',
+        'updater.id',
+        'archiver.id',
+      ],
       paranoid: !includeDeleted,
     });
 
@@ -209,8 +278,22 @@ export class ProjectsService {
   async update(id: string, dto: UpdateProjectDto, user?: any) {
     const project = await this.findOne(id);
 
-    await project.update({ ...dto });
+    if (dto.client_id) {
+      const clientExists = await this.clientsService.exists(dto.client_id);
+      if (!clientExists) {
+        throw new NotFoundException(`Client ${dto.client_id} not found`);
+      }
+    }
 
+    const updateData: Partial<Project> = {
+      ...dto,
+      updated_by: user?.id ?? project.updated_by,
+      expected_completion_date: dto.expected_completion_date
+        ? new Date(dto.expected_completion_date)
+        : undefined,
+    };
+
+    await project.update(updateData);
     await this.activityLogForProjectService.logProjectUpdated(
       project,
       user,
@@ -239,6 +322,7 @@ export class ProjectsService {
 
     await project.update({
       archived_at: new Date(),
+      archived_by: user?.id ?? null,
       status: ProjectStatus.INACTIVE,
     });
 
@@ -262,10 +346,11 @@ export class ProjectsService {
   // RESTORE
   // =========================
   async restore(id: string, user?: any) {
-    const project = await this.findOne(id);
+    const project = await this.findOne(id, true);
 
     await project.update({
       archived_at: null,
+      archived_by: null,
       status: ProjectStatus.ACTIVE,
     });
 
@@ -290,7 +375,7 @@ export class ProjectsService {
   // =========================
   async remove(id: string, user?: any): Promise<void> {
     const project = await this.findOne(id);
-    const projectName = project.name; // capture before destroy wipes access
+    const projectName = project.name;
 
     try {
       await this.activityLogForProjectService.logProjectDeleted(
@@ -306,7 +391,7 @@ export class ProjectsService {
       status: ProjectStatus.INACTIVE,
     });
 
-    await project.destroy(); // sets deleted_at automatically
+    await project.destroy();
 
     if (user?.id) {
       try {

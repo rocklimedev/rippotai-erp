@@ -18,7 +18,12 @@ export enum ProjectStatus {
   ON_HOLD = 'on_hold',
   INACTIVE = 'inactive',
 }
-
+export enum ProjectPriority {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+  CRITICAL = 'CRITICAL',
+}
 export enum VendorCategory {
   MATERIAL = 'Material',
   CONTRACTOR = 'Contractor',

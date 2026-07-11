@@ -9,10 +9,11 @@ import {
   BelongsTo,
   HasMany,
 } from 'sequelize-typescript';
-
+import { Client } from '../../clients/models/client.model';
+import { ProjectType } from './project-type.model';
+import { ProjectPriority, ProjectStatus } from '@/common/enums';
 import { User } from '@/modules/users/models/user.model';
 import { Quotation } from '@/modules/quotations/models/quotations.model';
-import { ProjectStatus } from '@/common/enums';
 
 @Table({
   tableName: 'projects',
@@ -35,7 +36,26 @@ export class Project extends Model<Project> {
     allowNull: false,
   })
   declare name: string;
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: false,
+    unique: true,
+  })
+  declare slug: string;
 
+  @ForeignKey(() => Client)
+  @Column({
+    type: DataType.CHAR(36),
+    allowNull: true,
+  })
+  declare client_id: string | null;
+
+  @ForeignKey(() => ProjectType)
+  @Column({
+    type: DataType.CHAR(36),
+    allowNull: true,
+  })
+  declare project_type_id: string | null;
   @Column({
     type: DataType.STRING(255),
     allowNull: false,
@@ -47,14 +67,23 @@ export class Project extends Model<Project> {
     allowNull: true,
   })
   declare description: string | null;
-
+  @Column({
+    type: DataType.ENUM(...Object.values(ProjectPriority)),
+    allowNull: false,
+    defaultValue: ProjectPriority.MEDIUM,
+  })
+  declare priority: ProjectPriority;
   @Column({
     type: DataType.ENUM(...Object.values(ProjectStatus)),
     allowNull: false,
     defaultValue: ProjectStatus.ACTIVE,
   })
   declare status: ProjectStatus;
-
+  @Column({
+    type: DataType.DATEONLY,
+    allowNull: true,
+  })
+  declare expected_completion_date: Date | null;
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
@@ -124,4 +153,15 @@ export class Project extends Model<Project> {
     foreignKey: 'project_id',
   })
   declare quotations: Quotation[];
+  @BelongsTo(() => Client, {
+    foreignKey: 'client_id',
+    as: 'client',
+  })
+  declare client: Client;
+
+  @BelongsTo(() => ProjectType, {
+    foreignKey: 'project_type_id',
+    as: 'project_type',
+  })
+  declare project_type: ProjectType;
 }

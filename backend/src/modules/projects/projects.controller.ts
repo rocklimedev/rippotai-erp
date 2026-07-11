@@ -7,9 +7,11 @@ import {
   Body,
   Param,
   Query,
+  ParseUUIDPipe,
   HttpCode,
   HttpStatus,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 
 import { ProjectsService } from './projects.service';
@@ -17,6 +19,7 @@ import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { ProjectStatus } from '../../common/enums';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
+
 type AuthUser = {
   id: string;
   name?: string;
@@ -37,23 +40,41 @@ export class ProjectsController {
 
   @Get()
   findAll(
-    @Query('status') status?: ProjectStatus,
+    @Query('status') status?: string,
     @Query('includeArchived') includeArchived?: string,
+    @Query('includeDeleted') includeDeleted?: string,
   ) {
+    let parsedStatus: ProjectStatus | undefined;
+
+    if (status) {
+      if (!Object.values(ProjectStatus).includes(status as ProjectStatus)) {
+        throw new BadRequestException(
+          `Invalid status "${status}". Expected one of: ${Object.values(
+            ProjectStatus,
+          ).join(', ')}`,
+        );
+      }
+      parsedStatus = status as ProjectStatus;
+    }
+
     return this.projectsService.findAll({
-      status,
+      status: parsedStatus,
       includeArchived: includeArchived === 'true',
+      includeDeleted: includeDeleted === 'true',
     });
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.projectsService.findOne(id);
+  findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('includeDeleted') includeDeleted?: string,
+  ) {
+    return this.projectsService.findOne(id, includeDeleted === 'true');
   }
 
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateProjectDto,
     @CurrentUser() user: AuthUser,
   ) {
@@ -61,18 +82,27 @@ export class ProjectsController {
   }
 
   @Patch(':id/archive')
-  archive(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+  archive(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
     return this.projectsService.archive(id, user);
   }
 
   @Patch(':id/restore')
-  restore(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+  restore(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
     return this.projectsService.restore(id, user);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<void> {
     return this.projectsService.remove(id, user);
   }
 }

@@ -14,6 +14,7 @@ import { NotificationsModule } from './modules/engagement/notifications.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { UnitsModule } from './modules/metas/units.module';
+import { ClientsModule } from './modules/clients/clients.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -39,6 +40,7 @@ import { UnitsModule } from './modules/metas/units.module';
     ProjectsModule,
     VendorsModule,
     QuotationsModule,
+    ClientsModule,
   ],
 })
 export class AppModule {}
