@@ -22,6 +22,7 @@ async function bootstrap() {
       'http://localhost:3000',
       'http://localhost:3001',
       'https://vendors-quote.rippotaiarchitecture.com',
+      'https://rippotai-erp-qga2.vercel.app',
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

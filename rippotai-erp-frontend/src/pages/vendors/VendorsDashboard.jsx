@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -15,6 +15,8 @@ import {
   X,
   Bookmark,
   Phone,
+  Trash2,
+  Edit,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -41,6 +43,7 @@ import {
   useGetVendorShortlistsQuery,
   useCreateVendorShortlistMutation,
   useAddVendorToShortlistMutation,
+  useDeleteVendorMutation,
 } from "../../api/vendor.api";
 
 const STATUS_OPTIONS = ["active", "inactive", "blocked"];
@@ -171,18 +174,21 @@ export default function VendorsDashboard() {
   const [shortlistFor, setShortlistFor] = useState(null);
   const [saveSearchOpen, setSaveSearchOpen] = useState(false);
   const [newSearchName, setNewSearchName] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const { data: rows, isFetching } = useGetVendorsQuery(f);
   const { data: summary } = useGetVendorsSummaryQuery();
   const { data: categories = [] } = useGetVendorCategoriesQuery();
   const { data: businessTypes = [] } = useGetBusinessTypesQuery(
     f.vendor_category_id,
-    { skip: !f.vendor_category_id },
+    { skip: !f.vendor_category_id }
   );
   const { data: savedSearches = [] } = useGetSavedSearchesQuery();
+
   const [createSavedSearch] = useCreateSavedSearchMutation();
   const [deleteSavedSearch] = useDeleteSavedSearchMutation();
   const [triggerExport] = useLazyExportVendorsQuery();
+  const [deleteVendor] = useDeleteVendorMutation();
 
   const emptyFilters = {
     q: "",
@@ -239,6 +245,16 @@ export default function VendorsDashboard() {
     }
   };
 
+  const handleDelete = async (id) => {
+    try {
+      await deleteVendor(id).unwrap();
+      toast.success("Vendor deleted successfully");
+      setDeleteConfirm(null);
+    } catch {
+      toast.error("Failed to delete vendor");
+    }
+  };
+
   return (
     <div className="space-y-6" data-testid="vendors-dashboard">
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
@@ -285,7 +301,7 @@ export default function VendorsDashboard() {
         </div>
       </div>
 
-      {/* Summary */}
+      {/* Summary Cards */}
       <section
         className="grid grid-cols-2 md:grid-cols-5 gap-3"
         data-testid="vendor-summary"
@@ -306,7 +322,7 @@ export default function VendorsDashboard() {
         ))}
       </section>
 
-      {/* Discovery search */}
+      {/* Search */}
       <section className="bc-card p-6" data-testid="vendor-discovery">
         <div className="relative">
           <Search
@@ -323,7 +339,7 @@ export default function VendorsDashboard() {
         </div>
       </section>
 
-      {/* Saved searches */}
+      {/* Saved Searches */}
       {savedSearches.length > 0 && (
         <section
           className="flex flex-wrap items-center gap-2"
@@ -367,6 +383,7 @@ export default function VendorsDashboard() {
           >
             <Filter size={13} /> Filters
           </button>
+
           <select
             className="bc-input h-9 py-0 max-w-[220px]"
             value={f.vendor_category_id}
@@ -386,6 +403,7 @@ export default function VendorsDashboard() {
               </option>
             ))}
           </select>
+
           <select
             className="bc-input h-9 py-0 max-w-[220px] disabled:opacity-50"
             value={f.business_type_id}
@@ -400,6 +418,7 @@ export default function VendorsDashboard() {
               </option>
             ))}
           </select>
+
           <select
             className="bc-input h-9 py-0 max-w-[160px]"
             value={f.status}
@@ -413,12 +432,14 @@ export default function VendorsDashboard() {
               </option>
             ))}
           </select>
+
           <button
             className="text-[12px] text-[#6B7B7C] hover:underline"
             onClick={() => setF(emptyFilters)}
           >
             Clear
           </button>
+
           <div className="ml-auto flex items-center gap-1 bg-[#EAEEF0] rounded-lg p-1">
             <button
               onClick={() => setView("table")}
@@ -472,10 +493,7 @@ export default function VendorsDashboard() {
                           <div className="text-[13px] font-semibold text-[#333333] flex items-center gap-1">
                             {v.name}
                             {v.status === "active" && (
-                              <ShieldCheck
-                                size={12}
-                                className="text-[#333333]"
-                              />
+                              <ShieldCheck size={12} className="text-[#333333]" />
                             )}
                           </div>
                           <div className="text-[11.5px] text-[#B5C4B6]">
@@ -501,10 +519,7 @@ export default function VendorsDashboard() {
                       )}
                     </td>
                     <td className="px-3 py-3 text-[12px] text-[#6B7B7C] max-w-[220px] truncate">
-                      <MapPin
-                        size={11}
-                        className="inline mr-1 text-[#B5C4B6]"
-                      />
+                      <MapPin size={11} className="inline mr-1 text-[#B5C4B6]" />
                       {v.address || "—"}
                     </td>
                     <td className="px-3 py-3">
@@ -521,10 +536,14 @@ export default function VendorsDashboard() {
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => nav(`/vendors/${v.id}`)}
-                          >
+                          <DropdownMenuItem onClick={() => nav(`/vendors/${v.id}`)}>
                             View Profile
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => nav(`/vendors/${v.id}/edit`)}
+                          >
+                            <Edit size={16} className="mr-2" />
+                            Edit Vendor
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => setShortlistFor(v.id)}
@@ -533,11 +552,16 @@ export default function VendorsDashboard() {
                             Add to Shortlist
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() =>
-                              nav(`/quotations/new?vendor=${v.id}`)
-                            }
+                            onClick={() => nav(`/quotations/new?vendor=${v.id}`)}
                           >
                             Open in Quotations
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setDeleteConfirm(v.id)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 size={16} className="mr-2" />
+                            Delete Vendor
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -546,6 +570,7 @@ export default function VendorsDashboard() {
                 ))}
               </tbody>
             </table>
+
             {rows && rows.length === 0 && (
               <div className="p-10 text-center text-[13px] text-[#6B7B7C]">
                 No vendors match. Adjust filters or{" "}
@@ -600,12 +625,40 @@ export default function VendorsDashboard() {
         )}
       </section>
 
+      {/* Modals */}
       <AddToShortlistModal
         open={!!shortlistFor}
         onClose={() => setShortlistFor(null)}
         vendorId={shortlistFor}
       />
 
+      {/* Delete Confirmation */}
+      <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Vendor</DialogTitle>
+          </DialogHeader>
+          <p className="text-[13.5px] text-[#6B7B7C]">
+            Are you sure you want to permanently delete this vendor? This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <button
+              onClick={() => setDeleteConfirm(null)}
+              className="h-10 px-4 rounded-xl border border-[#B5C4B6] text-[#6B7B7C]"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
+              className="h-10 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white"
+            >
+              Yes, Delete Vendor
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Save Search Dialog */}
       <Dialog open={saveSearchOpen} onOpenChange={setSaveSearchOpen}>
         <DialogContent>
           <DialogHeader>
