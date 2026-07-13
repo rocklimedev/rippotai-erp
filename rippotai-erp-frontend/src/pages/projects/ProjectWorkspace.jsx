@@ -6,13 +6,9 @@ import { fmtINR, relativeTime } from "@/lib/format";
 import {
   ArrowLeft,
   Share2,
-  Users,
-  FileText,
-  CheckCircle2,
-  Clock,
-  AlertTriangle,
   Copy,
 } from "lucide-react";
+import { useGetProjectByIdQuery } from "../../api/project.api"; // Adjust import path as needed
 
 const TABS = ["Overview", "BOQ", "Estimates", "Activity"];
 
@@ -41,7 +37,14 @@ export default function ProjectWorkspace() {
   const { id } = useParams();
   const nav = useNavigate();
   const [tab, setTab] = useState("Overview");
-  const [overview, setOverview] = useState(null);
+
+  // RTK Query for main project data
+  const {
+    data: projectData,
+    isLoading,
+    error,
+  } = useGetProjectByIdQuery(id, { skip: !id });
+
   const [milestones, setMilestones] = useState([]);
   const [work, setWork] = useState({});
   const [docs, setDocs] = useState([]);
@@ -62,7 +65,7 @@ export default function ProjectWorkspace() {
   const [createdLink, setCreatedLink] = useState(null);
   const [phaseProgress, setPhaseProgress] = useState(null);
 
-  // Keep header progress in sync with phase completions (auto + manual)
+  // Phase Progress
   useEffect(() => {
     if (!id) return;
     api
@@ -71,41 +74,44 @@ export default function ProjectWorkspace() {
       .catch(() => {});
   }, [id]);
 
+  // Load supplementary data
   useEffect(() => {
-    load();
-  }, [id]); // eslint-disable-line
+    if (!id || !projectData) return;
 
-  const load = async () => {
-    try {
-      const [ov, ms, wk, dc, bq, qt, vd, fn, lk] = await Promise.all([
-        api.get(`/projects/${id}/overview`),
-        api.get(`/projects/${id}/milestones`),
-        api.get(`/projects/${id}/pending-work`),
-        api.get(`/projects/${id}/documents`),
-        api.get(`/boqs?project_id=${id}`).catch(() => ({ data: [] })),
-        api.get(`/quotations?project_id=${id}`).catch(() => ({ data: [] })),
-        api.get(`/projects/${id}/vendors`),
-        api.get(`/projects/${id}/financial`),
-        api.get(`/client-links?project_id=${id}`),
-      ]);
-      setOverview(ov.data);
-      setMilestones(ms.data);
-      setWork(wk.data);
-      setDocs(dc.data);
-      setBoqs(bq.data);
-      setQuotes(qt.data);
-      setVendors(vd.data);
-      setFinancial(fn.data);
-      setLinks(lk.data);
-      setShareForm((f) => ({
-        ...f,
-        client_email: ov.data.project.client_email || "",
-        client_name: ov.data.project.client_name || "",
-      }));
-    } catch (e) {
-      toast.error("Failed to load project");
-    }
-  };
+    const loadSupplementary = async () => {
+      try {
+        const [ms, wk, dc, bq, qt, vd, fn, lk] = await Promise.all([
+          api.get(`/projects/${id}/milestones`).catch(() => ({ data: [] })),
+          api.get(`/projects/${id}/pending-work`).catch(() => ({ data: {} })),
+          api.get(`/projects/${id}/documents`).catch(() => ({ data: [] })),
+          api.get(`/boqs?project_id=${id}`).catch(() => ({ data: [] })),
+          api.get(`/quotations?project_id=${id}`).catch(() => ({ data: [] })),
+          api.get(`/projects/${id}/vendors`).catch(() => ({ data: { engaged: [], attached: [] } })),
+          api.get(`/projects/${id}/financial`).catch(() => ({ data: null })),
+          api.get(`/client-links?project_id=${id}`).catch(() => ({ data: [] })),
+        ]);
+
+        setMilestones(ms.data);
+        setWork(wk.data);
+        setDocs(dc.data);
+        setBoqs(bq.data);
+        setQuotes(qt.data.length > 0 ? qt.data : (projectData.quotations || []));
+        setVendors(vd.data);
+        setFinancial(fn.data);
+        setLinks(lk.data);
+
+        setShareForm((f) => ({
+          ...f,
+          client_email: projectData.client?.email || "",
+          client_name: projectData.client?.name || projectData.client?.contact_person || "",
+        }));
+      } catch (e) {
+        toast.error("Failed to load additional project data");
+      }
+    };
+
+    loadSupplementary();
+  }, [id, projectData]);
 
   const createLink = async () => {
     const payload = {
@@ -131,10 +137,14 @@ export default function ProjectWorkspace() {
     }
   };
 
-  if (!overview) return <div className="p-8 text-[#6B7B7C]">Loading…</div>;
+  if (isLoading) return <div className="p-8 text-[#6B7B7C]">Loading…</div>;
+  if (error || !projectData) return <div className="p-8 text-red-600">Failed to load project</div>;
 
-  const p = overview.project;
-  const tl = overview.timeline;
+  const p = projectData;
+  const tl = {
+    status: p.status?.toLowerCase() || "on_track",
+    variance: 0,
+  };
 
   const Card = ({ label, value }) => (
     <div className="bg-[#EAEEF0] rounded-lg p-3">
@@ -166,7 +176,7 @@ export default function ProjectWorkspace() {
             <div className="flex items-center gap-2">
               <TimelineChip status={tl.status} />
               <span className="text-[11px] font-semibold text-[#6B7B7C]">
-                {p.code}
+                {p.slug?.toUpperCase() || p.id?.slice(0, 8)}
               </span>
               <span className="text-[11px] font-semibold text-[#333333] bg-[#EAEEF0] px-1.5 rounded">
                 {p.priority || "Medium"}
@@ -176,7 +186,7 @@ export default function ProjectWorkspace() {
               {p.name}
             </h1>
             <div className="text-[13px] text-[#6B7B7C] mt-1">
-              {p.client_name || "—"} · {p.location || "—"} · {p.project_type}
+              {p.client?.name || p.client?.contact_person || "—"} · {p.site_location || "—"} · {p.project_type?.name || p.project_type}
             </div>
           </div>
           <div className="grid grid-cols-4 gap-2 min-w-[440px]">
@@ -190,7 +200,7 @@ export default function ProjectWorkspace() {
               label="Variance"
               value={`${tl.variance > 0 ? "+" : ""}${tl.variance}%`}
             />
-            <Card label="ECD" value={p.expected_completion || "—"} />
+            <Card label="ECD" value={p.expected_completion_date || "—"} />
           </div>
         </div>
         <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[#B5C4B6]">
@@ -228,12 +238,11 @@ export default function ProjectWorkspace() {
         {tab === "Overview" && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2 space-y-4">
-              {/* Phase H: legacy phase progress strip removed — use Phases tab instead. */}
               <div className="bg-white border border-[#B5C4B6] rounded-xl p-4">
                 <div className="text-[13px] font-bold mb-3">
                   Recent Activity
                 </div>
-                {(overview.recent_activity || []).map((a) => (
+                {(projectData.recent_activity || []).map((a) => (
                   <div key={a.id} className="py-2 border-b border-[#EAEEF0]">
                     <div className="text-[12.5px] text-[#333333]">
                       {a.description || a.action}
@@ -245,7 +254,6 @@ export default function ProjectWorkspace() {
                 ))}
               </div>
             </div>
-            {/* Phase H: Milestone / Pending Work / Health sections removed from Overview */}
           </div>
         )}
 
@@ -395,7 +403,7 @@ export default function ProjectWorkspace() {
           </div>
         )}
 
-        {tab === "Quotations" && (
+        {tab === "Estimates" && (
           <div className="bg-white border border-[#B5C4B6] rounded-xl p-4">
             {quotes.length === 0 ? (
               <div className="text-[#B5C4B6] text-center py-6">
@@ -410,14 +418,14 @@ export default function ProjectWorkspace() {
                 >
                   <div>
                     <div className="font-semibold text-[#333333]">
-                      {q.quotation_number} · {q.vendor_name}
+                      {q.quotationNumber || q.quotation_number} · {q.vendor?.name || q.vendor_name}
                     </div>
                     <div className="text-[11px] text-[#6B7B7C]">
-                      {q.work_category} · {q.status}
+                      {(q.vendor?.vendorCategory?.name || q.work_category)} · {q.status}
                     </div>
                   </div>
                   <div className="font-bold text-[#333333]">
-                    {fmtINR(q.subtotals?.total || 0)}
+                    {fmtINR(q.totalAmount || q.subtotal || q.subtotals?.total || 0)}
                   </div>
                 </Link>
               ))
@@ -457,56 +465,6 @@ export default function ProjectWorkspace() {
           </div>
         )}
 
-        {tab === "Calendar" && (
-          <div className="bg-white border border-[#B5C4B6] rounded-xl p-4">
-            <div className="text-[13px] font-bold mb-3">Upcoming Events</div>
-            {milestones
-              .filter((m) => m.status !== "completed")
-              .slice(0, 8)
-              .map((m) => (
-                <div
-                  key={m.id}
-                  className="flex justify-between py-2 border-b border-[#EAEEF0] text-[12.5px]"
-                >
-                  <div>
-                    <div className="font-semibold">{m.name}</div>
-                    <div className="text-[11px] text-[#6B7B7C]">{m.phase}</div>
-                  </div>
-                  <div className="text-[#333333] font-semibold">
-                    {m.planned_end}
-                  </div>
-                </div>
-              ))}
-          </div>
-        )}
-
-        {tab === "Team" && (
-          <div className="bg-white border border-[#B5C4B6] rounded-xl p-4">
-            {(overview.team || []).map((t) => (
-              <div
-                key={t.id}
-                className="flex items-center gap-3 py-2 border-b border-[#EAEEF0]"
-              >
-                <div className="w-9 h-9 rounded-full bg-[#1F453B] text-white flex items-center justify-center font-bold text-[13px]">
-                  {(t.name || "?")
-                    .split(" ")
-                    .map((w) => w[0])
-                    .slice(0, 2)
-                    .join("")}
-                </div>
-                <div className="flex-1">
-                  <div className="text-[13px] font-semibold text-[#333333]">
-                    {t.name}
-                  </div>
-                  <div className="text-[11.5px] text-[#6B7B7C]">
-                    {t.role} · {t.responsibilities}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
         {tab === "Financial" && financial && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
@@ -543,235 +501,191 @@ export default function ProjectWorkspace() {
           </div>
         )}
 
-        {tab === "Activity" && (
-          <div className="bg-white border border-[#B5C4B6] rounded-xl p-4">
-            {(overview.recent_activity || []).map((a) => (
+        {/* Existing links section */}
+        {links.length > 0 && (
+          <div className="mt-6 bg-white border border-[#B5C4B6] rounded-xl p-4">
+            <div className="text-[13px] font-bold mb-3">
+              Client Magic Links ({links.length})
+            </div>
+            {links.map((l) => (
               <div
-                key={a.id}
-                className="py-2 border-b border-[#EAEEF0] text-[12.5px]"
+                key={l.id}
+                className="flex justify-between items-center py-2 border-b border-[#EAEEF0] text-[12.5px]"
+                data-testid={`link-${l.id}`}
               >
-                <div className="text-[#333333]">
-                  {a.description || a.action}
+                <div>
+                  <div className="font-semibold text-[#333333]">{l.purpose}</div>
+                  <div className="text-[11px] text-[#6B7B7C] max-w-[500px] truncate">
+                    {l.url}
+                  </div>
                 </div>
-                <div className="text-[11px] text-[#B5C4B6]">
-                  {a.actor} · {relativeTime(a.at || a.created_at)}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => copyUrl(l.url)}
+                    className="px-2 py-1 rounded border border-[#B5C4B6] text-[11.5px] inline-flex items-center gap-1"
+                  >
+                    <Copy size={11} /> Copy
+                  </button>
+                  <a
+                    href={l.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-2 py-1 rounded bg-[#1F453B] text-white text-[11.5px]"
+                  >
+                    Open
+                  </a>
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {tab === "Handover" && (
-          <div className="bg-white border border-[#B5C4B6] rounded-xl p-4">
-            <p className="text-[13px] text-[#6B7B7C]">
-              See dedicated{" "}
-              <Link
-                to={`/projects/${id}/handover`}
-                className="text-[#333333] font-semibold"
-              >
-                Handover Package
-              </Link>{" "}
-              workspace.
-            </p>
+        {shareModal && (
+          <div
+            className="fixed inset-0 z-50 bg-[#1F453B]/40 flex items-center justify-center p-4"
+            onClick={() => setShareModal(false)}
+          >
+            <div
+              className="bg-white rounded-xl max-w-md w-full p-5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-[16px] font-bold mb-3">Share with Client</div>
+              {!createdLink ? (
+                <>
+                  <label className="text-[12px] font-semibold text-[#6B7B7C]">
+                    Purpose
+                  </label>
+                  <select
+                    value={shareForm.purpose}
+                    onChange={(e) =>
+                      setShareForm({ ...shareForm, purpose: e.target.value })
+                    }
+                    className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
+                    data-testid="share-purpose"
+                  >
+                    <option value="project_view">Project View</option>
+                    <option value="boq_approval">BOQ Approval</option>
+                    <option value="quotation_selection">Quotation Selection</option>
+                    <option value="handover_acceptance">Handover Acceptance</option>
+                  </select>
+                  <label className="text-[12px] font-semibold text-[#6B7B7C] mt-3 block">
+                    Client Name
+                  </label>
+                  <input
+                    value={shareForm.client_name}
+                    onChange={(e) =>
+                      setShareForm({ ...shareForm, client_name: e.target.value })
+                    }
+                    className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
+                  />
+                  <label className="text-[12px] font-semibold text-[#6B7B7C] mt-3 block">
+                    Client Email
+                  </label>
+                  <input
+                    value={shareForm.client_email}
+                    onChange={(e) =>
+                      setShareForm({ ...shareForm, client_email: e.target.value })
+                    }
+                    className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
+                    data-testid="share-email"
+                  />
+                  <div className="mt-3 space-y-1.5 text-[12.5px]">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={shareForm.show_rates}
+                        onChange={(e) =>
+                          setShareForm({ ...shareForm, show_rates: e.target.checked })
+                        }
+                      />{" "}
+                      Show rates on BOQ
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={shareForm.show_vendor_names}
+                        onChange={(e) =>
+                          setShareForm({ ...shareForm, show_vendor_names: e.target.checked })
+                        }
+                      />{" "}
+                      Show vendor names
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={shareForm.show_ratings}
+                        onChange={(e) =>
+                          setShareForm({ ...shareForm, show_ratings: e.target.checked })
+                        }
+                      />{" "}
+                      Show vendor ratings
+                    </label>
+                  </div>
+                  <div className="flex justify-end gap-2 mt-4">
+                    <button
+                      onClick={() => setShareModal(false)}
+                      className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px]"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={createLink}
+                      className="px-4 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold"
+                      data-testid="btn-create-link"
+                    >
+                      Create Link
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-[13px] text-[#333333] font-semibold mb-2">
+                    ✓ Link generated
+                  </div>
+                  <div className="text-[11.5px] text-[#6B7B7C] mb-2 break-all bg-[#EAEEF0] p-2 rounded border border-[#B5C4B6]">
+                    {createdLink.url}
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => copyUrl(createdLink.url)}
+                      className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px]"
+                      data-testid="btn-copy-link"
+                    >
+                      Copy
+                    </button>
+                    <a
+                      href={createdLink.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px]"
+                    >
+                      Open
+                    </a>
+                    <button
+                      onClick={() => {
+                        setCreatedLink(null);
+                        setShareModal(false);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px]"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>
-
-      {/* Existing links section */}
-      {links.length > 0 && (
-        <div className="mt-6 bg-white border border-[#B5C4B6] rounded-xl p-4">
-          <div className="text-[13px] font-bold mb-3">
-            Client Magic Links ({links.length})
-          </div>
-          {links.map((l) => (
-            <div
-              key={l.id}
-              className="flex justify-between items-center py-2 border-b border-[#EAEEF0] text-[12.5px]"
-              data-testid={`link-${l.id}`}
-            >
-              <div>
-                <div className="font-semibold text-[#333333]">{l.purpose}</div>
-                <div className="text-[11px] text-[#6B7B7C] max-w-[500px] truncate">
-                  {l.url}
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => copyUrl(l.url)}
-                  className="px-2 py-1 rounded border border-[#B5C4B6] text-[11.5px] inline-flex items-center gap-1"
-                >
-                  <Copy size={11} /> Copy
-                </button>
-                <a
-                  href={l.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-2 py-1 rounded bg-[#1F453B] text-white text-[11.5px]"
-                >
-                  Open
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {shareModal && (
-        <div
-          className="fixed inset-0 z-50 bg-[#1F453B]/40 flex items-center justify-center p-4"
-          onClick={() => setShareModal(false)}
-        >
-          <div
-            className="bg-white rounded-xl max-w-md w-full p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="text-[16px] font-bold mb-3">Share with Client</div>
-            {!createdLink ? (
-              <>
-                <label className="text-[12px] font-semibold text-[#6B7B7C]">
-                  Purpose
-                </label>
-                <select
-                  value={shareForm.purpose}
-                  onChange={(e) =>
-                    setShareForm({ ...shareForm, purpose: e.target.value })
-                  }
-                  className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
-                  data-testid="share-purpose"
-                >
-                  <option value="project_view">Project View</option>
-                  <option value="boq_approval">BOQ Approval</option>
-                  <option value="quotation_selection">
-                    Quotation Selection
-                  </option>
-                  <option value="handover_acceptance">
-                    Handover Acceptance
-                  </option>
-                </select>
-                <label className="text-[12px] font-semibold text-[#6B7B7C] mt-3 block">
-                  Client Name
-                </label>
-                <input
-                  value={shareForm.client_name}
-                  onChange={(e) =>
-                    setShareForm({ ...shareForm, client_name: e.target.value })
-                  }
-                  className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
-                />
-                <label className="text-[12px] font-semibold text-[#6B7B7C] mt-3 block">
-                  Client Email
-                </label>
-                <input
-                  value={shareForm.client_email}
-                  onChange={(e) =>
-                    setShareForm({ ...shareForm, client_email: e.target.value })
-                  }
-                  className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
-                  data-testid="share-email"
-                />
-                <div className="mt-3 space-y-1.5 text-[12.5px]">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={shareForm.show_rates}
-                      onChange={(e) =>
-                        setShareForm({
-                          ...shareForm,
-                          show_rates: e.target.checked,
-                        })
-                      }
-                    />{" "}
-                    Show rates on BOQ
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={shareForm.show_vendor_names}
-                      onChange={(e) =>
-                        setShareForm({
-                          ...shareForm,
-                          show_vendor_names: e.target.checked,
-                        })
-                      }
-                    />{" "}
-                    Show vendor names
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={shareForm.show_ratings}
-                      onChange={(e) =>
-                        setShareForm({
-                          ...shareForm,
-                          show_ratings: e.target.checked,
-                        })
-                      }
-                    />{" "}
-                    Show vendor ratings
-                  </label>
-                </div>
-                <div className="flex justify-end gap-2 mt-4">
-                  <button
-                    onClick={() => setShareModal(false)}
-                    className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px]"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={createLink}
-                    className="px-4 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold"
-                    data-testid="btn-create-link"
-                  >
-                    Create Link
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="text-[13px] text-[#333333] font-semibold mb-2">
-                  ✓ Link generated
-                </div>
-                <div className="text-[11.5px] text-[#6B7B7C] mb-2 break-all bg-[#EAEEF0] p-2 rounded border border-[#B5C4B6]">
-                  {createdLink.url}
-                </div>
-                <div className="flex justify-end gap-2">
-                  <button
-                    onClick={() => copyUrl(createdLink.url)}
-                    className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px]"
-                    data-testid="btn-copy-link"
-                  >
-                    Copy
-                  </button>
-                  <a
-                    href={createdLink.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px]"
-                  >
-                    Open
-                  </a>
-                  <button
-                    onClick={() => {
-                      setCreatedLink(null);
-                      setShareModal(false);
-                    }}
-                    className="px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px]"
-                  >
-                    Done
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
+// PhaseTracker Component
 function PhaseTracker({ projectId, onProgressChange }) {
   const [data, setData] = React.useState(null);
   const [busy, setBusy] = React.useState(null);
+
   const load = React.useCallback(() => {
     api
       .get(`/projects/${projectId}/phases`)
@@ -782,9 +696,11 @@ function PhaseTracker({ projectId, onProgressChange }) {
       })
       .catch(() => setData({ phases: [], progress_pct: 0 }));
   }, [projectId, onProgressChange]);
+
   React.useEffect(() => {
     load();
   }, [load]);
+
   const toggle = async (key, next) => {
     setBusy(key);
     try {
@@ -799,8 +715,10 @@ function PhaseTracker({ projectId, onProgressChange }) {
       setBusy(null);
     }
   };
+
   if (!data)
     return <div className="text-[13px] text-[#6B7B7C]">Loading phases…</div>;
+
   return (
     <div className="space-y-4" data-testid="phase-tracker">
       <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
@@ -925,6 +843,7 @@ function PhaseTracker({ projectId, onProgressChange }) {
   );
 }
 
+// Project Activity Inline
 function ProjectActivityInline() {
   const [rows, setRows] = React.useState([]);
   React.useEffect(() => {

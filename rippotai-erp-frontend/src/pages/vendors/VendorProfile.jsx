@@ -1,6 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import api from "@/lib/api";
+import {
+  useGetVendorByIdQuery,
+
+} from "../../api/vendor.api"; // Adjust path based on your RTK Query exports
+import { useGetQuotationsByVendorQuery } from "../../api/vendor.api";
 import { formatINR, relativeTime, formatDate } from "@/lib/format";
 import { toast } from "sonner";
 import {
@@ -8,12 +12,10 @@ import {
   Star,
   MapPin,
   ShieldCheck,
-  Plus,
   Bookmark,
   FileText,
   Upload,
   Trash2,
-  Edit3,
   MoreHorizontal,
 } from "lucide-react";
 import {
@@ -23,6 +25,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AddToShortlistModal } from "./VendorsDashboard";
+
+// Temporary manual API for actions (add mutations to RTK slice later)
+import api from "@/lib/api";
 
 const TABS = [
   "Overview",
@@ -51,39 +56,57 @@ function Rating({ v, size = 12 }) {
 export default function VendorProfile() {
   const { id } = useParams();
   const nav = useNavigate();
-  const [v, setV] = useState(null);
+
+  // RTK Query Hooks
+  const { data: vendorResponse, isLoading, error, refetch } = useGetVendorByIdQuery(id, {
+    skip: !id,
+  });
+
+  const { data: quotationsResponse } = useGetQuotationsByVendorQuery(id, {
+    skip: !id,
+  });
+
   const [tab, setTab] = useState("Overview");
   const [shortlistOpen, setShortlistOpen] = useState(false);
   const [note, setNote] = useState("");
   const [uploading, setUploading] = useState(false);
 
-  const load = () =>
-    api
-      .get(`/vendors/${id}`)
-      .then((r) => setV(r.data))
-      .catch(() => nav("/vendors"));
-  useEffect(() => {
-    load(); /* eslint-disable-next-line */
-  }, [id]);
+  const v = vendorResponse?.data || vendorResponse;
 
-  if (!v)
+  if (isLoading) {
     return (
       <div className="p-10 text-center text-[13px] text-[#6B7B7C]">
         Loading vendor…
       </div>
     );
+  }
 
+  if (error || !v) {
+    return (
+      <div className="p-10 text-center text-[13px] text-red-600">
+        Failed to load vendor profile
+      </div>
+    );
+  }
+
+  const quotations = quotationsResponse?.data || quotationsResponse?.success ? quotationsResponse.data : [];
+
+  const load = () => refetch();
+
+  // Actions
   const setPreferred = async () => {
     await api.post(`/vendors/${id}/set-preferred`);
     toast.success("Set as preferred");
     load();
   };
+
   const block = async () => {
     if (!confirm("Block this vendor?")) return;
     await api.post(`/vendors/${id}/block`);
     toast.success("Blocked");
     load();
   };
+
   const archive = async () => {
     await api.post(`/vendors/${id}/archive`);
     toast.success("Archived");
@@ -96,6 +119,7 @@ export default function VendorProfile() {
     setNote("");
     load();
   };
+
   const delNote = async (nid) => {
     await api.delete(`/vendors/${id}/notes/${nid}`);
     load();
@@ -130,19 +154,18 @@ export default function VendorProfile() {
         <ArrowLeft size={14} /> Back to Vendors
       </button>
 
+      {/* Header */}
       <section className="bc-card p-6" data-testid="vendor-header">
         <div className="flex flex-col md:flex-row md:items-start gap-6">
           <div className="w-20 h-20 rounded-2xl bg-[#1F453B] text-white text-[36px] font-bold flex items-center justify-center shrink-0">
-            {v.avatar_initials}
+            {v.avatar_initials || v.name?.slice(0, 2)?.toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-[34px] font-bold text-[#333333] tracking-tight">
                 {v.name}
               </h1>
-              {v.verified && (
-                <ShieldCheck size={16} className="text-[#333333]" />
-              )}
+              {v.verified && <ShieldCheck size={16} className="text-[#333333]" />}
               {v.preferred && (
                 <span className="text-[10.5px] uppercase tracking-widest bg-[#EAEEF0] text-[#333333] px-2 py-0.5 rounded-full font-semibold">
                   Preferred
@@ -153,12 +176,12 @@ export default function VendorProfile() {
               </span>
             </div>
             <div className="text-[14px] text-[#6B7B7C] mt-1">
-              {v.company} · {v.vendor_type}
+              {v.company || v.company_name} · {v.vendor_type || v.vendorCategory?.name}
             </div>
             <div className="text-[12.5px] text-[#6B7B7C] mt-1 flex items-center gap-3">
               <span className="flex items-center gap-1">
                 <MapPin size={12} />
-                {v.city}, {v.state}
+                {v.city || (v.address && v.address.split(",")[0])}, {v.state}
               </span>
               <Rating v={v.rating} />
               <span>{v.completed_projects} projects done</span>
@@ -199,12 +222,17 @@ export default function VendorProfile() {
         </div>
       </section>
 
+      {/* Tabs */}
       <div className="flex flex-wrap gap-1 border-b border-[#B5C4B6]">
         {TABS.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-3 h-10 text-[13px] font-semibold border-b-2 ${tab === t ? "border-[#1F453B] text-[#333333]" : "border-transparent text-[#6B7B7C] hover:text-[#333333]"}`}
+            className={`px-3 h-10 text-[13px] font-semibold border-b-2 ${
+              tab === t
+                ? "border-[#1F453B] text-[#333333]"
+                : "border-transparent text-[#6B7B7C] hover:text-[#333333]"
+            }`}
             data-testid={`tab-${t.toLowerCase()}`}
           >
             {t}
@@ -212,14 +240,16 @@ export default function VendorProfile() {
         ))}
       </div>
 
+      {/* Overview */}
       {tab === "Overview" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 bc-card p-6">
             <h3 className="text-[13px] font-bold text-[#333333] mb-3">About</h3>
             <p className="text-[13px] text-[#6B7B7C]">
-              {v.company} is a {v.vendor_type.toLowerCase()} based in {v.city},
-              serving {(v.project_types || []).join(", ")} projects.{" "}
-              {v.years_of_experience} years of experience with{" "}
+              {v.company || v.company_name} is a{" "}
+              {(v.vendor_type || v.vendorCategory?.name || "").toLowerCase()}{" "}
+              based in {v.city}, serving {(v.project_types || []).join(", ")}{" "}
+              projects. {v.years_of_experience} years of experience with{" "}
               {v.completed_projects} completed projects.
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
@@ -242,6 +272,7 @@ export default function VendorProfile() {
                 </div>
               ))}
             </div>
+            {/* Specializations & Brands */}
             <div className="mt-5">
               <div className="text-[10.5px] uppercase tracking-widest text-[#B5C4B6] mb-2">
                 Specializations
@@ -294,6 +325,7 @@ export default function VendorProfile() {
         </div>
       )}
 
+      {/* Services */}
       {tab === "Services" && (
         <div className="bc-card p-6 space-y-4">
           {[
@@ -327,6 +359,7 @@ export default function VendorProfile() {
         </div>
       )}
 
+      {/* Projects */}
       {tab === "Projects" && (
         <div className="bc-card p-6">
           {(v.projects_worked || []).length === 0 ? (
@@ -358,9 +391,10 @@ export default function VendorProfile() {
         </div>
       )}
 
+      {/* Quotations - Using RTK Query */}
       {tab === "Quotations" && (
         <div className="bc-card p-6">
-          {(v.quotations || []).length === 0 ? (
+          {quotations.length === 0 ? (
             <div className="text-[13px] text-[#B5C4B6]">
               No quotations linked.
             </div>
@@ -376,12 +410,14 @@ export default function VendorProfile() {
                 </tr>
               </thead>
               <tbody>
-                {v.quotations.map((q) => (
+                {quotations.map((q) => (
                   <tr key={q.id} className="border-b border-[#B5C4B6]">
-                    <td className="py-2">{q.project_name}</td>
+                    <td className="py-2">
+                      {q.project_name || q.projectSnapshot?.name}
+                    </td>
                     <td>{q.category}</td>
                     <td className="text-right font-semibold">
-                      {formatINR(q.amount)}
+                      {formatINR(q.totalAmount || q.amount)}
                     </td>
                     <td className="capitalize">{q.status}</td>
                     <td className="text-right">
@@ -400,6 +436,7 @@ export default function VendorProfile() {
         </div>
       )}
 
+      {/* Performance */}
       {tab === "Performance" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bc-card p-6">
@@ -455,6 +492,7 @@ export default function VendorProfile() {
         </div>
       )}
 
+      {/* Documents */}
       {tab === "Documents" && (
         <div className="bc-card p-6">
           <div className="flex items-center justify-between mb-4">
@@ -499,6 +537,7 @@ export default function VendorProfile() {
         </div>
       )}
 
+      {/* Commercial */}
       {tab === "Commercial" && (
         <div className="bc-card p-6 grid grid-cols-2 gap-4 text-[13px]">
           {[
@@ -521,6 +560,7 @@ export default function VendorProfile() {
         </div>
       )}
 
+      {/* Availability */}
       {tab === "Availability" && (
         <div className="bc-card p-6 grid grid-cols-2 gap-4 text-[13px]">
           {[
@@ -541,6 +581,7 @@ export default function VendorProfile() {
         </div>
       )}
 
+      {/* Activity */}
       {tab === "Activity" && (
         <div className="bc-card p-6">
           <ul className="space-y-3 text-[13px]">
@@ -562,6 +603,7 @@ export default function VendorProfile() {
         </div>
       )}
 
+      {/* Notes */}
       {tab === "Notes" && (
         <div className="bc-card p-6">
           <div className="flex gap-2 mb-4">
