@@ -1,66 +1,61 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus, Search, CheckCircle2, Circle } from "lucide-react";
+import { Plus, Search, CheckCircle2, Circle, MoreHorizontal, Edit, Archive, Trash2, RotateCcw } from "lucide-react";
 import {
   useGetProjectsSummaryQuery,
-  useGetProjectsFullQuery,
   useGetProjectsQuery,
   useGetProjectStatusChecklistQuery,
-} from "../../api/project.api"; // adjust import path to wherever projectsApi.js lives
+  useArchiveProjectMutation,
+  useRestoreProjectMutation,
+  useDeleteProjectMutation,
+} from "../../api/project.api";
 
 const STATUS_LABEL = {
-  on_track: "On Track",
-  ahead: "Ahead",
-  at_risk: "At Risk",
-  delayed: "Delayed",
+  active: "Active",
   completed: "Completed",
+  archived: "Archived",
   on_hold: "On Hold",
 };
+
 const STATUS_TONE = {
-  on_track: { bg: "#EAEEF0", fg: "#1F453B" },
-  ahead: { bg: "#EAEEF0", fg: "#1F453B" },
-  at_risk: { bg: "#EAEEF0", fg: "#1F453B" },
-  delayed: { bg: "#EAEEF0", fg: "#1F453B" },
+  active: { bg: "#EAEEF0", fg: "#1F453B" },
   completed: { bg: "#EAEEF0", fg: "#1F453B" },
+  archived: { bg: "#B5C4B6", fg: "#6B7B7C" },
   on_hold: { bg: "#B5C4B6", fg: "#6B7B7C" },
 };
 
-function TimelineChip({ status }) {
-  const t = STATUS_TONE[status] || STATUS_TONE.on_track;
+function StatusChip({ status }) {
+  const t = STATUS_TONE[status] || STATUS_TONE.active;
   return (
     <span
       className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold"
       style={{ background: t.bg, color: t.fg }}
     >
-      {STATUS_LABEL[status] || status}
+      {STATUS_LABEL[status] || status || "—"}
     </span>
   );
 }
 
-function PhaseTracker({ phase }) {
-  const phases = [
-    "pre_design",
-    "design",
-    "pre_execution",
-    "execution",
-    "handover",
-    "completed",
-  ];
-  const idx = phases.indexOf(phase);
-  return (
-    <div className="flex gap-1">
-      {phases.slice(0, 5).map((p, i) => (
-        <div
-          key={p}
-          className="h-1.5 flex-1 rounded-full"
-          style={{
-            background: i < idx ? "#1F453B" : i === idx ? "#1F453B" : "#B5C4B6",
-          }}
-        />
-      ))}
-    </div>
-  );
+function formatDate(value) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function formatCurrency(value) {
+  const n = Number(value);
+  if (!value || Number.isNaN(n)) return "—";
+  return n.toLocaleString("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  });
 }
 
 export default function ProjectsDashboard() {
@@ -80,7 +75,10 @@ export default function ProjectsDashboard() {
     isError: rowsError,
   } = useGetProjectsQuery();
 
-  // Surface fetch errors the same way the old axios catch blocks did.
+  const [archiveProject] = useArchiveProjectMutation();
+  const [restoreProject] = useRestoreProjectMutation();
+  const [deleteProject] = useDeleteProjectMutation();
+
   useEffect(() => {
     if (summaryError || rowsError) {
       toast.error("Failed to load projects");
@@ -90,28 +88,50 @@ export default function ProjectsDashboard() {
   const loading = summaryLoading || rowsLoading;
 
   const filtered = rows.filter((r) => {
-    if (
-      tab === "active" &&
-      (r.status === "completed" || r.status === "archived")
-    )
-      return false;
-    if (
-      tab === "on_time" &&
-      !["on_track", "ahead"].includes(r.timeline?.status)
-    )
-      return false;
-    if (tab === "delayed" && r.timeline?.status !== "delayed") return false;
-    if (tab === "near_handover" && r.progress < 85) return false;
-    if (tab === "completed" && r.progress < 100 && r.status !== "completed")
-      return false;
+    if (tab === "active" && r.status !== "active") return false;
+    if (tab === "completed" && r.status !== "completed") return false;
+    if (tab === "on_hold" && r.status !== "on_hold") return false;
+    if (tab === "archived" && r.status !== "archived") return false;
+
     if (
       q &&
-      !r.name.toLowerCase().includes(q.toLowerCase()) &&
-      !r.client_name?.toLowerCase().includes(q.toLowerCase())
+      !r.name?.toLowerCase().includes(q.toLowerCase()) &&
+      !r.client?.name?.toLowerCase().includes(q.toLowerCase())
     )
       return false;
     return true;
   });
+
+  // Action Handlers
+  const handleArchive = async (id, name) => {
+    if (!window.confirm(`Archive project "${name}"?`)) return;
+    try {
+      await archiveProject({ id, archived_by: "current_user" }).unwrap();
+      toast.success(`Project "${name}" has been archived`);
+    } catch (err) {
+      toast.error("Failed to archive project");
+    }
+  };
+
+  const handleRestore = async (id, name) => {
+    if (!window.confirm(`Restore project "${name}"?`)) return;
+    try {
+      await restoreProject(id).unwrap();
+      toast.success(`Project "${name}" has been restored`);
+    } catch (err) {
+      toast.error("Failed to restore project");
+    }
+  };
+
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`PERMANENTLY DELETE "${name}"?\n\nThis action cannot be undone.`)) return;
+    try {
+      await deleteProject(id).unwrap();
+      toast.success(`Project "${name}" deleted successfully`);
+    } catch (err) {
+      toast.error("Failed to delete project");
+    }
+  };
 
   return (
     <div className="max-w-[1440px] mx-auto p-6 space-y-5">
@@ -175,10 +195,9 @@ export default function ProjectsDashboard() {
             {[
               ["all", "All"],
               ["active", "Active"],
-              ["on_time", "On Time"],
-              ["delayed", "Delayed"],
-              ["near_handover", "Near Handover"],
               ["completed", "Completed"],
+              ["on_hold", "On Hold"],
+              ["archived", "Archived"],
             ].map(([k, l]) => (
               <button
                 key={k}
@@ -190,6 +209,7 @@ export default function ProjectsDashboard() {
               </button>
             ))}
           </div>
+
           <div className="p-4">
             <div className="relative mb-3 max-w-md">
               <Search
@@ -204,6 +224,7 @@ export default function ProjectsDashboard() {
                 data-testid="project-search"
               />
             </div>
+
             <div className="overflow-x-auto">
               <table className="w-full text-[12.5px]">
                 <thead className="text-[11px] uppercase text-[#B5C4B6]">
@@ -211,70 +232,121 @@ export default function ProjectsDashboard() {
                     <th className="text-left py-2 pr-3">Project</th>
                     <th className="text-left py-2 pr-3">Client</th>
                     <th className="text-left py-2 pr-3">Type</th>
-                    <th className="text-left py-2 pr-3 min-w-[180px]">
-                      Progress
-                    </th>
-                    <th className="text-left py-2 pr-3">Timeline</th>
+                    <th className="text-left py-2 pr-3">Status</th>
                     <th className="text-left py-2 pr-3">ECD</th>
-                    <th className="text-right py-2 pr-3">Pending</th>
+   
+                    <th className="w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading && (
                     <tr>
-                      <td
-                        colSpan={7}
-                        className="py-6 text-center text-[#B5C4B6]"
-                      >
+                      <td colSpan={7} className="py-6 text-center text-[#B5C4B6]">
                         Loading…
                       </td>
                     </tr>
                   )}
                   {!loading && filtered.length === 0 && (
                     <tr>
-                      <td
-                        colSpan={7}
-                        className="py-6 text-center text-[#B5C4B6]"
-                      >
+                      <td colSpan={7} className="py-6 text-center text-[#B5C4B6]">
                         No projects match.
                       </td>
                     </tr>
                   )}
+
                   {filtered.map((p) => (
                     <tr
                       key={p.id}
-                      onClick={() => nav(`/projects/${p.id}`)}
-                      data-testid={`project-row-${p.id}`}
-                      className="border-b border-[#EAEEF0] cursor-pointer hover:bg-[#EAEEF0]"
+                      className="border-b border-[#EAEEF0] hover:bg-[#EAEEF0] group"
                     >
-                      <td className="py-2.5 pr-3">
-                        <div className="font-semibold text-[#333333]">
-                          {p.name}
+                      <td
+                        className="py-2.5 pr-3 cursor-pointer"
+                        onClick={() => nav(`/projects/${p.id}`)}
+                      >
+                        <div className="font-semibold text-[#333333]">{p.name}</div>
+                        <div className="text-[11px] text-[#B5C4B6]">{p.slug || ""}</div>
+                      </td>
+                      <td
+                        className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer"
+                        onClick={() => nav(`/projects/${p.id}`)}
+                      >
+                        {p.client?.name || "—"}
+                      </td>
+                      <td
+                        className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer"
+                        onClick={() => nav(`/projects/${p.id}`)}
+                      >
+                        {p.project_type?.name || "—"}
+                      </td>
+                      <td
+                        className="py-2.5 pr-3 cursor-pointer"
+                        onClick={() => nav(`/projects/${p.id}`)}
+                      >
+                        <StatusChip status={p.status} />
+                      </td>
+                      <td
+                        className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer"
+                        onClick={() => nav(`/projects/${p.id}`)}
+                      >
+                        {formatDate(p.expected_completion_date)}
+                      </td>
+      
+
+                      {/* Actions Column */}
+                      <td className="py-2.5">
+                        <div className="relative">
+                          <button
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-2 rounded-lg hover:bg-[#EAEEF0] text-[#6B7B7C] hover:text-[#333333] opacity-0 group-hover:opacity-100 transition-all"
+                          >
+                            <MoreHorizontal size={18} />
+                          </button>
+
+                          {/* Dropdown Menu */}
+                          <div className="absolute right-0 top-10 w-48 bg-white border border-[#B5C4B6] rounded-xl shadow-xl py-1 z-20 hidden group-hover:block">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                nav(`/projects/${p.id}`);
+                              }}
+                              className="w-full px-4 py-2.5 text-left hover:bg-[#EAEEF0] flex items-center gap-2 text-[13px]"
+                            >
+                              <Edit size={16} /> View / Edit
+                            </button>
+
+                            {p.status !== "archived" ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleArchive(p.id, p.name);
+                                }}
+                                className="w-full px-4 py-2.5 text-left hover:bg-[#EAEEF0] flex items-center gap-2 text-[13px] text-amber-700"
+                              >
+                                <Archive size={16} /> Archive
+                              </button>
+                            ) : (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRestore(p.id, p.name);
+                                }}
+                                className="w-full px-4 py-2.5 text-left hover:bg-[#EAEEF0] flex items-center gap-2 text-[13px] text-emerald-700"
+                              >
+                                <RotateCcw size={16} /> Restore
+                              </button>
+                            )}
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(p.id, p.name);
+                              }}
+                              className="w-full px-4 py-2.5 text-left hover:bg-[#EAEEF0] flex items-center gap-2 text-[13px] text-red-600"
+                            >
+                              <Trash2 size={16} /> Delete
+                            </button>
+                          </div>
                         </div>
-                        <div className="text-[11px] text-[#B5C4B6]">
-                          {p.code || ""}
-                        </div>
-                      </td>
-                      <td className="py-2.5 pr-3 text-[#6B7B7C]">
-                        {p.client_name || "—"}
-                      </td>
-                      <td className="py-2.5 pr-3 text-[#6B7B7C]">
-                        {p.project_type || "—"}
-                      </td>
-                      <td className="py-2.5 pr-3">
-                        <div className="text-[11px] text-[#6B7B7C] mb-1">
-                          {p.progress || 0}% · {p.phase || "—"}
-                        </div>
-                        <PhaseTracker phase={p.phase} />
-                      </td>
-                      <td className="py-2.5 pr-3">
-                        <TimelineChip status={p.timeline?.status} />
-                      </td>
-                      <td className="py-2.5 pr-3 text-[#6B7B7C]">
-                        {p.expected_completion || "—"}
-                      </td>
-                      <td className="py-2.5 pr-3 text-right font-semibold text-[#333333]">
-                        {p.pending_actions || 0}
                       </td>
                     </tr>
                   ))}
@@ -283,6 +355,7 @@ export default function ProjectsDashboard() {
             </div>
           </div>
         </div>
+
         <ProjectStatusWidget projects={rows} />
       </div>
     </div>
@@ -320,6 +393,7 @@ function ProjectStatusWidget({ projects }) {
           </div>
         )}
       </div>
+
       <select
         value={selectedId}
         onChange={(e) => setSelectedId(e.target.value)}
@@ -332,6 +406,7 @@ function ProjectStatusWidget({ projects }) {
           </option>
         ))}
       </select>
+
       {data && (
         <div className="h-1.5 rounded-full bg-[#EAEEF0] overflow-hidden mb-3">
           <div
@@ -340,16 +415,19 @@ function ProjectStatusWidget({ projects }) {
           />
         </div>
       )}
+
       {loading && (
         <div className="text-[12px] text-[#B5C4B6] py-4 text-center">
           Loading…
         </div>
       )}
+
       {!loading && isError && (
         <div className="text-[12px] text-[#B5C4B6] py-4 text-center">
           Couldn't load checklist.
         </div>
       )}
+
       {!loading && data && (
         <ol className="space-y-1.5" data-testid="project-status-list">
           {data.items.map((it, i) => (
@@ -383,6 +461,7 @@ function ProjectStatusWidget({ projects }) {
           ))}
         </ol>
       )}
+
       {!loading && !data && !isError && (
         <div className="text-[12px] text-[#B5C4B6] py-4 text-center">
           Select a project

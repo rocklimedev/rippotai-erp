@@ -16,10 +16,10 @@ export class CreateProjectDto {
   @MaxLength(255)
   name: string;
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(255)
-  slug: string;
+  // `slug` is intentionally absent. It's derived from `name` and must be
+  // unique — accepting it from the client would let two projects collide
+  // on the same slug, or let a client set a slug that doesn't match `name`.
+  // The service generates it the same way ProjectTypeService does.
 
   @IsString()
   @IsNotEmpty()
@@ -60,9 +60,9 @@ export class CreateProjectDto {
   // ProjectsService.findAll/findOne) and are not user-settable.
 }
 
-// updated_by, created_by etc. still excluded — nothing to OmitType here
-// since CreateProjectDto never had them in the first place, but keeping
-// this pattern documents the intent and makes future additions safer.
+// `name` is deliberately still updatable, but doing so must re-derive and
+// re-check `slug` server-side (same as ProjectTypeService.update) — there's
+// nothing to OmitType here since slug was never on CreateProjectDto.
 export class UpdateProjectDto extends PartialType(
   OmitType(CreateProjectDto, [] as const),
 ) {}

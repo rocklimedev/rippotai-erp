@@ -15,6 +15,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { UnitsModule } from './modules/metas/units.module';
 import { ClientsModule } from './modules/clients/clients.module';
+import { BoqModule } from './modules/boqs/boq.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -41,6 +42,7 @@ import { ClientsModule } from './modules/clients/clients.module';
     VendorsModule,
     QuotationsModule,
     ClientsModule,
+    BoqModule,
   ],
 })
 export class AppModule {}

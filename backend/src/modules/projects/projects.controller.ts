@@ -19,14 +19,7 @@ import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { ProjectStatus } from '../../common/enums';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
-
-type AuthUser = {
-  id: string;
-  name?: string;
-  email?: string;
-  role?: string;
-  role_id?: string;
-};
+import { User } from '@/modules/users/models/user.model';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
@@ -34,7 +27,7 @@ export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
   @Post()
-  create(@Body() dto: CreateProjectDto, @CurrentUser() user: AuthUser) {
+  create(@Body() dto: CreateProjectDto, @CurrentUser() user?: User) {
     return this.projectsService.create(dto, user);
   }
 
@@ -54,6 +47,7 @@ export class ProjectsController {
           ).join(', ')}`,
         );
       }
+
       parsedStatus = status as ProjectStatus;
     }
 
@@ -76,24 +70,18 @@ export class ProjectsController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateProjectDto,
-    @CurrentUser() user: AuthUser,
+    @CurrentUser() user?: User,
   ) {
     return this.projectsService.update(id, dto, user);
   }
 
   @Patch(':id/archive')
-  archive(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: AuthUser,
-  ) {
+  archive(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user?: User) {
     return this.projectsService.archive(id, user);
   }
 
   @Patch(':id/restore')
-  restore(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: AuthUser,
-  ) {
+  restore(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user?: User) {
     return this.projectsService.restore(id, user);
   }
 
@@ -101,7 +89,7 @@ export class ProjectsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: AuthUser,
+    @CurrentUser() user?: User,
   ): Promise<void> {
     return this.projectsService.remove(id, user);
   }

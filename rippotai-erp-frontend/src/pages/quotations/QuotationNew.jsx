@@ -3,6 +3,16 @@ import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import {
+  useCreateQuotationMutation,
+  useReplaceQuotationItemsMutation,
+  useUpdateQuotationMutation,
+  useSubmitQuotationMutation,
+} from "../../api/quotation.api";
+import { useGetVendorsQuery } from "../../api/vendor.api";
+import { useGetProjectsQuery } from "../../api/project.api"; // adjust import path to wherever projectsApi.js lives
+import { useGetUnitsQuery } from "../../api/unit.api"; // adjust import path to wherever unitApi.js lives
+import NewVendorModal from "../../components/vendors/AddVendorModal";
 import { X, Plus, Copy, Trash2, GripVertical, Search } from "lucide-react";
 import {
   DndContext,
@@ -19,18 +29,16 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-const UNITS = [
-  "Sq.ft",
-  "Sq.m",
-  "Rft",
-  "Nos",
-  "Lump",
-  "Set",
-  "Kg",
-  "Point",
-  "Day",
-  "Month",
-];
+// NOTE: QuotationStatus enum on the backend model is:
+// draft | submitted | approved | returned_for_editing | declined | cancelled
+// There is no "awaiting_approval" status — submitting for review moves a
+// quotation from draft -> submitted via the /quotations/:id/submit endpoint.
+const QUOTATION_STATUS = {
+  DRAFT: "draft",
+  SUBMITTED: "submitted",
+  APPROVED: "approved",
+};
+
 const DEFAULT_TERMS = `1. Rates are inclusive of labour and material unless specified otherwise.\n2. GST is extra as applicable.\n3. Any item outside this estimate will be charged as per actuals after mutual approval.\n4. A 50% advance is required to commence work; the balance will be billed progressively.`;
 
 const iso = () => new Date().toISOString().slice(0, 10);
@@ -65,8 +73,14 @@ const Input = (props) => (
     className={`h-10 w-full px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13.5px] disabled:opacity-70 disabled:cursor-not-allowed ${props.className || ""}`}
   />
 );
+const Select = (props) => (
+  <select
+    {...props}
+    className={`h-10 w-full px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13.5px] disabled:opacity-70 disabled:cursor-not-allowed ${props.className || ""}`}
+  />
+);
 
-function ItemRow({ item, index, disabled, onChange, onDup, onDel }) {
+function ItemRow({ item, index, disabled, units, unitsLoading, onChange, onDup, onDel }) {
   const {
     attributes,
     listeners,
@@ -139,15 +153,23 @@ function ItemRow({ item, index, disabled, onChange, onDup, onDel }) {
         />
       </td>
       <td className="px-1 py-1.5">
+        {/* Now backed by unitApi's getUnits query and bound to the real
+            unit_id FK on QuotationItem, instead of the old hardcoded,
+            display-only unit name list. */}
         <select
-          disabled={disabled}
-          value={item.unit}
-          onChange={(e) => onChange(item.id, { unit: e.target.value })}
+          disabled={disabled || unitsLoading}
+          value={item.unit_id || ""}
+          onChange={(e) =>
+            onChange(item.id, { unit_id: e.target.value || null })
+          }
           className="h-10 w-full px-2 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13px]"
           data-testid={`row-unit-${item.id}`}
         >
-          {UNITS.map((u) => (
-            <option key={u}>{u}</option>
+          <option value="">{unitsLoading ? "Loading…" : "Select unit"}</option>
+          {units.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.name}
+            </option>
           ))}
         </select>
       </td>
@@ -191,21 +213,28 @@ export default function EstimateNew() {
   const nav = useNavigate();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+
+  const [createQuotation] = useCreateQuotationMutation();
+  const [replaceQuotationItems] = useReplaceQuotationItemsMutation();
+  const [updateQuotation] = useUpdateQuotationMutation();
+  const [submitQuotation] = useSubmitQuotationMutation();
+
   // Basic
   const [estimateNumber, setEstimateNumber] = useState("");
   const [estimateDate, setEstimateDate] = useState(iso());
   // Vendor
   const [vendorSearch, setVendorSearch] = useState("");
-  const [vendorResults, setVendorResults] = useState([]);
+  const [debouncedVendorSearch, setDebouncedVendorSearch] = useState("");
   const [vendor, setVendor] = useState(null);
   const [showNewVendor, setShowNewVendor] = useState(false);
   // Project
-  const [projectSearch, setProjectSearch] = useState("");
-  const [projectResults, setProjectResults] = useState([]);
   const [project, setProject] = useState(null);
+  // Units (for the item rows' unit dropdown)
+  const { data: unitsData, isLoading: unitsLoading } = useGetUnitsQuery();
+  const units = Array.isArray(unitsData) ? unitsData : unitsData?.data || [];
   // Items
   const [items, setItems] = useState([
-    { id: uid(), particular: "", rate: 0, qty: 1, unit: "Nos", remarks: "" },
+    { id: uid(), particular: "", rate: 0, qty: 1, unit_id: null, remarks: "" },
   ]);
   // Totals
   const [addlAmt, setAddlAmt] = useState(0);
@@ -213,39 +242,35 @@ export default function EstimateNew() {
   const [discAmt, setDiscAmt] = useState(0);
   const [discIsPct, setDiscIsPct] = useState(false);
   const [taxPct, setTaxPct] = useState(0);
-  // T&C + approval + status
+  // T&C + status
   const [terms, setTerms] = useState(DEFAULT_TERMS);
   const [busy, setBusy] = useState(false);
-  const [approval, setApproval] = useState({
-    approved_by_name: "",
-    approved_by_signature_url: "",
-    approved_at: "",
-  });
-  const [status, setStatus] = useState("draft");
-  const readOnly = status === "approved" && !isAdmin;
+  const [status, setStatus] = useState(QUOTATION_STATUS.DRAFT);
+  const readOnly = status === QUOTATION_STATUS.APPROVED && !isAdmin;
 
-  // Vendor search
+  // Debounce vendor search input before hitting vendorsApi
   useEffect(() => {
     const t = setTimeout(() => {
-      const q = vendorSearch.trim();
-      api
-        .get(`/vendors${q ? `?q=${encodeURIComponent(q)}` : "?limit=20"}`)
-        .then((r) => setVendorResults(r.data || []))
-        .catch(() => setVendorResults([]));
+      setDebouncedVendorSearch(vendorSearch.trim());
     }, 200);
     return () => clearTimeout(t);
   }, [vendorSearch]);
-  // Project search
-  useEffect(() => {
-    const t = setTimeout(() => {
-      const q = projectSearch.trim();
-      api
-        .get(`/projects${q ? `?q=${encodeURIComponent(q)}` : "?limit=20"}`)
-        .then((r) => setProjectResults(r.data || []))
-        .catch(() => setProjectResults([]));
-    }, 200);
-    return () => clearTimeout(t);
-  }, [projectSearch]);
+
+  // Vendor search — goes through vendorsApi's getVendors query instead of a
+  // raw axios call, so it stays in sync with the vendors cache/tags.
+  const { data: vendorResults = [] } = useGetVendorsQuery(
+    debouncedVendorSearch ? { q: debouncedVendorSearch } : {},
+    { skip: !!vendor },
+  );
+
+  // Project — a dropdown backed by projectsApi's getProjects query instead
+  // of a free-text axios search, so it stays in sync with the projects
+  // cache/tags too.
+  const { data: projectsData, isLoading: projectsLoading } =
+    useGetProjectsQuery({});
+  const projects = Array.isArray(projectsData)
+    ? projectsData
+    : projectsData?.data || [];
 
   // Recompute estimate number whenever project or date changes
   const refreshEstimateNumber = useCallback((pid, d) => {
@@ -295,7 +320,7 @@ export default function EstimateNew() {
   const addItem = () =>
     setItems((list) => [
       ...list,
-      { id: uid(), particular: "", rate: 0, qty: 1, unit: "Nos", remarks: "" },
+      { id: uid(), particular: "", rate: 0, qty: 1, unit_id: null, remarks: "" },
     ]);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -310,54 +335,86 @@ export default function EstimateNew() {
     });
   };
 
-  const submit = async (targetStatus = "awaiting_approval") => {
+  const submit = async (targetStatus = QUOTATION_STATUS.SUBMITTED) => {
     if (!project) return toast.error("Select a project");
     if (!vendor) return toast.error("Select or create a vendor");
     if (items.every((i) => !i.particular?.trim()))
       return toast.error("Add at least one item");
+
     setBusy(true);
     try {
-      const { data } = await api.post("/quotations", {
-        project_id: project.id,
-        vendor_id: vendor.id,
-        title: `Estimate — ${project.name}`,
-        quotation_number: estimateNumber || undefined,
-        quotation_date: estimateDate,
-      });
-      const qid = data.id;
-      const rows = items
+      // 1. Create the quotation header — field names must match the
+      //    Sequelize model's camelCase attributes (projectId, vendorId,
+      //    quotationNumber, quotationDate). There is no "title" column.
+const created = await createQuotation({
+  project_id: project.id,
+  vendor_id: vendor.id,
+  quotation_date: estimateDate,
+  quotation_number: estimateNumber || undefined,
+  items: items
+    .filter((i) => i.particular?.trim())
+    .map((i, idx) => ({
+      sno: idx + 1,
+      particular: i.particular,
+      rate: Number(i.rate) || 0,
+      quantity: Number(i.qty) || 0,
+      amount: (Number(i.rate) || 0) * (Number(i.qty) || 0),
+      remarks: i.remarks || "",
+    })),
+}).unwrap();
+      const qid = created.id;
+
+      // 2. Replace items in bulk via PUT /quotations/:id/items — matches
+      //    QuotationItem's actual columns: particular, rate, quantity,
+      //    amount, remarks, sno, unit_id (now a real FK, populated from the
+      //    unitApi-backed dropdown above instead of always being null).
+      const itemRows = items
         .filter((i) => i.particular?.trim())
-        .map((i) => ({
-          description: i.particular,
-          unit: i.unit,
-          quantity: Number(i.qty) || 0,
+        .map((i, idx) => ({
+          sno: idx + 1,
+          particular: i.particular,
           rate: Number(i.rate) || 0,
+          quantity: Number(i.qty) || 0,
+          amount: (Number(i.rate) || 0) * (Number(i.qty) || 0),
           remarks: i.remarks || "",
+          unit_id: i.unit_id || null,
         }));
-      if (rows.length)
-        await api.post(`/quotations/${qid}/items/bulk`, { items: rows });
-      await api.patch(`/quotations/${qid}`, {
-        commercial_terms: { ...(project ? {} : {}), special_conditions: terms },
-        additional_charges: addlAmt
-          ? [
-              {
-                label: addlIsPct ? "Additional (%)" : "Additional (₹)",
-                amount: addlResolved,
-              },
-            ]
-          : [],
-        discount: discResolved,
-        tax_config: `GST ${taxPct}%`,
-      });
-      if (targetStatus === "awaiting_approval") {
-        try {
-          await api.post(`/quotations/${qid}/send-to-reviewer`);
-        } catch {}
+
+      if (itemRows.length) {
+        await replaceQuotationItems({
+          quotationId: qid,
+          items: itemRows,
+        }).unwrap();
       }
+
+      // 3. Update totals/terms/discount — field names matched to the model:
+      //    termsConditions, additionalCharges (decimal), globalDiscountType/
+      //    Value, discount, taxPercent, taxAmount, subtotal, totalAmount.
+      await updateQuotation({
+        id: qid,
+        termsConditions: terms,
+        subtotal,
+        additionalCharges: addlResolved,
+        globalDiscountType: discIsPct ? "percentage" : "fixed",
+        globalDiscountValue: Number(discAmt) || 0,
+        discount: discResolved,
+        taxPercent: Number(taxPct) || 0,
+        taxAmount,
+        totalAmount: grandTotal,
+      }).unwrap();
+
+      // 4. Move draft -> submitted via the dedicated endpoint, instead of a
+      //    nonexistent "awaiting_approval" status / send-to-reviewer route.
+      if (targetStatus === QUOTATION_STATUS.SUBMITTED) {
+        await submitQuotation({ id: qid, submitted_by: user?.id }).unwrap();
+      }
+
       toast.success("Estimate saved");
       nav(`/quotations/${qid}`);
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "Failed to save estimate");
+      toast.error(
+        e?.data?.message || e?.error || "Failed to save estimate",
+      );
     } finally {
       setBusy(false);
     }
@@ -483,60 +540,26 @@ export default function EstimateNew() {
       <Card label="Project Information">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Project" required>
-            {project ? (
-              <div className="flex items-center gap-2">
-                <div
-                  className="flex-1 h-10 px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13.5px] flex items-center font-semibold"
-                  data-testid="project-selected"
-                >
-                  {project.name}
-                </div>
-                <button
-                  disabled={readOnly}
-                  onClick={() => setProject(null)}
-                  className="h-10 px-3 rounded-lg border border-[#DDD8CE] text-[12.5px] font-semibold text-[#333333]"
-                >
-                  Change
-                </button>
-              </div>
-            ) : (
-              <div className="relative">
-                <Search
-                  size={14}
-                  className="absolute top-3 left-3 text-[#B5C4B6]"
-                />
-                <input
-                  disabled={readOnly}
-                  value={projectSearch}
-                  onChange={(e) => setProjectSearch(e.target.value)}
-                  placeholder="Search project…"
-                  className="h-10 w-full pl-9 pr-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13.5px]"
-                  data-testid="project-search"
-                />
-                {projectResults.length > 0 && projectSearch && (
-                  <div className="absolute z-10 top-11 left-0 right-0 max-h-[240px] overflow-y-auto bg-white border border-[#DDD8CE] rounded-lg shadow-md">
-                    {projectResults.slice(0, 8).map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => {
-                          setProject(p);
-                          setProjectSearch("");
-                        }}
-                        className="w-full text-left px-3 py-2 hover:bg-[#EAEEF0] border-b border-[#EAEEF0] text-[13px]"
-                        data-testid={`project-opt-${p.id}`}
-                      >
-                        <div className="font-semibold text-[#333333]">
-                          {p.name}
-                        </div>
-                        <div className="text-[11.5px] text-[#6B7B7C]">
-                          {p.location || "—"}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            <Select
+              disabled={readOnly || projectsLoading}
+              value={project?.id || ""}
+              onChange={(e) => {
+                const selected = projects.find(
+                  (p) => String(p.id) === e.target.value,
+                );
+                setProject(selected || null);
+              }}
+              data-testid="project-select"
+            >
+              <option value="">
+                {projectsLoading ? "Loading projects…" : "Select a project…"}
+              </option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </Select>
           </Field>
           <Field label="Site Location">
             <Input
@@ -582,6 +605,8 @@ export default function EstimateNew() {
                       item={it}
                       index={idx}
                       disabled={readOnly}
+                      units={units}
+                      unitsLoading={unitsLoading}
                       onChange={setItem}
                       onDup={dupItem}
                       onDel={delItem}
@@ -694,34 +719,23 @@ export default function EstimateNew() {
         />
       </Card>
 
-      {/* Card E — Approval */}
+      {/* Card E — Approval. On create the quotation is always draft, so this
+          block never has data to show yet — real values (reviewedAt /
+          reviewedBy / reviewRemarks) only exist on the model once a
+          reviewer acts on the quotation from the detail/review screen. */}
       <Card label="Approval & Signature">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <div className="text-[12px] font-semibold text-[#333333] mb-2">
-              Approved By
+              Reviewer
             </div>
             <div
               className="border border-[#DDD8CE] rounded-lg p-4 min-h-[120px] bg-[#FAF8F5]"
               data-testid="approved-by-block"
             >
-              {status === "approved" && approval.approved_by_signature_url ? (
-                <>
-                  <img
-                    alt="signature"
-                    src={approval.approved_by_signature_url}
-                    className="max-h-14 mb-2"
-                  />
-                  <div className="text-[13px] font-semibold text-[#333333]">
-                    {approval.approved_by_name}
-                  </div>
-                  <div className="text-[11.5px] text-[#6B7B7C]">
-                    {(approval.approved_at || "").slice(0, 10)}
-                  </div>
-                </>
-              ) : (
-                <div className="text-[13px] text-[#B5C4B6] italic">—</div>
-              )}
+              <div className="text-[13px] text-[#B5C4B6] italic">
+                Available after this estimate is submitted and reviewed
+              </div>
             </div>
           </div>
           <div>
@@ -741,7 +755,7 @@ export default function EstimateNew() {
       <div className="flex items-center gap-3 pt-2">
         <button
           disabled={busy || readOnly}
-          onClick={() => submit("awaiting_approval")}
+          onClick={() => submit(QUOTATION_STATUS.SUBMITTED)}
           className="h-11 px-6 rounded-xl bg-[#1F453B] text-white text-[13.5px] font-semibold disabled:opacity-60"
           data-testid="submit-approval-btn"
         >
@@ -749,7 +763,7 @@ export default function EstimateNew() {
         </button>
         <button
           disabled={busy || readOnly}
-          onClick={() => submit("draft")}
+          onClick={() => submit(QUOTATION_STATUS.DRAFT)}
           className="text-[13px] font-semibold text-[#6B7B7C] hover:text-[#333333] hover:underline"
           data-testid="save-draft-btn"
         >
@@ -766,118 +780,6 @@ export default function EstimateNew() {
           }}
         />
       )}
-    </div>
-  );
-}
-
-function NewVendorModal({ onClose, onCreated }) {
-  const [form, setForm] = useState({
-    name: "",
-    company: "",
-    contact: "",
-    email: "",
-    primary_category: "General",
-  });
-  const [saving, setSaving] = useState(false);
-  const save = async () => {
-    if (!form.company.trim() && !form.name.trim())
-      return toast.error("Company or name required");
-    setSaving(true);
-    try {
-      const { data } = await api.post("/vendors", form);
-      toast.success(`Vendor "${data.company || data.name}" added`);
-      onCreated(data);
-    } catch (e) {
-      toast.error(e?.response?.data?.detail || "Failed to add vendor");
-    } finally {
-      setSaving(false);
-    }
-  };
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl w-[480px] p-6"
-        onClick={(e) => e.stopPropagation()}
-        data-testid="new-vendor-modal"
-      >
-        <div className="text-[18px] font-semibold text-[#333333] mb-4">
-          New Vendor
-        </div>
-        <div className="grid gap-3">
-          <Field label="Company">
-            <Input
-              value={form.company}
-              onChange={(e) => setForm({ ...form, company: e.target.value })}
-              data-testid="nv-company"
-            />
-          </Field>
-          <Field label="Contact name">
-            <Input
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              data-testid="nv-name"
-            />
-          </Field>
-          <Field label="Phone">
-            <Input
-              value={form.contact}
-              onChange={(e) => setForm({ ...form, contact: e.target.value })}
-              data-testid="nv-phone"
-            />
-          </Field>
-          <Field label="Email">
-            <Input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              data-testid="nv-email"
-            />
-          </Field>
-          <Field label="Primary Category">
-            <select
-              value={form.primary_category}
-              onChange={(e) =>
-                setForm({ ...form, primary_category: e.target.value })
-              }
-              className="h-10 w-full px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13.5px]"
-              data-testid="nv-category"
-            >
-              {[
-                "General",
-                "Civil",
-                "Electrical",
-                "Plumbing",
-                "Carpentry",
-                "Painting",
-                "Flooring",
-                "Fabrication",
-                "Other",
-              ].map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </Field>
-        </div>
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="h-10 px-4 rounded-lg border border-[#DDD8CE] text-[13px] font-semibold text-[#333333]"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={save}
-            disabled={saving}
-            className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold"
-            data-testid="nv-save"
-          >
-            {saving ? "Saving…" : "Save Vendor"}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

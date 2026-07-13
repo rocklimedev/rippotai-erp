@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, fn, col, literal } from 'sequelize';
+import { Op, fn, col, literal, WhereOptions } from 'sequelize';
 import { Quotation } from '@/modules/quotations/models/quotations.model';
 import { Project } from './models/projects.model';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
@@ -9,7 +9,7 @@ import { ActivityLogForProjectService } from '../engagement/services/activity-lo
 import { NotificationForProjectService } from '../engagement/services/notification-project.service';
 import { Vendor } from '../vendors/models/vendors.model';
 import { ClientsService } from '../clients/clients.service';
-
+import { User } from '@/modules/users/models/user.model';
 @Injectable()
 export class ProjectsService {
   constructor(
@@ -19,11 +19,35 @@ export class ProjectsService {
     private readonly notificationForProjectService: NotificationForProjectService,
     private readonly clientsService: ClientsService,
   ) {}
+  private slugify(name: string): string {
+    return name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  }
+  private async generateUniqueSlug(
+    name: string,
+    excludeId?: string,
+  ): Promise<string> {
+    const base = this.slugify(name);
+    let slug = base;
+    let suffix = 1;
+
+    while (true) {
+      const existing = await this.projectModel.findOne({ where: { slug } });
+      if (!existing || existing.id === excludeId) break;
+      suffix += 1;
+      slug = `${base}-${suffix}`;
+    }
+
+    return slug;
+  }
 
   // =========================
   // CREATE PROJECT
   // =========================
-  async create(dto: CreateProjectDto, user?: any): Promise<Project> {
+  async create(dto: CreateProjectDto, user?: User): Promise<Project> {
     if (dto.client_id) {
       const clientExists = await this.clientsService.exists(dto.client_id);
       if (!clientExists) {
@@ -31,8 +55,11 @@ export class ProjectsService {
       }
     }
 
+    const slug = await this.generateUniqueSlug(dto.name);
+
     const project = await this.projectModel.create({
       ...dto,
+      slug,
       created_by: user?.id ?? null,
     } as any);
 
@@ -67,11 +94,19 @@ export class ProjectsService {
       client_id?: string;
     } = {},
   ) {
-    const where: any = {};
+    const where: WhereOptions<Project> = {};
 
-    if (filters.status) where.status = filters.status;
-    if (filters.client_id) where.client_id = filters.client_id;
-    if (!filters.includeArchived) where.archived_at = { [Op.is]: null };
+    if (filters.status) {
+      where.status = filters.status;
+    }
+
+    if (filters.client_id) {
+      where.client_id = filters.client_id;
+    }
+
+    if (!filters.includeArchived) {
+      where.archived_at = { [Op.is]: null };
+    }
 
     return this.projectModel.findAll({
       where,
@@ -79,42 +114,37 @@ export class ProjectsService {
       subQuery: false,
 
       attributes: {
-        // Drop the stale stored columns so they don't collide with
-        // (or shadow) the live-computed literals below.
         exclude: ['quotation_count', 'approved_value'],
 
         include: [
-          // QUOTATION COUNT
           [
             literal(`(
-              SELECT COUNT(*)
-              FROM quotations q
-              WHERE q.project_id = Project.id
-              AND q.deleted_at IS NULL
-            )`),
+            SELECT COUNT(*)
+            FROM quotations q
+            WHERE q.project_id = Project.id
+            AND q.deleted_at IS NULL
+          )`),
             'quotation_count',
           ],
 
-          // TOTAL QUOTATIONS
           [
             literal(`(
-              SELECT COALESCE(SUM(q.total_amount), 0)
-              FROM quotations q
-              WHERE q.project_id = Project.id
-              AND q.deleted_at IS NULL
-            )`),
+            SELECT COALESCE(SUM(q.total_amount), 0)
+            FROM quotations q
+            WHERE q.project_id = Project.id
+            AND q.deleted_at IS NULL
+          )`),
             'quotation_total',
           ],
 
-          // APPROVED ONLY
           [
             literal(`(
-              SELECT COALESCE(SUM(q.total_amount), 0)
-              FROM quotations q
-              WHERE q.project_id = Project.id
-              AND q.status = 'approved'
-              AND q.deleted_at IS NULL
-            )`),
+            SELECT COALESCE(SUM(q.total_amount), 0)
+            FROM quotations q
+            WHERE q.project_id = Project.id
+            AND q.status = 'approved'
+            AND q.deleted_at IS NULL
+          )`),
             'approved_value',
           ],
         ],
@@ -125,7 +155,7 @@ export class ProjectsService {
           model: Quotation,
           as: 'quotations',
           required: false,
-          attributes: [], // only for relation existence, not aggregation
+          attributes: [],
         },
         {
           association: 'client',
@@ -150,7 +180,6 @@ export class ProjectsService {
       order: [['created_at', 'DESC']],
     });
   }
-
   // =========================
   // FIND ONE
   // =========================
@@ -275,7 +304,7 @@ export class ProjectsService {
   // =========================
   // UPDATE
   // =========================
-  async update(id: string, dto: UpdateProjectDto, user?: any) {
+  async update(id: string, dto: UpdateProjectDto, user?: User) {
     const project = await this.findOne(id);
 
     if (dto.client_id) {
@@ -317,7 +346,7 @@ export class ProjectsService {
   // =========================
   // ARCHIVE
   // =========================
-  async archive(id: string, user?: any) {
+  async archive(id: string, user?: User) {
     const project = await this.findOne(id);
 
     await project.update({
@@ -345,7 +374,7 @@ export class ProjectsService {
   // =========================
   // RESTORE
   // =========================
-  async restore(id: string, user?: any) {
+  async restore(id: string, user?: User) {
     const project = await this.findOne(id, true);
 
     await project.update({
@@ -373,7 +402,7 @@ export class ProjectsService {
   // =========================
   // DELETE (Soft Delete)
   // =========================
-  async remove(id: string, user?: any): Promise<void> {
+  async remove(id: string, user?: User): Promise<void> {
     const project = await this.findOne(id);
     const projectName = project.name;
 

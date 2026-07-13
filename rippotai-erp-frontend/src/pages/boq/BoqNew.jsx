@@ -1,28 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "@/lib/api";
 import { toast } from "sonner";
 import { ArrowRight, ArrowLeft, FileSpreadsheet } from "lucide-react";
 
+import { useCreateBoqMutation, useGetTemplatesQuery } from "../../api/boq.api";
+import { useGetProjectsQuery } from "../../api/project.api";
+
 export default function BoqNew() {
   const nav = useNavigate();
-  const [projects, setProjects] = useState([]);
-  const [templates, setTemplates] = useState([]);
   const [projectId, setProjectId] = useState("");
   const [title, setTitle] = useState("");
   const [templateId, setTemplateId] = useState("");
-  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    api
-      .get("/projects?limit=50")
-      .then((r) => setProjects(r.data))
-      .catch(() => {});
-    api
-      .get("/boq-templates")
-      .then((r) => setTemplates(r.data))
-      .catch(() => {});
-  }, []);
+  const { data: projects = [], isLoading: projectsLoading } =
+    useGetProjectsQuery({ limit: 50 });
+  const { data: templates = [], isLoading: templatesLoading } =
+    useGetTemplatesQuery();
+
+  const [createBoq, { isLoading: busy }] = useCreateBoqMutation();
 
   const submit = async (e) => {
     e.preventDefault();
@@ -30,19 +25,16 @@ export default function BoqNew() {
       toast.error("Please pick a project");
       return;
     }
-    setBusy(true);
     try {
-      const { data } = await api.post("/boqs", {
+      const data = await createBoq({
         project_id: projectId,
         title: title || undefined,
         template_id: templateId || undefined,
-      });
+      }).unwrap();
       toast.success("BOQ created");
       nav(`/boq/${data.id}`);
     } catch (err) {
-      toast.error(err?.response?.data?.detail || "Failed to create BOQ");
-    } finally {
-      setBusy(false);
+      toast.error(err?.data?.detail || "Failed to create BOQ");
     }
   };
 
@@ -81,9 +73,12 @@ export default function BoqNew() {
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
               required
+              disabled={projectsLoading}
               data-testid="boq-new-project"
             >
-              <option value="">Select a project…</option>
+              <option value="">
+                {projectsLoading ? "Loading projects…" : "Select a project…"}
+              </option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -119,9 +114,12 @@ export default function BoqNew() {
               className="bc-input"
               value={templateId}
               onChange={(e) => setTemplateId(e.target.value)}
+              disabled={templatesLoading}
               data-testid="boq-new-template"
             >
-              <option value="">Start blank</option>
+              <option value="">
+                {templatesLoading ? "Loading templates…" : "Start blank"}
+              </option>
               {templates.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}

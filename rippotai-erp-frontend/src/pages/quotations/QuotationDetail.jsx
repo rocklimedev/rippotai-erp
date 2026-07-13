@@ -1,143 +1,179 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import api from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { fmtINR, relativeTime, StatusChip } from "@/lib/format";
+// Blob downloads (PDF/Excel export) aren't covered by the RTK Query slice below,
+// so those two calls still go through the plain axios client.
+import api from "@/lib/api";
+import {
+  useGetQuotationByIdQuery,
+  useSubmitQuotationMutation,
+  useApproveQuotationMutation,
+  useReturnQuotationMutation,
+  useDeclineQuotationMutation,
+  useCancelQuotationMutation,
+  useRestoreQuotationMutation,
+  useSoftDeleteQuotationMutation,
+  useCreateQuotationItemMutation,
+  useUpdateQuotationItemMutation,
+  useDeleteQuotationItemMutation,
+  useGetQuotationVersionsQuery,
+  useCreateQuotationVersionMutation,
+  useRestoreQuotationVersionMutation,
+  useDeleteQuotationVersionMutation,
+} from "../../api/quotation.api"; // adjust to wherever quotationApi.js actually lives
 import {
   ArrowLeft,
   Download,
-  GitCompare,
   Copy,
   Send,
   CheckCircle2,
   XCircle,
-  MessageSquare,
   Trash2,
-  Archive,
   Upload,
   FileText,
+  ChevronDown,
+  ChevronRight,
+  RotateCcw,
+  Archive,
 } from "lucide-react";
 
 const TABS = [
   "Items",
   "Commercial Terms",
-  "BOQ Comparison",
   "Approval History",
   "Versions",
   "Attachments",
-  "Activity",
   "Notes",
 ];
-
-function DaysPill({ q }) {
-  const d = q.days_remaining;
-  if (d == null) return null;
-  const s =
-    d < 0
-      ? { l: "Expired", bg: "#EAEEF0", fg: "#1F453B" }
-      : d <= 7
-        ? { l: `Expires in ${d}d`, bg: "#EAEEF0", fg: "#1F453B" }
-        : { l: `${d}d left`, bg: "#EAEEF0", fg: "#1F453B" };
-  return (
-    <span
-      className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold"
-      style={{ background: s.bg, color: s.fg }}
-    >
-      {s.l}
-    </span>
-  );
-}
 
 export default function QuotationDetail() {
   const { id } = useParams();
   const nav = useNavigate();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
-  const [q, setQ] = useState(null);
+
+  const {
+    data: q,
+    isLoading,
+    isError,
+  } = useGetQuotationByIdQuery(id, { skip: !id });
+
+  const [submitQuotation, { isLoading: submitting }] =
+    useSubmitQuotationMutation();
+  const [approveQuotation, { isLoading: approving }] =
+    useApproveQuotationMutation();
+  const [returnQuotation, { isLoading: returning }] =
+    useReturnQuotationMutation();
+  const [declineQuotation, { isLoading: declining }] =
+    useDeclineQuotationMutation();
+  const [cancelQuotation, { isLoading: cancelling }] =
+    useCancelQuotationMutation();
+  const [restoreQuotation] = useRestoreQuotationMutation();
+  const [softDeleteQuotation] = useSoftDeleteQuotationMutation();
+
+  const [createQuotationItem] = useCreateQuotationItemMutation();
+  const [updateQuotationItem] = useUpdateQuotationItemMutation();
+  const [deleteQuotationItem] = useDeleteQuotationItemMutation();
+
   const [tab, setTab] = useState("Items");
-  const [busy, setBusy] = useState(false);
-  const [remarkModal, setRemarkModal] = useState(null); // { action, label }
+  const [remarkModal, setRemarkModal] = useState(null); // { label, onConfirm(remarks) }
   const [remark, setRemark] = useState("");
+  const busy = submitting || approving || returning || declining || cancelling;
 
-  const load = async () => {
-    try {
-      const { data } = await api.get(`/quotations/${id}`);
-      setQ(data);
-    } catch {
-      toast.error("Failed");
-    }
-  };
-  useEffect(() => {
-    load();
-  }, [id]); // eslint-disable-line
+  if (isLoading) return <div className="p-8 text-[#6B7B7C]">Loading…</div>;
+  if (isError || !q)
+    return (
+      <div className="p-8 text-[#6B7B7C]">Couldn't load this quotation.</div>
+    );
 
-  if (!q) return <div className="p-8 text-[#6B7B7C]">Loading…</div>;
-
+  // --- Derived values, mapped from the real payload shape ---
+  const vendor = q.vendor || q.vendorSnapshot || {};
+  const project = q.project || q.projectSnapshot || {};
   const readOnly = q.status === "approved" && !isAdmin;
   const editable = !readOnly && ["draft", "returned"].includes(q.status);
-  const total = q.subtotals?.total || 0;
+  const isDeleted = !!q.deletedAt;
 
-  const doAction = async (action, remarks = "") => {
-    setBusy(true);
+  const subtotal = Number(q.subtotal || 0);
+  const taxAmount = Number(q.taxAmount || 0);
+  const additionalCharges = Number(q.additionalCharges || 0);
+  const discountValue = Number(q.discount ?? q.globalDiscountValue ?? 0);
+  const total = Number(q.totalAmount || 0);
+
+  const runAction = async (mutationFn, args, successMsg = "Done") => {
     try {
-      if (action === "approve") {
-        // Phase G: signature-aware approve
-        await api.post(`/quotations/${id}/approve-with-signature`);
-      } else {
-        await api.post(`/quotations/${id}/${action}`, { remarks });
-      }
-      toast.success("Done");
+      await mutationFn(args).unwrap();
+      toast.success(successMsg);
       setRemarkModal(null);
       setRemark("");
-      load();
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "Action failed");
+      toast.error(e?.data?.detail || e?.error || "Action failed");
     }
-    setBusy(false);
   };
 
-  const duplicate = async () => {
-    setBusy(true);
-    try {
-      const { data } = await api.post(`/quotations/${id}/duplicate-version`);
-      toast.success(`V${data.version} created`);
-      nav(`/quotations/${data.id}`);
-    } catch {
-      toast.error("Failed");
-    }
-    setBusy(false);
-  };
+  const handleSubmit = () =>
+    runAction(
+      submitQuotation,
+      { id, submitted_by: user?.id },
+      "Sent for review",
+    );
+  const handleApprove = (remarks) =>
+    runAction(approveQuotation, { id, remarks }, "Approved");
+  const handleReturn = (remarks) =>
+    runAction(returnQuotation, { id, remarks }, "Returned for revision");
+  const handleDecline = (remarks) =>
+    runAction(declineQuotation, { id, remarks }, "Declined");
+  const handleCancel = () =>
+    runAction(cancelQuotation, { id, updated_by: user?.id }, "Cancelled");
+  const handleRestore = () => runAction(restoreQuotation, id, "Restored");
+  const handleSoftDelete = () =>
+    runAction(
+      softDeleteQuotation,
+      { id, deleted_by: user?.id },
+      "Moved to trash",
+    );
 
-  const patchItem = async (iid, patch) => {
-    await api.patch(`/quotations/${id}/items/${iid}`, patch);
-    load();
-  };
-  const delItem = async (iid) => {
-    await api.delete(`/quotations/${id}/items/${iid}`);
-    load();
-  };
   const addItem = async () => {
-    await api.post(`/quotations/${id}/items`, {
-      description: "New item",
-      unit: "Nos.",
-      quantity: 1,
-      rate: 0,
-      tax_pct: 18,
-      calc_type: "M",
-    });
-    load();
+    try {
+      await createQuotationItem({
+        quotationId: id,
+        particular: "New item",
+        quantity: 1,
+        rate: 0,
+        remarks: "",
+      }).unwrap();
+    } catch {
+      toast.error("Failed to add item");
+    }
+  };
+  const patchItem = async (itemId, patch) => {
+    try {
+      await updateQuotationItem({ itemId, ...patch }).unwrap();
+    } catch {
+      toast.error("Failed to update item");
+    }
+  };
+  const delItem = async (itemId) => {
+    try {
+      await deleteQuotationItem(itemId).unwrap();
+    } catch {
+      toast.error("Failed to delete item");
+    }
   };
 
   const uploadAtt = async (file) => {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("kind", "attachment");
-    await api.post(`/quotations/${id}/attachments`, fd, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    toast.success("Attached");
-    load();
+    try {
+      await api.post(`/quotations/${id}/attachments`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      toast.success("Attached");
+    } catch {
+      toast.error("Upload failed");
+    }
   };
 
   const exportPdf = async () => {
@@ -151,7 +187,7 @@ export default function QuotationDetail() {
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = `Quotation_${q.quotation_number}.pdf`;
+    a.download = `Quotation_${q.quotationNumber}.pdf`;
     a.click();
   };
   const exportXlsx = async () => {
@@ -161,7 +197,7 @@ export default function QuotationDetail() {
     const url = URL.createObjectURL(new Blob([res.data]));
     const a = document.createElement("a");
     a.href = url;
-    a.download = `Quotation_${q.quotation_number}.xlsx`;
+    a.download = `Quotation_${q.quotationNumber}.xlsx`;
     a.click();
   };
 
@@ -175,6 +211,22 @@ export default function QuotationDetail() {
         <ArrowLeft size={14} /> Estimates
       </button>
 
+      {isDeleted && (
+        <div className="mb-3 flex items-center justify-between bg-[#EAEEF0] border border-[#B5C4B6] rounded-lg px-4 py-2 text-[13px]">
+          <span className="text-[#333333]">
+            This quotation was deleted{q.deletedBy ? ` by ${q.deletedBy}` : ""}.
+          </span>
+          {isAdmin && (
+            <button
+              onClick={handleRestore}
+              className="inline-flex items-center gap-1 font-semibold text-[#1F453B]"
+            >
+              <RotateCcw size={13} /> Restore
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
         <div className="flex flex-wrap justify-between gap-4">
@@ -185,36 +237,37 @@ export default function QuotationDetail() {
               </span>
               <StatusChip status={q.status} />
               <span className="text-[11px] font-semibold text-[#333333] bg-[#EAEEF0] px-1.5 py-0.5 rounded">
-                V{q.version}
+                V{q.currentVersion ?? 1}
               </span>
-              {q.locked && (
-                <span className="text-[11px] font-semibold text-[#333333] bg-[#EAEEF0] px-1.5 py-0.5 rounded">
-                  Locked
-                </span>
-              )}
-              <DaysPill q={q} />
             </div>
             <h1
               className="text-[36px] font-bold text-[#333333] mt-1.5"
               data-testid="quotation-title"
             >
-              {q.title}
+              {project.name || "Untitled Project"}
             </h1>
             <div className="text-[13px] text-[#6B7B7C] mt-1 space-x-3">
               <Link
-                to={`/vendors/${q.vendor_id}`}
+                to={`/vendors/${q.vendorId || q.vendor_id}`}
                 className="hover:text-[#333333]"
               >
-                <span className="font-semibold">{q.vendor_name || "—"}</span>
+                <span className="font-semibold">{vendor.name || "—"}</span>
               </Link>
-              <span className="text-[#B5C4B6]">·</span>
-              <span>{q.project_name || "—"}</span>
-              <span className="text-[#B5C4B6]">·</span>
-              <span>{q.work_category}</span>
+              {vendor.company_name && (
+                <>
+                  <span className="text-[#B5C4B6]">·</span>
+                  <span>{vendor.company_name}</span>
+                </>
+              )}
+              {vendor.vendorCategory?.name && (
+                <>
+                  <span className="text-[#B5C4B6]">·</span>
+                  <span>{vendor.vendorCategory.name}</span>
+                </>
+              )}
             </div>
             <div className="text-[12px] text-[#B5C4B6] mt-1">
-              {q.quotation_number} · {q.quotation_date} · Valid until{" "}
-              {q.valid_until}
+              {q.quotationNumber} · {q.quotationDate}
             </div>
           </div>
           <div className="text-right">
@@ -228,15 +281,16 @@ export default function QuotationDetail() {
               {fmtINR(total)}
             </div>
             <div className="text-[11px] text-[#6B7B7C] mt-1">
-              Base {fmtINR(q.subtotals?.base || 0)} · Tax{" "}
-              {fmtINR(q.subtotals?.tax || 0)}
+              Subtotal {fmtINR(subtotal)} · Tax ({q.taxPercent || 0}%){" "}
+              {fmtINR(taxAmount)}
             </div>
-            {q.boq_variation_pct != null && (
-              <div
-                className={`text-[12px] font-semibold mt-1 ${q.boq_variation_pct > 10 ? "text-[#333333]" : q.boq_variation_pct > 0 ? "text-[#333333]" : "text-[#333333]"}`}
-              >
-                {q.boq_variation_pct > 0 ? "+" : ""}
-                {q.boq_variation_pct}% vs BOQ
+            {(discountValue > 0 || additionalCharges > 0) && (
+              <div className="text-[11px] text-[#6B7B7C] mt-0.5">
+                {discountValue > 0 &&
+                  `Discount ${q.globalDiscountType === "percent" ? `${discountValue}%` : fmtINR(discountValue)}`}
+                {discountValue > 0 && additionalCharges > 0 && " · "}
+                {additionalCharges > 0 &&
+                  `Additional charges ${fmtINR(additionalCharges)}`}
               </div>
             )}
           </div>
@@ -244,18 +298,6 @@ export default function QuotationDetail() {
 
         {/* Actions */}
         <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[#B5C4B6]">
-          <button
-            onClick={duplicate}
-            className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px] font-semibold inline-flex items-center gap-1"
-          >
-            <Copy size={13} /> Duplicate Version
-          </button>
-          <button
-            onClick={() => nav(`/quotations/compare?ids=${id}`)}
-            className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px] font-semibold inline-flex items-center gap-1"
-          >
-            <GitCompare size={13} /> Compare
-          </button>
           <button
             onClick={exportPdf}
             data-testid="btn-export-pdf"
@@ -271,31 +313,30 @@ export default function QuotationDetail() {
             <Download size={13} /> Excel
           </button>
           <div className="ml-auto flex flex-wrap gap-2">
-            {!readOnly && q.status === "draft" && (
-              <>
-                <button
-                  onClick={() => doAction("send-to-reviewer")}
-                  className="px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold inline-flex items-center gap-1"
-                  data-testid="btn-send-reviewer"
-                >
-                  <Send size={13} /> Send to Reviewer
-                </button>
-                <button
-                  onClick={() => doAction("send-to-vendor")}
-                  className="px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold inline-flex items-center gap-1"
-                >
-                  <Send size={13} /> Send to Vendor
-                </button>
-              </>
+            {!readOnly && !isDeleted && q.status === "draft" && (
+              <button
+                onClick={handleSubmit}
+                disabled={busy}
+                className="px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold inline-flex items-center gap-1"
+                data-testid="btn-submit"
+              >
+                <Send size={13} /> Submit for Review
+              </button>
             )}
             {!readOnly &&
-              (q.status === "under_review" ||
-                q.status === "awaiting_approval") && (
+              !isDeleted &&
+              ["submitted", "under_review", "awaiting_approval"].includes(
+                q.status,
+              ) && (
                 <>
                   <button
                     onClick={() =>
-                      setRemarkModal({ action: "approve", label: "Approve" })
+                      setRemarkModal({
+                        label: "Approve",
+                        onConfirm: handleApprove,
+                      })
                     }
+                    disabled={busy}
                     className="px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold inline-flex items-center gap-1"
                     data-testid="btn-approve"
                   >
@@ -304,61 +345,49 @@ export default function QuotationDetail() {
                   <button
                     onClick={() =>
                       setRemarkModal({
-                        action: "return",
                         label: "Return for Revision",
+                        onConfirm: handleReturn,
                       })
                     }
+                    disabled={busy}
                     className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px] font-semibold"
                   >
                     Return
                   </button>
                   <button
                     onClick={() =>
-                      setRemarkModal({ action: "reject", label: "Reject" })
-                    }
-                    className="px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold inline-flex items-center gap-1"
-                  >
-                    <XCircle size={13} /> Reject
-                  </button>
-                  <button
-                    onClick={() =>
                       setRemarkModal({
-                        action: "request-clarification",
-                        label: "Request Clarification",
+                        label: "Decline",
+                        onConfirm: handleDecline,
                       })
                     }
-                    className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px] font-semibold inline-flex items-center gap-1"
+                    disabled={busy}
+                    className="px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold inline-flex items-center gap-1"
                   >
-                    <MessageSquare size={13} /> Clarify
+                    <XCircle size={13} /> Decline
                   </button>
                 </>
               )}
-            {q.status === "approved" && (
-              <>
+            {!isDeleted &&
+              ["approved", "submitted", "under_review"].includes(
+                q.status,
+              ) && (
                 <button
-                  onClick={() =>
-                    setRemarkModal({
-                      action: "mark-selected",
-                      label: "Mark as Selected",
-                    })
-                  }
-                  className="px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold"
-                  data-testid="btn-mark-selected"
-                >
-                  Mark as Selected
-                </button>
-                <button
-                  onClick={() =>
-                    setRemarkModal({
-                      action: "mark-not-selected",
-                      label: "Mark as Not Selected",
-                    })
-                  }
+                  onClick={handleCancel}
+                  disabled={busy}
                   className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px] font-semibold"
                 >
-                  Not Selected
+                  Cancel
                 </button>
-              </>
+              )}
+            {isAdmin && !isDeleted && (
+              <button
+                onClick={handleSoftDelete}
+                className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px] font-semibold inline-flex items-center gap-1 text-[#333333]"
+                title="Move to trash"
+              >
+                <Archive size={13} /> Delete
+              </button>
             )}
           </div>
         </div>
@@ -400,39 +429,31 @@ export default function QuotationDetail() {
                 <thead className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
                   <tr className="border-b border-[#B5C4B6]">
                     <th className="text-left py-2 pr-2">#</th>
-                    <th className="text-left py-2 pr-2">Description</th>
-                    <th className="text-left py-2 pr-2">Unit</th>
+                    <th className="text-left py-2 pr-2">Particular</th>
                     <th className="text-right py-2 pr-2">Qty</th>
                     <th className="text-right py-2 pr-2">Rate</th>
                     <th className="text-right py-2 pr-2">Amount</th>
-                    <th className="text-right py-2 pr-2">Tax %</th>
-                    <th className="text-right py-2 pr-2">BOQ Δ</th>
+                    <th className="text-left py-2 pr-2">Remarks</th>
                     {editable && <th></th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {(q.items || []).map((it, idx) => (
+                  {(q.items || []).map((it) => (
                     <tr key={it.id} className="border-b border-[#EAEEF0]">
-                      <td className="py-2 pr-2 text-[#B5C4B6]">{idx + 1}</td>
+                      <td className="py-2 pr-2 text-[#B5C4B6]">{it.sno}</td>
                       <td className="py-2 pr-2">
                         {editable ? (
                           <input
-                            value={it.description || ""}
+                            value={it.particular || ""}
                             onChange={(e) =>
-                              patchItem(it.id, { description: e.target.value })
+                              patchItem(it.id, { particular: e.target.value })
                             }
                             className="w-full px-2 py-1 border border-transparent hover:border-[#B5C4B6] rounded"
                           />
                         ) : (
-                          it.description
-                        )}
-                        {it.boq_ref && (
-                          <div className="text-[11px] text-[#B5C4B6]">
-                            BOQ: {it.boq_ref}
-                          </div>
+                          it.particular
                         )}
                       </td>
-                      <td className="py-2 pr-2">{it.unit}</td>
                       <td className="py-2 pr-2 text-right">
                         {editable ? (
                           <input
@@ -446,7 +467,7 @@ export default function QuotationDetail() {
                             className="w-20 px-2 py-1 border border-transparent hover:border-[#B5C4B6] rounded text-right"
                           />
                         ) : (
-                          it.quantity
+                          Number(it.quantity)
                         )}
                       </td>
                       <td className="py-2 pr-2 text-right">
@@ -468,13 +489,18 @@ export default function QuotationDetail() {
                       <td className="py-2 pr-2 text-right font-semibold">
                         {fmtINR(it.amount || 0)}
                       </td>
-                      <td className="py-2 pr-2 text-right">{it.tax_pct}%</td>
-                      <td
-                        className={`py-2 pr-2 text-right font-semibold ${it.variation_pct == null ? "text-[#B5C4B6]" : it.variation_pct > 10 ? "text-[#333333]" : it.variation_pct > 0 ? "text-[#333333]" : "text-[#333333]"}`}
-                      >
-                        {it.variation_pct == null
-                          ? "—"
-                          : `${it.variation_pct > 0 ? "+" : ""}${it.variation_pct}%`}
+                      <td className="py-2 pr-2">
+                        {editable ? (
+                          <input
+                            value={it.remarks || ""}
+                            onChange={(e) =>
+                              patchItem(it.id, { remarks: e.target.value })
+                            }
+                            className="w-full px-2 py-1 border border-transparent hover:border-[#B5C4B6] rounded"
+                          />
+                        ) : (
+                          it.remarks || "—"
+                        )}
                       </td>
                       {editable && (
                         <td className="py-2">
@@ -489,6 +515,20 @@ export default function QuotationDetail() {
                     </tr>
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr className="text-[12.5px]">
+                    <td
+                      colSpan={4}
+                      className="py-2 pr-2 text-right font-semibold text-[#6B7B7C]"
+                    >
+                      Subtotal
+                    </td>
+                    <td className="py-2 pr-2 text-right font-semibold">
+                      {fmtINR(subtotal)}
+                    </td>
+                    <td />
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </div>
@@ -497,120 +537,64 @@ export default function QuotationDetail() {
         {tab === "Commercial Terms" && (
           <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[13px]">
-              {Object.entries(q.commercial_terms || {}).map(([k, v]) => (
-                <div key={k}>
-                  <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
-                    {k.replace(/_/g, " ")}
-                  </div>
-                  <div className="text-[#333333] font-semibold">
-                    {typeof v === "boolean"
-                      ? v
-                        ? "Yes"
-                        : "No"
-                      : Array.isArray(v)
-                        ? v.join(", ")
-                        : String(v || "—")}
-                  </div>
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
+                  Tax
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {tab === "BOQ Comparison" && (
-          <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
-            {(q.items || []).filter((i) => i.boq_ref_data).length === 0 ? (
-              <div className="text-[13px] text-[#B5C4B6] text-center py-8">
-                No BOQ-linked items in this quotation.
+                <div className="text-[#333333] font-semibold">
+                  {q.taxPercent || 0}% ({fmtINR(taxAmount)})
+                </div>
               </div>
-            ) : (
-              <table className="w-full text-[12.5px]">
-                <thead className="text-[11px] uppercase text-[#B5C4B6]">
-                  <tr className="border-b border-[#B5C4B6]">
-                    <th className="text-left py-2">Item</th>
-                    <th className="text-right py-2">BOQ Rate</th>
-                    <th className="text-right py-2">BOQ Amount</th>
-                    <th className="text-right py-2">Quoted Rate</th>
-                    <th className="text-right py-2">Quoted Amount</th>
-                    <th className="text-right py-2">Δ ₹</th>
-                    <th className="text-right py-2">Δ %</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(q.items || [])
-                    .filter((i) => i.boq_ref_data)
-                    .map((it) => {
-                      const b = it.boq_ref_data;
-                      const dRs = (it.amount || 0) - (b.boq_amount || 0);
-                      return (
-                        <tr key={it.id} className="border-b border-[#EAEEF0]">
-                          <td className="py-2 pr-2">{it.description}</td>
-                          <td className="py-2 pr-2 text-right">
-                            {fmtINR(b.boq_rate)}
-                          </td>
-                          <td className="py-2 pr-2 text-right">
-                            {fmtINR(b.boq_amount)}
-                          </td>
-                          <td className="py-2 pr-2 text-right">
-                            {fmtINR(it.rate)}
-                          </td>
-                          <td className="py-2 pr-2 text-right">
-                            {fmtINR(it.amount)}
-                          </td>
-                          <td
-                            className={`py-2 pr-2 text-right font-semibold ${dRs > 0 ? "text-[#333333]" : "text-[#333333]"}`}
-                          >
-                            {dRs > 0 ? "+" : ""}
-                            {fmtINR(dRs)}
-                          </td>
-                          <td
-                            className={`py-2 pr-2 text-right font-semibold ${it.variation_pct > 10 ? "text-[#333333]" : it.variation_pct > 0 ? "text-[#333333]" : "text-[#333333]"}`}
-                          >
-                            {it.variation_pct == null
-                              ? "—"
-                              : `${it.variation_pct > 0 ? "+" : ""}${it.variation_pct}%`}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            )}
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
+                  Discount
+                </div>
+                <div className="text-[#333333] font-semibold">
+                  {discountValue > 0
+                    ? q.globalDiscountType === "percent"
+                      ? `${discountValue}%`
+                      : fmtINR(discountValue)
+                    : "—"}
+                </div>
+              </div>
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
+                  Additional Charges
+                </div>
+                <div className="text-[#333333] font-semibold">
+                  {fmtINR(additionalCharges)}
+                </div>
+              </div>
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
+                  Created
+                </div>
+                <div className="text-[#333333] font-semibold">
+                  {relativeTime(q.created_at)}
+                </div>
+              </div>
+              <div className="md:col-span-2">
+                <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
+                  Terms &amp; Conditions
+                </div>
+                <div className="text-[#333333] whitespace-pre-wrap">
+                  {q.termsConditions || "—"}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
         {tab === "Approval History" && (
           <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
-            {(q.approval_history || []).length === 0 ? (
-              <div className="text-[#B5C4B6] text-center py-6">
-                No approval events yet.
-              </div>
-            ) : (
-              <ol className="space-y-3">
-                {(q.approval_history || []).map((a) => (
-                  <li key={a.id} className="flex gap-3">
-                    <div className="w-2 h-2 rounded-full bg-[#1F453B] mt-1.5" />
-                    <div className="flex-1">
-                      <div className="text-[13px] font-semibold text-[#333333]">
-                        {a.action.replace(/_/g, " ")}
-                      </div>
-                      <div className="text-[12px] text-[#6B7B7C]">
-                        {a.actor} · {relativeTime(a.at)}
-                      </div>
-                      {a.meta?.remarks && (
-                        <div className="text-[12px] text-[#6B7B7C] mt-1">
-                          "{a.meta.remarks}"
-                        </div>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            )}
+            <ApprovalHistory q={q} />
           </div>
         )}
 
-        {tab === "Versions" && <VersionsTab id={id} />}
+        {tab === "Versions" && (
+          <VersionsTab id={id} currentVersion={q.currentVersion} isAdmin={isAdmin} />
+        )}
+
         {tab === "Attachments" && (
           <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
             <div className="flex justify-between items-center mb-3">
@@ -657,92 +641,13 @@ export default function QuotationDetail() {
             </div>
           </div>
         )}
-        {tab === "Activity" && (
-          <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
-            <ol className="space-y-2">
-              {(q.activity || []).map((a) => (
-                <li
-                  key={a.id}
-                  className="text-[13px] flex justify-between border-b border-[#EAEEF0] py-2"
-                >
-                  <div>
-                    <span className="font-semibold text-[#333333]">
-                      {a.action.replace(/_/g, " ")}
-                    </span>
-                    <span className="text-[#6B7B7C]"> · {a.actor}</span>
-                  </div>
-                  <span className="text-[12px] text-[#B5C4B6]">
-                    {relativeTime(a.at)}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
+
         {tab === "Notes" && (
           <div className="bg-white border border-[#B5C4B6] rounded-xl p-5 text-[13px] text-[#6B7B7C]">
             Internal notes will be shared privately across your team. (Coming
             soon)
           </div>
         )}
-      </div>
-
-      {/* Approval & Signature block (Phase G) */}
-      <div
-        className="mt-6 bg-white border border-[#DDD8CE] rounded-2xl p-5"
-        data-testid="detail-approval-block"
-      >
-        <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6] font-semibold mb-3">
-          Approval &amp; Signature
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <div className="text-[12px] font-semibold text-[#333333] mb-2">
-              Approved By
-            </div>
-            <div
-              className="border border-[#DDD8CE] rounded-lg p-4 min-h-[120px] bg-[#FAF8F5]"
-              data-testid="detail-approved-by"
-            >
-              {q.status === "approved" ? (
-                <>
-                  {q.approved_by_signature_url ? (
-                    <img
-                      alt="signature"
-                      src={q.approved_by_signature_url}
-                      className="max-h-14 mb-2"
-                    />
-                  ) : (
-                    <div className="text-[11.5px] text-[#B5C4B6] italic mb-2">
-                      No signature on file for the approver.
-                    </div>
-                  )}
-                  <div className="text-[13px] font-semibold text-[#333333]">
-                    {q.approved_by_name || q.approved_by || "—"}
-                  </div>
-                  <div className="text-[11.5px] text-[#6B7B7C]">
-                    {(q.approved_at || "").slice(0, 10)}
-                  </div>
-                </>
-              ) : (
-                <div className="text-[13px] text-[#B5C4B6] italic">
-                  Awaiting approval — will populate once an admin approves this
-                  estimate.
-                </div>
-              )}
-            </div>
-          </div>
-          <div>
-            <div className="text-[12px] font-semibold text-[#333333] mb-2">
-              Contractor&apos;s Sign
-            </div>
-            <div className="border border-[#DDD8CE] rounded-lg p-4 min-h-[120px] bg-[#FAF8F5] flex items-end">
-              <div className="text-[11.5px] text-[#B5C4B6]">
-                Signature block for print
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {remarkModal && (
@@ -774,7 +679,7 @@ export default function QuotationDetail() {
                 Cancel
               </button>
               <button
-                onClick={() => doAction(remarkModal.action, remark)}
+                onClick={() => remarkModal.onConfirm(remark)}
                 disabled={busy}
                 className="px-4 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold"
                 data-testid="btn-confirm-remark"
@@ -789,36 +694,308 @@ export default function QuotationDetail() {
   );
 }
 
-function VersionsTab({ id }) {
-  const [rows, setRows] = useState([]);
-  useEffect(() => {
-    api.get(`/quotations/${id}/versions`).then((r) => setRows(r.data));
-  }, [id]);
+// Built from submittedAt/submittedBy + reviewedAt/reviewedBy/reviewRemarks,
+// since the API does not return a dedicated approval_history array.
+function ApprovalHistory({ q }) {
+  const events = [];
+  if (q.submittedAt) {
+    events.push({
+      id: "submitted",
+      action: "submitted",
+      actor: q.submittedBy,
+      at: q.submittedAt,
+    });
+  }
+  if (q.reviewedAt) {
+    events.push({
+      id: "reviewed",
+      action: q.status === "approved" ? "approved" : "reviewed",
+      actor: q.reviewedBy,
+      at: q.reviewedAt,
+      remarks: q.reviewRemarks,
+    });
+  }
+
+  if (events.length === 0) {
+    return (
+      <div className="text-[#B5C4B6] text-center py-6">
+        No approval events yet.
+      </div>
+    );
+  }
+
+  return (
+    <ol className="space-y-3">
+      {events.map((a) => (
+        <li key={a.id} className="flex gap-3">
+          <div className="w-2 h-2 rounded-full bg-[#1F453B] mt-1.5" />
+          <div className="flex-1">
+            <div className="text-[13px] font-semibold text-[#333333]">
+              {a.action.replace(/_/g, " ")}
+            </div>
+            <div className="text-[12px] text-[#6B7B7C]">
+              {a.actor || "—"} · {relativeTime(a.at)}
+            </div>
+            {a.remarks && (
+              <div className="text-[12px] text-[#6B7B7C] mt-1">
+                &ldquo;{a.remarks}&rdquo;
+              </div>
+            )}
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+// Version records look like:
+// { id, quotationId, version, snapshot: {...full quotation at that point...}, remarks, createdBy, created_at }
+// version.id is the *version record's* id, not a navigable quotation id — so
+// rows expand inline instead of linking to /quotations/{version.id}.
+function VersionsTab({ id, currentVersion, isAdmin }) {
+  const { data: rows = [], isLoading } = useGetQuotationVersionsQuery(id, {
+    skip: !id,
+  });
+  const [createQuotationVersion, { isLoading: creating }] =
+    useCreateQuotationVersionMutation();
+  const [restoreQuotationVersion] = useRestoreQuotationVersionMutation();
+  const [deleteQuotationVersion] = useDeleteQuotationVersionMutation();
+  const { user } = useAuth();
+
+  const [openId, setOpenId] = useState(null);
+  const [remarkModal, setRemarkModal] = useState(false);
+  const [remark, setRemark] = useState("");
+
+  const handleCreateVersion = async () => {
+    try {
+      await createQuotationVersion({
+        quotationId: id,
+        created_by: user?.id,
+        remarks: remark,
+      }).unwrap();
+      toast.success("Version saved");
+      setRemarkModal(false);
+      setRemark("");
+    } catch {
+      toast.error("Failed to save version");
+    }
+  };
+
+  const handleRestoreVersion = async (versionId) => {
+    try {
+      await restoreQuotationVersion({
+        id: versionId,
+        restored_by: user?.id,
+      }).unwrap();
+      toast.success("Version restored");
+    } catch {
+      toast.error("Failed to restore version");
+    }
+  };
+
+  const handleDeleteVersion = async (versionId) => {
+    try {
+      await deleteQuotationVersion(versionId).unwrap();
+      toast.success("Version deleted");
+    } catch {
+      toast.error("Failed to delete version");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
+        <div className="text-[#B5C4B6] text-center py-6">Loading versions…</div>
+      </div>
+    );
+  }
+
+  const sorted = [...rows].sort((a, b) => b.version - a.version);
+
   return (
     <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
-      {rows.length === 0 ? (
+      <div className="flex justify-between items-center mb-3">
+        <div className="text-[13px] font-semibold text-[#333333]">
+          {rows.length} version{rows.length === 1 ? "" : "s"}
+        </div>
+        <button
+          onClick={() => setRemarkModal(true)}
+          disabled={creating}
+          className="px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12px] font-semibold inline-flex items-center gap-1"
+        >
+          <Copy size={12} /> Save Version
+        </button>
+      </div>
+
+      {sorted.length === 0 ? (
         <div className="text-[#B5C4B6] text-center py-6">No versions yet.</div>
       ) : (
         <div className="space-y-2">
-          {rows.map((r) => (
-            <Link
-              key={r.id}
-              to={`/quotations/${r.id}`}
-              className="flex justify-between items-center border border-[#B5C4B6] rounded-lg p-3 hover:border-[#1F453B]"
-            >
-              <div>
-                <div className="text-[13px] font-semibold text-[#333333]">
-                  V{r.version} · {r.quotation_number}
+          {sorted.map((r) => {
+            const isOpen = openId === r.id;
+            const snap = r.snapshot || {};
+            return (
+              <div
+                key={r.id}
+                className="border border-[#B5C4B6] rounded-lg overflow-hidden"
+              >
+                <div className="w-full flex justify-between items-center p-3 hover:bg-[#FAF8F5]">
+                  <button
+                    onClick={() => setOpenId(isOpen ? null : r.id)}
+                    className="flex items-center gap-2 text-left flex-1"
+                  >
+                    {isOpen ? (
+                      <ChevronDown size={14} className="text-[#B5C4B6]" />
+                    ) : (
+                      <ChevronRight size={14} className="text-[#B5C4B6]" />
+                    )}
+                    <div>
+                      <div className="text-[13px] font-semibold text-[#333333] flex items-center gap-2">
+                        V{r.version}
+                        {r.version === currentVersion && (
+                          <span className="text-[10px] font-semibold text-[#1F453B] bg-[#EAEEF0] px-1.5 py-0.5 rounded-full">
+                            Current
+                          </span>
+                        )}
+                        <StatusChip status={snap.status} />
+                      </div>
+                      <div className="text-[12px] text-[#6B7B7C]">
+                        {r.remarks || "No remarks"} ·{" "}
+                        {relativeTime(r.created_at)}
+                      </div>
+                    </div>
+                  </button>
+                  <div className="flex items-center gap-3">
+                    <div className="text-[14px] font-bold text-[#333333]">
+                      {fmtINR(snap.totalAmount || 0)}
+                    </div>
+                    {isAdmin && (
+                      <>
+                        <button
+                          onClick={() => handleRestoreVersion(r.id)}
+                          title="Restore this version"
+                          className="text-[#6B7B7C] hover:text-[#1F453B]"
+                        >
+                          <RotateCcw size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteVersion(r.id)}
+                          title="Delete this version"
+                          className="text-[#6B7B7C] hover:text-[#333333]"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div className="text-[12px] text-[#6B7B7C]">
-                  {r.status} · {relativeTime(r.updated_at)}
-                </div>
+
+                {isOpen && (
+                  <div className="border-t border-[#EAEEF0] p-3 bg-[#FAF8F5]">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[12px] mb-3">
+                      <div>
+                        <div className="text-[10px] uppercase text-[#B5C4B6]">
+                          Subtotal
+                        </div>
+                        <div className="font-semibold text-[#333333]">
+                          {fmtINR(snap.subtotal || 0)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase text-[#B5C4B6]">
+                          Tax
+                        </div>
+                        <div className="font-semibold text-[#333333]">
+                          {fmtINR(snap.taxAmount || 0)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase text-[#B5C4B6]">
+                          Discount
+                        </div>
+                        <div className="font-semibold text-[#333333]">
+                          {snap.discount ? fmtINR(snap.discount) : "—"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase text-[#B5C4B6]">
+                          Items
+                        </div>
+                        <div className="font-semibold text-[#333333]">
+                          {snap.items?.length || 0}
+                        </div>
+                      </div>
+                    </div>
+                    <table className="w-full text-[12px]">
+                      <thead className="text-[10px] uppercase text-[#B5C4B6]">
+                        <tr className="border-b border-[#B5C4B6]">
+                          <th className="text-left py-1">#</th>
+                          <th className="text-left py-1">Particular</th>
+                          <th className="text-right py-1">Qty</th>
+                          <th className="text-right py-1">Rate</th>
+                          <th className="text-right py-1">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(snap.items || []).map((it) => (
+                          <tr key={it.id} className="border-b border-[#EAEEF0]">
+                            <td className="py-1 text-[#B5C4B6]">{it.sno}</td>
+                            <td className="py-1">{it.particular}</td>
+                            <td className="py-1 text-right">
+                              {Number(it.quantity)}
+                            </td>
+                            <td className="py-1 text-right">
+                              {fmtINR(it.rate)}
+                            </td>
+                            <td className="py-1 text-right font-semibold">
+                              {fmtINR(it.amount)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-              <div className="text-[14px] font-bold text-[#333333]">
-                {fmtINR(r.subtotals?.total || 0)}
-              </div>
-            </Link>
-          ))}
+            );
+          })}
+        </div>
+      )}
+
+      {remarkModal && (
+        <div
+          className="fixed inset-0 z-50 bg-[#1F453B]/40 flex items-center justify-center p-4"
+          onClick={() => setRemarkModal(false)}
+        >
+          <div
+            className="bg-white rounded-xl max-w-md w-full p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-[15px] font-bold mb-2">Save Version</div>
+            <textarea
+              autoFocus
+              value={remark}
+              onChange={(e) => setRemark(e.target.value)}
+              rows={4}
+              placeholder="Add remarks (optional)…"
+              className="w-full px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
+            />
+            <div className="flex justify-end gap-2 mt-3">
+              <button
+                onClick={() => setRemarkModal(false)}
+                className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateVersion}
+                disabled={creating}
+                className="px-4 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

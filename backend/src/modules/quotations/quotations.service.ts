@@ -36,12 +36,6 @@ export class QuotationsService {
     private readonly activityLogForQuotationService: ActivityLogForQuotationService,
   ) {}
 
-  /**
-   * Resolve the "actor" id for audit fields (createdBy/updatedBy/etc).
-   * Always prefer the authenticated user from the request over anything
-   * the client claims in the DTO body — the DTO value is only used as a
-   * fallback for system/service-account calls where `user` is not present.
-   */
   private resolveActorId(
     user?: any,
     fallback?: string | null,
@@ -49,11 +43,6 @@ export class QuotationsService {
     return user?.id ?? fallback ?? undefined;
   }
 
-  /**
-   * Derive a 2-letter client slug from a client's full name.
-   * "Dhruv Verma" -> "DV" (first letter of first + second word)
-   * "Dhruv" (single word) -> "DH" (first two letters of the single word)
-   */
   private getClientSlug(clientName: string): string {
     const parts = clientName.trim().split(/\s+/).filter(Boolean);
 
@@ -66,20 +55,6 @@ export class QuotationsService {
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
-  /**
-   * NOTE ON SLUG COLLISIONS:
-   * The 2-letter slug is derived from initials only, so it is NOT unique —
-   * "Dhruv Verma" and "David Verma" both produce "DV". Because of this we
-   * must NOT use the slug (or any LIKE match on the quotationNumber string)
-   * to compute the next sequence number — doing so would let two unrelated
-   * clients' quotations collide or skip numbers.
-   *
-   * Instead, the sequence is simply "how many quotations this project
-   * already has" — i.e. project.quotations.length + 1 — scoped by
-   * project_id, which is guaranteed unique. This mirrors "the Nth
-   * quotation raised for this project" rather than parsing any existing
-   * quotationNumber string or relying on a sortable timestamp/id column.
-   */
   private async generateQuotationNumber(
     projectId: string,
     projectName: string,
@@ -158,10 +133,6 @@ export class QuotationsService {
     while (true) {
       attempt++;
 
-      // Re-derived fresh on every attempt — generateQuotationNumber() re-runs
-      // count() from scratch each time, so if a concurrent insert landed
-      // between our last count() and our failed create(), this attempt will
-      // pick up the new true count instead of repeating a stale value.
       const quotation_number =
         dto.quotation_number ??
         (await this.generateQuotationNumber(dto.project_id, project.name));
@@ -313,7 +284,7 @@ export class QuotationsService {
     const updatedBy = this.resolveActorId(user, dto.updated_by);
 
     const { subtotal, discount, tax_amount, total_amount } = this.computeTotals(
-      items as any,
+      items,
       Number(additional_charges),
       global_discount_type,
       Number(global_discount_value),

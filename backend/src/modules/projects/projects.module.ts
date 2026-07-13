@@ -6,7 +6,10 @@ import { ProjectsController } from './projects.controller';
 import { ActivityLogsModule } from '../engagement/activity-logs.module';
 import { NotificationsModule } from '../engagement/notifications.module';
 import { ProjectType } from './models/project-type.model';
+import { ProjectTypeService } from './project-type.service';
+import { ProjectTypeController } from './project-type.controller';
 import { ClientsModule } from '../clients/clients.module';
+
 @Module({
   imports: [
     SequelizeModule.forFeature([Project, ProjectType]),
@@ -14,8 +17,8 @@ import { ClientsModule } from '../clients/clients.module';
     NotificationsModule,
     ClientsModule,
   ],
-  controllers: [ProjectsController],
-  providers: [ProjectsService],
-  exports: [ProjectsService],
+  controllers: [ProjectsController, ProjectTypeController],
+  providers: [ProjectsService, ProjectTypeService],
+  exports: [ProjectsService, ProjectTypeService],
 })
 export class ProjectsModule {}

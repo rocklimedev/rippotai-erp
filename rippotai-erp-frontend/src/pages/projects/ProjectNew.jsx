@@ -1,36 +1,83 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "@/lib/api";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, X } from "lucide-react";
+import { useCreateProjectMutation } from "../../api/project.api"; // adjust import path
+import {
+  useGetProjectTypesQuery,
+  useCreateProjectTypeMutation,
+} from "../../api/project-type.api"; // adjust import path
+import {
+  useGetClientsQuery,
+  useCreateClientMutation,
+} from "../../api/client.api"; // adjust import path
+
+// UI shows friendly labels; CreateProjectDto's `priority` is validated
+// against the ProjectPriority enum, which is uppercase.
+const PRIORITY_OPTIONS = [
+  { label: "Low", value: "LOW" },
+  { label: "Medium", value: "MEDIUM" },
+  { label: "High", value: "HIGH" },
+  { label: "Critical", value: "CRITICAL" },
+];
 
 export default function ProjectNew() {
   const nav = useNavigate();
   const [form, setForm] = useState({
     name: "",
-    client_name: "",
-    project_type: "",
-    location: "",
-    priority: "Medium",
-    expected_completion: "",
+    client_id: "",
+    project_type_id: "",
+    site_location: "",
+    priority: "MEDIUM",
+    expected_completion_date: "",
   });
-  const [types, setTypes] = useState([]);
-  const [busy, setBusy] = useState(false);
+
   const [showAddType, setShowAddType] = useState(false);
   const [newTypeName, setNewTypeName] = useState("");
 
-  const loadTypes = () =>
-    api
-      .get("/project-types")
-      .then((r) => {
-        setTypes(r.data);
-        if (!form.project_type && r.data.length)
-          setForm((f) => ({ ...f, project_type: r.data[0].name }));
-      })
-      .catch(() => setTypes([]));
+  const [showAddClient, setShowAddClient] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+
+  const {
+    data: types = [],
+    isFetching: typesLoading,
+    isError: typesError,
+  } = useGetProjectTypesQuery();
+
+  const {
+    data: clients = [],
+    isFetching: clientsLoading,
+    isError: clientsError,
+  } = useGetClientsQuery();
+
+  const [createProjectType, { isLoading: creatingType }] =
+    useCreateProjectTypeMutation();
+  const [createClient, { isLoading: creatingClient }] =
+    useCreateClientMutation();
+  const [createProject, { isLoading: creatingProject }] =
+    useCreateProjectMutation();
+
+  const busy = creatingProject;
+
+  // Surface fetch errors the same way the old axios .catch() did.
   useEffect(() => {
-    loadTypes(); /* eslint-disable-next-line */
-  }, []);
+    if (typesError) toast.error("Failed to load project types");
+  }, [typesError]);
+  useEffect(() => {
+    if (clientsError) toast.error("Failed to load clients");
+  }, [clientsError]);
+
+  // Default the selects to the first option once data has loaded.
+  useEffect(() => {
+    if (!form.project_type_id && types.length) {
+      setForm((f) => ({ ...f, project_type_id: types[0].id }));
+    }
+  }, [types, form.project_type_id]);
+  useEffect(() => {
+    if (!form.client_id && clients.length) {
+      setForm((f) => ({ ...f, client_id: clients[0].id }));
+    }
+  }, [clients, form.client_id]);
 
   const saveNewType = async () => {
     if (!newTypeName.trim()) {
@@ -38,30 +85,68 @@ export default function ProjectNew() {
       return;
     }
     try {
-      const { data } = await api.post("/project-types", {
+      const data = await createProjectType({
         name: newTypeName.trim(),
-      });
+      }).unwrap();
       toast.success(`Project type "${data.name}" added`);
       setShowAddType(false);
       setNewTypeName("");
-      await loadTypes();
-      setForm((f) => ({ ...f, project_type: data.name }));
+      setForm((f) => ({ ...f, project_type_id: data.id }));
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "Failed to add project type");
+      toast.error(e?.data?.detail || "Failed to add project type");
+    }
+  };
+
+  const saveNewClient = async () => {
+    if (!newClientName.trim()) {
+      toast.error("Name required");
+      return;
+    }
+    try {
+      const data = await createClient({
+        name: newClientName.trim(),
+      }).unwrap();
+      toast.success(`Client "${data.name}" added`);
+      setShowAddClient(false);
+      setNewClientName("");
+      setForm((f) => ({ ...f, client_id: data.id }));
+    } catch (e) {
+      toast.error(e?.data?.detail || "Failed to add client");
     }
   };
 
   const create = async () => {
     if (!form.name.trim()) return toast.error("Name required");
-    setBusy(true);
+    if (!form.site_location.trim())
+      return toast.error("Location required");
+
+    // Send only what CreateProjectDto accepts, with the exact field
+    // names/types it validates. Optional fields are omitted rather than
+    // sent as empty strings, since e.g. an empty client_id would fail
+    // @IsUUID().
+    const payload = {
+      name: form.name.trim(),
+      site_location: form.site_location.trim(),
+      priority: form.priority,
+      ...(form.client_id ? { client_id: form.client_id } : {}),
+      ...(form.project_type_id
+        ? { project_type_id: form.project_type_id }
+        : {}),
+      ...(form.expected_completion_date
+        ? { expected_completion_date: form.expected_completion_date }
+        : {}),
+    };
+
     try {
-      const { data } = await api.post("/projects", form);
+      const data = await createProject(payload).unwrap();
       toast.success("Project created");
       nav(`/projects/${data.id}`);
-    } catch {
-      toast.error("Failed");
+    } catch (e) {
+      const messages = e?.data?.message;
+      toast.error(
+        Array.isArray(messages) ? messages[0] : messages || "Failed",
+      );
     }
-    setBusy(false);
   };
 
   return (
@@ -92,13 +177,37 @@ export default function ProjectNew() {
         </div>
         <div>
           <label className="text-[12px] font-semibold text-[#6B7B7C]">
-            Client Name
+            Client
           </label>
-          <input
-            value={form.client_name}
-            onChange={(e) => setForm({ ...form, client_name: e.target.value })}
-            className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
-          />
+          <div className="flex items-center gap-2 mt-1">
+            <select
+              value={form.client_id}
+              onChange={(e) => setForm({ ...form, client_id: e.target.value })}
+              disabled={clientsLoading}
+              className="flex-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
+              data-testid="client-select"
+            >
+              {clientsLoading && <option>Loading…</option>}
+              {!clientsLoading && clients.length === 0 && (
+                <option value="">No clients yet</option>
+              )}
+              {!clientsLoading &&
+                clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setShowAddClient(true)}
+              className="w-9 h-9 rounded-lg border border-[#1F453B] text-[#333333] flex items-center justify-center hover:bg-[#EAEEF0]"
+              title="Add new client"
+              data-testid="add-client-btn"
+            >
+              <Plus size={15} />
+            </button>
+          </div>
         </div>
         <div>
           <label className="text-[12px] font-semibold text-[#6B7B7C]">
@@ -106,18 +215,21 @@ export default function ProjectNew() {
           </label>
           <div className="flex items-center gap-2 mt-1">
             <select
-              value={form.project_type}
+              value={form.project_type_id}
               onChange={(e) =>
-                setForm({ ...form, project_type: e.target.value })
+                setForm({ ...form, project_type_id: e.target.value })
               }
+              disabled={typesLoading}
               className="flex-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
               data-testid="project-type-select"
             >
-              {types.map((t) => (
-                <option key={t.id} value={t.name}>
-                  {t.name}
-                </option>
-              ))}
+              {typesLoading && <option>Loading…</option>}
+              {!typesLoading &&
+                types.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
             </select>
             <button
               type="button"
@@ -132,12 +244,15 @@ export default function ProjectNew() {
         </div>
         <div>
           <label className="text-[12px] font-semibold text-[#6B7B7C]">
-            Location
+            Location *
           </label>
           <input
-            value={form.location}
-            onChange={(e) => setForm({ ...form, location: e.target.value })}
+            value={form.site_location}
+            onChange={(e) =>
+              setForm({ ...form, site_location: e.target.value })
+            }
             className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
+            data-testid="new-site-location"
           />
         </div>
         <div>
@@ -148,9 +263,12 @@ export default function ProjectNew() {
             value={form.priority}
             onChange={(e) => setForm({ ...form, priority: e.target.value })}
             className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
+            data-testid="new-priority"
           >
-            {["Low", "Medium", "High", "Critical"].map((t) => (
-              <option key={t}>{t}</option>
+            {PRIORITY_OPTIONS.map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
             ))}
           </select>
         </div>
@@ -160,11 +278,12 @@ export default function ProjectNew() {
           </label>
           <input
             type="date"
-            value={form.expected_completion}
+            value={form.expected_completion_date}
             onChange={(e) =>
-              setForm({ ...form, expected_completion: e.target.value })
+              setForm({ ...form, expected_completion_date: e.target.value })
             }
             className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
+            data-testid="new-expected-completion"
           />
         </div>
       </div>
@@ -227,10 +346,63 @@ export default function ProjectNew() {
               </button>
               <button
                 onClick={saveNewType}
+                disabled={creatingType}
                 className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold"
                 data-testid="new-type-save"
               >
                 Add Type
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddClient && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setShowAddClient(false)}
+        >
+          <div
+            className="bg-white rounded-2xl w-[420px] p-6 relative"
+            onClick={(e) => e.stopPropagation()}
+            data-testid="add-client-modal"
+          >
+            <button
+              className="absolute top-4 right-4 text-[#6B7B7C]"
+              onClick={() => setShowAddClient(false)}
+            >
+              <X size={18} />
+            </button>
+            <div className="text-[18px] font-semibold text-[#333333] mb-1">
+              New Client
+            </div>
+            <div className="text-[12.5px] text-[#6B7B7C] mb-4">
+              Add a client on the fly. It becomes available for all future
+              projects.
+            </div>
+            <input
+              autoFocus
+              value={newClientName}
+              onChange={(e) => setNewClientName(e.target.value)}
+              placeholder="e.g. Apex Buildcon Pvt Ltd"
+              className="w-full h-10 px-3 rounded-lg border border-[#B5C4B6] bg-[#EAEEF0] text-[13.5px]"
+              data-testid="new-client-name"
+              onKeyDown={(e) => e.key === "Enter" && saveNewClient()}
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setShowAddClient(false)}
+                className="h-10 px-4 rounded-lg border border-[#B5C4B6] text-[13px] font-semibold text-[#333333]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveNewClient}
+                disabled={creatingClient}
+                className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold"
+                data-testid="new-client-save"
+              >
+                Add Client
               </button>
             </div>
           </div>

@@ -17,5 +17,25 @@ export default registerAs(
       timestamps: true,
       underscored: false,
     },
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 3000, // release connections well before the host's 10s wait_timeout
+      evict: 1000, // check for idle connections every second
+    },
+    dialectOptions: {
+      connectTimeout: 20000,
+    },
+    retry: {
+      max: 3,
+      match: [
+        /PROTOCOL_CONNECTION_LOST/,
+        /ECONNRESET/,
+        /ETIMEDOUT/,
+        /SequelizeConnectionError/,
+        /SequelizeConnectionRefusedError/,
+      ],
+    },
   }),
 );
