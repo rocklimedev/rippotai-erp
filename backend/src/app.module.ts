@@ -16,6 +16,9 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { UnitsModule } from './modules/metas/units.module';
 import { ClientsModule } from './modules/clients/clients.module';
 import { BoqModule } from './modules/boqs/boq.module';
+import { CdnModule } from './modules/cdn/cdn.module';
+import { DocumentsModule } from './modules/documents/document.module';
+import { DrawingsModule } from './modules/documents/drawing.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -43,6 +46,9 @@ import { BoqModule } from './modules/boqs/boq.module';
     QuotationsModule,
     ClientsModule,
     BoqModule,
+    CdnModule,
+    DocumentsModule,
+    DrawingsModule,
   ],
 })
 export class AppModule {}

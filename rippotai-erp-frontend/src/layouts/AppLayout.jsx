@@ -582,7 +582,6 @@ function TopHeader({ app }) {
 }
 
 /* ---- Main AppLayout: only header + main, no sidebar ---- */
-/* ---- Main AppLayout: only header + main, no sidebar ---- */
 export default function AppLayout({ app }) {
   const { user, ready } = useAuth();
   const navigate = useNavigate();

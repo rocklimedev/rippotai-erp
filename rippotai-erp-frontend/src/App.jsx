@@ -34,16 +34,15 @@ import ClientHome from "@/pages/client/ClientHome";
 import { allSlugsFor } from "@/config/appNav";
 import AppDashboard from "@/components/dashboard/AppDashboard";
 import SectionPage from "@/pages/SectionPage";
-import {
-  DocumentsAll,
-  DocumentUpload,
-  ProjectDocuments,
-  ProjectBriefForm,
-  SiteRekiForm,
-  SiteRekiView,
-  DrawingsAll,
-  DrawingUpload,
-} from "@/pages/documents/DocumentsRoutes";
+
+import { DrawingUpload } from "./pages/documents/DocumentsRoutes";
+import { DrawingsAll } from "./pages/documents/DocumentsRoutes";
+import { SiteRekiView } from "./pages/documents/SiteRekiView";
+import { ProjectBriefForm } from "./components/SectionForm";
+import { SiteRekiForm } from "./components/SectionForm";
+import { ProjectDocuments } from "./pages/documents/DocumentsRoutes";
+import { DocumentsAll } from "./pages/documents/DocumentsAll";
+import { DocumentUpload } from "./pages/documents/DocumentUpload";
 import DocumentsDashboard from "@/pages/documents/DocumentsDashboard";
 import CalendarPage from "@/pages/phasef/CalendarPage";
 import TasksBoard from "@/pages/phasef/TasksBoard";

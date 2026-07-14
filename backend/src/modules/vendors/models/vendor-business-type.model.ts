@@ -11,13 +11,24 @@ import {
 } from 'sequelize-typescript';
 import { VendorCategory } from './vendor-category.model';
 import { Vendor } from './vendors.model';
+
+export type VendorBusinessTypeCreationAttributes = {
+  id?: string;
+  category_id: string;
+  name: string;
+  status?: boolean;
+};
+
 @Table({
   tableName: 'vendor_business_types',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
 })
-export class VendorBusinessType extends Model<VendorBusinessType> {
+export class VendorBusinessType extends Model<
+  VendorBusinessType,
+  VendorBusinessTypeCreationAttributes
+> {
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column({
@@ -38,9 +49,10 @@ export class VendorBusinessType extends Model<VendorBusinessType> {
   })
   declare name: string;
 
+  @Default(true)
   @Column({
     type: DataType.BOOLEAN,
-    defaultValue: true,
+    allowNull: false,
   })
   declare status: boolean;
 

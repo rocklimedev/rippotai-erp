@@ -1,22 +1,17 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useState } from "react";
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
-import {
-  ArrowLeft,
-  ArrowRight,
-  ArrowLeftIcon,
-  CheckCircle2,
-} from "lucide-react";
+import { ArrowLeftIcon, CheckCircle2, Plus, X } from "lucide-react";
 import {
   useCreateVendorMutation,
   useUpdateVendorMutation,
   useSetVendorStatusMutation,
   useGetVendorCategoriesQuery,
   useGetBusinessTypesQuery,
+  useCreateBusinessTypeMutation,
 } from "../../api/vendor.api"; // adjust this import path to wherever vendorsApi is actually exported from
-
-const STEPS = ["Basic", "Category & Type", "Contact", "Review"];
 
 // Only fields that exist on the Vendor model are collected here.
 const initialForm = {
@@ -49,13 +44,19 @@ function toPayload(form) {
 
 export default function VendorNew() {
   const nav = useNavigate();
-  const [step, setStep] = useState(0);
   const [vendorId, setVendorId] = useState(null);
   const [form, setForm] = useState(initialForm);
+  const [errors, setErrors] = useState({});
+  const [isBusinessTypeModalOpen, setBusinessTypeModalOpen] = useState(false);
+  const [newBusinessTypeName, setNewBusinessTypeName] = useState("");
+  const [businessTypeError, setBusinessTypeError] = useState("");
 
   const [createVendor, { isLoading: creating }] = useCreateVendorMutation();
   const [updateVendor, { isLoading: updating }] = useUpdateVendorMutation();
-  const [setVendorStatus] = useSetVendorStatusMutation();
+  const [setVendorStatus, { isLoading: activating }] =
+    useSetVendorStatusMutation();
+  const [createBusinessType, { isLoading: creatingBusinessType }] =
+    useCreateBusinessTypeMutation();
   const saving = creating || updating;
 
   const { data: categories = [] } = useGetVendorCategoriesQuery();
@@ -90,32 +91,53 @@ export default function VendorNew() {
 
   const debouncedPersist = useDebouncedCallback(persist, 800);
 
+  const openBusinessTypeModal = () => {
+    setNewBusinessTypeName("");
+    setBusinessTypeError("");
+    setBusinessTypeModalOpen(true);
+  };
+
+  const closeBusinessTypeModal = () => {
+    setBusinessTypeModalOpen(false);
+  };
+
+  const handleCreateBusinessType = async () => {
+    if (!newBusinessTypeName.trim()) {
+      setBusinessTypeError("Please enter a name");
+      return;
+    }
+    try {
+      const result = await createBusinessType({
+        category_id: form.vendor_category_id,
+        name: newBusinessTypeName.trim(),
+      }).unwrap();
+      set("business_type_id", result.id);
+      toast.success("Business type created");
+      setBusinessTypeModalOpen(false);
+    } catch {
+      toast.error("Failed to create business type");
+    }
+  };
+
   useEffect(() => {
     if (form.name || form.company_name) debouncedPersist();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
 
-  const validateStep = () => {
-    if (step === 0 && !form.name) {
-      toast.error("Please enter the vendor's name");
-      return false;
-    }
-    if (step === 2 && !form.contact_number) {
-      toast.error("Please enter a contact number");
-      return false;
-    }
-    return true;
+  const validate = () => {
+    const next = {};
+    if (!form.name) next.name = "Please enter the vendor's name";
+    if (!form.contact_number)
+      next.contact_number = "Please enter a contact number";
+    setErrors(next);
+    return Object.keys(next).length === 0;
   };
-
-  const next = async () => {
-    if (!validateStep()) return;
-    await persist();
-    if (step < STEPS.length - 1) setStep(step + 1);
-  };
-  const back = () => setStep(Math.max(0, step - 1));
 
   const submit = async () => {
-    if (!validateStep()) return;
+    if (!validate()) {
+      toast.error("Please fill in the required fields");
+      return;
+    }
     await persist();
     if (!vendorId) {
       toast.error("Please fill vendor details first");
@@ -133,7 +155,7 @@ export default function VendorNew() {
   return (
     <div
       className="max-w-3xl mx-auto space-y-6"
-      data-testid="vendor-new-wizard"
+      data-testid="vendor-new-form"
     >
       <button
         onClick={() => nav("/vendors")}
@@ -143,21 +165,17 @@ export default function VendorNew() {
       </button>
       <div>
         <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6] mb-1.5">
-          Add Vendor · Step {step + 1} of {STEPS.length}
+          Add Vendor
         </div>
-        <h1 className="text-[32px] font-bold text-[#333333]">{STEPS[step]}</h1>
-        <div className="mt-4 flex gap-1">
-          {STEPS.map((s, i) => (
-            <div
-              key={s}
-              className={`h-1.5 flex-1 rounded-full ${i <= step ? "bg-[#1F453B]" : "bg-[#B5C4B6]"}`}
-            />
-          ))}
-        </div>
+        <h1 className="text-[32px] font-bold text-[#333333]">New Vendor</h1>
       </div>
 
-      <div className="bc-card p-6 space-y-4">
-        {step === 0 && (
+      <div className="bc-card p-6 space-y-8">
+        {/* Basic */}
+        <div className="space-y-4">
+          <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
+            Basic
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
@@ -169,6 +187,11 @@ export default function VendorNew() {
                 onChange={(e) => set("name", e.target.value)}
                 data-testid="w-name"
               />
+              {errors.name && (
+                <div className="text-[11.5px] text-red-500 mt-1">
+                  {errors.name}
+                </div>
+              )}
             </div>
             <div>
               <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
@@ -193,9 +216,13 @@ export default function VendorNew() {
               />
             </div>
           </div>
-        )}
+        </div>
 
-        {step === 1 && (
+        {/* Category & Type */}
+        <div className="space-y-4">
+          <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
+            Category &amp; Type
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
@@ -216,9 +243,20 @@ export default function VendorNew() {
               </select>
             </div>
             <div>
-              <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-                Business Type
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
+                  Business Type
+                </label>
+                <button
+                  type="button"
+                  onClick={openBusinessTypeModal}
+                  disabled={!form.vendor_category_id}
+                  className="text-[11.5px] font-semibold text-[#1F453B] hover:text-[#16332B] flex items-center gap-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                  data-testid="w-business-type-add"
+                >
+                  <Plus size={12} /> Add
+                </button>
+              </div>
               <select
                 className="bc-input mt-1"
                 value={form.business_type_id}
@@ -239,126 +277,157 @@ export default function VendorNew() {
               </select>
             </div>
           </div>
-        )}
+        </div>
 
-        {step === 2 && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-                  Contact Number *
-                </label>
-                <input
-                  className="bc-input mt-1"
-                  value={form.contact_number}
-                  onChange={(e) => set("contact_number", e.target.value)}
-                  data-testid="w-contact-number"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-                  Alternate Contact
-                </label>
-                <input
-                  className="bc-input mt-1"
-                  value={form.alternate_contact}
-                  onChange={(e) => set("alternate_contact", e.target.value)}
-                  data-testid="w-alt-contact"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-                Address
-              </label>
-              <textarea
-                className="bc-input mt-1 min-h-[70px]"
-                value={form.address}
-                onChange={(e) => set("address", e.target.value)}
-                data-testid="w-address"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-                Notes
-              </label>
-              <textarea
-                className="bc-input mt-1 min-h-[80px]"
-                value={form.notes}
-                onChange={(e) => set("notes", e.target.value)}
-                data-testid="w-notes"
-              />
-            </div>
+        {/* Contact */}
+        <div className="space-y-4">
+          <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
+            Contact
           </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-4">
-            <div className="text-[13px] text-[#6B7B7C]">
-              Please review the details before saving.
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-[13px]">
-              {[
-                ["Name", form.name],
-                ["Company", form.company_name],
-                ["Position", form.position],
-                [
-                  "Category",
-                  categories.find((c) => c.id === form.vendor_category_id)
-                    ?.name,
-                ],
-                [
-                  "Business Type",
-                  businessTypes.find((b) => b.id === form.business_type_id)
-                    ?.name,
-                ],
-                ["Contact Number", form.contact_number],
-                ["Alternate Contact", form.alternate_contact],
-                ["Address", form.address],
-                ["Notes", form.notes],
-              ].map(([k, v]) => (
-                <div key={k}>
-                  <div className="text-[10.5px] uppercase tracking-widest text-[#B5C4B6]">
-                    {k}
-                  </div>
-                  <div className="text-[#333333]">{v || "—"}</div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
+                Contact Number *
+              </label>
+              <input
+                className="bc-input mt-1"
+                value={form.contact_number}
+                onChange={(e) => set("contact_number", e.target.value)}
+                data-testid="w-contact-number"
+              />
+              {errors.contact_number && (
+                <div className="text-[11.5px] text-red-500 mt-1">
+                  {errors.contact_number}
                 </div>
-              ))}
+              )}
+            </div>
+            <div>
+              <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
+                Alternate Contact
+              </label>
+              <input
+                className="bc-input mt-1"
+                value={form.alternate_contact}
+                onChange={(e) => set("alternate_contact", e.target.value)}
+                data-testid="w-alt-contact"
+              />
             </div>
           </div>
-        )}
+          <div>
+            <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
+              Address
+            </label>
+            <textarea
+              className="bc-input mt-1 min-h-[70px]"
+              value={form.address}
+              onChange={(e) => set("address", e.target.value)}
+              data-testid="w-address"
+            />
+          </div>
+          <div>
+            <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
+              Notes
+            </label>
+            <textarea
+              className="bc-input mt-1 min-h-[80px]"
+              value={form.notes}
+              onChange={(e) => set("notes", e.target.value)}
+              data-testid="w-notes"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center justify-between">
-        <button
-          onClick={back}
-          disabled={step === 0}
-          className="h-11 px-4 rounded-xl border border-[#B5C4B6] text-[13px] font-semibold text-[#6B7B7C] flex items-center gap-1 disabled:opacity-50"
-          data-testid="wizard-back"
-        >
-          <ArrowLeft size={14} /> Back
-        </button>
         <div className="text-[11.5px] text-[#B5C4B6]">
           {saving ? "Saving…" : "All changes auto-saved"}
         </div>
-        {step < STEPS.length - 1 ? (
-          <button
-            onClick={next}
-            className="h-11 px-4 rounded-xl bg-[#1F453B] hover:bg-[#1F453B] text-white text-[13px] font-semibold flex items-center gap-1"
-            data-testid="wizard-next"
-          >
-            Next <ArrowRight size={14} />
-          </button>
-        ) : (
-          <button
-            onClick={submit}
-            className="h-11 px-6 rounded-xl bg-[#1F453B] hover:bg-[#1F453B] text-white text-[13px] font-semibold flex items-center gap-1"
-            data-testid="wizard-submit"
-          >
-            Save Vendor <CheckCircle2 size={14} />
-          </button>
-        )}
+        <button
+          onClick={submit}
+          disabled={activating}
+          className="h-11 px-6 rounded-xl bg-[#1F453B] hover:bg-[#1F453B] text-white text-[13px] font-semibold flex items-center gap-1 disabled:opacity-50"
+          data-testid="form-submit"
+        >
+          Save Vendor <CheckCircle2 size={14} />
+        </button>
       </div>
+
+      {isBusinessTypeModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={closeBusinessTypeModal}
+        >
+          <div
+            className="bc-card w-full max-w-sm p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+            data-testid="business-type-modal"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6] mb-1">
+                  New Business Type
+                </div>
+                <div className="text-[15px] font-bold text-[#333333]">
+                  {categories.find((c) => c.id === form.vendor_category_id)
+                    ?.name || "Business Type"}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={closeBusinessTypeModal}
+                className="text-[#B5C4B6] hover:text-[#333333]"
+                data-testid="business-type-modal-close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div>
+              <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
+                Name *
+              </label>
+              <input
+                className="bc-input mt-1"
+                value={newBusinessTypeName}
+                onChange={(e) => {
+                  setNewBusinessTypeName(e.target.value);
+                  if (businessTypeError) setBusinessTypeError("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleCreateBusinessType();
+                }}
+                autoFocus
+                data-testid="business-type-name-input"
+              />
+              {businessTypeError && (
+                <div className="text-[11.5px] text-red-500 mt-1">
+                  {businessTypeError}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={closeBusinessTypeModal}
+                className="h-10 px-4 rounded-xl border border-[#B5C4B6] text-[13px] font-semibold text-[#6B7B7C]"
+                data-testid="business-type-cancel"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateBusinessType}
+                disabled={creatingBusinessType}
+                className="h-10 px-4 rounded-xl bg-[#1F453B] hover:bg-[#1F453B] text-white text-[13px] font-semibold disabled:opacity-50"
+                data-testid="business-type-save"
+              >
+                {creatingBusinessType ? "Saving…" : "Create"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

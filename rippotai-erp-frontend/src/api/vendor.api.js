@@ -65,7 +65,14 @@ export const vendorsApi = createApi({
       query: (id) => `/vendor/business-types/${id}`,
       providesTags: ["BusinessTypes"],
     }),
-
+    createBusinessType: builder.mutation({
+      query: (body) => ({
+        url: "/vendor/business-types",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["BusinessTypes"],
+    }),
     // =====================================
     // Vendors
     // =====================================
@@ -233,7 +240,7 @@ export const {
   // Business Types
   useGetBusinessTypesQuery,
   useGetBusinessTypeByIdQuery,
-
+  useCreateBusinessTypeMutation,
   // Vendors
   useCreateVendorMutation,
   useGetVendorsQuery,

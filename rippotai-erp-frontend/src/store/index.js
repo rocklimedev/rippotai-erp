@@ -16,6 +16,9 @@ import { unitApi } from "../api/unit.api";
 import { projectTypesApi } from "../api/project-type.api";
 import { clientsApi } from "../api/client.api";
 import { boqApi } from "../api/boq.api";
+import { documentApi } from "../api/document.api";
+import { drawingApi } from "../api/drawing.api";
+import { cdnApi } from "../api/cdn.api";
 // -------------------------------
 // API LIST (clean management layer)
 // -------------------------------
@@ -35,6 +38,9 @@ const apiReducers = {
   [projectTypesApi.reducerPath]: projectTypesApi.reducer,
   [clientsApi.reducerPath]: clientsApi.reducer,
   [boqApi.reducerPath]: boqApi.reducer,
+  [documentApi.reducerPath]: documentApi.reducer,
+  [drawingApi.reducerPath]: drawingApi.reducer,
+  [cdnApi.reducerPath]: cdnApi.reducer,
 };
 
 const apiMiddlewares = [
@@ -53,6 +59,9 @@ const apiMiddlewares = [
   projectTypesApi.middleware,
   clientsApi.middleware,
   boqApi.middleware,
+  documentApi.middleware,
+  cdnApi.middleware,
+  drawingApi.middleware,
 ];
 
 // -------------------------------
