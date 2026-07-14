@@ -32,6 +32,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+/* ---- Notifications + User (shared) ---- */
+import {
+  useGetUserNotificationsQuery,
+  useMarkAsReadMutation,
+  useMarkAllAsReadMutation,
+} from "../api/notification.api"; // adjust import path to wherever this file lives
 
 /* ---- App Switcher (4-cube) ---- */
 function AppSwitcher({ currentApp }) {
@@ -325,19 +331,20 @@ function ContextualSearch({ app }) {
   );
 }
 
-/* ---- Notifications + User (shared) ---- */
+
 function NotificationsBell() {
   const nav = useNavigate();
-  const [n, setN] = useState([]);
-useEffect(() => {
-  api
-    .get("/notifications")
-    .then((r) => {
-      setN(Array.isArray(r.data) ? r.data : []);
-    })
-    .catch(() => setN([]));
-}, []);
+  const { user } = useAuth();
+
+  const { data: n = [] } = useGetUserNotificationsQuery(
+    { userId: user?.id },
+    { skip: !user?.id }
+  );
+  const [markAsRead] = useMarkAsReadMutation();
+  const [markAllAsRead] = useMarkAllAsReadMutation();
+
   const unread = n.filter((x) => x.unread).length;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -362,14 +369,24 @@ useEffect(() => {
         className="w-[380px] max-w-[92vw] bc-card border-0 p-1"
       >
         <DropdownMenuLabel className="px-3 py-2 flex items-center justify-between">
-          <span
-            style={{ fontFamily: "Poppins", fontWeight: 600, fontSize: 15 }}
-          >
+          <span style={{ fontFamily: "Poppins", fontWeight: 600, fontSize: 15 }}>
             Notifications
           </span>
-          <span className="text-[12px] shrink-0" style={{ color: "#6B7B7C" }}>
-            {unread} unread
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] shrink-0" style={{ color: "#6B7B7C" }}>
+              {unread} unread
+            </span>
+            {unread > 0 && (
+              <button
+                data-testid="notif-mark-all-read"
+                className="text-[11.5px] font-semibold shrink-0"
+                style={{ color: "#1F453B" }}
+                onClick={() => user?.id && markAllAsRead(user.id)}
+              >
+                Mark all read
+              </button>
+            )}
+          </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <div style={{ maxHeight: 480, overflowY: "auto" }}>
@@ -378,11 +395,7 @@ useEffect(() => {
               key={it.id}
               data-testid={`notif-item-${it.id}`}
               onSelect={() => {
-                setN((prev) =>
-                  prev.map((x) =>
-                    x.id === it.id ? { ...x, unread: false } : x,
-                  ),
-                );
+                if (it.unread) markAsRead(it.id);
                 if (it.link_url) nav(it.link_url);
               }}
               className="flex flex-col items-start gap-0.5 py-2 px-3 min-w-0 w-full cursor-pointer"
@@ -404,10 +417,7 @@ useEffect(() => {
             </DropdownMenuItem>
           ))}
           {n.length === 0 && (
-            <div
-              className="py-6 text-center text-[13px]"
-              style={{ color: "#6B7B7C" }}
-            >
+            <div className="py-6 text-center text-[13px]" style={{ color: "#6B7B7C" }}>
               No notifications
             </div>
           )}

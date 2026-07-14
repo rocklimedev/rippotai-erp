@@ -6,6 +6,11 @@ import api from "@/lib/api";
 import { MODULE_ICONS } from "@/components/icons/ModuleIcons";
 import { APP_META, LANDING_ORDER } from "@/config/appNav";
 import {
+  useGetUserNotificationsQuery,
+  useMarkAsReadMutation,
+  useMarkAllAsReadMutation,
+} from "../api/notification.api"; // <-- adjust path to match your project
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -23,20 +28,31 @@ const BADGE_MAP = {
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [notifs, setNotifs] = useState([]);
   const [badges, setBadges] = useState({});
 
+  // RTK Query replaces the old useState/useEffect + api.get("/notifications")
+  const { data: notifs = [] } = useGetUserNotificationsQuery(
+    { userId: user?.id },
+    { skip: !user?.id },
+  );
+  const [markAsRead] = useMarkAsReadMutation();
+  const [markAllAsRead] = useMarkAllAsReadMutation();
+
   useEffect(() => {
-    api
-      .get("/notifications")
-      .then((r) => setNotifs(r.data))
-      .catch(() => {});
     api
       .get("/dashboard/app-badges")
       .then((r) => setBadges(r.data || {}))
       .catch(() => {});
   }, []);
+
   const unread = notifs.filter((n) => n.unread).length;
+
+  const handleNotifSelect = (n) => {
+    if (n.unread) {
+      markAsRead(n.id);
+    }
+    if (n.link_url) navigate(n.link_url);
+  };
 
   return (
     <div className="min-h-screen bg-page" data-testid="landing-page">
@@ -114,14 +130,7 @@ export default function Dashboard() {
                 <DropdownMenuItem
                   key={n.id}
                   data-testid={`notif-item-${n.id}`}
-                  onSelect={() => {
-                    setNotifs((prev) =>
-                      prev.map((x) =>
-                        x.id === n.id ? { ...x, unread: false } : x,
-                      ),
-                    );
-                    if (n.link_url) navigate(n.link_url);
-                  }}
+                  onSelect={() => handleNotifSelect(n)}
                   className="flex flex-col items-start gap-0.5 py-2 px-3 cursor-pointer"
                 >
                   <div
@@ -147,6 +156,7 @@ export default function Dashboard() {
               <div
                 className="px-3 py-2 text-[13px] font-semibold cursor-pointer"
                 style={{ color: "#333333" }}
+                onClick={() => markAllAsRead(user?.id)}
               >
                 Mark all as read
               </div>

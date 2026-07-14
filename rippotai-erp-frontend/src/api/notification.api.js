@@ -43,9 +43,12 @@ export const notificationsApi = createApi({
 
         return `/notifications/user/${userId}?${params.toString()}`;
       },
+      transformResponse: (response) => {
+        console.log("NOTIFICATION RESPONSE:", response);
+        return response;
+      },
       providesTags: ["Notifications"],
     }),
-
     markAsRead: builder.mutation({
       query: (id) => ({
         url: `/notifications/${id}/read`,

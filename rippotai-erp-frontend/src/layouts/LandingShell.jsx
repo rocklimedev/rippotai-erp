@@ -15,6 +15,11 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
 import {
+  useGetUserNotificationsQuery,
+  useMarkAsReadMutation,
+  useMarkAllAsReadMutation,
+} from "../api/notification.api"; // <-- adjust this path to wherever the file above lives
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -157,15 +162,15 @@ function GlobalSearch({ open, setOpen }) {
 export default function LandingShell() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [notifs, setNotifs] = useState([]);
   const [searchOpen, setSearchOpen] = useState(false);
 
-  useEffect(() => {
-    api
-      .get("/notifications")
-      .then((r) => setNotifs(r.data))
-      .catch(() => {});
-  }, []);
+  // RTK Query replaces the old useState/useEffect + api.get("/notifications")
+  const { data: notifs = [] } = useGetUserNotificationsQuery(
+    { userId: user?.id },
+    { skip: !user?.id },
+  );
+  const [markAsRead] = useMarkAsReadMutation();
+  const [markAllAsRead] = useMarkAllAsReadMutation();
 
   useEffect(() => {
     const onKey = (e) => {
@@ -179,6 +184,13 @@ export default function LandingShell() {
   }, []);
 
   const unread = notifs.filter((n) => n.unread).length;
+
+  const handleNotifSelect = (n) => {
+    if (n.unread) {
+      markAsRead(n.id);
+    }
+    if (n.link_url) navigate(n.link_url);
+  };
 
   return (
     <div className="min-h-screen bc-page-bg">
@@ -262,14 +274,7 @@ export default function LandingShell() {
                   <DropdownMenuItem
                     key={n.id}
                     data-testid={`notif-item-${n.id}`}
-                    onSelect={() => {
-                      setNotifs((prev) =>
-                        prev.map((x) =>
-                          x.id === n.id ? { ...x, unread: false } : x,
-                        ),
-                      );
-                      if (n.link_url) navigate(n.link_url);
-                    }}
+                    onSelect={() => handleNotifSelect(n)}
                     className="flex flex-col items-start gap-0.5 py-2 cursor-pointer"
                   >
                     <div className="text-[13px] font-semibold text-[#333333]">
@@ -282,6 +287,17 @@ export default function LandingShell() {
                   <div className="py-4 text-center text-[12px] text-[#B5C4B6]">
                     No notifications yet
                   </div>
+                )}
+                {notifs.length > 0 && unread > 0 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onSelect={() => markAllAsRead(user?.id)}
+                      className="text-[12px] text-center justify-center text-[#6B7B7C]"
+                    >
+                      Mark all as read
+                    </DropdownMenuItem>
+                  </>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
