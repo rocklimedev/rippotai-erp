@@ -329,12 +329,14 @@ function ContextualSearch({ app }) {
 function NotificationsBell() {
   const nav = useNavigate();
   const [n, setN] = useState([]);
-  useEffect(() => {
-    api
-      .get("/notifications")
-      .then((r) => setN(r.data))
-      .catch(() => {});
-  }, []);
+useEffect(() => {
+  api
+    .get("/notifications")
+    .then((r) => {
+      setN(Array.isArray(r.data) ? r.data : []);
+    })
+    .catch(() => setN([]));
+}, []);
   const unread = n.filter((x) => x.unread).length;
   return (
     <DropdownMenu>
