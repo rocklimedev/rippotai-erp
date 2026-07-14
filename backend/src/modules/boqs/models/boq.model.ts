@@ -42,6 +42,15 @@ export class Boq extends Model<Boq> {
   })
   declare title: string;
 
+  // Human-facing identifier shown in the header chip, e.g. "BOQ-2026-014".
+  // Falls back to `BOQ-V{version}` in the UI when null.
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: true,
+    unique: true,
+  })
+  declare boq_number: string | null;
+
   // Where this BOQ was seeded from, if any. Kept for traceability only —
   // categories/items below are copied in as independent rows, never a
   // live reference, so later edits to the template don't retroactively
@@ -60,6 +69,12 @@ export class Boq extends Model<Boq> {
   })
   declare status: BoqStatus;
 
+  // Independent of status: an approved/final BOQ is locked, but a BOQ
+  // can also be locked manually (e.g. archived) regardless of status.
+  @Default(false)
+  @Column(DataType.BOOLEAN)
+  declare locked: boolean;
+
   @Column({
     type: DataType.DECIMAL(15, 2),
     allowNull: false,
@@ -73,6 +88,47 @@ export class Boq extends Model<Boq> {
     defaultValue: 1,
   })
   declare version: number;
+
+  // Snapshot fields shown in the summary header. Denormalized off
+  // Project on create so a BOQ's header doesn't silently change if the
+  // project record is edited later.
+  @Column({ type: DataType.STRING(255), allowNull: true })
+  declare client_name: string | null;
+
+  @Column({ type: DataType.STRING(255), allowNull: true })
+  declare location: string | null;
+
+  @Column({ type: DataType.STRING(255), allowNull: true })
+  declare prepared_by: string | null;
+
+  @Column({ type: DataType.DATEONLY, allowNull: true })
+  declare date: string | null;
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare terms_html: string | null;
+
+  // Miscellaneous % applied on top of project_total to derive
+  // final_total. misc_amount/project_total/final_total are computed in
+  // BoqService.withComputedTotals(), never persisted, so they can never
+  // drift from the underlying line items.
+  @Column({
+    type: DataType.DECIMAL(5, 2),
+    allowNull: false,
+    defaultValue: 10,
+  })
+  declare misc_pct: number;
+
+  @Column({ type: DataType.DECIMAL(15, 2), allowNull: false, defaultValue: 0 })
+  declare design_amount: number;
+
+  @Column({ type: DataType.DECIMAL(15, 2), allowNull: false, defaultValue: 0 })
+  declare execution_amount: number;
+
+  @Column({ type: DataType.DECIMAL(15, 2), allowNull: false, defaultValue: 0 })
+  declare supervisor_amount: number;
+
+  @Column({ type: DataType.DECIMAL(15, 2), allowNull: false, defaultValue: 0 })
+  declare additional_total: number;
 
   @Column({
     type: DataType.DATE,
@@ -121,4 +177,9 @@ export class Boq extends Model<Boq> {
 
   @HasMany(() => BoqCategory, { foreignKey: 'boq_id' })
   declare categories: BoqCategory[];
+
+  // Computed, not persisted — attached by BoqService.withComputedTotals().
+  declare project_total?: number;
+  declare misc_amount?: number;
+  declare final_total?: number;
 }

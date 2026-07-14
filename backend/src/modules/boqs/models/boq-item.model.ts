@@ -83,11 +83,44 @@ export class BoqItem extends Model<BoqItem> {
   })
   declare amount: number;
 
+  // "L" = lump sum (amount entered directly, quantity/rate not used),
+  // "M" = measured (amount derived from quantity * rate). Drives the
+  // L/M toggle + editable-cell locking in the BOQ table UI.
+  @Column({
+    type: DataType.ENUM('M', 'L'),
+    allowNull: false,
+    defaultValue: 'M',
+  })
+  declare calc_type: 'M' | 'L';
+
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: true,
+  })
+  declare location: string | null;
+
+  // Structured measurement breakdown (formula + length/width/height/
+  // repetitions/etc) shown in the Item Detail drawer. Stored as JSON
+  // since its shape depends on `formula`.
+  @Column({
+    type: DataType.JSON,
+    allowNull: true,
+  })
+  declare detail: Record<string, unknown> | null;
+
   @Column({
     type: DataType.TEXT,
     allowNull: true,
   })
   declare notes: string | null;
+
+  // When true, the row is excluded from the client-facing PDF export
+  // but stays visible (dimmed) in the editor. Used by the row "Hide"
+  // action and the pre-export checklist's "items hidden from client
+  // copy" count.
+  @Default(false)
+  @Column(DataType.BOOLEAN)
+  declare hidden: boolean;
 
   @Column({
     type: DataType.INTEGER,

@@ -14,7 +14,7 @@ import { ProjectType } from './project-type.model';
 import { ProjectPriority, ProjectStatus } from '@/common/enums';
 import { User } from '@/modules/users/models/user.model';
 import { Quotation } from '@/modules/quotations/models/quotations.model';
-
+import { Boq } from '@/modules/boqs/models/boq.model';
 @Table({
   tableName: 'projects',
   timestamps: true,
@@ -153,6 +153,11 @@ export class Project extends Model<Project> {
     foreignKey: 'project_id',
   })
   declare quotations: Quotation[];
+  @HasMany(() => Boq, {
+    foreignKey: 'project_id',
+    as: 'boqs',
+  })
+  declare boqs: Boq[];
   @BelongsTo(() => Client, {
     foreignKey: 'client_id',
     as: 'client',

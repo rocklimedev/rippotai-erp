@@ -60,12 +60,9 @@ import RolesPermissions from "@/pages/settings/RolesPermissions";
 import SuperAdminPage from "@/pages/settings/SuperAdmin";
 import { UpgradeModalHost } from "@/lib/planGuards";
 import EstimateSignature from "@/pages/settings/EstimateSignature";
-import {
-  BoqTemplatesList,
-  BoqLibraryPage,
-  BoqActivityPage,
-} from "@/pages/boq/BoqPhaseE";
-
+import BoqTemplatesList from "./pages/boq/BoqTemplatesList";
+import BoqLibraryPage from "./pages/boq/BoqLibraryPage";
+import BoqActivityPage from "./pages/boq/BoqActivitypage";
 function Protected({ children, blockRoles }) {
   const { user, ready } = useAuth();
   if (!ready)

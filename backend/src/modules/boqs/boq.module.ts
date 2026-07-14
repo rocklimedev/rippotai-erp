@@ -11,7 +11,7 @@ import { BoqTemplateItem } from './models/boq-template-item.model';
 import { BoqActivity } from './models/boq-activity.model';
 import { LibraryCategory } from './models/library-category.model';
 import { LibraryItem } from './models/library-item.model';
-
+import { User } from '../users/models/user.model';
 // Models from modules that already exist, needed for FK lookups/includes
 import { Project } from '../projects/models/projects.model';
 import { Unit } from '../metas/models/unit.model';
@@ -20,7 +20,7 @@ import { BoqTemplateService } from './boq-template.service';
 import { LibraryService } from './library.service';
 import { BoqActivityService } from './boq-activity.service';
 import { BoqController } from './boq.controller';
-
+import { BoqExportService } from './boq-export.service';
 import {
   BoqTemplateController,
   BoqTemplateCompatController,
@@ -42,6 +42,7 @@ import { BoqActivityController } from './boq-activity.controller';
       LibraryItem,
       Project,
       Unit,
+      User,
     ]),
   ],
   controllers: [
@@ -56,7 +57,14 @@ import { BoqActivityController } from './boq-activity.controller';
     BoqTemplateService,
     LibraryService,
     BoqActivityService,
+    BoqExportService,
   ],
-  exports: [BoqService, BoqTemplateService, LibraryService, BoqActivityService],
+  exports: [
+    BoqService,
+    BoqTemplateService,
+    LibraryService,
+    BoqActivityService,
+    BoqExportService,
+  ],
 })
 export class BoqModule {}
