@@ -19,6 +19,9 @@ import { BoqModule } from './modules/boqs/boq.module';
 import { CdnModule } from './modules/cdn/cdn.module';
 import { DocumentsModule } from './modules/documents/document.module';
 import { DrawingsModule } from './modules/documents/drawing.module';
+import { BriefModule } from './modules/brief/brief.module';
+import { RekiModule } from './modules/reki/reki.module';
+import { TasksModule } from './modules/tasks/task.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -49,6 +52,9 @@ import { DrawingsModule } from './modules/documents/drawing.module';
     CdnModule,
     DocumentsModule,
     DrawingsModule,
+    BriefModule,
+    RekiModule,
+    TasksModule,
   ],
 })
 export class AppModule {}

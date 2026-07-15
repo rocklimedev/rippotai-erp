@@ -21,10 +21,7 @@ import { LibraryService } from './library.service';
 import { BoqActivityService } from './boq-activity.service';
 import { BoqController } from './boq.controller';
 import { BoqExportService } from './boq-export.service';
-import {
-  BoqTemplateController,
-  BoqTemplateCompatController,
-} from './boq-template.controller';
+import { BoqTemplateController } from './boq-template.controller';
 import { LibraryController } from './library.controller';
 import { BoqActivityController } from './boq-activity.controller';
 
@@ -48,7 +45,7 @@ import { BoqActivityController } from './boq-activity.controller';
   controllers: [
     BoqController,
     BoqTemplateController,
-    BoqTemplateCompatController,
+
     LibraryController,
     BoqActivityController,
   ],

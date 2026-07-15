@@ -8,14 +8,22 @@ export default function DocumentsDashboard() {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const nav = useNavigate();
-  const load = () => {
-    setLoading(true);
-    api
-      .get("/documents/project-cards")
-      .then((r) => setCards(r.data || []))
-      .catch(() => toast.error("Failed to load"))
-      .finally(() => setLoading(false));
-  };
+const load = () => {
+  setLoading(true);
+  api
+    .get("/documents/project-cards")
+    .then((r) => {
+      // Ensure we always set an array
+      const data = r.data;
+      setCards(Array.isArray(data) ? data : []);
+    })
+    .catch((err) => {
+      console.error(err);
+      toast.error("Failed to load documents");
+      setCards([]); // explicitly reset on error
+    })
+    .finally(() => setLoading(false));
+};
   useEffect(() => {
     load();
   }, []);

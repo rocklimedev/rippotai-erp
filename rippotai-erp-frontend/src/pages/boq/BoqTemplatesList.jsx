@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import api from "@/lib/api";
 import { formatINR, relativeTime } from "@/lib/format";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
+import {
+  useGetTemplatesQuery,
+  useDeleteTemplateMutation,
+} from "../../api/boq.api"; // adjust path to wherever boqApi is exported from
 
 const TIER_META = {
   essential: { label: "Essential", bg: "#EAEEF0", fg: "#1F453B" },
@@ -14,15 +17,21 @@ const TIER_META = {
 /* ============ Templates List ============ */
 export function BoqTemplatesList() {
   const nav = useNavigate();
-  const [rows, setRows] = useState(null);
-  const load = () =>
-    api
-      .get("/boq/templates")
-      .then((r) => setRows(r.data))
-      .catch(() => setRows([]));
-  useEffect(() => {
-    load();
-  }, []);
+
+  const { data: rows, isLoading, isFetching } = useGetTemplatesQuery();
+
+  const [deleteTemplate] = useDeleteTemplateMutation();
+
+  const handleDelete = async (t) => {
+    if (!confirm(`Delete template "${t.name}"?`)) return;
+    try {
+      await deleteTemplate(t.id).unwrap();
+      toast.success("Deleted");
+    } catch {
+      toast.error("Delete failed");
+    }
+  };
+
   return (
     <div className="space-y-6" data-testid="boq-templates-page">
       <div className="flex items-end justify-between">
@@ -39,13 +48,14 @@ export function BoqTemplatesList() {
           </p>
         </div>
         <button
-          onClick={() => nav("/boq/new?as_template=1")}
+          onClick={() => nav("/boq/template/new")}
           className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold flex items-center gap-2"
           data-testid="template-create-btn"
         >
-          <Plus size={15} /> Create Template
+          <Plus size={15} /> New Template
         </button>
       </div>
+
       <div className="bc-card overflow-hidden" data-testid="templates-table">
         <table className="w-full text-left">
           <thead>
@@ -62,7 +72,7 @@ export function BoqTemplatesList() {
             </tr>
           </thead>
           <tbody>
-            {rows === null && (
+            {isLoading && (
               <tr>
                 <td
                   colSpan={7}
@@ -72,7 +82,7 @@ export function BoqTemplatesList() {
                 </td>
               </tr>
             )}
-            {rows && rows.length === 0 && (
+            {!isLoading && rows && rows.length === 0 && (
               <tr>
                 <td
                   colSpan={7}
@@ -82,7 +92,8 @@ export function BoqTemplatesList() {
                 </td>
               </tr>
             )}
-            {rows &&
+            {!isLoading &&
+              rows &&
               rows.map((t) => {
                 const tier = TIER_META[t.template_tier] || null;
                 return (
@@ -132,17 +143,13 @@ export function BoqTemplatesList() {
                           Use
                         </button>
                         <button
-                          onClick={async () => {
-                            if (!confirm(`Delete template "${t.name}"?`))
-                              return;
-                            try {
-                              await api.delete(`/boq-templates/${t.id}`);
-                              toast.success("Deleted");
-                              load();
-                            } catch {
-                              toast.error("Delete failed");
-                            }
-                          }}
+                          onClick={() => nav(`/boq/template/${t.id}/editor`)}
+                          className="text-[12.5px] font-semibold text-[#333333] hover:underline"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(t)}
                           className="text-[12.5px] text-[#7A2E1A] hover:underline"
                         >
                           Delete

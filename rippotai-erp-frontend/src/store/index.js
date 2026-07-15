@@ -19,6 +19,8 @@ import { boqApi } from "../api/boq.api";
 import { documentApi } from "../api/document.api";
 import { drawingApi } from "../api/drawing.api";
 import { cdnApi } from "../api/cdn.api";
+import { rekiApi } from "../api/reki.api";
+import { briefApi } from "../api/brief.api";
 // -------------------------------
 // API LIST (clean management layer)
 // -------------------------------
@@ -41,6 +43,8 @@ const apiReducers = {
   [documentApi.reducerPath]: documentApi.reducer,
   [drawingApi.reducerPath]: drawingApi.reducer,
   [cdnApi.reducerPath]: cdnApi.reducer,
+  [rekiApi.reducerPath]: rekiApi.reducer,
+  [briefApi.reducerPath]: briefApi.reducer,
 };
 
 const apiMiddlewares = [
@@ -62,6 +66,8 @@ const apiMiddlewares = [
   documentApi.middleware,
   cdnApi.middleware,
   drawingApi.middleware,
+  rekiApi.middleware,
+  briefApi.middleware,
 ];
 
 // -------------------------------

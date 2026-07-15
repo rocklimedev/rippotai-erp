@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import { Search, CheckCircle2 } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { toast } from "sonner";
 import {
   useGetLibraryCategoriesQuery,
@@ -28,12 +33,12 @@ export function AddCategoryPanel({
 
   const add = async (category) => {
     try {
- await addCategory({
-  boqId,
-  library_category_id: category.id,
-  name: category.name,
-  include_items: true,
-}).unwrap();
+      await addCategory({
+        boqId,
+        library_category_id: category.id,
+        name: category.name,
+        include_items: true,
+      }).unwrap();
       toast.success("Category added");
       onAdded();
     } catch (error) {
@@ -43,10 +48,7 @@ export function AddCategoryPanel({
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-[520px] bg-white"
-      >
+      <SheetContent side="right" className="w-full sm:max-w-[520px] bg-white">
         <SheetHeader>
           <SheetTitle className="text-[11px] uppercase tracking-widest text-[#B5C4B6] font-normal">
             Library Categories
@@ -73,9 +75,9 @@ export function AddCategoryPanel({
 
         <div className="mt-4 space-y-2 max-h-[70vh] overflow-y-auto pr-2">
           {filtered.map((category) => {
-         const included = existingCategories.has(
-  category.name.toLowerCase().trim()
-);
+            const included = existingCategories.has(
+              category.name.toLowerCase().trim(),
+            );
             return (
               <div
                 key={category.id}

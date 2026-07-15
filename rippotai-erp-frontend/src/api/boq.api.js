@@ -298,6 +298,62 @@ export const boqApi = createApi({
       invalidatesTags: ["BOQ_TEMPLATE"],
     }),
 
+    // ---- Template Categories ----
+
+    addTemplateCategory: builder.mutation({
+      query: ({ templateId, name }) => ({
+        url: `/boq/templates/${templateId}/categories`,
+        method: "POST",
+        body: { name },
+      }),
+      invalidatesTags: ["BOQ_TEMPLATE"],
+    }),
+
+    deleteTemplateCategory: builder.mutation({
+      query: ({ templateId, categoryId }) => ({
+        url: `/boq/templates/${templateId}/categories/${categoryId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["BOQ_TEMPLATE"],
+    }),
+
+    // ---- Template Items ----
+
+    addTemplateItem: builder.mutation({
+      query: ({ templateId, categoryId, ...body }) => ({
+        url: `/boq/templates/${templateId}/categories/${categoryId}/items`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["BOQ_TEMPLATE"],
+    }),
+
+    updateTemplateItem: builder.mutation({
+      query: ({ templateId, itemId, ...body }) => ({
+        url: `/boq/templates/${templateId}/items/${itemId}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["BOQ_TEMPLATE"],
+    }),
+
+    deleteTemplateItem: builder.mutation({
+      query: ({ templateId, itemId }) => ({
+        url: `/boq/templates/${templateId}/items/${itemId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["BOQ_TEMPLATE"],
+    }),
+
+    reorderTemplateItems: builder.mutation({
+      query: ({ templateId, categoryId, orderedIds }) => ({
+        url: `/boq/templates/${templateId}/items/reorder`,
+        method: "POST",
+        body: { category_id: categoryId, ordered_ids: orderedIds },
+      }),
+      invalidatesTags: ["BOQ_TEMPLATE"],
+    }),
+
     // ==========================
     // Activity
     // ==========================
@@ -411,6 +467,14 @@ export const {
   useCreateTemplateMutation,
   useUpdateTemplateMutation,
   useDeleteTemplateMutation,
+
+  useAddTemplateCategoryMutation,
+  useDeleteTemplateCategoryMutation,
+
+  useAddTemplateItemMutation,
+  useUpdateTemplateItemMutation,
+  useDeleteTemplateItemMutation,
+  useReorderTemplateItemsMutation,
 
   useGetActivityQuery,
 

@@ -11,11 +11,25 @@ import {
   CheckCircle2,
   Circle,
 } from "lucide-react";
-import { Shell, Card, Input, CATEGORIES, downloadDocument } from "../../hooks/shared";
+import {
+  Shell,
+  Card,
+  Input,
+  CATEGORIES,
+  downloadDocument,
+} from "../../hooks/shared";
+import {
+  useGetDocumentsQuery,
+  useDeleteDocumentMutation,
+  useLockDocumentMutation,
+  useUnlockDocumentMutation,
+  useLazyDownloadDocumentQuery,
+  useUpdateDocumentMutation,
+  useReplaceDocumentFileMutation,
+} from "../../api/document.api"; // adjust to wherever documentApi is defined
 
 /* ---------- All Documents ---------- */
 export function DocumentsAll() {
-  const [rows, setRows] = useState([]);
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("");
   const [collapsed, setCollapsed] = useState({}); // {projectName: true}
@@ -23,20 +37,24 @@ export function DocumentsAll() {
   const [editing, setEditing] = useState(null); // doc being edited
   const [pdfUrl, setPdfUrl] = useState(null);
   const nav = useNavigate();
+
   // Read ?project_id= from location.search to auto-filter
   const projectFilter =
     new URLSearchParams(window.location.search).get("project_id") || "";
 
-  const load = () => {
-    const params = new URLSearchParams();
-    if (q) params.set("q", q);
-    if (cat) params.set("category", cat);
-    if (projectFilter) params.set("project_id", projectFilter);
-    api.get(`/documents?${params}`).then((r) => setRows(r.data));
-  };
-  useEffect(() => {
-    load(); /* eslint-disable-next-line */
-  }, [cat, q]);
+  // RTK Query replaces the manual load()/api.get() call. It refetches
+  // automatically whenever q/cat/projectFilter change, and whenever a
+  // mutation below invalidates the "Documents" tag.
+  const {
+    data: rows = [],
+    isFetching,
+    refetch,
+  } = useGetDocumentsQuery({ q, category: cat, project_id: projectFilter });
+
+  const [lockDocument] = useLockDocumentMutation();
+  const [unlockDocument] = useUnlockDocumentMutation();
+  const [deleteDocument] = useDeleteDocumentMutation();
+  const [triggerDownload] = useLazyDownloadDocumentQuery();
 
   // Group rows by project_name (or "Unassigned")
   const groups = React.useMemo(() => {
@@ -50,13 +68,19 @@ export function DocumentsAll() {
 
   const toggleLock = async (r) => {
     try {
-      await api.post(`/documents/${r.id}/${r.is_locked ? "unlock" : "lock"}`);
-      toast.success(r.is_locked ? "Unapproved" : "Approved");
-      load();
+      if (r.is_locked) {
+        await unlockDocument(r.id).unwrap();
+        toast.success("Unapproved");
+      } else {
+        await lockDocument(r.id).unwrap();
+        toast.success("Approved");
+      }
+      // no manual load() needed — invalidatesTags: ["Documents"] refetches for us
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "Failed");
+      toast.error(e?.data?.detail || "Failed");
     }
   };
+
   const deleteDoc = async (r) => {
     if (
       !window.confirm(
@@ -65,31 +89,28 @@ export function DocumentsAll() {
     )
       return;
     try {
-      await api.delete(`/documents/${r.id}`);
+      await deleteDocument(r.id).unwrap();
       toast.success("Deleted");
-      load();
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "Failed");
+      toast.error(e?.data?.detail || "Failed");
     }
   };
+
   const openView = async (r) => {
     setViewing(r);
     setPdfUrl(null);
     if ((r.mime || "").includes("pdf")) {
       try {
-        const res = await api.get(`/documents/${r.id}/download`, {
-          responseType: "blob",
-        });
-        setPdfUrl(
-          URL.createObjectURL(
-            new Blob([res.data], { type: "application/pdf" }),
-          ),
-        );
+        // triggerDownload hits the same /documents/:id/download endpoint,
+        // via the shared RTK Query cache/dedup instead of a bespoke axios call.
+        const blob = await triggerDownload(r.id).unwrap();
+        setPdfUrl(URL.createObjectURL(blob));
       } catch {
         toast.error("Preview failed");
       }
     }
   };
+
   const closeView = () => {
     if (pdfUrl) URL.revokeObjectURL(pdfUrl);
     setPdfUrl(null);
@@ -317,7 +338,7 @@ export function DocumentsAll() {
                   </React.Fragment>
                 );
               })}
-              {!rows.length && (
+              {!isFetching && !rows.length && (
                 <tr>
                   <td colSpan={7} className="text-center text-[#B5C4B6] py-8">
                     No documents yet. Upload the first one or approve a BOQ.
@@ -399,20 +420,13 @@ export function DocumentsAll() {
         </div>
       )}
       {editing && (
-        <EditDocumentModal
-          doc={editing}
-          onClose={() => setEditing(null)}
-          onSaved={() => {
-            setEditing(null);
-            load();
-          }}
-        />
+        <EditDocumentModal doc={editing} onClose={() => setEditing(null)} />
       )}
     </Shell>
   );
 }
 
-export function EditDocumentModal({ doc, onClose, onSaved }) {
+export function EditDocumentModal({ doc, onClose }) {
   const [form, setForm] = useState({
     title: doc.title || "",
     category: doc.category || "Agreements",
@@ -420,34 +434,36 @@ export function EditDocumentModal({ doc, onClose, onSaved }) {
     project_id: doc.project_id || "",
   });
   const [projects, setProjects] = useState([]);
-  const [saving, setSaving] = useState(false);
   const [file, setFile] = useState(null);
+
+  const [updateDocument, { isLoading: saving }] = useUpdateDocumentMutation();
+  const [replaceDocumentFile] = useReplaceDocumentFileMutation();
+
   useEffect(() => {
+    // No RTK endpoint for projects was provided alongside documentApi,
+    // so this list stays on the plain axios client.
     api
       .get("/projects?limit=100")
       .then((r) => setProjects(r.data))
       .catch(() => {});
   }, []);
+
   const save = async (e) => {
     e.preventDefault();
-    setSaving(true);
     try {
-      await api.patch(`/documents/${doc.id}`, form);
+      await updateDocument({ id: doc.id, data: form }).unwrap();
       if (file) {
-        const fd = new FormData();
-        fd.append("file", file);
-        await api.post(`/documents/${doc.id}/replace`, fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        await replaceDocumentFile({ id: doc.id, file }).unwrap();
       }
       toast.success("Document updated");
-      onSaved();
+      // invalidatesTags: ["Documents"] on both mutations refreshes the list;
+      // just close the modal.
+      onClose();
     } catch (er) {
-      toast.error(er?.response?.data?.detail || "Save failed");
-    } finally {
-      setSaving(false);
+      toast.error(er?.data?.detail || "Save failed");
     }
   };
+
   return (
     <div
       className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"

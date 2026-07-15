@@ -44,9 +44,15 @@ export class BoqTemplateCategory extends Model<BoqTemplateCategory> {
   })
   declare sort_order: number;
 
-  @BelongsTo(() => BoqTemplate, { foreignKey: 'template_id' })
+  @BelongsTo(() => BoqTemplate, {
+    foreignKey: 'template_id',
+  })
   declare template: BoqTemplate;
 
-  @HasMany(() => BoqTemplateItem, { foreignKey: 'template_category_id' })
+  @HasMany(() => BoqTemplateItem, {
+    foreignKey: 'boq_category_id',
+    sourceKey: 'id',
+    as: 'items',
+  })
   declare items: BoqTemplateItem[];
 }

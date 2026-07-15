@@ -81,7 +81,8 @@ export default function BoqWorkspace() {
   const [submitForApproval] = useSubmitBoqForApprovalMutation();
   const [approveBoq] = useApproveBoqMutation();
   const [duplicateVersion] = useDuplicateBoqVersionMutation();
-  const [createNewVersion, { isLoading: creatingVersion }] = useCreateBoqNewVersionMutation();
+  const [createNewVersion, { isLoading: creatingVersion }] =
+    useCreateBoqNewVersionMutation();
   const [exportExcel] = useExportBoqExcelMutation();
   const [exportPdf] = useExportBoqPdfMutation();
 
@@ -148,13 +149,22 @@ export default function BoqWorkspace() {
 
   const handleAddItem = (cid) => setPickerFor({ cid });
 
-  const addItemFromPicker = async ({ payload, targetCategoryId, newCategoryName }) => {
+  const addItemFromPicker = async ({
+    payload,
+    targetCategoryId,
+    newCategoryName,
+  }) => {
     if (!pickerFor) return;
     try {
       let cid = targetCategoryId || pickerFor.cid;
       if (newCategoryName) {
-        const created = await addCategory({ boqId: id, name: newCategoryName }).unwrap();
-        const cat = (created.categories || []).find((c) => c.name === newCategoryName);
+        const created = await addCategory({
+          boqId: id,
+          name: newCategoryName,
+        }).unwrap();
+        const cat = (created.categories || []).find(
+          (c) => c.name === newCategoryName,
+        );
         if (!cat) throw new Error("Category creation failed");
         cid = cat.id;
       }
@@ -257,7 +267,12 @@ export default function BoqWorkspace() {
   const handleBulkAction = async (op, value) => {
     if (selectedIds.size === 0) return;
     try {
-      await bulkUpdateItems({ boqId: id, ids: [...selectedIds], op, value }).unwrap();
+      await bulkUpdateItems({
+        boqId: id,
+        ids: [...selectedIds],
+        op,
+        value,
+      }).unwrap();
       setSelectedIds(new Set());
       toast.success(op === "delete" ? "Deleted" : "Updated");
     } catch {
@@ -267,7 +282,11 @@ export default function BoqWorkspace() {
 
   const handleDuplicateVersion = async () => {
     try {
-      const data = await duplicateVersion({ id, reason: dupReason, note: dupNote }).unwrap();
+      const data = await duplicateVersion({
+        id,
+        reason: dupReason,
+        note: dupNote,
+      }).unwrap();
       toast.success(`Created ${data.version}`);
       setDupOpen(false);
       nav(`/boq/${data.id}`);
@@ -297,7 +316,10 @@ export default function BoqWorkspace() {
 
   const handleExportExcel = async () => {
     try {
-      await exportExcel({ boqId: id, filename: `${boq?.boq_number || `BOQ-V${boq?.version || 1}`}.xlsx` }).unwrap();
+      await exportExcel({
+        boqId: id,
+        filename: `${boq?.boq_number || `BOQ-V${boq?.version || 1}`}.xlsx`,
+      }).unwrap();
       toast.success("Excel downloaded");
     } catch {
       toast.error("Export failed");
@@ -307,7 +329,11 @@ export default function BoqWorkspace() {
   const doExportPdf = async (variant) => {
     try {
       const base = boq?.boq_number || `BOQ-V${boq?.version || 1}`;
-      await exportPdf({ boqId: id, variant, filename: `${base}-${variant}.pdf` }).unwrap();
+      await exportPdf({
+        boqId: id,
+        variant,
+        filename: `${base}-${variant}.pdf`,
+      }).unwrap();
       toast.success(`PDF (${variant}) downloaded`);
       setPreExportVariant(null);
     } catch {
@@ -318,7 +344,9 @@ export default function BoqWorkspace() {
   // Keyboard shortcuts + click-outside to clear selection
   useEffect(() => {
     const onKey = (e) => {
-      const isInput = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName);
+      const isInput = ["INPUT", "TEXTAREA", "SELECT"].includes(
+        document.activeElement?.tagName,
+      );
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
         toast.success("All changes are auto-saved");
@@ -364,14 +392,16 @@ export default function BoqWorkspace() {
     );
   }
 
-const existingCategories = new Set(
-  boq.categories.map((c) => c.name.toLowerCase().trim())
-);
+  const existingCategories = new Set(
+    boq.categories.map((c) => c.name.toLowerCase().trim()),
+  );
   const attentionCount = boq.items.filter(
     (i) => !i.unit || (i.calc_type !== "L" && (!i.quantity || !i.rate)),
   ).length;
   const itemsByCat = (cid) =>
-    boq.items.filter((i) => i.category_id === cid).sort((a, b) => a.order - b.order);
+    boq.items
+      .filter((i) => i.category_id === cid)
+      .sort((a, b) => a.order - b.order);
 
   const onSelectItem = (iid, checked) =>
     setSelectedIds((s) => {
@@ -390,14 +420,20 @@ const existingCategories = new Set(
     <div className="min-h-screen bc-page-bg">
       <header className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-[#B5C4B6]">
         <div className="h-14 px-4 lg:px-8 flex items-center gap-3">
-          <button onClick={() => nav("/boq")} className="flex items-center gap-2 text-[13px] text-[#6B7B7C] hover:text-[#333333]" data-testid="back-to-boq-dashboard">
+          <button
+            onClick={() => nav("/boq")}
+            className="flex items-center gap-2 text-[13px] text-[#6B7B7C] hover:text-[#333333]"
+            data-testid="back-to-boq-dashboard"
+          >
             <ArrowLeft size={15} /> BOQ Dashboard
           </button>
           <div className="text-[12px] text-[#B5C4B6] hidden md:flex items-center gap-2">
             <span>/</span>
             <span className="text-[#6B7B7C]">BOQ</span>
             <span>/</span>
-            <span className="text-[#333333] font-medium truncate max-w-[300px]">{boq.project_name}</span>
+            <span className="text-[#333333] font-medium truncate max-w-[300px]">
+              {boq.project_name}
+            </span>
           </div>
           <div className="ml-3">
             <SaveChip state={saveState} />
@@ -408,22 +444,42 @@ const existingCategories = new Set(
                 <Lock size={12} /> Locked
               </span>
             )}
-            <button onClick={() => setDupOpen(true)} className="h-9 px-3 rounded-lg border border-[#B5C4B6] hover:bg-[#EAEEF0] text-[12.5px] font-semibold text-[#6B7B7C] flex items-center gap-1.5" data-testid="duplicate-version-btn">
+            <button
+              onClick={() => setDupOpen(true)}
+              className="h-9 px-3 rounded-lg border border-[#B5C4B6] hover:bg-[#EAEEF0] text-[12.5px] font-semibold text-[#6B7B7C] flex items-center gap-1.5"
+              data-testid="duplicate-version-btn"
+            >
               <Copy size={13} /> Duplicate Version
             </button>
-            <button onClick={() => nav(`/boq/${id}/versions`)} className="h-9 px-3 rounded-lg border border-[#B5C4B6] hover:bg-[#EAEEF0] text-[12.5px] font-semibold text-[#6B7B7C] flex items-center gap-1.5">
+            <button
+              onClick={() => nav(`/boq/${id}/versions`)}
+              className="h-9 px-3 rounded-lg border border-[#B5C4B6] hover:bg-[#EAEEF0] text-[12.5px] font-semibold text-[#6B7B7C] flex items-center gap-1.5"
+            >
               <GitBranch size={13} /> Versions
             </button>
-            <button onClick={() => setPreExportVariant("internal")} className="h-9 px-3 rounded-lg bg-[#1F453B] hover:opacity-90 text-white text-[12.5px] font-semibold flex items-center gap-1.5" data-testid="download-boq-btn" title="Download BOQ (PDF)">
+            <button
+              onClick={() => setPreExportVariant("internal")}
+              className="h-9 px-3 rounded-lg bg-[#1F453B] hover:opacity-90 text-white text-[12.5px] font-semibold flex items-center gap-1.5"
+              data-testid="download-boq-btn"
+              title="Download BOQ (PDF)"
+            >
               <Download size={13} /> Download BOQ
             </button>
             {boq.status === "draft" && (
-              <button onClick={handleSubmitForApproval} className="h-9 px-3 rounded-lg bg-[#1F453B] hover:bg-[#1F453B] text-white text-[12.5px] font-semibold flex items-center gap-1.5" data-testid="submit-approval-btn">
+              <button
+                onClick={handleSubmitForApproval}
+                className="h-9 px-3 rounded-lg bg-[#1F453B] hover:bg-[#1F453B] text-white text-[12.5px] font-semibold flex items-center gap-1.5"
+                data-testid="submit-approval-btn"
+              >
                 <Send size={13} /> Send for Approval
               </button>
             )}
             {boq.status === "awaiting_approval" && (
-              <button onClick={() => setApprovalOpen(true)} className="h-9 px-3 rounded-lg bg-[#1F453B] hover:bg-[#1F453B] text-white text-[12.5px] font-semibold flex items-center gap-1.5" data-testid="approve-btn">
+              <button
+                onClick={() => setApprovalOpen(true)}
+                className="h-9 px-3 rounded-lg bg-[#1F453B] hover:bg-[#1F453B] text-white text-[12.5px] font-semibold flex items-center gap-1.5"
+                data-testid="approve-btn"
+              >
                 <CheckCircle2 size={13} /> Approve
               </button>
             )}
@@ -437,8 +493,12 @@ const existingCategories = new Set(
                 <DropdownMenuItem onClick={() => nav(`/boq/${id}/preview`)}>
                   <Eye size={13} className="mr-2" /> Preview BOQ
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportExcel}>Export Excel</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => window.print()}>Print</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportExcel}>
+                  Export Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.print()}>
+                  Print
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-[#333333]"
@@ -462,14 +522,23 @@ const existingCategories = new Set(
         <BoqSummaryHeader boq={boq} disabled={disabled} />
 
         <section className="flex items-center gap-3 flex-wrap">
-          <button onClick={() => (disabled ? onLockedEdit() : setAddCatOpen(true))} className="h-10 px-4 rounded-xl border-2 border-[#1F453B] text-[#333333] hover:bg-[#EAEEF0] text-[13px] font-semibold flex items-center gap-2" data-testid="add-category-btn">
+          <button
+            onClick={() => (disabled ? onLockedEdit() : setAddCatOpen(true))}
+            className="h-10 px-4 rounded-xl border-2 border-[#1F453B] text-[#333333] hover:bg-[#EAEEF0] text-[13px] font-semibold flex items-center gap-2"
+            data-testid="add-category-btn"
+          >
             <Plus size={15} /> Add Category
           </button>
-          <button onClick={() => (disabled ? onLockedEdit() : setCustomCatOpen(true))} className="h-10 px-4 rounded-xl border border-[#B5C4B6] bg-white hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C] flex items-center gap-2" data-testid="add-custom-category-btn">
+          <button
+            onClick={() => (disabled ? onLockedEdit() : setCustomCatOpen(true))}
+            className="h-10 px-4 rounded-xl border border-[#B5C4B6] bg-white hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C] flex items-center gap-2"
+            data-testid="add-custom-category-btn"
+          >
             <Plus size={14} /> Custom Category
           </button>
           <div className="text-[12px] text-[#B5C4B6] hidden md:block">
-            Pick a category — its standard items, units and rates are added automatically.
+            Pick a category — its standard items, units and rates are added
+            automatically.
           </div>
           <div className="ml-auto flex items-center gap-3">
             {attentionCount > 0 && (
@@ -488,27 +557,42 @@ const existingCategories = new Set(
             <div className="w-14 h-14 rounded-2xl bg-[#EAEEF0] flex items-center justify-center mx-auto mb-4">
               <Sparkles size={22} className="text-[#333333]" />
             </div>
-            <h2 className="text-[18px] font-bold text-[#333333]">Start building your BOQ</h2>
+            <h2 className="text-[18px] font-bold text-[#333333]">
+              Start building your BOQ
+            </h2>
             <p className="text-[13px] text-[#6B7B7C] mt-1 mb-5">
-              Choose a predefined category to automatically add its standard items, units and rates.
+              Choose a predefined category to automatically add its standard
+              items, units and rates.
             </p>
             <div className="flex items-center justify-center gap-2">
-              <button onClick={() => setAddCatOpen(true)} className="h-10 px-4 rounded-xl bg-[#1F453B] hover:bg-[#1F453B] text-white text-[13px] font-semibold" data-testid="empty-add-category">
+              <button
+                onClick={() => setAddCatOpen(true)}
+                className="h-10 px-4 rounded-xl bg-[#1F453B] hover:bg-[#1F453B] text-white text-[13px] font-semibold"
+                data-testid="empty-add-category"
+              >
                 Add First Category
               </button>
-              <button onClick={() => setCustomCatOpen(true)} className="h-10 px-4 rounded-xl border border-[#B5C4B6] hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C]">
+              <button
+                onClick={() => setCustomCatOpen(true)}
+                className="h-10 px-4 rounded-xl border border-[#B5C4B6] hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C]"
+              >
                 Create Custom Category
               </button>
             </div>
           </section>
         ) : (
-          <section className="bc-card overflow-hidden" data-testid="boq-main-table">
+          <section
+            className="bc-card overflow-hidden"
+            data-testid="boq-main-table"
+          >
             <div className="overflow-x-auto">
               <table className="w-full text-[13px]">
                 <thead className="text-[10.5px] uppercase tracking-widest text-[#B5C4B6] bg-[#EAEEF0] border-b border-[#B5C4B6] sticky top-0">
                   <tr>
                     <th className="p-2 w-11"></th>
-                    <th className="p-2 text-center w-11 whitespace-nowrap">S. No.</th>
+                    <th className="p-2 text-center w-11 whitespace-nowrap">
+                      S. No.
+                    </th>
                     <th className="p-2 text-left">Description</th>
                     <th className="p-2 text-left w-[120px]">Location</th>
                     <th className="p-2 text-left w-[92px]">Unit</th>
@@ -519,30 +603,30 @@ const existingCategories = new Set(
                   </tr>
                 </thead>
                 <tbody>
-    {boq.categories?.map((cat, index) => (
-  <CategoryBlock
-    key={cat.id}
-    cat={{
-      ...cat,
-      code: String(index + 1).padStart(2, "0"),
-      subtotal: cat.subtotal || 0,
-    }}
-    items={cat.items || []}
-    disabled={disabled}
-    selectedIds={selectedIds}
-    onSelectItem={onSelectItem}
-    onSelectCategory={onSelectCategory}
-    onPatchItem={patchItem}
-    onDeleteItem={handleDeleteItem}
-    onDuplicateItem={handleDuplicateItem}
-    onOpenDetail={setDetailItem}
-    onAddItem={handleAddItem}
-    onDeleteCat={handleDeleteCategory}
-    onReorderItems={handleReorderItems}
-    onToggleHide={toggleHide}
-    onLockedEdit={onLockedEdit}
-  />
-))}
+                  {boq.categories?.map((cat, index) => (
+                    <CategoryBlock
+                      key={cat.id}
+                      cat={{
+                        ...cat,
+                        code: String(index + 1).padStart(2, "0"),
+                        subtotal: cat.subtotal || 0,
+                      }}
+                      items={cat.items || []}
+                      disabled={disabled}
+                      selectedIds={selectedIds}
+                      onSelectItem={onSelectItem}
+                      onSelectCategory={onSelectCategory}
+                      onPatchItem={patchItem}
+                      onDeleteItem={handleDeleteItem}
+                      onDuplicateItem={handleDuplicateItem}
+                      onOpenDetail={setDetailItem}
+                      onAddItem={handleAddItem}
+                      onDeleteCat={handleDeleteCategory}
+                      onReorderItems={handleReorderItems}
+                      onToggleHide={toggleHide}
+                      onLockedEdit={onLockedEdit}
+                    />
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -565,25 +649,45 @@ const existingCategories = new Set(
         />
       </main>
 
-   <AddCategoryPanel
-  open={addCatOpen}
-  onClose={setAddCatOpen}
-  boqId={id}
-  existingCategories={existingCategories}
-  onAdded={() => setAddCatOpen(false)}
-/>
+      <AddCategoryPanel
+        open={addCatOpen}
+        onClose={setAddCatOpen}
+        boqId={id}
+        existingCategories={existingCategories}
+        onAdded={() => setAddCatOpen(false)}
+      />
       <Dialog open={customCatOpen} onOpenChange={setCustomCatOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Custom Category</DialogTitle>
-            <DialogDescription>Add a category not in the catalog. You can add items to it afterwards.</DialogDescription>
+            <DialogDescription>
+              Add a category not in the catalog. You can add items to it
+              afterwards.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <input className="bc-input" placeholder="Category name (e.g. Landscape)" value={customCatName} onChange={(e) => setCustomCatName(e.target.value)} data-testid="custom-cat-name" />
+            <input
+              className="bc-input"
+              placeholder="Category name (e.g. Landscape)"
+              value={customCatName}
+              onChange={(e) => setCustomCatName(e.target.value)}
+              data-testid="custom-cat-name"
+            />
           </div>
           <DialogFooter>
-            <button onClick={() => setCustomCatOpen(false)} className="h-10 px-4 rounded-xl border border-[#B5C4B6] text-[13px] font-semibold">Cancel</button>
-            <button onClick={addCustomCategory} className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold" data-testid="custom-cat-submit">Add Category</button>
+            <button
+              onClick={() => setCustomCatOpen(false)}
+              className="h-10 px-4 rounded-xl border border-[#B5C4B6] text-[13px] font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={addCustomCategory}
+              className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold"
+              data-testid="custom-cat-submit"
+            >
+              Add Category
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -600,12 +704,20 @@ const existingCategories = new Set(
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Duplicate as new version</DialogTitle>
-            <DialogDescription>Creates an editable copy. Current version stays intact.</DialogDescription>
+            <DialogDescription>
+              Creates an editable copy. Current version stays intact.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <label className="text-[11.5px] uppercase tracking-widest text-[#B5C4B6]">Reason</label>
-              <select className="bc-input mt-1" value={dupReason} onChange={(e) => setDupReason(e.target.value)}>
+              <label className="text-[11.5px] uppercase tracking-widest text-[#B5C4B6]">
+                Reason
+              </label>
+              <select
+                className="bc-input mt-1"
+                value={dupReason}
+                onChange={(e) => setDupReason(e.target.value)}
+              >
                 <option>Revision</option>
                 <option>Client requested changes</option>
                 <option>Scope change</option>
@@ -613,13 +725,32 @@ const existingCategories = new Set(
               </select>
             </div>
             <div>
-              <label className="text-[11.5px] uppercase tracking-widest text-[#B5C4B6]">Change Note</label>
-              <textarea className="bc-input mt-1 min-h-[80px]" value={dupNote} onChange={(e) => setDupNote(e.target.value)} placeholder="What's changing in this version?" data-testid="dup-note" />
+              <label className="text-[11.5px] uppercase tracking-widest text-[#B5C4B6]">
+                Change Note
+              </label>
+              <textarea
+                className="bc-input mt-1 min-h-[80px]"
+                value={dupNote}
+                onChange={(e) => setDupNote(e.target.value)}
+                placeholder="What's changing in this version?"
+                data-testid="dup-note"
+              />
             </div>
           </div>
           <DialogFooter>
-            <button onClick={() => setDupOpen(false)} className="h-10 px-4 rounded-xl border border-[#B5C4B6] text-[13px] font-semibold">Cancel</button>
-            <button onClick={handleDuplicateVersion} className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold" data-testid="dup-submit">Duplicate</button>
+            <button
+              onClick={() => setDupOpen(false)}
+              className="h-10 px-4 rounded-xl border border-[#B5C4B6] text-[13px] font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDuplicateVersion}
+              className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold"
+              data-testid="dup-submit"
+            >
+              Duplicate
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -628,11 +759,25 @@ const existingCategories = new Set(
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Approve BOQ</DialogTitle>
-            <DialogDescription>Approving will lock this version and auto-attach a PDF to Documents.</DialogDescription>
+            <DialogDescription>
+              Approving will lock this version and auto-attach a PDF to
+              Documents.
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <button onClick={() => setApprovalOpen(false)} className="h-10 px-4 rounded-xl border border-[#B5C4B6] text-[13px] font-semibold">Cancel</button>
-            <button onClick={handleApprove} className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold" data-testid="approve-confirm">Approve & Lock</button>
+            <button
+              onClick={() => setApprovalOpen(false)}
+              className="h-10 px-4 rounded-xl border border-[#B5C4B6] text-[13px] font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleApprove}
+              className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold"
+              data-testid="approve-confirm"
+            >
+              Approve & Lock
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

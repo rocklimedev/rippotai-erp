@@ -10,7 +10,7 @@ import {
 } from 'sequelize-typescript';
 import { Unit } from '@/modules/metas/models/unit.model';
 import { LibraryItem } from './library-item.model';
-import { BoqTemplateCategory } from './boq-template-category.model';
+import { BoqCategory } from './boq-category.model';
 
 @Table({
   tableName: 'boq_template_items',
@@ -24,15 +24,14 @@ export class BoqTemplateItem extends Model<BoqTemplateItem> {
   @Column({ type: DataType.CHAR(36) })
   declare id: string;
 
-  @ForeignKey(() => BoqTemplateCategory)
+  @ForeignKey(() => BoqCategory)
   @Column({
     type: DataType.CHAR(36),
     allowNull: false,
   })
-  declare template_category_id: string;
+  declare boq_category_id: string;
 
-  // Optional link back to the master library item this row was seeded
-  // from. Nullable because a template item can be authored free-hand.
+  // Optional link back to the master library item this row was seeded from.
   @ForeignKey(() => LibraryItem)
   @Column({
     type: DataType.CHAR(36),
@@ -86,12 +85,19 @@ export class BoqTemplateItem extends Model<BoqTemplateItem> {
   })
   declare sort_order: number;
 
-  @BelongsTo(() => BoqTemplateCategory, { foreignKey: 'template_category_id' })
-  declare category: BoqTemplateCategory;
+  @BelongsTo(() => BoqCategory, {
+    foreignKey: 'boq_category_id',
+  })
+  declare category: BoqCategory;
 
-  @BelongsTo(() => LibraryItem, { foreignKey: 'library_item_id' })
+  @BelongsTo(() => LibraryItem, {
+    foreignKey: 'library_item_id',
+  })
   declare library_item: LibraryItem;
 
-  @BelongsTo(() => Unit, { foreignKey: 'unit_id', as: 'unit_ref' })
+  @BelongsTo(() => Unit, {
+    foreignKey: 'unit_id',
+    as: 'unit_ref',
+  })
   declare unit_ref: Unit;
 }

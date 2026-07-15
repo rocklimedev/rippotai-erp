@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "@/lib/api";
 import { toast } from "sonner";
 import { Upload } from "lucide-react";
 import { Shell, Card, Input, TextArea, CATEGORIES } from "../../hooks/shared";
+import { useCreateDocumentMutation } from "../../api/document.api"; // adjust to wherever documentApi is defined
+import { useGetProjectsQuery } from "../../api/project.api"; // adjust to wherever projectsApi is defined
 
 /* ---------- Upload Document ---------- */
 export function DocumentUpload() {
   const nav = useNavigate();
-  const [projects, setProjects] = useState([]);
   // Prefill project_id from ?project_id=… query param (used by Documents dashboard "+" icons)
   const initialProjectId =
     new URLSearchParams(window.location.search).get("project_id") || "";
@@ -20,25 +20,29 @@ export function DocumentUpload() {
     remarks: "",
   });
   const [file, setFile] = useState(null);
-  useEffect(() => {
-    api.get("/projects").then((r) => setProjects(r.data || []));
-  }, []);
+
+  const [createDocument, { isLoading: uploading }] =
+    useCreateDocumentMutation();
+
+  // Replaces the manual api.get("/projects") + useEffect/useState with the
+  // projectsApi RTK Query hook. getProjects takes { status, includeArchived };
+  // omit them to get the plain unfiltered list this form needs.
+  const { data: projects = [] } = useGetProjectsQuery({});
+
   const submit = async (e) => {
     e.preventDefault();
     if (!file) return toast.error("Pick a file");
-    const fd = new FormData();
-    Object.entries(form).forEach(([k, v]) => fd.append(k, v));
-    fd.append("file", file);
     try {
-      await api.post("/documents", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      // createDocument builds the FormData internally (data fields + file),
+      // matching the shape POST /documents expects.
+      await createDocument({ data: form, file }).unwrap();
       toast.success("Document uploaded");
       nav("/documents/all");
     } catch {
       toast.error("Upload failed");
     }
   };
+
   return (
     <Shell
       title="Upload Document"
@@ -122,8 +126,11 @@ export function DocumentUpload() {
               onChange={(e) => setForm({ ...form, remarks: e.target.value })}
             />
           </div>
-          <button className="h-11 px-5 rounded-lg bg-[#1F453B] text-white font-semibold w-fit inline-flex items-center gap-2">
-            <Upload size={15} /> Upload
+          <button
+            disabled={uploading}
+            className="h-11 px-5 rounded-lg bg-[#1F453B] text-white font-semibold w-fit inline-flex items-center gap-2 disabled:opacity-60"
+          >
+            <Upload size={15} /> {uploading ? "Uploading…" : "Upload"}
           </button>
         </form>
       </Card>

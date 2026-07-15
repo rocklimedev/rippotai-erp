@@ -1,6 +1,3 @@
-/* Phase F frontend — Calendar / Notes / Tasks apps
-Small, functional, INOS-themed pages. Reuses common Shell + Card idioms.
-Every header slug exports a page component consumed by App.js. */
 import React, { useEffect, useMemo, useState } from "react";
 import api from "@/lib/api";
 import { toast } from "sonner";

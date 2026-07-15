@@ -38,9 +38,9 @@ import SectionPage from "@/pages/SectionPage";
 import { DrawingUpload } from "./pages/documents/DocumentsRoutes";
 import { DrawingsAll } from "./pages/documents/DocumentsRoutes";
 import { SiteRekiView } from "./pages/documents/SiteRekiView";
-import { ProjectBriefForm } from "./components/SectionForm";
-import { SiteRekiForm } from "./components/SectionForm";
-import { ProjectDocuments } from "./pages/documents/DocumentsRoutes";
+import { BriefForm } from "./pages/documents/BriefForm";
+import { SiteRekiForm } from "./pages/documents/SiteRekiForm";
+import { ProjectDocuments } from "./pages/documents/ProjectDocument";
 import { DocumentsAll } from "./pages/documents/DocumentsAll";
 import { DocumentUpload } from "./pages/documents/DocumentUpload";
 import DocumentsDashboard from "@/pages/documents/DocumentsDashboard";
@@ -62,6 +62,8 @@ import EstimateSignature from "@/pages/settings/EstimateSignature";
 import BoqTemplatesList from "./pages/boq/BoqTemplatesList";
 import BoqLibraryPage from "./pages/boq/BoqLibraryPage";
 import BoqActivityPage from "./pages/boq/BoqActivitypage";
+import BoqTemplateNew from "./pages/boq/BoqTemplateNew";
+import BoqTemplateEditor from "./pages/boq/BoqTemplateEditor";
 function Protected({ children, blockRoles }) {
   const { user, ready } = useAuth();
   if (!ready)
@@ -156,6 +158,12 @@ function App() {
             <Route path="all" element={<BoqDashboard />} />
             <Route path="new" element={<BoqNew />} />
             <Route path="templates" element={<BoqTemplatesList />} />
+
+            <Route path="/boq/template/new" element={<BoqTemplateNew />} />
+            <Route
+              path="/boq/template/:id/editor"
+              element={<BoqTemplateEditor />}
+            />
             <Route path="rate-and-item-library" element={<BoqLibraryPage />} />
             <Route path="activity" element={<BoqActivityPage />} />
             {sectionRoutes("boq", [
@@ -257,7 +265,7 @@ function App() {
             <Route path="all" element={<DocumentsAll />} />
             <Route path="upload" element={<DocumentUpload />} />
             <Route path="project-documents" element={<ProjectDocuments />} />
-            <Route path="forms/project-brief" element={<ProjectBriefForm />} />
+            <Route path="forms/project-brief" element={<BriefForm />} />
             <Route path="forms/site-reki" element={<SiteRekiForm />} />
             <Route path="site-reki/:id" element={<SiteRekiView />} />
             <Route path="drawings" element={<DrawingsAll />} />
