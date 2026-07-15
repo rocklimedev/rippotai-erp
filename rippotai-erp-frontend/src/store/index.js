@@ -21,6 +21,7 @@ import { drawingApi } from "../api/drawing.api";
 import { cdnApi } from "../api/cdn.api";
 import { rekiApi } from "../api/reki.api";
 import { briefApi } from "../api/brief.api";
+import { tasksApi } from "../api/task.api";
 // -------------------------------
 // API LIST (clean management layer)
 // -------------------------------
@@ -45,6 +46,7 @@ const apiReducers = {
   [cdnApi.reducerPath]: cdnApi.reducer,
   [rekiApi.reducerPath]: rekiApi.reducer,
   [briefApi.reducerPath]: briefApi.reducer,
+  [tasksApi.reducerPath]: tasksApi.reducer,
 };
 
 const apiMiddlewares = [
@@ -68,6 +70,7 @@ const apiMiddlewares = [
   drawingApi.middleware,
   rekiApi.middleware,
   briefApi.middleware,
+  tasksApi.middleware,
 ];
 
 // -------------------------------

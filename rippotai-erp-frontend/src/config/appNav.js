@@ -86,7 +86,6 @@ export const APP_MENUS = {
       items: [
         I("All Estimates", "all"),
         I("Create Estimate", "new"),
-        I("Estimate Requests", "requests"),
         I("Comparisons", "compare"),
         I("Projects", "/projects/all"),
       ],
@@ -152,11 +151,7 @@ export const APP_MENUS = {
   tasks: [
     {
       label: "Tasks",
-      items: [
-        I("My Tasks", "mine"),
-        I("All Tasks", "all"),
-        I("Create Task", "new"),
-      ],
+      items: [I("My Tasks", "mine"), I("All Tasks", "all")],
     },
     {
       label: "Settings",

@@ -3,11 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { fmtINR, relativeTime } from "@/lib/format";
-import {
-  ArrowLeft,
-  Share2,
-  Copy,
-} from "lucide-react";
+import { ArrowLeft, Share2, Copy } from "lucide-react";
 import { useGetProjectByIdQuery } from "../../api/project.api"; // Adjust import path as needed
 
 const TABS = ["Overview", "BOQ", "Estimates", "Activity"];
@@ -86,7 +82,9 @@ export default function ProjectWorkspace() {
           api.get(`/projects/${id}/documents`).catch(() => ({ data: [] })),
           api.get(`/boqs?project_id=${id}`).catch(() => ({ data: [] })),
           api.get(`/quotations?project_id=${id}`).catch(() => ({ data: [] })),
-          api.get(`/projects/${id}/vendors`).catch(() => ({ data: { engaged: [], attached: [] } })),
+          api
+            .get(`/projects/${id}/vendors`)
+            .catch(() => ({ data: { engaged: [], attached: [] } })),
           api.get(`/projects/${id}/financial`).catch(() => ({ data: null })),
           api.get(`/client-links?project_id=${id}`).catch(() => ({ data: [] })),
         ]);
@@ -95,7 +93,7 @@ export default function ProjectWorkspace() {
         setWork(wk.data);
         setDocs(dc.data);
         setBoqs(bq.data);
-        setQuotes(qt.data.length > 0 ? qt.data : (projectData.quotations || []));
+        setQuotes(qt.data.length > 0 ? qt.data : projectData.quotations || []);
         setVendors(vd.data);
         setFinancial(fn.data);
         setLinks(lk.data);
@@ -103,7 +101,10 @@ export default function ProjectWorkspace() {
         setShareForm((f) => ({
           ...f,
           client_email: projectData.client?.email || "",
-          client_name: projectData.client?.name || projectData.client?.contact_person || "",
+          client_name:
+            projectData.client?.name ||
+            projectData.client?.contact_person ||
+            "",
         }));
       } catch (e) {
         toast.error("Failed to load additional project data");
@@ -138,7 +139,8 @@ export default function ProjectWorkspace() {
   };
 
   if (isLoading) return <div className="p-8 text-[#6B7B7C]">Loading…</div>;
-  if (error || !projectData) return <div className="p-8 text-red-600">Failed to load project</div>;
+  if (error || !projectData)
+    return <div className="p-8 text-red-600">Failed to load project</div>;
 
   const p = projectData;
   const tl = {
@@ -186,7 +188,9 @@ export default function ProjectWorkspace() {
               {p.name}
             </h1>
             <div className="text-[13px] text-[#6B7B7C] mt-1">
-              {p.client?.name || p.client?.contact_person || "—"} · {p.site_location || "—"} · {p.project_type?.name || p.project_type}
+              {p.client?.name || p.client?.contact_person || "—"} ·{" "}
+              {p.site_location || "—"} ·{" "}
+              {p.project_type?.name || p.project_type}
             </div>
           </div>
           <div className="grid grid-cols-4 gap-2 min-w-[440px]">
@@ -418,14 +422,18 @@ export default function ProjectWorkspace() {
                 >
                   <div>
                     <div className="font-semibold text-[#333333]">
-                      {q.quotationNumber || q.quotation_number} · {q.vendor?.name || q.vendor_name}
+                      {q.quotationNumber || q.quotation_number} ·{" "}
+                      {q.vendor?.name || q.vendor_name}
                     </div>
                     <div className="text-[11px] text-[#6B7B7C]">
-                      {(q.vendor?.vendorCategory?.name || q.work_category)} · {q.status}
+                      {q.vendor?.vendorCategory?.name || q.work_category} ·{" "}
+                      {q.status}
                     </div>
                   </div>
                   <div className="font-bold text-[#333333]">
-                    {fmtINR(q.totalAmount || q.subtotal || q.subtotals?.total || 0)}
+                    {fmtINR(
+                      q.totalAmount || q.subtotal || q.subtotals?.total || 0,
+                    )}
                   </div>
                 </Link>
               ))
@@ -501,45 +509,6 @@ export default function ProjectWorkspace() {
           </div>
         )}
 
-        {/* Existing links section */}
-        {links.length > 0 && (
-          <div className="mt-6 bg-white border border-[#B5C4B6] rounded-xl p-4">
-            <div className="text-[13px] font-bold mb-3">
-              Client Magic Links ({links.length})
-            </div>
-            {links.map((l) => (
-              <div
-                key={l.id}
-                className="flex justify-between items-center py-2 border-b border-[#EAEEF0] text-[12.5px]"
-                data-testid={`link-${l.id}`}
-              >
-                <div>
-                  <div className="font-semibold text-[#333333]">{l.purpose}</div>
-                  <div className="text-[11px] text-[#6B7B7C] max-w-[500px] truncate">
-                    {l.url}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => copyUrl(l.url)}
-                    className="px-2 py-1 rounded border border-[#B5C4B6] text-[11.5px] inline-flex items-center gap-1"
-                  >
-                    <Copy size={11} /> Copy
-                  </button>
-                  <a
-                    href={l.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-2 py-1 rounded bg-[#1F453B] text-white text-[11.5px]"
-                  >
-                    Open
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
         {shareModal && (
           <div
             className="fixed inset-0 z-50 bg-[#1F453B]/40 flex items-center justify-center p-4"
@@ -549,7 +518,9 @@ export default function ProjectWorkspace() {
               className="bg-white rounded-xl max-w-md w-full p-5"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="text-[16px] font-bold mb-3">Share with Client</div>
+              <div className="text-[16px] font-bold mb-3">
+                Share with Client
+              </div>
               {!createdLink ? (
                 <>
                   <label className="text-[12px] font-semibold text-[#6B7B7C]">
@@ -565,8 +536,12 @@ export default function ProjectWorkspace() {
                   >
                     <option value="project_view">Project View</option>
                     <option value="boq_approval">BOQ Approval</option>
-                    <option value="quotation_selection">Quotation Selection</option>
-                    <option value="handover_acceptance">Handover Acceptance</option>
+                    <option value="quotation_selection">
+                      Quotation Selection
+                    </option>
+                    <option value="handover_acceptance">
+                      Handover Acceptance
+                    </option>
                   </select>
                   <label className="text-[12px] font-semibold text-[#6B7B7C] mt-3 block">
                     Client Name
@@ -574,7 +549,10 @@ export default function ProjectWorkspace() {
                   <input
                     value={shareForm.client_name}
                     onChange={(e) =>
-                      setShareForm({ ...shareForm, client_name: e.target.value })
+                      setShareForm({
+                        ...shareForm,
+                        client_name: e.target.value,
+                      })
                     }
                     className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
                   />
@@ -584,7 +562,10 @@ export default function ProjectWorkspace() {
                   <input
                     value={shareForm.client_email}
                     onChange={(e) =>
-                      setShareForm({ ...shareForm, client_email: e.target.value })
+                      setShareForm({
+                        ...shareForm,
+                        client_email: e.target.value,
+                      })
                     }
                     className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
                     data-testid="share-email"
@@ -595,7 +576,10 @@ export default function ProjectWorkspace() {
                         type="checkbox"
                         checked={shareForm.show_rates}
                         onChange={(e) =>
-                          setShareForm({ ...shareForm, show_rates: e.target.checked })
+                          setShareForm({
+                            ...shareForm,
+                            show_rates: e.target.checked,
+                          })
                         }
                       />{" "}
                       Show rates on BOQ
@@ -605,7 +589,10 @@ export default function ProjectWorkspace() {
                         type="checkbox"
                         checked={shareForm.show_vendor_names}
                         onChange={(e) =>
-                          setShareForm({ ...shareForm, show_vendor_names: e.target.checked })
+                          setShareForm({
+                            ...shareForm,
+                            show_vendor_names: e.target.checked,
+                          })
                         }
                       />{" "}
                       Show vendor names
@@ -615,7 +602,10 @@ export default function ProjectWorkspace() {
                         type="checkbox"
                         checked={shareForm.show_ratings}
                         onChange={(e) =>
-                          setShareForm({ ...shareForm, show_ratings: e.target.checked })
+                          setShareForm({
+                            ...shareForm,
+                            show_ratings: e.target.checked,
+                          })
                         }
                       />{" "}
                       Show vendor ratings

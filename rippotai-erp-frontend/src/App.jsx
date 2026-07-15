@@ -24,7 +24,7 @@ import QuotationNew from "@/pages/quotations/QuotationNew";
 import QuotationUpload from "@/pages/quotations/QuotationUpload";
 import QuotationDetail from "@/pages/quotations/QuotationDetail";
 import QuotationCompare from "@/pages/quotations/QuotationCompare";
-import QuotationRequests from "@/pages/quotations/QuotationRequests";
+
 import ProjectsDashboard from "@/pages/projects/ProjectsDashboard";
 import ProjectNew from "@/pages/projects/ProjectNew";
 import ProjectWorkspace from "@/pages/projects/ProjectWorkspace";
@@ -223,15 +223,9 @@ function App() {
             <Route path="all" element={<QuotationsDashboard />} />
             <Route path="new" element={<QuotationNew />} />
             <Route path="upload" element={<QuotationUpload />} />
-            <Route path="requests" element={<QuotationRequests />} />
+
             <Route path="compare" element={<QuotationCompare />} />
-            {sectionRoutes("quotations", [
-              "new",
-              "upload",
-              "requests",
-              "compare",
-              "all",
-            ])}
+            {sectionRoutes("quotations", ["new", "upload", "compare", "all"])}
             <Route path=":id" element={<QuotationDetail />} />
           </Route>
 

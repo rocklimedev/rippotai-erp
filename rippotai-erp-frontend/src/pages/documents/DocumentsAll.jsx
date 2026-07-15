@@ -68,7 +68,7 @@ export function DocumentsAll() {
 
   const toggleLock = async (r) => {
     try {
-      if (r.is_locked) {
+      if (r.isLocked) {
         await unlockDocument(r.id).unwrap();
         toast.success("Unapproved");
       } else {
@@ -227,12 +227,12 @@ export function DocumentsAll() {
                         >
                           <td className="px-3 py-2.5 font-semibold text-[#333333] max-w-[280px]">
                             <div className="flex items-center gap-1.5 truncate">
-                              {r.is_locked ? (
+                              {r.isLocked ? (
                                 <CheckCircle2
                                   size={14}
                                   className="shrink-0"
                                   style={{ color: "#4CAF50" }}
-                                  title={`Approved by ${r.locked_by || "—"}`}
+                                  title={`Approved by ${r.lockedBy || "—"}`}
                                 />
                               ) : (
                                 <Circle
@@ -259,10 +259,10 @@ export function DocumentsAll() {
                             </span>
                           </td>
                           <td className="px-3 py-2.5 text-[#6B7B7C]">
-                            {r.uploaded_by_name || r.uploaded_by || "—"}
+                            {r.uploadedByName || "—"}
                           </td>
                           <td className="px-3 py-2.5 text-[#6B7B7C]">
-                            {(r.document_date || r.created_at || "").slice(
+                            {(r.document_date || r.createdAt || "").slice(
                               0,
                               10,
                             )}
@@ -284,10 +284,10 @@ export function DocumentsAll() {
                               </button>
                               <button
                                 onClick={() => setEditing(r)}
-                                disabled={r.is_locked}
+                                disabled={r.isLocked}
                                 className="p-1.5 rounded hover:bg-[#EAEEF0] text-[#333333] disabled:opacity-40 disabled:cursor-not-allowed"
                                 title={
-                                  r.is_locked
+                                  r.isLocked
                                     ? "Approved — unapprove to edit."
                                     : "Edit Document"
                                 }
@@ -299,14 +299,14 @@ export function DocumentsAll() {
                                 onClick={() => toggleLock(r)}
                                 className="p-1.5 rounded hover:bg-[#EAEEF0]"
                                 title={
-                                  r.is_locked ? "Unapprove (admin)" : "Approve"
+                                  r.isLocked ? "Unapprove (admin)" : "Approve"
                                 }
                                 data-testid={`doc-lock-${r.id}`}
                                 aria-label={
-                                  r.is_locked ? "Unapprove" : "Approve"
+                                  r.isLocked ? "Unapprove" : "Approve"
                                 }
                               >
-                                {r.is_locked ? (
+                                {r.isLocked ? (
                                   <CheckCircle2
                                     size={15}
                                     style={{ color: "#4CAF50" }}
@@ -320,10 +320,10 @@ export function DocumentsAll() {
                               </button>
                               <button
                                 onClick={() => deleteDoc(r)}
-                                disabled={r.is_locked}
+                                disabled={r.isLocked}
                                 className="p-1.5 rounded hover:bg-[#F4E1D6] text-[#B04D26] disabled:opacity-40 disabled:cursor-not-allowed"
                                 title={
-                                  r.is_locked
+                                  r.isLocked
                                     ? "Approved — unapprove to delete."
                                     : "Delete"
                                 }

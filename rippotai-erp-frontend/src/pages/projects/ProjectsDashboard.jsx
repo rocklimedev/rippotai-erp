@@ -1,7 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus, Search, CheckCircle2, Circle, MoreHorizontal, Edit, Archive, Trash2, RotateCcw } from "lucide-react";
+import {
+  Plus,
+  Search,
+  CheckCircle2,
+  Circle,
+  MoreHorizontal,
+  Edit,
+  Archive,
+  Trash2,
+  RotateCcw,
+} from "lucide-react";
 import {
   useGetProjectsSummaryQuery,
   useGetProjectsQuery,
@@ -124,7 +134,12 @@ export default function ProjectsDashboard() {
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`PERMANENTLY DELETE "${name}"?\n\nThis action cannot be undone.`)) return;
+    if (
+      !window.confirm(
+        `PERMANENTLY DELETE "${name}"?\n\nThis action cannot be undone.`,
+      )
+    )
+      return;
     try {
       await deleteProject(id).unwrap();
       toast.success(`Project "${name}" deleted successfully`);
@@ -146,12 +161,6 @@ export default function ProjectsDashboard() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => toast.info("Project templates coming soon")}
-            className="px-3.5 py-2 rounded-lg border border-[#B5C4B6] bg-white text-[13px] font-semibold"
-          >
-            Project Templates
-          </button>
           <button
             onClick={() => nav("/projects/new")}
             className="px-4 py-2 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold inline-flex items-center gap-1.5"
@@ -234,21 +243,27 @@ export default function ProjectsDashboard() {
                     <th className="text-left py-2 pr-3">Type</th>
                     <th className="text-left py-2 pr-3">Status</th>
                     <th className="text-left py-2 pr-3">ECD</th>
-   
+
                     <th className="w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading && (
                     <tr>
-                      <td colSpan={7} className="py-6 text-center text-[#B5C4B6]">
+                      <td
+                        colSpan={7}
+                        className="py-6 text-center text-[#B5C4B6]"
+                      >
                         Loading…
                       </td>
                     </tr>
                   )}
                   {!loading && filtered.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="py-6 text-center text-[#B5C4B6]">
+                      <td
+                        colSpan={7}
+                        className="py-6 text-center text-[#B5C4B6]"
+                      >
                         No projects match.
                       </td>
                     </tr>
@@ -263,8 +278,12 @@ export default function ProjectsDashboard() {
                         className="py-2.5 pr-3 cursor-pointer"
                         onClick={() => nav(`/projects/${p.id}`)}
                       >
-                        <div className="font-semibold text-[#333333]">{p.name}</div>
-                        <div className="text-[11px] text-[#B5C4B6]">{p.slug || ""}</div>
+                        <div className="font-semibold text-[#333333]">
+                          {p.name}
+                        </div>
+                        <div className="text-[11px] text-[#B5C4B6]">
+                          {p.slug || ""}
+                        </div>
                       </td>
                       <td
                         className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer"
@@ -290,7 +309,6 @@ export default function ProjectsDashboard() {
                       >
                         {formatDate(p.expected_completion_date)}
                       </td>
-      
 
                       {/* Actions Column */}
                       <td className="py-2.5">
@@ -355,118 +373,7 @@ export default function ProjectsDashboard() {
             </div>
           </div>
         </div>
-
-        <ProjectStatusWidget projects={rows} />
       </div>
-    </div>
-  );
-}
-
-function ProjectStatusWidget({ projects }) {
-  const [selectedId, setSelectedId] = useState("");
-
-  useEffect(() => {
-    if (!projects || projects.length === 0) return;
-    if (!selectedId) setSelectedId(projects[0].id);
-  }, [projects, selectedId]);
-
-  const {
-    data,
-    isFetching: loading,
-    isError,
-  } = useGetProjectStatusChecklistQuery(selectedId, {
-    skip: !selectedId,
-  });
-
-  return (
-    <div
-      className="bg-white border border-[#B5C4B6] rounded-xl p-4 h-fit lg:sticky lg:top-4"
-      data-testid="project-status-widget"
-    >
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-[12px] uppercase tracking-[0.16em] text-[#6B7B7C] font-semibold">
-          Project Status
-        </div>
-        {data && (
-          <div className="text-[11.5px] text-[#333333] font-semibold">
-            {data.completed_count}/{data.total} · {data.progress_pct}%
-          </div>
-        )}
-      </div>
-
-      <select
-        value={selectedId}
-        onChange={(e) => setSelectedId(e.target.value)}
-        className="w-full h-9 px-2 rounded-lg border border-[#B5C4B6] bg-[#FAF8F5] text-[13px] mb-3"
-        data-testid="project-status-select"
-      >
-        {(projects || []).map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
-          </option>
-        ))}
-      </select>
-
-      {data && (
-        <div className="h-1.5 rounded-full bg-[#EAEEF0] overflow-hidden mb-3">
-          <div
-            className="h-full bg-[#1F453B]"
-            style={{ width: `${data.progress_pct}%` }}
-          />
-        </div>
-      )}
-
-      {loading && (
-        <div className="text-[12px] text-[#B5C4B6] py-4 text-center">
-          Loading…
-        </div>
-      )}
-
-      {!loading && isError && (
-        <div className="text-[12px] text-[#B5C4B6] py-4 text-center">
-          Couldn't load checklist.
-        </div>
-      )}
-
-      {!loading && data && (
-        <ol className="space-y-1.5" data-testid="project-status-list">
-          {data.items.map((it, i) => (
-            <li
-              key={it.key}
-              className="flex items-center gap-2 text-[12.5px]"
-              data-testid={`project-status-item-${it.key}`}
-            >
-              {it.completed ? (
-                <CheckCircle2
-                  size={15}
-                  style={{ color: "#4CAF50" }}
-                  className="shrink-0"
-                />
-              ) : (
-                <Circle size={15} className="text-[#B5C4B6] shrink-0" />
-              )}
-              <span className="text-[#6B7B7C] w-5 text-right shrink-0">
-                {i + 1}.
-              </span>
-              <span
-                className={
-                  it.completed
-                    ? "text-[#333333] font-semibold"
-                    : "text-[#6B7B7C]"
-                }
-              >
-                {it.label}
-              </span>
-            </li>
-          ))}
-        </ol>
-      )}
-
-      {!loading && !data && !isError && (
-        <div className="text-[12px] text-[#B5C4B6] py-4 text-center">
-          Select a project
-        </div>
-      )}
     </div>
   );
 }
