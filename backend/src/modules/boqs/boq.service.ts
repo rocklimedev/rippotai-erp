@@ -172,22 +172,95 @@ export class BoqService {
   async create(dto: CreateBoqDto, actorId?: string) {
     const project = await this.projectModel.findByPk(dto.project_id);
 
-    if (!project) throw new NotFoundException('Project not found');
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
 
     const projectBilling = project as unknown as ProjectBillingFields;
 
-    const boqId = await this.sequelize.transaction(async (t) => {
+    const boqId = await this.sequelize.transaction(async (t: Transaction) => {
       const boq = await this.boqModel.create(
         {
           project_id: dto.project_id,
           title: dto.title || `${project.name} · Bill of Quantities`,
           status: BoqStatus.DRAFT,
+          source_template_id: dto.source_template_id ?? null,
           client_name: projectBilling.client_name ?? null,
           location: projectBilling.location ?? null,
           created_by: actorId ?? null,
         } as Boq,
-        { transaction: t },
+        {
+          transaction: t,
+        },
       );
+
+      if (dto.source_template_id) {
+        const template = await this.templateModel.findByPk(
+          dto.source_template_id,
+          {
+            include: [
+              {
+                model: BoqTemplateCategory,
+                as: 'categories',
+                include: [
+                  {
+                    model: BoqTemplateItem,
+                    as: 'items',
+                  },
+                ],
+              },
+            ],
+            transaction: t,
+          },
+        );
+
+        if (!template) {
+          throw new BadRequestException('Template not found');
+        }
+
+        for (const templateCategory of template.categories) {
+          const category = await this.categoryModel.create(
+            {
+              boq_id: boq.id,
+              name: templateCategory.name,
+              sort_order: templateCategory.sort_order,
+            } as BoqCategory,
+            {
+              transaction: t,
+            },
+          );
+
+          for (const templateItem of templateCategory.items) {
+            await this.itemModel.create(
+              {
+                boq_category_id: category.id,
+
+                library_item_id: null,
+
+                name: templateItem.name,
+
+                unit_id: null,
+                unit: templateItem.unit,
+
+                quantity: Number(templateItem.quantity ?? 0),
+                rate: Number(templateItem.rate ?? 0),
+
+                calc_type: 'M',
+
+                location: null,
+                detail: null,
+                notes: null,
+
+                hidden: false,
+                sort_order: templateItem.sort_order ?? 0,
+              } as any, // <-- temporary workaround
+              {
+                transaction: t,
+              },
+            );
+          }
+        }
+      }
 
       await this.recomputeTotal(boq.id, t);
 
@@ -196,7 +269,9 @@ export class BoqService {
         user_id: actorId,
         action: BoqActivityAction.CREATED,
         target: `BOQ · ${boq.title}`,
-        details: 'Created blank',
+        details: dto.source_template_id
+          ? `Created from template ${dto.source_template_id}`
+          : 'Created blank',
         transaction: t,
       });
 
@@ -205,7 +280,6 @@ export class BoqService {
 
     return this.findOne(boqId);
   }
-
   async update(id: string, dto: UpdateBoqDto, actorId?: string) {
     const boq = await this.getOrThrow(id);
     this.assertEditable(boq);

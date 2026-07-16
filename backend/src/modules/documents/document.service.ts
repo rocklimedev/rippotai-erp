@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
+import { Op, Transaction } from 'sequelize';
 import { Document, DocumentCategory } from './models/document.model';
 import { DocumentAttachment } from './models/document-attachment.model';
 import { Project } from '@/modules/projects/models/projects.model';
@@ -81,31 +81,41 @@ export class DocumentsService {
   /* Upload / Edit / Replace / Delete                                   */
   /* ---------------------------------------------------------------- */
 
-  async create(dto: CreateDocumentDto, file: Express.Multer.File, user?: User) {
+  async create(
+    dto: CreateDocumentDto,
+    file: Express.Multer.File,
+    user?: User,
+    transaction?: Transaction,
+  ) {
     if (!file) throw new BadRequestException('file is required');
 
     const { filename: storageFilename, url } =
       await this.cdnService.uploadFile(file);
 
-    return this.documentModel.create({
-      projectId: dto.project_id,
-      category: dto.category as DocumentCategory,
-      title: dto.title,
-      visibility: dto.visibility || 'internal',
-      remarks: dto.remarks || null,
-      filename: file.originalname,
-      storageFilename,
-      url,
-      mime: file.mimetype,
-      size: file.size,
-      version: 'V1',
-      status: 'draft',
-      docType: 'upload',
-      sourceApp: 'Manual Upload',
-      documentDate: new Date().toISOString().slice(0, 10),
-      uploadedBy: user?.id || null,
-      uploadedByName: user?.name || null,
-    } as any);
+    return this.documentModel.create(
+      {
+        projectId: dto.project_id,
+        category: dto.category as DocumentCategory,
+        title: dto.title,
+        visibility: dto.visibility || 'internal',
+        remarks: dto.remarks || null,
+        filename: file.originalname,
+        storageFilename,
+        url,
+        mime: file.mimetype,
+        size: file.size,
+        version: 'V1',
+        status: 'draft',
+        docType: 'upload',
+        sourceApp: 'Manual Upload',
+        documentDate: new Date().toISOString().slice(0, 10),
+        uploadedBy: user?.id || null,
+        uploadedByName: user?.name || null,
+      } as any,
+      {
+        transaction,
+      },
+    );
   }
 
   async update(id: string, dto: UpdateDocumentDto) {

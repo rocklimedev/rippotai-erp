@@ -10,12 +10,14 @@ import { toast } from "sonner";
 import {
   useGetLibraryCategoriesQuery,
   useAddBoqCategoryMutation,
+  useAddTemplateCategoryMutation,
 } from "../../api/boq.api";
 
 export function AddCategoryPanel({
   open,
   onClose,
   boqId,
+  mode = "boq", // "boq" | "template"
   existingCategories,
   onAdded,
 }) {
@@ -25,7 +27,8 @@ export function AddCategoryPanel({
     skip: !open,
   });
 
-  const [addCategory] = useAddBoqCategoryMutation();
+  const [addBoqCategory] = useAddBoqCategoryMutation();
+  const [addTemplateCategory] = useAddTemplateCategoryMutation();
 
   const filtered = categories.filter((c) =>
     c.name.toLowerCase().includes(q.toLowerCase()),
@@ -33,12 +36,16 @@ export function AddCategoryPanel({
 
   const add = async (category) => {
     try {
-      await addCategory({
-        boqId,
+      const payload = {
         library_category_id: category.id,
         name: category.name,
         include_items: true,
-      }).unwrap();
+      };
+      if (mode === "template") {
+        await addTemplateCategory({ templateId: boqId, ...payload }).unwrap();
+      } else {
+        await addBoqCategory({ boqId, ...payload }).unwrap();
+      }
       toast.success("Category added");
       onAdded();
     } catch (error) {
@@ -53,7 +60,6 @@ export function AddCategoryPanel({
           <SheetTitle className="text-[11px] uppercase tracking-widest text-[#B5C4B6] font-normal">
             Library Categories
           </SheetTitle>
-
           <div className="text-[16px] font-bold text-[#333333]">
             Add category
           </div>
@@ -64,7 +70,6 @@ export function AddCategoryPanel({
             size={14}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B5C4B6]"
           />
-
           <input
             className="bc-input pl-8"
             placeholder="Search categories…"
@@ -86,17 +91,14 @@ export function AddCategoryPanel({
                 <div className="w-10 h-10 rounded-lg bg-[#1F453B] text-white text-[13px] font-bold flex items-center justify-center">
                   {category.sort_order}
                 </div>
-
                 <div className="flex-1 min-w-0">
                   <div className="font-serif-bc text-[15px] text-[#333333]">
                     {category.name}
                   </div>
-
                   <div className="text-[11.5px] text-[#B5C4B6]">
                     Library category
                   </div>
                 </div>
-
                 {included ? (
                   <span className="text-[11px] font-semibold text-[#333333] flex items-center gap-1">
                     <CheckCircle2 size={12} />

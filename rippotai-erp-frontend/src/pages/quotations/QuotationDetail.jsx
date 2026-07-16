@@ -369,9 +369,7 @@ export default function QuotationDetail() {
                 </>
               )}
             {!isDeleted &&
-              ["approved", "submitted", "under_review"].includes(
-                q.status,
-              ) && (
+              ["approved", "submitted", "under_review"].includes(q.status) && (
                 <button
                   onClick={handleCancel}
                   disabled={busy}
@@ -592,7 +590,11 @@ export default function QuotationDetail() {
         )}
 
         {tab === "Versions" && (
-          <VersionsTab id={id} currentVersion={q.currentVersion} isAdmin={isAdmin} />
+          <VersionsTab
+            id={id}
+            currentVersion={q.currentVersion}
+            isAdmin={isAdmin}
+          />
         )}
 
         {tab === "Attachments" && (
@@ -694,8 +696,6 @@ export default function QuotationDetail() {
   );
 }
 
-// Built from submittedAt/submittedBy + reviewedAt/reviewedBy/reviewRemarks,
-// since the API does not return a dedicated approval_history array.
 function ApprovalHistory({ q }) {
   const events = [];
   if (q.submittedAt) {
@@ -748,10 +748,6 @@ function ApprovalHistory({ q }) {
   );
 }
 
-// Version records look like:
-// { id, quotationId, version, snapshot: {...full quotation at that point...}, remarks, createdBy, created_at }
-// version.id is the *version record's* id, not a navigable quotation id — so
-// rows expand inline instead of linking to /quotations/{version.id}.
 function VersionsTab({ id, currentVersion, isAdmin }) {
   const { data: rows = [], isLoading } = useGetQuotationVersionsQuery(id, {
     skip: !id,

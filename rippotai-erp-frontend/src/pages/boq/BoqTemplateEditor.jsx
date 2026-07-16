@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
@@ -6,46 +6,41 @@ import {
   ArrowLeft,
   Plus,
   Loader2,
-  Trash2,
-  LayoutTemplate,
   MoreHorizontal,
-  ChevronDown,
-  ChevronRight,
+  Sparkles,
+  AlertCircle,
 } from "lucide-react";
-import { formatINR } from "@/lib/format";
 import {
-  useGetTemplateByIdQuery,
-  useUpdateTemplateMutation,
-  // BOQ APIs (replacing template category/item APIs)
-  useAddBoqCategoryMutation,
-  useDeleteBoqCategoryMutation,
-  useAddBoqItemMutation,
-  useUpdateBoqItemMutation,
-  useDeleteBoqItemMutation,
-} from "../../api/boq.api";
-import { SaveChip } from "../../components/boqs/StatusIndicators";
-import { AddItemPicker } from "../../components/boqs/AddItemPicker";
-import { AddCategoryPanel } from "../../components/boqs/AddCategoryPanel";
-
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  arrayMove,
-} from "@dnd-kit/sortable";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ItemRow } from "../../components/boqs/ItemRow";
+import { formatINR } from "@/lib/format";
+import {
+  useGetTemplateByIdQuery,
+  useUpdateTemplateMutation,
+  useAddTemplateCategoryMutation,
+  useDeleteTemplateCategoryMutation,
+  useAddTemplateItemMutation,
+  useUpdateTemplateItemMutation,
+  useDeleteTemplateItemMutation,
+  useReorderTemplateItemsMutation,
+} from "../../api/boq.api";
+import { SaveChip } from "../../components/boqs/StatusIndicators";
+import { AddItemPicker } from "../../components/boqs/AddItemPicker";
+import { AddCategoryPanel } from "../../components/boqs/AddCategoryPanel";
+import { ItemDetailDrawer } from "../../components/boqs/ItemDetailDrawer";
+import { CategoryBlock } from "../../components/boqs/CategoryBlock";
+import { BulkActionBar } from "../../components/boqs/BulkActionBar";
 
 const TIERS = [
   { value: "essential", label: "Essential" },
@@ -59,27 +54,20 @@ export default function BoqTemplateEditor() {
 
   const { data: template, isLoading, refetch } = useGetTemplateByIdQuery(id);
   const [updateTemplate] = useUpdateTemplateMutation();
-
-  // Switched to BOQ category/item mutations
-  const [addCategory] = useAddBoqCategoryMutation();
-  const [deleteCategory] = useDeleteBoqCategoryMutation();
-  const [addItem] = useAddBoqItemMutation();
-  const [updateItem] = useUpdateBoqItemMutation();
-  const [deleteItem] = useDeleteBoqItemMutation();
+  const [addCategory] = useAddTemplateCategoryMutation();
+  const [deleteCategory] = useDeleteTemplateCategoryMutation();
+  const [addItem] = useAddTemplateItemMutation();
+  const [updateItem] = useUpdateTemplateItemMutation();
+  const [deleteItem] = useDeleteTemplateItemMutation();
+  const [reorderItems] = useReorderTemplateItemsMutation();
 
   const [saveState, setSaveState] = useState("idle");
-  const [collapsedCategories, setCollapsedCategories] = useState(new Set());
-
-  // Picker States
-  const [showItemPicker, setShowItemPicker] = useState(false);
-  const [pickerCategoryId, setPickerCategoryId] = useState(null);
-  const [showCategoryPanel, setShowCategoryPanel] = useState(false);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 4 },
-    }),
-  );
+  const [addCatOpen, setAddCatOpen] = useState(false);
+  const [customCatOpen, setCustomCatOpen] = useState(false);
+  const [customCatName, setCustomCatName] = useState("");
+  const [detailItem, setDetailItem] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [pickerFor, setPickerFor] = useState(null);
 
   const withSaveChip = async (promise) => {
     setSaveState("saving");
@@ -98,26 +86,33 @@ export default function BoqTemplateEditor() {
     800,
   );
 
-  const handleCategoryAdded = () => {
-    refetch();
-    setShowCategoryPanel(false);
-  };
+  const patchItem = (itemId, patch) =>
+    withSaveChip(updateItem({ templateId: id, itemId, ...patch }).unwrap());
 
-  const openItemPicker = (categoryId) => {
-    setPickerCategoryId(categoryId);
-    setShowItemPicker(true);
-  };
+  const handleAddItem = (cid) => setPickerFor({ cid });
 
-  const handlePickerPick = async ({ payload }) => {
-    if (!pickerCategoryId) {
-      toast.error("No category selected");
-      return;
-    }
-
+  const addItemFromPicker = async ({
+    payload,
+    targetCategoryId,
+    newCategoryName,
+  }) => {
+    if (!pickerFor) return;
     try {
+      let cid = targetCategoryId || pickerFor.cid;
+      if (newCategoryName) {
+        const created = await addCategory({
+          templateId: id,
+          name: newCategoryName,
+        }).unwrap();
+        const cat = (created.categories || []).find(
+          (c) => c.name === newCategoryName,
+        );
+        if (!cat) throw new Error("Category creation failed");
+        cid = cat.id;
+      }
       await addItem({
-        boqId: id, // Changed from templateId
-        categoryId: pickerCategoryId,
+        templateId: id,
+        categoryId: cid,
         name: payload.description,
         unit: payload.unit || "Nos.",
         quantity: payload.quantity || 1,
@@ -125,51 +120,164 @@ export default function BoqTemplateEditor() {
         library_item_id: payload.library_item_id,
         notes: payload.notes || "",
       }).unwrap();
-
-      toast.success("Item added successfully");
+      toast.success("Item added");
+      setPickerFor(null);
       refetch();
-    } catch (err) {
+    } catch {
       toast.error("Failed to add item");
     }
   };
 
-  const patchItem = (itemId, patch) =>
-    withSaveChip(updateItem({ boqId: id, itemId, ...patch }).unwrap());
-
-  const handleDeleteItem = async (itemId) => {
+  const handleDeleteItem = async (itemId, cat) => {
+    const item = (cat?.items || []).find((i) => i.id === itemId);
     try {
-      await deleteItem({ boqId: id, itemId }).unwrap();
-      toast.success("Item deleted");
+      await deleteItem({ templateId: id, itemId }).unwrap();
+      toast("Item deleted", {
+        action: item && {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              await addItem({
+                templateId: id,
+                categoryId: item.category_id || cat.id,
+                name: item.name,
+                unit: item.unit,
+                quantity: item.quantity,
+                rate: item.rate,
+                library_item_id: item.library_item_id,
+                notes: item.notes,
+              }).unwrap();
+              toast.success("Restored");
+              refetch();
+            } catch {
+              toast.error("Undo failed");
+            }
+          },
+        },
+        duration: 5000,
+      });
       refetch();
     } catch {
       toast.error("Delete failed");
     }
   };
 
-  const toggleCollapse = (catId) => {
-    setCollapsedCategories((prev) => {
-      const next = new Set(prev);
-      if (next.has(catId)) next.delete(catId);
-      else next.add(catId);
-      return next;
-    });
+  const handleDuplicateItem = async (itemId, cat) => {
+    const item = (cat?.items || []).find((i) => i.id === itemId);
+    if (!item) return;
+    try {
+      await addItem({
+        templateId: id,
+        categoryId: item.category_id || cat.id,
+        name: item.name + " (copy)",
+        unit: item.unit,
+        quantity: item.quantity,
+        rate: item.rate,
+        library_item_id: item.library_item_id,
+        notes: item.notes,
+      }).unwrap();
+      refetch();
+    } catch {
+      toast.error("Duplicate failed");
+    }
   };
 
-  const handleReorderItems = async (categoryId, newOrder) => {
-    // You may want to call reorderBoqItems here if needed
-    refetch();
+  const handleReorderItems = async (cid, orderedIds) => {
+    try {
+      await reorderItems({
+        templateId: id,
+        categoryId: cid,
+        orderedIds,
+      }).unwrap();
+      refetch();
+    } catch {
+      toast.error("Reorder failed");
+    }
   };
 
-  const handleDeleteCategory = async (categoryId) => {
+  const handleDeleteCategory = async (cid) => {
     if (!confirm("Delete this category and all its items?")) return;
     try {
-      await deleteCategory({ boqId: id, categoryId }).unwrap();
-      toast.success("Category deleted");
+      await deleteCategory({ templateId: id, categoryId: cid }).unwrap();
+      toast.success("Category removed");
       refetch();
     } catch {
       toast.error("Delete failed");
     }
   };
+
+  const addCustomCategory = async () => {
+    if (!customCatName.trim()) return;
+    try {
+      await addCategory({ templateId: id, name: customCatName }).unwrap();
+      toast.success("Category added");
+      setCustomCatOpen(false);
+      setCustomCatName("");
+      refetch();
+    } catch {
+      toast.error("Failed");
+    }
+  };
+
+  // No bulk endpoint exists for templates yet — fan out individual calls instead.
+  const handleBulkAction = async (op, value) => {
+    if (selectedIds.size === 0) return;
+    const ids = [...selectedIds];
+    try {
+      if (op === "delete") {
+        await Promise.all(
+          ids.map((itemId) => deleteItem({ templateId: id, itemId }).unwrap()),
+        );
+      } else if (op === "change_unit") {
+        await Promise.all(
+          ids.map((itemId) =>
+            updateItem({ templateId: id, itemId, unit: value }).unwrap(),
+          ),
+        );
+      }
+      setSelectedIds(new Set());
+      toast.success(op === "delete" ? "Deleted" : "Updated");
+      refetch();
+    } catch {
+      toast.error("Bulk action failed");
+    }
+  };
+
+  useEffect(() => {
+    const onKey = (e) => {
+      const isInput = ["INPUT", "TEXTAREA", "SELECT"].includes(
+        document.activeElement?.tagName,
+      );
+      if (e.key === "Delete" && !isInput && selectedIds.size > 0) {
+        e.preventDefault();
+        handleBulkAction("delete");
+      }
+      if (e.key === "Escape" && selectedIds.size > 0) {
+        e.preventDefault();
+        setSelectedIds(new Set());
+      }
+    };
+    const onClick = (e) => {
+      if (selectedIds.size === 0) return;
+      const t = e.target;
+      if (
+        !t.closest ||
+        t.closest('[data-testid="template-main-table"]') ||
+        t.closest('[data-testid="bulk-action-bar"]') ||
+        t.closest('[role="menu"]') ||
+        t.closest("[data-radix-popper-content-wrapper]")
+      )
+        return;
+      setSelectedIds(new Set());
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("click", onClick);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("click", onClick);
+    };
+    // eslint-disable-next-line
+  }, [selectedIds]);
 
   if (isLoading || !template) {
     return (
@@ -181,9 +289,32 @@ export default function BoqTemplateEditor() {
     );
   }
 
+  const categories = template.categories || [];
+  const allItems = categories.flatMap((c) => c.items || []);
+  const existingCategories = new Set(
+    categories.map((c) => c.name.toLowerCase().trim()),
+  );
+  const attentionCount = allItems.filter(
+    (i) => !i.unit || !i.quantity || !i.rate,
+  ).length;
+
+  const itemsByCat = (cid) => categories.find((c) => c.id === cid)?.items || [];
+
+  const onSelectItem = (iid, checked) =>
+    setSelectedIds((s) => {
+      const n = new Set(s);
+      checked ? n.add(iid) : n.delete(iid);
+      return n;
+    });
+  const onSelectCategory = (cid, checked) =>
+    setSelectedIds((s) => {
+      const n = new Set(s);
+      itemsByCat(cid).forEach((i) => (checked ? n.add(i.id) : n.delete(i.id)));
+      return n;
+    });
+
   return (
     <div className="min-h-screen bc-page-bg">
-      {/* Header & main content remain mostly the same */}
       <header className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-[#B5C4B6]">
         <div className="h-14 px-4 lg:px-8 flex items-center gap-3">
           <button
@@ -194,6 +325,8 @@ export default function BoqTemplateEditor() {
           </button>
           <div className="text-[12px] text-[#B5C4B6] hidden md:flex items-center gap-2">
             <span>/</span>
+            <span className="text-[#6B7B7C]">Template</span>
+            <span>/</span>
             <span className="text-[#333333] font-medium truncate max-w-[300px]">
               {template.name}
             </span>
@@ -201,13 +334,25 @@ export default function BoqTemplateEditor() {
           <div className="ml-3">
             <SaveChip state={saveState} />
           </div>
+          <div className="ml-auto flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="h-9 w-9 rounded-lg border border-[#B5C4B6] hover:bg-[#EAEEF0] flex items-center justify-center">
+                  <MoreHorizontal size={15} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onClick={() => window.print()}>
+                  Print
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* Template Details Section (unchanged) */}
+      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <section className="bc-card p-6 space-y-4">
-          {/* ... same as before ... */}
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-[12px] font-medium text-[#6B7B7C] mb-1.5">
@@ -257,193 +402,201 @@ export default function BoqTemplateEditor() {
           </div>
         </section>
 
-        {/* Add Category Bar */}
-        <section className="flex items-center gap-2">
+        <section className="flex items-center gap-3 flex-wrap">
           <button
-            onClick={() => setShowCategoryPanel(true)}
-            className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold flex items-center gap-2 hover:bg-[#1F453B]/90 transition"
+            onClick={() => setAddCatOpen(true)}
+            className="h-10 px-4 rounded-xl border-2 border-[#1F453B] text-[#333333] hover:bg-[#EAEEF0] text-[13px] font-semibold flex items-center gap-2"
+            data-testid="add-category-btn"
           >
-            <Plus size={15} /> Add Category from Library
+            <Plus size={15} /> Add Category
           </button>
-
-          <span className="ml-auto text-[12px] text-[#6B7B7C]">
-            Total value: {formatINR(template.total_value || 0)}
-          </span>
+          <button
+            onClick={() => setCustomCatOpen(true)}
+            className="h-10 px-4 rounded-xl border border-[#B5C4B6] bg-white hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C] flex items-center gap-2"
+            data-testid="add-custom-category-btn"
+          >
+            <Plus size={14} /> Custom Category
+          </button>
+          <div className="text-[12px] text-[#B5C4B6] hidden md:block">
+            Pick a category — its standard items, units and rates are added
+            automatically.
+          </div>
+          <div className="ml-auto flex items-center gap-3">
+            {attentionCount > 0 && (
+              <span className="text-[11.5px] font-semibold text-[#333333] bg-[#EAEEF0] px-2.5 py-1 rounded-full flex items-center gap-1">
+                <AlertCircle size={11} /> {attentionCount} require attention
+              </span>
+            )}
+            <span className="text-[12px] text-[#6B7B7C]">
+              {categories.length} categories · {allItems.length} line items
+            </span>
+            <span className="text-[12px] font-semibold text-[#333333]">
+              Total value: {formatINR(template.total_value || 0)}
+            </span>
+          </div>
         </section>
 
-        {/* Categories Table - unchanged structure */}
-        <div className="bc-card overflow-hidden">
-          <table className="w-full text-[13px]">
-            {/* thead unchanged */}
-            <thead className="text-[10.5px] uppercase tracking-widest text-[#B5C4B6] border-b border-[#EAEEF0]">
-              <tr>
-                <th className="p-2 text-left w-8"></th>
-                <th className="p-2 text-left">Item</th>
-                <th className="p-2 text-left w-[90px]">Unit</th>
-                <th className="p-2 text-right w-[90px]">Quantity</th>
-                <th className="p-2 text-right w-[100px]">Rate</th>
-                <th className="p-2 text-right w-[110px]">Amount</th>
-                <th className="p-2 w-10"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {(template.categories || []).map((cat) => {
-                const isCollapsed = collapsedCategories.has(cat.id);
-                const items = cat.items || [];
-                const subtotal = items.reduce(
-                  (sum, item) =>
-                    sum + Number(item.quantity || 0) * Number(item.rate || 0),
-                  0,
-                );
-
-                return (
-                  <React.Fragment key={cat.id}>
-                    <tr className="boq-category-row border-b border-[#EAEEF0]">
-                      <td colSpan={7}>
-                        <div className="flex items-center gap-3 px-4 py-3 bg-[#EAEEF0]">
-                          {/* Collapse, name, subtotal, menu - unchanged */}
-                          <button
-                            onClick={() => toggleCollapse(cat.id)}
-                            className="p-1 rounded hover:bg-[#B5C4B6]"
-                          >
-                            {isCollapsed ? (
-                              <ChevronRight size={16} />
-                            ) : (
-                              <ChevronDown size={16} />
-                            )}
-                          </button>
-
-                          <div className="w-8 h-8 rounded bg-[#1F453B] text-white text-[13px] font-bold flex items-center justify-center">
-                            {cat.code || "C"}
-                          </div>
-
-                          <h3 className="font-serif-bc text-[18px] text-[#333333] flex-1">
-                            {cat.name}
-                          </h3>
-
-                          <div className="text-[11.5px] text-[#B5C4B6]">
-                            {items.length} items
-                          </div>
-
-                          <div className="text-[13px] font-semibold text-[#333333] min-w-[120px] text-right">
-                            SUBTOTAL {formatINR(subtotal)}
-                          </div>
-
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button className="p-1 rounded hover:bg-[#B5C4B6]">
-                                <MoreHorizontal size={16} />
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onSelect={() => openItemPicker(cat.id)}
-                              >
-                                <Plus size={13} className="mr-2" /> Add from
-                                Library
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onSelect={() => handleDeleteCategory(cat.id)}
-                                className="text-[#7A2E1A]"
-                              >
-                                <Trash2 size={13} className="mr-2" /> Delete
-                                category
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </td>
-                    </tr>
-
-                    {!isCollapsed && (
-                      <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={(e) => {
-                          if (!e.over || e.active.id === e.over.id) return;
-                          const oldIndex = items.findIndex(
-                            (i) => i.id === e.active.id,
-                          );
-                          const newIndex = items.findIndex(
-                            (i) => i.id === e.over.id,
-                          );
-                          const newOrder = arrayMove(
-                            items,
-                            oldIndex,
-                            newIndex,
-                          ).map((i) => i.id);
-                          handleReorderItems(cat.id, newOrder);
-                        }}
-                      >
-                        <SortableContext
-                          items={items.map((i) => i.id)}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          {items.map((item, idx) => (
-                            <ItemRow
-                              key={item.id}
-                              item={item}
-                              sno={idx + 1}
-                              onPatch={(patch) => patchItem(item.id, patch)}
-                              onDelete={() => handleDeleteItem(item.id)}
-                            />
-                          ))}
-                        </SortableContext>
-                      </DndContext>
-                    )}
-
-                    {!isCollapsed && items.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={7}
-                          className="p-8 text-center text-[#B5C4B6] text-[12.5px]"
-                        >
-                          No items in this category yet.{" "}
-                          <button
-                            onClick={() => openItemPicker(cat.id)}
-                            className="text-[#1F453B] font-semibold hover:underline"
-                          >
-                            Add from Library
-                          </button>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {(template.categories || []).length === 0 && (
-          <section className="bc-card p-14 text-center text-[#6B7B7C] text-[13px]">
-            No categories yet. Click "Add Category from Library" above.
+        {categories.length === 0 ? (
+          <section className="bc-card p-14 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-[#EAEEF0] flex items-center justify-center mx-auto mb-4">
+              <Sparkles size={22} className="text-[#333333]" />
+            </div>
+            <h2 className="text-[18px] font-bold text-[#333333]">
+              Start building this template
+            </h2>
+            <p className="text-[13px] text-[#6B7B7C] mt-1 mb-5">
+              Choose a predefined category to automatically add its standard
+              items, units and rates.
+            </p>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => setAddCatOpen(true)}
+                className="h-10 px-4 rounded-xl bg-[#1F453B] hover:bg-[#1F453B] text-white text-[13px] font-semibold"
+                data-testid="empty-add-category"
+              >
+                Add First Category
+              </button>
+              <button
+                onClick={() => setCustomCatOpen(true)}
+                className="h-10 px-4 rounded-xl border border-[#B5C4B6] hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C]"
+              >
+                Create Custom Category
+              </button>
+            </div>
+          </section>
+        ) : (
+          <section
+            className="bc-card overflow-hidden"
+            data-testid="template-main-table"
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full text-[13px]">
+                <thead className="text-[10.5px] uppercase tracking-widest text-[#B5C4B6] bg-[#EAEEF0] border-b border-[#B5C4B6] sticky top-0">
+                  <tr>
+                    <th className="p-2 w-11"></th>
+                    <th className="p-2 text-center w-11 whitespace-nowrap">
+                      S. No.
+                    </th>
+                    <th className="p-2 text-left">Item</th>
+                    <th className="p-2 text-left w-[92px]">Location</th>
+                    <th className="p-2 text-left w-[92px]">Unit</th>
+                    <th className="p-2 text-right w-[80px]">Quantity</th>
+                    <th className="p-2 text-right w-[100px]">Rate</th>
+                    <th className="p-2 text-left w-[92px]">Type</th>
+                    <th className="p-2 text-right w-[120px]">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categories.map((cat, index) => (
+                    <CategoryBlock
+                      key={cat.id}
+                      cat={{
+                        ...cat,
+                        code: cat.code || String(index + 1).padStart(2, "0"),
+                        subtotal:
+                          cat.subtotal ??
+                          (cat.items || []).reduce(
+                            (sum, item) =>
+                              sum +
+                              Number(item.quantity || 0) *
+                                Number(item.rate || 0),
+                            0,
+                          ),
+                      }}
+                      items={cat.items || []}
+                      disabled={false}
+                      selectedIds={selectedIds}
+                      onSelectItem={onSelectItem}
+                      onSelectCategory={onSelectCategory}
+                      onPatchItem={patchItem}
+                      onDeleteItem={(itemId) => handleDeleteItem(itemId, cat)}
+                      onDuplicateItem={(itemId) =>
+                        handleDuplicateItem(itemId, cat)
+                      }
+                      onOpenDetail={setDetailItem}
+                      onAddItem={handleAddItem}
+                      onDeleteCat={handleDeleteCategory}
+                      onReorderItems={handleReorderItems}
+                      onToggleHide={() => {}}
+                      onLockedEdit={() => {}}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </section>
         )}
+
+        <BulkActionBar
+          count={selectedIds.size}
+          onChangeUnit={(unit) => handleBulkAction("change_unit", unit)}
+          onDelete={() => handleBulkAction("delete")}
+          onDeselectAll={() => setSelectedIds(new Set())}
+        />
       </main>
 
-      {/* Modals remain the same */}
-      <AddItemPicker
-        open={showItemPicker}
-        onClose={() => {
-          setShowItemPicker(false);
-          setPickerCategoryId(null);
+      <AddCategoryPanel
+        open={addCatOpen}
+        onClose={setAddCatOpen}
+        boqId={id}
+        mode="template"
+        existingCategories={existingCategories}
+        onAdded={() => {
+          setAddCatOpen(false);
+          refetch();
         }}
-        onPick={handlePickerPick}
-        categories={template.categories || []}
-        defaultCategoryId={pickerCategoryId}
       />
 
-      <AddCategoryPanel
-        open={showCategoryPanel}
-        onClose={() => setShowCategoryPanel(false)}
-        boqId={id}
-        existingCategories={
-          new Set(
-            (template.categories || []).map((c) => c.name.toLowerCase().trim()),
-          )
-        }
-        onAdded={handleCategoryAdded}
+      <Dialog open={customCatOpen} onOpenChange={setCustomCatOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Custom Category</DialogTitle>
+            <DialogDescription>
+              Add a category not in the catalog. You can add items to it
+              afterwards.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <input
+              className="bc-input"
+              placeholder="Category name (e.g. Landscape)"
+              value={customCatName}
+              onChange={(e) => setCustomCatName(e.target.value)}
+              data-testid="custom-cat-name"
+            />
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => setCustomCatOpen(false)}
+              className="h-10 px-4 rounded-xl border border-[#B5C4B6] text-[13px] font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={addCustomCategory}
+              className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold"
+              data-testid="custom-cat-submit"
+            >
+              Add Category
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ItemDetailDrawer
+        open={!!detailItem}
+        onClose={() => setDetailItem(null)}
+        item={detailItem}
+        disabled={false}
+        onPatch={(patch) => detailItem && patchItem(detailItem.id, patch)}
+      />
+
+      <AddItemPicker
+        open={!!pickerFor}
+        defaultCategoryId={pickerFor?.cid}
+        categories={categories}
+        onClose={() => setPickerFor(null)}
+        onPick={addItemFromPicker}
       />
     </div>
   );

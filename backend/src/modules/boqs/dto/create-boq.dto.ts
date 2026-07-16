@@ -11,5 +11,5 @@ export class CreateBoqDto {
 
   @IsOptional()
   @IsUUID()
-  template_id?: string;
+  source_template_id?: string;
 }

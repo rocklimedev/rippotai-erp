@@ -10,7 +10,7 @@ import {
 } from 'sequelize-typescript';
 import { Unit } from '@/modules/metas/models/unit.model';
 import { LibraryItem } from './library-item.model';
-import { BoqCategory } from './boq-category.model';
+import { BoqTemplateCategory } from './boq-template-category.model'; // ← was BoqCategory
 
 @Table({
   tableName: 'boq_template_items',
@@ -24,7 +24,7 @@ export class BoqTemplateItem extends Model<BoqTemplateItem> {
   @Column({ type: DataType.CHAR(36) })
   declare id: string;
 
-  @ForeignKey(() => BoqCategory)
+  @ForeignKey(() => BoqTemplateCategory) // ← was BoqCategory
   @Column({
     type: DataType.CHAR(36),
     allowNull: false,
@@ -85,10 +85,12 @@ export class BoqTemplateItem extends Model<BoqTemplateItem> {
   })
   declare sort_order: number;
 
-  @BelongsTo(() => BoqCategory, {
+  @BelongsTo(() => BoqTemplateCategory, {
+    // ← was BoqCategory
     foreignKey: 'boq_category_id',
+    as: 'category',
   })
-  declare category: BoqCategory;
+  declare category: BoqTemplateCategory;
 
   @BelongsTo(() => LibraryItem, {
     foreignKey: 'library_item_id',

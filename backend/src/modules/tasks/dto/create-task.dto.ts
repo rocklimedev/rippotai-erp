@@ -5,7 +5,10 @@ import {
   IsNumber,
   IsDateString,
   IsUUID,
+  Min,
+  MaxLength,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export enum TaskPriority {
   LOW = 'low',
@@ -21,11 +24,12 @@ export enum TaskStatus {
 
 export class CreateTaskDto {
   @IsString()
+  @MaxLength(255)
   title: string;
 
   @IsOptional()
   @IsUUID('4')
-  project_id?: string;
+  project_id?: string | null;
 
   @IsOptional()
   @IsEnum(TaskPriority)
@@ -37,9 +41,11 @@ export class CreateTaskDto {
 
   @IsOptional()
   @IsDateString()
-  due_date?: string;
+  due_date?: string | null;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
+  @Min(0)
   workload_estimate_hours?: number;
 }

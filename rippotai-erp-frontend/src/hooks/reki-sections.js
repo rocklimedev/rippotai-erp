@@ -1,102 +1,220 @@
 export const REKI_SECTIONS = [
   {
-    title: "Survey Information",
-    fields: [
-      { key: "surveyor", label: "Surveyor" },
-      { key: "survey_date", label: "Survey date", type: "date" },
-      { key: "weather", label: "Weather / conditions" },
-    ],
-  },
-  {
-    title: "Site and Access",
+    title: "General Information",
     fields: [
       {
-        key: "access_notes",
-        label: "Access / lift / stairs",
+        key: "recce_date",
+        label: "Recce Date",
+        type: "date",
+      },
+      {
+        key: "time_of_visit",
+        label: "Time of Visit",
+        type: "time",
+      },
+      {
+        key: "status",
+        label: "Status",
+        type: "select",
+        options: [
+          "draft",
+          "scheduled",
+          "in_progress",
+          "completed",
+          "approved",
+          "cancelled",
+        ],
+      },
+      {
+        key: "remarks",
+        label: "General Remarks",
         type: "textarea",
       },
-      { key: "parking", label: "Parking" },
     ],
   },
+
   {
-    title: "Room-by-Room Survey",
+    title: "Site Access Details",
     fields: [
       {
-        key: "rooms_measured",
-        label: "Rooms measured (L×W×H per line)",
+        key: "site_accessibility",
+        label: "Site Accessibility",
+        type: "select",
+        options: ["Easy", "Moderate", "Difficult"],
+      },
+      {
+        key: "road_width_near_site",
+        label: "Road Width Near Site",
+      },
+      {
+        key: "vehicle_entry_available",
+        label: "Vehicle Entry Available",
+        type: "select",
+        options: ["Yes", "No"],
+      },
+      {
+        key: "loading_unloading_space",
+        label: "Loading / Unloading Space",
+        type: "select",
+        options: ["Yes", "No", "Limited"],
+      },
+      {
+        key: "lift_available",
+        label: "Lift Available",
+        type: "select",
+        options: ["Yes", "No"],
+      },
+      {
+        key: "service_lift_available",
+        label: "Service Lift Available",
+        type: "select",
+        options: ["Yes", "No"],
+      },
+      {
+        key: "staircase_width",
+        label: "Staircase Width",
+      },
+      {
+        key: "floor_level",
+        label: "Floor Level",
+      },
+      {
+        key: "parking_availability",
+        label: "Parking Availability",
+        type: "select",
+        options: ["Yes", "No", "Limited"],
+      },
+      {
+        key: "access_restrictions",
+        label: "Access Restrictions",
         type: "textarea",
-        rows: 6,
       },
     ],
   },
+
   {
-    title: "Doors and Windows",
-    fields: [{ key: "openings", label: "Openings notes", type: "textarea" }],
+    title: "Site Condition",
+    fields: [
+      {
+        key: "current_site_status",
+        label: "Current Site Status",
+        type: "select",
+        options: [
+          "Empty Site",
+          "Under Construction",
+          "Renovation Site",
+          "Occupied Site",
+          "Partially Occupied",
+          "Demolition Required",
+        ],
+      },
+      {
+        key: "existing_flooring_condition",
+        label: "Existing Flooring",
+      },
+      {
+        key: "existing_wall_condition",
+        label: "Existing Wall Condition",
+      },
+      {
+        key: "existing_ceiling_condition",
+        label: "Existing Ceiling Condition",
+      },
+      {
+        key: "existing_doors_windows_condition",
+        label: "Doors & Windows Condition",
+      },
+      {
+        key: "leakage_dampness_observed",
+        label: "Leakage / Dampness",
+        type: "textarea",
+      },
+      {
+        key: "cracks_observed",
+        label: "Cracks Observed",
+        type: "textarea",
+      },
+    ],
   },
+
   {
     title: "Electrical Survey",
     fields: [
       {
-        key: "electrical",
-        label: "Electrical points / DBs",
-        type: "textarea",
+        key: "existing_points_available",
+        label: "Existing Electrical Points",
+        type: "select",
+        options: ["Yes", "No"],
+      },
+      {
+        key: "main_db_location",
+        label: "Main DB Location",
+      },
+      {
+        key: "meter_location",
+        label: "Meter Location",
+      },
+      {
+        key: "power_supply_status",
+        label: "Power Supply Status",
+        type: "select",
+        options: [
+          "Available",
+          "Not Available",
+          "Temporary Connection Required",
+        ],
       },
     ],
   },
+
   {
-    title: "Plumbing and Sanitary",
+    title: "Plumbing Survey",
     fields: [
       {
-        key: "plumbing",
-        label: "Plumbing lines / fixtures",
-        type: "textarea",
+        key: "water_supply_available",
+        label: "Water Supply",
+        type: "select",
+        options: ["Yes", "No"],
       },
-    ],
-  },
-  {
-    title: "HVAC and Ventilation",
-    fields: [{ key: "hvac", label: "HVAC / ducts", type: "textarea" }],
-  },
-  {
-    title: "Existing Construction",
-    fields: [
       {
-        key: "structure",
-        label: "Existing structure / condition",
-        type: "textarea",
+        key: "drainage_line_available",
+        label: "Drainage Line",
+        type: "select",
+        options: ["Yes", "No"],
+      },
+      {
+        key: "existing_plumbing_condition",
+        label: "Existing Plumbing",
+        type: "select",
+        options: ["Good", "Average", "Poor", "Needs Replacement"],
+      },
+      {
+        key: "kitchen_plumbing_checked",
+        label: "Kitchen Plumbing Checked",
+        type: "select",
+        options: ["Yes", "No", "Not Applicable"],
+      },
+      {
+        key: "bathroom_plumbing_checked",
+        label: "Bathroom Plumbing Checked",
+        type: "select",
+        options: ["Yes", "No", "Not Applicable"],
       },
     ],
   },
+
   {
-    title: "Light and Environment",
-    fields: [
-      {
-        key: "light",
-        label: "Natural light / noise / air",
-        type: "textarea",
-      },
-    ],
+    title: "Floor & Room Survey",
+    type: "floors",
   },
+
   {
-    title: "Safety and Restrictions",
-    fields: [
-      {
-        key: "safety",
-        label: "Society / municipal restrictions",
-        type: "textarea",
-      },
-    ],
+    title: "Layout Drawings",
+    type: "layoutAttachments",
   },
+
   {
-    title: "Survey Completion",
-    fields: [
-      { key: "observations", label: "Major observations", type: "textarea" },
-      {
-        key: "missing",
-        label: "Missing info / follow-ups",
-        type: "textarea",
-      },
-      { key: "submitted_by", label: "Submitted by" },
-    ],
+    title: "Additional Documents",
+    type: "documents",
   },
 ];

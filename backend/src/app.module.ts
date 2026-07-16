@@ -20,8 +20,9 @@ import { CdnModule } from './modules/cdn/cdn.module';
 import { DocumentsModule } from './modules/documents/document.module';
 import { DrawingsModule } from './modules/documents/drawing.module';
 import { BriefModule } from './modules/brief/brief.module';
-import { RekiModule } from './modules/reki/reki.module';
+import { SiteRecceModule } from './modules/reki/reki.module';
 import { TasksModule } from './modules/tasks/task.module';
+import { CalendarModule } from './modules/calendar/calendar.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -53,8 +54,9 @@ import { TasksModule } from './modules/tasks/task.module';
     DocumentsModule,
     DrawingsModule,
     BriefModule,
-    RekiModule,
+    SiteRecceModule,
     TasksModule,
+    CalendarModule,
   ],
 })
 export class AppModule {}

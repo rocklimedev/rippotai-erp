@@ -11,12 +11,15 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { Optional } from 'sequelize';
+
 import { Project } from '@/modules/projects/models/projects.model';
+import { User } from '@/modules/users/models/user.model';
 
 export interface TaskAttributes {
   id: string;
   title: string;
   project_id: string | null;
+  created_by: string | null;
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: 'todo' | 'completed';
   due_date: Date | null;
@@ -31,6 +34,7 @@ export interface TaskCreationAttributes extends Optional<
   TaskAttributes,
   | 'id'
   | 'project_id'
+  | 'created_by'
   | 'priority'
   | 'status'
   | 'due_date'
@@ -71,6 +75,20 @@ export class Task extends Model<TaskAttributes, TaskCreationAttributes> {
     targetKey: 'id',
   })
   declare project?: Project;
+
+  // Created By
+  @ForeignKey(() => User)
+  @Column({
+    type: DataType.CHAR(36),
+    allowNull: true,
+  })
+  declare created_by: string | null;
+
+  @BelongsTo(() => User, {
+    foreignKey: 'created_by',
+    as: 'creator',
+  })
+  declare creator?: User;
 
   @Column({
     type: DataType.ENUM('low', 'medium', 'high', 'critical'),

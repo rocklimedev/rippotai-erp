@@ -4,7 +4,7 @@ import { Task } from './models/task.model';
 import { Project } from '../projects/models/projects.model';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-
+import { User } from '@/modules/users/models/user.model';
 @Injectable()
 export class TasksService {
   constructor(
@@ -13,14 +13,21 @@ export class TasksService {
 
     @InjectModel(Project)
     private readonly projectModel: typeof Project,
-  ) {}
 
+    @InjectModel(User)
+    private readonly userModel: typeof User,
+  ) {}
   async findAll() {
     return this.taskModel.findAll({
       include: [
         {
           model: Project,
           attributes: ['id', 'name'],
+        },
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'name', 'email'],
         },
       ],
       order: [
@@ -37,6 +44,11 @@ export class TasksService {
           model: Project,
           attributes: ['id', 'name'],
         },
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'name', 'email'],
+        },
       ],
     });
 
@@ -47,10 +59,21 @@ export class TasksService {
     return task;
   }
 
-  async create(createTaskDto: CreateTaskDto) {
+  async create(createTaskDto: CreateTaskDto, actorId: string) {
+    if (createTaskDto.project_id) {
+      const project = await this.projectModel.findByPk(
+        createTaskDto.project_id,
+      );
+
+      if (!project) {
+        throw new NotFoundException('Project not found');
+      }
+    }
+
     return this.taskModel.create({
       title: createTaskDto.title,
       project_id: createTaskDto.project_id ?? null,
+      created_by: actorId,
       priority: createTaskDto.priority ?? 'medium',
       status: createTaskDto.status ?? 'todo',
       due_date: createTaskDto.due_date
@@ -101,13 +124,42 @@ export class TasksService {
 
     return task;
   }
-
-  async getBoard() {
-    const tasks = await this.taskModel.findAll({
+  async getMyTasks(userId: string) {
+    return this.taskModel.findAll({
+      where: {
+        created_by: userId,
+      },
       include: [
         {
           model: Project,
           attributes: ['id', 'name'],
+        },
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'name', 'email'],
+        },
+      ],
+      order: [
+        ['order_index', 'ASC'],
+        ['due_date', 'ASC'],
+      ],
+    });
+  }
+  async getMyBoard(userId: string) {
+    const tasks = await this.taskModel.findAll({
+      where: {
+        created_by: userId,
+      },
+      include: [
+        {
+          model: Project,
+          attributes: ['id', 'name'],
+        },
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'name', 'email'],
         },
       ],
       order: [
@@ -139,7 +191,76 @@ export class TasksService {
 
       let bucket = task.due_bucket ?? this.calculateDueBucket(dueDate);
 
-      // Overdue tasks stay in Today
+      if (dueDate < startOfToday) {
+        bucket = 'today';
+      }
+
+      switch (bucket) {
+        case 'today':
+          board.today.push(task);
+          break;
+        case 'this_week':
+          board.this_week.push(task);
+          break;
+        case 'month':
+          board.month.push(task);
+          break;
+        case 'year':
+          board.year.push(task);
+          break;
+        default:
+          board.today.push(task);
+          break;
+      }
+    }
+
+    return board;
+  }
+  async getBoard() {
+    const tasks = await this.taskModel.findAll({
+      include: [
+        {
+          model: Project,
+          attributes: ['id', 'name'],
+        },
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'name', 'email'],
+        },
+      ],
+      order: [
+        ['order_index', 'ASC'],
+        ['due_date', 'ASC'],
+      ],
+    });
+
+    const board = {
+      today: [] as Task[],
+      this_week: [] as Task[],
+      month: [] as Task[],
+      year: [] as Task[],
+    };
+
+    const now = new Date();
+
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+
+    for (const task of tasks) {
+      // Skip completed tasks
+      if (task.status === 'completed') {
+        continue;
+      }
+
+      const dueDate = task.due_date ? new Date(task.due_date) : startOfToday;
+
+      let bucket = task.due_bucket ?? this.calculateDueBucket(dueDate);
+
+      // Overdue tasks always appear in Today
       if (dueDate < startOfToday) {
         bucket = 'today';
       }
@@ -163,12 +284,12 @@ export class TasksService {
 
         default:
           board.today.push(task);
+          break;
       }
     }
 
     return board;
   }
-
   private calculateDueBucket(dueDate?: Date | string | null): string {
     if (!dueDate) {
       return 'today';

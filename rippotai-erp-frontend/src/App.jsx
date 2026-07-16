@@ -46,15 +46,13 @@ import { DocumentUpload } from "./pages/documents/DocumentUpload";
 import DocumentsDashboard from "@/pages/documents/DocumentsDashboard";
 import CalendarPage from "@/pages/phasef/CalendarPage";
 import TasksBoard from "@/pages/phasef/TasksBoard";
-import {
-  CalendarMine,
-  CalendarTeam,
-  NotesAll,
-  NoteNew,
-  TasksMine,
-  TasksAll,
-  TaskNew,
-} from "@/pages/phasef/PhaseFRoutes";
+import { TasksAll } from "./pages/phasef/Tasks";
+import { CalendarMine } from "./pages/phasef/Calendar";
+import { CalendarTeam } from "./pages/phasef/Calendar";
+import { NotesAll } from "./pages/phasef/Notes";
+import { NoteNew } from "./pages/phasef/Notes";
+import { TasksMine } from "./pages/phasef/Tasks";
+import { TaskNew } from "./pages/phasef/Tasks";
 import RolesPermissions from "@/pages/settings/RolesPermissions";
 import SuperAdminPage from "@/pages/settings/SuperAdmin";
 import { UpgradeModalHost } from "@/lib/planGuards";
@@ -64,6 +62,8 @@ import BoqLibraryPage from "./pages/boq/BoqLibraryPage";
 import BoqActivityPage from "./pages/boq/BoqActivitypage";
 import BoqTemplateNew from "./pages/boq/BoqTemplateNew";
 import BoqTemplateEditor from "./pages/boq/BoqTemplateEditor";
+import AccountSettings from "./pages/settings/AccountSettings";
+import SettingsLayout from "./layouts/SettingsLayout";
 function Protected({ children, blockRoles }) {
   const { user, ready } = useAuth();
   if (!ready)
@@ -335,42 +335,21 @@ function App() {
             element={<Navigate to="/dashboard" replace />}
           />
 
+          {/* Settings App - Uses Same Top Header/Navbar */}
+
           <Route
             path="/settings"
             element={
               <Protected>
-                <ComingSoon
-                  title="Settings"
-                  description="Workspace settings coming soon."
-                />
+                <SettingsLayout />
               </Protected>
             }
-          />
-          <Route
-            path="/settings/roles-permissions"
-            element={
-              <Protected>
-                <RolesPermissions />
-              </Protected>
-            }
-          />
-          <Route
-            path="/settings/estimate-signature"
-            element={
-              <Protected>
-                <EstimateSignature />
-              </Protected>
-            }
-          />
-          <Route
-            path="/settings/super-admin"
-            element={
-              <Protected>
-                <SuperAdminPage />
-              </Protected>
-            }
-          />
-
+          >
+            <Route index element={<AccountSettings />} />
+            <Route path="roles-permissions" element={<RolesPermissions />} />
+            <Route path="estimate-signature" element={<EstimateSignature />} />
+            <Route path="super-admin" element={<SuperAdminPage />} />
+          </Route>
           <Route path="/client/*" element={<ClientPortalRoutes />} />
           <Route
             path="/client-home"

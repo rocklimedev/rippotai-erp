@@ -1,7 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import api from "@/lib/api";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, Search, Plus, X } from "lucide-react";
+import {
+  useGetCalendarEventsQuery,
+  useCreateCalendarEventMutation,
+  useUpdateCalendarEventMutation,
+  useDeleteCalendarEventMutation,
+} from "../../api/calendar.api"; // adjust this import path to wherever calendar.api.js lives
+import { useGetProjectsQuery } from "../../api/project.api"; // adjust this import path to wherever projects.api.js lives
 
 const VIEWS = ["day", "week", "month", "year"];
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -69,7 +75,6 @@ function CreateEventModal({
   onClose,
   initialDate,
   projects,
-  onSaved,
   existingEvent,
 }) {
   const isEdit = !!existingEvent;
@@ -84,6 +89,15 @@ function CreateEventModal({
     description: "",
     assignee: "",
   });
+
+  const [createCalendarEvent, { isLoading: isCreating }] =
+    useCreateCalendarEventMutation();
+  const [updateCalendarEvent, { isLoading: isUpdating }] =
+    useUpdateCalendarEventMutation();
+  const [deleteCalendarEvent, { isLoading: isDeleting }] =
+    useDeleteCalendarEventMutation();
+  const isSaving = isCreating || isUpdating;
+
   useEffect(() => {
     if (!open) return;
     if (existingEvent) {
@@ -128,27 +142,32 @@ function CreateEventModal({
       attendees: form.assignee ? [form.assignee] : [],
     };
     try {
-      if (isEdit)
-        await api.patch(`/calendar/events/${existingEvent.id}`, payload);
-      else await api.post("/calendar/events", payload);
+      if (isEdit) {
+        await updateCalendarEvent({
+          id: existingEvent.id,
+          body: payload,
+        }).unwrap();
+      } else {
+        await createCalendarEvent(payload).unwrap();
+      }
       toast.success(isEdit ? "Event updated" : "Event created");
-      onSaved && onSaved();
       onClose();
     } catch {
       toast.error("Save failed");
     }
   };
+
   const del = async () => {
     if (!isEdit || !window.confirm(`Delete "${existingEvent.title}"?`)) return;
     try {
-      await api.delete(`/calendar/events/${existingEvent.id}`);
+      await deleteCalendarEvent(existingEvent.id).unwrap();
       toast.success("Deleted");
-      onSaved && onSaved();
       onClose();
     } catch {
       toast.error("Delete failed");
     }
   };
+
   if (!open) return null;
   return (
     <div
@@ -284,19 +303,21 @@ function CreateEventModal({
               <button
                 type="button"
                 onClick={del}
-                className="h-10 px-3 rounded-lg border border-[#7A2E1A] text-[#7A2E1A] text-[13px] font-semibold"
+                disabled={isDeleting}
+                className="h-10 px-3 rounded-lg border border-[#7A2E1A] text-[#7A2E1A] text-[13px] font-semibold disabled:opacity-50"
                 data-testid="event-delete"
               >
-                Delete
+                {isDeleting ? "Deleting…" : "Delete"}
               </button>
             )}
             <button
               type="submit"
-              className="h-10 px-4 rounded-lg text-white text-[13px] font-semibold ml-auto"
+              disabled={isSaving}
+              className="h-10 px-4 rounded-lg text-white text-[13px] font-semibold ml-auto disabled:opacity-50"
               style={{ backgroundColor: "#1F453B" }}
               data-testid="event-save"
             >
-              {isEdit ? "Save" : "Create Event"}
+              {isSaving ? "Saving…" : isEdit ? "Save" : "Create Event"}
             </button>
           </div>
         </form>
@@ -308,21 +329,26 @@ function CreateEventModal({
 export default function CalendarPage() {
   const [view, setView] = useState("month");
   const [cursor, setCursor] = useState(() => new Date());
-  const [events, setEvents] = useState([]);
-  const [projects, setProjects] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalDate, setModalDate] = useState(null);
   const [editingEvent, setEditingEvent] = useState(null);
 
-  const load = () =>
-    api
-      .get("/calendar/events?limit=500")
-      .then((r) => setEvents(r.data || []))
-      .catch(() => {});
+  const {
+    data: events = [],
+    isFetching,
+    isError,
+  } = useGetCalendarEventsQuery({ limit: 500 });
+
+  const { data: projects = [], isError: isProjectsError } =
+    useGetProjectsQuery();
+
   useEffect(() => {
-    load();
-    api.get("/projects").then((r) => setProjects(r.data || []));
-  }, []);
+    if (isError) toast.error("Failed to load events");
+  }, [isError]);
+
+  useEffect(() => {
+    if (isProjectsError) toast.error("Failed to load projects");
+  }, [isProjectsError]);
 
   const eventsByDay = useMemo(() => {
     const m = {};
@@ -451,6 +477,10 @@ export default function CalendarPage() {
         </div>
       </div>
 
+      {isFetching && !events.length && (
+        <div className="text-[13px] text-[#6B7B7C] mb-3">Loading events…</div>
+      )}
+
       {view === "month" && (
         <MonthView
           cursor={cursor}
@@ -493,7 +523,6 @@ export default function CalendarPage() {
         initialDate={modalDate}
         projects={projects}
         existingEvent={editingEvent}
-        onSaved={load}
       />
     </div>
   );
