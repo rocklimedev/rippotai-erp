@@ -19,7 +19,12 @@ const baseQuery = fetchBaseQuery({
 export const quotationApi = createApi({
   reducerPath: "quotationApi",
   baseQuery,
-  tagTypes: ["Quotations", "QuotationItems", "QuotationVersions"],
+  tagTypes: [
+    "Quotations",
+    "QuotationItems",
+    "QuotationVersions",
+    "QuotationDashboard",
+  ],
 
   endpoints: (builder) => ({
     // =========================
@@ -237,6 +242,91 @@ export const quotationApi = createApi({
       }),
       invalidatesTags: ["Quotations", "QuotationItems", "QuotationVersions"],
     }),
+
+    // =========================
+    // QUOTATION COMPARISON
+    // =========================
+
+    // Compare multiple quotations
+    compareQuotations: builder.query({
+      query: (ids) => ({
+        url: `/quotations/compare`,
+        params: {
+          ids: ids.join(","),
+        },
+      }),
+      providesTags: ["Quotations"],
+    }),
+
+    // Save a comparison
+    saveQuotationComparison: builder.mutation({
+      query: (body) => ({
+        url: "/quotations/quotation-comparisons",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Quotations"],
+    }),
+
+    // Mark quotation as selected
+    markQuotationSelected: builder.mutation({
+      query: ({ id, remarks }) => ({
+        url: `/quotations/${id}/mark-selected`,
+        method: "POST",
+        body: { remarks },
+      }),
+      invalidatesTags: ["Quotations"],
+    }),
+
+    // =========================
+    // DASHBOARD — summary card
+    // =========================
+
+    getQuotationsSummary: builder.query({
+      query: () => "/quotations/summary",
+      providesTags: ["QuotationDashboard"],
+    }),
+
+    // =========================
+    // DASHBOARD — Phase 8 tables/lists
+    // =========================
+
+    getQuotationsProjectWise: builder.query({
+      query: () => "/dashboards/quotations/project-wise",
+      providesTags: ["QuotationDashboard"],
+    }),
+
+    getQuotationsExpiringSoon: builder.query({
+      query: (withinDays = 7) =>
+        `/dashboards/quotations/expiring-soon?within_days=${withinDays}`,
+      providesTags: ["QuotationDashboard"],
+    }),
+
+    getQuotationsBoqVariance: builder.query({
+      query: () => "/dashboards/quotations/boq-variance",
+      providesTags: ["QuotationDashboard"],
+    }),
+
+    // =========================
+    // DASHBOARD — Phase 10 charts
+    // =========================
+
+    getQuotationsValueTrend: builder.query({
+      query: (months = 6) =>
+        `/dashboards/quotations/value-trend?months=${months}`,
+      providesTags: ["QuotationDashboard"],
+    }),
+
+    getQuotationsStatusMix: builder.query({
+      query: () => "/dashboards/quotations/status-mix",
+      providesTags: ["QuotationDashboard"],
+    }),
+
+    getQuotationsVariationByProject: builder.query({
+      query: (limit = 6) =>
+        `/dashboards/quotations/variation-by-project?limit=${limit}`,
+      providesTags: ["QuotationDashboard"],
+    }),
   }),
 });
 
@@ -259,6 +349,11 @@ export const {
   useSoftDeleteQuotationMutation,
   useDeleteQuotationPermanentMutation,
 
+  // comparison
+  useCompareQuotationsQuery,
+  useSaveQuotationComparisonMutation,
+  useMarkQuotationSelectedMutation,
+
   // items
   useCreateQuotationItemMutation,
   useGetQuotationItemsQuery,
@@ -272,4 +367,13 @@ export const {
   useGetQuotationVersionQuery,
   useDeleteQuotationVersionMutation,
   useRestoreQuotationVersionMutation,
+
+  // dashboard
+  useGetQuotationsSummaryQuery,
+  useGetQuotationsProjectWiseQuery,
+  useGetQuotationsExpiringSoonQuery,
+  useGetQuotationsBoqVarianceQuery,
+  useGetQuotationsValueTrendQuery,
+  useGetQuotationsStatusMixQuery,
+  useGetQuotationsVariationByProjectQuery,
 } = quotationApi;

@@ -26,6 +26,7 @@ export enum GlobalDiscountType {
   FIXED = 'fixed',
   PERCENTAGE = 'percentage',
 }
+
 @Table({
   tableName: 'quotations',
   timestamps: true,

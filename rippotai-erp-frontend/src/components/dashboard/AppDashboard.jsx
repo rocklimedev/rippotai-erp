@@ -1,37 +1,13 @@
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useCallback,
-} from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Responsive, WidthProvider } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import {
-  Plus,
-  Edit3,
-  MoreHorizontal,
-  X,
-  RotateCcw,
-  Lock,
-  Check,
-  Search,
-  RefreshCw,
-} from "lucide-react";
+import { Plus, X, Lock, Check, Search, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import api from "@/lib/api";
 import { APP_ICONS } from "@/components/AppIcons";
 import { APP_META } from "@/config/appNav";
 import { WIDGETS as WIDGET_COMPONENTS } from "@/widgets/registry";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
@@ -45,6 +21,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  useGetDashboardQuery,
+  useGetDashboardLibraryQuery,
+  useSaveDashboardMutation,
+  useResetDashboardMutation,
+} from "../../api/dashboard.api";
 
 const RGL = WidthProvider(Responsive);
 
@@ -66,6 +48,7 @@ function DashboardHeader({
   appKey,
   editing,
   dirty,
+  saving,
   onCancel,
   onSave,
   onAddWidget,
@@ -121,6 +104,7 @@ function DashboardHeader({
         <button
           data-testid="dashboard-cancel-btn"
           onClick={onCancel}
+          disabled={saving}
           className="bc-btn-secondary"
           style={{ minHeight: 36, padding: "0 12px" }}
         >
@@ -129,10 +113,11 @@ function DashboardHeader({
         <button
           data-testid="dashboard-done-btn"
           onClick={onSave}
+          disabled={saving}
           className="bc-btn-primary"
           style={{ minHeight: 36, padding: "0 14px" }}
         >
-          <Check size={14} /> Done
+          <Check size={14} /> {saving ? "Saving…" : "Done"}
         </button>
       </div>
     </>
@@ -251,7 +236,7 @@ function AddWidgetDrawer({ open, onClose, appKey, library, layout, onAdd }) {
 }
 
 /* Reset Modal */
-function ResetModal({ open, onClose, onConfirm }) {
+function ResetModal({ open, onClose, onConfirm, resetting }) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
@@ -270,6 +255,7 @@ function ResetModal({ open, onClose, onConfirm }) {
         <DialogFooter>
           <button
             onClick={onClose}
+            disabled={resetting}
             className="h-9 px-3 rounded-lg bg-white border border-[#B5C4B6] text-[12.5px] font-semibold text-[#333333] hover:bg-[#D8E0DA]/60]"
           >
             Cancel
@@ -277,9 +263,10 @@ function ResetModal({ open, onClose, onConfirm }) {
           <button
             data-testid="reset-confirm-btn"
             onClick={onConfirm}
+            disabled={resetting}
             className="h-9 px-3.5 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold hover:opacity-90"
           >
-            Reset
+            {resetting ? "Resetting…" : "Reset"}
           </button>
         </DialogFooter>
       </DialogContent>
@@ -340,14 +327,64 @@ export default function AppDashboard({ appKey }) {
   const [hidden, setHidden] = useState([]);
   const [requiredKeys, setRequiredKeys] = useState([]);
   const [defaultLayout, setDefaultLayout] = useState([]);
-  const [library, setLibrary] = useState([]);
   const [editing, setEditing] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [sp, setSp] = useSearchParams();
   const savedRef = useRef({ layout: [], hidden_keys: [] });
   const undoTimerRef = useRef(null);
+  // Tracks whether we've hydrated local state for the CURRENT appKey at
+  // least once — lets a background refetch/poll update local state safely
+  // before the user starts editing, without ever clobbering an in-progress
+  // edit once they have.
+  const hydratedRef = useRef(false);
+
+  const {
+    data: dash,
+    isLoading: dashLoading,
+    isError: dashIsError,
+    refetch: refetchDashboard,
+  } = useGetDashboardQuery(appKey, { skip: !appKey });
+
+  const { data: lib, isLoading: libLoading } = useGetDashboardLibraryQuery(
+    appKey,
+    { skip: !appKey },
+  );
+  const library = lib?.widgets || [];
+
+  const [saveDashboard, { isLoading: saving }] = useSaveDashboardMutation();
+  const [resetDashboard, { isLoading: resetting }] =
+    useResetDashboardMutation();
+
+  const loading = (dashLoading || libLoading) && !hydratedRef.current;
+
+  // Reset hydration when switching apps, so the new app's server data is
+  // guaranteed to populate local state even if we're mid-"edit=1" deep link.
+  useEffect(() => {
+    hydratedRef.current = false;
+    setEditing(false);
+  }, [appKey]);
+
+  // Hydrate local editable state from the server. Skips while the user is
+  // actively editing (after the first hydration) so a background refetch
+  // never overwrites an unsaved drag/resize/add/remove.
+  useEffect(() => {
+    if (!dash) return;
+    if (hydratedRef.current && editing) return;
+    setLayout(dash.layout || []);
+    setHidden(dash.hidden_keys || []);
+    setRequiredKeys(dash.required_keys || []);
+    setDefaultLayout(dash.default_layout || []);
+    savedRef.current = {
+      layout: dash.layout || [],
+      hidden_keys: dash.hidden_keys || [],
+    };
+    hydratedRef.current = true;
+  }, [dash, editing]);
+
+  useEffect(() => {
+    if (dashIsError) toast.error("Failed to load dashboard");
+  }, [dashIsError]);
 
   useEffect(() => {
     if (sp.get("edit") === "1") {
@@ -357,35 +394,6 @@ export default function AppDashboard({ appKey }) {
     }
     // eslint-disable-next-line
   }, [sp]);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [dash, lib] = await Promise.all([
-        api.get(`/dashboards/${appKey}`),
-        api
-          .get(`/dashboards/library/${appKey}`)
-          .catch(() => ({ data: { widgets: [] } })),
-      ]);
-      setLayout(dash.data.layout || []);
-      setHidden(dash.data.hidden_keys || []);
-      setRequiredKeys(dash.data.required_keys || []);
-      setDefaultLayout(dash.data.default_layout || []);
-      setLibrary(lib.data.widgets || []);
-      savedRef.current = {
-        layout: dash.data.layout || [],
-        hidden_keys: dash.data.hidden_keys || [],
-      };
-    } catch (e) {
-      toast.error("Failed to load dashboard");
-    } finally {
-      setLoading(false);
-    }
-  }, [appKey]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   // Keyboard shortcuts (Esc / Cmd+S)
   useEffect(() => {
@@ -469,7 +477,7 @@ export default function AppDashboard({ appKey }) {
 
   const handleSave = async () => {
     try {
-      await api.put(`/dashboards/${appKey}`, { layout, hidden_keys: hidden });
+      await saveDashboard({ appKey, layout, hidden_keys: hidden }).unwrap();
       savedRef.current = {
         layout: JSON.parse(JSON.stringify(layout)),
         hidden_keys: [...hidden],
@@ -477,7 +485,7 @@ export default function AppDashboard({ appKey }) {
       setEditing(false);
       toast.success("Dashboard saved");
     } catch (e) {
-      const detail = e?.response?.data?.detail || "Save failed — retry";
+      const detail = e?.data?.detail || "Save failed — retry";
       toast.error(detail);
     }
   };
@@ -490,8 +498,8 @@ export default function AppDashboard({ appKey }) {
 
   const handleReset = async () => {
     try {
-      const r = await api.post(`/dashboards/${appKey}/reset`);
-      const newLayout = r.data.layout || [];
+      const r = await resetDashboard(appKey).unwrap();
+      const newLayout = r.layout || [];
       setLayout(newLayout);
       setHidden([]);
       savedRef.current = { layout: newLayout, hidden_keys: [] };
@@ -512,6 +520,7 @@ export default function AppDashboard({ appKey }) {
 
   const isEmpty = layout.length === 0;
   const handleManualRefresh = () => {
+    refetchDashboard();
     window.dispatchEvent(
       new CustomEvent("bc:dashboard-refresh", {
         detail: { app: appKey, manual: true },
@@ -538,6 +547,7 @@ export default function AppDashboard({ appKey }) {
         appKey={appKey}
         editing={editing}
         dirty={dirty}
+        saving={saving}
         onCancel={handleCancel}
         onSave={handleSave}
         onAddWidget={() => setDrawer(true)}
@@ -603,9 +613,10 @@ export default function AppDashboard({ appKey }) {
             </button>
             <button
               onClick={handleReset}
+              disabled={resetting}
               className="h-10 px-4 rounded-xl bg-white border border-[#B5C4B6] text-[#333333] text-[13px] font-semibold hover:bg-[#D8E0DA]/60]"
             >
-              Restore Default Layout
+              {resetting ? "Restoring…" : "Restore Default Layout"}
             </button>
           </div>
         </div>
@@ -653,6 +664,7 @@ export default function AppDashboard({ appKey }) {
         open={resetOpen}
         onClose={() => setResetOpen(false)}
         onConfirm={handleReset}
+        resetting={resetting}
       />
     </div>
   );

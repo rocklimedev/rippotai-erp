@@ -17,9 +17,11 @@ import {
   UpdateQuotationDto,
   ReviewQuotationDto,
 } from './dto/quotation.dto';
+import { CreateQuotationComparisonDto } from './dto/quotation-comparison.dto';
 import { QuotationStatus } from '../../common/enums';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
+
 @Controller('quotations')
 @UseGuards(JwtAuthGuard)
 export class QuotationsController {
@@ -44,6 +46,30 @@ export class QuotationsController {
       includeDeleted: includeDeleted === 'true',
     });
   }
+
+  // ==================== COMPARISON FEATURE ====================
+
+  @Get('compare')
+  async compare(@Query('ids') ids: string) {
+    const idList = ids
+      ? ids
+          .split(',')
+          .map((id) => id.trim())
+          .filter(Boolean)
+      : [];
+
+    return this.quotationsService.compareQuotations(idList);
+  }
+
+  @Post('quotation-comparisons')
+  async saveComparison(
+    @Body() dto: CreateQuotationComparisonDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.quotationsService.saveComparison(dto, user);
+  }
+
+  // ==================== ID ROUTES ====================
 
   @Get(':id')
   findOne(@Param('id') id: string) {
@@ -107,6 +133,15 @@ export class QuotationsController {
   @Patch(':id/restore')
   restore(@Param('id') id: string, @CurrentUser() user: any) {
     return this.quotationsService.restore(id, user);
+  }
+
+  @Post(':id/mark-selected')
+  async markSelected(
+    @Param('id') id: string,
+    @Body('remarks') remarks?: string,
+    @CurrentUser() user?: any,
+  ) {
+    return this.quotationsService.markQuotationSelected(id, remarks, user);
   }
 
   @Delete(':id')

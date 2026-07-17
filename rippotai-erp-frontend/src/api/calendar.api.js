@@ -12,6 +12,7 @@ const baseQuery = fetchBaseQuery({
     }
 
     const cdnToken = import.meta.env.VITE_CDN_TOKEN;
+
     if (cdnToken) {
       headers.set("x-cdn-secret", cdnToken);
     }
@@ -23,7 +24,7 @@ const baseQuery = fetchBaseQuery({
 export const calendarApi = createApi({
   reducerPath: "calendarApi",
   baseQuery,
-  tagTypes: ["CalendarEvents"],
+  tagTypes: ["CalendarEvents", "CalendarStats"],
 
   endpoints: (builder) => ({
     // =========================
@@ -38,8 +39,49 @@ export const calendarApi = createApi({
       providesTags: ["CalendarEvents"],
     }),
 
+    getMyCalendarEvents: builder.query({
+      query: (params) => ({
+        url: "/calendar/events/my-events",
+        params,
+      }),
+      providesTags: ["CalendarEvents"],
+    }),
+
+    getTodayCalendarEvents: builder.query({
+      query: () => ({
+        url: "/calendar/events/today",
+      }),
+      providesTags: ["CalendarEvents"],
+    }),
+
+    getUpcomingCalendarEvents: builder.query({
+      query: (days = 30) => ({
+        url: "/calendar/events/upcoming",
+        params: {
+          days,
+        },
+      }),
+      providesTags: ["CalendarEvents"],
+    }),
+
+    getProjectCalendarEvents: builder.query({
+      query: (projectId) => ({
+        url: `/calendar/events/project/${projectId}`,
+      }),
+      providesTags: ["CalendarEvents"],
+    }),
+
+    getCalendarStats: builder.query({
+      query: () => ({
+        url: "/calendar/events/stats",
+      }),
+      providesTags: ["CalendarStats"],
+    }),
+
     getCalendarEvent: builder.query({
-      query: (id) => `/calendar/events/${id}`,
+      query: (id) => ({
+        url: `/calendar/events/${id}`,
+      }),
       providesTags: ["CalendarEvents"],
     }),
 
@@ -49,7 +91,7 @@ export const calendarApi = createApi({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["CalendarEvents"],
+      invalidatesTags: ["CalendarEvents", "CalendarStats"],
     }),
 
     updateCalendarEvent: builder.mutation({
@@ -58,7 +100,7 @@ export const calendarApi = createApi({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["CalendarEvents"],
+      invalidatesTags: ["CalendarEvents", "CalendarStats"],
     }),
 
     deleteCalendarEvent: builder.mutation({
@@ -66,7 +108,7 @@ export const calendarApi = createApi({
         url: `/calendar/events/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["CalendarEvents"],
+      invalidatesTags: ["CalendarEvents", "CalendarStats"],
     }),
   }),
 });
@@ -78,8 +120,25 @@ export const calendarApi = createApi({
 export const {
   useGetCalendarEventsQuery,
   useLazyGetCalendarEventsQuery,
+
+  useGetMyCalendarEventsQuery,
+  useLazyGetMyCalendarEventsQuery,
+
+  useGetTodayCalendarEventsQuery,
+  useLazyGetTodayCalendarEventsQuery,
+
+  useGetUpcomingCalendarEventsQuery,
+  useLazyGetUpcomingCalendarEventsQuery,
+
+  useGetProjectCalendarEventsQuery,
+  useLazyGetProjectCalendarEventsQuery,
+
+  useGetCalendarStatsQuery,
+  useLazyGetCalendarStatsQuery,
+
   useGetCalendarEventQuery,
   useLazyGetCalendarEventQuery,
+
   useCreateCalendarEventMutation,
   useUpdateCalendarEventMutation,
   useDeleteCalendarEventMutation,

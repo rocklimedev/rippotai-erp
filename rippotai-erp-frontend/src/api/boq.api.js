@@ -422,6 +422,40 @@ export const boqApi = createApi({
       }),
       invalidatesTags: ["LIBRARY"],
     }),
+    getBoqSummary: builder.query({
+      query: () => "/boqs/summary",
+      providesTags: ["BOQ"],
+    }),
+
+    getBoqProductivity: builder.query({
+      query: () => "/boq/productivity",
+      providesTags: ["BOQ"],
+    }),
+
+    getBoqProjectWise: builder.query({
+      query: () => "/dashboards/boq/project-wise",
+      providesTags: ["BOQ"],
+    }),
+
+    getBoqValueTrend: builder.query({
+      query: () => "/dashboards/boq/value-trend?months=6",
+      providesTags: ["BOQ"],
+    }),
+
+    getBoqMonthlyVolume: builder.query({
+      query: () => "/dashboards/boq/monthly-volume?months=6",
+      providesTags: ["BOQ"],
+    }),
+
+    getBoqStatusMix: builder.query({
+      query: () => "/dashboards/boq/status-mix",
+      providesTags: ["BOQ"],
+    }),
+
+    getBoqRecentlyEdited: builder.query({
+      query: (limit = 5) => `/dashboards/boq/recently-edited?limit=${limit}`,
+      providesTags: ["BOQ"],
+    }),
   }),
 });
 
@@ -485,4 +519,12 @@ export const {
   useCreateLibraryItemMutation,
   useUpdateLibraryItemMutation,
   useDeleteLibraryItemMutation,
+
+  useGetBoqSummaryQuery,
+  useGetBoqProductivityQuery,
+  useGetBoqProjectWiseQuery,
+  useGetBoqValueTrendQuery,
+  useGetBoqMonthlyVolumeQuery,
+  useGetBoqStatusMixQuery,
+  useGetBoqRecentlyEditedQuery,
 } = boqApi;

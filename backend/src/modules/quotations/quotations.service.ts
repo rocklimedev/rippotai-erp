@@ -18,6 +18,8 @@ import {
 import { QuotationStatus } from '../../common/enums';
 import { QuotationVersionsService } from './quotation-versions.service';
 import { ActivityLogForQuotationService } from '../engagement/services/activity-log-quotation.service';
+import { QuotationComparison } from './models/quotation-comparisons.model';
+import { CreateQuotationComparisonDto } from './dto/quotation-comparison.dto';
 const EDITABLE_STATUSES = [
   QuotationStatus.DRAFT,
   QuotationStatus.RETURNED_FOR_EDITING,
@@ -29,6 +31,9 @@ export class QuotationsService {
   constructor(
     @InjectModel(Quotation)
     private readonly quotationModel: typeof Quotation,
+
+    @InjectModel(QuotationComparison)
+    private readonly quotationComparisonModel: typeof QuotationComparison,
 
     private readonly projectsService: ProjectsService,
     private readonly vendorsService: VendorsService,
@@ -580,5 +585,160 @@ export class QuotationsService {
     const quotation = await this.quotationModel.findByPk(id);
     if (!quotation) throw new NotFoundException(`Quotation ${id} not found`);
     await quotation.destroy();
+  }
+
+  async compareQuotations(ids: string[]) {
+    if (!ids.length) {
+      throw new BadRequestException('At least one quotation ID required');
+    }
+
+    const quotations = await this.quotationModel.findAll({
+      where: {
+        id: {
+          [Op.in]: ids,
+        },
+        deletedAt: null,
+      },
+      include: [
+        {
+          association: 'items',
+          include: ['unit'],
+        },
+        {
+          association: 'vendor',
+          include: ['vendorCategory', 'businessType'],
+        },
+        {
+          association: 'project',
+          include: ['client', 'project_type'],
+        },
+      ],
+    });
+
+    if (!quotations.length) {
+      throw new NotFoundException('No quotations found');
+    }
+
+    const lowestQuotation = quotations.reduce((lowest, current) =>
+      Number(current.totalAmount) < Number(lowest.totalAmount)
+        ? current
+        : lowest,
+    );
+
+    const lineItemsMap = new Map<
+      string,
+      {
+        sno: number;
+        description: string;
+        unit: string;
+        boq_rate: number | null;
+        quotes: Record<
+          string,
+          {
+            quantity: number;
+            rate: number;
+            amount: number;
+          }
+        >;
+      }
+    >();
+
+    for (const quotation of quotations) {
+      for (const item of quotation.items) {
+        const key = `${item.sno}-${item.particular}`;
+
+        if (!lineItemsMap.has(key)) {
+          lineItemsMap.set(key, {
+            sno: item.sno,
+            description: item.particular,
+            unit: item.unit?.name ?? '-',
+            boq_rate: null,
+            quotes: {},
+          });
+        }
+
+        lineItemsMap.get(key)!.quotes[quotation.id] = {
+          quantity: Number(item.quantity),
+          rate: Number(item.rate),
+          amount: Number(item.amount),
+        };
+      }
+    }
+
+    return {
+      lowest_id: lowestQuotation.id,
+
+      quotations: quotations.map((q) => ({
+        id: q.id,
+
+        vendor_name:
+          q.vendor?.company_name ||
+          q.vendor?.name ||
+          (q.vendorSnapshot as any)?.name,
+
+        project_name: q.project?.name || (q.projectSnapshot as any)?.name,
+
+        project_type: q.project?.project_type?.name ?? null,
+
+        client_name: q.project?.client?.name ?? null,
+
+        quotation_number: q.quotationNumber,
+
+        quotation_date: q.quotationDate,
+
+        status: q.status,
+
+        subtotals: {
+          base: Number(q.subtotal),
+          additional_charges: Number(q.additionalCharges),
+          discount: Number(q.discount),
+          tax: Number(q.taxAmount),
+          total: Number(q.totalAmount),
+        },
+
+        commercial_terms: q.termsConditions,
+
+        vendor: q.vendor,
+
+        vendor_category: q.vendor?.vendorCategory?.name ?? null,
+
+        business_type: q.vendor?.businessType?.name ?? null,
+
+        selected: false,
+      })),
+
+      line_items: [...lineItemsMap.values()],
+    };
+  }
+
+  async markQuotationSelected(id: string, remarks?: string, user?: any) {
+    const quotation = await this.findOne(id);
+    // Add a selected flag or relation if needed (without changing model - use a separate table or field if added later)
+    // For now, just log
+    await this.activityLogForQuotationService.logQuotationUpdated(
+      quotation,
+      user,
+      { remarks },
+    );
+    return quotation;
+  }
+
+  // For saved comparisons
+  async saveComparison(dto: CreateQuotationComparisonDto, user?: any) {
+    // Validation: ensure all quotations exist and belong to project
+    const existing = await this.quotationModel.count({
+      where: { id: { [Op.in]: dto.quotation_ids } },
+    });
+    if (existing !== dto.quotation_ids.length) {
+      throw new NotFoundException('Some quotations not found');
+    }
+
+    return this.quotationComparisonModel.create({
+      name: dto.name,
+      projectId: dto.project_id,
+      workCategory: dto.work_category,
+      quotationIds: dto.quotation_ids,
+      comparedAt: new Date(),
+    } as any);
   }
 }

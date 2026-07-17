@@ -1,5 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
-import api from "@/lib/api";
+import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Loader2 } from "lucide-react";
 import {
@@ -11,19 +10,15 @@ import {
   fmtDT,
   useProjects,
 } from "../../components/Shared";
+import {
+  useGetMyCalendarEventsQuery,
+  useGetCalendarEventsQuery,
+  useCreateCalendarEventMutation,
+} from "../../api/calendar.api";
 
 export function CalendarMine() {
-  const [events, setE] = useState([]);
-  const [busy, setBusy] = useState(true);
-  useEffect(() => {
-    api
-      .get("/calendar/events?my=true")
-      .then((r) => {
-        setE(r.data);
-        setBusy(false);
-      })
-      .catch(() => setBusy(false));
-  }, []);
+  const { data: events = [], isLoading: busy } = useGetMyCalendarEventsQuery();
+
   return (
     <Shell
       label="Calendar"
@@ -82,7 +77,8 @@ export function CalendarMine() {
 
 export function CalendarTeam() {
   const projects = useProjects();
-  const [events, setEvents] = useState([]);
+  const { data: events = [] } = useGetCalendarEventsQuery({ limit: 300 });
+  const [createCalendarEvent] = useCreateCalendarEventMutation();
   const [monthDate, setMonthDate] = useState(() => new Date());
   const [form, setForm] = useState({
     title: "",
@@ -93,23 +89,16 @@ export function CalendarTeam() {
     location: "",
   });
   const [showForm, setShowForm] = useState(false);
-  const load = () =>
-    api
-      .get("/calendar/events?limit=300")
-      .then((r) => setEvents(r.data))
-      .catch(() => {});
-  useEffect(() => {
-    load();
-  }, []);
+
   const submit = async (e) => {
     e.preventDefault();
     if (!form.title || !form.starts_at)
       return toast.error("Title + start required");
     try {
-      await api.post("/calendar/events", {
+      await createCalendarEvent({
         ...form,
         ends_at: form.ends_at || form.starts_at,
-      });
+      }).unwrap();
       toast.success("Event created");
       setForm({
         title: "",
@@ -120,7 +109,6 @@ export function CalendarTeam() {
         location: "",
       });
       setShowForm(false);
-      load();
     } catch {
       toast.error("Create failed");
     }

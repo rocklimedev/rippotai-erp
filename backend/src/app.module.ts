@@ -23,6 +23,7 @@ import { BriefModule } from './modules/brief/brief.module';
 import { SiteRecceModule } from './modules/reki/reki.module';
 import { TasksModule } from './modules/tasks/task.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
+import { DashboardsModule } from './modules/dashboard/dashboard.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -57,6 +58,7 @@ import { CalendarModule } from './modules/calendar/calendar.module';
     SiteRecceModule,
     TasksModule,
     CalendarModule,
+    DashboardsModule,
   ],
 })
 export class AppModule {}

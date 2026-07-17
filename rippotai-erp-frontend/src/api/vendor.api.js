@@ -1,10 +1,11 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { API_URL } from "../lib/config";
+
 const baseQuery = fetchBaseQuery({
   baseUrl: API_URL,
   credentials: "include",
   prepareHeaders: (headers) => {
-    const token = localStorage.getItem("bc_token"); // aligned with AuthContext
+    const token = localStorage.getItem("bc_token");
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);
     }
@@ -27,6 +28,7 @@ export const vendorsApi = createApi({
     "SavedSearches",
     "Shortlists",
     "VendorQuotations",
+    "VendorDashboard", // ← Added for dashboard widgets
   ],
 
   endpoints: (builder) => ({
@@ -51,11 +53,7 @@ export const vendorsApi = createApi({
     getBusinessTypes: builder.query({
       query: (category_id) => {
         const params = new URLSearchParams();
-
-        if (category_id) {
-          params.append("category_id", category_id);
-        }
-
+        if (category_id) params.append("category_id", category_id);
         return `/vendor/business-types?${params.toString()}`;
       },
       providesTags: ["BusinessTypes"],
@@ -65,6 +63,7 @@ export const vendorsApi = createApi({
       query: (id) => `/vendor/business-types/${id}`,
       providesTags: ["BusinessTypes"],
     }),
+
     createBusinessType: builder.mutation({
       query: (body) => ({
         url: "/vendor/business-types",
@@ -73,6 +72,7 @@ export const vendorsApi = createApi({
       }),
       invalidatesTags: ["BusinessTypes"],
     }),
+
     // =====================================
     // Vendors
     // =====================================
@@ -90,24 +90,14 @@ export const vendorsApi = createApi({
       query: ({ q, status, vendor_category_id, business_type_id } = {}) => {
         const params = new URLSearchParams();
 
-        if (q) {
-          params.append("q", q);
-        }
-
-        if (status) {
-          params.append("status", status);
-        }
-
-        if (vendor_category_id) {
+        if (q) params.append("q", q);
+        if (status) params.append("status", status);
+        if (vendor_category_id)
           params.append("vendor_category_id", vendor_category_id);
-        }
-
-        if (business_type_id) {
+        if (business_type_id)
           params.append("business_type_id", business_type_id);
-        }
 
         const query = params.toString();
-
         return query ? `/vendors?${query}` : "/vendors";
       },
       providesTags: ["Vendors"],
@@ -136,7 +126,6 @@ export const vendorsApi = createApi({
       invalidatesTags: ["Vendors", "VendorSummary"],
     }),
 
-    // ==================== NEW: Get Quotations by Vendor ====================
     getQuotationsByVendor: builder.query({
       query: (vendorId) => `/vendors/${vendorId}/quotations`,
       providesTags: (result, error, vendorId) => [
@@ -153,7 +142,7 @@ export const vendorsApi = createApi({
     }),
 
     // =====================================
-    // Vendor Summary (dashboard stat cards)
+    // Vendor Summary
     // =====================================
 
     getVendorsSummary: builder.query({
@@ -224,6 +213,41 @@ export const vendorsApi = createApi({
       }),
       invalidatesTags: ["Shortlists"],
     }),
+
+    // =====================================
+    // DASHBOARD ENDPOINTS (Added for Widgets)
+    // =====================================
+
+    getVendorsByCategory: builder.query({
+      query: () => "/dashboards/vendors/by-category",
+      providesTags: ["VendorDashboard"],
+    }),
+
+    getVendorsProjectWise: builder.query({
+      query: () => "/dashboards/vendors/project-wise",
+      providesTags: ["VendorDashboard"],
+    }),
+
+    getVendorsRequiringAttention: builder.query({
+      query: () => "/dashboards/vendors/requiring-attention",
+      providesTags: ["VendorDashboard"],
+    }),
+
+    getVendorsOnboardingTrend: builder.query({
+      query: (months = 6) =>
+        `/dashboards/vendors/onboarding-trend?months=${months}`,
+      providesTags: ["VendorDashboard"],
+    }),
+
+    getVendorsAvailabilityMix: builder.query({
+      query: () => "/dashboards/vendors/availability-mix",
+      providesTags: ["VendorDashboard"],
+    }),
+
+    getVendorsRecentlyAdded: builder.query({
+      query: (limit = 5) => `/dashboards/vendors/recently-added?limit=${limit}`,
+      providesTags: ["VendorDashboard"],
+    }),
   }),
 });
 
@@ -235,12 +259,12 @@ export const {
   // Vendor Categories
   useGetVendorCategoriesQuery,
   useGetVendorCategoryByIdQuery,
-  useGetQuotationsByVendorQuery,
 
   // Business Types
   useGetBusinessTypesQuery,
   useGetBusinessTypeByIdQuery,
   useCreateBusinessTypeMutation,
+
   // Vendors
   useCreateVendorMutation,
   useGetVendorsQuery,
@@ -248,6 +272,7 @@ export const {
   useUpdateVendorMutation,
   useSetVendorStatusMutation,
   useDeleteVendorMutation,
+  useGetQuotationsByVendorQuery,
 
   // Summary
   useGetVendorsSummaryQuery,
@@ -264,4 +289,12 @@ export const {
   useGetVendorShortlistsQuery,
   useCreateVendorShortlistMutation,
   useAddVendorToShortlistMutation,
+
+  // Dashboard Widgets (New)
+  useGetVendorsByCategoryQuery,
+  useGetVendorsProjectWiseQuery,
+  useGetVendorsRequiringAttentionQuery,
+  useGetVendorsOnboardingTrendQuery,
+  useGetVendorsAvailabilityMixQuery,
+  useGetVendorsRecentlyAddedQuery,
 } = vendorsApi;

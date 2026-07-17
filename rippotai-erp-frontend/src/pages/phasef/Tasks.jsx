@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from "react";
-import api from "@/lib/api";
+import React, { useState } from "react";
 import { toast } from "sonner";
 import { Plus, CheckCircle2, XCircle } from "lucide-react";
 import {
@@ -14,6 +13,12 @@ import {
   fmtDate,
   useProjects,
 } from "../../components/Shared";
+import {
+  useGetTasksQuery,
+  useGetMyTasksQuery,
+  useCreateTaskMutation,
+  useUpdateTaskMutation,
+} from "../../api/task.api";
 
 const TaskCard = ({ t, onStatus }) => (
   <Card>
@@ -60,30 +65,53 @@ const TaskCard = ({ t, onStatus }) => (
 );
 
 export function TasksList({ view = "all" }) {
-  const [tasks, setTasks] = useState([]);
-  const load = () => {
-    const params = new URLSearchParams();
-    if (view === "mine") params.set("my", "true");
-    if (view === "overdue") params.set("due_before", new Date().toISOString());
-    if (view === "blocked") params.set("status", "blocked");
-    if (view === "completed") params.set("status", "completed");
-    api
-      .get(`/tasks?${params}`)
-      .then((r) => setTasks(r.data))
-      .catch(() => {});
-  };
-  useEffect(() => {
-    load(); /* eslint-disable-next-line */
-  }, [view]);
+  // "mine" has its own endpoint; every other view pulls the full list
+  // and filters client-side, since the tasksApi endpoints don't take
+  // query params for due_before/status.
+  const { data: allTasks = [], isLoading: isLoadingAll } = useGetTasksQuery(
+    undefined,
+    { skip: view === "mine" },
+  );
+
+  const { data: myTasks = [], isLoading: isLoadingMine } = useGetMyTasksQuery(
+    undefined,
+    { skip: view !== "mine" },
+  );
+
+  const [updateTask] = useUpdateTaskMutation();
+
+  const isLoading = view === "mine" ? isLoadingMine : isLoadingAll;
+  const source = view === "mine" ? myTasks : allTasks;
+
+  const tasks = React.useMemo(() => {
+    switch (view) {
+      case "overdue": {
+        const now = new Date();
+        return source.filter(
+          (t) =>
+            t.due_date &&
+            new Date(t.due_date) < now &&
+            t.status !== "completed",
+        );
+      }
+      case "blocked":
+        return source.filter((t) => t.status === "blocked");
+      case "completed":
+        return source.filter((t) => t.status === "completed");
+      default:
+        return source;
+    }
+  }, [source, view]);
+
   const changeStatus = async (t, status) => {
     try {
-      await api.patch(`/tasks/${t.id}`, { status });
+      await updateTask({ id: t.id, status }).unwrap();
       toast.success(`Marked ${status.replace(/_/g, " ")}`);
-      load();
     } catch {
       toast.error("Update failed");
     }
   };
+
   const label = {
     mine: "My Tasks",
     all: "All Tasks",
@@ -91,6 +119,7 @@ export function TasksList({ view = "all" }) {
     blocked: "Blocked Tasks",
     completed: "Completed Tasks",
   }[view];
+
   return (
     <Shell
       label="Tasks"
@@ -105,7 +134,11 @@ export function TasksList({ view = "all" }) {
         </Btn>
       }
     >
-      {tasks.length === 0 ? (
+      {isLoading ? (
+        <Card>
+          <div className="text-center py-8 text-[#B5C4B6]">Loading…</div>
+        </Card>
+      ) : tasks.length === 0 ? (
         <Card>
           <div className="text-center py-8 text-[#B5C4B6]">Nothing here.</div>
         </Card>
@@ -122,6 +155,7 @@ export function TasksList({ view = "all" }) {
 
 export function TaskNew() {
   const projects = useProjects();
+  const [createTask, { isLoading: busy }] = useCreateTaskMutation();
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -135,10 +169,9 @@ export function TaskNew() {
     recurring_interval: "",
     requires_approval: false,
   });
-  const [busy, setBusy] = useState(false);
+
   const submit = async (e) => {
     e.preventDefault();
-    setBusy(true);
     try {
       const payload = {
         ...form,
@@ -149,15 +182,14 @@ export function TaskNew() {
           : null,
       };
       delete payload.recurring_interval;
-      await api.post("/tasks", payload);
+      await createTask(payload).unwrap();
       toast.success("Task created");
       window.location.assign("/tasks/all");
     } catch {
       toast.error("Create failed");
-    } finally {
-      setBusy(false);
     }
   };
+
   return (
     <Shell
       label="Tasks"

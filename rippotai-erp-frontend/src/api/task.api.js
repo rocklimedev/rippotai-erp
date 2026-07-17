@@ -46,6 +46,16 @@ export const tasksApi = createApi({
     }),
 
     // =========================
+    // Get My Tasks
+    // =========================
+    getMyTasks: builder.query({
+      query: () => ({
+        url: "/tasks/my-tasks",
+      }),
+      providesTags: [{ type: "Tasks", id: "MY_LIST" }],
+    }),
+
+    // =========================
     // Get Board
     // =========================
     getTaskBoard: builder.query({
@@ -53,6 +63,16 @@ export const tasksApi = createApi({
         url: "/tasks/board",
       }),
       providesTags: [{ type: "Tasks", id: "BOARD" }],
+    }),
+
+    // =========================
+    // Get My Board
+    // =========================
+    getMyTaskBoard: builder.query({
+      query: () => ({
+        url: "/tasks/my-board",
+      }),
+      providesTags: [{ type: "Tasks", id: "MY_BOARD" }],
     }),
 
     // =========================
@@ -77,6 +97,8 @@ export const tasksApi = createApi({
       invalidatesTags: [
         { type: "Tasks", id: "LIST" },
         { type: "Tasks", id: "BOARD" },
+        { type: "Tasks", id: "MY_LIST" },
+        { type: "Tasks", id: "MY_BOARD" },
       ],
     }),
 
@@ -93,6 +115,8 @@ export const tasksApi = createApi({
         { type: "Tasks", id },
         { type: "Tasks", id: "LIST" },
         { type: "Tasks", id: "BOARD" },
+        { type: "Tasks", id: "MY_LIST" },
+        { type: "Tasks", id: "MY_BOARD" },
       ],
     }),
 
@@ -108,6 +132,8 @@ export const tasksApi = createApi({
         { type: "Tasks", id },
         { type: "Tasks", id: "LIST" },
         { type: "Tasks", id: "BOARD" },
+        { type: "Tasks", id: "MY_LIST" },
+        { type: "Tasks", id: "MY_BOARD" },
       ],
     }),
 
@@ -122,6 +148,8 @@ export const tasksApi = createApi({
       invalidatesTags: [
         { type: "Tasks", id: "LIST" },
         { type: "Tasks", id: "BOARD" },
+        { type: "Tasks", id: "MY_LIST" },
+        { type: "Tasks", id: "MY_BOARD" },
       ],
     }),
   }),
@@ -129,7 +157,9 @@ export const tasksApi = createApi({
 
 export const {
   useGetTasksQuery,
+  useGetMyTasksQuery,
   useGetTaskBoardQuery,
+  useGetMyTaskBoardQuery,
   useGetTaskByIdQuery,
   useCreateTaskMutation,
   useUpdateTaskMutation,

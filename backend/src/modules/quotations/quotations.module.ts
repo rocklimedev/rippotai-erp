@@ -18,6 +18,7 @@ import { ActivityLogsModule } from '../engagement/activity-logs.module';
 
 import { QuotationVersionsService } from './quotation-versions.service';
 import { QuotationVersionsController } from './quotation-versions.controller';
+import { QuotationComparison } from './models/quotation-comparisons.model';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { QuotationVersionsController } from './quotation-versions.controller';
       Quotation,
       QuotationItem,
       QuotationVersion,
+      QuotationComparison,
       Unit, // 🔥 REQUIRED for belongsTo relation
     ]),
 

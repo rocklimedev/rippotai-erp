@@ -19,7 +19,7 @@ export const projectsApi = createApi({
     },
   }),
 
-  tagTypes: ["Projects", "ProjectStatus"],
+  tagTypes: ["Projects", "ProjectStatus", "Milestones", "Activity"],
 
   endpoints: (builder) => ({
     // =========================
@@ -135,6 +135,56 @@ export const projectsApi = createApi({
       }),
       invalidatesTags: ["Projects"],
     }),
+
+    // =========================
+    // Milestones
+    // =========================
+    getUpcomingMilestones: builder.query({
+      query: (limit = 5) => `/milestones/upcoming?limit=${limit}`,
+      providesTags: ["Milestones"],
+    }),
+
+    // =========================
+    // Activity
+    // =========================
+    getRecentActivity: builder.query({
+      query: (limit = 10) => `/activity/recent?limit=${limit}`,
+      providesTags: ["Activity"],
+    }),
+
+    // =========================
+    // Dashboards — Phase 8 tables
+    // =========================
+    getProjectsProgress: builder.query({
+      query: () => "/dashboards/projects/progress",
+      providesTags: ["Projects"],
+    }),
+
+    getUpcomingMilestones4: builder.query({
+      query: (limit = 4) =>
+        `/dashboards/projects/upcoming-milestones?limit=${limit}`,
+      providesTags: ["Milestones"],
+    }),
+
+    // =========================
+    // Dashboards — Phase 10 charts
+    // =========================
+    getProjectsProgressTrend: builder.query({
+      query: (months = 6) =>
+        `/dashboards/projects/progress-trend?months=${months}`,
+      providesTags: ["Projects"],
+    }),
+
+    getProjectsPhaseMix: builder.query({
+      query: () => "/dashboards/projects/phase-mix",
+      providesTags: ["Projects"],
+    }),
+
+    getProjectsVarianceByProject: builder.query({
+      query: (limit = 6) =>
+        `/dashboards/projects/variance-by-project?limit=${limit}`,
+      providesTags: ["Projects"],
+    }),
   }),
 });
 
@@ -149,4 +199,14 @@ export const {
   useArchiveProjectMutation,
   useRestoreProjectMutation,
   useDeleteProjectMutation,
+
+  useGetUpcomingMilestonesQuery,
+  useGetRecentActivityQuery,
+
+  useGetProjectsProgressQuery,
+  useGetUpcomingMilestones4Query,
+
+  useGetProjectsProgressTrendQuery,
+  useGetProjectsPhaseMixQuery,
+  useGetProjectsVarianceByProjectQuery,
 } = projectsApi;
