@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import api from "@/lib/api";
+import api from "@/lib/api"; // still used for the signature endpoint (no RTK slice provided for it yet)
 import {
   Camera,
   Save,
   User,
+  Users as UsersIcon,
   Shield,
   Bell,
   CreditCard,
@@ -17,7 +18,27 @@ import {
   ShieldCheck,
   Trash2,
   KeyRound,
+  Activity,
+  Plus,
 } from "lucide-react";
+
+// ---- RTK Query hooks ----
+import {
+  useGetUsersQuery,
+  useUpdateUserMutation,
+  useCreateUserMutation,
+} from "../../api/user.api";
+import { useLazyMeQuery } from "../../api/auth.api";
+import {
+  useGetRolesQuery,
+  useCreateRoleMutation,
+  useDeleteRoleMutation,
+  useGetPermissionsQuery,
+  useGetRolePermissionsQuery,
+  useGrantPermissionToRoleMutation,
+  useRevokeRolePermissionMutation,
+} from "../../api/rbac.api";
+import { useGetActivityLogsQuery } from "../../api/activity-logs.api";
 
 const sidebarItems = [
   { id: "profile", label: "Edit Profile", icon: User },
@@ -25,7 +46,8 @@ const sidebarItems = [
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "billing", label: "Billing", icon: CreditCard },
   { id: "estimate-signature", label: "Estimate Signature", icon: CreditCard },
-  { id: "role-permissions", label: "Role & Permissions", icon: CreditCard },
+  { id: "users", label: "Users", icon: UsersIcon },
+  { id: "role-permissions", label: "Roles & Permissions", icon: Shield },
   { id: "super-admin", label: "Super Admin", icon: ShieldCheck },
 ];
 
@@ -49,14 +71,6 @@ const ROLE_LABEL = {
   member: "Member",
 };
 
-const ALLOWED_PLANS = [
-  "free_trial",
-  "studio",
-  "firm",
-  "enterprise",
-  "super_admin",
-];
-
 const fmtDate = (iso) => {
   if (!iso) return "—";
   try {
@@ -64,6 +78,21 @@ const fmtDate = (iso) => {
       day: "2-digit",
       month: "short",
       year: "numeric",
+    });
+  } catch {
+    return "—";
+  }
+};
+
+const fmtDateTime = (iso) => {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   } catch {
     return "—";
@@ -93,16 +122,145 @@ export default function Settings() {
   const [sigFile, setSigFile] = useState(null);
   const [sigSaving, setSigSaving] = useState(false);
 
-  // Roles & Permissions State
-  const [users, setUsers] = useState([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  const [savingId, setSavingId] = useState(null);
+  // Access Guards
+  const isAdmin = user?.role === "ADMIN";
+  const isSuperAdmin = user?.role === "ADMIN";
 
-  // Super Admin State
-  const [superUsers, setSuperUsers] = useState([]);
-  const [loadingSuper, setLoadingSuper] = useState(true);
-  const [editingSuper, setEditingSuper] = useState(null);
+  // ------------------------------------------------------------------
+  // USERS TAB — user list, role assignment, activate/deactivate, invite
+  // ------------------------------------------------------------------
+  const {
+    data: users = [],
+    isFetching: loadingUsers,
+    error: usersError,
+  } = useGetUsersQuery({}, { skip: !(activeSection === "users" && isAdmin) });
+
+  const [updateUserMutation] = useUpdateUserMutation();
+  const [savingId, setSavingId] = useState(null);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+
+  useEffect(() => {
+    if (usersError) toast.error("Failed to load users");
+  }, [usersError]);
+
+  const onRoleChange = async (u, newRole) => {
+    if (newRole === u.role) return;
+    setSavingId(u.id);
+    try {
+      await updateUserMutation({ id: u.id, role: newRole }).unwrap();
+      toast.success(`${u.name} → ${ROLE_LABEL[newRole]}`);
+    } catch (e) {
+      toast.error(e?.data?.detail || "Failed to update role");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const toggleActive = async (u) => {
+    setSavingId(u.id);
+    const next = !(u.is_active !== false);
+    try {
+      await updateUserMutation({ id: u.id, is_active: next }).unwrap();
+      toast.success(`${u.name} ${next ? "activated" : "deactivated"}`);
+    } catch (e) {
+      toast.error(e?.data?.detail || "Failed to update status");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  // ------------------------------------------------------------------
+  // ROLES & PERMISSIONS TAB — backed by rbacApi
+  // ------------------------------------------------------------------
+  const rbacSectionActive = activeSection === "role-permissions" && isAdmin;
+
+  const { data: roles = [], isFetching: loadingRoles } = useGetRolesQuery(
+    undefined,
+    { skip: !rbacSectionActive },
+  );
+  const { data: allPermissions = [], isFetching: loadingAllPermissions } =
+    useGetPermissionsQuery(undefined, { skip: !rbacSectionActive });
+
+  const [selectedRoleId, setSelectedRoleId] = useState(null);
+
+  useEffect(() => {
+    if (rbacSectionActive && !selectedRoleId && roles.length > 0) {
+      setSelectedRoleId(roles[0].id);
+    }
+  }, [rbacSectionActive, roles, selectedRoleId]);
+
+  const { data: rolePermissions = [], isFetching: loadingRolePermissions } =
+    useGetRolePermissionsQuery(selectedRoleId, {
+      skip: !rbacSectionActive || !selectedRoleId,
+    });
+
+  const [createRole, { isLoading: creatingRole }] = useCreateRoleMutation();
+  const [deleteRole] = useDeleteRoleMutation();
+  const [grantPermissionToRole, { isLoading: granting }] =
+    useGrantPermissionToRoleMutation();
+  const [revokeRolePermission] = useRevokeRolePermissionMutation();
+
+  const [newRoleName, setNewRoleName] = useState("");
+  const [permissionToGrant, setPermissionToGrant] = useState("");
+
+  const grantedPermissionIds = new Set(
+    rolePermissions.map((rp) => rp.permission_id ?? rp.permission?.id),
+  );
+  const grantablePermissions = allPermissions.filter(
+    (p) => !grantedPermissionIds.has(p.id),
+  );
+
+  const handleCreateRole = async (e) => {
+    e.preventDefault();
+    if (!newRoleName.trim()) return toast.error("Role name is required");
+    try {
+      const data = await createRole({ name: newRoleName.trim() }).unwrap();
+      toast.success(`Role "${data.name || newRoleName}" created`);
+      setNewRoleName("");
+      setSelectedRoleId(data.id);
+    } catch (e) {
+      toast.error(e?.data?.detail || "Failed to create role");
+    }
+  };
+
+  const handleDeleteRole = async (role) => {
+    if (!window.confirm(`Delete role "${role.name}"?`)) return;
+    try {
+      await deleteRole(role.id).unwrap();
+      toast.success(`Role "${role.name}" deleted`);
+      if (selectedRoleId === role.id) setSelectedRoleId(null);
+    } catch (e) {
+      toast.error(e?.data?.detail || "Failed to delete role");
+    }
+  };
+
+  const handleGrantPermission = async () => {
+    if (!permissionToGrant || !selectedRoleId) return;
+    try {
+      await grantPermissionToRole({
+        role_id: selectedRoleId,
+        permission_id: permissionToGrant,
+      }).unwrap();
+      toast.success("Permission granted");
+      setPermissionToGrant("");
+    } catch (e) {
+      toast.error(e?.data?.detail || "Failed to grant permission");
+    }
+  };
+
+  const handleRevokePermission = async (permissionId) => {
+    try {
+      await revokeRolePermission({
+        roleId: selectedRoleId,
+        permissionId,
+      }).unwrap();
+      toast.success("Permission revoked");
+    } catch (e) {
+      toast.error(e?.data?.detail || "Failed to revoke permission");
+    }
+  };
+
+  const selectedRole = roles.find((r) => r.id === selectedRoleId);
 
   // Handle profile input changes
   const handleInputChange = (e) => {
@@ -133,21 +291,25 @@ export default function Settings() {
     }
   };
 
-  // Estimate Signature Logic
+  // ------------------------------------------------------------------
+  // Estimate Signature — /auth/me lookup via useLazyMeQuery
+  // ------------------------------------------------------------------
+  const [fetchMe] = useLazyMeQuery();
+
   useEffect(() => {
     if (activeSection === "estimate-signature" && user) {
-      api
-        .get("/auth/me")
-        .then((r) => {
-          setSigName(r.data?.estimate_signature_name || r.data?.name || "");
+      fetchMe()
+        .unwrap()
+        .then((data) => {
+          setSigName(data?.estimate_signature_name || data?.name || "");
           setCurrentSig({
-            url: r.data?.estimate_signature_url || "",
-            name: r.data?.estimate_signature_name || "",
+            url: data?.estimate_signature_url || "",
+            name: data?.estimate_signature_name || "",
           });
         })
         .catch(() => {});
     }
-  }, [activeSection, user]);
+  }, [activeSection, user, fetchMe]);
 
   const readFile = (f) =>
     new Promise((res, rej) => {
@@ -169,6 +331,8 @@ export default function Settings() {
   };
 
   const saveSignature = async () => {
+    // NOTE: no RTK slice endpoint was provided for /users/me/signature,
+    // so this still goes through the plain axios `api` client.
     if (!sigFile) return toast.error("Choose a signature image");
     setSigSaving(true);
     try {
@@ -189,104 +353,30 @@ export default function Settings() {
     }
   };
 
-  // Roles & Permissions Logic
-  useEffect(() => {
-    if (activeSection === "role-permissions" && user?.role === "admin") {
-      setLoadingUsers(true);
-      api
-        .get("/users")
-        .then((res) => setUsers(res.data))
-        .catch(() => toast.error("Failed to load users"))
-        .finally(() => setLoadingUsers(false));
-    }
-  }, [activeSection, user]);
+  // ------------------------------------------------------------------
+  // SUPER ADMIN TAB — Activity Logs, backed by activityLogsApi
+  // ------------------------------------------------------------------
+  const [logFilters, setLogFilters] = useState({
+    user_id: "",
+    action: "",
+    entity_type: "",
+    entity_id: "",
+  });
 
-  const onRoleChange = async (u, newRole) => {
-    if (newRole === u.role) return;
-    setSavingId(u.id);
-    try {
-      const { data } = await api.patch(`/users/${u.id}`, { role: newRole });
-      setUsers((prev) =>
-        prev.map((x) => (x.id === u.id ? { ...x, ...data } : x)),
-      );
-      toast.success(`${u.name} → ${ROLE_LABEL[newRole]}`);
-    } catch (e) {
-      toast.error(e?.response?.data?.detail || "Failed to update role");
-    } finally {
-      setSavingId(null);
-    }
+  const {
+    data: activityLogs = [],
+    isFetching: loadingLogs,
+    refetch: refetchLogs,
+  } = useGetActivityLogsQuery(logFilters, {
+    skip: !(activeSection === "super-admin" && isSuperAdmin),
+  });
+
+  const onLogFilterChange = (e) => {
+    setLogFilters((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const toggleActive = async (u) => {
-    setSavingId(u.id);
-    const next = !(u.is_active !== false);
-    try {
-      const { data } = await api.patch(`/users/${u.id}`, { is_active: next });
-      setUsers((prev) =>
-        prev.map((x) => (x.id === u.id ? { ...x, ...data } : x)),
-      );
-      toast.success(`${u.name} ${next ? "activated" : "deactivated"}`);
-    } catch (e) {
-      toast.error("Failed to update status");
-    } finally {
-      setSavingId(null);
-    }
-  };
-
-  // Super Admin Logic
-  useEffect(() => {
-    if (activeSection === "super-admin" && user?.is_super_admin) {
-      setLoadingSuper(true);
-      api
-        .get("/super-admin/users")
-        .then((res) => setSuperUsers(res.data))
-        .catch((e) =>
-          toast.error(e?.response?.data?.detail || "Failed to load"),
-        )
-        .finally(() => setLoadingSuper(false));
-    }
-  }, [activeSection, user]);
-
-  const patchSuperUser = async (id, updates) => {
-    try {
-      const { data } = await api.patch(`/super-admin/users/${id}`, updates);
-      setSuperUsers((rs) => rs.map((r) => (r.id === id ? data : r)));
-      toast.success("Updated");
-    } catch (e) {
-      toast.error(e?.response?.data?.detail || "Failed to update");
-    }
-  };
-
-  const softDeleteSuper = async (row) => {
-    if (!window.confirm(`Soft-delete ${row.email}?`)) return;
-    try {
-      await api.delete(`/super-admin/users/${row.id}`);
-      toast.success("User deactivated");
-      // Reload
-      const { data } = await api.get("/super-admin/users");
-      setSuperUsers(data);
-    } catch (e) {
-      toast.error(e?.response?.data?.detail || "Failed to delete");
-    }
-  };
-
-  const resetPasswordSuper = async (row) => {
-    try {
-      const { data } = await api.post(
-        `/super-admin/users/${row.id}/reset-password`,
-      );
-      toast.success(
-        `Temp password for ${row.email}: ${data.temp_password} (email MOCKED)`,
-        { duration: 10000 },
-      );
-    } catch (e) {
-      toast.error(e?.response?.data?.detail || "Failed to reset");
-    }
-  };
-
-  // Access Guards
-  const isAdmin = user?.role === "ADMIN";
-  const isSuperAdmin = user?.role === "ADMIN";
+  const clearLogFilters = () =>
+    setLogFilters({ user_id: "", action: "", entity_type: "", entity_id: "" });
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -588,8 +678,8 @@ export default function Settings() {
               </div>
             )}
 
-            {/* ROLE & PERMISSIONS */}
-            {activeSection === "role-permissions" && (
+            {/* USERS */}
+            {activeSection === "users" && (
               <div>
                 {!isAdmin ? (
                   <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -606,10 +696,10 @@ export default function Settings() {
                     <div className="flex justify-between items-start mb-6">
                       <div>
                         <h2 className="text-2xl font-semibold text-[#333333]">
-                          Roles & Permissions
+                          Users
                         </h2>
                         <p className="text-[#6B7B7C]">
-                          Assign roles to users. Only admins can change roles.
+                          Assign roles, activate or deactivate team members.
                         </p>
                       </div>
                       <button
@@ -730,7 +820,191 @@ export default function Settings() {
               </div>
             )}
 
-            {/* SUPER ADMIN */}
+            {/* ROLES & PERMISSIONS */}
+            {activeSection === "role-permissions" && (
+              <div>
+                {!isAdmin ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <div className="w-12 h-12 rounded-full bg-[#F1D9D3] flex items-center justify-center mx-auto mb-4">
+                      <ShieldAlert size={22} className="text-[#7A2E1A]" />
+                    </div>
+                    <div className="text-xl font-semibold mb-2">
+                      Access denied
+                    </div>
+                    <p className="text-[#6B7B7C]">You need admin privileges.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="mb-6">
+                      <h2 className="text-2xl font-semibold text-[#333333]">
+                        Roles & Permissions
+                      </h2>
+                      <p className="text-[#6B7B7C]">
+                        Define roles and control which permissions each one
+                        grants.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
+                      {/* Roles list */}
+                      <div className="bg-white border border-[#E8EAF0] rounded-2xl p-3">
+                        <form
+                          onSubmit={handleCreateRole}
+                          className="flex gap-2 mb-3"
+                        >
+                          <input
+                            value={newRoleName}
+                            onChange={(e) => setNewRoleName(e.target.value)}
+                            placeholder="New role name"
+                            className="h-9 flex-1 px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-sm min-w-0"
+                          />
+                          <button
+                            type="submit"
+                            disabled={creatingRole}
+                            className="h-9 w-9 shrink-0 rounded-lg text-white flex items-center justify-center disabled:opacity-60"
+                            style={{ backgroundColor: "#1F453B" }}
+                            title="Create role"
+                          >
+                            <Plus size={16} />
+                          </button>
+                        </form>
+
+                        {loadingRoles ? (
+                          <div className="text-sm text-[#6B7B7C] py-6 text-center">
+                            Loading roles…
+                          </div>
+                        ) : roles.length === 0 ? (
+                          <div className="text-sm text-[#6B7B7C] py-6 text-center">
+                            No roles yet.
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            {roles.map((r) => (
+                              <div
+                                key={r.id}
+                                className={`flex items-center justify-between rounded-xl px-3 py-2 cursor-pointer ${
+                                  selectedRoleId === r.id
+                                    ? "bg-[#1F453B] text-white"
+                                    : "hover:bg-[#F4F6F7] text-[#1F453B]"
+                                }`}
+                                onClick={() => setSelectedRoleId(r.id)}
+                              >
+                                <span className="text-sm font-medium truncate">
+                                  {r.name}
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteRole(r);
+                                  }}
+                                  className={`p-1 rounded hover:bg-black/10 ${
+                                    selectedRoleId === r.id
+                                      ? "text-white"
+                                      : "text-[#B04D26]"
+                                  }`}
+                                  title="Delete role"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Permissions for selected role */}
+                      <div className="bg-white border border-[#E8EAF0] rounded-2xl p-5">
+                        {!selectedRole ? (
+                          <div className="text-sm text-[#6B7B7C] py-10 text-center">
+                            Select a role to manage its permissions.
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center justify-between mb-4">
+                              <h3 className="text-lg font-semibold text-[#333333]">
+                                {selectedRole.name}
+                              </h3>
+                            </div>
+
+                            <div className="flex gap-2 mb-4">
+                              <select
+                                value={permissionToGrant}
+                                onChange={(e) =>
+                                  setPermissionToGrant(e.target.value)
+                                }
+                                className="h-9 flex-1 px-2 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-sm"
+                              >
+                                <option value="">
+                                  {loadingAllPermissions
+                                    ? "Loading permissions…"
+                                    : "Select permission to grant…"}
+                                </option>
+                                {grantablePermissions.map((p) => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.name ||
+                                      `${p.resource}:${p.action}` ||
+                                      p.id}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                onClick={handleGrantPermission}
+                                disabled={!permissionToGrant || granting}
+                                className="h-9 px-4 rounded-lg text-white text-sm font-semibold disabled:opacity-60"
+                                style={{ backgroundColor: "#1F453B" }}
+                              >
+                                Grant
+                              </button>
+                            </div>
+
+                            {loadingRolePermissions ? (
+                              <div className="text-sm text-[#6B7B7C] py-6 text-center">
+                                Loading permissions…
+                              </div>
+                            ) : rolePermissions.length === 0 ? (
+                              <div className="text-sm text-[#6B7B7C] py-6 text-center">
+                                No permissions granted to this role yet.
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap gap-2">
+                                {rolePermissions.map((rp) => {
+                                  const permId =
+                                    rp.permission_id ?? rp.permission?.id;
+                                  const permLabel =
+                                    rp.permission?.name ||
+                                    allPermissions.find((p) => p.id === permId)
+                                      ?.name ||
+                                    permId;
+                                  return (
+                                    <span
+                                      key={permId}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#EAF0EC] text-[#1F453B]"
+                                    >
+                                      {permLabel}
+                                      <button
+                                        onClick={() =>
+                                          handleRevokePermission(permId)
+                                        }
+                                        className="hover:text-[#B04D26]"
+                                        title="Revoke"
+                                      >
+                                        <X size={12} />
+                                      </button>
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* SUPER ADMIN — Activity Logs */}
             {activeSection === "super-admin" && (
               <div>
                 {!isSuperAdmin ? (
@@ -746,17 +1020,65 @@ export default function Settings() {
                 ) : (
                   <>
                     <div className="flex items-center gap-3 mb-6">
-                      <ShieldCheck size={22} style={{ color: "#1F453B" }} />
+                      <Activity size={22} style={{ color: "#1F453B" }} />
                       <div>
                         <h1
                           className="text-2xl font-bold"
                           style={{ color: "#333333" }}
                         >
-                          Super Admin Console
+                          Activity Logs
                         </h1>
                         <p className="text-sm text-[#6B7B7C]">
-                          Manage users, roles, plans and access.
+                          Audit trail of actions taken across the workspace.
                         </p>
+                      </div>
+                    </div>
+
+                    <div className="bg-white border border-[#E8EAF0] rounded-2xl p-4 mb-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                        <input
+                          name="user_id"
+                          value={logFilters.user_id}
+                          onChange={onLogFilterChange}
+                          placeholder="User ID"
+                          className="h-9 px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-sm"
+                        />
+                        <input
+                          name="action"
+                          value={logFilters.action}
+                          onChange={onLogFilterChange}
+                          placeholder="Action (e.g. update)"
+                          className="h-9 px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-sm"
+                        />
+                        <input
+                          name="entity_type"
+                          value={logFilters.entity_type}
+                          onChange={onLogFilterChange}
+                          placeholder="Entity type"
+                          className="h-9 px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-sm"
+                        />
+                        <input
+                          name="entity_id"
+                          value={logFilters.entity_id}
+                          onChange={onLogFilterChange}
+                          placeholder="Entity ID"
+                          className="h-9 px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-sm"
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2 mt-3">
+                        <button
+                          onClick={clearLogFilters}
+                          className="h-9 px-4 rounded-lg border border-[#DDD8CE] text-sm font-semibold text-[#333333] hover:bg-[#F7F7F5]"
+                        >
+                          Clear
+                        </button>
+                        <button
+                          onClick={() => refetchLogs()}
+                          className="h-9 px-4 rounded-lg text-white text-sm font-semibold"
+                          style={{ backgroundColor: "#1F453B" }}
+                        >
+                          Refresh
+                        </button>
                       </div>
                     </div>
 
@@ -764,146 +1086,59 @@ export default function Settings() {
                       <table className="w-full text-sm">
                         <thead className="bg-[#F7F7F5] text-xs uppercase tracking-widest text-[#6B7B7C]">
                           <tr>
-                            <th className="text-left px-4 py-3">Name</th>
-                            <th className="text-left px-4 py-3">Email</th>
-                            <th className="text-left px-4 py-3">Role</th>
-                            <th className="text-left px-4 py-3">Plan</th>
-                            <th className="text-center px-4 py-3">
-                              Super Admin
-                            </th>
-                            <th className="text-center px-4 py-3">Status</th>
-                            <th className="text-left px-4 py-3">Created</th>
-                            <th className="text-right px-4 py-3">Actions</th>
+                            <th className="text-left px-4 py-3">When</th>
+                            <th className="text-left px-4 py-3">User</th>
+                            <th className="text-left px-4 py-3">Action</th>
+                            <th className="text-left px-4 py-3">Entity</th>
+                            <th className="text-left px-4 py-3">Details</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {loadingSuper ? (
+                          {loadingLogs ? (
                             <tr>
                               <td
-                                colSpan={8}
+                                colSpan={5}
                                 className="py-12 text-center text-[#6B7B7C]"
                               >
                                 Loading…
                               </td>
                             </tr>
-                          ) : superUsers.length === 0 ? (
+                          ) : activityLogs.length === 0 ? (
                             <tr>
                               <td
-                                colSpan={8}
+                                colSpan={5}
                                 className="py-12 text-center text-[#6B7B7C]"
                               >
-                                No users.
+                                No activity found.
                               </td>
                             </tr>
                           ) : (
-                            superUsers.map((r) => (
+                            activityLogs.map((log) => (
                               <tr
-                                key={r.id}
-                                className="border-t border-[#E8EAF0]"
+                                key={log.id}
+                                className="border-t border-[#E8EAF0] align-top"
                               >
-                                <td className="px-4 py-3 font-semibold text-[#333333]">
-                                  {r.name}
+                                <td className="px-4 py-3 text-xs text-[#6B7B7C] whitespace-nowrap">
+                                  {fmtDateTime(log.created_at)}
                                 </td>
-                                <td className="px-4 py-3 text-[#6B7B7C]">
-                                  {r.email}
-                                </td>
-                                <td className="px-4 py-3">
-                                  <select
-                                    value={r.role || "member"}
-                                    onChange={(e) =>
-                                      patchSuperUser(r.id, {
-                                        role: e.target.value,
-                                      })
-                                    }
-                                    className="h-8 px-2 rounded border border-[#DDD8CE] bg-[#FAF8F5] text-xs"
-                                  >
-                                    {ROLES.map((x) => (
-                                      <option key={x} value={x}>
-                                        {x}
-                                      </option>
-                                    ))}
-                                  </select>
+                                <td className="px-4 py-3 text-[#333333]">
+                                  {log.user_name || log.user_id || "—"}
                                 </td>
                                 <td className="px-4 py-3">
-                                  <select
-                                    value={r.plan || "free_trial"}
-                                    onChange={(e) =>
-                                      patchSuperUser(r.id, {
-                                        plan: e.target.value,
-                                      })
-                                    }
-                                    className="h-8 px-2 rounded border border-[#DDD8CE] bg-[#FAF8F5] text-xs"
-                                  >
-                                    {ALLOWED_PLANS.map((x) => (
-                                      <option key={x} value={x}>
-                                        {x}
-                                      </option>
-                                    ))}
-                                  </select>
+                                  <span className="px-2 py-1 rounded-full text-xs font-semibold bg-[#EAF0EC] text-[#1F453B]">
+                                    {log.action}
+                                  </span>
                                 </td>
-                                <td className="px-4 py-3 text-center">
-                                  <input
-                                    type="checkbox"
-                                    checked={!!r.is_super_admin}
-                                    onChange={(e) =>
-                                      patchSuperUser(r.id, {
-                                        is_super_admin: e.target.checked,
-                                      })
-                                    }
-                                  />
+                                <td className="px-4 py-3 text-[#333333]">
+                                  {log.entity_type}
+                                  {log.entity_id ? ` #${log.entity_id}` : ""}
                                 </td>
-                                <td className="px-4 py-3 text-center">
-                                  {r.is_active === false ? (
-                                    <span
-                                      className="px-2 py-1 rounded-full text-xs font-semibold"
-                                      style={{
-                                        background: "#F4E1D6",
-                                        color: "#B04D26",
-                                      }}
-                                    >
-                                      Inactive
-                                    </span>
-                                  ) : (
-                                    <span
-                                      className="px-2 py-1 rounded-full text-xs font-semibold"
-                                      style={{
-                                        background: "#EAF0EC",
-                                        color: "#1F453B",
-                                      }}
-                                    >
-                                      Active
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3 text-xs text-[#6B7B7C]">
-                                  {(r.created_at || "").slice(0, 10)}
-                                </td>
-                                <td className="px-4 py-3 text-right">
-                                  <div className="inline-flex gap-1">
-                                    <button
-                                      onClick={() => setEditingSuper(r)}
-                                      className="h-8 px-2.5 rounded border border-[#DDD8CE] text-xs font-semibold hover:bg-[#F7F7F5]"
-                                    >
-                                      Edit
-                                    </button>
-                                    <button
-                                      onClick={() => resetPasswordSuper(r)}
-                                      className="h-8 px-2 rounded border border-[#DDD8CE] hover:bg-[#F7F7F5]"
-                                      title="Reset password"
-                                    >
-                                      <KeyRound size={13} />
-                                    </button>
-                                    <button
-                                      onClick={() => softDeleteSuper(r)}
-                                      className="h-8 px-2 rounded border border-[#F4E1D6] hover:bg-[#F4E1D6]"
-                                      title="Deactivate"
-                                    >
-                                      <Trash2
-                                        size={13}
-                                        className="text-[#B04D26]"
-                                      />
-                                    </button>
-                                  </div>
+                                <td className="px-4 py-3 text-[#6B7B7C] max-w-[280px] truncate">
+                                  {typeof log.details === "string"
+                                    ? log.details
+                                    : log.details
+                                      ? JSON.stringify(log.details)
+                                      : "—"}
                                 </td>
                               </tr>
                             ))
@@ -921,78 +1156,22 @@ export default function Settings() {
 
       {/* Invite Modal */}
       {showInviteModal && (
-        <InviteUserModal
-          onClose={() => setShowInviteModal(false)}
-          onCreated={(newUser) => setUsers((prev) => [...prev, newUser])}
-        />
-      )}
-
-      {/* Super Admin Edit Modal */}
-      {editingSuper && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => setEditingSuper(null)}
-        >
-          <div
-            className="bg-white rounded-2xl border border-[#E8EAF0] max-w-[420px] w-full p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-[#333333]">Edit User</h3>
-              <button onClick={() => setEditingSuper(null)}>
-                <X size={18} />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-semibold mb-1 block text-[#333333]">
-                  Name
-                </label>
-                <input
-                  value={editingSuper.name || ""}
-                  onChange={(e) =>
-                    setEditingSuper({ ...editingSuper, name: e.target.value })
-                  }
-                  className="w-full h-10 px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5]"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold mb-1 block text-[#333333]">
-                  Email
-                </label>
-                <input
-                  value={editingSuper.email}
-                  disabled
-                  className="w-full h-10 px-3 rounded-lg border border-[#DDD8CE] bg-[#EAEEF0]"
-                />
-              </div>
-              <button
-                onClick={async () => {
-                  await patchSuperUser(editingSuper.id, {
-                    name: editingSuper.name,
-                  });
-                  setEditingSuper(null);
-                }}
-                className="w-full h-11 rounded-lg text-white font-semibold flex items-center justify-center gap-2"
-                style={{ background: "#1F453B" }}
-              >
-                Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
+        <InviteUserModal onClose={() => setShowInviteModal(false)} />
       )}
     </div>
   );
 }
 
-function InviteUserModal({ onClose, onCreated }) {
+function InviteUserModal({ onClose }) {
   const [form, setForm] = useState({
     name: "",
     email: "",
     role: "project_manager",
   });
-  const [saving, setSaving] = useState(false);
+
+  // Uses usersApi's createUser mutation — invalidates the "Users" tag,
+  // so the Users table refetches automatically.
+  const [createUser, { isLoading: saving }] = useCreateUserMutation();
 
   const submit = async (e) => {
     e.preventDefault();
@@ -1000,19 +1179,15 @@ function InviteUserModal({ onClose, onCreated }) {
       toast.error("Name and email required");
       return;
     }
-    setSaving(true);
     try {
-      const { data } = await api.post("/users", form);
-      onCreated(data.user);
+      const data = await createUser(form).unwrap();
       toast.success(
         `Invited ${data.user.name} · Temp password: ${data.temp_password}`,
         { duration: 12000 },
       );
       onClose();
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "Failed to invite");
-    } finally {
-      setSaving(false);
+      toast.error(e?.data?.detail || "Failed to invite");
     }
   };
 

@@ -13,6 +13,7 @@ import {
 
 export default function UserMenu() {
   const { user, logout } = useAuth();
+
   const nav = useNavigate();
   return (
     <DropdownMenu>

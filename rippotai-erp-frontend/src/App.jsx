@@ -74,7 +74,7 @@ function Protected({ children, blockRoles }) {
         </div>
       </div>
     );
-  if (!user) return <Navigate to="/" replace />;
+  if (!user) return <Navigate to="/login" replace />;
   if (blockRoles && blockRoles.includes(user.role))
     return <Navigate to="/dashboard" replace />;
   return children;
@@ -85,7 +85,13 @@ function PublicOnly({ children }) {
   if (user) return <Navigate to="/dashboard" replace />;
   return children;
 }
+function RootRedirect() {
+  const { user, ready } = useAuth();
 
+  if (!ready) return null;
+
+  return <Navigate to={user ? "/dashboard" : "/login"} replace />;
+}
 // Any menu slug we haven't specialised opens a real functional SectionPage (not ComingSoon)
 function sectionRoutes(appKey, realSlugs = []) {
   const set = new Set([...realSlugs, "edit-dashboard"]);
@@ -132,9 +138,7 @@ function App() {
             }
           />
 
-          {/* Public Landing */}
-          <Route path="/" element={<LandingPage />} />
-
+          <Route path="/" element={<RootRedirect />} />
           {/* App Dashboard (protected) */}
           <Route
             path="/dashboard"

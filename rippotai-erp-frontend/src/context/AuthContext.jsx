@@ -42,22 +42,26 @@ export function AuthProvider({ children }) {
 
   const refresh = useCallback(async () => {
     const token = localStorage.getItem("bc_token");
+
     if (!token) {
       setReady(true);
       return;
     }
+
     try {
-      // /auth/me returns the user object directly (see getCurrentUserFromPayload)
-      const userData = await triggerMe().unwrap();
+      const response = await triggerMe().unwrap();
+
+      const userData = response.user; // <-- FIX
+
       localStorage.setItem("bc_user", JSON.stringify(userData));
       setUser(userData);
-    } catch {
+    } catch (err) {
+      console.error(err);
       clearSession();
     } finally {
       setReady(true);
     }
   }, [triggerMe]);
-
   useEffect(() => {
     refresh();
   }, [refresh]);
