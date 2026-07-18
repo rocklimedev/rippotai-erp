@@ -437,14 +437,20 @@ export function StatCardWithTrend({
   );
 }
 
-export function DonutMix({ title, subtitle, url, transform }) {
-  const raw = useEndpoint(url);
-  const rows = raw
-    ? transform
-      ? transform(raw)
-      : Object.entries(raw).map(([k, v]) => ({ name: k, value: v }))
-    : [];
+export function DonutMix({ title, subtitle, data, isLoading }) {
+  const rows = Array.isArray(data) ? data : [];
   const total = rows.reduce((s, r) => s + (r.value || 0), 0);
+
+  if (isLoading) {
+    return (
+      <WidgetShell title={title} subtitle={subtitle}>
+        <div className="text-[12px] text-[#B5C4B6] py-6 text-center">
+          Loading…
+        </div>
+      </WidgetShell>
+    );
+  }
+
   return (
     <WidgetShell title={title} subtitle={subtitle}>
       <div className="flex gap-4 h-full items-center">
