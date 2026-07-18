@@ -146,7 +146,7 @@ export const vendorsApi = createApi({
     // =====================================
 
     getVendorsSummary: builder.query({
-      query: () => "/vendors/summary",
+      query: () => "/vendors/dashboard/summary",
       providesTags: ["VendorSummary"],
     }),
 
@@ -219,33 +219,33 @@ export const vendorsApi = createApi({
     // =====================================
 
     getVendorsByCategory: builder.query({
-      query: () => "/dashboards/vendors/by-category",
+      query: () => "/vendors/dashboard/by-category",
       providesTags: ["VendorDashboard"],
     }),
 
     getVendorsProjectWise: builder.query({
-      query: () => "/dashboards/vendors/project-wise",
+      query: () => "/vendors/dashboard/project-wise",
       providesTags: ["VendorDashboard"],
     }),
 
     getVendorsRequiringAttention: builder.query({
-      query: () => "/dashboards/vendors/requiring-attention",
+      query: () => "/vendors/dashboard/requiring-attention",
       providesTags: ["VendorDashboard"],
     }),
 
     getVendorsOnboardingTrend: builder.query({
       query: (months = 6) =>
-        `/dashboards/vendors/onboarding-trend?months=${months}`,
+        `/vendors/dashboard/onboarding-trend?months=${months}`,
       providesTags: ["VendorDashboard"],
     }),
 
     getVendorsAvailabilityMix: builder.query({
-      query: () => "/dashboards/vendors/availability-mix",
+      query: () => "/vendors/dashboard/availability-mix",
       providesTags: ["VendorDashboard"],
     }),
 
     getVendorsRecentlyAdded: builder.query({
-      query: (limit = 5) => `/dashboards/vendors/recently-added?limit=${limit}`,
+      query: (limit = 5) => `/vendors/dashboard/recently-added?limit=${limit}`,
       providesTags: ["VendorDashboard"],
     }),
   }),

@@ -19,6 +19,8 @@ import { ActivityLogsModule } from '../engagement/activity-logs.module';
 import { QuotationVersionsService } from './quotation-versions.service';
 import { QuotationVersionsController } from './quotation-versions.controller';
 import { QuotationComparison } from './models/quotation-comparisons.model';
+import { QuotationDashboardService } from './quotation-dashboard.service';
+import { Project } from '../projects/models/projects.model';
 
 @Module({
   imports: [
@@ -28,6 +30,7 @@ import { QuotationComparison } from './models/quotation-comparisons.model';
       QuotationVersion,
       QuotationComparison,
       Unit, // 🔥 REQUIRED for belongsTo relation
+      Project,
     ]),
 
     ProjectsModule,
@@ -45,6 +48,7 @@ import { QuotationComparison } from './models/quotation-comparisons.model';
     QuotationsService,
     QuotationItemsService,
     QuotationVersionsService,
+    QuotationDashboardService,
   ],
 
   exports: [QuotationsService, QuotationItemsService, QuotationVersionsService],

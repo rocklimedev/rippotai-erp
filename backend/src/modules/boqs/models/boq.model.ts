@@ -9,11 +9,13 @@ import {
   BelongsTo,
   HasMany,
 } from 'sequelize-typescript';
+
 import { Project } from '@/modules/projects/models/projects.model';
 import { User } from '@/modules/users/models/user.model';
 import { BoqStatus } from '@/common/enums/boq-enums';
 import { BoqTemplate } from './boq-template.model';
 import { BoqCategory } from './boq-category.model';
+import { BoqVersion } from './boq-version.model';
 
 @Table({
   tableName: 'boqs',
@@ -26,7 +28,7 @@ import { BoqCategory } from './boq-category.model';
 export class Boq extends Model<Boq> {
   @PrimaryKey
   @Default(DataType.UUIDV4)
-  @Column({ type: DataType.CHAR(36) })
+  @Column(DataType.CHAR(36))
   declare id: string;
 
   @ForeignKey(() => Project)
@@ -42,8 +44,6 @@ export class Boq extends Model<Boq> {
   })
   declare title: string;
 
-  // Human-facing identifier shown in the header chip, e.g. "BOQ-2026-014".
-  // Falls back to `BOQ-V{version}` in the UI when null.
   @Column({
     type: DataType.STRING(50),
     allowNull: true,
@@ -51,10 +51,6 @@ export class Boq extends Model<Boq> {
   })
   declare boq_number: string | null;
 
-  // Where this BOQ was seeded from, if any. Kept for traceability only —
-  // categories/items below are copied in as independent rows, never a
-  // live reference, so later edits to the template don't retroactively
-  // change an already-created BOQ.
   @ForeignKey(() => BoqTemplate)
   @Column({
     type: DataType.CHAR(36),
@@ -62,124 +58,150 @@ export class Boq extends Model<Boq> {
   })
   declare source_template_id: string | null;
 
+  @ForeignKey(() => BoqVersion)
+  @Column({
+    type: DataType.CHAR(36),
+    allowNull: true,
+  })
+  declare boq_version_id: string | null;
+
   @Column({
     type: DataType.ENUM(...Object.values(BoqStatus)),
-    allowNull: false,
     defaultValue: BoqStatus.DRAFT,
   })
   declare status: BoqStatus;
 
-  // Independent of status: an approved/final BOQ is locked, but a BOQ
-  // can also be locked manually (e.g. archived) regardless of status.
   @Default(false)
   @Column(DataType.BOOLEAN)
   declare locked: boolean;
 
   @Column({
     type: DataType.DECIMAL(15, 2),
-    allowNull: false,
-    defaultValue: 0.0,
+    defaultValue: 0,
   })
   declare total_value: number;
 
   @Column({
     type: DataType.INTEGER,
-    allowNull: false,
     defaultValue: 1,
   })
   declare version: number;
 
-  // Snapshot fields shown in the summary header. Denormalized off
-  // Project on create so a BOQ's header doesn't silently change if the
-  // project record is edited later.
-  @Column({ type: DataType.STRING(255), allowNull: true })
+  @Column(DataType.STRING)
   declare client_name: string | null;
 
-  @Column({ type: DataType.STRING(255), allowNull: true })
+  @Column(DataType.STRING)
   declare location: string | null;
 
-  @Column({ type: DataType.STRING(255), allowNull: true })
+  @Column(DataType.STRING)
   declare prepared_by: string | null;
 
-  @Column({ type: DataType.DATEONLY, allowNull: true })
+  @Column(DataType.DATEONLY)
   declare date: string | null;
 
-  @Column({ type: DataType.TEXT, allowNull: true })
+  @Column(DataType.TEXT)
   declare terms_html: string | null;
 
-  // Miscellaneous % applied on top of project_total to derive
-  // final_total. misc_amount/project_total/final_total are computed in
-  // BoqService.withComputedTotals(), never persisted, so they can never
-  // drift from the underlying line items.
   @Column({
     type: DataType.DECIMAL(5, 2),
-    allowNull: false,
     defaultValue: 10,
   })
   declare misc_pct: number;
 
-  @Column({ type: DataType.DECIMAL(15, 2), allowNull: false, defaultValue: 0 })
+  @Column({
+    type: DataType.DECIMAL(15, 2),
+    defaultValue: 0,
+  })
   declare design_amount: number;
 
-  @Column({ type: DataType.DECIMAL(15, 2), allowNull: false, defaultValue: 0 })
+  @Column({
+    type: DataType.DECIMAL(15, 2),
+    defaultValue: 0,
+  })
   declare execution_amount: number;
 
-  @Column({ type: DataType.DECIMAL(15, 2), allowNull: false, defaultValue: 0 })
+  @Column({
+    type: DataType.DECIMAL(15, 2),
+    defaultValue: 0,
+  })
   declare supervisor_amount: number;
 
-  @Column({ type: DataType.DECIMAL(15, 2), allowNull: false, defaultValue: 0 })
+  @Column({
+    type: DataType.DECIMAL(15, 2),
+    defaultValue: 0,
+  })
   declare additional_total: number;
 
-  @Column({
-    type: DataType.DATE,
-    allowNull: true,
-  })
+  @Column(DataType.DATE)
   declare approved_at: Date | null;
 
   @ForeignKey(() => User)
-  @Column({
-    type: DataType.CHAR(36),
-    allowNull: true,
-  })
+  @Column(DataType.CHAR(36))
   declare approved_by: string | null;
 
   @ForeignKey(() => User)
-  @Column({
-    type: DataType.CHAR(36),
-    allowNull: true,
-  })
+  @Column(DataType.CHAR(36))
   declare created_by: string | null;
 
   @ForeignKey(() => User)
-  @Column({
-    type: DataType.CHAR(36),
-    allowNull: true,
-  })
+  @Column(DataType.CHAR(36))
   declare updated_by: string | null;
 
-  @BelongsTo(() => Project, { foreignKey: 'project_id', as: 'project' })
+  // ===========================
+  // RELATIONS
+  // ===========================
+
+  @BelongsTo(() => Project, {
+    foreignKey: 'project_id',
+    as: 'project',
+  })
   declare project: Project;
 
   @BelongsTo(() => BoqTemplate, {
     foreignKey: 'source_template_id',
-    as: 'source_template',
+    as: 'sourceTemplate',
   })
-  declare source_template: BoqTemplate;
+  declare sourceTemplate: BoqTemplate;
 
-  @BelongsTo(() => User, { foreignKey: 'created_by', as: 'creator' })
+  @BelongsTo(() => BoqVersion, {
+    foreignKey: 'boq_version_id',
+    as: 'currentVersion',
+  })
+  declare currentVersion: BoqVersion;
+
+  @BelongsTo(() => User, {
+    foreignKey: 'created_by',
+    as: 'creator',
+  })
   declare creator: User;
 
-  @BelongsTo(() => User, { foreignKey: 'updated_by', as: 'updater' })
+  @BelongsTo(() => User, {
+    foreignKey: 'updated_by',
+    as: 'updater',
+  })
   declare updater: User;
 
-  @BelongsTo(() => User, { foreignKey: 'approved_by', as: 'approver' })
+  @BelongsTo(() => User, {
+    foreignKey: 'approved_by',
+    as: 'approver',
+  })
   declare approver: User;
 
-  @HasMany(() => BoqCategory, { foreignKey: 'boq_id' })
+  @HasMany(() => BoqCategory, {
+    foreignKey: 'boq_id',
+    as: 'categories',
+  })
   declare categories: BoqCategory[];
+  @Column(DataType.DATE)
+  declare created_at: Date;
 
-  // Computed, not persisted — attached by BoqService.withComputedTotals().
+  @Column(DataType.DATE)
+  declare updated_at: Date;
+
+  @Column(DataType.DATE)
+  declare deleted_at: Date | null;
   declare project_total?: number;
   declare misc_amount?: number;
   declare final_total?: number;
+  declare avg_variation_pct?: number | string;
 }

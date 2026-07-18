@@ -20,7 +20,14 @@ export const boqApi = createApi({
     },
   }),
 
-  tagTypes: ["BOQ", "BOQ_TEMPLATE", "BOQ_ACTIVITY", "LIBRARY", "BOQ_CATALOG"],
+  tagTypes: [
+    "BOQ",
+    "BOQ_TEMPLATE",
+    "BOQ_ACTIVITY",
+    "LIBRARY",
+    "BOQ_CATALOG",
+    "BOQ_VERSION",
+  ],
 
   endpoints: (builder) => ({
     // ==========================
@@ -89,13 +96,18 @@ export const boqApi = createApi({
       invalidatesTags: (result, error, { id }) => [{ type: "BOQ", id }],
     }),
 
+    // `reason`/`note` are shown in the activity log; `versionName` (optional)
+    // becomes the label on the new BoqVersion row, e.g. "Client revision 2".
     duplicateBoqVersion: builder.mutation({
-      query: ({ id, reason, note }) => ({
+      query: ({ id, reason, note, versionName }) => ({
         url: `/boqs/${id}/duplicate-version`,
         method: "POST",
-        body: { reason, note },
+        body: { reason, note, version_name: versionName },
       }),
-      invalidatesTags: ["BOQ"],
+      invalidatesTags: (result, error, { id }) => [
+        "BOQ",
+        { type: "BOQ_VERSION", id },
+      ],
     }),
 
     createBoqNewVersion: builder.mutation({
@@ -103,7 +115,41 @@ export const boqApi = createApi({
         url: `/boqs/${id}/new-version`,
         method: "POST",
       }),
-      invalidatesTags: ["BOQ"],
+      invalidatesTags: (result, error, { id }) => [
+        "BOQ",
+        { type: "BOQ_VERSION", id },
+      ],
+    }),
+
+    // Full version history (oldest → newest) for the family a boq
+    // belongs to — works from any version's id, not just v1's.
+    getBoqVersionHistory: builder.query({
+      query: (id) => `/boqs/${id}/versions`,
+      providesTags: (result, error, id) => [{ type: "BOQ_VERSION", id }],
+    }),
+
+    // Relabels one BoqVersion row without touching its Boq snapshot.
+    // Pass `boqId` (any id in the family) so the history cache for
+    // that family gets invalidated and refetches.
+    renameBoqVersion: builder.mutation({
+      query: ({ versionId, versionName }) => ({
+        url: `/boqs/versions/${versionId}`,
+        method: "PATCH",
+        body: { version_name: versionName },
+      }),
+      invalidatesTags: (result, error, { boqId }) =>
+        boqId ? [{ type: "BOQ_VERSION", id: boqId }] : ["BOQ_VERSION"],
+    }),
+
+    // Line-item diff between two boq snapshots (`id` vs `vs`), for the
+    // "Compare current with…" panel. `id`/`vs` can be any two ids in
+    // (or out of) the same family.
+    compareBoqVersions: builder.query({
+      query: ({ id, vs }) => `/boqs/${id}/compare?vs=${vs}`,
+      providesTags: (result, error, { id, vs }) => [
+        { type: "BOQ_VERSION", id },
+        { type: "BOQ_VERSION", id: vs },
+      ],
     }),
 
     // ==========================
@@ -428,32 +474,32 @@ export const boqApi = createApi({
     }),
 
     getBoqProductivity: builder.query({
-      query: () => "/boq/productivity",
+      query: () => "/boqs/productivity",
       providesTags: ["BOQ"],
     }),
 
     getBoqProjectWise: builder.query({
-      query: () => "/dashboards/boq/project-wise",
+      query: () => "/boqs/project-wise",
       providesTags: ["BOQ"],
     }),
 
     getBoqValueTrend: builder.query({
-      query: () => "/dashboards/boq/value-trend?months=6",
+      query: () => "/boqs/value-trend?months=6",
       providesTags: ["BOQ"],
     }),
 
     getBoqMonthlyVolume: builder.query({
-      query: () => "/dashboards/boq/monthly-volume?months=6",
+      query: () => "/boqs/monthly-volume?months=6",
       providesTags: ["BOQ"],
     }),
 
     getBoqStatusMix: builder.query({
-      query: () => "/dashboards/boq/status-mix",
+      query: () => "/boqs/status-mix",
       providesTags: ["BOQ"],
     }),
 
     getBoqRecentlyEdited: builder.query({
-      query: (limit = 5) => `/dashboards/boq/recently-edited?limit=${limit}`,
+      query: (limit = 5) => `/boqs/recently-edited?limit=${limit}`,
       providesTags: ["BOQ"],
     }),
   }),
@@ -479,6 +525,10 @@ export const {
   useApproveBoqMutation,
   useDuplicateBoqVersionMutation,
   useCreateBoqNewVersionMutation,
+  useGetBoqVersionHistoryQuery,
+  useLazyGetBoqVersionHistoryQuery,
+  useRenameBoqVersionMutation,
+  useLazyCompareBoqVersionsQuery,
 
   useAddBoqCategoryMutation,
   useUpdateBoqCategoryMutation,

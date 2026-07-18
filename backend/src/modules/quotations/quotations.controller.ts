@@ -21,11 +21,14 @@ import { CreateQuotationComparisonDto } from './dto/quotation-comparison.dto';
 import { QuotationStatus } from '../../common/enums';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
-
+import { QuotationDashboardService } from './quotation-dashboard.service';
 @Controller('quotations')
 @UseGuards(JwtAuthGuard)
 export class QuotationsController {
-  constructor(private readonly quotationsService: QuotationsService) {}
+  constructor(
+    private readonly quotationsService: QuotationsService,
+    private readonly quotationDashboardService: QuotationDashboardService,
+  ) {}
 
   @Post()
   create(@Body() dto: CreateQuotationDto, @CurrentUser() user: any) {
@@ -46,7 +49,48 @@ export class QuotationsController {
       includeDeleted: includeDeleted === 'true',
     });
   }
+  // ==================== DASHBOARD ====================
 
+  @Get('summary')
+  getSummary() {
+    return this.quotationDashboardService.getSummary();
+  }
+
+  @Get('project-wise')
+  getProjectWise() {
+    return this.quotationDashboardService.getProjectWise();
+  }
+
+  @Get('expiring-soon')
+  getExpiringSoon(@Query('within_days') within_days?: string) {
+    return this.quotationDashboardService.getExpiringSoon(
+      within_days ? Number(within_days) : 7,
+    );
+  }
+
+  @Get('boq-variance')
+  getBoqVariance() {
+    return this.quotationDashboardService.getBoqVariance();
+  }
+
+  @Get('value-trend')
+  getValueTrend(@Query('months') months?: string) {
+    return this.quotationDashboardService.getValueTrend(
+      months ? Number(months) : 6,
+    );
+  }
+
+  @Get('status-mix')
+  getStatusMix() {
+    return this.quotationDashboardService.getStatusMix();
+  }
+
+  @Get('variation-by-project')
+  getVariationByProject(@Query('limit') limit?: string) {
+    return this.quotationDashboardService.getVariationByProject(
+      limit ? Number(limit) : 6,
+    );
+  }
   // ==================== COMPARISON FEATURE ====================
 
   @Get('compare')

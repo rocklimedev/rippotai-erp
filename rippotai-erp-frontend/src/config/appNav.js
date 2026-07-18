@@ -27,6 +27,11 @@ export const APP_META = {
     base: "/documents",
     searchPh: "Search documents, forms",
   },
+  leads: {
+    name: "Leads",
+    base: "/leads",
+    searchPh: "Search leads",
+  },
   tasks: { name: "Tasks", base: "/tasks", searchPh: "Search tasks" },
   calendar: { name: "Calendar", base: "/calendar", searchPh: "Search events" },
 };
@@ -38,10 +43,10 @@ export const LANDING_ORDER = [
   "quotations",
   "vendors",
   "documents",
+  "leads",
   "tasks",
   "calendar",
 ];
-
 const I = (label, slug) => ({ label, slug });
 
 export const APP_MENUS = {
@@ -144,6 +149,34 @@ export const APP_MENUS = {
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles and Permissions", "roles"),
         I("Document Settings", "settings"),
+        I("Activity", "activity"),
+      ],
+    },
+  ],
+  leads: [
+    {
+      label: "Leads",
+      items: [
+        I("All Leads", "all"),
+        I("Create Lead", "new"),
+        I("Pipeline", "pipeline"),
+        I("Kanban Board", "kanban"),
+      ],
+    },
+    {
+      label: "Management",
+      items: [
+        I("Sources", "sources"),
+        I("Statuses", "statuses"),
+        I("Assignments", "assignments"),
+      ],
+    },
+    {
+      label: "Settings",
+      items: [
+        I("Edit Dashboard", "edit-dashboard"),
+        I("Roles and Permissions", "roles"),
+        I("Lead Settings", "settings"),
         I("Activity", "activity"),
       ],
     },

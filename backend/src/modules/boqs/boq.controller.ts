@@ -29,6 +29,7 @@ import {
 } from './dto/boq-workflow.dto';
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
 import { User } from '@/modules/users/models/user.model';
+import { BoqDashboardService } from './boq-dashboard.service';
 
 const PDF_VARIANTS: readonly PdfVariant[] = [
   'internal',
@@ -36,6 +37,7 @@ const PDF_VARIANTS: readonly PdfVariant[] = [
   'quantity_only',
   'vendor_enquiry',
 ];
+
 function parsePdfVariant(value: string | undefined): PdfVariant {
   if (!value) return 'internal';
   if ((PDF_VARIANTS as readonly string[]).includes(value)) {
@@ -51,39 +53,81 @@ export class BoqController {
   constructor(
     private readonly boqService: BoqService,
     private readonly exportService: BoqExportService,
+    private readonly dashboardService: BoqDashboardService,
   ) {}
 
+  // ==================== DASHBOARD (static routes first) ====================
+  @Get('summary')
+  getSummary() {
+    return this.dashboardService.getSummary();
+  }
+
+  @Get('productivity')
+  getProductivity() {
+    return this.dashboardService.getProductivity();
+  }
+
+  @Get('project-wise')
+  getProjectWise() {
+    return this.dashboardService.getProjectWise();
+  }
+
+  @Get('value-trend')
+  getValueTrend(@Query('months') months?: string) {
+    return this.dashboardService.getValueTrend(months ? Number(months) : 6);
+  }
+
+  @Get('monthly-volume')
+  getMonthlyVolume(@Query('months') months?: string) {
+    return this.dashboardService.getMonthlyVolume(months ? Number(months) : 6);
+  }
+
+  @Get('status-mix')
+  getStatusMix() {
+    return this.dashboardService.getStatusMix();
+  }
+
+  @Get('recently-edited')
+  getRecentlyEdited(@Query('limit') limit?: string) {
+    return this.dashboardService.getRecentlyEdited(limit ? Number(limit) : 5);
+  }
+
+  // ==================== LIST & CRUD ====================
   @Get()
   findAll(@Query('project_id') projectId?: string) {
     return this.boqService.findAll(projectId);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.boqService.findOne(id);
+  // ==================== VERSION & WORKFLOW ROUTES (more specific first) ====================
+
+  // Version history
+  @Get(':id/versions')
+  getVersionHistory(@Param('id') id: string) {
+    return this.boqService.getVersionHistory(id);
   }
 
-  @Post()
-  create(@Body() dto: CreateBoqDto, @CurrentUser() user?: User) {
-    return this.boqService.create(dto, user?.id);
+  // Compare versions
+  @Get(':id/compare')
+  compare(@Param('id') id: string, @Query('vs') vs: string) {
+    if (!vs) {
+      throw new BadRequestException('vs query param is required');
+    }
+    return this.boqService.compareVersions(id, vs);
   }
 
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() dto: UpdateBoqDto,
-    @CurrentUser() user?: User,
+  // Rename version (global versionId route)
+  @Patch('versions/:versionId')
+  renameVersion(
+    @Param('versionId') versionId: string,
+    @Body('version_name') versionName: string,
   ) {
-    return this.boqService.update(id, dto, user?.id);
+    if (!versionName?.trim()) {
+      throw new BadRequestException('version_name is required');
+    }
+    return this.boqService.renameVersion(versionId, versionName);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string, @CurrentUser() user?: User) {
-    return this.boqService.remove(id, user?.id);
-  }
-
-  // ---------- Workflow ----------
-
+  // Workflow
   @Post(':id/submit-for-approval')
   submitForApproval(
     @Param('id') id: string,
@@ -116,8 +160,32 @@ export class BoqController {
     return this.boqService.newVersion(id, user?.id);
   }
 
-  // ---------- Categories ----------
+  // ==================== SINGLE BOQ CRUD (general :id route — keep near the end) ====================
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.boqService.findOne(id);
+  }
 
+  @Post()
+  create(@Body() dto: CreateBoqDto, @CurrentUser() user?: User) {
+    return this.boqService.create(dto, user?.id);
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateBoqDto,
+    @CurrentUser() user?: User,
+  ) {
+    return this.boqService.update(id, dto, user?.id);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string, @CurrentUser() user?: User) {
+    return this.boqService.remove(id, user?.id);
+  }
+
+  // ==================== CATEGORIES & ITEMS ====================
   @Post(':id/categories')
   addCategory(
     @Param('id') id: string,
@@ -148,8 +216,6 @@ export class BoqController {
   ) {
     return this.boqService.removeCategory(id, categoryId, user?.id);
   }
-
-  // ---------- Items ----------
 
   @Post(':id/categories/:categoryId/items')
   addItem(
@@ -202,8 +268,7 @@ export class BoqController {
     return this.boqService.bulkUpdateItems(id, dto, user?.id);
   }
 
-  // ---------- Export ----------
-
+  // ==================== EXPORT ====================
   @Get(':id/export/excel')
   async exportExcel(@Param('id') id: string, @Res() res: Response) {
     const { buffer, filename } = await this.exportService.toExcel(id);
@@ -247,9 +312,7 @@ export class BoqController {
   }
 }
 
-// The frontend's AddCategoryPanel calls GET /boq-catalog (top-level, not
-// nested under /boqs/:id), so this needs its own controller rather than
-// a route inside @Controller('boqs').
+// Catalog Controller (unchanged — it's correctly separated)
 @Controller('boq-catalog')
 export class BoqCatalogController {
   constructor(private readonly boqService: BoqService) {}

@@ -292,18 +292,18 @@ export const quotationApi = createApi({
     // =========================
 
     getQuotationsProjectWise: builder.query({
-      query: () => "/dashboards/quotations/project-wise",
+      query: () => "/quotations/project-wise",
       providesTags: ["QuotationDashboard"],
     }),
 
     getQuotationsExpiringSoon: builder.query({
       query: (withinDays = 7) =>
-        `/dashboards/quotations/expiring-soon?within_days=${withinDays}`,
+        `/quotations/expiring-soon?within_days=${withinDays}`,
       providesTags: ["QuotationDashboard"],
     }),
 
     getQuotationsBoqVariance: builder.query({
-      query: () => "/dashboards/quotations/boq-variance",
+      query: () => "/quotations/boq-variance",
       providesTags: ["QuotationDashboard"],
     }),
 
@@ -312,19 +312,17 @@ export const quotationApi = createApi({
     // =========================
 
     getQuotationsValueTrend: builder.query({
-      query: (months = 6) =>
-        `/dashboards/quotations/value-trend?months=${months}`,
+      query: (months = 6) => `/quotations/value-trend?months=${months}`,
       providesTags: ["QuotationDashboard"],
     }),
 
     getQuotationsStatusMix: builder.query({
-      query: () => "/dashboards/quotations/status-mix",
+      query: () => "/quotations/status-mix",
       providesTags: ["QuotationDashboard"],
     }),
 
     getQuotationsVariationByProject: builder.query({
-      query: (limit = 6) =>
-        `/dashboards/quotations/variation-by-project?limit=${limit}`,
+      query: (limit = 6) => `/quotations/variation-by-project?limit=${limit}`,
       providesTags: ["QuotationDashboard"],
     }),
   }),

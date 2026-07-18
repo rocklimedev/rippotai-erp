@@ -18,6 +18,7 @@ import { memoryStorage } from 'multer';
 import type { Response } from 'express';
 import { InjectModel } from '@nestjs/sequelize';
 import { DocumentsService } from './document.service';
+import { DocumentsDashboardService } from './documents-dashboard.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { SectionFormDto } from './dto/section-form.dto';
@@ -155,5 +156,67 @@ export class ProjectDocumentsWorkspaceController {
   @Get(':id/documents-workspace')
   getWorkspace(@Param('id') id: string) {
     return this.documentsService.getWorkspace(id);
+  }
+}
+
+/**
+ * Dashboard widgets for the Documents module. Kept as its own controller
+ * (rather than tacked onto DocumentsController) since these are aggregate/
+ * read-only queries across several models (docs, drawings, briefs, site
+ * recce, quotations, BOQs) rather than CRUD on a single Document resource.
+ */
+@UseGuards(JwtAuthGuard)
+@Controller('documents/dashboard')
+export class DocumentsDashboardController {
+  constructor(
+    private readonly documentsDashboardService: DocumentsDashboardService,
+  ) {}
+
+  // Recent Activity widget (documents + drawings + briefs + site recce)
+  @Get('recent')
+  getRecentDocuments(@Query('limit') limit?: string) {
+    return this.documentsDashboardService.getRecentDocuments(
+      limit ? parseInt(limit, 10) : undefined,
+    );
+  }
+
+  // Pending Items widget
+  @Get('pending')
+  getPendingDocuments() {
+    return this.documentsDashboardService.getPendingDocuments();
+  }
+
+  // Expiring Soon Quotations widget (QuotProjectWiseExpiring)
+  @Get('quotations/expiring')
+  getExpiringQuotations(@Query('within_days') withinDays?: string) {
+    return this.documentsDashboardService.getExpiringQuotations(
+      withinDays ? parseInt(withinDays, 10) : undefined,
+    );
+  }
+
+  // BOQ vs Estimate variance widget
+  @Get('boq-variance')
+  getBoqVariance() {
+    return this.documentsDashboardService.getBoqVariance();
+  }
+
+  // Draft Estimates widget
+  @Get('estimates/draft')
+  getDraftEstimates() {
+    return this.documentsDashboardService.getDraftEstimates();
+  }
+
+  // Overall dashboard stats (counts across all document-related entities)
+  @Get('stats')
+  getDashboardStats() {
+    return this.documentsDashboardService.getDashboardStats();
+  }
+
+  // Project-wise summary (documents/drawings/quotations per project)
+  @Get('projects')
+  getProjectWiseDocuments(@Query('limit') limit?: string) {
+    return this.documentsDashboardService.getProjectWiseDocuments(
+      limit ? parseInt(limit, 10) : undefined,
+    );
   }
 }

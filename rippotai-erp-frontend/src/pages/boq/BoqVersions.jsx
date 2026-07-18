@@ -1,37 +1,29 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import api from "@/lib/api";
-import { formatINR, formatDate, relativeTime } from "@/lib/format";
 import {
-  ArrowLeft,
-  GitBranch,
-  ArrowLeftRight,
-  Lock,
-  Unlock,
-} from "lucide-react";
+  useGetBoqVersionHistoryQuery,
+  useLazyCompareBoqVersionsQuery,
+} from "../../api/boq.api"; // ← adjust import path
+import { formatINR, formatDate, relativeTime } from "@/lib/format";
+import { ArrowLeft, GitBranch, ArrowLeftRight, Lock } from "lucide-react";
 
 export default function BoqVersions() {
   const { id } = useParams();
   const nav = useNavigate();
-  const [versions, setVersions] = useState(null);
   const [compareId, setCompareId] = useState("");
-  const [diff, setDiff] = useState(null);
 
-  useEffect(() => {
-    api
-      .get(`/boqs/${id}/versions`)
-      .then((r) => setVersions(r.data))
-      .catch(() => setVersions([]));
-  }, [id]);
+  const {
+    data: versions = [],
+    isLoading: isVersionsLoading,
+    isError: isVersionsError,
+  } = useGetBoqVersionHistoryQuery(id, { skip: !id });
 
-  const runCompare = async () => {
+  const [triggerCompare, { data: diff, isFetching: isComparing }] =
+    useLazyCompareBoqVersionsQuery();
+
+  const runCompare = () => {
     if (!compareId) return;
-    try {
-      const { data } = await api.get(`/boqs/${id}/compare?vs=${compareId}`);
-      setDiff(data);
-    } catch (e) {
-      /* ignore */
-    }
+    triggerCompare({ id, vs: compareId });
   };
 
   return (
@@ -69,48 +61,88 @@ export default function BoqVersions() {
             </tr>
           </thead>
           <tbody>
-            {(versions || []).map((v) => (
-              <tr
-                key={v.id}
-                className="border-b border-[#B5C4B6] hover:bg-[#EAEEF0]"
-                data-testid={`version-row-${v.version}`}
-              >
-                <td className="px-4 py-3 font-semibold text-[#333333] flex items-center gap-2">
-                  <GitBranch size={13} /> {v.version}
-                  {v.id === id && (
-                    <span className="text-[9px] uppercase tracking-widest bg-[#EAEEF0] text-[#333333] px-1.5 py-0.5 rounded">
-                      Current
-                    </span>
-                  )}
-                </td>
-                <td className="px-3 py-3 text-[12.5px] text-[#6B7B7C] capitalize">
-                  {v.status?.replace("_", " ")}
-                </td>
-                <td className="px-3 py-3 text-[12.5px] text-[#6B7B7C]">
-                  {v.created_by || v.prepared_by || "—"}
-                </td>
-                <td className="px-3 py-3 text-[11.5px] text-[#B5C4B6]">
-                  {formatDate(v.created_at)} · {relativeTime(v.created_at)}
-                </td>
-                <td className="px-3 py-3 text-[12px] text-[#6B7B7C] max-w-[280px] truncate">
-                  {v.revision_note || "—"}
-                </td>
-                <td className="px-3 py-3 text-[13px] font-semibold text-[#333333] text-right">
-                  {formatINR(v.final_total || 0)}
-                </td>
-                <td className="px-3 py-3 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    {v.locked && <Lock size={12} className="text-[#333333]" />}
-                    <Link
-                      to={`/boq/${v.id}`}
-                      className="text-[12px] text-[#333333] font-semibold hover:underline"
-                    >
-                      Open
-                    </Link>
-                  </div>
+            {isVersionsLoading &&
+              [1, 2, 3].map((i) => (
+                <tr key={i} className="border-b border-[#B5C4B6]">
+                  {Array(7)
+                    .fill(0)
+                    .map((_, j) => (
+                      <td key={j} className="px-3 py-4">
+                        <div className="bc-skeleton h-4 w-full" />
+                      </td>
+                    ))}
+                </tr>
+              ))}
+
+            {!isVersionsLoading && isVersionsError && (
+              <tr>
+                <td
+                  colSpan={7}
+                  className="px-4 py-10 text-center text-[13px] text-[#6B7B7C]"
+                >
+                  Couldn't load version history.
                 </td>
               </tr>
-            ))}
+            )}
+
+            {!isVersionsLoading &&
+              !isVersionsError &&
+              versions.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-4 py-10 text-center text-[13px] text-[#6B7B7C]"
+                  >
+                    No versions yet.
+                  </td>
+                </tr>
+              )}
+
+            {!isVersionsLoading &&
+              versions.map((v) => (
+                <tr
+                  key={v.id}
+                  className="border-b border-[#B5C4B6] hover:bg-[#EAEEF0]"
+                  data-testid={`version-row-${v.version}`}
+                >
+                  <td className="px-4 py-3 font-semibold text-[#333333] flex items-center gap-2">
+                    <GitBranch size={13} /> {v.version}
+                    {v.id === id && (
+                      <span className="text-[9px] uppercase tracking-widest bg-[#EAEEF0] text-[#333333] px-1.5 py-0.5 rounded">
+                        Current
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 py-3 text-[12.5px] text-[#6B7B7C] capitalize">
+                    {v.status?.replace("_", " ")}
+                  </td>
+                  <td className="px-3 py-3 text-[12.5px] text-[#6B7B7C]">
+                    {v.created_by || v.prepared_by || "—"}
+                  </td>
+                  <td className="px-3 py-3 text-[11.5px] text-[#B5C4B6]">
+                    {formatDate(v.created_at)} · {relativeTime(v.created_at)}
+                  </td>
+                  <td className="px-3 py-3 text-[12px] text-[#6B7B7C] max-w-[280px] truncate">
+                    {v.revision_note || "—"}
+                  </td>
+                  <td className="px-3 py-3 text-[13px] font-semibold text-[#333333] text-right">
+                    {formatINR(v.final_total || 0)}
+                  </td>
+                  <td className="px-3 py-3 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      {v.locked && (
+                        <Lock size={12} className="text-[#333333]" />
+                      )}
+                      <Link
+                        to={`/boq/${v.id}`}
+                        className="text-[12px] text-[#333333] font-semibold hover:underline"
+                      >
+                        Open
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </section>
@@ -127,7 +159,7 @@ export default function BoqVersions() {
             data-testid="compare-version-select"
           >
             <option value="">Select a version</option>
-            {(versions || [])
+            {versions
               .filter((v) => v.id !== id)
               .map((v) => (
                 <option key={v.id} value={v.id}>
@@ -137,11 +169,12 @@ export default function BoqVersions() {
           </select>
           <button
             onClick={runCompare}
-            disabled={!compareId}
+            disabled={!compareId || isComparing}
             className="h-10 px-4 rounded-xl bg-[#1F453B] hover:bg-[#1F453B] text-white text-[13px] font-semibold flex items-center gap-2 disabled:opacity-60"
             data-testid="compare-btn"
           >
-            <ArrowLeftRight size={14} /> Compare
+            <ArrowLeftRight size={14} />{" "}
+            {isComparing ? "Comparing…" : "Compare"}
           </button>
         </div>
 

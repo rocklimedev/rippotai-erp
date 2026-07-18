@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 
 import { ProjectsService } from './projects.service';
+import { ProjectDashboardService } from './project-dashboard.service';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { ProjectStatus } from '../../common/enums';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
@@ -24,7 +25,10 @@ import { User } from '@/modules/users/models/user.model';
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
 export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
+  constructor(
+    private readonly projectsService: ProjectsService,
+    private readonly dashboardService: ProjectDashboardService,
+  ) {}
 
   @Post()
   create(@Body() dto: CreateProjectDto, @CurrentUser() user?: User) {
@@ -57,6 +61,59 @@ export class ProjectsController {
       includeDeleted: includeDeleted === 'true',
     });
   }
+
+  // ===========================
+  // Dashboard Routes
+  // ===========================
+
+  @Get('summary')
+  getSummary() {
+    return this.dashboardService.getProjectsSummary();
+  }
+
+  @Get('full')
+  getFull() {
+    return this.dashboardService.getProjectsFull();
+  }
+
+  @Get('progress')
+  getProgress() {
+    return this.dashboardService.getProjectsProgress();
+  }
+
+  @Get('upcoming-milestones')
+  getUpcomingMilestones(@Query('limit') limit = '4') {
+    return this.dashboardService.getUpcomingMilestones(Number(limit));
+  }
+
+  @Get('progress-trend')
+  getProgressTrend(@Query('months') months = '6') {
+    return this.dashboardService.getProjectsProgressTrend(Number(months));
+  }
+
+  @Get('phase-mix')
+  getPhaseMix() {
+    return this.dashboardService.getProjectsPhaseMix();
+  }
+
+  @Get('variance-by-project')
+  getVarianceByProject(@Query('limit') limit = '6') {
+    return this.dashboardService.getProjectsVarianceByProject(Number(limit));
+  }
+
+  @Get('milestones/upcoming')
+  getUpcomingMilestonesGlobal(@Query('limit') limit = '5') {
+    return this.dashboardService.getUpcomingMilestonesGlobal(Number(limit));
+  }
+
+  @Get('activity/recent')
+  getRecentActivity(@Query('limit') limit = '10') {
+    return this.dashboardService.getRecentActivity(Number(limit));
+  }
+
+  // ===========================
+  // CRUD Routes
+  // ===========================
 
   @Get(':id')
   findOne(

@@ -8,8 +8,9 @@ import {
   ForeignKey,
   BelongsTo,
   HasMany,
+  CreatedAt,
+  UpdatedAt,
 } from 'sequelize-typescript';
-
 import { User } from '@/modules/users/models/user.model';
 import { Quotation } from '@/modules/quotations/models/quotations.model';
 import { VendorCategory } from './vendor-category.model';
@@ -135,4 +136,15 @@ export class Vendor extends Model<Vendor> {
     foreignKey: 'vendor_id',
   })
   declare quotations: Quotation[];
+  @CreatedAt
+  @Column({
+    type: DataType.DATE,
+  })
+  declare created_at: Date;
+
+  @UpdatedAt
+  @Column({
+    type: DataType.DATE,
+  })
+  declare updated_at: Date;
 }

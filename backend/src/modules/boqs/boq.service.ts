@@ -12,6 +12,7 @@ import { BoqItem } from './models/boq-item.model';
 import { BoqTemplate } from './models/boq-template.model';
 import { BoqTemplateCategory } from './models/boq-template-category.model';
 import { BoqTemplateItem } from './models/boq-template-item.model';
+import { BoqVersion } from './models/boq-version.model';
 import { Project } from '../projects/models/projects.model';
 import { CreateBoqDto } from './dto/create-boq.dto';
 import { UpdateBoqDto } from './dto/update-boq.dto';
@@ -28,6 +29,7 @@ import {
   SubmitForApprovalDto,
 } from './dto/boq-workflow.dto';
 import { BoqActivityService } from './boq-activity.service';
+import { BoqVersionService } from './boq-version.service';
 import { BoqActivityAction, BoqStatus } from '@/common/enums/boq-enums';
 import { User } from '../users/models/user.model';
 const LOCKED_STATUSES = [
@@ -90,6 +92,7 @@ export class BoqService {
     private readonly projectModel: typeof Project,
     private readonly sequelize: Sequelize,
     private readonly activity: BoqActivityService,
+    private readonly boqVersionService: BoqVersionService,
   ) {}
 
   async findAll(project_id?: string) {
@@ -101,9 +104,7 @@ export class BoqService {
   }
 
   async findOne(id: string) {
-    console.log('BOQ associations:', Object.keys(this.boqModel.associations));
     const boq = await this.boqModel.findByPk(id, {
-      logging: console.log,
       include: [
         {
           model: Project,
@@ -137,6 +138,10 @@ export class BoqService {
           attributes: ['id', 'name', 'email'],
         },
         {
+          model: BoqVersion,
+          as: 'currentVersion',
+        },
+        {
           model: BoqCategory,
           as: 'categories',
           include: [
@@ -168,6 +173,12 @@ export class BoqService {
    * Creates a new BOQ for a project. If template_id is supplied, the
    * template's categories/items are deep-copied as independent rows
    * (snapshot), so later edits to the template never affect this BOQ.
+   *
+   * This is also where a Boq family's versioning starts: the freshly
+   * created row is v1, so it becomes its own "root" — a BoqVersion row
+   * is created with boq_id pointing at this same boq, and the boq's
+   * boq_version_id is set to that row. Every later clone
+   * (see cloneAsNewVersion) chains off this root.
    */
   async create(dto: CreateBoqDto, actorId?: string) {
     const project = await this.projectModel.findByPk(dto.project_id);
@@ -264,6 +275,17 @@ export class BoqService {
 
       await this.recomputeTotal(boq.id, t);
 
+      // Seed this boq as the root of its own version lineage (v1).
+      await this.boqVersionService.createVersionRecord(
+        boq.id,
+        {
+          rootBoqId: boq.id,
+          version: boq.version,
+          versionName: (dto as Partial<{ version_name: string }>).version_name,
+        },
+        t,
+      );
+
       await this.activity.log({
         boq_id: boq.id,
         user_id: actorId,
@@ -304,7 +326,7 @@ export class BoqService {
     await boq.destroy();
 
     await this.activity.log({
-      boq_id: boq.id,
+      boq_id: id,
       user_id: actorId,
       action: BoqActivityAction.DELETED,
       target: `BOQ · ${boq.title}`,
@@ -379,15 +401,26 @@ export class BoqService {
    * Deep-clones this BOQ (categories + items) into a fresh draft at
    * version + 1. Used by both "Create New Version" (from the locked-edit
    * modal) and "Duplicate Version" (explicit reason/note dialog).
+   *
+   * The clone is chained into the *same* version lineage as `source`:
+   * we resolve the family's root boq id off `source` (falling back to
+   * `source.id` itself if `source` has no boq_version_id yet — e.g. a
+   * legacy row created before versioning existed) and create a new
+   * BoqVersion row under that same root for the clone.
    */
   async cloneAsNewVersion(
     id: string,
-    opts: { reason?: string; note?: string },
+    opts: { reason?: string; note?: string; versionName?: string },
     actorId?: string,
   ) {
     const source = await this.getOrThrow(id);
 
     const newId = await this.sequelize.transaction(async (t) => {
+      const rootBoqId = await this.boqVersionService.resolveRootBoqId(
+        source,
+        t,
+      );
+
       const clone = await this.boqModel.create(
         {
           project_id: source.project_id,
@@ -451,6 +484,17 @@ export class BoqService {
       }
 
       await this.recomputeTotal(clone.id, t);
+
+      await this.boqVersionService.createVersionRecord(
+        clone.id,
+        {
+          rootBoqId,
+          version: clone.version,
+          versionName: opts.versionName ?? opts.reason,
+        },
+        t,
+      );
+
       return clone.id;
     });
 
@@ -474,7 +518,11 @@ export class BoqService {
   ) {
     return this.cloneAsNewVersion(
       id,
-      { reason: dto.reason, note: dto.note },
+      {
+        reason: dto.reason,
+        note: dto.note,
+        versionName: (dto as Partial<{ version_name: string }>).version_name,
+      },
       actorId,
     );
   }
@@ -487,6 +535,69 @@ export class BoqService {
       );
     }
     return this.cloneAsNewVersion(id, {}, actorId);
+  }
+
+  /**
+   * Full version history (BoqVersion rows + their Boq snapshots) for
+   * the family that `id` belongs to, oldest first.
+   */
+  async getVersionHistory(id: string) {
+    return this.boqVersionService.getHistory(id);
+  }
+
+  /**
+   * Renames a single version's label (e.g. "Client revision 2")
+   * without touching the underlying Boq snapshot.
+   */
+  async renameVersion(versionId: string, versionName: string) {
+    return this.boqVersionService.renameVersion(versionId, versionName);
+  }
+  /**
+   * Line-item diff between two Boq snapshots, for the "Compare current
+   * with…" panel on BoqVersions.jsx. Items are matched across versions
+   * by `library_item_id` when the row came from the catalog/library;
+   * free-typed rows (no library_item_id) fall back to matching by
+   * name, which is best-effort — renaming a free-typed item between
+   * versions will show up as one removed + one added rather than one
+   * updated.
+   */
+  async compareVersions(idA: string, idB: string) {
+    const [a, b] = await Promise.all([this.findOne(idA), this.findOne(idB)]);
+
+    type FlatItem = { key: string; description: string; amount: number };
+
+    const flatten = (boq: BoqJSON): FlatItem[] =>
+      (boq.items ?? []).map((i) => ({
+        key: String(i.library_item_id ?? i.name),
+        description: String(i.name ?? ''),
+        amount: Number(i.amount || 0),
+      }));
+
+    const itemsA = flatten(a);
+    const itemsB = flatten(b);
+    const mapA = new Map(itemsA.map((i) => [i.key, i]));
+    const mapB = new Map(itemsB.map((i) => [i.key, i]));
+
+    const added = itemsB.filter((i) => !mapA.has(i.key));
+    const removed = itemsA.filter((i) => !mapB.has(i.key));
+    const updated = itemsB
+      .filter((i) => {
+        const before = mapA.get(i.key);
+        return before !== undefined && before.amount !== i.amount;
+      })
+      .map((after) => ({ before: mapA.get(after.key)!, after }));
+
+    const finalTotalA = Number(a.final_total || 0);
+    const finalTotalB = Number(b.final_total || 0);
+
+    return {
+      a: { id: a.id, version: a.version, final_total: finalTotalA },
+      b: { id: b.id, version: b.version, final_total: finalTotalB },
+      delta: Math.round((finalTotalB - finalTotalA) * 100) / 100,
+      added,
+      removed,
+      updated,
+    };
   }
 
   // ---------- Categories ----------

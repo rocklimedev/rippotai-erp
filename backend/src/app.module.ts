@@ -24,6 +24,7 @@ import { SiteRecceModule } from './modules/reki/reki.module';
 import { TasksModule } from './modules/tasks/task.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
 import { DashboardsModule } from './modules/dashboard/dashboard.module';
+import { LeadsModule } from './modules/leads/leads.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -59,6 +60,7 @@ import { DashboardsModule } from './modules/dashboard/dashboard.module';
     TasksModule,
     CalendarModule,
     DashboardsModule,
+    LeadsModule,
   ],
 })
 export class AppModule {}

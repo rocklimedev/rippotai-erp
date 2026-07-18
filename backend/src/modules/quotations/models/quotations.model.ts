@@ -14,6 +14,7 @@ import { Vendor } from '@/modules/vendors/models/vendors.model';
 import { User } from '@/modules/users/models/user.model';
 import { QuotationItem } from './quotation-items.model';
 import { QuotationVersion } from './quotation-versions.model';
+
 export enum QuotationStatus {
   DRAFT = 'draft',
   SUBMITTED = 'submitted',
@@ -22,6 +23,7 @@ export enum QuotationStatus {
   DECLINED = 'declined',
   CANCELLED = 'cancelled',
 }
+
 export enum GlobalDiscountType {
   FIXED = 'fixed',
   PERCENTAGE = 'percentage',
@@ -36,22 +38,11 @@ export enum GlobalDiscountType {
   deletedAt: 'deleted_at',
 
   indexes: [
-    {
-      name: 'idx_quotations_project',
-      fields: ['project_id'],
-    },
-    {
-      name: 'idx_quotations_vendor',
-      fields: ['vendor_id'],
-    },
-    {
-      name: 'idx_quotations_status',
-      fields: ['status'],
-    },
-    {
-      name: 'idx_quotations_date',
-      fields: ['quotation_date'],
-    },
+    { name: 'idx_quotations_project', fields: ['project_id'] },
+    { name: 'idx_quotations_vendor', fields: ['vendor_id'] },
+    { name: 'idx_quotations_status', fields: ['status'] },
+    { name: 'idx_quotations_date', fields: ['quotation_date'] },
+    { name: 'idx_quotations_expiry', fields: ['expiry_date'] },
   ],
 })
 export class Quotation extends Model<Quotation> {
@@ -59,6 +50,7 @@ export class Quotation extends Model<Quotation> {
   @Default(DataType.UUIDV4)
   @Column(DataType.UUID)
   declare id: string;
+
   @Column({
     field: 'quotation_number',
     allowNull: false,
@@ -72,6 +64,63 @@ export class Quotation extends Model<Quotation> {
     allowNull: false,
   })
   declare quotationDate: string;
+
+  /** ==================== NEW / MISSING FIELDS ==================== */
+
+  @Column({
+    field: 'expiry_date',
+    type: DataType.DATEONLY,
+    allowNull: true,
+    comment: 'Quotation validity / expiry date (used in Expiring Soon widget)',
+  })
+  declare expiryDate: string | null;
+
+  @Column({
+    field: 'validity_days',
+    type: DataType.INTEGER,
+    allowNull: true,
+    defaultValue: 30,
+    comment: 'Default validity period in days from quotation_date',
+  })
+  declare validityDays: number | null;
+
+  @Column({
+    field: 'comparison_notes',
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  declare comparisonNotes: string | null;
+
+  @Column({
+    field: 'selected_at',
+    type: DataType.DATE,
+    allowNull: true,
+  })
+  declare selectedAt: Date | null;
+
+  @ForeignKey(() => User)
+  @Column({
+    field: 'selected_by',
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  declare selectedBy: string | null;
+
+  @Column({
+    field: 'is_selected',
+    type: DataType.BOOLEAN,
+    defaultValue: false,
+  })
+  declare isSelected: boolean;
+
+  @Column({
+    field: 'boq_reference',
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  declare boqReference: string | null;
+
+  /** ==================== EXISTING FIELDS ==================== */
 
   @Column({
     type: DataType.ENUM(...Object.values(QuotationStatus)),
@@ -147,6 +196,7 @@ export class Quotation extends Model<Quotation> {
     defaultValue: 0,
   })
   declare discount: number;
+
   @Column({
     field: 'tax_percent',
     type: DataType.DECIMAL(5, 2),
@@ -245,6 +295,7 @@ export class Quotation extends Model<Quotation> {
     allowNull: true,
   })
   declare updatedBy: string | null;
+
   @Column({
     field: 'current_version',
     type: DataType.INTEGER,
@@ -252,8 +303,12 @@ export class Quotation extends Model<Quotation> {
     defaultValue: 1,
   })
   declare currentVersion: number;
+
+  /** ==================== ASSOCIATIONS ==================== */
+
   @HasMany(() => QuotationVersion)
   declare versions: QuotationVersion[];
+
   @BelongsTo(() => Project)
   declare project: Project;
 
@@ -275,6 +330,50 @@ export class Quotation extends Model<Quotation> {
   @BelongsTo(() => User, 'updatedBy')
   declare updater: User;
 
+  @BelongsTo(() => User, 'selectedBy')
+  declare selector: User;
+
   @HasMany(() => QuotationItem)
   declare items: QuotationItem[];
+
+  /** ==================== VIRTUAL ATTRIBUTES FOR DASHBOARD ==================== */
+
+  // Used in getBoqVariance, getVariationByProject, etc.
+  @Column({
+    type: DataType.VIRTUAL,
+    allowNull: true,
+  })
+  declare avg_variation_pct: number;
+
+  // Used in getExpiringSoon
+  @Column({
+    type: DataType.VIRTUAL,
+    allowNull: true,
+  })
+  declare days_left: number;
+
+  // Used in getProjectWise and status mix
+  @Column({
+    type: DataType.VIRTUAL,
+    allowNull: true,
+  })
+  declare quotation_count: number;
+
+  @Column({
+    type: DataType.VIRTUAL,
+    allowNull: true,
+  })
+  declare combined_value: number;
+
+  @Column({
+    type: DataType.VIRTUAL,
+    allowNull: true,
+  })
+  declare vendor_count: number;
+
+  @Column({
+    type: DataType.VIRTUAL,
+    allowNull: true,
+  })
+  declare latest_status: string;
 }

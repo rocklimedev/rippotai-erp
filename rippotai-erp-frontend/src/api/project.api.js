@@ -140,7 +140,7 @@ export const projectsApi = createApi({
     // Milestones
     // =========================
     getUpcomingMilestones: builder.query({
-      query: (limit = 5) => `/milestones/upcoming?limit=${limit}`,
+      query: (limit = 5) => `/projects/milestones/upcoming?limit=${limit}`,
       providesTags: ["Milestones"],
     }),
 
@@ -148,7 +148,7 @@ export const projectsApi = createApi({
     // Activity
     // =========================
     getRecentActivity: builder.query({
-      query: (limit = 10) => `/activity/recent?limit=${limit}`,
+      query: (limit = 10) => `/projects/activity/recent?limit=${limit}`,
       providesTags: ["Activity"],
     }),
 
@@ -156,13 +156,12 @@ export const projectsApi = createApi({
     // Dashboards — Phase 8 tables
     // =========================
     getProjectsProgress: builder.query({
-      query: () => "/dashboards/projects/progress",
+      query: () => "/projects/progress",
       providesTags: ["Projects"],
     }),
 
     getUpcomingMilestones4: builder.query({
-      query: (limit = 4) =>
-        `/dashboards/projects/upcoming-milestones?limit=${limit}`,
+      query: (limit = 4) => `/projects/upcoming-milestones?limit=${limit}`,
       providesTags: ["Milestones"],
     }),
 
@@ -170,19 +169,17 @@ export const projectsApi = createApi({
     // Dashboards — Phase 10 charts
     // =========================
     getProjectsProgressTrend: builder.query({
-      query: (months = 6) =>
-        `/dashboards/projects/progress-trend?months=${months}`,
+      query: (months = 6) => `/projects/progress-trend?months=${months}`,
       providesTags: ["Projects"],
     }),
 
     getProjectsPhaseMix: builder.query({
-      query: () => "/dashboards/projects/phase-mix",
+      query: () => "/projects/phase-mix",
       providesTags: ["Projects"],
     }),
 
     getProjectsVarianceByProject: builder.query({
-      query: (limit = 6) =>
-        `/dashboards/projects/variance-by-project?limit=${limit}`,
+      query: (limit = 6) => `/projects/variance-by-project?limit=${limit}`,
       providesTags: ["Projects"],
     }),
   }),

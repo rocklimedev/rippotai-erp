@@ -2,10 +2,12 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   useGetBoqsQuery,
+  useDuplicateBoqVersionMutation,
+  useCreateBoqNewVersionMutation,
+  useLazyGetBoqVersionHistoryQuery,
   // Add these when you create them in boqApi:
   // useGetBoqsSummaryQuery,
-  // useDuplicateBoqMutation,
-} from "../../api/boq.api";          // ← adjust import path
+} from "../../api/boq.api"; // ← adjust import path
 import { useGetProjectsQuery } from "../../api/project.api";
 import { formatINR, relativeTime } from "@/lib/format";
 import { toast } from "sonner";
@@ -18,6 +20,8 @@ import {
   Filter,
   MoreHorizontal,
   Copy,
+  FilePlus2,
+  History,
   Eye,
   Archive,
   Download,
@@ -33,15 +37,24 @@ import {
 const STATUS_META = {
   draft: { label: "Draft", bg: "#B5C4B6", fg: "#6B7B7C" },
   in_progress: { label: "In Progress", bg: "#EAEEF0", fg: "#1F453B" },
-  awaiting_approval: { label: "Awaiting Approval", bg: "#EAEEF0", fg: "#1F453B" },
+  awaiting_approval: {
+    label: "Awaiting Approval",
+    bg: "#EAEEF0",
+    fg: "#1F453B",
+  },
   returned: { label: "Returned for Revision", bg: "#EAEEF0", fg: "#1F453B" },
   approved: { label: "Approved", bg: "#EAEEF0", fg: "#1F453B" },
   final: { label: "Final", bg: "#EAEEF0", fg: "#1F453B" },
   archived: { label: "Archived", bg: "#B5C4B6", fg: "#6B7B7C" },
 };
 
+// Statuses where the BOQ is priced/locked and editing requires spinning
+// off a new version rather than editing in place — mirrors
+// LOCKED_STATUSES in BoqService on the backend.
+const LOCKED_STATUSES = ["approved", "final", "awaiting_approval"];
+
 function StatusChip({ status }) {
-  const s = STATUS_META[status ] || STATUS_META.draft;
+  const s = STATUS_META[status] || STATUS_META.draft;
   return (
     <span
       className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
@@ -64,8 +77,11 @@ export default function BoqDashboard() {
 
   // Sync with URL on back/forward navigation
   useEffect(() => {
-    const statusFromUrl = new URLSearchParams(location.search).get("status") || "";
-    setFilters((f) => (f.status === statusFromUrl ? f : { ...f, status: statusFromUrl }));
+    const statusFromUrl =
+      new URLSearchParams(location.search).get("status") || "";
+    setFilters((f) =>
+      f.status === statusFromUrl ? f : { ...f, status: statusFromUrl },
+    );
   }, [location.search]);
 
   // ==================== RTK Query ====================
@@ -80,8 +96,14 @@ export default function BoqDashboard() {
   });
 
   const { data: projects = [] } = useGetProjectsQuery({
-    limit: 100,           // or remove limit if your endpoint supports it
+    limit: 100, // or remove limit if your endpoint supports it
   });
+
+  const [duplicateVersion, { isLoading: isDuplicating }] =
+    useDuplicateBoqVersionMutation();
+  const [createNewVersion, { isLoading: isVersioning }] =
+    useCreateBoqNewVersionMutation();
+  const [fetchVersionHistory] = useLazyGetBoqVersionHistoryQuery();
 
   // TODO: Replace this with real RTK Query when you add the endpoint
   const [summary, setSummary] = useState(null);
@@ -97,19 +119,84 @@ export default function BoqDashboard() {
 
   const summaryCards = [
     { k: "total", l: "Total BOQs", v: summary?.total ?? "—", status: "" },
-    { k: "drafts", l: "Draft BOQs", v: summary?.drafts ?? "—", status: "draft" },
-    { k: "awaiting", l: "Awaiting Approval", v: summary?.awaiting ?? "—", status: "awaiting_approval" },
-    { k: "approved", l: "Approved BOQs", v: summary?.approved ?? "—", status: "approved" },
-    { k: "templates", l: "Templates", v: summary?.templates ?? "—", href: "/boq/templates" },
+    {
+      k: "drafts",
+      l: "Draft BOQs",
+      v: summary?.drafts ?? "—",
+      status: "draft",
+    },
+    {
+      k: "awaiting",
+      l: "Awaiting Approval",
+      v: summary?.awaiting ?? "—",
+      status: "awaiting_approval",
+    },
+    {
+      k: "approved",
+      l: "Approved BOQs",
+      v: summary?.approved ?? "—",
+      status: "approved",
+    },
+    {
+      k: "templates",
+      l: "Templates",
+      v: summary?.templates ?? "—",
+      href: "/boq/templates",
+    },
   ];
 
   // ==================== Actions ====================
+
+  // "Duplicate Version" — always available. Spins off a new draft
+  // (version + 1) from this BOQ, whether or not it's locked, with an
+  // optional reason recorded on the activity log and the version label.
   const duplicate = async (id) => {
+    const reason = window.prompt(
+      "Reason for duplicating this version (optional):",
+      "",
+    );
+    if (reason === null) return; // user cancelled the prompt
+
     try {
-      // TODO: Add useDuplicateBoqMutation to boqApi
-      toast.info("Duplicate Version - Add mutation in boqApi");
+      const result = await duplicateVersion({
+        id,
+        reason: reason || undefined,
+      }).unwrap();
+      toast.success(`Created v${result?.version ?? "?"} as a new draft`);
+      nav(`/boq/${result.id}`);
     } catch (e) {
-      toast.error("Failed to duplicate");
+      toast.error(e?.data?.message || "Failed to duplicate version");
+    }
+  };
+
+  // "Create New Version" — only meaningful for a locked/approved BOQ,
+  // which can no longer be edited in place. Skips the reason prompt.
+  const createVersion = async (id) => {
+    try {
+      const result = await createNewVersion({ id }).unwrap();
+      toast.success(`Created v${result?.version ?? "?"} draft to edit`);
+      nav(`/boq/${result.id}`);
+    } catch (e) {
+      toast.error(e?.data?.message || "Failed to create a new version");
+    }
+  };
+
+  // "Version History" — fetches the full lineage (oldest → newest) for
+  // whichever BOQ id is clicked; works regardless of which version in
+  // the family you start from.
+  const viewVersionHistory = async (id) => {
+    try {
+      const history = await fetchVersionHistory(id).unwrap();
+      if (!history?.length) {
+        toast.info("No version history yet");
+        return;
+      }
+      const summaryText = history
+        .map((v) => `v${v.version} — ${v.version_name}`)
+        .join("\n");
+      toast.message("Version history", { description: summaryText });
+    } catch (e) {
+      toast.error("Failed to load version history");
     }
   };
 
@@ -134,7 +221,8 @@ export default function BoqDashboard() {
             Bill of Quantities
           </h1>
           <p className="text-[13.5px] text-[#6B7B7C] mt-1 max-w-2xl">
-            Create project BOQs in minutes using predefined categories, items, units and rates.
+            Create project BOQs in minutes using predefined categories, items,
+            units and rates.
           </p>
         </div>
 
@@ -161,7 +249,10 @@ export default function BoqDashboard() {
       </div>
 
       {/* Summary Cards */}
-      <section className="grid grid-cols-2 md:grid-cols-5 gap-3" data-testid="boq-summary-strip">
+      <section
+        className="grid grid-cols-2 md:grid-cols-5 gap-3"
+        data-testid="boq-summary-strip"
+      >
         {summaryCards.map((c) => (
           <button
             key={c.k}
@@ -169,8 +260,12 @@ export default function BoqDashboard() {
             onClick={() => (c.href ? nav(c.href) : filterByStatus(c.status))}
             className="bc-card p-4 text-left hover:shadow-sm hover:border-[#1F453B] transition-shadow"
           >
-            <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">{c.l}</div>
-            <div className="text-[32px] font-bold text-[#333333] mt-1">{c.v}</div>
+            <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
+              {c.l}
+            </div>
+            <div className="text-[32px] font-bold text-[#333333] mt-1">
+              {c.v}
+            </div>
           </button>
         ))}
       </section>
@@ -179,7 +274,10 @@ export default function BoqDashboard() {
       <section className="bc-card p-4" data-testid="boq-filters">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[220px]">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B5C4B6]" />
+            <Search
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B5C4B6]"
+            />
             <input
               className="bc-input pl-8"
               placeholder="Search by project name"
@@ -191,7 +289,9 @@ export default function BoqDashboard() {
           <select
             className="bc-input max-w-[220px]"
             value={filters.project_id}
-            onChange={(e) => setFilters((f) => ({ ...f, project_id: e.target.value }))}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, project_id: e.target.value }))
+            }
           >
             <option value="">All Projects</option>
             {projects.map((p) => (
@@ -204,7 +304,9 @@ export default function BoqDashboard() {
           <select
             className="bc-input max-w-[200px]"
             value={filters.status}
-            onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, status: e.target.value }))
+            }
           >
             <option value="">All Statuses</option>
             {Object.entries(STATUS_META).map(([value, meta]) => (
@@ -244,90 +346,131 @@ export default function BoqDashboard() {
               {isBoqsLoading &&
                 [1, 2, 3, 4].map((i) => (
                   <tr key={i} className="border-b border-[#B5C4B6]">
-                    {Array(9).fill(0).map((_, j) => (
-                      <td key={j} className="px-3 py-4">
-                        <div className="bc-skeleton h-4 w-full" />
-                      </td>
-                    ))}
+                    {Array(9)
+                      .fill(0)
+                      .map((_, j) => (
+                        <td key={j} className="px-3 py-4">
+                          <div className="bc-skeleton h-4 w-full" />
+                        </td>
+                      ))}
                   </tr>
                 ))}
 
               {!isBoqsLoading &&
-                rows.map((b) => (
-                  <tr
-                    key={b.id}
-                    className="border-b border-[#B5C4B6] hover:bg-[#EAEEF0] cursor-pointer"
-                    onClick={() => nav(`/boq/${b.id}`)}
-                  >
-                    <td className="px-3 py-3 whitespace-nowrap">
-                      <span className="text-[12px] font-mono font-bold text-[#333333] bg-[#EAEEF0] px-2 py-0.5 rounded">
-                        {b.boq_number || `BOQ-V${b.version || 1}`}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 min-w-[220px]">
-                      <div className="text-[13.5px] font-semibold text-[#333333]">
-                        {b.project?.name || b.project_name}
-                      </div>
-                      <div className="text-[11.5px] text-[#B5C4B6]">
-                        {b.title || "BOQ"}
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 text-[12.5px] text-[#6B7B7C]">
-                      {b.client_name || b.project?.client?.name || "—"}
-                    </td>
-                    <td className="px-3 py-3">
-                      <StatusChip status={b.status} />
-                    </td>
-                    <td className="px-3 py-3 text-[12.5px] text-[#6B7B7C] text-right">
-                      {b.category_count ?? b.categories?.length ?? 0}
-                    </td>
-                    <td className="px-3 py-3 text-[12.5px] text-[#6B7B7C] text-right">
-                      {b.item_count ?? 0}
-                    </td>
-                    <td className="px-3 py-3 text-[13px] font-semibold text-[#333333] text-right whitespace-nowrap">
-                      {formatINR(b.total_value ?? b.final_total ?? b.total_amount ?? 0)}
-                    </td>
-                    <td className="px-3 py-3 text-[11.5px] text-[#B5C4B6] whitespace-nowrap">
-                      {relativeTime(b.updated_at)}
-                    </td>
-                    <td className="px-3 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="inline-flex items-center gap-1">
-                        <button
-                          onClick={() => downloadBoq(b)}
-                          className="p-1.5 rounded hover:bg-[#EAEEF0]"
-                        >
-                          <Download size={16} />
-                        </button>
+                rows.map((b) => {
+                  const isLocked =
+                    b.locked || LOCKED_STATUSES.includes(b.status);
 
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className="p-1.5 rounded hover:bg-[#EAEEF0]">
-                              <MoreHorizontal size={16} />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-52">
-                            <DropdownMenuItem onClick={() => nav(`/boq/${b.id}`)}>
-                              <Eye size={13} className="mr-2" /> Open
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => duplicate(b.id)}>
-                              <Copy size={13} className="mr-2" /> Duplicate Version
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => nav(`/boq/${b.id}/preview`)}>
-                              <Eye size={13} className="mr-2" /> Preview
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => downloadBoq(b)}>
-                              <Download size={13} className="mr-2" /> Download BOQ
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-[#333333]">
-                              <Archive size={13} className="mr-2" /> Archive
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                  return (
+                    <tr
+                      key={b.id}
+                      className="border-b border-[#B5C4B6] hover:bg-[#EAEEF0] cursor-pointer"
+                      onClick={() => nav(`/boq/${b.id}`)}
+                    >
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <span className="text-[12px] font-mono font-bold text-[#333333] bg-[#EAEEF0] px-2 py-0.5 rounded">
+                          {b.boq_number || `BOQ-V${b.version || 1}`}
+                        </span>
+                        {b.boq_version?.version_name && (
+                          <div className="text-[10px] text-[#B5C4B6] mt-0.5 truncate max-w-[100px]">
+                            {b.boq_version.version_name}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 min-w-[220px]">
+                        <div className="text-[13.5px] font-semibold text-[#333333]">
+                          {b.project?.name || b.project_name}
+                        </div>
+                        <div className="text-[11.5px] text-[#B5C4B6]">
+                          {b.title || "BOQ"}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-[12.5px] text-[#6B7B7C]">
+                        {b.client_name || b.project?.client?.name || "—"}
+                      </td>
+                      <td className="px-3 py-3">
+                        <StatusChip status={b.status} />
+                      </td>
+                      <td className="px-3 py-3 text-[12.5px] text-[#6B7B7C] text-right">
+                        {b.category_count ?? b.categories?.length ?? 0}
+                      </td>
+                      <td className="px-3 py-3 text-[12.5px] text-[#6B7B7C] text-right">
+                        {b.item_count ?? 0}
+                      </td>
+                      <td className="px-3 py-3 text-[13px] font-semibold text-[#333333] text-right whitespace-nowrap">
+                        {formatINR(
+                          b.total_value ?? b.final_total ?? b.total_amount ?? 0,
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-[11.5px] text-[#B5C4B6] whitespace-nowrap">
+                        {relativeTime(b.updated_at)}
+                      </td>
+                      <td
+                        className="px-3 py-3 text-right"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="inline-flex items-center gap-1">
+                          <button
+                            onClick={() => downloadBoq(b)}
+                            className="p-1.5 rounded hover:bg-[#EAEEF0]"
+                          >
+                            <Download size={16} />
+                          </button>
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="p-1.5 rounded hover:bg-[#EAEEF0]">
+                                <MoreHorizontal size={16} />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                              <DropdownMenuItem
+                                onClick={() => nav(`/boq/${b.id}`)}
+                              >
+                                <Eye size={13} className="mr-2" /> Open
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={isDuplicating}
+                                onClick={() => duplicate(b.id)}
+                              >
+                                <Copy size={13} className="mr-2" /> Duplicate
+                                Version
+                              </DropdownMenuItem>
+                              {isLocked && (
+                                <DropdownMenuItem
+                                  disabled={isVersioning}
+                                  onClick={() => createVersion(b.id)}
+                                >
+                                  <FilePlus2 size={13} className="mr-2" />{" "}
+                                  Create New Version
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem
+                                onClick={() => viewVersionHistory(b.id)}
+                              >
+                                <History size={13} className="mr-2" /> Version
+                                History
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => nav(`/boq/${b.id}/preview`)}
+                              >
+                                <Eye size={13} className="mr-2" /> Preview
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => downloadBoq(b)}>
+                                <Download size={13} className="mr-2" /> Download
+                                BOQ
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-[#333333]">
+                                <Archive size={13} className="mr-2" /> Archive
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
 
               {!isBoqsLoading && rows.length === 0 && (
                 <tr>

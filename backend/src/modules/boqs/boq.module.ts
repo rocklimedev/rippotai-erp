@@ -24,7 +24,9 @@ import { BoqExportService } from './boq-export.service';
 import { BoqTemplateController } from './boq-template.controller';
 import { LibraryController } from './library.controller';
 import { BoqActivityController } from './boq-activity.controller';
-
+import { BoqVersion } from './models/boq-version.model';
+import { BoqVersionService } from './boq-version.service';
+import { BoqDashboardService } from './boq-dashboard.service';
 @Module({
   imports: [
     SequelizeModule.forFeature([
@@ -34,6 +36,7 @@ import { BoqActivityController } from './boq-activity.controller';
       BoqTemplate,
       BoqTemplateCategory,
       BoqTemplateItem,
+      BoqVersion,
       BoqActivity,
       LibraryCategory,
       LibraryItem,
@@ -55,6 +58,8 @@ import { BoqActivityController } from './boq-activity.controller';
     LibraryService,
     BoqActivityService,
     BoqExportService,
+    BoqVersionService,
+    BoqDashboardService, // <-- Add this
   ],
   exports: [
     BoqService,
@@ -62,6 +67,7 @@ import { BoqActivityController } from './boq-activity.controller';
     LibraryService,
     BoqActivityService,
     BoqExportService,
+    BoqDashboardService, // <-- Optional
   ],
 })
 export class BoqModule {}
