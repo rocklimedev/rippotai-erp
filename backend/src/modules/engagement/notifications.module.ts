@@ -9,10 +9,11 @@ import { NotificationsGateway } from '../../common/gateway/notification.gateway'
 import { NotificationBroadcastService } from './notification-broadcast.service';
 import { NotificationForProjectService } from './services/notification-project.service';
 import { NotificationsController } from './notifications.controller';
+import { RedisModule } from '@/common/redis/redis.module';
 
 @Global()
 @Module({
-  imports: [SequelizeModule.forFeature([Notification, User])],
+  imports: [SequelizeModule.forFeature([Notification, User]), RedisModule],
   controllers: [NotificationsController],
   providers: [
     NotificationsService,
