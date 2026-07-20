@@ -9,7 +9,10 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+
 import { LeadsService } from './leads.service';
+import { LeadActivityService } from './lead-activity.service';
+
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { MoveStageDto } from './dto/move-stage.dto';
@@ -21,7 +24,16 @@ import { DocType } from '@/common/enums/leads.enums';
 
 @Controller('leads')
 export class LeadsController {
-  constructor(private readonly leadsService: LeadsService) {}
+  constructor(
+    private readonly leadsService: LeadsService,
+    private readonly leadActivityService: LeadActivityService,
+  ) {}
+
+  /*
+  |--------------------------------------------------------------------------
+  | LEADS
+  |--------------------------------------------------------------------------
+  */
 
   @Get()
   findAll(@Query() query: QueryLeadsDto) {
@@ -37,6 +49,52 @@ export class LeadsController {
   review(@Query('stuckDays') stuckDays?: string) {
     return this.leadsService.review(stuckDays ? Number(stuckDays) : undefined);
   }
+
+  /*
+  |--------------------------------------------------------------------------
+  | ACTIVITY
+  |--------------------------------------------------------------------------
+  */
+
+  /**
+   * GET ALL ACTIVITIES
+   *
+   * /leads/activity
+   *
+   * ?leadId=
+   * ?date_from=
+   * ?date_to=
+   */
+  @Get('activity')
+  findActivities(@Query() query: any) {
+    return this.leadActivityService.findAll(query);
+  }
+
+  /**
+   * GET LEAD ACTIVITIES
+   *
+   * /leads/activity/lead/:leadId
+   */
+  @Get('activity/lead/:leadId')
+  findLeadActivity(@Param('leadId') leadId: string) {
+    return this.leadActivityService.findByLead(leadId);
+  }
+
+  /**
+   * DELETE ACTIVITY
+   *
+   * /leads/activity/:id
+   */
+  @Delete('activity/:id')
+  removeActivity(@Param('id') id: string) {
+    return this.leadActivityService.remove(id);
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | SINGLE LEAD
+  |--------------------------------------------------------------------------
+  */
 
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {

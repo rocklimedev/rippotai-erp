@@ -1,11 +1,11 @@
-import { labelStyle, card } from "../constants/stages";
-import { useGetReviewQuery } from "../api/leadsApi";
+import { labelStyle } from "../../hooks/stages";
+import { useGetReviewQuery } from "../../api/leads.api";
 
 export default function ReviewView({ onOpenLead }) {
   const { data, isLoading } = useGetReviewQuery(7);
   if (isLoading || !data)
     return (
-      <div style={{ padding: "28px", color: "#6E7F8D", fontSize: "13px" }}>
+      <div className="p-7 text-[var(--muted)] text-[13px]">
         Crunching the numbers…
       </div>
     );
@@ -13,154 +13,77 @@ export default function ReviewView({ onOpenLead }) {
   const maxAvg = 14;
   const maxSource = Math.max(1, ...data.sourceRows.map((s) => s.count));
 
-  return (
+  const bar = (pct, warn) => (
     <div
-      style={{
-        padding: "20px 28px 40px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "16px",
-      }}
+      className="h-2 rounded-[4px] overflow-hidden"
+      style={{ background: "var(--mist)" }}
     >
       <div
+        className="h-full rounded-[4px]"
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
-          gap: "16px",
+          width: pct + "%",
+          background: warn ? "#c98f2b" : "var(--ink-green)",
         }}
+      ></div>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-4 px-7 pt-5 pb-10">
+      <div
+        className="grid gap-4"
+        style={{ gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))" }}
       >
         {data.kpis.map((k) => (
-          <div
-            key={k.label}
-            style={{
-              ...card,
-              padding: "20px 22px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "6px",
-            }}
-          >
+          <div key={k.label} className="bc-card p-5 flex flex-col gap-1.5">
             <span style={labelStyle}>{k.label}</span>
-            <span
-              style={{ fontSize: "30px", fontWeight: 300, color: "#161B1D" }}
-            >
+            <span className="text-[30px] font-light text-[var(--ink-green)]">
               {k.value}
             </span>
-            <span style={{ fontSize: "12px", color: "#6E7F8D" }}>{k.sub}</span>
+            <span className="text-[12px] text-[var(--muted)]">{k.sub}</span>
           </div>
         ))}
       </div>
 
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))",
-          gap: "16px",
-          alignItems: "start",
-        }}
+        className="grid gap-4 items-start"
+        style={{ gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))" }}
       >
-        <div
-          style={{
-            ...card,
-            padding: "20px 22px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "14px",
-          }}
-        >
-          <div style={{ fontSize: "16px", fontWeight: 700 }}>
+        <div className="bc-card p-5 flex flex-col gap-3.5">
+          <div className="text-[16px] font-semibold text-[var(--ink-green)]">
             Conversion Rate by Stage
           </div>
           {data.convBars.map((b) => (
-            <div
-              key={b.label}
-              style={{ display: "flex", flexDirection: "column", gap: "5px" }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "12px",
-                }}
-              >
-                <span style={{ color: "#6E7F8D" }}>{b.label}</span>
-                <span style={{ fontWeight: 400, color: "#161B1D" }}>
+            <div key={b.label} className="flex flex-col gap-1.5">
+              <div className="flex justify-between text-[12px]">
+                <span className="text-[var(--muted)]">{b.label}</span>
+                <span className="font-medium text-[var(--ink-green)]">
                   {b.pct}%
                 </span>
               </div>
-              <div
-                style={{
-                  height: "8px",
-                  background: "#E4EBF1",
-                  borderRadius: "4px",
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    width: b.pct + "%",
-                    height: "100%",
-                    background: "#161B1D",
-                    borderRadius: "4px",
-                  }}
-                ></div>
-              </div>
+              {bar(b.pct, false)}
             </div>
           ))}
         </div>
-        <div
-          style={{
-            ...card,
-            padding: "20px 22px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "14px",
-          }}
-        >
-          <div style={{ fontSize: "16px", fontWeight: 700 }}>
+
+        <div className="bc-card p-5 flex flex-col gap-3.5">
+          <div className="text-[16px] font-semibold text-[var(--ink-green)]">
             Average Time in Stage
           </div>
           {data.timeBars.map((b) => {
             const warn = b.avgDays > 9;
             return (
-              <div
-                key={b.label}
-                style={{ display: "flex", flexDirection: "column", gap: "5px" }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "12px",
-                  }}
-                >
-                  <span style={{ color: "#6E7F8D" }}>{b.label}</span>
+              <div key={b.label} className="flex flex-col gap-1.5">
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[var(--muted)]">{b.label}</span>
                   <span
-                    style={{
-                      fontWeight: 400,
-                      color: warn ? "#B07A1E" : "#161B1D",
-                    }}
+                    className="font-medium"
+                    style={{ color: warn ? "#a3701a" : "var(--ink-green)" }}
                   >
                     {b.avgDays} d
                   </span>
                 </div>
-                <div
-                  style={{
-                    height: "8px",
-                    background: "#E4EBF1",
-                    borderRadius: "4px",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: Math.min(100, (b.avgDays / maxAvg) * 100) + "%",
-                      height: "100%",
-                      background: warn ? "#B07A1E" : "#161B1D",
-                      borderRadius: "4px",
-                    }}
-                  ></div>
-                </div>
+                {bar(Math.min(100, (b.avgDays / maxAvg) * 100), warn)}
               </div>
             );
           })}
@@ -168,35 +91,16 @@ export default function ReviewView({ onOpenLead }) {
       </div>
 
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))",
-          gap: "16px",
-          alignItems: "start",
-        }}
+        className="grid gap-4 items-start"
+        style={{ gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))" }}
       >
-        <div
-          style={{
-            ...card,
-            padding: "20px 22px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "8px",
-          }}
-        >
-          <div
-            style={{ fontSize: "16px", fontWeight: 700, marginBottom: "6px" }}
-          >
+        <div className="bc-card p-5 flex flex-col gap-2">
+          <div className="text-[16px] font-semibold text-[var(--ink-green)] mb-1.5">
             Stuck Leads (&gt;7 days)
           </div>
           <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "2fr 1.6fr 1fr 1fr",
-              gap: "10px",
-              padding: "0 2px 8px",
-              borderBottom: "1px solid #E4EBF1",
-            }}
+            className="grid gap-2.5 px-0.5 pb-2 border-b border-[var(--stroke)]"
+            style={{ gridTemplateColumns: "2fr 1.6fr 1fr 1fr" }}
           >
             <span style={labelStyle}>Lead</span>
             <span style={labelStyle}>Stage</span>
@@ -207,82 +111,41 @@ export default function ReviewView({ onOpenLead }) {
             <div
               key={r.id}
               onClick={() => onOpenLead(r)}
-              className="row-hover"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "2fr 1.6fr 1fr 1fr",
-                gap: "10px",
-                padding: "9px 2px",
-                borderBottom: "1px solid #E4EBF1",
-                cursor: "pointer",
-                alignItems: "center",
-              }}
+              className="grid gap-2.5 px-0.5 py-2.5 border-b border-[var(--stroke)] cursor-pointer items-center hover:bg-[var(--mist-soft)]"
+              style={{ gridTemplateColumns: "2fr 1.6fr 1fr 1fr" }}
             >
-              <span
-                style={{ fontSize: "13px", fontWeight: 700, color: "#161B1D" }}
-              >
+              <span className="text-[13px] font-semibold text-[var(--ink-green)] truncate">
                 {r.name}
               </span>
-              <span style={{ fontSize: "12px", color: "#6E7F8D" }}>
+              <span className="text-[12px] text-[var(--muted)] truncate">
                 {r.stage}
               </span>
               <span
-                style={{ fontSize: "12px", fontWeight: 400, color: "#B07A1E" }}
+                className="text-[12px] font-medium"
+                style={{ color: "#a3701a" }}
               >
                 {r.days} d
               </span>
-              <span style={{ fontSize: "12px", color: "#6E7F8D" }}>
+              <span className="text-[12px] text-[var(--muted)] truncate">
                 {r.owner}
               </span>
             </div>
           ))}
         </div>
-        <div
-          style={{
-            ...card,
-            padding: "20px 22px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "14px",
-          }}
-        >
-          <div style={{ fontSize: "16px", fontWeight: 700 }}>
+
+        <div className="bc-card p-5 flex flex-col gap-3.5">
+          <div className="text-[16px] font-semibold text-[var(--ink-green)]">
             Leads by Source
           </div>
           {data.sourceRows.map((s) => (
-            <div
-              key={s.label}
-              style={{ display: "flex", flexDirection: "column", gap: "5px" }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "12px",
-                }}
-              >
-                <span style={{ color: "#6E7F8D" }}>{s.label}</span>
-                <span style={{ color: "#161B1D", fontWeight: 400 }}>
+            <div key={s.label} className="flex flex-col gap-1.5">
+              <div className="flex justify-between text-[12px]">
+                <span className="text-[var(--muted)]">{s.label}</span>
+                <span className="text-[var(--ink-green)] font-medium">
                   {s.count} leads · {s.won} won
                 </span>
               </div>
-              <div
-                style={{
-                  height: "8px",
-                  background: "#E4EBF1",
-                  borderRadius: "4px",
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    width: (s.count / maxSource) * 100 + "%",
-                    height: "100%",
-                    background: "#161B1D",
-                    borderRadius: "4px",
-                  }}
-                ></div>
-              </div>
+              {bar((s.count / maxSource) * 100, false)}
             </div>
           ))}
         </div>

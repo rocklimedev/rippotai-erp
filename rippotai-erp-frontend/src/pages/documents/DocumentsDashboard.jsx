@@ -1,134 +1,306 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import api from "@/lib/api";
 import { toast } from "sonner";
 import { RefreshCw, Plus, FolderOpen, FileText } from "lucide-react";
 
-export default function DocumentsDashboard() {
-  const [cards, setCards] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const nav = useNavigate();
-const load = () => {
-  setLoading(true);
-  api
-    .get("/documents/project-cards")
-    .then((r) => {
-      // Ensure we always set an array
-      const data = r.data;
-      setCards(Array.isArray(data) ? data : []);
-    })
-    .catch((err) => {
-      console.error(err);
-      toast.error("Failed to load documents");
-      setCards([]); // explicitly reset on error
-    })
-    .finally(() => setLoading(false));
-};
-  useEffect(() => {
-    load();
-  }, []);
+import { useGetDocumentsQuery } from "../../api/document.api";
+import { useGetDrawingsQuery } from "../../api/drawing.api";
 
-  const openAdd = (projectId) => {
-    // Navigate to upload page pre-selecting the project
-    nav(`/documents/upload?project_id=${projectId}`);
+export default function DocumentsDashboard() {
+  const nav = useNavigate();
+
+  const {
+    data: documents = [],
+    isLoading: documentsLoading,
+    refetch: refetchDocuments,
+    error: documentsError,
+  } = useGetDocumentsQuery();
+
+  const {
+    data: drawings = [],
+    isLoading: drawingsLoading,
+    refetch: refetchDrawings,
+    error: drawingsError,
+  } = useGetDrawingsQuery();
+
+  const loading = documentsLoading || drawingsLoading;
+
+  React.useEffect(() => {
+    if (documentsError || drawingsError) {
+      toast.error("Failed to load documents");
+    }
+  }, [documentsError, drawingsError]);
+
+  const refresh = () => {
+    refetchDocuments();
+    refetchDrawings();
   };
+
+  /**
+   * Normalize API data
+   *
+   * Backend structure:
+   *
+   * {
+   *   id,
+   *   projectId,
+   *   category,
+   *   project:{
+   *      id,
+   *      name
+   *   }
+   * }
+   *
+   */
+
+  const items = [
+    ...documents.map((doc) => ({
+      id: doc.id,
+
+      project_id: doc.projectId,
+
+      project_name: doc.project?.name || doc.project_name || "Unknown Project",
+
+      category: doc.category || "Documents",
+
+      type: "document",
+    })),
+
+    ...drawings.map((drawing) => ({
+      id: drawing.id,
+
+      project_id: drawing.projectId,
+
+      project_name:
+        drawing.project?.name || drawing.project_name || "Unknown Project",
+
+      category: drawing.category || "Drawings",
+
+      type: "drawing",
+    })),
+  ];
+
+  /**
+   * Group documents by project
+   */
+
+  const projects = Object.values(
+    items.reduce((acc, item) => {
+      if (!acc[item.project_id]) {
+        acc[item.project_id] = {
+          project_id: item.project_id,
+
+          project_name: item.project_name,
+
+          count: 0,
+
+          categories: {},
+        };
+      }
+
+      acc[item.project_id].count++;
+
+      if (!acc[item.project_id].categories[item.category]) {
+        acc[item.project_id].categories[item.category] = 0;
+      }
+
+      acc[item.project_id].categories[item.category]++;
+
+      return acc;
+    }, {}),
+  );
 
   return (
     <div>
+      {/* Header */}
+
       <div
-        className="flex items-center justify-between mb-4 gap-3 flex-wrap"
-        data-testid="dashboard-header-documents"
+        className="
+          flex items-center justify-between
+          mb-4 gap-3 flex-wrap
+        "
       >
-        <div className="min-w-0">
-          <h1
-            className="text-[36px] font-bold text-[#333333] truncate"
-            style={{ fontFamily: "Poppins" }}
-          >
-            Documents
-          </h1>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <h1
+          className="
+            text-[36px]
+            font-bold
+            text-[#333333]
+          "
+          style={{
+            fontFamily: "Poppins",
+          }}
+        >
+          Documents
+        </h1>
+
+        <div className="flex gap-2">
           <button
-            data-testid="dashboard-refresh-documents"
-            onClick={load}
-            title="Refresh dashboard data"
-            className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-[rgba(31,69,59,0.14)] bg-white text-[#333333] hover:bg-[#F4F6F7]"
-            aria-label="Refresh"
+            onClick={refresh}
+            className="
+              inline-flex
+              items-center
+              justify-center
+              w-9 h-9
+              rounded-lg
+              border
+              bg-white
+              hover:bg-gray-50
+            "
+            title="Refresh"
           >
             <RefreshCw size={15} />
           </button>
+
           <button
-            data-testid="dashboard-cta-documents"
             onClick={() => nav("/documents/upload")}
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-white text-[13px] font-semibold hover:opacity-90"
-            style={{ backgroundColor: "#1F453B" }}
+            className="
+              flex items-center gap-2
+              h-9 px-4
+              rounded-lg
+              text-white
+              text-sm
+            "
+            style={{
+              background: "#1F453B",
+            }}
           >
-            <Plus size={14} /> Add Document
+            <Plus size={14} />
+            Add Document
           </button>
         </div>
       </div>
 
       {loading ? (
-        <div className="py-16 text-center text-[13px] text-[#B5C4B6]">
-          Loading projects…
+        <div
+          className="
+              py-16
+              text-center
+              text-gray-400
+            "
+        >
+          Loading projects...
         </div>
-      ) : cards.length === 0 ? (
-        <div className="py-16 text-center text-[#B5C4B6]">
-          <FolderOpen size={40} className="mx-auto mb-3 text-[#B5C4B6]" />
-          <div className="text-[13px]">No projects yet.</div>
+      ) : projects.length === 0 ? (
+        <div
+          className="
+              py-16
+              text-center
+              text-[#B5C4B6]
+            "
+        >
+          <FolderOpen
+            size={40}
+            className="
+                mx-auto mb-3
+              "
+          />
+
+          <div>No documents found</div>
         </div>
       ) : (
         <div
-          className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4"
-          data-testid="documents-project-grid"
+          className="
+              grid
+              grid-cols-2
+              xl:grid-cols-3
+              2xl:grid-cols-4
+              gap-4
+            "
         >
-          {cards.map((c) => (
+          {projects.map((project) => (
             <div
-              key={c.project_id}
-              data-testid={`project-card-${c.project_id}`}
-              className="bc-card p-5 group cursor-pointer hover:shadow-md transition-shadow relative"
-              onClick={() => nav(`/documents/all?project_id=${c.project_id}`)}
-              role="button"
-              tabIndex={0}
+              key={project.project_id}
+              onClick={() =>
+                nav(`/documents/all?projectId=${project.project_id}`)
+              }
+              className="
+                    bc-card
+                    p-5
+                    cursor-pointer
+                    hover:shadow-md
+                    transition
+                  "
             >
-              <button
-                data-testid={`project-card-add-${c.project_id}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openAdd(c.project_id);
-                }}
-                title="Add document to this project"
-                className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-[#1F453B] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:opacity-100"
+              <div
+                className="
+                      flex
+                      items-start
+                      gap-3
+                      mb-3
+                    "
               >
-                <Plus size={16} />
-              </button>
-              <div className="flex items-start gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg bg-[#EAEEF0] text-[#333333] flex items-center justify-center shrink-0">
+                <div
+                  className="
+                        w-10
+                        h-10
+                        rounded-lg
+                        bg-[#EAEEF0]
+                        flex
+                        items-center
+                        justify-center
+                      "
+                >
                   <FileText size={18} />
                 </div>
-                <div className="min-w-0 flex-1 pr-8">
+
+                <div
+                  className="
+                        min-w-0
+                      "
+                >
                   <div
-                    title={c.project_name}
-                    className="text-[15px] font-semibold text-[#333333] truncate"
-                    style={{ fontFamily: "Poppins" }}
+                    className="
+                          font-semibold
+                          text-[#333333]
+                          truncate
+                        "
                   >
-                    {c.project_name || "—"}
+                    {project.project_name}
                   </div>
+
                   <div
-                    title={c.client_name || ""}
-                    className="text-[12px] text-[#6B7B7C] truncate"
+                    className="
+                          text-xs
+                          text-gray-500
+                          mt-1
+                        "
                   >
-                    {c.client_name || c.location || "—"}
+                    {Object.entries(project.categories)
+                      .map(([key, value]) => `${key}: ${value}`)
+                      .join(" • ")}
                   </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between border-t border-[rgba(31,69,59,0.08)] pt-3">
-                <div className="text-[32px] font-bold text-[#333333] leading-none">
-                  {c.count}
-                </div>
-                <div className="text-[11px] text-[#6B7B7C] uppercase tracking-widest">
-                  documents
-                </div>
+
+              <div
+                className="
+                      border-t
+                      pt-3
+                      flex
+                      justify-between
+                      items-center
+                    "
+              >
+                <span
+                  className="
+                        text-3xl
+                        font-bold
+                        text-[#333333]
+                      "
+                >
+                  {project.count}
+                </span>
+
+                <span
+                  className="
+                        text-xs
+                        uppercase
+                        tracking-wide
+                        text-gray-500
+                      "
+                >
+                  files
+                </span>
               </div>
             </div>
           ))}

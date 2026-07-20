@@ -64,6 +64,12 @@
     "vaul": "^1.1.2",
     "zod": "^4.4.3"
   },
+  "overrides": {
+    "react-grid-layout": {
+      "react-draggable": "^4.5.0",
+      "react-resizable": "^3.0.5"
+    }
+  },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@eslint/js": "^10.0.1",

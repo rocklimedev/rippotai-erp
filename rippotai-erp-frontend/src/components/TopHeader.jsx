@@ -35,14 +35,27 @@ export default function TopHeader({ app }) {
         </div>
       </button>
       <nav className="flex items-center gap-1 flex-shrink min-w-0 overflow-hidden">
-        {menus.map((g) => (
-          <MenuDropdown
-            key={g.label}
-            app={app}
-            label={g.label}
-            items={g.items}
-          />
-        ))}
+        {menus.map((g) =>
+          g.items ? (
+            <MenuDropdown
+              key={g.label}
+              app={app}
+              label={g.label}
+              items={g.items}
+            />
+          ) : (
+            <button
+              key={g.label}
+              onClick={() =>
+                nav(g.slug.startsWith("/") ? g.slug : `${meta.base}/${g.slug}`)
+              }
+              className="h-9 px-3 rounded-lg text-[15px] font-semibold hover:bg-[#F4F6F7]"
+              style={{ color: "#1F453B", fontFamily: "Poppins" }}
+            >
+              {g.label}
+            </button>
+          ),
+        )}
       </nav>
       <div className="flex-1" />
       <CommandShellSearch currentApp={app} />

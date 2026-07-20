@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { card, inputStyle, labelStyle } from "../constants/stages";
-import { useCreateLeadMutation } from "../api/leadsApi";
+import { labelStyle } from "../../hooks/stages";
+import { useCreateLeadMutation } from "../../api/leads.api";
 
 const EMPTY_FORM = {
   name: "",
@@ -25,25 +25,6 @@ export default function NewLeadView({ onCaptured }) {
   const onForm = (e) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
   const waValue = samePhone ? form.phone : form.whatsapp;
-  const waStyle = {
-    border: "1px solid #B5BFC6",
-    borderRadius: "10px",
-    padding: "9px 12px",
-    fontSize: "13px",
-    color: samePhone ? "#6E7F8D" : "#161B1D",
-    background: samePhone ? "#E4EBF1" : "#FFFFFF",
-  };
-  const bannerStyle = {
-    width: "100%",
-    maxWidth: "720px",
-    background: bannerErr ? "#F5E7E4" : "#E3F0EA",
-    color: bannerErr ? "#B0483A" : "#2E7D5B",
-    border: "1px solid " + (bannerErr ? "#B0483A" : "#2E7D5B") + "33",
-    borderRadius: "10px",
-    padding: "11px 14px",
-    fontSize: "13px",
-    fontWeight: 400,
-  };
 
   const onCapture = async () => {
     if (!form.name.trim() || !form.phone.trim()) {
@@ -69,143 +50,142 @@ export default function NewLeadView({ onCaptured }) {
     }
   };
 
+  const field = (label, children) => (
+    <div className="flex flex-col gap-1.5">
+      <label style={labelStyle}>{label}</label>
+      {children}
+    </div>
+  );
+
   return (
-    <div
-      style={{
-        padding: "24px 28px 40px",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: "14px",
-      }}
-    >
-      {banner && <div style={bannerStyle}>{banner}</div>}
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "720px",
-          ...card,
-          padding: "26px 28px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "18px",
-        }}
-      >
-        <div style={{ fontSize: "16px", fontWeight: 700 }}>Lead Capture</div>
+    <div className="flex flex-col items-center gap-3.5 px-7 pt-6 pb-10">
+      {banner && (
         <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
-            gap: "16px 20px",
-          }}
+          className="w-full max-w-[720px] rounded-[10px] px-3.5 py-2.5 text-[13px] font-medium"
+          style={
+            bannerErr
+              ? {
+                  background: "#f5e7e4",
+                  color: "#a54536",
+                  border: "1px solid #a5453633",
+                }
+              : {
+                  background: "#e3f0ea",
+                  color: "#1f453b",
+                  border: "1px solid #1f453b33",
+                }
+          }
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={labelStyle}>Full Name</label>
+          {banner}
+        </div>
+      )}
+
+      <div className="w-full max-w-[720px] bc-card p-6 flex flex-col gap-4.5">
+        <div className="text-[16px] font-semibold text-[var(--ink-green)]">
+          Lead Capture
+        </div>
+
+        <div
+          className="bc-form-2col grid gap-4"
+          style={{ gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))" }}
+        >
+          {field(
+            "Full Name",
             <input
               name="name"
               value={form.name}
               onChange={onForm}
               placeholder="e.g. Rhea Malhotra"
-              style={inputStyle}
-            />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={labelStyle}>Phone</label>
+              className="bc-input"
+            />,
+          )}
+          {field(
+            "Phone",
             <input
               name="phone"
               value={form.phone}
               onChange={onForm}
               placeholder="+91 98XXX XXXXX"
-              style={inputStyle}
-            />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <label style={labelStyle}>WhatsApp</label>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  fontSize: "11px",
-                  color: "#6E7F8D",
-                  cursor: "pointer",
-                }}
-              >
+              className="bc-input"
+            />,
+          )}
+          {field(
+            <div className="flex items-center justify-between w-full">
+              <span>WhatsApp</span>
+              <label className="flex items-center gap-1.5 text-[11px] text-[var(--muted)] cursor-pointer normal-case tracking-normal font-normal">
                 <input
                   type="checkbox"
                   checked={samePhone}
                   onChange={(e) => setSamePhone(e.target.checked)}
-                  style={{ accentColor: "#161B1D" }}
+                  style={{ accentColor: "var(--ink-green)" }}
                 />
                 Same as phone
               </label>
-            </div>
+            </div>,
             <input
               name="whatsapp"
               value={waValue}
               onChange={onForm}
               disabled={samePhone}
               placeholder="+91 98XXX XXXXX"
-              style={waStyle}
-            />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={labelStyle}>Email</label>
+              className="bc-input"
+              style={
+                samePhone
+                  ? { background: "var(--mist)", color: "var(--muted)" }
+                  : undefined
+              }
+            />,
+          )}
+          {field(
+            "Email",
             <input
               name="email"
               value={form.email}
               onChange={onForm}
               placeholder="name@example.com"
-              style={inputStyle}
-            />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={labelStyle}>Project Type</label>
+              className="bc-input"
+            />,
+          )}
+          {field(
+            "Project Type",
             <select
               name="type"
               value={form.type}
               onChange={onForm}
-              style={inputStyle}
+              className="bc-input"
             >
               <option>Residential</option>
               <option>Commercial</option>
               <option>Institutional</option>
-            </select>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={labelStyle}>Location (City, State)</label>
+            </select>,
+          )}
+          {field(
+            "Location (City, State)",
             <input
               name="location"
               value={form.location}
               onChange={onForm}
               placeholder="Gurugram, Haryana"
-              style={inputStyle}
-            />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={labelStyle}>Approx. Size (sq ft)</label>
+              className="bc-input"
+            />,
+          )}
+          {field(
+            "Approx. Size (sq ft)",
             <input
               name="size"
               value={form.size}
               onChange={onForm}
               placeholder="e.g. 3,200"
-              style={inputStyle}
-            />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={labelStyle}>Budget Range</label>
+              className="bc-input"
+            />,
+          )}
+          {field(
+            "Budget Range",
             <select
               name="budget"
               value={form.budget}
               onChange={onForm}
-              style={inputStyle}
+              className="bc-input"
             >
               <option>Under ₹25L</option>
               <option>₹25L–₹75L</option>
@@ -214,62 +194,44 @@ export default function NewLeadView({ onCaptured }) {
               <option>₹5Cr+</option>
               <option>₹10Cr+</option>
               <option>₹15Cr+</option>
-            </select>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={labelStyle}>Timeline</label>
+            </select>,
+          )}
+          {field(
+            "Timeline",
             <select
               name="timeline"
               value={form.timeline}
               onChange={onForm}
-              style={inputStyle}
+              className="bc-input"
             >
               <option>Immediate</option>
               <option>1–3 months</option>
               <option>3–6 months</option>
               <option>6+ months</option>
-            </select>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={labelStyle}>Source</label>
+            </select>,
+          )}
+          {field(
+            "Source",
             <select
               name="source"
               value={form.source}
               onChange={onForm}
-              style={inputStyle}
+              className="bc-input"
             >
               <option>Website</option>
               <option>Referral — add name in notes</option>
               <option>Instagram</option>
               <option>WhatsApp</option>
               <option>Walk-in</option>
-            </select>
-          </div>
+            </select>,
+          )}
         </div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "10px",
-            borderTop: "1px solid #E4EBF1",
-            marginTop: "4px",
-            paddingTop: "16px",
-          }}
-        >
+
+        <div className="flex justify-end gap-2.5 border-t border-[var(--stroke)] mt-1 pt-4">
           <button
             onClick={onCapture}
             disabled={isLoading}
-            className="btn-dark"
-            style={{
-              background: "#161B1D",
-              color: "#FFFFFF",
-              border: "none",
-              borderRadius: "10px",
-              padding: "10px 22px",
-              fontSize: "13px",
-              fontWeight: 400,
-              cursor: "pointer",
-            }}
+            className="bc-btn-primary"
           >
             {isLoading ? "Capturing…" : "Capture Lead"}
           </button>

@@ -155,22 +155,14 @@ export const APP_MENUS = {
   ],
   leads: [
     {
-      label: "Leads",
-      items: [
-        I("All Leads", "all"),
-        I("Create Lead", "new"),
-        I("Pipeline", "pipeline"),
-        I("Kanban Board", "kanban"),
-      ],
+      label: "Pipeline",
+      slug: "pipeline",
     },
     {
-      label: "Management",
-      items: [
-        I("Sources", "sources"),
-        I("Statuses", "statuses"),
-        I("Assignments", "assignments"),
-      ],
+      label: "Leads",
+      items: [I("Create Lead", "new"), I("Sources", "sources")],
     },
+
     {
       label: "Settings",
       items: [
@@ -216,8 +208,27 @@ export const APP_MENUS = {
 export function allSlugsFor(app) {
   const menus = APP_MENUS[app] || [];
   const out = [];
-  for (const g of menus)
-    for (const it of g.items) out.push({ slug: it.slug, label: it.label });
+
+  for (const g of menus) {
+    // Standalone nav item
+    if (g.slug) {
+      out.push({
+        slug: g.slug,
+        label: g.label,
+      });
+    }
+
+    // Dropdown
+    if (Array.isArray(g.items)) {
+      for (const it of g.items) {
+        out.push({
+          slug: it.slug,
+          label: it.label,
+        });
+      }
+    }
+  }
+
   return out;
 }
 

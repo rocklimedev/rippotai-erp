@@ -1,4 +1,4 @@
-export default function Icon({ d, color = "#6E7F8D", size = 16 }) {
+export default function Icon({ d, color = "var(--muted)", size = 16 }) {
   return (
     <svg
       width={size}

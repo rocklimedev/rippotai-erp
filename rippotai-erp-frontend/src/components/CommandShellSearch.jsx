@@ -1,9 +1,33 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Search, ArrowRight, Zap, X } from "lucide-react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import {
+  Search,
+  ArrowRight,
+  Zap,
+  X,
+  Home,
+  Settings as SettingsIcon,
+  Plus,
+  FileText,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"; // ← Make sure this exists
-import { APP_META } from "@/config/appNav";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { APP_META, APP_MENUS } from "@/config/appNav";
 import api from "@/lib/api"; // for real search
+
+// Resolve a slug against the app's base route. Slugs that already start
+// with "/" (cross-app links like "/projects/all") are used as-is.
+function resolvePath(base, slug) {
+  if (!slug) return base;
+  return slug.startsWith("/") ? slug : `${base}/${slug}`;
+}
+
+// Pick a sensible icon for a menu item based on its label/slug.
+function iconFor(label = "", slug = "") {
+  const text = `${label} ${slug}`.toLowerCase();
+  if (/(create|new|add|upload)/.test(text)) return Plus;
+  if (/(setting|role|permission)/.test(text)) return SettingsIcon;
+  return FileText;
+}
 
 export default function CommandShellSearch({ currentApp }) {
   const [open, setOpen] = useState(false);
@@ -13,6 +37,9 @@ export default function CommandShellSearch({ currentApp }) {
 
   const inputRef = useRef(null);
   const nav = useNavigate();
+
+  const meta = APP_META[currentApp] || {};
+  const base = meta.base || "/";
 
   // Cmd/Ctrl + K global shortcut
   useEffect(() => {
@@ -41,7 +68,7 @@ export default function CommandShellSearch({ currentApp }) {
         const { data } = await api.get(
           `/search?q=${encodeURIComponent(query)}&limit=8`,
         );
-        setSearchResults(data?.results || []); // adjust according to your API response
+        setSearchResults(data?.results || []);
       } catch (err) {
         setSearchResults([]);
       }
@@ -50,75 +77,81 @@ export default function CommandShellSearch({ currentApp }) {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const getContextualCommands = () => {
-    const meta = APP_META[currentApp] || {};
-    const base = meta.base || "/";
-
+  // Build contextual commands straight from APP_META / APP_MENUS so every
+  // app (not just two hardcoded ones) gets Quick Actions + its real nav.
+  const groupedCommands = useMemo(() => {
     const common = [
       {
-        id: "dashboard",
+        id: "quick-dashboard",
         label: "Go to Dashboard",
-        icon: "🏠",
+        icon: Home,
         action: () => nav("/dashboard"),
       },
       {
-        id: "settings",
+        id: "quick-settings",
         label: "Open Settings",
-        icon: "⚙️",
+        icon: SettingsIcon,
         action: () => nav("/settings"),
       },
     ];
 
-    const appSpecific = {
-      projects: [
-        {
-          id: "new-project",
-          label: "New Project",
-          icon: "➕",
-          action: () => nav(`${base}/new`),
-        },
-        {
-          id: "my-projects",
-          label: "My Active Projects",
-          icon: "📋",
-          action: () => nav(base),
-        },
-      ],
-      boqs: [
-        {
-          id: "new-boq",
-          label: "Create New BOQ",
-          icon: "📄",
-          action: () => nav(`${base}/new`),
-        },
-        {
-          id: "all-boqs",
-          label: "View All BOQs",
-          icon: "📚",
-          action: () => nav(base),
-        },
-      ],
-      // Add more apps as needed
-    };
+    const groups = { "Quick Actions": common };
+    const menuGroups = APP_MENUS[currentApp] || [];
 
-    return {
-      "Quick Actions": common,
-      [meta.name || "Current App"]: appSpecific[currentApp] || [],
-    };
-  };
+    menuGroups.forEach((group) => {
+      const items = [];
 
-  const groupedCommands = getContextualCommands();
-  let allResults = [];
+      // Standalone nav item (e.g. leads "Pipeline")
+      if (group.slug) {
+        items.push({
+          id: `${currentApp}-${group.label}-${group.slug}`,
+          label: group.label,
+          icon: iconFor(group.label, group.slug),
+          action: () => nav(resolvePath(base, group.slug)),
+        });
+      }
 
-  Object.entries(groupedCommands).forEach(([group, items]) => {
-    items.forEach((item) => {
-      if (!query || item.label.toLowerCase().includes(query.toLowerCase())) {
-        allResults.push({ ...item, group });
+      // Dropdown items
+      if (Array.isArray(group.items)) {
+        group.items.forEach((it) => {
+          items.push({
+            id: `${currentApp}-${group.label}-${it.slug}`,
+            label: it.label,
+            icon: iconFor(it.label, it.slug),
+            action: () => nav(resolvePath(base, it.slug)),
+          });
+        });
+      }
+
+      if (items.length) {
+        groups[group.label] = items;
       }
     });
-  });
 
-  const allItems = [...allResults, ...searchResults];
+    return groups;
+  }, [currentApp, base, nav]);
+
+  const allResults = useMemo(() => {
+    const out = [];
+    Object.entries(groupedCommands).forEach(([group, items]) => {
+      items.forEach((item) => {
+        if (!query || item.label.toLowerCase().includes(query.toLowerCase())) {
+          out.push({ ...item, group });
+        }
+      });
+    });
+    return out;
+  }, [groupedCommands, query]);
+
+  const allItems = useMemo(
+    () => [...allResults, ...searchResults],
+    [allResults, searchResults],
+  );
+
+  // Reset selection whenever the visible item list changes.
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [query, allItems.length]);
 
   const executeCommand = (item) => {
     if (item.action) item.action();
@@ -155,21 +188,17 @@ export default function CommandShellSearch({ currentApp }) {
         <div className="relative flex-1 max-w-[380px] cursor-text">
           <Search
             size={16}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none"
           />
           <input
             type="text"
             value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setOpen(true);
-            }}
             onFocus={() => setOpen(true)}
-            placeholder={`Search or jump to... (${currentApp})`}
+            placeholder={meta.searchPh || `Search or jump to...`}
             className="bc-input pl-10 w-full cursor-text"
             readOnly // Prevents typing in trigger, only opens modal
           />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 hidden sm:block">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[var(--muted)] hidden sm:block">
             ⌘K
           </div>
         </div>
@@ -177,15 +206,15 @@ export default function CommandShellSearch({ currentApp }) {
 
       {/* Modal Content */}
       <DialogContent
-        className="max-w-[520px] p-0 overflow-hidden rounded-2xl shadow-2xl"
+        className="bc-card max-w-[520px] p-0 overflow-hidden"
         style={{ maxHeight: "85vh" }}
       >
         {/* Header / Search Input */}
-        <div className="p-4 border-b relative">
+        <div className="p-4 border-b border-border relative">
           <div className="relative">
             <Search
               size={20}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)]"
             />
             <input
               ref={inputRef}
@@ -194,13 +223,13 @@ export default function CommandShellSearch({ currentApp }) {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Type a command or search..."
-              className="w-full pl-12 pr-4 py-4 bg-transparent text-[16px] focus:outline-none"
+              className="w-full pl-12 pr-10 py-4 bg-transparent text-[16px] text-[var(--ink-green)] focus:outline-none"
             />
           </div>
 
           <button
             onClick={() => setOpen(false)}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            className="absolute top-4 right-4 text-[var(--muted)] hover:text-[var(--ink-green)]"
           >
             <X size={20} />
           </button>
@@ -212,7 +241,7 @@ export default function CommandShellSearch({ currentApp }) {
           style={{ maxHeight: "calc(85vh - 120px)" }}
         >
           {allItems.length === 0 && query && (
-            <div className="py-16 text-center text-gray-500">
+            <div className="py-16 text-center text-[var(--muted)]">
               No results found for "{query}"
             </div>
           )}
@@ -228,24 +257,39 @@ export default function CommandShellSearch({ currentApp }) {
 
             return (
               <div key={groupName} className="py-3">
-                <div className="px-5 py-2 text-xs font-semibold uppercase tracking-widest text-gray-500">
-                  {groupName}
-                </div>
-                {filtered.map((item, idx) => {
+                <div className="eyebrow px-5 py-2">{groupName}</div>
+                {filtered.map((item) => {
                   const globalIdx = allResults.findIndex(
                     (r) => r.id === item.id,
                   );
                   const isSelected = globalIdx === selectedIndex;
+                  const Icon = item.icon || FileText;
 
                   return (
                     <button
                       key={item.id}
                       onClick={() => executeCommand(item)}
-                      className={`w-full px-5 py-3.5 flex items-center gap-4 text-left hover:bg-[#F4F6F7] ${isSelected ? "bg-[#F4F6F7]" : ""}`}
+                      className={`w-full px-5 py-3.5 flex items-center gap-4 text-left transition-colors ${
+                        isSelected
+                          ? "bg-[var(--ink-green)] text-white"
+                          : "hover:bg-[var(--mist-soft)] text-[var(--ink-green)]"
+                      }`}
                     >
-                      <span className="text-2xl">{item.icon}</span>
-                      <span className="flex-1 text-[15px]">{item.label}</span>
-                      <ArrowRight size={18} className="text-gray-300" />
+                      <Icon
+                        size={18}
+                        className={
+                          isSelected ? "text-white" : "text-[var(--muted)]"
+                        }
+                      />
+                      <span className="flex-1 text-[15px] truncate">
+                        {item.label}
+                      </span>
+                      <ArrowRight
+                        size={18}
+                        className={
+                          isSelected ? "text-white/70" : "text-[var(--sage)]"
+                        }
+                      />
                     </button>
                   );
                 })}
@@ -256,7 +300,7 @@ export default function CommandShellSearch({ currentApp }) {
           {/* Live Search Results */}
           {searchResults.length > 0 && (
             <div className="py-3">
-              <div className="px-5 py-2 text-xs font-semibold uppercase tracking-widest text-gray-500 flex items-center gap-2">
+              <div className="eyebrow px-5 py-2 flex items-center gap-2">
                 <Zap size={14} /> Live Search Results
               </div>
               {searchResults.map((item, idx) => {
@@ -267,10 +311,19 @@ export default function CommandShellSearch({ currentApp }) {
                   <button
                     key={item.id}
                     onClick={() => executeCommand(item)}
-                    className={`w-full px-5 py-3.5 flex items-center gap-4 text-left hover:bg-[#F4F6F7] ${isSelected ? "bg-[#F4F6F7]" : ""}`}
+                    className={`w-full px-5 py-3.5 flex items-center gap-4 text-left transition-colors ${
+                      isSelected
+                        ? "bg-[var(--ink-green)] text-white"
+                        : "hover:bg-[var(--mist-soft)] text-[var(--ink-green)]"
+                    }`}
                   >
-                    <Search size={18} className="text-gray-400" />
-                    <span className="flex-1 text-[15px]">
+                    <Search
+                      size={18}
+                      className={
+                        isSelected ? "text-white" : "text-[var(--muted)]"
+                      }
+                    />
+                    <span className="flex-1 text-[15px] truncate">
                       {item.label || item.title}
                     </span>
                   </button>
@@ -281,7 +334,7 @@ export default function CommandShellSearch({ currentApp }) {
         </div>
 
         {/* Footer Hint */}
-        <div className="border-t px-5 py-3 text-xs text-gray-400 flex justify-between bg-gray-50">
+        <div className="border-t border-border px-5 py-3 text-xs text-[var(--muted)] flex justify-between bg-[var(--mist-soft)]">
           <div>↑ ↓ to navigate • Enter to select</div>
           <div>Esc to close</div>
         </div>

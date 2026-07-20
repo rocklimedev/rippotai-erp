@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { card, labelStyle, TINT, stageOf } from "../constants/stages";
-import { useGetLeadsQuery, useDeleteLeadMutation } from "../api/leadsApi";
+import { labelStyle, stageOf } from "../../hooks/stages";
+import { useGetLeadsQuery, useDeleteLeadMutation } from "../../api/leads.api";
 
 const COLS = "1.6fr 1.1fr 1.6fr 1fr 0.9fr 1.3fr 0.8fr 36px";
 
@@ -12,57 +12,22 @@ export default function ContactsView({ onOpenLead, onEditLead }) {
   const [deleteLead] = useDeleteLeadMutation();
 
   return (
-    <div
-      style={{
-        padding: "20px 28px 40px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "16px",
-      }}
-    >
-      <div
-        style={{
-          ...card,
-          padding: "20px 22px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "14px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "12px",
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "baseline", gap: "10px" }}>
-            <span style={{ fontSize: "16px", fontWeight: 700 }}>Contacts</span>
-            <span style={{ fontSize: "12px", color: "#6E7F8D" }}>
+    <div className="flex flex-col gap-4 px-7 pt-5 pb-10">
+      <div className="bc-card p-5 flex flex-col gap-3.5">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-baseline gap-2.5">
+            <span className="text-[16px] font-semibold text-[var(--ink-green)]">
+              Contacts
+            </span>
+            <span className="text-[12px] text-[var(--muted)]">
               {rows.length} contacts
             </span>
           </div>
-          <div
-            style={{
-              display: "flex",
-              gap: "10px",
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
+          <div className="flex gap-2.5 items-center flex-wrap">
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value)}
-              style={{
-                border: "1px solid #B5BFC6",
-                borderRadius: "10px",
-                padding: "8px 10px",
-                fontSize: "13px",
-                background: "#FFFFFF",
-                color: "#161B1D",
-              }}
+              className="bc-input w-auto py-2 px-2.5 text-[13px]"
             >
               <option value="name-asc">Sort: Name A–Z</option>
               <option value="name-desc">Sort: Name Z–A</option>
@@ -75,223 +40,133 @@ export default function ContactsView({ onOpenLead, onEditLead }) {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search name, city, phone, email…"
-              style={{
-                border: "1px solid #B5BFC6",
-                borderRadius: "10px",
-                padding: "8px 12px",
-                fontSize: "13px",
-                color: "#161B1D",
-                background: "#FFFFFF",
-                width: "240px",
-                maxWidth: "100%",
-              }}
+              className="bc-input w-[240px] max-w-full py-2 px-3 text-[13px]"
             />
           </div>
         </div>
 
         {isLoading ? (
-          <div style={{ color: "#6E7F8D", fontSize: "13px" }}>
+          <div className="text-[var(--muted)] text-[13px]">
             Loading contacts…
           </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <div style={{ minWidth: "860px" }}>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: COLS,
-                  gap: "10px",
-                  padding: "0 2px 8px",
-                  borderBottom: "1px solid #E4EBF1",
-                }}
-              >
-                <span style={labelStyle}>Name</span>
-                <span style={labelStyle}>Phone</span>
-                <span style={labelStyle}>Email</span>
-                <span style={labelStyle}>Location</span>
-                <span style={labelStyle}>Type</span>
-                <span style={labelStyle}>Stage</span>
-                <span style={labelStyle}>Owner</span>
-                <span></span>
-              </div>
-              {rows.map((c) => {
-                const s = stageOf(c.stage);
-                const stagePill = {
-                  background: TINT[s.c],
-                  color: s.c,
-                  fontSize: "11px",
-                  fontWeight: 400,
-                  padding: "3px 10px",
-                  borderRadius: "999px",
-                  justifySelf: "start",
-                };
-                const menuOpen = menuId === c.id;
-                return (
-                  <div
-                    key={c.id}
-                    onClick={() => onOpenLead(c)}
-                    className="row-hover"
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: COLS,
-                      gap: "10px",
-                      padding: "10px 2px",
-                      borderBottom: "1px solid #E4EBF1",
-                      cursor: "pointer",
-                      alignItems: "center",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "13px",
-                        fontWeight: 700,
-                        color: "#161B1D",
-                      }}
+          <div className="table-container">
+            <div className="bc-table-scroll">
+              <div style={{ minWidth: "860px" }}>
+                <div
+                  className="grid gap-2.5 px-0.5 pb-2 border-b border-[var(--stroke)]"
+                  style={{ gridTemplateColumns: COLS }}
+                >
+                  <span style={labelStyle}>Name</span>
+                  <span style={labelStyle}>Phone</span>
+                  <span style={labelStyle}>Email</span>
+                  <span style={labelStyle}>Location</span>
+                  <span style={labelStyle}>Type</span>
+                  <span style={labelStyle}>Stage</span>
+                  <span style={labelStyle}>Owner</span>
+                  <span></span>
+                </div>
+                {rows.map((c) => {
+                  const s = stageOf(c.stage);
+                  const menuOpen = menuId === c.id;
+                  return (
+                    <div
+                      key={c.id}
+                      onClick={() => onOpenLead(c)}
+                      className="grid gap-2.5 px-0.5 py-2.5 border-b border-[var(--stroke)] cursor-pointer items-center hover:bg-[var(--mist-soft)]"
+                      style={{ gridTemplateColumns: COLS }}
                     >
-                      {c.name}
-                    </span>
-                    <span style={{ fontSize: "12px", color: "#6E7F8D" }}>
-                      {c.phone}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        color: "#6E7F8D",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {c.email}
-                    </span>
-                    <span style={{ fontSize: "12px", color: "#6E7F8D" }}>
-                      {c.location}
-                    </span>
-                    <span style={{ fontSize: "12px", color: "#6E7F8D" }}>
-                      {c.type}
-                    </span>
-                    <span style={stagePill}>{s.label}</span>
-                    <span style={{ fontSize: "12px", color: "#6E7F8D" }}>
-                      {c.owner}
-                    </span>
-                    <span
-                      style={{
-                        position: "relative",
-                        display: "flex",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <span
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMenuId(menuOpen ? null : c.id);
-                        }}
-                        className="icon-btn"
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          width: "24px",
-                          height: "24px",
-                          borderRadius: "7px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 16 16"
-                          fill="#6E7F8D"
-                        >
-                          <circle cx="8" cy="3" r="1.3"></circle>
-                          <circle cx="8" cy="8" r="1.3"></circle>
-                          <circle cx="8" cy="13" r="1.3"></circle>
-                        </svg>
+                      <span className="text-[13px] font-semibold text-[var(--ink-green)] truncate">
+                        {c.name}
                       </span>
-                      {menuOpen && (
+                      <span className="text-[12px] text-[var(--muted)]">
+                        {c.phone}
+                      </span>
+                      <span className="text-[12px] text-[var(--muted)] truncate">
+                        {c.email}
+                      </span>
+                      <span className="text-[12px] text-[var(--muted)] truncate">
+                        {c.location}
+                      </span>
+                      <span className="text-[12px] text-[var(--muted)]">
+                        {c.type}
+                      </span>
+                      <span
+                        className="bc-chip justify-self-start"
+                        style={{ background: s.bg, color: s.fg }}
+                      >
+                        {s.label}
+                      </span>
+                      <span className="text-[12px] text-[var(--muted)] truncate">
+                        {c.owner}
+                      </span>
+                      <span className="relative flex justify-center">
                         <span
-                          onClick={(e) => e.stopPropagation()}
-                          style={{
-                            position: "absolute",
-                            top: "28px",
-                            right: 0,
-                            background: "#FFFFFF",
-                            border: "1px solid #E4EBF1",
-                            borderRadius: "10px",
-                            boxShadow: "0 6px 18px rgba(22,27,29,0.16)",
-                            padding: "6px",
-                            zIndex: 30,
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "2px",
-                            minWidth: "150px",
-                            cursor: "default",
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuId(menuOpen ? null : c.id);
                           }}
+                          className="flex items-center justify-center w-6 h-6 rounded-[7px] cursor-pointer hover:bg-[var(--mist)]"
                         >
-                          <span
-                            onClick={() => {
-                              window.open(
-                                "https://wa.me/" +
-                                  (c.whatsapp || c.phone).replace(
-                                    /[^0-9]/g,
-                                    "",
-                                  ),
-                                "_blank",
-                              );
-                              setMenuId(null);
-                            }}
-                            className="menu-item-wa"
-                            style={{
-                              padding: "7px 9px",
-                              borderRadius: "7px",
-                              fontSize: "12.5px",
-                              color: "#2E7D5B",
-                              cursor: "pointer",
-                              display: "block",
-                            }}
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 16 16"
+                            fill="var(--muted)"
                           >
-                            WhatsApp
-                          </span>
-                          <span
-                            onClick={() => {
-                              setMenuId(null);
-                              onEditLead(c);
-                            }}
-                            className="menu-item"
-                            style={{
-                              padding: "7px 9px",
-                              borderRadius: "7px",
-                              fontSize: "12.5px",
-                              color: "#161B1D",
-                              cursor: "pointer",
-                              display: "block",
-                            }}
-                          >
-                            Edit Contact
-                          </span>
-                          <span
-                            onClick={() => {
-                              setMenuId(null);
-                              deleteLead(c.id);
-                            }}
-                            className="menu-item-danger"
-                            style={{
-                              padding: "7px 9px",
-                              borderRadius: "7px",
-                              fontSize: "12.5px",
-                              color: "#B0483A",
-                              cursor: "pointer",
-                              display: "block",
-                            }}
-                          >
-                            Delete Contact
-                          </span>
+                            <circle cx="8" cy="3" r="1.3"></circle>
+                            <circle cx="8" cy="8" r="1.3"></circle>
+                            <circle cx="8" cy="13" r="1.3"></circle>
+                          </svg>
                         </span>
-                      )}
-                    </span>
-                  </div>
-                );
-              })}
+                        {menuOpen && (
+                          <span
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute top-7 right-0 bg-paper border border-[var(--stroke)] rounded-[10px] shadow-[0_6px_18px_rgba(15,31,26,0.16)] p-1.5 z-30 flex flex-col gap-0.5 min-w-[150px] cursor-default"
+                          >
+                            <span
+                              onClick={() => {
+                                window.open(
+                                  "https://wa.me/" +
+                                    (c.whatsapp || c.phone).replace(
+                                      /[^0-9]/g,
+                                      "",
+                                    ),
+                                  "_blank",
+                                );
+                                setMenuId(null);
+                              }}
+                              className="block px-2.5 py-1.5 rounded-[7px] text-[12.5px] cursor-pointer hover:bg-[#e3ede9]"
+                              style={{ color: "#3f6d5f" }}
+                            >
+                              WhatsApp
+                            </span>
+                            <span
+                              onClick={() => {
+                                setMenuId(null);
+                                onEditLead(c);
+                              }}
+                              className="block px-2.5 py-1.5 rounded-[7px] text-[12.5px] text-[var(--ink-green)] cursor-pointer hover:bg-[var(--mist-soft)]"
+                            >
+                              Edit Contact
+                            </span>
+                            <span
+                              onClick={() => {
+                                setMenuId(null);
+                                deleteLead(c.id);
+                              }}
+                              className="block px-2.5 py-1.5 rounded-[7px] text-[12.5px] cursor-pointer hover:bg-[#f5e7e4]"
+                              style={{ color: "#a54536" }}
+                            >
+                              Delete Contact
+                            </span>
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}

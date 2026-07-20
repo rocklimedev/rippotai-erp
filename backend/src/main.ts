@@ -7,12 +7,19 @@ import { RedisIoAdapter } from './redis-io.adapter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Configure Redis-backed Socket.IO adapter
-  const redisIoAdapter = new RedisIoAdapter(app);
-  await redisIoAdapter.connectToRedis();
-  app.useWebSocketAdapter(redisIoAdapter);
+  const isDev = process.env.NODE_ENV !== 'production';
 
-  // Global validation
+  // Only use Redis Socket.IO adapter outside development
+  if (!isDev) {
+    const redisIoAdapter = new RedisIoAdapter(app);
+    await redisIoAdapter.connectToRedis();
+    app.useWebSocketAdapter(redisIoAdapter);
+
+    console.log('✅ Redis Socket.IO Adapter Enabled');
+  } else {
+    console.log('⚠️ Development mode - Redis Socket.IO Adapter Disabled');
+  }
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -21,16 +28,13 @@ async function bootstrap() {
     }),
   );
 
-  // API prefix
   app.setGlobalPrefix('api/v1');
 
-  // CORS
   app.enableCors({
     origin: [
       'http://localhost:5173',
       'http://localhost:3000',
       'http://localhost:3001',
-
       'https://vendors-quote.rippotaiarchitecture.com',
       'https://rippotai-erp-qga2.vercel.app',
       'https://inos.rippotaiarchitecture.com',

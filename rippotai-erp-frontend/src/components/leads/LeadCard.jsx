@@ -1,17 +1,17 @@
 import { useState } from "react";
-import { pill, TAG_COLORS, LEAD_COLORS } from "../constants/stages";
+import { pill, TAG_COLORS, LEAD_COLORS } from "../../hooks/stages";
 import {
   useMarkNurtureMutation,
   useMarkLostMutation,
   useUpdateColorMutation,
-} from "../api/leadsApi";
+} from "../../api/leads.api";
 
 const COLOR_DOTS = [
-  ["None", "#FFFFFF"],
-  ["Green", "#2E7D5B"],
-  ["Red", "#B0483A"],
-  ["Yellow", "#B07A1E"],
-  ["Blue", "#4A6B8A"],
+  ["None", "#ffffff"],
+  ["Green", "#1f453b"],
+  ["Red", "#a54536"],
+  ["Yellow", "#c98f2b"],
+  ["Blue", "#3f6d8a"],
 ];
 
 export default function LeadCard({
@@ -30,29 +30,13 @@ export default function LeadCard({
   const [updateColor] = useUpdateColorMutation();
 
   const cc = lead.color && LEAD_COLORS[lead.color];
-  const bg = cc ? cc[1] : lead.stuck ? "#F6EDDA" : "#FFFFFF";
-  const bd = cc ? cc[0] : lead.stuck ? "#B07A1E" : "#E4EBF1";
-  const cardStyle = {
-    position: "relative",
-    background: bg,
-    border: "1px solid " + bd,
-    borderRadius: "14px",
-    padding: "12px",
-    boxShadow: "0 2px 10px rgba(22,27,29,0.06)",
-    cursor: "grab",
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-    opacity: dragging ? 0.45 : 1,
-    zIndex: menuOpen ? 10 : "auto",
-  };
+  const railColor = cc ? cc.rail : lead.stuck ? "#c98f2b" : "var(--sage)";
   const tagStyle = lead.tag
-    ? pill(TAG_COLORS[lead.tag][0], TAG_COLORS[lead.tag][1])
+    ? pill(TAG_COLORS[lead.tag].fg, TAG_COLORS[lead.tag].bg)
     : null;
   const daysLabel =
     lead.days === 0 ? "Added today" : `${lead.days} days in stage`;
 
-  const stop = (e) => e.stopPropagation();
   const openWhatsApp = (e) => {
     e.stopPropagation();
     window.open(
@@ -71,32 +55,22 @@ export default function LeadCard({
       }}
       onDragEnd={onDragEnd}
       onClick={() => onClick(lead)}
-      style={cardStyle}
-      className="lead-card"
+      className="relative flex flex-col gap-1.5 bg-paper rounded-[14px] border border-[var(--stroke)] pl-3.5 pr-3 py-3 cursor-grab shadow-[0_2px_10px_rgba(15,31,26,0.06)] transition-opacity"
+      style={{
+        opacity: dragging ? 0.45 : 1,
+        zIndex: menuOpen ? 10 : "auto",
+        boxShadow: `inset 3px 0 0 ${railColor}, 0 2px 10px rgba(15,31,26,0.06)`,
+      }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "6px",
-        }}
-      >
-        <div style={{ fontSize: "13px", fontWeight: 700, color: "#161B1D" }}>
+      <div className="flex items-center justify-between gap-1.5">
+        <div className="text-[13px] font-semibold text-[var(--ink-green)] truncate">
           {lead.name}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+        <div className="flex items-center gap-1.5 shrink-0">
           {lead.stuck && (
             <span
-              style={{
-                background: "#B07A1E",
-                color: "#FFFFFF",
-                fontSize: "9px",
-                fontWeight: 400,
-                letterSpacing: "0.06em",
-                padding: "2px 6px",
-                borderRadius: "5px",
-              }}
+              className="bc-badge"
+              style={{ background: "#c98f2b", color: "#fff" }}
             >
               STUCK
             </span>
@@ -106,19 +80,9 @@ export default function LeadCard({
               e.stopPropagation();
               setMenuOpen((v) => !v);
             }}
-            className="icon-btn"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "20px",
-              height: "20px",
-              borderRadius: "6px",
-              cursor: "pointer",
-              flexShrink: 0,
-            }}
+            className="flex items-center justify-center w-5 h-5 rounded-[6px] cursor-pointer hover:bg-[var(--mist-soft)]"
           >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="#6E7F8D">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="var(--muted)">
               <circle cx="8" cy="3" r="1.3"></circle>
               <circle cx="8" cy="8" r="1.3"></circle>
               <circle cx="8" cy="13" r="1.3"></circle>
@@ -129,81 +93,28 @@ export default function LeadCard({
 
       {menuOpen && (
         <div
-          onClick={stop}
-          style={{
-            position: "absolute",
-            top: "32px",
-            right: "8px",
-            background: "#FFFFFF",
-            border: "1px solid #E4EBF1",
-            borderRadius: "10px",
-            boxShadow: "0 6px 18px rgba(22,27,29,0.16)",
-            padding: "6px",
-            zIndex: 20,
-            display: "flex",
-            flexDirection: "column",
-            gap: "2px",
-            minWidth: "170px",
-            cursor: "default",
-          }}
+          onClick={(e) => e.stopPropagation()}
+          className="absolute top-8 right-2 bg-paper border border-[var(--stroke)] rounded-[10px] shadow-[0_6px_18px_rgba(15,31,26,0.16)] p-1.5 z-20 flex flex-col gap-0.5 min-w-[172px] cursor-default"
         >
+          {[
+            ["Edit Lead", () => onEdit(lead)],
+            ["Add Remark", () => onRemark(lead)],
+            ["Mark as Proposed", () => onProposed(lead)],
+          ].map(([label, fn]) => (
+            <div
+              key={label}
+              className="px-2.5 py-1.5 rounded-[7px] text-[12.5px] text-[var(--ink-green)] cursor-pointer hover:bg-[var(--mist-soft)]"
+              onClick={() => {
+                setMenuOpen(false);
+                fn();
+              }}
+            >
+              {label}
+            </div>
+          ))}
           <div
-            className="menu-item"
-            style={{
-              padding: "7px 9px",
-              borderRadius: "7px",
-              fontSize: "12.5px",
-              color: "#161B1D",
-              cursor: "pointer",
-            }}
-            onClick={() => {
-              setMenuOpen(false);
-              onEdit(lead);
-            }}
-          >
-            Edit Lead
-          </div>
-          <div
-            className="menu-item"
-            style={{
-              padding: "7px 9px",
-              borderRadius: "7px",
-              fontSize: "12.5px",
-              color: "#161B1D",
-              cursor: "pointer",
-            }}
-            onClick={() => {
-              setMenuOpen(false);
-              onRemark(lead);
-            }}
-          >
-            Add Remark
-          </div>
-          <div
-            className="menu-item"
-            style={{
-              padding: "7px 9px",
-              borderRadius: "7px",
-              fontSize: "12.5px",
-              color: "#161B1D",
-              cursor: "pointer",
-            }}
-            onClick={() => {
-              setMenuOpen(false);
-              onProposed(lead);
-            }}
-          >
-            Mark as Proposed
-          </div>
-          <div
-            className="menu-item-warn"
-            style={{
-              padding: "7px 9px",
-              borderRadius: "7px",
-              fontSize: "12.5px",
-              color: "#B07A1E",
-              cursor: "pointer",
-            }}
+            className="px-2.5 py-1.5 rounded-[7px] text-[12.5px] cursor-pointer hover:bg-[#f6edda]"
+            style={{ color: "#a3701a" }}
             onClick={() => {
               setMenuOpen(false);
               markNurture(lead.id);
@@ -212,14 +123,8 @@ export default function LeadCard({
             Move to Nurture List
           </div>
           <div
-            className="menu-item-danger"
-            style={{
-              padding: "7px 9px",
-              borderRadius: "7px",
-              fontSize: "12.5px",
-              color: "#B0483A",
-              cursor: "pointer",
-            }}
+            className="px-2.5 py-1.5 rounded-[7px] text-[12.5px] cursor-pointer hover:bg-[#f5e7e4]"
+            style={{ color: "#a54536" }}
             onClick={() => {
               setMenuOpen(false);
               markLost(lead.id);
@@ -227,28 +132,10 @@ export default function LeadCard({
           >
             Mark Closed-Lost
           </div>
-          <div
-            style={{
-              borderTop: "1px solid #E4EBF1",
-              marginTop: "4px",
-              padding: "8px 9px 4px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "6px",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "10px",
-                fontWeight: 400,
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                color: "#6E7F8D",
-              }}
-            >
-              Card Color
-            </span>
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+
+          <div className="border-t border-[var(--stroke)] mt-1 pt-2 px-2.5 pb-1 flex flex-col gap-1.5">
+            <span className="eyebrow text-[10px]">Card Color</span>
+            <div className="flex gap-2 items-center">
               {COLOR_DOTS.map(([name, c]) => {
                 const active = (lead.color || "None") === name;
                 return (
@@ -263,19 +150,15 @@ export default function LeadCard({
                         color: name === "None" ? null : name,
                       });
                     }}
+                    className="w-[13px] h-[13px] rounded-full cursor-pointer shrink-0"
                     style={{
-                      width: "13px",
-                      height: "13px",
-                      borderRadius: "50%",
                       background: c,
                       border:
                         name === "None"
-                          ? "1px solid #B5BFC6"
+                          ? "1px solid var(--sage)"
                           : "1px solid " + c,
-                      outline: active ? "1.5px solid #161B1D" : "none",
+                      outline: active ? "1.5px solid var(--ink-green)" : "none",
                       outlineOffset: "1.5px",
-                      cursor: "pointer",
-                      flexShrink: 0,
                     }}
                   ></div>
                 );
@@ -285,49 +168,36 @@ export default function LeadCard({
         </div>
       )}
 
-      <div style={{ fontSize: "12px", color: "#6E7F8D" }}>
+      <div className="text-[12px] text-[var(--muted)] truncate">
         {lead.type} · {lead.location}
       </div>
-      <div style={{ fontSize: "12px", fontWeight: 400, color: "#161B1D" }}>
+      <div className="text-[12px] font-medium text-[var(--ink-green)]">
         {lead.budget}
       </div>
       {lead.proposal && (
-        <div style={{ fontSize: "11px", fontWeight: 400, color: "#2E7D5B" }}>
+        <div className="text-[11px] font-medium" style={{ color: "#3f6d5f" }}>
           Quoted: {lead.proposal.amount} · {lead.proposal.timeline}
         </div>
       )}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginTop: "2px",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          {lead.tag && <span style={tagStyle}>{lead.tag}</span>}
+
+      <div className="flex items-center justify-between mt-0.5">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {lead.tag && (
+            <span className="bc-chip" style={tagStyle}>
+              {lead.tag}
+            </span>
+          )}
           <span
             onClick={openWhatsApp}
             title={"WhatsApp " + (lead.whatsapp || lead.phone)}
-            className="wa-btn"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "22px",
-              height: "22px",
-              border: "1px solid #E4EBF1",
-              borderRadius: "7px",
-              background: "#FFFFFF",
-              cursor: "pointer",
-            }}
+            className="flex items-center justify-center w-[22px] h-[22px] border border-[var(--stroke)] rounded-[7px] bg-paper cursor-pointer hover:bg-[var(--mist-soft)] shrink-0"
           >
             <svg
               width="13"
               height="13"
               viewBox="0 0 16 16"
               fill="none"
-              stroke="#2E7D5B"
+              stroke="#3f6d5f"
               strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -337,7 +207,9 @@ export default function LeadCard({
             </svg>
           </span>
         </div>
-        <span style={{ fontSize: "11px", color: "#6E7F8D" }}>{daysLabel}</span>
+        <span className="text-[11px] text-[var(--muted)] whitespace-nowrap">
+          {daysLabel}
+        </span>
       </div>
     </div>
   );

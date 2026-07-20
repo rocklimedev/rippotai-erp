@@ -13,6 +13,7 @@ import { Lead } from './lead.model';
 @Table({
   tableName: 'lead_activity',
   timestamps: true,
+  createdAt: 'created_at',
   updatedAt: false,
 })
 export class LeadActivity extends Model<LeadActivity> {
@@ -25,10 +26,14 @@ export class LeadActivity extends Model<LeadActivity> {
   @Column({
     type: DataType.UUID,
     allowNull: false,
+    field: 'lead_id',
   })
   declare leadId: string;
 
-  @BelongsTo(() => Lead)
+  @BelongsTo(() => Lead, {
+    foreignKey: 'leadId',
+    targetKey: 'id',
+  })
   declare lead: Lead;
 
   @Column({
@@ -37,6 +42,9 @@ export class LeadActivity extends Model<LeadActivity> {
   })
   declare text: string;
 
-  @Column(DataType.DATE)
+  @Column({
+    type: DataType.DATE,
+    field: 'created_at',
+  })
   declare createdAt: Date;
 }

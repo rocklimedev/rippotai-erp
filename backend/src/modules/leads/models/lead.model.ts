@@ -21,6 +21,8 @@ import {
 @Table({
   tableName: 'leads',
   timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 })
 export class Lead extends Model<Lead> {
   @PrimaryKey
@@ -53,7 +55,9 @@ export class Lead extends Model<Lead> {
   declare email: string | null;
 
   @Default(LeadType.RESIDENTIAL)
-  @Column(DataType.ENUM(...Object.values(LeadType)))
+  @Column({
+    type: DataType.ENUM(...Object.values(LeadType)),
+  })
   declare type: LeadType;
 
   @Column({
@@ -93,16 +97,21 @@ export class Lead extends Model<Lead> {
   declare owner: string | null;
 
   @Default(LeadStage.CAPTURE)
-  @Column(DataType.ENUM(...Object.values(LeadStage)))
+  @Column({
+    type: DataType.ENUM(...Object.values(LeadStage)),
+  })
   declare stage: LeadStage;
 
   @Default(0)
-  @Column(DataType.INTEGER)
+  @Column({
+    type: DataType.INTEGER,
+  })
   declare days: number;
 
   @Column({
     type: DataType.DATE,
     allowNull: true,
+    field: 'stage_entered_at',
   })
   declare stageEnteredAt: Date | null;
 
@@ -119,43 +128,59 @@ export class Lead extends Model<Lead> {
   declare color: LeadColor | null;
 
   @Default(StuckMode.AUTO)
-  @Column(DataType.ENUM(...Object.values(StuckMode)))
+  @Column({
+    type: DataType.ENUM(...Object.values(StuckMode)),
+    field: 'stuck_mode',
+  })
   declare stuckMode: StuckMode;
 
   @Column({
     type: DataType.DATEONLY,
     allowNull: true,
+    field: 'follow_up',
   })
   declare followUp: string | null;
 
   @Column({
     type: DataType.STRING,
     allowNull: true,
+    field: 'proposal_amount',
   })
   declare proposalAmount: string | null;
 
   @Column({
     type: DataType.STRING,
     allowNull: true,
+    field: 'proposal_timeline',
   })
   declare proposalTimeline: string | null;
 
   @Column({
     type: DataType.TEXT,
     allowNull: true,
+    field: 'proposal_remarks',
   })
   declare proposalRemarks: string | null;
 
   @Default(DocStatus.NOT_STARTED)
-  @Column(DataType.SMALLINT)
+  @Column({
+    type: DataType.SMALLINT,
+    field: 'doc_brief',
+  })
   declare docBrief: DocStatus;
 
   @Default(DocStatus.NOT_STARTED)
-  @Column(DataType.SMALLINT)
+  @Column({
+    type: DataType.SMALLINT,
+    field: 'doc_proposal',
+  })
   declare docProposal: DocStatus;
 
   @Default(DocStatus.NOT_STARTED)
-  @Column(DataType.SMALLINT)
+  @Column({
+    type: DataType.SMALLINT,
+    field: 'doc_contract',
+  })
   declare docContract: DocStatus;
 
   @HasMany(() => LeadNote, {
