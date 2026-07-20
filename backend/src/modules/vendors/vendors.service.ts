@@ -7,18 +7,28 @@ import { VendorCategory } from './models/vendor-category.model';
 import { VendorBusinessType } from './models/vendor-business-type.model';
 import { Quotation } from '../quotations/models/quotations.model';
 import { ActivityLogForVendorService } from '../engagement/services/activity-log-vendors.service';
+import { NotificationVendorService } from '../engagement/services/notification-vendor.service';
 @Injectable()
 export class VendorsService {
   constructor(
     @InjectModel(Vendor)
     private readonly vendorModel: typeof Vendor,
     private readonly activityLogForVendorService: ActivityLogForVendorService,
+    private readonly notificationVendorService: NotificationVendorService,
   ) {}
 
-  async create(dto: CreateVendorDto, user?: any): Promise<Vendor> {
+  async create(
+    dto: CreateVendorDto,
+    user?: any,
+    recipientUserIds: string[] = [],
+  ): Promise<Vendor> {
     const vendor = await this.vendorModel.create({ ...dto } as any);
 
     await this.activityLogForVendorService.logVendorCreated(vendor, user);
+    await this.notificationVendorService.notifyVendorCreated(vendor, {
+      recipientUserIds,
+      actorUserId: user?.id,
+    });
 
     return vendor;
   }
@@ -63,9 +73,7 @@ export class VendorsService {
     return vendor;
   }
 
-  // ==================== NEW: Get Quotations by Vendor ====================
   async getQuotationsByVendor(vendorId: string) {
-    // First verify vendor exists
     await this.findOne(vendorId);
 
     const quotations = await Quotation.findAll({
@@ -80,24 +88,27 @@ export class VendorsService {
           as: 'vendor',
           attributes: ['id', 'name', 'company_name'],
         },
-        // You can include Project if needed
-        // {
-        //   model: Project,
-        //   as: 'project',
-        //   attributes: ['id', 'name', 'site_location'],
-        // },
       ],
     });
 
     return quotations;
   }
 
-  async update(id: string, dto: UpdateVendorDto, user?: any): Promise<Vendor> {
+  async update(
+    id: string,
+    dto: UpdateVendorDto,
+    user?: any,
+    recipientUserIds: string[] = [],
+  ): Promise<Vendor> {
     const vendor = await this.findOne(id);
     await vendor.update({ ...dto });
     const updated = await this.findOne(id);
 
     await this.activityLogForVendorService.logVendorUpdated(updated, user, dto);
+    await this.notificationVendorService.notifyVendorUpdated(updated, {
+      recipientUserIds,
+      actorUserId: user?.id,
+    });
 
     return updated;
   }
@@ -106,6 +117,7 @@ export class VendorsService {
     id: string,
     status: VendorStatus,
     user?: any,
+    recipientUserIds: string[] = [],
   ): Promise<Vendor> {
     const vendor = await this.findOne(id);
     await vendor.update({ status });
@@ -114,14 +126,28 @@ export class VendorsService {
     await this.activityLogForVendorService.logVendorUpdated(updated, user, {
       status,
     });
+    await this.notificationVendorService.notifyVendorStatusChanged(
+      updated,
+      status,
+      { recipientUserIds, actorUserId: user?.id },
+    );
 
     return updated;
   }
 
-  async remove(id: string, user?: any): Promise<void> {
+  async remove(
+    id: string,
+    user?: any,
+    recipientUserIds: string[] = [],
+  ): Promise<void> {
     const vendor = await this.findOne(id);
+    const vendorName = vendor.name ?? vendor.company_name;
     await vendor.destroy();
 
     await this.activityLogForVendorService.logVendorDeleted(id, user);
+    await this.notificationVendorService.notifyVendorDeleted(id, vendorName, {
+      recipientUserIds,
+      actorUserId: user?.id,
+    });
   }
 }

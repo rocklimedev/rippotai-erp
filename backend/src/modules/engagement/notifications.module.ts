@@ -10,6 +10,8 @@ import { NotificationBroadcastService } from './notification-broadcast.service';
 import { NotificationForProjectService } from './services/notification-project.service';
 import { NotificationsController } from './notifications.controller';
 import { RedisModule } from '@/common/redis/redis.module';
+import { NotificationClientService } from './services/notification-client.service';
+import { NotificationVendorService } from './services/notification-vendor.service';
 
 @Global()
 @Module({
@@ -20,12 +22,15 @@ import { RedisModule } from '@/common/redis/redis.module';
     NotificationsGateway,
     NotificationBroadcastService,
     NotificationForProjectService,
+    NotificationClientService,
+    NotificationVendorService,
   ],
   exports: [
     NotificationsService,
     NotificationsGateway,
     NotificationBroadcastService,
     NotificationForProjectService,
+    NotificationClientService,
   ],
 })
 export class NotificationsModule {}

@@ -104,7 +104,7 @@ export enum NotificationType {
   VENDOR_ARCHIVED = 'vendor_archived',
   VENDOR_RESTORED = 'vendor_restored',
   VENDOR_DELETED = 'vendor_deleted',
-
+  VENDOR_STATUS_CHANGED = 'vendor_status_changed',
   // =========================
   // USERS
   // =========================
@@ -113,6 +113,12 @@ export enum NotificationType {
   USER_DELETED = 'user_deleted',
   USER_ROLE_CHANGED = 'user_role_changed',
   USER_STATUS_CHANGED = 'user_status_changed',
+
+  // CLient
+  CLIENT_CREATED = 'client_created',
+  CLIENT_UPDATED = 'client_updated',
+  CLIENT_DELETED = 'client_deleted',
+  CLIENT_RESTORED = 'client_restored',
 
   // =========================
   // PURCHASE ORDERS
