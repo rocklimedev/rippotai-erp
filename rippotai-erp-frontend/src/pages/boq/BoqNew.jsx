@@ -5,6 +5,8 @@ import { ArrowLeft, ArrowRight, FileSpreadsheet } from "lucide-react";
 
 import { useCreateBoqMutation, useGetTemplatesQuery } from "../../api/boq.api";
 import { useGetProjectsQuery } from "../../api/project.api";
+import NewProjectModal from "../../components/projects/CreateNewProject";
+const CREATE_NEW_PROJECT = "__create_new_project__";
 
 export default function BoqNew() {
   const navigate = useNavigate();
@@ -13,9 +15,13 @@ export default function BoqNew() {
   const [projectId, setProjectId] = useState("");
   const [title, setTitle] = useState("");
   const [templateId, setTemplateId] = useState("");
+  const [showNewProjectModal, setShowNewProjectModal] = useState(false);
 
-  const { data: projects = [], isLoading: projectsLoading } =
-    useGetProjectsQuery({ limit: 50 });
+  const {
+    data: projects = [],
+    isLoading: projectsLoading,
+    refetch: refetchProjects,
+  } = useGetProjectsQuery({ limit: 50 });
 
   const {
     data: templates = [],
@@ -25,22 +31,9 @@ export default function BoqNew() {
 
   const [createBoq, { isLoading: busy }] = useCreateBoqMutation();
 
-  console.log("======================================");
-  console.log("BoqNew Render");
-  console.log("Current URL:", window.location.href);
-  console.log("Search Params:", searchParams.toString());
-  console.log("URL template_id:", searchParams.get("template_id"));
-  console.log("Current templateId state:", templateId);
-  console.log("Templates Loading:", templatesLoading);
-  console.log("Templates:", templates);
-  console.log("Projects:", projects);
-  console.log("======================================");
-
   // Read template_id from URL
   useEffect(() => {
     const id = searchParams.get("template_id");
-
-    console.log("Reading template_id from URL:", id);
 
     if (id) {
       setTemplateId(id);
@@ -53,45 +46,40 @@ export default function BoqNew() {
   useEffect(() => {
     if (!templatesLoaded) return;
 
-    console.log("Templates loaded.");
-
-    console.log(
-      "Available template ids:",
-      templates.map((t) => t.id),
-    );
-
-    console.log("Current templateId:", templateId);
-
     const found = templates.find((t) => t.id === templateId);
 
-    console.log("Found template:", found);
-
     if (!templateId) {
-      console.log("No template selected.");
       return;
     }
 
     if (!found) {
-      console.error("Template NOT FOUND.");
-
       toast.error("Template not found.");
-
       setTemplateId("");
-    } else {
-      console.log("Template successfully selected:", found);
     }
   }, [templatesLoaded, templates, templateId]);
 
+  const handleProjectSelectChange = (e) => {
+    const value = e.target.value;
+
+    if (value === CREATE_NEW_PROJECT) {
+      // Don't actually set this as the projectId — open the modal instead.
+      setShowNewProjectModal(true);
+      return;
+    }
+
+    setProjectId(value);
+  };
+
+  const handleProjectCreated = async (project) => {
+    // getProjects invalidates on createProject, but refetch explicitly too
+    // so the new project is guaranteed to be in the list before we select it.
+    await refetchProjects();
+    setProjectId(project.id);
+    toast.success(`"${project.name}" selected for this BOQ.`);
+  };
+
   const submit = async (e) => {
     e.preventDefault();
-
-    console.log("Submitting...");
-
-    console.log({
-      project_id: projectId,
-      title,
-      source_template_id: templateId,
-    });
 
     if (!projectId) {
       toast.error("Please select a project.");
@@ -105,14 +93,10 @@ export default function BoqNew() {
         source_template_id: templateId || undefined,
       }).unwrap();
 
-      console.log("BOQ Created:", boq);
-
       toast.success("BOQ created successfully.");
 
       navigate(`/boq/${boq.id}`);
     } catch (err) {
-      console.error("Create BOQ Error:", err);
-
       toast.error(
         err?.data?.message || err?.data?.detail || "Failed to create BOQ.",
       );
@@ -149,15 +133,22 @@ export default function BoqNew() {
 
         <form onSubmit={submit} className="space-y-5">
           <div>
-            <label className="block mb-2 text-sm font-medium">Project *</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium">Project *</label>
+
+              <button
+                type="button"
+                onClick={() => setShowNewProjectModal(true)}
+                className="text-xs font-medium text-[#1F453B] hover:underline"
+              >
+                + Create New Project
+              </button>
+            </div>
 
             <select
               className="bc-input"
               value={projectId}
-              onChange={(e) => {
-                console.log("Project Changed:", e.target.value);
-                setProjectId(e.target.value);
-              }}
+              onChange={handleProjectSelectChange}
               disabled={projectsLoading}
               required
             >
@@ -170,6 +161,8 @@ export default function BoqNew() {
                   {project.name}
                 </option>
               ))}
+
+              <option value={CREATE_NEW_PROJECT}>+ Create New Project…</option>
             </select>
 
             {selectedProject && (
@@ -188,10 +181,7 @@ export default function BoqNew() {
               className="bc-input"
               value={title}
               placeholder="Auto generated from project"
-              onChange={(e) => {
-                console.log("Title Changed:", e.target.value);
-                setTitle(e.target.value);
-              }}
+              onChange={(e) => setTitle(e.target.value)}
             />
           </div>
 
@@ -202,10 +192,7 @@ export default function BoqNew() {
               className="bc-input"
               value={templateId}
               disabled={templatesLoading}
-              onChange={(e) => {
-                console.log("Template Changed:", e.target.value);
-                setTemplateId(e.target.value);
-              }}
+              onChange={(e) => setTemplateId(e.target.value)}
             >
               <option value="">
                 {templatesLoading ? "Loading templates..." : "Start Blank"}
@@ -245,6 +232,12 @@ export default function BoqNew() {
           </div>
         </form>
       </div>
+
+      <NewProjectModal
+        open={showNewProjectModal}
+        onClose={() => setShowNewProjectModal(false)}
+        onCreated={handleProjectCreated}
+      />
     </div>
   );
 }

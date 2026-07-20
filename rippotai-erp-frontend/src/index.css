@@ -416,12 +416,6 @@ header,
 }
 
 /* 9) Modal / dialog body scroll instead of overflow */
-[role="dialog"] {
-  max-height: 90vh;
-}
-[role="dialog"] > * {
-  max-width: 100%;
-}
 
 /* 10) BOQ workspace — description clamp + amount nowrap */
 .boq-cell-desc {

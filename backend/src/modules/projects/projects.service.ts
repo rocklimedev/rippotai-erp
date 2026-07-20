@@ -63,23 +63,6 @@ export class ProjectsService {
       created_by: user?.id ?? null,
     } as any);
 
-    try {
-      await this.activityLogForProjectService.logProjectCreated(project, user);
-    } catch (err) {
-      console.error('AUDIT LOG FAILED:', err);
-    }
-
-    if (user?.id) {
-      try {
-        await this.notificationForProjectService.notifyProjectCreated(
-          project,
-          user.id,
-        );
-      } catch (err) {
-        console.error('NOTIFICATION FAILED:', err);
-      }
-    }
-
     return project;
   }
 

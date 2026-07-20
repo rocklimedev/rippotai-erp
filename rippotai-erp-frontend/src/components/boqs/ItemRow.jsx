@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import {
   Copy,
   Trash2,
@@ -6,6 +6,7 @@ import {
   Eye,
   EyeOff,
   CheckCircle2,
+  Plus,
 } from "lucide-react";
 
 import {
@@ -21,7 +22,9 @@ import { CSS } from "@dnd-kit/utilities";
 
 import { formatINR } from "@/lib/format";
 import { UNITS } from "../../hooks/constants";
+import { useGetUnitsQuery } from "../../api/unit.api";
 import { EditableCell } from "./EditableCell";
+import { AddUnitModal } from "./AddUnitModal";
 
 export function ItemRow({
   item,
@@ -77,6 +80,23 @@ export function ItemRow({
   const openMenu = () => {
     openMenuRef.current?.click();
   };
+
+  // Units are fetched dynamically so newly-created ones show up immediately,
+  // falling back to the static constant list if the API hasn't loaded yet.
+  const { data: fetchedUnits } = useGetUnitsQuery();
+  const [addUnitOpen, setAddUnitOpen] = useState(false);
+
+  const unitOptions =
+    fetchedUnits && fetchedUnits.length > 0
+      ? fetchedUnits.map((u) => u.code)
+      : UNITS;
+
+  // Make sure the item's current unit is always selectable, even if it
+  // isn't (yet) in the fetched/static list.
+  const allUnitOptions =
+    item.unit && !unitOptions.includes(item.unit)
+      ? [item.unit, ...unitOptions]
+      : unitOptions;
 
   return (
     <tr
@@ -221,21 +241,49 @@ export function ItemRow({
         {disabled ? (
           <span>{item.unit || "—"}</span>
         ) : (
-          <select
-            className="w-full bg-transparent outline-none"
-            value={item.unit || ""}
-            onChange={(e) =>
-              onPatch({
-                unit: e.target.value,
-              })
-            }
-          >
-            {UNITS.map((u) => (
-              <option key={u} value={u}>
-                {u}
+          <div className="flex items-center gap-1">
+            <select
+              className="w-full bg-transparent outline-none"
+              value={item.unit || ""}
+              onChange={(e) =>
+                onPatch({
+                  unit: e.target.value,
+                })
+              }
+            >
+              <option value="" disabled>
+                Select
               </option>
-            ))}
-          </select>
+              {allUnitOptions.map((u) => (
+                <option key={u} value={u}>
+                  {u}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setAddUnitOpen(true);
+              }}
+              className="
+                shrink-0
+                inline-flex
+                items-center
+                justify-center
+                w-5
+                h-5
+                rounded
+                text-[#6B7B7C]
+                hover:bg-[#EAEEF0]
+                hover:text-[#333333]
+              "
+              title="Add unit"
+              data-testid={`item-add-unit-${item.id}`}
+            >
+              <Plus size={12} />
+            </button>
+          </div>
         )}
       </td>
 
@@ -348,6 +396,13 @@ export function ItemRow({
           {formatINR(item.amount)}
         </td>
       )}
+
+      {/* Portal-rendered dialog — safe to mount inside a <tr> */}
+      <AddUnitModal
+        open={addUnitOpen}
+        onClose={setAddUnitOpen}
+        onCreated={(unit) => onPatch({ unit: unit.code })}
+      />
     </tr>
   );
 }
