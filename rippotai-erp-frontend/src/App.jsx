@@ -65,7 +65,7 @@ import BoqTemplateEditor from "./pages/boq/BoqTemplateEditor";
 import AccountSettings from "./pages/settings/AccountSettings";
 import SettingsLayout from "./layouts/SettingsLayout";
 import LeadsPage from "./pages/leads/LeadsPage";
-import NewLeadView from "./components/leads/NewLeadView";
+import NewLeadView from "./components/leads/NewleadView";
 import ContactsView from "./components/leads/ContactsView";
 import ReviewView from "./components/leads/ReviewView";
 import BoardView from "./components/leads/BoardView";
