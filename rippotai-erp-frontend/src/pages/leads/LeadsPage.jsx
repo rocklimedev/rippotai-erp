@@ -3,7 +3,7 @@ import TopBar from "../../components/leads/TopBar";
 import TabsBar from "../../components/leads/TabsBar";
 import LeadActionModal from "../../components/leads/LeadActionModal";
 import BoardView from "../../components/leads/BoardView";
-import NewLeadView from "../../components/leads/NewLeadView";
+import NewLeadPage from "../../components/leads/NewLeadPage";
 import DetailView from "../../components/leads/DetailView";
 import ContactsView from "../../components/leads/ContactsView";
 import ReviewView from "../../components/leads/ReviewView";

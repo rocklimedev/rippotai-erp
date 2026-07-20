@@ -65,7 +65,7 @@ import BoqTemplateEditor from "./pages/boq/BoqTemplateEditor";
 import AccountSettings from "./pages/settings/AccountSettings";
 import SettingsLayout from "./layouts/SettingsLayout";
 import LeadsPage from "./pages/leads/LeadsPage";
-import NewLeadView from "./components/leads/NewLeadView";
+import NewLeadPage from "./components/leads/NewLeadPage";
 import ContactsView from "./components/leads/ContactsView";
 import ReviewView from "./components/leads/ReviewView";
 import BoardView from "./components/leads/BoardView";
@@ -211,7 +211,7 @@ function App() {
             }
           >
             <Route index element={<ReviewView />} />
-            <Route path="new" element={<NewLeadView />} />
+            <Route path="new" element={<NewLeadPage />} />
             <Route path="sources" element={<ContactsView />} />
             <Route path="activity" element={<LeadsActivity />} />
             <Route path="pipeline" element={<BoardView />} />

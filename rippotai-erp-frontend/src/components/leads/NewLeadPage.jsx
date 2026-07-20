@@ -15,7 +15,7 @@ const EMPTY_FORM = {
   source: "Website",
 };
 
-export default function NewLeadView({ onCaptured }) {
+export default function NewLeadPage({ onCaptured }) {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [samePhone, setSamePhone] = useState(true);
   const [banner, setBanner] = useState("");
