@@ -25,6 +25,7 @@ import { TasksModule } from './modules/tasks/task.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
 import { DashboardsModule } from './modules/dashboard/dashboard.module';
 import { LeadsModule } from './modules/leads/leads.module';
+import { SearchModule } from './modules/search/search.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -49,6 +50,7 @@ import { LeadsModule } from './modules/leads/leads.module';
     SettingsModule,
     ProjectsModule,
     VendorsModule,
+    BriefModule,
     QuotationsModule,
     ClientsModule,
     BoqModule,
@@ -57,6 +59,7 @@ import { LeadsModule } from './modules/leads/leads.module';
     DrawingsModule,
     BriefModule,
     SiteRecceModule,
+    SearchModule,
     TasksModule,
     CalendarModule,
     DashboardsModule,

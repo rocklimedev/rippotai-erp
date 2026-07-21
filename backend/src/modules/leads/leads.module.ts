@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 
+import { SearchModule } from '../search/search.module'; // <-- Add this
+
 import { LeadsController } from './leads.controller';
 import { LeadsService } from './leads.service';
 
@@ -9,6 +11,7 @@ import { LeadNote } from './models/lead-note.model';
 import { LeadActivity } from './models/lead-activity.model';
 
 import { LeadActivityService } from './lead-activity.service';
+import { LeadSearchService } from '../search/services/lead-search.service';
 
 @Module({
   imports: [SequelizeModule.forFeature([Lead, LeadNote, LeadActivity])],

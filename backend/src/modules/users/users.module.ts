@@ -1,32 +1,25 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 
+import { SearchModule } from '../search/search.module'; // <-- ADD THIS
+
 // Models
 import { User } from './models/user.model';
-import { UserSignature } from './models/user-signature.model'; // ← Add this
+import { UserSignature } from './models/user-signature.model';
 
 // Services
 import { UsersService } from './users.service';
 import { UserSignaturesService } from './user-signature.service';
+import { UserSearchService } from '../search/services/user-search.service';
+
 // Controllers
 import { UsersController } from './users.controller';
-import { UserSignatureController } from './user-signature.controller'; // ← Add this
+import { UserSignatureController } from './user-signature.controller';
 
 @Module({
-  imports: [
-    SequelizeModule.forFeature([User, UserSignature]), // ← Added UserSignature
-  ],
-  controllers: [
-    UsersController,
-    UserSignatureController, // ← Added here
-  ],
-  providers: [
-    UsersService,
-    UserSignaturesService, // ← Added here
-  ],
-  exports: [
-    UsersService,
-    UserSignaturesService, // ← Recommended to export
-  ],
+  imports: [SequelizeModule.forFeature([User, UserSignature])],
+  controllers: [UsersController, UserSignatureController],
+  providers: [UsersService, UserSignaturesService],
+  exports: [UsersService],
 })
 export class UsersModule {}

@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 
+import { SearchModule } from '../search/search.module'; // <-- ADD THIS
+
 import { Vendor } from './models/vendors.model';
 import { VendorCategory } from './models/vendor-category.model';
 import { VendorBusinessType } from './models/vendor-business-type.model';
@@ -16,6 +18,7 @@ import { VendorsService } from './vendors.service';
 import { VendorCategoriesService } from './vendor-categories.service';
 import { VendorBusinessTypesService } from './vendor-business-types.service';
 import { VendorDashboardService } from './vendor-dashboard.service';
+import { VendorSearchService } from '../search/services/vendor-search.service';
 
 import { ActivityLogsModule } from '../engagement/activity-logs.module';
 
