@@ -306,22 +306,6 @@ export class ProjectsService {
     };
 
     await project.update(updateData);
-    await this.activityLogForProjectService.logProjectUpdated(
-      project,
-      user,
-      dto,
-    );
-
-    if (user?.id) {
-      try {
-        await this.notificationForProjectService.notifyProjectUpdated(
-          project,
-          user.id,
-        );
-      } catch (err) {
-        console.error('NOTIFICATION FAILED:', err);
-      }
-    }
 
     return project;
   }
@@ -338,19 +322,6 @@ export class ProjectsService {
       status: ProjectStatus.INACTIVE,
     });
 
-    await this.activityLogForProjectService.logProjectArchived(project, user);
-
-    if (user?.id) {
-      try {
-        await this.notificationForProjectService.notifyProjectArchived(
-          project,
-          user.id,
-        );
-      } catch (err) {
-        console.error('NOTIFICATION FAILED:', err);
-      }
-    }
-
     return project;
   }
 
@@ -366,19 +337,6 @@ export class ProjectsService {
       status: ProjectStatus.ACTIVE,
     });
 
-    await this.activityLogForProjectService.logProjectRestored(project, user);
-
-    if (user?.id) {
-      try {
-        await this.notificationForProjectService.notifyProjectRestored(
-          project,
-          user.id,
-        );
-      } catch (err) {
-        console.error('NOTIFICATION FAILED:', err);
-      }
-    }
-
     return project;
   }
 
@@ -389,31 +347,11 @@ export class ProjectsService {
     const project = await this.findOne(id);
     const projectName = project.name;
 
-    try {
-      await this.activityLogForProjectService.logProjectDeleted(
-        project.id,
-        user,
-      );
-    } catch (err) {
-      console.error('AUDIT LOG FAILED:', err);
-    }
-
     await project.update({
       deleted_by: user?.id ?? null,
       status: ProjectStatus.INACTIVE,
     });
 
     await project.destroy();
-
-    if (user?.id) {
-      try {
-        await this.notificationForProjectService.notifyProjectDeleted(
-          projectName,
-          user.id,
-        );
-      } catch (err) {
-        console.error('NOTIFICATION FAILED:', err);
-      }
-    }
   }
 }

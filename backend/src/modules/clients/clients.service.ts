@@ -6,7 +6,7 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 import { Client } from './models/client.model';
 import { CreateClientDto, UpdateClientDto } from './dto/client.dto';
-
+import slugify from 'slugify'; // npm i slugify
 @Injectable()
 export class ClientsService {
   constructor(
@@ -15,16 +15,17 @@ export class ClientsService {
   ) {}
 
   async create(dto: CreateClientDto): Promise<Client> {
+    const slug =
+      dto.slug?.trim() || slugify(dto.name, { lower: true, strict: true });
+
     const existing = await this.clientModel.findOne({
-      where: { slug: dto.slug },
-      paranoid: false, // catch soft-deleted rows too, slug is unique
+      where: { slug },
+      paranoid: false,
     });
     if (existing) {
-      throw new ConflictException(
-        `Client with slug "${dto.slug}" already exists`,
-      );
+      throw new ConflictException(`Client with slug "${slug}" already exists`);
     }
-    return this.clientModel.create({ ...dto } as any);
+    return this.clientModel.create({ ...dto, slug } as any);
   }
 
   findAll(filters: { includeDeleted?: boolean } = {}) {

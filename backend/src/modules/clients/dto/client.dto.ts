@@ -5,9 +5,10 @@ export class CreateClientDto {
   @MaxLength(255)
   name: string;
 
+  @IsOptional()
   @IsString()
   @MaxLength(255)
-  slug: string;
+  slug?: string;
 
   @IsOptional()
   @IsString()
@@ -28,5 +29,4 @@ export class CreateClientDto {
   @IsString()
   address?: string;
 }
-
 export class UpdateClientDto extends CreateClientDto {}
