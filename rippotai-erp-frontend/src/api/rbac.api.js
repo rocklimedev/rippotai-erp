@@ -130,7 +130,10 @@ export const rbacApi = createApi({
         roleId ? `/role-permissions?role_id=${roleId}` : "/role-permissions",
       providesTags: ["RolePermissions"],
     }),
-
+    getRolePermissionMatrix: builder.query({
+      query: () => "/role-permissions/matrix",
+      providesTags: ["RolePermissions"],
+    }),
     revokeRolePermission: builder.mutation({
       query: ({ roleId, permissionId }) => ({
         url: `/role-permissions/${roleId}/${permissionId}`,
@@ -159,7 +162,7 @@ export const {
   useGetPermissionByIdQuery,
   useUpdatePermissionMutation,
   useDeletePermissionMutation,
-
+  useGetRolePermissionMatrixQuery,
   // role-permissions
   useGrantPermissionToRoleMutation,
   useBulkAssignPermissionsMutation,

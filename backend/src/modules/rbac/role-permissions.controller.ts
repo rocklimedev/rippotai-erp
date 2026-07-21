@@ -25,7 +25,10 @@ export class RolePermissionsController {
   grant(@Body() dto: CreateRolePermissionDto) {
     return this.rolePermissionsService.grant(dto);
   }
-
+  @Get('matrix')
+  getMatrix() {
+    return this.rolePermissionsService.getMatrix();
+  }
   @Post('bulk')
   bulkAssign(@Body() dto: BulkAssignPermissionsDto) {
     return this.rolePermissionsService.bulkAssign(dto);

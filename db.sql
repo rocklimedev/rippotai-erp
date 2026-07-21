@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS `boqs` (
   `title` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `boq_number` varchar(50) COLLATE utf8_unicode_ci DEFAULT NULL,
   `source_template_id` char(36) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `boq_version_id` char(36) COLLATE utf8_unicode_ci DEFAULT NULL,
   `status` enum('draft','pending_approval','approved','rejected','archived') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'draft',
   `locked` tinyint(1) NOT NULL DEFAULT '0',
   `total_value` decimal(15,2) NOT NULL DEFAULT '0.00',
@@ -93,7 +94,9 @@ CREATE TABLE IF NOT EXISTS `boqs` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_boq_number` (`boq_number`),
   KEY `fk_boq_template` (`source_template_id`),
-  CONSTRAINT `fk_boq_template` FOREIGN KEY (`source_template_id`) REFERENCES `boq_templates` (`id`) ON DELETE SET NULL
+  KEY `fk_boqs_version` (`boq_version_id`),
+  CONSTRAINT `fk_boq_template` FOREIGN KEY (`source_template_id`) REFERENCES `boq_templates` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_boqs_version` FOREIGN KEY (`boq_version_id`) REFERENCES `boq_versions` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- Data exporting was unselected.
@@ -206,6 +209,22 @@ CREATE TABLE IF NOT EXISTS `boq_template_items` (
   KEY `fk_template_item_library` (`library_item_id`),
   KEY `fk_boq_item_category` (`boq_category_id`),
   CONSTRAINT `fk_template_item_library` FOREIGN KEY (`library_item_id`) REFERENCES `library_items` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table spsyn8lm_rippotai_erp.boq_versions
+CREATE TABLE IF NOT EXISTS `boq_versions` (
+  `id` char(36) COLLATE utf8_unicode_ci NOT NULL,
+  `boq_id` char(36) COLLATE utf8_unicode_ci NOT NULL,
+  `version` int(11) NOT NULL,
+  `version_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_boq_versions_boq` (`boq_id`),
+  CONSTRAINT `fk_boq_versions_boq` FOREIGN KEY (`boq_id`) REFERENCES `boqs` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- Data exporting was unselected.
@@ -333,6 +352,71 @@ CREATE TABLE IF NOT EXISTS `drawings` (
 
 -- Data exporting was unselected.
 
+-- Dumping structure for table spsyn8lm_rippotai_erp.leads
+CREATE TABLE IF NOT EXISTS `leads` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `phone` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `whatsapp` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `type` enum('Residential','Commercial','Institutional') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Residential',
+  `location` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `size` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `budget` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `timeline` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `source` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `owner` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `stage` enum('capture','qual','disc','prop','nego','contract','handoff','nurture','lost') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'capture',
+  `days` int(11) NOT NULL DEFAULT '0',
+  `stage_entered_at` datetime DEFAULT NULL,
+  `tag` enum('Hot','Warm','Cold') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `color` enum('Green','Red','Yellow','Blue') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `stuck_mode` enum('auto','always','never') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'auto',
+  `follow_up` date DEFAULT NULL,
+  `proposal_amount` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `proposal_timeline` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `proposal_remarks` text COLLATE utf8mb4_unicode_ci,
+  `doc_brief` smallint(6) NOT NULL DEFAULT '0',
+  `doc_proposal` smallint(6) NOT NULL DEFAULT '0',
+  `doc_contract` smallint(6) NOT NULL DEFAULT '0',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_leads_phone` (`phone`),
+  KEY `idx_leads_stage` (`stage`),
+  KEY `idx_leads_owner` (`owner`),
+  KEY `idx_leads_followup` (`follow_up`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table spsyn8lm_rippotai_erp.lead_activity
+CREATE TABLE IF NOT EXISTS `lead_activity` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `lead_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `text` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_lead_activity_lead` (`lead_id`),
+  CONSTRAINT `fk_lead_activity_lead` FOREIGN KEY (`lead_id`) REFERENCES `leads` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table spsyn8lm_rippotai_erp.lead_notes
+CREATE TABLE IF NOT EXISTS `lead_notes` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `lead_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `author` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `text` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_lead_notes_lead` (`lead_id`),
+  CONSTRAINT `fk_lead_notes_lead` FOREIGN KEY (`lead_id`) REFERENCES `leads` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data exporting was unselected.
+
 -- Dumping structure for table spsyn8lm_rippotai_erp.library_categories
 CREATE TABLE IF NOT EXISTS `library_categories` (
   `id` char(36) COLLATE utf8_unicode_ci NOT NULL,
@@ -363,6 +447,41 @@ CREATE TABLE IF NOT EXISTS `library_items` (
   PRIMARY KEY (`id`),
   KEY `fk_library_item_category` (`category_id`),
   CONSTRAINT `fk_library_item_category` FOREIGN KEY (`category_id`) REFERENCES `library_categories` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table spsyn8lm_rippotai_erp.milestones
+CREATE TABLE IF NOT EXISTS `milestones` (
+  `id` char(36) COLLATE utf8_unicode_ci NOT NULL,
+  `project_id` char(36) COLLATE utf8_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `description` text COLLATE utf8_unicode_ci,
+  `due_date` date NOT NULL,
+  `planned_start` date DEFAULT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  `status` enum('PENDING','IN_PROGRESS','COMPLETED','CANCELLED') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'PENDING',
+  `order` int(11) NOT NULL DEFAULT '0',
+  `weight` decimal(5,2) DEFAULT NULL,
+  `assignee_id` char(36) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `created_by` char(36) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `updated_by` char(36) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_milestones_project` (`project_id`) USING BTREE,
+  KEY `idx_milestones_status` (`status`) USING BTREE,
+  KEY `idx_milestones_due_date` (`due_date`) USING BTREE,
+  KEY `idx_milestones_order` (`project_id`,`order`) USING BTREE,
+  KEY `idx_milestones_assignee` (`assignee_id`) USING BTREE,
+  KEY `idx_milestones_deleted_at` (`deleted_at`) USING BTREE,
+  KEY `fk_milestones_created_by` (`created_by`),
+  KEY `fk_milestones_updated_by` (`updated_by`),
+  CONSTRAINT `fk_milestones_assignee` FOREIGN KEY (`assignee_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_milestones_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_milestones_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_milestones_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- Data exporting was unselected.
@@ -422,6 +541,12 @@ CREATE TABLE IF NOT EXISTS `projects` (
   `archived_at` timestamp NULL DEFAULT NULL,
   `deleted_at` datetime DEFAULT NULL,
   `deleted_by` char(36) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `current_phase` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `progress_pct` decimal(5,2) DEFAULT '0.00',
+  `timeline_status` varchar(50) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `next_milestone_name` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `schedule_variance` int(11) NOT NULL DEFAULT '0',
+  `planned_duration` int(11) NOT NULL DEFAULT '0',
   `archived_by` char(36) COLLATE utf8_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `created_by` (`created_by`),
@@ -433,6 +558,8 @@ CREATE TABLE IF NOT EXISTS `projects` (
   KEY `idx_projects_client` (`client_id`),
   KEY `idx_projects_project_type` (`project_type_id`),
   KEY `idx_projects_priority` (`priority`),
+  KEY `idx_projects_timeline_status` (`timeline_status`),
+  KEY `idx_projects_progress_pct` (`progress_pct`),
   CONSTRAINT `fk_projects_client` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_projects_project_type` FOREIGN KEY (`project_type_id`) REFERENCES `project_types` (`id`) ON DELETE SET NULL,
   CONSTRAINT `projects_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
@@ -464,6 +591,13 @@ CREATE TABLE IF NOT EXISTS `quotations` (
   `quotation_number` varchar(50) COLLATE utf8_unicode_ci NOT NULL,
   `current_version` int(11) NOT NULL DEFAULT '1',
   `quotation_date` date NOT NULL,
+  `expiry_date` date DEFAULT NULL,
+  `validity_days` int(11) DEFAULT '30',
+  `comparison_notes` text COLLATE utf8_unicode_ci,
+  `selected_at` timestamp NULL DEFAULT NULL,
+  `selected_by` char(36) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `is_selected` tinyint(1) NOT NULL DEFAULT '0',
+  `boq_reference` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `status` enum('draft','submitted','approved','returned_for_editing','declined','cancelled') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'draft',
   `project_id` char(36) COLLATE utf8_unicode_ci NOT NULL,
   `vendor_id` char(36) COLLATE utf8_unicode_ci NOT NULL,
@@ -500,13 +634,33 @@ CREATE TABLE IF NOT EXISTS `quotations` (
   KEY `idx_quotations_vendor` (`vendor_id`),
   KEY `idx_quotations_status` (`status`),
   KEY `idx_quotations_date` (`quotation_date`),
+  KEY `idx_quotations_expiry` (`expiry_date`),
+  KEY `idx_quotations_selected_by` (`selected_by`),
   CONSTRAINT `quotations_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`),
   CONSTRAINT `quotations_ibfk_2` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`),
   CONSTRAINT `quotations_ibfk_3` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `quotations_ibfk_4` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `quotations_ibfk_5` FOREIGN KEY (`deleted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `quotations_ibfk_6` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `quotations_ibfk_7` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+  CONSTRAINT `quotations_ibfk_7` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `quotations_ibfk_8` FOREIGN KEY (`selected_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table spsyn8lm_rippotai_erp.quotation_comparisons
+CREATE TABLE IF NOT EXISTS `quotation_comparisons` (
+  `id` char(36) COLLATE utf8_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `projectId` char(36) COLLATE utf8_unicode_ci NOT NULL,
+  `workCategory` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `quotationIds` json NOT NULL,
+  `comparedAt` datetime DEFAULT NULL,
+  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_quotation_comparisons_project` (`projectId`),
+  CONSTRAINT `fk_quotation_comparisons_project` FOREIGN KEY (`projectId`) REFERENCES `projects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- Data exporting was unselected.
@@ -796,6 +950,9 @@ CREATE TABLE IF NOT EXISTS `users` (
   `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `email` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `password_hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `phone` varchar(50) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `job_title` varchar(150) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `avatar_url` text COLLATE utf8_unicode_ci,
   `role_id` char(36) COLLATE utf8_unicode_ci DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `last_login_at` timestamp NULL DEFAULT NULL,
@@ -809,6 +966,20 @@ CREATE TABLE IF NOT EXISTS `users` (
   KEY `idx_users_role` (`role_id`),
   KEY `idx_users_is_active` (`is_active`),
   CONSTRAINT `users_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table spsyn8lm_rippotai_erp.user_dashboard_layouts
+CREATE TABLE IF NOT EXISTS `user_dashboard_layouts` (
+  `user_id` char(36) COLLATE utf8_unicode_ci NOT NULL,
+  `app_key` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
+  `layout` json NOT NULL,
+  `hidden_keys` json NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`,`app_key`),
+  CONSTRAINT `fk_dashboard_layout_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- Data exporting was unselected.

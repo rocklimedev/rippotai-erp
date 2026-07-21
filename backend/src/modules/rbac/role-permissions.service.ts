@@ -5,7 +5,10 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { UniqueConstraintError } from 'sequelize';
+
 import { RolePermission } from './models/role_permission.model';
+import { Role } from '../rbac/models/role.model';
+import { Permission } from './models/permission.model';
 import {
   CreateRolePermissionDto,
   BulkAssignPermissionsDto,
@@ -16,6 +19,12 @@ export class RolePermissionsService {
   constructor(
     @InjectModel(RolePermission)
     private readonly rolePermissionModel: typeof RolePermission,
+
+    @InjectModel(Role)
+    private readonly roleModel: typeof Role,
+
+    @InjectModel(Permission)
+    private readonly permissionModel: typeof Permission,
   ) {}
 
   async grant(dto: CreateRolePermissionDto): Promise<RolePermission> {
@@ -37,7 +46,7 @@ export class RolePermissionsService {
       permission_id,
       granted_by: dto.granted_by ?? null,
     }));
-    // ignoreDuplicates keeps this idempotent against the composite PK
+
     return this.rolePermissionModel.bulkCreate(rows as any, {
       ignoreDuplicates: true,
     });
@@ -60,9 +69,42 @@ export class RolePermissionsService {
     const row = await this.rolePermissionModel.findOne({
       where: { role_id, permission_id },
     });
+
     if (!row) {
       throw new NotFoundException('Permission grant not found for this role');
     }
+
     await row.destroy();
+  }
+
+  // ============================
+  // MATRIX
+  // ============================
+
+  async getMatrix() {
+    const [roles, permissions, assignments] = await Promise.all([
+      this.roleModel.findAll({
+        attributes: ['id', 'name'],
+        order: [['name', 'ASC']],
+      }),
+
+      this.permissionModel.findAll({
+        attributes: ['id', 'name', 'resource', 'action'],
+        order: [
+          ['resource', 'ASC'],
+          ['action', 'ASC'],
+        ],
+      }),
+
+      this.rolePermissionModel.findAll({
+        attributes: ['role_id', 'permission_id'],
+      }),
+    ]);
+
+    return {
+      roles,
+      permissions,
+      assignments,
+    };
   }
 }

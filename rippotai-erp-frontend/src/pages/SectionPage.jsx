@@ -4,7 +4,14 @@ import api from "@/lib/api";
 import { toast } from "sonner";
 import { sectionNameFor } from "@/config/appNav";
 import { Search, Filter, Save, ChevronRight } from "lucide-react";
-
+import { useMemo } from "react";
+import {
+  useGetRolePermissionMatrixQuery,
+  useGrantPermissionToRoleMutation,
+  useBulkAssignPermissionsMutation,
+  useGetRolePermissionsQuery,
+  useRevokeRolePermissionMutation,
+} from "@/api/rbac.api";
 /* Small helper components */
 const PageShell = ({ title, subtitle, action, children }) => (
   <div
@@ -114,54 +121,181 @@ const ActivityFeed = ({ app }) => {
 };
 
 const RolesPage = () => {
-  const { data, loading } = useData("/roles-permissions");
-  if (loading) return <Loading />;
-  const roles = data?.roles || [];
-  const matrix = data?.matrix || [];
+  const { data, isLoading, isFetching } = useGetRolePermissionMatrixQuery();
+
+  const [grantPermissionToRole, { isLoading: granting }] =
+    useGrantPermissionToRoleMutation();
+
+  const [revokeRolePermission, { isLoading: revoking }] =
+    useRevokeRolePermissionMutation();
+
+  const roles = data?.roles ?? [];
+  const permissions = data?.permissions ?? [];
+  const assignments = data?.assignments ?? [];
+
+  const [search, setSearch] = useState("");
+
+  const filteredPermissions = useMemo(() => {
+    if (!search.trim()) return permissions;
+
+    return permissions.filter((permission) => {
+      const label =
+        permission.name || `${permission.resource}.${permission.action}`;
+
+      return label.toLowerCase().includes(search.toLowerCase());
+    });
+  }, [permissions, search]);
+
+  const handleTogglePermission = async (roleId, permissionId, granted) => {
+    try {
+      if (granted) {
+        await revokeRolePermission({
+          roleId,
+          permissionId,
+        }).unwrap();
+
+        toast.success("Permission revoked");
+      } else {
+        await grantPermissionToRole({
+          role_id: roleId,
+          permission_id: permissionId,
+        }).unwrap();
+
+        toast.success("Permission granted");
+      }
+    } catch (err) {
+      toast.error(err?.data?.message || "Unable to update permission");
+    }
+  };
+
+  const hasPermission = (roleId, permissionId) => {
+    return assignments.some(
+      (assignment) =>
+        assignment.role_id === roleId &&
+        assignment.permission_id === permissionId,
+    );
+  };
+
+  if (isLoading) {
+    return <Loading />;
+  }
+
   return (
-    <Card>
-      <div className="overflow-x-auto table-container">
-        <table className="w-full text-[14px]">
-          <thead className="bg-[#F4F6F7]">
-            <tr>
-              <th className="text-left px-4 py-3 font-semibold text-[13px] uppercase tracking-[0.14em] text-[#6B7B7C]">
-                Permission
-              </th>
-              {roles.map((r) => (
-                <th
-                  key={r}
-                  className="px-3 py-3 font-semibold text-[13px] uppercase tracking-[0.14em] text-[#6B7B7C]"
-                >
-                  {r.replace("_", " ")}
+    <>
+      <Card className="mb-5">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="relative w-full md:w-80">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B5C4B6]"
+              size={16}
+            />
+
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search permissions..."
+              className="w-full pl-10 pr-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-[#1F453B]"
+            />
+          </div>
+        </div>
+      </Card>
+
+      <Card>
+        <div className="overflow-x-auto table-container">
+          <table className="w-full text-sm">
+            <thead className="bg-[#F4F6F7] sticky top-0">
+              <tr>
+                <th className="text-left px-4 py-3 font-semibold uppercase tracking-wider text-[#6B7B7C]">
+                  Permission
                 </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {matrix.map((row, i) => (
-              <tr key={i} className="border-t border-[rgba(31,69,59,0.08)]">
-                <td className="px-4 py-3 text-[#333333] font-semibold">
-                  {row.action}
-                </td>
-                {roles.map((r) => (
-                  <td key={r} className="px-3 py-3 text-center">
-                    {row[r] ? (
-                      <span className="inline-block w-5 h-5 rounded-full bg-[#1F453B] text-white text-[10px] leading-5">
-                        ✓
-                      </span>
-                    ) : (
-                      <span className="inline-block w-5 h-5 rounded-full bg-[#EAEEF0] text-[#B5C4B6] text-[10px] leading-5">
-                        —
-                      </span>
-                    )}
-                  </td>
+
+                {roles.map((role) => (
+                  <th
+                    key={role.id}
+                    className="px-4 py-3 text-center font-semibold uppercase tracking-wider text-[#6B7B7C]"
+                  >
+                    {role.name.replace(/_/g, " ")}
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Card>
+            </thead>
+
+            <tbody>
+              {filteredPermissions.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={roles.length + 1}
+                    className="px-4 py-10 text-center text-[#6B7B7C]"
+                  >
+                    No permissions found.
+                  </td>
+                </tr>
+              ) : (
+                filteredPermissions.map((permission) => {
+                  const permissionLabel =
+                    permission.name ||
+                    `${permission.resource}.${permission.action}`;
+
+                  return (
+                    <tr
+                      key={permission.id}
+                      className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#FAFBFB]"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="font-semibold text-[#333333]">
+                          {permissionLabel}
+                        </div>
+
+                        {(permission.resource || permission.action) && (
+                          <div className="text-xs text-[#6B7B7C] mt-1">
+                            {permission.resource} • {permission.action}
+                          </div>
+                        )}
+                      </td>
+
+                      {roles.map((role) => {
+                        const granted = hasPermission(role.id, permission.id);
+
+                        return (
+                          <td key={role.id} className="px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              disabled={granting || revoking || isFetching}
+                              onClick={() =>
+                                handleTogglePermission(
+                                  role.id,
+                                  permission.id,
+                                  granted,
+                                )
+                              }
+                              className={`inline-flex items-center justify-center
+                                w-7 h-7 rounded-full transition-all duration-200
+                                border
+                                ${
+                                  granted
+                                    ? "bg-[#1F453B] border-[#1F453B] text-white hover:scale-110"
+                                    : "bg-white border-[#D7E1DB] text-[#B5C4B6] hover:bg-[#F4F6F7] hover:border-[#1F453B]"
+                                }
+                                ${
+                                  granting || revoking || isFetching
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : "cursor-pointer"
+                                }`}
+                            >
+                              {granted ? "✓" : ""}
+                            </button>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </>
   );
 };
 

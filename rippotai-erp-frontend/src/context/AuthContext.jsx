@@ -10,6 +10,7 @@ import {
   useLogoutMutation,
   useLazyMeQuery,
 } from "../api/auth.api";
+import { useUpdateUserMutation } from "../api/user.api";
 
 const AuthContext = createContext(null);
 
@@ -27,6 +28,7 @@ export function AuthProvider({ children }) {
   const [loginMutation] = useLoginMutation();
   const [logoutMutation] = useLogoutMutation();
   const [triggerMe] = useLazyMeQuery();
+  const [updateUserMutation] = useUpdateUserMutation();
 
   const persistSession = (token, userData) => {
     localStorage.setItem("bc_token", token);
@@ -98,9 +100,44 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Patches the current user's profile (name/email/phone/job_title/avatar_url)
+  // via PATCH /users/:id, then syncs both React state and localStorage so the
+  // rest of the app (and a page refresh) sees the new values immediately.
+  const updateUser = useCallback(
+    async (payload) => {
+      if (!user?.id) {
+        throw new Error("updateUser called with no authenticated user");
+      }
+
+      const result = await updateUserMutation({
+        id: user.id,
+        ...payload,
+      }).unwrap();
+
+      // Backend may respond with either the raw user row or { user: {...} }.
+      // Handle both shapes rather than assuming one.
+      const updatedUser = result?.user ?? result;
+
+      const merged = { ...user, ...updatedUser };
+      localStorage.setItem("bc_user", JSON.stringify(merged));
+      setUser(merged);
+      return merged;
+    },
+    [user, updateUserMutation],
+  );
+
   return (
     <AuthContext.Provider
-      value={{ user, ready, login, register, signup, logout, refresh }}
+      value={{
+        user,
+        ready,
+        login,
+        register,
+        signup,
+        logout,
+        refresh,
+        updateUser,
+      }}
     >
       {children}
     </AuthContext.Provider>

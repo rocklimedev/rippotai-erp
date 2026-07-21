@@ -547,7 +547,58 @@ export const DASHBOARD_CONFIG: Record<string, AppDashboardConfig> = {
     ],
     requiredKeys: ['documents.recent'],
   },
+  // -------------------------------------------------------------- Leads
+  leads: {
+    widgets: [
+      {
+        key: 'leads.kpi_row',
+        name: 'Lead Metrics',
+        description: 'Overall lead KPIs',
+        category: 'App Data',
+        sizes: ['large', 'full'],
+        defaultSize: 'large',
+        locked_required: true,
+      },
+      {
+        key: 'leads.conversion_stage',
+        name: 'Conversion Rate by Stage',
+        category: 'Reports',
+        sizes: ['medium', 'large'],
+        defaultSize: 'medium',
+      },
+      {
+        key: 'leads.avg_time_stage',
+        name: 'Average Time in Stage',
+        category: 'Reports',
+        sizes: ['medium', 'large'],
+        defaultSize: 'medium',
+      },
+      {
+        key: 'leads.by_source',
+        name: 'Leads by Source',
+        category: 'Reports',
+        sizes: ['medium', 'large'],
+        defaultSize: 'medium',
+      },
+      {
+        key: 'leads.stuck',
+        name: 'Stuck Leads',
+        category: 'Alerts',
+        sizes: ['medium', 'large'],
+        defaultSize: 'medium',
+      },
+    ],
 
+    defaultLayout: [
+      { key: 'leads.kpi_row', x: 0, y: 0, w: 12, h: 3 },
+      { key: 'leads.conversion_stage', x: 0, y: 3, w: 6, h: 4 },
+      { key: 'leads.avg_time_stage', x: 6, y: 3, w: 6, h: 4 },
+      { key: 'leads.by_source', x: 0, y: 7, w: 6, h: 4 },
+      { key: 'leads.stuck', x: 6, y: 7, w: 6, h: 4 },
+    ],
+
+    requiredKeys: ['leads.kpi_row'],
+  },
   // To add another app (e.g. "clients"), add a new key here with the same
   // shape — no other backend changes are required.
 };

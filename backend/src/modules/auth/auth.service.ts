@@ -28,6 +28,9 @@ export class AuthService {
         'password_hash',
         'last_login_at',
         'role_id',
+        'phone',
+        'job_title',
+        'avatar_url',
       ],
       include: [
         {
@@ -88,6 +91,9 @@ export class AuthService {
         email: user.email,
         role: user.role?.name,
         role_id: user.role_id,
+        phone: user.phone,
+        job_title: user.job_title,
+        avatar_url: user.avatar_url,
       },
     };
   }
@@ -95,6 +101,10 @@ export class AuthService {
   async getCurrentUserFromPayload(payload: any) {
     const tokenHash = createHash('sha256').update(payload.jti).digest('hex');
 
+    // NOTE: authTokensService.findByHash must include the User association
+    // with these attributes (phone, job_title, avatar_url) as well, or
+    // authToken.user below simply won't have them. That file wasn't
+    // provided here, so double check its `attributes`/`include` list.
     const authToken = await this.authTokensService.findByHash(tokenHash);
 
     if (!authToken) {
@@ -117,10 +127,12 @@ export class AuthService {
       email: authToken.user?.email,
       role: authToken.user?.role?.name,
       role_id: authToken.user?.role_id,
+      phone: authToken.user?.phone,
+      job_title: authToken.user?.job_title,
+      avatar_url: authToken.user?.avatar_url,
     };
   }
 
-  // Also update getCurrentUser similarly for consistency
   async getCurrentUser(token: string) {
     if (!token) throw new UnauthorizedException('No token provided');
 
@@ -133,6 +145,7 @@ export class AuthService {
 
     return this.getCurrentUserFromPayload(payload);
   }
+
   async logout(token: string) {
     try {
       const payload = jwt.verify(token, process.env.JWT_SECRET!) as any;

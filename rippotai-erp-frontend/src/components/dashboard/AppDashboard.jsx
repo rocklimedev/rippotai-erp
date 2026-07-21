@@ -317,6 +317,18 @@ function WidgetWrapper({ item, meta, editing, canRemove, onRemove }) {
           </div>
         )}
       </div>
+
+      {/* NEW: swallow clicks on widget content while editing */}
+      {editing && (
+        <div
+          className="absolute inset-0 z-10 cursor-move"
+          data-testid={`widget-edit-overlay-${item.key}`}
+          onClickCapture={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        />
+      )}
     </div>
   );
 }

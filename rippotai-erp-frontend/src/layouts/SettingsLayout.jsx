@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import {
   Bell,
   ChevronDown,
   LogOut,
   Settings as SettingsIcon,
-  LayoutGrid,
   Search,
-  ArrowLeft,
+  User,
+  Users as UsersIcon,
+  Shield,
+  CreditCard,
+  ShieldCheck,
 } from "lucide-react";
 
 import {
@@ -21,12 +24,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-
-import {
   useGetUserNotificationsQuery,
   useMarkAsReadMutation,
   useMarkAllAsReadMutation,
@@ -34,7 +31,27 @@ import {
 
 import api from "@/lib/api";
 
-// ====================== SETTINGS HEADER ======================
+// ====================== SIDEBAR ITEMS (route-based) ======================
+const sidebarItems = [
+  { to: "/settings", end: true, label: "Edit Profile", icon: User },
+  { to: "/settings/security", label: "Security", icon: Shield },
+  { to: "/settings/notifications", label: "Notifications", icon: Bell },
+  { to: "/settings/billing", label: "Billing", icon: CreditCard },
+  {
+    to: "/settings/estimate-signature",
+    label: "Estimate Signature",
+    icon: CreditCard,
+  },
+  { to: "/settings/users", label: "Users", icon: UsersIcon },
+  {
+    to: "/settings/roles-permissions",
+    label: "Roles & Permissions",
+    icon: Shield,
+  },
+  { to: "/settings/super-admin", label: "Super Admin", icon: ShieldCheck },
+];
+
+// ====================== SETTINGS TOP HEADER ======================
 
 function SettingsTopHeader() {
   const nav = useNavigate();
@@ -241,7 +258,6 @@ function SettingsTopHeader() {
           <DropdownMenuItem onClick={() => nav("/settings")}>
             <SettingsIcon size={15} className="mr-2" /> Account Settings
           </DropdownMenuItem>
-          {/* Add other admin items if needed */}
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => {
@@ -257,7 +273,40 @@ function SettingsTopHeader() {
   );
 }
 
-// ====================== SETTINGS LAYOUT ======================
+// ====================== SETTINGS SIDEBAR ======================
+
+function SettingsSidebar() {
+  return (
+    <div className="lg:col-span-3">
+      <div className="bg-white border border-[rgba(31,69,59,0.14)] rounded-3xl p-2 shadow-sm sticky top-6">
+        <nav className="space-y-1">
+          {sidebarItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  `w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all ${
+                    isActive
+                      ? "bg-[#1F453B] text-white"
+                      : "hover:bg-[#F4F6F7] text-[#1F453B]"
+                  }`
+                }
+              >
+                <Icon size={20} />
+                <span className="font-medium">{item.label}</span>
+              </NavLink>
+            );
+          })}
+        </nav>
+      </div>
+    </div>
+  );
+}
+
+// ====================== SETTINGS LAYOUT (shell) ======================
 export default function SettingsLayout() {
   const { user, ready } = useAuth();
   const navigate = useNavigate();
@@ -285,7 +334,30 @@ export default function SettingsLayout() {
     <div className="min-h-screen bg-page">
       <SettingsTopHeader />
       <main className="p-6 lg:p-8">
-        <Outlet />
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-8">
+            <h1
+              className="text-3xl font-semibold"
+              style={{ color: "var(--ink-green)" }}
+            >
+              Settings
+            </h1>
+            <p className="text-[#6B7B7C] mt-1">
+              Manage your account, team, and workspace preferences
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <SettingsSidebar />
+
+            <div className="lg:col-span-9">
+              <div className="bg-white border border-[rgba(31,69,59,0.14)] rounded-3xl p-8 shadow-sm min-h-[600px]">
+                {/* Active tab renders here based on the current /settings/* route */}
+                <Outlet />
+              </div>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   );

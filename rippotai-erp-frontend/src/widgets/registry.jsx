@@ -87,6 +87,13 @@ import {
   DocumentsPending,
 } from "./calendar";
 
+import {
+  LeadsKpiRow,
+  LeadsConversionByStage,
+  LeadsAvgTimeInStage,
+  LeadsBySource,
+  LeadsStuckLeads,
+} from "./leads";
 /* -------- Registry --------
  * Same keys as the original monolithic registry.jsx, just sourced from
  * per-domain modules now. Nothing that reads WIDGETS[key] needs to change.
@@ -144,6 +151,13 @@ export const WIDGETS = {
   // legacy
   "vendors.by_category": VendorsByCategory,
   "vendors.saved_searches": VendorsSavedSearches,
+
+  // Leads
+  "leads.kpi_row": LeadsKpiRow,
+  "leads.conversion_by_stage": LeadsConversionByStage,
+  "leads.avg_time_in_stage": LeadsAvgTimeInStage,
+  "leads.by_source": LeadsBySource,
+  "leads.stuck_leads": LeadsStuckLeads,
 
   // Quotations
   "quot.total": QuotTotal,

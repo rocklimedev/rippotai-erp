@@ -54,7 +54,7 @@ import { NoteNew } from "./pages/phasef/Notes";
 import { TasksMine } from "./pages/phasef/Tasks";
 import { TaskNew } from "./pages/phasef/Tasks";
 import RolesPermissions from "@/pages/settings/RolesPermissions";
-import SuperAdminPage from "@/pages/settings/SuperAdmin";
+import SuperAdmin from "@/pages/settings/SuperAdmin";
 import { UpgradeModalHost } from "@/lib/planGuards";
 import EstimateSignature from "@/pages/settings/EstimateSignature";
 import BoqTemplatesList from "./pages/boq/BoqTemplatesList";
@@ -70,6 +70,17 @@ import ContactsView from "./components/leads/ContactsView";
 import ReviewView from "./components/leads/ReviewView";
 import BoardView from "./components/leads/BoardView";
 import LeadsActivity from "./pages/leads/LeadsActivity";
+import ProfileSettings from "@/pages/settings/ProfileSettings";
+import SecuritySettings from "@/pages/settings/SecuritySettings";
+import NotificationSettings from "@/pages/settings/NotificationSettings";
+import BillingSettings from "@/pages/settings/BillingSettings";
+import UsersSettings from "@/pages/settings/UserSettings";
+import ProjectActivity from "./pages/projects/ProjectActivity";
+import QuotationsActivity from "./pages/quotations/QuotationActivity";
+import VendorActivity from "./pages/vendors/VendorActivity";
+import DocumentActivity from "./pages/documents/DocumentActivity";
+import TaskActivity from "./pages/phasef/TaskActivity";
+import CalendarActivity from "./pages/phasef/CalendarActivity";
 function Protected({ children, blockRoles }) {
   const { user, ready } = useAuth();
   if (!ready)
@@ -210,7 +221,7 @@ function App() {
               </Protected>
             }
           >
-            <Route index element={<ReviewView />} />
+            <Route index element={<AppDashboard appKey="leads" />} />
             <Route path="new" element={<NewLeadPage />} />
             <Route path="sources" element={<ContactsView />} />
             <Route path="activity" element={<LeadsActivity />} />
@@ -231,6 +242,7 @@ function App() {
             <Route path="new" element={<VendorNew />} />
             <Route path="shortlists" element={<ShortlistsIndex />} />
             <Route path="shortlists/:id" element={<ShortlistDetail />} />
+            <Route path="activity" element={<VendorActivity />} />
             {sectionRoutes("vendors", ["new", "shortlists", "directory"])}
             <Route path=":id" element={<VendorProfile />} />
           </Route>
@@ -248,7 +260,7 @@ function App() {
             <Route path="all" element={<QuotationsDashboard />} />
             <Route path="new" element={<QuotationNew />} />
             <Route path="upload" element={<QuotationUpload />} />
-
+            <Route path="activity" element={<QuotationsActivity />} />
             <Route path="compare" element={<QuotationCompare />} />
             {sectionRoutes("quotations", ["new", "upload", "compare", "all"])}
             <Route path=":id" element={<QuotationDetail />} />
@@ -265,6 +277,7 @@ function App() {
           >
             <Route index element={<AppDashboard appKey="projects" />} />
             <Route path="all" element={<ProjectsDashboard />} />
+            <Route path="activity" element={<ProjectActivity />} />
             <Route path="new" element={<ProjectNew />} />
             {sectionRoutes("projects", ["new", "all"])}
             <Route path=":id/handover" element={<ProjectHandover />} />
@@ -284,6 +297,7 @@ function App() {
             <Route path="all" element={<DocumentsAll />} />
             <Route path="upload" element={<DocumentUpload />} />
             <Route path="project-documents" element={<ProjectDocuments />} />
+            <Route path="activity" element={<DocumentActivity />} />
             <Route path="forms/project-brief" element={<BriefForm />} />
             <Route path="forms/site-reki" element={<SiteRekiForm />} />
             <Route path="site-reki/:id" element={<SiteRekiView />} />
@@ -311,6 +325,7 @@ function App() {
           >
             <Route index element={<CalendarPage />} />
             <Route path="mine" element={<CalendarMine />} />
+            <Route path="activity" element={<CalendarActivity />} />
             <Route path="team" element={<CalendarTeam />} />
             {sectionRoutes("calendar", ["mine", "team"])}
           </Route>
@@ -324,6 +339,7 @@ function App() {
           >
             <Route index element={<TasksBoard />} />
             <Route path="mine" element={<TasksMine />} />
+            <Route path="activity" element={<TaskActivity />} />
             <Route path="all" element={<TasksAll />} />
             <Route path="new" element={<TaskNew />} />
             {sectionRoutes("tasks", ["mine", "all", "new"])}
@@ -370,11 +386,16 @@ function App() {
               </Protected>
             }
           >
-            <Route index element={<AccountSettings />} />
-            <Route path="roles-permissions" element={<RolesPermissions />} />
+            <Route index element={<ProfileSettings />} />
+            <Route path="security" element={<SecuritySettings />} />
+            <Route path="notifications" element={<NotificationSettings />} />
+            <Route path="billing" element={<BillingSettings />} />
             <Route path="estimate-signature" element={<EstimateSignature />} />
-            <Route path="super-admin" element={<SuperAdminPage />} />
+            <Route path="users" element={<UsersSettings />} />
+            <Route path="roles-permissions" element={<RolesPermissions />} />
+            <Route path="super-admin" element={<SuperAdmin />} />
           </Route>
+
           <Route path="/client/*" element={<ClientPortalRoutes />} />
           <Route
             path="/client-home"

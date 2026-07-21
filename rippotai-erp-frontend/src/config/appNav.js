@@ -65,7 +65,6 @@ export const APP_MENUS = {
       items: [
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles and Permissions", "roles"),
-        I("BOQ Settings", "settings"),
         I("Activity", "activity"),
       ],
     },
@@ -80,7 +79,6 @@ export const APP_MENUS = {
       items: [
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles and Permissions", "roles"),
-        I("Project Settings", "settings"),
         I("Activity", "activity"),
       ],
     },
@@ -91,7 +89,6 @@ export const APP_MENUS = {
       items: [
         I("All Estimates", "all"),
         I("Create Estimate", "new"),
-        I("Comparisons", "compare"),
         I("Projects", "/projects/all"),
       ],
     },
@@ -100,7 +97,6 @@ export const APP_MENUS = {
       items: [
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles and Permissions", "roles"),
-        I("Estimate Settings", "settings"),
         I("Activity", "activity"),
       ],
     },
@@ -115,7 +111,6 @@ export const APP_MENUS = {
       items: [
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles and Permissions", "roles"),
-        I("Vendor Settings", "settings"),
         I("Activity", "activity"),
       ],
     },
@@ -148,7 +143,6 @@ export const APP_MENUS = {
       items: [
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles and Permissions", "roles"),
-        I("Document Settings", "settings"),
         I("Activity", "activity"),
       ],
     },
@@ -168,7 +162,6 @@ export const APP_MENUS = {
       items: [
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles and Permissions", "roles"),
-        I("Lead Settings", "settings"),
         I("Activity", "activity"),
       ],
     },
@@ -183,7 +176,6 @@ export const APP_MENUS = {
       items: [
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles and Permissions", "roles"),
-        I("Task Settings", "settings"),
         I("Activity", "activity"),
       ],
     },
@@ -198,7 +190,6 @@ export const APP_MENUS = {
       items: [
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles and Permissions", "roles"),
-        I("Calendar Settings", "settings"),
         I("Activity", "activity"),
       ],
     },
