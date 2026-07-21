@@ -12,20 +12,22 @@ import {
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { APP_META, APP_MENUS } from "@/config/appNav";
-import api from "@/lib/api"; // for real search
+import { useGlobalSearchQuery } from "@/api/search.api";
 
-// Resolve a slug against the app's base route. Slugs that already start
-// with "/" (cross-app links like "/projects/all") are used as-is.
+// Resolve a slug against the app's base route.
+// Slugs that already start with "/" are used as-is.
 function resolvePath(base, slug) {
   if (!slug) return base;
   return slug.startsWith("/") ? slug : `${base}/${slug}`;
 }
 
-// Pick a sensible icon for a menu item based on its label/slug.
+// Pick an icon based on menu label.
 function iconFor(label = "", slug = "") {
   const text = `${label} ${slug}`.toLowerCase();
+
   if (/(create|new|add|upload)/.test(text)) return Plus;
   if (/(setting|role|permission)/.test(text)) return SettingsIcon;
+
   return FileText;
 }
 
@@ -33,7 +35,6 @@ export default function CommandShellSearch({ currentApp }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [searchResults, setSearchResults] = useState([]);
 
   const inputRef = useRef(null);
   const nav = useNavigate();
@@ -41,7 +42,36 @@ export default function CommandShellSearch({ currentApp }) {
   const meta = APP_META[currentApp] || {};
   const base = meta.base || "/";
 
-  // Cmd/Ctrl + K global shortcut
+  // =====================================================
+  // GLOBAL SEARCH (RTK QUERY)
+  // =====================================================
+
+  const { data: searchData, isFetching } = useGlobalSearchQuery(query, {
+    skip: query.trim().length < 2,
+  });
+
+  const searchResults = useMemo(() => {
+    if (!searchData) return [];
+
+    return [
+      ...(searchData.boqs ?? []),
+      ...(searchData.briefs ?? []),
+      ...(searchData.calendar ?? []),
+      ...(searchData.clients ?? []),
+      ...(searchData.leads ?? []),
+      ...(searchData.projects ?? []),
+      ...(searchData.quotations ?? []),
+      ...(searchData.siteRecce ?? []),
+      ...(searchData.tasks ?? []),
+      ...(searchData.users ?? []),
+      ...(searchData.vendors ?? []),
+    ];
+  }, [searchData]);
+
+  // =====================================================
+  // CMD + K
+  // =====================================================
+
   useEffect(() => {
     const handleGlobalKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -53,32 +83,16 @@ export default function CommandShellSearch({ currentApp }) {
     };
 
     window.addEventListener("keydown", handleGlobalKey);
-    return () => window.removeEventListener("keydown", handleGlobalKey);
+
+    return () => {
+      window.removeEventListener("keydown", handleGlobalKey);
+    };
   }, []);
 
-  // Live Search
-  useEffect(() => {
-    if (query.length < 2) {
-      setSearchResults([]);
-      return;
-    }
+  // =====================================================
+  // COMMANDS
+  // =====================================================
 
-    const timer = setTimeout(async () => {
-      try {
-        const { data } = await api.get(
-          `/search?q=${encodeURIComponent(query)}&limit=8`,
-        );
-        setSearchResults(data?.results || []);
-      } catch (err) {
-        setSearchResults([]);
-      }
-    }, 220);
-
-    return () => clearTimeout(timer);
-  }, [query]);
-
-  // Build contextual commands straight from APP_META / APP_MENUS so every
-  // app (not just two hardcoded ones) gets Quick Actions + its real nav.
   const groupedCommands = useMemo(() => {
     const common = [
       {
@@ -95,13 +109,15 @@ export default function CommandShellSearch({ currentApp }) {
       },
     ];
 
-    const groups = { "Quick Actions": common };
+    const groups = {
+      "Quick Actions": common,
+    };
+
     const menuGroups = APP_MENUS[currentApp] || [];
 
     menuGroups.forEach((group) => {
       const items = [];
 
-      // Standalone nav item (e.g. leads "Pipeline")
       if (group.slug) {
         items.push({
           id: `${currentApp}-${group.label}-${group.slug}`,
@@ -111,14 +127,13 @@ export default function CommandShellSearch({ currentApp }) {
         });
       }
 
-      // Dropdown items
       if (Array.isArray(group.items)) {
-        group.items.forEach((it) => {
+        group.items.forEach((item) => {
           items.push({
-            id: `${currentApp}-${group.label}-${it.slug}`,
-            label: it.label,
-            icon: iconFor(it.label, it.slug),
-            action: () => nav(resolvePath(base, it.slug)),
+            id: `${currentApp}-${group.label}-${item.slug}`,
+            label: item.label,
+            icon: iconFor(item.label, item.slug),
+            action: () => nav(resolvePath(base, item.slug)),
           });
         });
       }
@@ -133,29 +148,35 @@ export default function CommandShellSearch({ currentApp }) {
 
   const allResults = useMemo(() => {
     const out = [];
+
     Object.entries(groupedCommands).forEach(([group, items]) => {
       items.forEach((item) => {
         if (!query || item.label.toLowerCase().includes(query.toLowerCase())) {
-          out.push({ ...item, group });
+          out.push({
+            ...item,
+            group,
+          });
         }
       });
     });
+
     return out;
   }, [groupedCommands, query]);
 
-  const allItems = useMemo(
-    () => [...allResults, ...searchResults],
-    [allResults, searchResults],
-  );
+  const allItems = useMemo(() => {
+    return [...allResults, ...searchResults];
+  }, [allResults, searchResults]);
 
-  // Reset selection whenever the visible item list changes.
   useEffect(() => {
     setSelectedIndex(0);
   }, [query, allItems.length]);
 
   const executeCommand = (item) => {
-    if (item.action) item.action();
-    else if (item.path) nav(item.path);
+    if (item.action) {
+      item.action();
+    } else if (item.path) {
+      nav(item.path);
+    }
 
     setOpen(false);
     setQuery("");
@@ -165,57 +186,66 @@ export default function CommandShellSearch({ currentApp }) {
   const handleKeyDown = (e) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
+
       setSelectedIndex((prev) => (prev + 1) % Math.max(1, allItems.length));
     }
+
     if (e.key === "ArrowUp") {
       e.preventDefault();
+
       setSelectedIndex(
         (prev) => (prev - 1 + allItems.length) % Math.max(1, allItems.length),
       );
     }
+
     if (e.key === "Enter") {
       e.preventDefault();
+
       if (allItems[selectedIndex]) {
         executeCommand(allItems[selectedIndex]);
       }
     }
   };
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {/* Trigger - Visible Search Bar */}
+      {/* Trigger */}
       <DialogTrigger asChild>
         <div className="relative flex-1 max-w-[380px] cursor-text">
           <Search
             size={16}
             className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none"
           />
+
           <input
             type="text"
             value={query}
             onFocus={() => setOpen(true)}
-            placeholder={meta.searchPh || `Search or jump to...`}
+            placeholder={meta.searchPh || "Search or jump to..."}
             className="bc-input pl-10 w-full cursor-text"
-            readOnly // Prevents typing in trigger, only opens modal
+            readOnly
           />
+
           <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[var(--muted)] hidden sm:block">
             ⌘K
           </div>
         </div>
       </DialogTrigger>
 
-      {/* Modal Content */}
       <DialogContent
         className="bc-card max-w-[520px] p-0 overflow-hidden"
         style={{ maxHeight: "85vh" }}
       >
-        {/* Header / Search Input */}
+        {/* ====================================================== */}
+        {/* HEADER */}
+        {/* ====================================================== */}
+
         <div className="p-4 border-b border-border relative">
           <div className="relative">
             <Search
               size={20}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)]"
             />
+
             <input
               ref={inputRef}
               autoFocus
@@ -235,34 +265,54 @@ export default function CommandShellSearch({ currentApp }) {
           </button>
         </div>
 
-        {/* Results Area */}
+        {/* ====================================================== */}
+        {/* RESULTS */}
+        {/* ====================================================== */}
+
         <div
           className="overflow-auto"
           style={{ maxHeight: "calc(85vh - 120px)" }}
         >
-          {allItems.length === 0 && query && (
+          {/* Loading */}
+
+          {isFetching && (
+            <div className="py-10 text-center text-[var(--muted)]">
+              Searching...
+            </div>
+          )}
+
+          {/* Empty */}
+
+          {!isFetching && allItems.length === 0 && query && (
             <div className="py-16 text-center text-[var(--muted)]">
               No results found for "{query}"
             </div>
           )}
 
-          {/* Command Groups */}
+          {/* ====================================================== */}
+          {/* QUICK COMMANDS */}
+          {/* ====================================================== */}
+
           {Object.entries(groupedCommands).map(([groupName, items]) => {
             const filtered = items.filter(
               (item) =>
                 !query ||
                 item.label.toLowerCase().includes(query.toLowerCase()),
             );
-            if (filtered.length === 0) return null;
+
+            if (!filtered.length) return null;
 
             return (
               <div key={groupName} className="py-3">
                 <div className="eyebrow px-5 py-2">{groupName}</div>
+
                 {filtered.map((item) => {
                   const globalIdx = allResults.findIndex(
                     (r) => r.id === item.id,
                   );
+
                   const isSelected = globalIdx === selectedIndex;
+
                   const Icon = item.icon || FileText;
 
                   return (
@@ -281,9 +331,11 @@ export default function CommandShellSearch({ currentApp }) {
                           isSelected ? "text-white" : "text-[var(--muted)]"
                         }
                       />
+
                       <span className="flex-1 text-[15px] truncate">
                         {item.label}
                       </span>
+
                       <ArrowRight
                         size={18}
                         className={
@@ -296,20 +348,25 @@ export default function CommandShellSearch({ currentApp }) {
               </div>
             );
           })}
+          {/* ====================================================== */}
+          {/* LIVE ELASTICSEARCH RESULTS */}
+          {/* ====================================================== */}
 
-          {/* Live Search Results */}
           {searchResults.length > 0 && (
             <div className="py-3">
               <div className="eyebrow px-5 py-2 flex items-center gap-2">
-                <Zap size={14} /> Live Search Results
+                <Zap size={14} />
+                Live Search Results
               </div>
+
               {searchResults.map((item, idx) => {
                 const globalIdx = allResults.length + idx;
+
                 const isSelected = globalIdx === selectedIndex;
 
                 return (
                   <button
-                    key={item.id}
+                    key={item.id || `${item.type}-${idx}`}
                     onClick={() => executeCommand(item)}
                     className={`w-full px-5 py-3.5 flex items-center gap-4 text-left transition-colors ${
                       isSelected
@@ -323,9 +380,29 @@ export default function CommandShellSearch({ currentApp }) {
                         isSelected ? "text-white" : "text-[var(--muted)]"
                       }
                     />
-                    <span className="flex-1 text-[15px] truncate">
-                      {item.label || item.title}
-                    </span>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[15px] truncate">
+                        {item.label || item.title || item.name}
+                      </div>
+
+                      {item.type && (
+                        <div
+                          className={`text-xs mt-1 ${
+                            isSelected ? "text-white/70" : "text-[var(--muted)]"
+                          }`}
+                        >
+                          {item.type}
+                        </div>
+                      )}
+                    </div>
+
+                    <ArrowRight
+                      size={18}
+                      className={
+                        isSelected ? "text-white/70" : "text-[var(--sage)]"
+                      }
+                    />
                   </button>
                 );
               })}
@@ -333,9 +410,23 @@ export default function CommandShellSearch({ currentApp }) {
           )}
         </div>
 
-        {/* Footer Hint */}
-        <div className="border-t border-border px-5 py-3 text-xs text-[var(--muted)] flex justify-between bg-[var(--mist-soft)]">
+        {/* ====================================================== */}
+        {/* FOOTER */}
+        {/* ====================================================== */}
+
+        <div
+          className="
+            border-t border-border
+            px-5 py-3
+            text-xs
+            text-[var(--muted)]
+            flex
+            justify-between
+            bg-[var(--mist-soft)]
+          "
+        >
           <div>↑ ↓ to navigate • Enter to select</div>
+
           <div>Esc to close</div>
         </div>
       </DialogContent>
