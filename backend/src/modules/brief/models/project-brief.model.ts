@@ -58,4 +58,22 @@ export class ProjectBrief extends Model<ProjectBrief> {
     as: 'creator',
   })
   declare creator: User;
+  @Column({
+    field: 'created_at',
+    type: DataType.DATE,
+  })
+  declare createdAt: Date;
+
+  @Column({
+    field: 'updated_at',
+    type: DataType.DATE,
+  })
+  declare updatedAt: Date;
+
+  @Column({
+    field: 'deleted_at',
+    type: DataType.DATE,
+    allowNull: true,
+  })
+  declare deletedAt: Date | null;
 }

@@ -1,3 +1,4 @@
+// brief.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ProjectBrief } from './models/project-brief.model';
@@ -35,6 +36,33 @@ export class BriefService {
       pdf_size: brief.pdf_size,
       project_id: brief.project_id,
     };
+  }
+
+  // NEW: list endpoint backing ProjectBriefList.jsx / useGetProjectBriefsQuery.
+  // Optional project_id filter, most recent first.
+  async findAll(filters: { project_id?: string } = {}) {
+    const where: Record<string, unknown> = {};
+    if (filters.project_id) where.project_id = filters.project_id;
+
+    const briefs = await this.projectBriefModel.findAll({
+      where,
+      include: [{ association: 'project' }, { association: 'creator' }],
+      order: [['createdAt', 'DESC']],
+    });
+
+    // Reshaped to match what the list page reads: project_name, sections
+    // length, createdByName, createdAt/updatedAt — same spirit as create()
+    // reshaping its return value for the frontend that consumes it.
+    return briefs.map((b) => ({
+      id: b.id,
+      doc_no: b.doc_no,
+      project_id: b.project_id,
+      project_name: b.project?.name ?? null,
+      sections: b.sections,
+      createdByName: b.creator?.name ?? null,
+      createdAt: b.createdAt,
+      updatedAt: b.updatedAt,
+    }));
   }
 
   async findOne(id: string) {

@@ -42,19 +42,19 @@ export function AddItemPicker({ open, onClose, onPick, categories = [], defaultC
 
   if (!open) return null;
 
-  const pickFromLibrary = (it) => {
-    onPick({
-      payload: {
-        description: it.name,
-        unit: it.unit || "Nos.",
-        quantity: 1,
-        rate: it.default_rate || 0,
-        calc_type: "M",
-        library_item_id: it.id,
-        notes: it.notes || "",
-      },
-    });
-  };
+const pickFromLibrary = (it) => {
+  onPick({
+    payload: {
+      name: it.name,              // ✅ was `description: it.name`
+      unit: it.unit || "Nos.",
+      quantity: 1,
+      rate: it.default_rate || 0,
+      calc_type: "M",
+      library_item_id: it.id,
+      notes: it.notes || "",
+    },
+  });
+};
 
   const createInline = async () => {
     if (!newItem.name.trim()) return toast.error("Name required");

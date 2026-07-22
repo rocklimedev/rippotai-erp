@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, X } from "lucide-react";
-import { useCreateProjectMutation } from "../../api/project.api"; // adjust import path
+import {
+  useCreateProjectMutation,
+  useGetProjectByIdQuery,
+  useUpdateProjectMutation,
+} from "../../api/project.api"; // adjust import path
 import {
   useGetProjectTypesQuery,
   useCreateProjectTypeMutation,
@@ -12,8 +16,8 @@ import {
   useCreateClientMutation,
 } from "../../api/client.api"; // adjust import path
 
-// UI shows friendly labels; CreateProjectDto's `priority` is validated
-// against the ProjectPriority enum, which is uppercase.
+// UI shows friendly labels; CreateProjectDto/UpdateProjectDto's `priority`
+// is validated against the ProjectPriority enum, which is uppercase.
 const PRIORITY_OPTIONS = [
   { label: "Low", value: "LOW" },
   { label: "Medium", value: "MEDIUM" },
@@ -21,8 +25,20 @@ const PRIORITY_OPTIONS = [
   { label: "Critical", value: "CRITICAL" },
 ];
 
+// Dates come back from the API as ISO datetimes (e.g. 2026-07-22T00:00:00.000Z)
+// but <input type="date"> needs a plain yyyy-mm-dd value.
+const toDateInputValue = (value) => {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
+};
+
 export default function ProjectNew() {
   const nav = useNavigate();
+  const { id: projectId } = useParams(); // present on /projects/:id/edit, absent on /projects/new
+  const isEdit = Boolean(projectId);
+
   const [form, setForm] = useState({
     name: "",
     client_id: "",
@@ -31,12 +47,19 @@ export default function ProjectNew() {
     priority: "MEDIUM",
     expected_completion_date: "",
   });
+  const [hydrated, setHydrated] = useState(false);
 
   const [showAddType, setShowAddType] = useState(false);
   const [newTypeName, setNewTypeName] = useState("");
 
   const [showAddClient, setShowAddClient] = useState(false);
   const [newClientName, setNewClientName] = useState("");
+
+  const {
+    data: project,
+    isFetching: projectLoading,
+    isError: projectError,
+  } = useGetProjectByIdQuery(projectId, { skip: !isEdit });
 
   const {
     data: types = [],
@@ -56,10 +79,15 @@ export default function ProjectNew() {
     useCreateClientMutation();
   const [createProject, { isLoading: creatingProject }] =
     useCreateProjectMutation();
+  const [updateProject, { isLoading: updatingProject }] =
+    useUpdateProjectMutation();
 
-  const busy = creatingProject;
+  const busy = isEdit ? updatingProject : creatingProject;
 
   // Surface fetch errors the same way the old axios .catch() did.
+  useEffect(() => {
+    if (projectError) toast.error("Failed to load project");
+  }, [projectError]);
   useEffect(() => {
     if (typesError) toast.error("Failed to load project types");
   }, [typesError]);
@@ -67,17 +95,37 @@ export default function ProjectNew() {
     if (clientsError) toast.error("Failed to load clients");
   }, [clientsError]);
 
-  // Default the selects to the first option once data has loaded.
+  // Edit mode: hydrate the form once the project has loaded. Guarded by
+  // `hydrated` so a refetch afterwards doesn't clobber what's being typed.
   useEffect(() => {
+    if (!isEdit || !project || hydrated) return;
+    setForm({
+      name: project.name || "",
+      client_id: project.client_id || project.client?.id || "",
+      project_type_id:
+        project.project_type_id || project.project_type?.id || "",
+      site_location: project.site_location || "",
+      priority: project.priority || "MEDIUM",
+      expected_completion_date: toDateInputValue(
+        project.expected_completion_date,
+      ),
+    });
+    setHydrated(true);
+  }, [isEdit, project, hydrated]);
+
+  // Create mode: default the selects to the first option once data loads.
+  useEffect(() => {
+    if (isEdit) return;
     if (!form.project_type_id && types.length) {
       setForm((f) => ({ ...f, project_type_id: types[0].id }));
     }
-  }, [types, form.project_type_id]);
+  }, [isEdit, types, form.project_type_id]);
   useEffect(() => {
+    if (isEdit) return;
     if (!form.client_id && clients.length) {
       setForm((f) => ({ ...f, client_id: clients[0].id }));
     }
-  }, [clients, form.client_id]);
+  }, [isEdit, clients, form.client_id]);
 
   const saveNewType = async () => {
     if (!newTypeName.trim()) {
@@ -115,15 +163,15 @@ export default function ProjectNew() {
     }
   };
 
-  const create = async () => {
+  const submit = async () => {
     if (!form.name.trim()) return toast.error("Name required");
     if (!form.site_location.trim())
       return toast.error("Location required");
 
-    // Send only what CreateProjectDto accepts, with the exact field
-    // names/types it validates. Optional fields are omitted rather than
-    // sent as empty strings, since e.g. an empty client_id would fail
-    // @IsUUID().
+    // Send only what CreateProjectDto/UpdateProjectDto accepts, with the
+    // exact field names/types it validates. Optional fields are omitted
+    // rather than sent as empty strings, since e.g. an empty client_id
+    // would fail @IsUUID().
     const payload = {
       name: form.name.trim(),
       site_location: form.site_location.trim(),
@@ -138,9 +186,15 @@ export default function ProjectNew() {
     };
 
     try {
-      const data = await createProject(payload).unwrap();
-      toast.success("Project created");
-      nav(`/projects/${data.id}`);
+      if (isEdit) {
+        const data = await updateProject({ id: projectId, ...payload }).unwrap();
+        toast.success("Project updated");
+        nav(`/projects/${data?.id || projectId}`);
+      } else {
+        const data = await createProject(payload).unwrap();
+        toast.success("Project created");
+        nav(`/projects/${data.id}`);
+      }
     } catch (e) {
       const messages = e?.data?.message;
       toast.error(
@@ -149,18 +203,31 @@ export default function ProjectNew() {
     }
   };
 
+  if (isEdit && projectLoading && !hydrated) {
+    return (
+      <div className="max-w-[900px] mx-auto p-6">
+        <div className="text-[13px] text-[#6B7B7C]">Loading project…</div>
+      </div>
+    );
+  }
+
+  const backTarget = isEdit ? `/projects/${projectId}` : "/projects";
+
   return (
     <div className="max-w-[900px] mx-auto p-6">
       <button
-        onClick={() => nav("/projects")}
+        onClick={() => nav(backTarget)}
         className="text-[13px] text-[#6B7B7C] inline-flex items-center gap-1 mb-3"
       >
-        <ArrowLeft size={14} /> Projects
+        <ArrowLeft size={14} /> {isEdit ? "Project" : "Projects"}
       </button>
-      <h1 className="text-[36px] font-bold text-[#333333]">Create Project</h1>
+      <h1 className="text-[36px] font-bold text-[#333333]">
+        {isEdit ? "Edit Project" : "Create Project"}
+      </h1>
       <p className="text-[13px] text-[#6B7B7C] mt-1">
-        Set up a new project — the phase tracker is populated automatically as
-        documents are finalized.
+        {isEdit
+          ? "Update project details. The phase tracker keeps updating automatically as documents are finalized."
+          : "Set up a new project — the phase tracker is populated automatically as documents are finalized."}
       </p>
 
       <div className="bg-white border border-[#B5C4B6] rounded-xl p-6 mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -290,18 +357,18 @@ export default function ProjectNew() {
 
       <div className="flex justify-end gap-2 mt-4">
         <button
-          onClick={() => nav("/projects")}
+          onClick={() => nav(backTarget)}
           className="px-4 py-2 rounded-lg border border-[#B5C4B6] text-[13px] font-semibold"
         >
           Cancel
         </button>
         <button
-          onClick={create}
+          onClick={submit}
           disabled={busy}
           className="px-4 py-2 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold"
           data-testid="btn-create-project-confirm"
         >
-          Create Project
+          {isEdit ? "Save Changes" : "Create Project"}
         </button>
       </div>
 

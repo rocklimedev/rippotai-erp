@@ -81,6 +81,10 @@ import VendorActivity from "./pages/vendors/VendorActivity";
 import DocumentActivity from "./pages/documents/DocumentActivity";
 import TaskActivity from "./pages/phasef/TaskActivity";
 import CalendarActivity from "./pages/phasef/CalendarActivity";
+import ProjectBriefList from "./pages/documents/ProjectBriefList";
+import SiteRecceList from "./pages/documents/SiteRecceList";
+import DrawingsView from "./pages/documents/DrawingsView";
+import { ProjectBriefView } from "./pages/documents/ProjectBriefView";
 function Protected({ children, blockRoles }) {
   const { user, ready } = useAuth();
   if (!ready)
@@ -244,6 +248,7 @@ function App() {
             <Route path="shortlists/:id" element={<ShortlistDetail />} />
             <Route path="activity" element={<VendorActivity />} />
             {sectionRoutes("vendors", ["new", "shortlists", "directory"])}
+            <Route path=":id/edit" element={<VendorNew/>}/>
             <Route path=":id" element={<VendorProfile />} />
           </Route>
 
@@ -259,6 +264,7 @@ function App() {
             <Route index element={<AppDashboard appKey="quotations" />} />
             <Route path="all" element={<QuotationsDashboard />} />
             <Route path="new" element={<QuotationNew />} />
+            <Route path=":id/edit" element={<QuotationNew/>}/>
             <Route path="upload" element={<QuotationUpload />} />
             <Route path="activity" element={<QuotationsActivity />} />
             <Route path="compare" element={<QuotationCompare />} />
@@ -281,6 +287,7 @@ function App() {
             <Route path="new" element={<ProjectNew />} />
             {sectionRoutes("projects", ["new", "all"])}
             <Route path=":id/handover" element={<ProjectHandover />} />
+            <Route path=":id/edit" element={<ProjectNew/>}/>
             <Route path=":id" element={<ProjectWorkspace />} />
           </Route>
 
@@ -297,11 +304,15 @@ function App() {
             <Route path="all" element={<DocumentsAll />} />
             <Route path="upload" element={<DocumentUpload />} />
             <Route path="project-documents" element={<ProjectDocuments />} />
+            <Route path="brief/all" element={<ProjectBriefList/>}/>
+            <Route path="recce/all" element={<SiteRecceList/>}/>
             <Route path="activity" element={<DocumentActivity />} />
             <Route path="forms/project-brief" element={<BriefForm />} />
             <Route path="forms/site-reki" element={<SiteRekiForm />} />
-            <Route path="site-reki/:id" element={<SiteRekiView />} />
+            <Route path="site-recce/:id" element={<SiteRekiView />} />
+            <Route path="brief/:id" element={<ProjectBriefView/>}/>
             <Route path="drawings" element={<DrawingsAll />} />
+            <Route path="drawings/:id" element={<DrawingsView/>}/>
             <Route path="drawings/upload" element={<DrawingUpload />} />
             {sectionRoutes("documents", [
               "all",

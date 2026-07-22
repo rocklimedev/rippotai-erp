@@ -34,6 +34,26 @@ export const briefApi = createApi({
       invalidatesTags: ["ProjectBrief"],
     }),
 
+    // NEW: list endpoint for the ProjectBrief list page. No list route was
+    // provided alongside the by-id getter, so this assumes the collection
+    // route mirrors it (GET /documents/forms/project-brief). Adjust the
+    // path/params if the backend differs.
+    getProjectBriefs: builder.query({
+      query: ({ project_id, status } = {}) => ({
+        url: "/documents/forms/project-brief",
+        method: "GET",
+        params: { project_id, status },
+      }),
+      providesTags: ["ProjectBrief"],
+    }),
+    // In brief.api.js
+    deleteProjectBrief: builder.mutation({
+      query: (id) => ({
+        url: `/documents/forms/project-brief/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["ProjectBrief"],
+    }),
     getProjectBrief: builder.query({
       query: (id) => ({
         url: `/documents/forms/project-brief/${id}`,
@@ -44,5 +64,9 @@ export const briefApi = createApi({
   }),
 });
 
-export const { useCreateProjectBriefMutation, useGetProjectBriefQuery } =
-  briefApi;
+export const {
+  useCreateProjectBriefMutation,
+  useGetProjectBriefsQuery,
+  useGetProjectBriefQuery,
+  useDeleteProjectBriefMutation,
+} = briefApi;

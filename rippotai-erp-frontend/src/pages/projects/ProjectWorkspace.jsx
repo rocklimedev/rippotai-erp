@@ -4,7 +4,13 @@ import api from "@/lib/api";
 import { toast } from "sonner";
 import { fmtINR, relativeTime } from "@/lib/format";
 import { ArrowLeft, Share2, Copy } from "lucide-react";
-import { useGetProjectByIdQuery } from "../../api/project.api"; // Adjust import path as needed
+import { useGetProjectByIdQuery } from "../../api/project.api";
+import { useGetBoqsQuery } from "../../api/boq.api";
+import { useGetQuotationsQuery } from "../../api/quotation.api"; // adjust import path as needed
+import {
+  useGetDocumentsQuery,
+  useUpdateDocumentMutation,
+} from "../../api/document.api"; // adjust import path as needed
 
 const TABS = ["Overview", "BOQ", "Estimates", "Activity"];
 
@@ -34,18 +40,67 @@ export default function ProjectWorkspace() {
   const nav = useNavigate();
   const [tab, setTab] = useState("Overview");
 
-  // RTK Query for main project data
+  // ---- RTK Query: project header ----
   const {
     data: projectData,
     isLoading,
     error,
   } = useGetProjectByIdQuery(id, { skip: !id });
 
+  // ---- RTK Query: BOQs for this project ----
+  // Was: api.get(`/boqs?project_id=${id}`) stashed into local state.
+  // boqApi.getBoqs already accepts { project_id }, so use the hook —
+  // this keeps the list in sync with the BOQ_TAG cache (e.g. after
+  // creating/deleting a BOQ elsewhere) instead of a one-time fetch.
+  const { data: boqs = [], isFetching: boqsLoading } = useGetBoqsQuery(
+    { project_id: id },
+    { skip: !id },
+  );
+
+  // ---- RTK Query: Documents for this project ----
+  // Was: api.get(`/projects/${id}/documents`) stashed into local state,
+  // with visibility toggles firing a raw api.patch that never
+  // invalidated anything. documentApi.getDocuments already accepts
+  // { project_id }, and updateDocument already invalidates ["Documents"].
+  const { data: docs = [], isFetching: docsLoading } = useGetDocumentsQuery(
+    { project_id: id },
+    { skip: !id },
+  );
+  const [updateDocument] = useUpdateDocumentMutation();
+
+  const toggleDocVisibility = async (docId, client_visible) => {
+    try {
+      await updateDocument({ id: docId, data: { client_visible } }).unwrap();
+    } catch {
+      toast.error("Failed to update document visibility");
+    }
+  };
+
+  // ---- RTK Query: Quotations for this project ----
+  // Was: api.get(`/quotations?project_id=${id}`) stashed into local
+  // state via Promise.all below. quotationApi.getQuotations already
+  // accepts { project_id }, so use the hook directly — the Estimates
+  // tab now stays in sync with any Quotations-tagged mutation
+  // (submit/approve/decline/cancel/etc.) fired anywhere in the app.
+  const { data: quotesFromApi = [], isFetching: quotesLoading } =
+    useGetQuotationsQuery({ project_id: id }, { skip: !id });
+
+  // Same fallback behavior as before: if the project-scoped query comes
+  // back empty, fall back to any quotations embedded on the project
+  // payload itself.
+  const quotes =
+    quotesFromApi.length > 0 ? quotesFromApi : projectData?.quotations || [];
+
+  // ---- No RTK Query endpoints exist yet for these — kept as raw axios.
+  // If you add matching endpoints to projectsApi (or a new slice), swap
+  // these useEffect+useState blocks for the generated hooks the same
+  // way BOQs/Documents/Quotations were converted above. Note: vendorsApi
+  // only exposes dashboard-wide endpoints (getVendorsProjectWise,
+  // getVendorsRequiringAttention, etc.) — none scoped to a single
+  // project's engaged/attached vendors — so this can't be converted
+  // without a new backend route + endpoint. ----
   const [milestones, setMilestones] = useState([]);
   const [work, setWork] = useState({});
-  const [docs, setDocs] = useState([]);
-  const [boqs, setBoqs] = useState([]);
-  const [quotes, setQuotes] = useState([]);
   const [vendors, setVendors] = useState({ engaged: [], attached: [] });
   const [financial, setFinancial] = useState(null);
   const [links, setLinks] = useState([]);
@@ -70,18 +125,15 @@ export default function ProjectWorkspace() {
       .catch(() => {});
   }, [id]);
 
-  // Load supplementary data
+  // Load supplementary data not yet covered by an RTK Query endpoint
   useEffect(() => {
     if (!id || !projectData) return;
 
     const loadSupplementary = async () => {
       try {
-        const [ms, wk, dc, bq, qt, vd, fn, lk] = await Promise.all([
+        const [ms, wk, vd, fn, lk] = await Promise.all([
           api.get(`/projects/${id}/milestones`).catch(() => ({ data: [] })),
           api.get(`/projects/${id}/pending-work`).catch(() => ({ data: {} })),
-          api.get(`/projects/${id}/documents`).catch(() => ({ data: [] })),
-          api.get(`/boqs?project_id=${id}`).catch(() => ({ data: [] })),
-          api.get(`/quotations?project_id=${id}`).catch(() => ({ data: [] })),
           api
             .get(`/projects/${id}/vendors`)
             .catch(() => ({ data: { engaged: [], attached: [] } })),
@@ -91,9 +143,6 @@ export default function ProjectWorkspace() {
 
         setMilestones(ms.data);
         setWork(wk.data);
-        setDocs(dc.data);
-        setBoqs(bq.data);
-        setQuotes(qt.data.length > 0 ? qt.data : projectData.quotations || []);
         setVendors(vd.data);
         setFinancial(fn.data);
         setLinks(lk.data);
@@ -339,7 +388,9 @@ export default function ProjectWorkspace() {
 
         {tab === "Documents" && (
           <div className="bg-white border border-[#B5C4B6] rounded-xl p-4">
-            {docs.length === 0 ? (
+            {docsLoading ? (
+              <div className="text-[#B5C4B6] text-center py-8">Loading…</div>
+            ) : docs.length === 0 ? (
               <div className="text-[#B5C4B6] text-center py-8">
                 No documents yet.
               </div>
@@ -359,12 +410,9 @@ export default function ProjectWorkspace() {
                   <label className="flex items-center gap-1 text-[11.5px] text-[#6B7B7C]">
                     <input
                       type="checkbox"
-                      defaultChecked={d.client_visible}
+                      checked={!!d.client_visible}
                       onChange={(e) =>
-                        api.patch(
-                          `/projects/${id}/documents/${d.id}/client-visibility`,
-                          { client_visible: e.target.checked },
-                        )
+                        toggleDocVisibility(d.id, e.target.checked)
                       }
                       data-testid={`doc-vis-${d.id}`}
                     />{" "}
@@ -378,7 +426,9 @@ export default function ProjectWorkspace() {
 
         {tab === "BOQ" && (
           <div className="bg-white border border-[#B5C4B6] rounded-xl p-4">
-            {boqs.length === 0 ? (
+            {boqsLoading ? (
+              <div className="text-[#B5C4B6] text-center py-6">Loading…</div>
+            ) : boqs.length === 0 ? (
               <div className="text-[#B5C4B6] text-center py-6">
                 No BOQs for this project.
               </div>
@@ -409,7 +459,9 @@ export default function ProjectWorkspace() {
 
         {tab === "Estimates" && (
           <div className="bg-white border border-[#B5C4B6] rounded-xl p-4">
-            {quotes.length === 0 ? (
+            {quotesLoading ? (
+              <div className="text-[#B5C4B6] text-center py-6">Loading…</div>
+            ) : quotes.length === 0 ? (
               <div className="text-[#B5C4B6] text-center py-6">
                 No quotations for this project.
               </div>

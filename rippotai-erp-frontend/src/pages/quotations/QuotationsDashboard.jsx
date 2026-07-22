@@ -9,6 +9,12 @@ import {
   useDeleteQuotationPermanentMutation,
 } from "../../api/quotation.api";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Plus,
   Send,
   AlertTriangle,
@@ -16,6 +22,7 @@ import {
   CheckCircle2,
   Search,
   MoreHorizontal,
+  Eye,
   Edit,
   Archive,
   Trash2,
@@ -442,8 +449,21 @@ export default function QuotationsDashboard() {
             </div>
           )}
 
+          {/* table-fixed + colgroup so columns use available width
+              consistently instead of shrinking to content */}
           <div className="overflow-x-auto">
-            <table className="w-full text-[12.5px]">
+            <table className="w-full table-fixed text-[12.5px]">
+              <colgroup>
+                <col className="w-8" /> {/* checkbox */}
+                <col className="w-[14%]" /> {/* Estimate # */}
+                <col className="w-[16%]" /> {/* Vendor */}
+                <col className="w-[16%]" /> {/* Project */}
+                <col className="w-[14%]" /> {/* Category */}
+                <col className="w-[12%]" /> {/* Amount */}
+                <col className="w-[12%]" /> {/* Status */}
+                <col className="w-auto" /> {/* Quotation Date — flexible */}
+                <col className="w-10" /> {/* Actions */}
+              </colgroup>
               <thead className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
                 <tr className="border-b border-[#B5C4B6]">
                   <th className="w-8 py-2">
@@ -499,13 +519,13 @@ export default function QuotationsDashboard() {
                           />
                         </td>
                         <td
-                          className="py-2.5 pr-3 font-semibold text-[#333333] cursor-pointer"
+                          className="py-2.5 pr-3 font-semibold text-[#333333] cursor-pointer truncate"
                           onClick={() => nav(`/quotations/${r.id}`)}
                         >
                           {r.quotationNumber}
                         </td>
                         <td
-                          className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer"
+                          className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer truncate"
                           onClick={() => nav(`/quotations/${r.id}`)}
                         >
                           {r.vendorSnapshot?.name ||
@@ -513,13 +533,13 @@ export default function QuotationsDashboard() {
                             "—"}
                         </td>
                         <td
-                          className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer"
+                          className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer truncate"
                           onClick={() => nav(`/quotations/${r.id}`)}
                         >
                           {r.projectSnapshot?.name || "—"}
                         </td>
                         <td
-                          className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer"
+                          className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer truncate"
                           onClick={() => nav(`/quotations/${r.id}`)}
                         >
                           {r.vendorSnapshot?.businessType?.name ||
@@ -539,7 +559,7 @@ export default function QuotationsDashboard() {
                           <StatusChip status={r.status} />
                         </td>
                         <td
-                          className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer"
+                          className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer truncate"
                           onClick={() => nav(`/quotations/${r.id}`)}
                         >
                           {r.quotationDate
@@ -549,64 +569,78 @@ export default function QuotationsDashboard() {
                               : "—"}
                         </td>
 
-                        {/* Actions Column */}
+                        {/* Actions Column — same fix as ProjectsDashboard:
+                            Radix DropdownMenu instead of a hover-only,
+                            hardcoded `absolute top-10` div. Portaled to
+                            document.body so it can't be clipped by the
+                            table's overflow-x-auto container and won't
+                            force a vertical scrollbar on bottom rows. */}
                         <td className="py-2.5">
-                          <div className="relative">
-                            <button
-                              onClick={(e) => e.stopPropagation()}
-                              className="p-2 rounded-lg hover:bg-[#EAEEF0] text-[#6B7B7C] hover:text-[#333333] opacity-0 group-hover:opacity-100 transition-all"
-                            >
-                              <MoreHorizontal size={18} />
-                            </button>
-
-                            {/* Dropdown Menu */}
-                            <div className="absolute right-0 top-10 w-48 bg-white border border-[#B5C4B6] rounded-xl shadow-xl py-1 z-20 hidden group-hover:block">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  nav(`/quotations/${r.id}`);
-                                }}
-                                className="w-full px-4 py-2.5 text-left hover:bg-[#EAEEF0] flex items-center gap-2 text-[13px]"
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-2 rounded-lg hover:bg-[#EAEEF0] text-[#6B7B7C] hover:text-[#333333] opacity-0 group-hover:opacity-100 transition-all"
+                                data-testid={`quotation-actions-${r.id}`}
                               >
-                                <Edit size={16} /> View / Edit
+                                <MoreHorizontal size={18} />
                               </button>
+                            </DropdownMenuTrigger>
+
+                            <DropdownMenuContent align="end" className="w-48">
+                              {/* View and Edit are now separate routes:
+                                  view stays on the detail page, edit
+                                  goes to /quotations/:id/edit */}
+                              <DropdownMenuItem
+                                onSelect={() => nav(`/quotations/${r.id}`)}
+                              >
+                                <Eye size={16} className="mr-2" /> View
+                              </DropdownMenuItem>
+
+                              <DropdownMenuItem
+                                onSelect={() =>
+                                  nav(`/quotations/${r.id}/edit`)
+                                }
+                              >
+                                <Edit size={16} className="mr-2" /> Edit
+                              </DropdownMenuItem>
 
                               {r.status !== "archived" ? (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleSoftDelete(r.id, r.quotationNumber);
-                                  }}
-                                  className="w-full px-4 py-2.5 text-left hover:bg-[#EAEEF0] flex items-center gap-2 text-[13px] text-amber-700"
+                                <DropdownMenuItem
+                                  onSelect={() =>
+                                    handleSoftDelete(r.id, r.quotationNumber)
+                                  }
+                                  className="text-amber-700"
                                 >
-                                  <Archive size={16} /> Archive / Trash
-                                </button>
+                                  <Archive size={16} className="mr-2" />{" "}
+                                  Archive / Trash
+                                </DropdownMenuItem>
                               ) : (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRestore(r.id, r.quotationNumber);
-                                  }}
-                                  className="w-full px-4 py-2.5 text-left hover:bg-[#EAEEF0] flex items-center gap-2 text-[13px] text-emerald-700"
+                                <DropdownMenuItem
+                                  onSelect={() =>
+                                    handleRestore(r.id, r.quotationNumber)
+                                  }
+                                  className="text-emerald-700"
                                 >
-                                  <RotateCcw size={16} /> Restore
-                                </button>
+                                  <RotateCcw size={16} className="mr-2" />{" "}
+                                  Restore
+                                </DropdownMenuItem>
                               )}
 
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
+                              <DropdownMenuItem
+                                onSelect={() =>
                                   handlePermanentDelete(
                                     r.id,
                                     r.quotationNumber,
-                                  );
-                                }}
-                                className="w-full px-4 py-2.5 text-left hover:bg-[#EAEEF0] flex items-center gap-2 text-[13px] text-red-600"
+                                  )
+                                }
+                                className="text-red-600"
                               >
-                                <Trash2 size={16} /> Permanent Delete
-                              </button>
-                            </div>
-                          </div>
+                                <Trash2 size={16} className="mr-2" />{" "}
+                                Permanent Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </td>
                       </tr>
                     );

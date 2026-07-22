@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Drawing } from './models/drawing.model';
 import { Project } from '@/modules/projects/models/projects.model';
@@ -25,6 +29,20 @@ export class DrawingsService {
       ...r.toJSON(),
       project_name: (r as any).project?.name || null,
     }));
+  }
+
+  // NEW: single-drawing detail endpoint backing DrawingsView.jsx.
+  async findOne(id: string) {
+    const row = await this.drawingModel.findByPk(id, {
+      include: [{ model: Project, attributes: ['id', 'name'] }],
+    });
+    if (!row) {
+      throw new NotFoundException('Drawing not found');
+    }
+    return {
+      ...row.toJSON(),
+      project_name: (row as any).project?.name || null,
+    };
   }
 
   async create(dto: UploadDrawingDto, file: Express.Multer.File, user?: User) {

@@ -4,8 +4,6 @@ import { toast } from "sonner";
 import {
   Plus,
   Search,
-  CheckCircle2,
-  Circle,
   MoreHorizontal,
   Edit,
   Archive,
@@ -13,9 +11,14 @@ import {
   RotateCcw,
 } from "lucide-react";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   useGetProjectsSummaryQuery,
   useGetProjectsQuery,
-  useGetProjectStatusChecklistQuery,
   useArchiveProjectMutation,
   useRestoreProjectMutation,
   useDeleteProjectMutation,
@@ -55,16 +58,6 @@ function formatDate(value) {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  });
-}
-
-function formatCurrency(value) {
-  const n = Number(value);
-  if (!value || Number.isNaN(n)) return "—";
-  return n.toLocaleString("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
   });
 }
 
@@ -156,8 +149,8 @@ export default function ProjectsDashboard() {
             Projects
           </h1>
           <p className="text-[13.5px] text-[#6B7B7C] mt-1 max-w-[620px]">
-            Manage every project from initial briefing to final handover through
-            one connected workspace.
+            Manage every project from initial briefing to final handover
+            through one connected workspace.
           </p>
         </div>
         <div className="flex gap-2">
@@ -198,7 +191,10 @@ export default function ProjectsDashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4">
+      {/* FIX #1: was `grid-cols-[1fr_340px]` with only one child rendered,
+          which reserved a 340px column for nothing and squeezed the table.
+          There's no sidebar here, so use a single full-width column. */}
+      <div className="grid grid-cols-1 gap-4">
         <div className="bg-white border border-[#B5C4B6] rounded-xl">
           <div className="border-b border-[#B5C4B6] flex gap-1 p-2 overflow-x-auto">
             {[
@@ -212,7 +208,11 @@ export default function ProjectsDashboard() {
                 key={k}
                 onClick={() => setTab(k)}
                 data-testid={`project-tab-${k}`}
-                className={`px-3 py-1.5 rounded-lg text-[12.5px] font-semibold ${tab === k ? "bg-[#EAEEF0] text-[#333333]" : "text-[#6B7B7C] hover:bg-[#EAEEF0]"}`}
+                className={`px-3 py-1.5 rounded-lg text-[12.5px] font-semibold ${
+                  tab === k
+                    ? "bg-[#EAEEF0] text-[#333333]"
+                    : "text-[#6B7B7C] hover:bg-[#EAEEF0]"
+                }`}
               >
                 {l}
               </button>
@@ -234,8 +234,19 @@ export default function ProjectsDashboard() {
               />
             </div>
 
+            {/* Keep overflow-x-auto for narrow screens, but the dropdown
+                menu below is now portaled so it never gets clipped or
+                triggers this container's scrollbar vertically. */}
             <div className="overflow-x-auto">
-              <table className="w-full text-[12.5px]">
+              <table className="w-full table-fixed text-[12.5px]">
+                <colgroup>
+                  <col className="w-auto" /> {/* Project — flexible */}
+                  <col className="w-[18%]" /> {/* Client */}
+                  <col className="w-[14%]" /> {/* Type */}
+                  <col className="w-[12%]" /> {/* Status */}
+                  <col className="w-[12%]" /> {/* ECD */}
+                  <col className="w-10" /> {/* Actions */}
+                </colgroup>
                 <thead className="text-[11px] uppercase text-[#B5C4B6]">
                   <tr className="border-b border-[#B5C4B6]">
                     <th className="text-left py-2 pr-3">Project</th>
@@ -243,27 +254,20 @@ export default function ProjectsDashboard() {
                     <th className="text-left py-2 pr-3">Type</th>
                     <th className="text-left py-2 pr-3">Status</th>
                     <th className="text-left py-2 pr-3">ECD</th>
-
                     <th className="w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading && (
                     <tr>
-                      <td
-                        colSpan={7}
-                        className="py-6 text-center text-[#B5C4B6]"
-                      >
+                      <td colSpan={6} className="py-6 text-center text-[#B5C4B6]">
                         Loading…
                       </td>
                     </tr>
                   )}
                   {!loading && filtered.length === 0 && (
                     <tr>
-                      <td
-                        colSpan={7}
-                        className="py-6 text-center text-[#B5C4B6]"
-                      >
+                      <td colSpan={6} className="py-6 text-center text-[#B5C4B6]">
                         No projects match.
                       </td>
                     </tr>
@@ -275,24 +279,24 @@ export default function ProjectsDashboard() {
                       className="border-b border-[#EAEEF0] hover:bg-[#EAEEF0] group"
                     >
                       <td
-                        className="py-2.5 pr-3 cursor-pointer"
+                        className="py-2.5 pr-3 cursor-pointer truncate"
                         onClick={() => nav(`/projects/${p.id}`)}
                       >
-                        <div className="font-semibold text-[#333333]">
+                        <div className="font-semibold text-[#333333] truncate">
                           {p.name}
                         </div>
-                        <div className="text-[11px] text-[#B5C4B6]">
+                        <div className="text-[11px] text-[#B5C4B6] truncate">
                           {p.slug || ""}
                         </div>
                       </td>
                       <td
-                        className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer"
+                        className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer truncate"
                         onClick={() => nav(`/projects/${p.id}`)}
                       >
                         {p.client?.name || "—"}
                       </td>
                       <td
-                        className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer"
+                        className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer truncate"
                         onClick={() => nav(`/projects/${p.id}`)}
                       >
                         {p.project_type?.name || "—"}
@@ -304,67 +308,67 @@ export default function ProjectsDashboard() {
                         <StatusChip status={p.status} />
                       </td>
                       <td
-                        className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer"
+                        className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer truncate"
                         onClick={() => nav(`/projects/${p.id}`)}
                       >
                         {formatDate(p.expected_completion_date)}
                       </td>
 
-                      {/* Actions Column */}
+                      {/* FIX #2: replaced the hover-only, hardcoded
+                          `absolute top-10` div (which opened downward and
+                          got clipped by the scroll container on bottom
+                          rows) with a Radix DropdownMenu. Radix portals
+                          the content to document.body and auto-flips
+                          direction on collision, so it can't be clipped
+                          or force a scrollbar. */}
                       <td className="py-2.5">
-                        <div className="relative">
-                          <button
-                            onClick={(e) => e.stopPropagation()}
-                            className="p-2 rounded-lg hover:bg-[#EAEEF0] text-[#6B7B7C] hover:text-[#333333] opacity-0 group-hover:opacity-100 transition-all"
-                          >
-                            <MoreHorizontal size={18} />
-                          </button>
-
-                          {/* Dropdown Menu */}
-                          <div className="absolute right-0 top-10 w-48 bg-white border border-[#B5C4B6] rounded-xl shadow-xl py-1 z-20 hidden group-hover:block">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                nav(`/projects/${p.id}`);
-                              }}
-                              className="w-full px-4 py-2.5 text-left hover:bg-[#EAEEF0] flex items-center gap-2 text-[13px]"
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-2 rounded-lg hover:bg-[#EAEEF0] text-[#6B7B7C] hover:text-[#333333] opacity-0 group-hover:opacity-100 transition-all"
+                              data-testid={`project-actions-${p.id}`}
                             >
-                              <Edit size={16} /> View / Edit
+                              <MoreHorizontal size={18} />
                             </button>
+                          </DropdownMenuTrigger>
+
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem
+                              onSelect={() => nav(`/projects/${p.id}`)}
+                            >
+                              <Edit size={16} className="mr-2" /> View 
+                            </DropdownMenuItem>
+        <DropdownMenuItem
+                              onSelect={() => nav(`/projects/${p.id}/edit`)}
+                            >
+                              <Edit size={16} className="mr-2" /> Edit
+                            </DropdownMenuItem>
 
                             {p.status !== "archived" ? (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleArchive(p.id, p.name);
-                                }}
-                                className="w-full px-4 py-2.5 text-left hover:bg-[#EAEEF0] flex items-center gap-2 text-[13px] text-amber-700"
+                              <DropdownMenuItem
+                                onSelect={() => handleArchive(p.id, p.name)}
+                                className="text-amber-700"
                               >
-                                <Archive size={16} /> Archive
-                              </button>
+                                <Archive size={16} className="mr-2" /> Archive
+                              </DropdownMenuItem>
                             ) : (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRestore(p.id, p.name);
-                                }}
-                                className="w-full px-4 py-2.5 text-left hover:bg-[#EAEEF0] flex items-center gap-2 text-[13px] text-emerald-700"
+                              <DropdownMenuItem
+                                onSelect={() => handleRestore(p.id, p.name)}
+                                className="text-emerald-700"
                               >
-                                <RotateCcw size={16} /> Restore
-                              </button>
+                                <RotateCcw size={16} className="mr-2" /> Restore
+                              </DropdownMenuItem>
                             )}
 
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(p.id, p.name);
-                              }}
-                              className="w-full px-4 py-2.5 text-left hover:bg-[#EAEEF0] flex items-center gap-2 text-[13px] text-red-600"
+                            <DropdownMenuItem
+                              onSelect={() => handleDelete(p.id, p.name)}
+                              className="text-red-600"
                             >
-                              <Trash2 size={16} /> Delete
-                            </button>
-                          </div>
-                        </div>
+                              <Trash2 size={16} className="mr-2" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </td>
                     </tr>
                   ))}

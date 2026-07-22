@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -8,6 +8,8 @@ import {
   useReplaceQuotationItemsMutation,
   useUpdateQuotationMutation,
   useSubmitQuotationMutation,
+  useGetQuotationByIdQuery,
+  useGetQuotationItemsQuery,
 } from "../../api/quotation.api";
 import { useGetVendorsQuery } from "../../api/vendor.api";
 import { useGetProjectsQuery } from "../../api/project.api"; // adjust import path to wherever projectsApi.js lives
@@ -153,9 +155,6 @@ function ItemRow({ item, index, disabled, units, unitsLoading, onChange, onDup, 
         />
       </td>
       <td className="px-1 py-1.5">
-        {/* Now backed by unitApi's getUnits query and bound to the real
-            unit_id FK on QuotationItem, instead of the old hardcoded,
-            display-only unit name list. */}
         <select
           disabled={disabled || unitsLoading}
           value={item.unit_id || ""}
@@ -209,8 +208,19 @@ function ItemRow({ item, index, disabled, units, unitsLoading, onChange, onDup, 
   );
 }
 
-export default function EstimateNew() {
+const emptyItem = () => ({
+  id: uid(),
+  particular: "",
+  rate: 0,
+  qty: 1,
+  unit_id: null,
+  remarks: "",
+});
+
+export default function EstimateForm() {
   const nav = useNavigate();
+  const { id } = useParams(); // present on /quotations/:id/edit, undefined on /quotations/new
+  const isEdit = !!id;
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
@@ -218,6 +228,16 @@ export default function EstimateNew() {
   const [replaceQuotationItems] = useReplaceQuotationItemsMutation();
   const [updateQuotation] = useUpdateQuotationMutation();
   const [submitQuotation] = useSubmitQuotationMutation();
+
+  // ---- Load existing quotation + its items when editing ----
+  const {
+    data: existingQuotation,
+    isLoading: quotationLoading,
+    isError: quotationError,
+  } = useGetQuotationByIdQuery(id, { skip: !isEdit });
+
+  const { data: existingItems, isLoading: itemsLoading } =
+    useGetQuotationItemsQuery(id, { skip: !isEdit });
 
   // Basic
   const [estimateNumber, setEstimateNumber] = useState("");
@@ -233,9 +253,7 @@ export default function EstimateNew() {
   const { data: unitsData, isLoading: unitsLoading } = useGetUnitsQuery();
   const units = Array.isArray(unitsData) ? unitsData : unitsData?.data || [];
   // Items
-  const [items, setItems] = useState([
-    { id: uid(), particular: "", rate: 0, qty: 1, unit_id: null, remarks: "" },
-  ]);
+  const [items, setItems] = useState([emptyItem()]);
   // Totals
   const [addlAmt, setAddlAmt] = useState(0);
   const [addlIsPct, setAddlIsPct] = useState(false);
@@ -246,7 +264,86 @@ export default function EstimateNew() {
   const [terms, setTerms] = useState(DEFAULT_TERMS);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(QUOTATION_STATUS.DRAFT);
+  // Tracks whether the prefill effect below has already run, so we don't
+  // clobber the user's in-progress edits if the query refetches.
+  const [hydrated, setHydrated] = useState(false);
+
   const readOnly = status === QUOTATION_STATUS.APPROVED && !isAdmin;
+
+  // ---- Prefill the form once, when editing and both queries have data ----
+  useEffect(() => {
+    if (!isEdit || hydrated) return;
+    if (!existingQuotation || !existingItems) return;
+
+    const q = existingQuotation;
+
+    setEstimateNumber(q.quotationNumber || q.quotation_number || "");
+    setEstimateDate(
+      (q.quotationDate || q.quotation_date || iso()).slice(0, 10),
+    );
+    setStatus(q.status || QUOTATION_STATUS.DRAFT);
+    setTerms(q.termsConditions || q.terms_conditions || DEFAULT_TERMS);
+    setTaxPct(Number(q.taxPercent ?? q.tax_percent ?? 0));
+
+    const discType = q.globalDiscountType || q.global_discount_type;
+    setDiscIsPct(discType === "percentage");
+    setDiscAmt(Number(q.globalDiscountValue ?? q.global_discount_value ?? 0));
+
+    // Additional charges are stored resolved (decimal amount), not as a
+    // percent/fixed pair, so load them in as a fixed ₹ value.
+    setAddlIsPct(false);
+    setAddlAmt(Number(q.additionalCharges ?? q.additional_charges ?? 0));
+
+    // Vendor / project come back as snapshots or nested relations
+    // depending on the endpoint — normalize whichever shape is present.
+    const v = q.vendor || q.vendorSnapshot;
+    if (v) {
+      setVendor({
+        id: v.id || q.vendorId || q.vendor_id,
+        company: v.company || v.company_name,
+        name: v.name,
+        primary_category: v.primary_category || v.vendorCategory?.name,
+        category: v.category,
+        city: v.city,
+      });
+    }
+
+    const p = q.project || q.projectSnapshot;
+    if (p) {
+      setProject({
+        id: p.id || q.projectId || q.project_id,
+        name: p.name,
+        location: p.location || p.site_location,
+      });
+    }
+
+    const rows = Array.isArray(existingItems)
+      ? existingItems
+      : existingItems?.data || [];
+    setItems(
+      rows.length
+        ? rows
+            .slice()
+            .sort((a, b) => (a.sno || 0) - (b.sno || 0))
+            .map((it) => ({
+              id: it.id || uid(),
+              particular: it.particular || "",
+              rate: Number(it.rate || 0),
+              qty: Number(it.quantity ?? it.qty ?? 0),
+              unit_id: it.unit_id || it.unitId || null,
+              remarks: it.remarks || "",
+            }))
+        : [emptyItem()],
+    );
+
+    setHydrated(true);
+  }, [isEdit, hydrated, existingQuotation, existingItems]);
+
+  useEffect(() => {
+    if (isEdit && quotationError) {
+      toast.error("Failed to load estimate");
+    }
+  }, [isEdit, quotationError]);
 
   // Debounce vendor search input before hitting vendorsApi
   useEffect(() => {
@@ -272,7 +369,10 @@ export default function EstimateNew() {
     ? projectsData
     : projectsData?.data || [];
 
-  // Recompute estimate number whenever project or date changes
+  // Recompute estimate number whenever project or date changes — but only
+  // in create mode. In edit mode the number was already assigned when the
+  // quotation was first created, so it must not be silently regenerated
+  // just because the prefill effect sets project/date once on load.
   const refreshEstimateNumber = useCallback((pid, d) => {
     if (!pid || !d) {
       setEstimateNumber("");
@@ -284,8 +384,9 @@ export default function EstimateNew() {
       .catch(() => {});
   }, []);
   useEffect(() => {
+    if (isEdit) return; // never auto-renumber an existing estimate
     if (project) refreshEstimateNumber(project.id, estimateDate);
-  }, [project, estimateDate, refreshEstimateNumber]);
+  }, [isEdit, project, estimateDate, refreshEstimateNumber]);
 
   // Totals
   const subtotal = useMemo(
@@ -317,11 +418,7 @@ export default function EstimateNew() {
     setItems((list) =>
       list.length === 1 ? list : list.filter((i) => i.id !== id),
     );
-  const addItem = () =>
-    setItems((list) => [
-      ...list,
-      { id: uid(), particular: "", rate: 0, qty: 1, unit_id: null, remarks: "" },
-    ]);
+  const addItem = () => setItems((list) => [...list, emptyItem()]);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
@@ -343,31 +440,6 @@ export default function EstimateNew() {
 
     setBusy(true);
     try {
-      // 1. Create the quotation header — field names must match the
-      //    Sequelize model's camelCase attributes (projectId, vendorId,
-      //    quotationNumber, quotationDate). There is no "title" column.
-const created = await createQuotation({
-  project_id: project.id,
-  vendor_id: vendor.id,
-  quotation_date: estimateDate,
-  quotation_number: estimateNumber || undefined,
-  items: items
-    .filter((i) => i.particular?.trim())
-    .map((i, idx) => ({
-      sno: idx + 1,
-      particular: i.particular,
-      rate: Number(i.rate) || 0,
-      quantity: Number(i.qty) || 0,
-      amount: (Number(i.rate) || 0) * (Number(i.qty) || 0),
-      remarks: i.remarks || "",
-    })),
-}).unwrap();
-      const qid = created.id;
-
-      // 2. Replace items in bulk via PUT /quotations/:id/items — matches
-      //    QuotationItem's actual columns: particular, rate, quantity,
-      //    amount, remarks, sno, unit_id (now a real FK, populated from the
-      //    unitApi-backed dropdown above instead of always being null).
       const itemRows = items
         .filter((i) => i.particular?.trim())
         .map((i, idx) => ({
@@ -380,6 +452,36 @@ const created = await createQuotation({
           unit_id: i.unit_id || null,
         }));
 
+      let qid = id;
+
+      if (!isEdit) {
+        // 1. Create the quotation header — field names must match the
+        //    Sequelize model's camelCase attributes (projectId, vendorId,
+        //    quotationNumber, quotationDate). There is no "title" column.
+        const created = await createQuotation({
+          project_id: project.id,
+          vendor_id: vendor.id,
+          quotation_date: estimateDate,
+          quotation_number: estimateNumber || undefined,
+          items: itemRows,
+        }).unwrap();
+        qid = created.id;
+      } else {
+        // Editing: update the header fields that can legitimately change
+        // (project/vendor/date). Items are always replaced wholesale below
+        // regardless of create vs edit, since the backend only exposes a
+        // bulk PUT, not per-row diffing.
+        await updateQuotation({
+          id: qid,
+          project_id: project.id,
+          vendor_id: vendor.id,
+          quotation_date: estimateDate,
+        }).unwrap();
+      }
+
+      // 2. Replace items in bulk via PUT /quotations/:id/items — matches
+      //    QuotationItem's actual columns: particular, rate, quantity,
+      //    amount, remarks, sno, unit_id.
       if (itemRows.length) {
         await replaceQuotationItems({
           quotationId: qid,
@@ -392,24 +494,28 @@ const created = await createQuotation({
       //    Value, discount, taxPercent, taxAmount, subtotal, totalAmount.
       await updateQuotation({
         id: qid,
-        termsConditions: terms,
-        subtotal,
-        additionalCharges: addlResolved,
-        globalDiscountType: discIsPct ? "percentage" : "fixed",
-        globalDiscountValue: Number(discAmt) || 0,
-        discount: discResolved,
-        taxPercent: Number(taxPct) || 0,
-        taxAmount,
-        totalAmount: grandTotal,
+        terms_conditions: terms,
+        additional_charges: addlResolved,
+        global_discount_type: discIsPct ? "percentage" : "fixed",
+        global_discount_value: Number(discAmt) || 0,
+        tax_percent: Number(taxPct) || 0,
       }).unwrap();
 
       // 4. Move draft -> submitted via the dedicated endpoint, instead of a
       //    nonexistent "awaiting_approval" status / send-to-reviewer route.
-      if (targetStatus === QUOTATION_STATUS.SUBMITTED) {
+      //    Only fire this if the quotation isn't already past draft — an
+      //    edit to an already-submitted/approved estimate shouldn't try to
+      //    re-submit it.
+      const canSubmit =
+        !isEdit || status === QUOTATION_STATUS.DRAFT || !isEdit;
+      if (
+        targetStatus === QUOTATION_STATUS.SUBMITTED &&
+        (!isEdit || status === QUOTATION_STATUS.DRAFT)
+      ) {
         await submitQuotation({ id: qid, submitted_by: user?.id }).unwrap();
       }
 
-      toast.success("Estimate saved");
+      toast.success(isEdit ? "Estimate updated" : "Estimate saved");
       nav(`/quotations/${qid}`);
     } catch (e) {
       toast.error(
@@ -420,6 +526,24 @@ const created = await createQuotation({
     }
   };
 
+  // Block rendering the form with stale/empty state while the existing
+  // quotation + items are still loading in edit mode.
+  if (isEdit && (quotationLoading || itemsLoading || !hydrated)) {
+    return (
+      <div className="max-w-[1200px] mx-auto py-10 px-4 text-center text-[#6B7B7C]">
+        Loading estimate…
+      </div>
+    );
+  }
+
+  if (isEdit && quotationError) {
+    return (
+      <div className="max-w-[1200px] mx-auto py-10 px-4 text-center text-red-600">
+        Failed to load estimate.
+      </div>
+    );
+  }
+
   return (
     <div
       className="max-w-[1200px] mx-auto py-6 px-4 space-y-4"
@@ -427,10 +551,10 @@ const created = await createQuotation({
     >
       <div className="flex items-center justify-between">
         <h1 className="text-[40px] font-bold text-[#333333]">
-          Create Estimate
+          {isEdit ? "Edit Estimate" : "Create Estimate"}
         </h1>
         <button
-          onClick={() => nav("/quotations")}
+          onClick={() => nav(isEdit ? `/quotations/${id}` : "/quotations")}
           className="text-[13px] text-[#6B7B7C] hover:text-[#333333] inline-flex items-center gap-1"
           data-testid="cancel-btn"
         >
@@ -733,9 +857,25 @@ const created = await createQuotation({
               className="border border-[#DDD8CE] rounded-lg p-4 min-h-[120px] bg-[#FAF8F5]"
               data-testid="approved-by-block"
             >
-              <div className="text-[13px] text-[#B5C4B6] italic">
-                Available after this estimate is submitted and reviewed
-              </div>
+              {existingQuotation?.reviewedBy || existingQuotation?.reviewed_by ? (
+                <div className="text-[13px] text-[#333333]">
+                  <div className="font-semibold">
+                    {existingQuotation.reviewedBy?.name ||
+                      existingQuotation.reviewed_by}
+                  </div>
+                  {(existingQuotation.reviewRemarks ||
+                    existingQuotation.review_remarks) && (
+                    <div className="text-[12px] text-[#6B7B7C] mt-1">
+                      {existingQuotation.reviewRemarks ||
+                        existingQuotation.review_remarks}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-[13px] text-[#B5C4B6] italic">
+                  Available after this estimate is submitted and reviewed
+                </div>
+              )}
             </div>
           </div>
           <div>
@@ -759,7 +899,11 @@ const created = await createQuotation({
           className="h-11 px-6 rounded-xl bg-[#1F453B] text-white text-[13.5px] font-semibold disabled:opacity-60"
           data-testid="submit-approval-btn"
         >
-          {busy ? "Saving…" : "Submit for Approval"}
+          {busy
+            ? "Saving…"
+            : isEdit && status !== QUOTATION_STATUS.DRAFT
+              ? "Save Changes"
+              : "Submit for Approval"}
         </button>
         <button
           disabled={busy || readOnly}

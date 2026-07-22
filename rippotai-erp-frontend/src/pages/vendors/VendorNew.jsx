@@ -1,5 +1,5 @@
-import React, { useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useCallback, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
@@ -7,6 +7,7 @@ import { ArrowLeftIcon, CheckCircle2, Plus, X } from "lucide-react";
 import {
   useCreateVendorMutation,
   useUpdateVendorMutation,
+  useGetVendorByIdQuery,
   useSetVendorStatusMutation,
   useGetVendorCategoriesQuery,
   useGetBusinessTypesQuery,
@@ -44,12 +45,20 @@ function toPayload(form) {
 
 export default function VendorNew() {
   const nav = useNavigate();
-  const [vendorId, setVendorId] = useState(null);
+  const { id: routeVendorId } = useParams(); // present on /vendors/:id/edit, absent on /vendors/new
+  const isEdit = Boolean(routeVendorId);
+
+  const [vendorId, setVendorId] = useState(routeVendorId || null);
   const [form, setForm] = useState(initialForm);
+  const [hydrated, setHydrated] = useState(false);
   const [errors, setErrors] = useState({});
   const [isBusinessTypeModalOpen, setBusinessTypeModalOpen] = useState(false);
   const [newBusinessTypeName, setNewBusinessTypeName] = useState("");
   const [businessTypeError, setBusinessTypeError] = useState("");
+
+  // Guards against the hydration-triggered form update firing an
+  // immediate autosave PATCH of data we just loaded from the server.
+  const suppressAutosave = useRef(false);
 
   const [createVendor, { isLoading: creating }] = useCreateVendorMutation();
   const [updateVendor, { isLoading: updating }] = useUpdateVendorMutation();
@@ -58,6 +67,12 @@ export default function VendorNew() {
   const [createBusinessType, { isLoading: creatingBusinessType }] =
     useCreateBusinessTypeMutation();
   const saving = creating || updating;
+
+  const {
+    data: vendor,
+    isFetching: vendorLoading,
+    isError: vendorError,
+  } = useGetVendorByIdQuery(routeVendorId, { skip: !isEdit });
 
   const { data: categories = [] } = useGetVendorCategoriesQuery();
   const { data: businessTypes = [] } = useGetBusinessTypesQuery(
@@ -119,7 +134,39 @@ export default function VendorNew() {
     }
   };
 
+  // Edit mode: once the vendor loads, hydrate the form from it. Guarded by
+  // `hydrated` so a background refetch doesn't clobber what's being typed,
+  // and suppresses the very next autosave so we don't immediately PATCH
+  // back the data we just fetched.
   useEffect(() => {
+    if (!isEdit || !vendor || hydrated) return;
+    setForm({
+      name: vendor.name || "",
+      company_name: vendor.company_name || "",
+      position: vendor.position || "",
+      vendor_category_id:
+        vendor.vendor_category_id || vendor.vendor_category?.id || "",
+      business_type_id:
+        vendor.business_type_id || vendor.business_type?.id || "",
+      contact_number: vendor.contact_number || "",
+      alternate_contact: vendor.alternate_contact || "",
+      address: vendor.address || "",
+      notes: vendor.notes || "",
+    });
+    setVendorId(vendor.id);
+    suppressAutosave.current = true;
+    setHydrated(true);
+  }, [isEdit, vendor, hydrated]);
+
+  useEffect(() => {
+    if (vendorError) toast.error("Failed to load vendor");
+  }, [vendorError]);
+
+  useEffect(() => {
+    if (suppressAutosave.current) {
+      suppressAutosave.current = false;
+      return;
+    }
     if (form.name || form.company_name) debouncedPersist();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
@@ -152,22 +199,34 @@ export default function VendorNew() {
     }
   };
 
+  if (isEdit && vendorLoading && !hydrated) {
+    return (
+      <div className="max-w-3xl mx-auto space-y-6" data-testid="vendor-new-form">
+        <div className="text-[13px] text-[#6B7B7C]">Loading vendor…</div>
+      </div>
+    );
+  }
+
+  const backTarget = isEdit ? `/vendors/${vendorId}` : "/vendors";
+
   return (
     <div
       className="max-w-3xl mx-auto space-y-6"
       data-testid="vendor-new-form"
     >
       <button
-        onClick={() => nav("/vendors")}
+        onClick={() => nav(backTarget)}
         className="text-[13px] text-[#6B7B7C] hover:text-[#333333] flex items-center gap-1"
       >
-        <ArrowLeftIcon size={14} /> Back to Vendors
+        <ArrowLeftIcon size={14} /> {isEdit ? "Back to Vendor" : "Back to Vendors"}
       </button>
       <div>
         <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6] mb-1.5">
-          Add Vendor
+          {isEdit ? "Edit Vendor" : "Add Vendor"}
         </div>
-        <h1 className="text-[32px] font-bold text-[#333333]">New Vendor</h1>
+        <h1 className="text-[32px] font-bold text-[#333333]">
+          {isEdit ? "Edit Vendor" : "New Vendor"}
+        </h1>
       </div>
 
       <div className="bc-card p-6 space-y-8">

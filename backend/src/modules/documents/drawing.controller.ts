@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  Param,
+  ParseUUIDPipe,
   Post,
   UploadedFile,
   UseGuards,
@@ -23,6 +25,12 @@ export class DrawingsController {
   @Get()
   findAll() {
     return this.drawingsService.findAll();
+  }
+
+  // NEW: GET /drawings/:id — backs DrawingsView.jsx / useGetDrawingByIdQuery
+  @Get(':id')
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.drawingsService.findOne(id);
   }
 
   @Post()

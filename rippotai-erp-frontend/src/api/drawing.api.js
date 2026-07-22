@@ -26,6 +26,12 @@ export const drawingApi = createApi({
       providesTags: ["Drawings"],
     }),
 
+    // NEW: single-drawing detail query backing DrawingsView.jsx
+    getDrawingById: builder.query({
+      query: (id) => `/drawings/${id}`,
+      providesTags: (result, error, id) => [{ type: "Drawings", id }],
+    }),
+
     uploadDrawing: builder.mutation({
       query: ({ data, file }) => {
         const formData = new FormData();
@@ -50,4 +56,8 @@ export const drawingApi = createApi({
   }),
 });
 
-export const { useGetDrawingsQuery, useUploadDrawingMutation } = drawingApi;
+export const {
+  useGetDrawingsQuery,
+  useGetDrawingByIdQuery,
+  useUploadDrawingMutation,
+} = drawingApi;

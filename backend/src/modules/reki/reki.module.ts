@@ -15,6 +15,7 @@ import { SiteRecceService } from './reki.service';
 import { SiteRecceSearchService } from '../search/services/reki-search.service';
 
 import { DocumentsModule } from '../documents/document.module';
+import { Document } from '../documents/models/document.model';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { DocumentsModule } from '../documents/document.module';
       SiteLayoutAttachment,
       SiteImageAttachment,
       SiteRecceDocument,
+      Document,
     ]),
     DocumentsModule,
     SearchModule, // <-- ADD THIS

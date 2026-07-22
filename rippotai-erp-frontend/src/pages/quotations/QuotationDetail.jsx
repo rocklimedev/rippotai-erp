@@ -44,8 +44,8 @@ const TABS = [
   "Commercial Terms",
   "Approval History",
   "Versions",
-  "Attachments",
-  "Notes",
+
+
 ];
 
 export default function QuotationDetail() {
@@ -162,19 +162,6 @@ export default function QuotationDetail() {
     }
   };
 
-  const uploadAtt = async (file) => {
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("kind", "attachment");
-    try {
-      await api.post(`/quotations/${id}/attachments`, fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      toast.success("Attached");
-    } catch {
-      toast.error("Upload failed");
-    }
-  };
 
   const exportPdf = async () => {
     const res = await api.post(
@@ -597,59 +584,7 @@ export default function QuotationDetail() {
           />
         )}
 
-        {tab === "Attachments" && (
-          <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
-            <div className="flex justify-between items-center mb-3">
-              <div className="text-[13px] font-semibold">
-                Attachments ({q.attachments?.length || 0})
-              </div>
-              <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12px] font-semibold inline-flex items-center gap-1">
-                <Upload size={12} /> Upload
-                <input
-                  type="file"
-                  className="hidden"
-                  onChange={(e) =>
-                    e.target.files?.[0] && uploadAtt(e.target.files[0])
-                  }
-                  data-testid="att-upload"
-                />
-              </label>
-            </div>
-            <div className="space-y-2">
-              {(q.attachments || []).map((a) => (
-                <div
-                  key={a.id}
-                  className="flex justify-between items-center border border-[#B5C4B6] rounded-lg p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText size={16} className="text-[#333333]" />
-                    <div>
-                      <div className="text-[13px] font-semibold text-[#333333]">
-                        {a.filename}
-                      </div>
-                      <div className="text-[11px] text-[#B5C4B6]">
-                        {a.uploaded_by} · {relativeTime(a.uploaded_at)} ·{" "}
-                        {(a.size / 1024).toFixed(1)} KB
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {(q.attachments || []).length === 0 && (
-                <div className="text-center py-6 text-[#B5C4B6]">
-                  No attachments.
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {tab === "Notes" && (
-          <div className="bg-white border border-[#B5C4B6] rounded-xl p-5 text-[13px] text-[#6B7B7C]">
-            Internal notes will be shared privately across your team. (Coming
-            soon)
-          </div>
-        )}
+    
       </div>
 
       {remarkModal && (

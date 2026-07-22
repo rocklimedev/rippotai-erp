@@ -12,6 +12,7 @@ import { useGetProjectsQuery } from "../../api/project.api"; // adjust to wherev
 
 /* ---------- Drawings ---------- */
 export function DrawingsAll() {
+  const nav = useNavigate();
   // Replaces api.get("/drawings") + useEffect/useState.
   const { data: rows = [] } = useGetDrawingsQuery();
 
@@ -57,10 +58,12 @@ export function DrawingsAll() {
               {rows.map((r) => (
                 <tr
                   key={r.id}
-                  className="border-t border-[rgba(31,69,59,0.08)]"
+                  onClick={() => nav(`/documents/drawings/${r.id}`)}
+                  className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F4F6F7] cursor-pointer"
+                  data-testid={`drawing-row-${r.id}`}
                 >
                   <td className="px-3 py-2.5 font-mono font-semibold text-[#333333]">
-                    {r.drawing_number}
+                    {r.drawingNumber}
                   </td>
                   <td className="px-3 py-2.5">{r.title}</td>
                   <td className="px-3 py-2.5">{r.discipline}</td>
@@ -73,7 +76,7 @@ export function DrawingsAll() {
                     </span>
                   </td>
                   <td className="px-3 py-2.5 text-[#6B7B7C]">
-                    {(r.issue_date || "").slice(0, 10)}
+                    {(r.issueDate || "").slice(0, 10)}
                   </td>
                 </tr>
               ))}

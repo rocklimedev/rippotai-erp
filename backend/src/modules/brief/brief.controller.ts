@@ -1,3 +1,4 @@
+// brief.controller.ts
 import {
   Body,
   Controller,
@@ -5,6 +6,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
 } from '@nestjs/common';
 import { BriefService } from './brief.service';
 import { CreateProjectBriefDto } from './dto/create-project-brief.dto';
@@ -17,6 +19,12 @@ export class BriefController {
   @Post()
   create(@Body() dto: CreateProjectBriefDto) {
     return this.briefService.create(dto);
+  }
+
+  // NEW: GET /documents/forms/project-brief?project_id=...
+  @Get()
+  findAll(@Query('project_id') project_id?: string) {
+    return this.briefService.findAll({ project_id });
   }
 
   @Get(':id')
