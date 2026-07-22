@@ -27,7 +27,7 @@ export default function NotificationsBell() {
   const [markAsRead] = useMarkAsReadMutation();
   const [markAllAsRead] = useMarkAllAsReadMutation();
 
-  const unread = n.filter((x) => x.unread).length;
+  const unread = n.filter((x) => !x.is_read).length;
 
   return (
     <DropdownMenu>
@@ -81,24 +81,32 @@ export default function NotificationsBell() {
               key={it.id}
               data-testid={`notif-item-${it.id}`}
               onSelect={() => {
-                if (it.unread) markAsRead(it.id);
-                if (it.link_url) nav(it.link_url);
+                if (!it.is_read) markAsRead(it.id);
+                if (it.entity_type && it.entity_id) {
+                  nav(`/${it.entity_type}s/${it.entity_id}`);
+                }
               }}
               className="flex flex-col items-start gap-0.5 py-2 px-3 min-w-0 w-full cursor-pointer"
             >
               <div
                 title={it.title}
-                className="text-[14px] font-semibold w-full truncate"
+                className="text-[14px] font-semibold w-full truncate flex items-center gap-2"
                 style={{ color: "#333333" }}
               >
-                {it.title}
+                {!it.is_read && (
+                  <span
+                    className="inline-block w-2 h-2 rounded-full shrink-0"
+                    style={{ background: "#1F453B" }}
+                  />
+                )}
+                <span className="truncate">{it.title}</span>
               </div>
               <div
-                title={it.body}
+                title={it.message}
                 className="text-[13px] w-full line-clamp-2"
                 style={{ color: "#6B7B7C" }}
               >
-                {it.body}
+                {it.message}
               </div>
             </DropdownMenuItem>
           ))}
