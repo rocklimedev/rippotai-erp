@@ -34,19 +34,21 @@ export class SearchController {
 
   @Get()
   async globalSearch(@Query('q') q: string) {
-    const [
-      boqs,
-      briefs,
-      calendar,
-      clients,
-      leads,
-      projects,
-      quotations,
-      siteRecce,
-      tasks,
-      users,
-      vendors,
-    ] = await Promise.all([
+    const keys = [
+      'boqs',
+      'briefs',
+      'calendar',
+      'clients',
+      'leads',
+      'projects',
+      'quotations',
+      'siteRecce',
+      'tasks',
+      'users',
+      'vendors',
+    ] as const;
+
+    const results = await Promise.allSettled([
       this.boqSearch.search(q),
       this.briefSearch.search(q),
       this.calendarSearch.search(q),
@@ -60,19 +62,24 @@ export class SearchController {
       this.vendorSearch.search(q),
     ]);
 
-    return {
-      boqs,
-      briefs,
-      calendar,
-      clients,
-      leads,
-      projects,
-      quotations,
-      siteRecce,
-      tasks,
-      users,
-      vendors,
-    };
+    const output: Record<string, any> = {};
+
+    results.forEach((result, i) => {
+      const key = keys[i];
+      if (result.status === 'fulfilled') {
+        output[key] = result.value;
+      } else {
+        output[key] = [];
+        // Keep this log — it's how you'll notice a category silently
+        // going empty instead of failing the whole global search.
+        console.error(
+          `[globalSearch] "${key}" failed:`,
+          result.reason?.message ?? result.reason,
+        );
+      }
+    });
+
+    return output;
   }
 
   // ==========================================================
@@ -140,23 +147,41 @@ export class SearchController {
 
   @Post('reindex/all')
   async reindexAll() {
-    await Promise.all([
-      this.boqSearch.reindexAll(),
-      this.briefSearch.reindexAll(),
-      this.calendarSearch.reindexAll(),
-      this.clientSearch.reindexAll(),
-      this.leadSearch.reindexAll(),
-      this.projectSearch.reindexAll(),
-      this.quotationSearch.reindexAll(),
-      this.siteRecceSearch.reindexAll(),
-      this.taskSearch.reindexAll(),
-      this.userSearch.reindexAll(),
-      this.vendorSearch.reindexAll(),
-    ]);
+    const jobs = [
+      ['boqs', this.boqSearch.reindexAll()],
+      ['briefs', this.briefSearch.reindexAll()],
+      ['calendar', this.calendarSearch.reindexAll()],
+      ['clients', this.clientSearch.reindexAll()],
+      ['leads', this.leadSearch.reindexAll()],
+      ['projects', this.projectSearch.reindexAll()],
+      ['quotations', this.quotationSearch.reindexAll()],
+      ['siteRecce', this.siteRecceSearch.reindexAll()],
+      ['tasks', this.taskSearch.reindexAll()],
+      ['users', this.userSearch.reindexAll()],
+      ['vendors', this.vendorSearch.reindexAll()],
+    ] as const;
+
+    const results = await Promise.allSettled(jobs.map(([, job]) => job));
+
+    const failures = results
+      .map((r, i) => ({ name: jobs[i][0], result: r }))
+      .filter((r) => r.result.status === 'rejected');
+
+    if (failures.length) {
+      failures.forEach((f) =>
+        console.error(
+          `[reindexAll] "${f.name}" failed:`,
+          (f.result as PromiseRejectedResult).reason,
+        ),
+      );
+    }
 
     return {
-      success: true,
-      message: 'All Elasticsearch indexes rebuilt successfully.',
+      success: failures.length === 0,
+      message:
+        failures.length === 0
+          ? 'All Elasticsearch indexes rebuilt successfully.'
+          : `Reindex completed with ${failures.length} failure(s): ${failures.map((f) => f.name).join(', ')}`,
     };
   }
 
