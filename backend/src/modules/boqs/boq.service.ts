@@ -1027,21 +1027,23 @@ export class BoqService {
         0,
       ),
     }));
+
     plain.items = plain.categories.flatMap((c) => c.items ?? []);
 
     const lineItemsTotal = plain.items.reduce(
       (sum, i) => sum + Number(i.amount || 0),
       0,
     );
+
     const projectTotal =
       lineItemsTotal +
       Number(plain.design_amount || 0) +
       Number(plain.execution_amount || 0) +
       Number(plain.supervisor_amount || 0) +
       Number(plain.additional_total || 0);
-    const miscAmount =
-      Math.round(projectTotal * (Number(plain.misc_pct || 0) / 100) * 100) /
-      100;
+
+    // Do not calculate misc amount
+    const miscAmount = 0;
 
     plain.project_total = Math.round(projectTotal * 100) / 100;
     plain.misc_amount = miscAmount;
