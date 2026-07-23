@@ -1,8 +1,7 @@
 import React, { useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import TopHeader from "../components/TopHeader";
-
+import TopHeader from "../components/dashboard/TopHeader";
 /* ---- Main AppLayout: only header + main, no sidebar ---- */
 export default function AppLayout({ app }) {
   const { user, ready } = useAuth();

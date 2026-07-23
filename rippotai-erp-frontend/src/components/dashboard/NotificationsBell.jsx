@@ -14,7 +14,7 @@ import {
   useGetUserNotificationsQuery,
   useMarkAsReadMutation,
   useMarkAllAsReadMutation,
-} from "../api/notification.api"; // adjust import path to wherever this file lives
+} from "../../api/notification.api"; // adjust import path to wherever this file lives
 
 export default function NotificationsBell() {
   const nav = useNavigate();

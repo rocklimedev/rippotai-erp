@@ -15,9 +15,10 @@ import { UserSearchService } from '../search/services/user-search.service';
 // Controllers
 import { UsersController } from './users.controller';
 import { UserSignatureController } from './user-signature.controller';
+import { CdnModule } from '../cdn/cdn.module';
 
 @Module({
-  imports: [SequelizeModule.forFeature([User, UserSignature])],
+  imports: [SequelizeModule.forFeature([User, UserSignature]), CdnModule],
   controllers: [UsersController, UserSignatureController],
   providers: [UsersService, UserSignaturesService],
   exports: [UsersService],

@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { APP_ICONS } from "@/components/AppIcons";
+import { APP_ICONS } from "@/components/dashboard/AppIcons";
 import { APP_META, sectionNameFor } from "@/config/appNav";
 
 /**

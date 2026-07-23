@@ -178,7 +178,45 @@ export const IconCalendar = () =>
     </>,
   );
 
+export const IconSettings = () =>
+  wrap(
+    <>
+      {/* Gear tile: deep-green rounded square base, sage cog, white hub */}
+      <rect x="8" y="8" width="64" height="64" rx="18" fill={P} />
+      <g transform="translate(40,40)">
+        {/* 8 teeth around the cog */}
+        {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
+          <rect
+            key={deg}
+            x="-4.5"
+            y="-25"
+            width="9"
+            height="12"
+            rx="2.5"
+            fill={SS}
+            transform={`rotate(${deg})`}
+          />
+        ))}
+        <circle r="15" fill={SS} />
+        <circle r="6.5" fill={P} />
+      </g>
+    </>,
+  );
+export const IconDashboard = () =>
+  wrap(
+    <>
+      {/* Background tile */}
+      <rect x="8" y="8" width="64" height="64" rx="16" fill={P} />
+
+      {/* Four dashboard panels */}
+      <rect x="18" y="18" width="18" height="18" rx="4" fill={W} />
+      <rect x="44" y="18" width="18" height="18" rx="4" fill={SS} />
+      <rect x="18" y="44" width="18" height="18" rx="4" fill={SS} />
+      <rect x="44" y="44" width="18" height="18" rx="4" fill={W} />
+    </>,
+  );
 export const MODULE_ICONS = {
+  dashboard: IconDashboard,
   boq: IconBoq,
   projects: IconProjects,
   quotations: IconQuotations,
@@ -190,6 +228,7 @@ export const MODULE_ICONS = {
   notes: IconNotes,
   inventory: IconInventory,
   calendar: IconCalendar,
+  settings: IconSettings,
 };
 export const APP_ICONS = MODULE_ICONS;
 export default MODULE_ICONS;
