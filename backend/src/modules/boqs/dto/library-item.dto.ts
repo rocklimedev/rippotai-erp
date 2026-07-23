@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsNumber,
@@ -31,8 +32,12 @@ export class CreateLibraryItemDto {
   unit?: string;
 
   @IsOptional()
-  @IsNumber()
-  @Min(0)
+  @Type(() => Number)
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: 'default_rate must be a valid number' },
+  )
+  @Min(0, { message: 'default_rate must not be less than 0' })
   default_rate?: number;
 
   @IsOptional()
@@ -64,8 +69,12 @@ export class UpdateLibraryItemDto {
   unit?: string;
 
   @IsOptional()
-  @IsNumber()
-  @Min(0)
+  @Type(() => Number)
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: 'default_rate must be a valid number' },
+  )
+  @Min(0, { message: 'default_rate must not be less than 0' })
   default_rate?: number;
 
   @IsOptional()
