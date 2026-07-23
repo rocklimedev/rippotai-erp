@@ -149,7 +149,9 @@ export function BoqLibraryPage() {
                 <td className="px-3 py-3">{it.unit}</td>
 
                 <td className="px-3 py-3 text-right font-semibold">
-                  {formatINR(it.default_rate || 0)}
+                  <td className="px-3 py-3 text-right font-semibold">
+                    {formatINR(it.default_rate || 0)}
+                  </td>
                 </td>
 
                 <td className="px-3 py-3">

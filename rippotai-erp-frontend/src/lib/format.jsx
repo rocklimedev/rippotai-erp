@@ -1,14 +1,28 @@
 // Indian numbering system currency formatter e.g., 3116080 -> ₹31,16,080
-export function formatINR(n) {
-  if (n === null || n === undefined || isNaN(n)) return "₹0";
-  const num = Math.round(Number(n));
+export function formatINR(n, decimals = 2) {
+  if (n === null || n === undefined || n === "") return "₹0.00";
+
+  const num = Number(n);
+  if (Number.isNaN(num)) return "₹0.00";
+
   const sign = num < 0 ? "-" : "";
-  const s = String(Math.abs(num));
-  if (s.length <= 3) return `${sign}₹${s}`;
-  const last3 = s.slice(-3);
-  const rest = s.slice(0, -3);
-  const withCommas = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ",");
-  return `${sign}₹${withCommas},${last3}`;
+  const absNum = Math.abs(num);
+
+  const fixed = absNum.toFixed(decimals);
+  const [integerPart, decimalPart] = fixed.split(".");
+
+  let formattedInteger = integerPart;
+
+  if (integerPart.length > 3) {
+    formattedInteger =
+      integerPart.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ",") +
+      "," +
+      integerPart.slice(-3);
+  }
+
+  return decimals > 0
+    ? `${sign}₹${formattedInteger}.${decimalPart}`
+    : `${sign}₹${formattedInteger}`;
 }
 
 export function formatINRShort(n) {
