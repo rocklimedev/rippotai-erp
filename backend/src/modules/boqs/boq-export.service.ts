@@ -467,7 +467,7 @@ export class BoqExportService {
   private formatCurrency(value: any): string {
     const n = Number(value ?? 0);
     if (Number.isNaN(n)) return this.formatValue(value);
-    return n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+    return `₹ ${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
   }
 
   private formatValue(value: any): string {

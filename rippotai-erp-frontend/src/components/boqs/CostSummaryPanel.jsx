@@ -1,5 +1,25 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { formatINR } from "@/lib/format";
+import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
+
+function htmlToPlainText(html) {
+  return (html || "")
+    .replace(/<[^>]+>/g, "\n")
+    .replace(/\n+/g, "\n")
+    .trim();
+}
+
+function plainTextToHtml(text) {
+  return (
+    "<ol>" +
+    text
+      .split("\n")
+      .filter(Boolean)
+      .map((l) => `<li>${l}</li>`)
+      .join("") +
+    "</ol>"
+  );
+}
 
 export function CostSummaryPanel({
   boq,
@@ -8,6 +28,29 @@ export function CostSummaryPanel({
   onSaveTerms,
   onSaveMiscPct,
 }) {
+  // Local buffer for the textarea so typing isn't clobbered by prop
+  // updates that lag behind the save request.
+  const [termsText, setTermsText] = useState(() =>
+    htmlToPlainText(boq.terms_html),
+  );
+
+  // Only resync from the prop when we're looking at a *different* BOQ,
+  // not on every terms_html change (which would fight with local typing).
+  useEffect(() => {
+    setTermsText(htmlToPlainText(boq.terms_html));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boq.id]);
+
+  const debouncedSaveTerms = useDebouncedCallback((text) => {
+    onSaveTerms(plainTextToHtml(text));
+  }, 500);
+
+  const handleTermsChange = (e) => {
+    const value = e.target.value;
+    setTermsText(value);
+    debouncedSaveTerms(value);
+  };
+
   return (
     <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <div className="lg:col-span-2 bc-card p-6">
@@ -16,24 +59,8 @@ export function CostSummaryPanel({
         </div>
         <textarea
           className="bc-input min-h-[140px] text-[13px] leading-relaxed"
-          readOnly={disabled}
-          onClick={() => disabled && onLockedEdit()}
-          value={(boq.terms_html || "")
-            .replace(/<[^>]+>/g, "\n")
-            .replace(/\n+/g, "\n")
-            .trim()}
-          onChange={(e) => {
-            if (disabled) return onLockedEdit();
-            onSaveTerms(
-              "<ol>" +
-                e.target.value
-                  .split("\n")
-                  .filter(Boolean)
-                  .map((l) => `<li>${l}</li>`)
-                  .join("") +
-                "</ol>",
-            );
-          }}
+          value={termsText}
+          onChange={handleTermsChange}
           data-testid="terms-textarea"
         />
       </div>
