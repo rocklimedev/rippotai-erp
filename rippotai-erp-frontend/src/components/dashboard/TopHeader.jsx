@@ -2,11 +2,11 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { MODULE_ICONS } from "@/components/icons/ModuleIcons";
 import { APP_META, APP_MENUS } from "@/config/appNav";
-import CommandShellSearch from "../components/CommandShellSearch";
+import CommandShellSearch from "../search/CommandShellSearch";
 import AppSwitcher from "./AppSwitcher";
 import MenuDropdown from "./MenuDropdown";
 import NotificationsBell from "./NotificationsBell";
-import UserMenu from "./UserMenu";
+import UserMenu from "../users/UserMenu";
 
 export default function TopHeader({ app }) {
   const nav = useNavigate();

@@ -1,7 +1,13 @@
 // Universal header nav config: grouped by dropdown label per app.
-// Slugs are relative to the app's base route.
+// Slugs are relative to the app's base route. A slug starting with "/" is
+// treated as an absolute path.
 
 export const APP_META = {
+  dashboard: {
+    name: "Dashboard",
+    base: "/dashboard",
+    searchPh: "Search applications",
+  },
   boq: {
     name: "BOQ",
     base: "/boq",
@@ -34,9 +40,20 @@ export const APP_META = {
   },
   tasks: { name: "Tasks", base: "/tasks", searchPh: "Search tasks" },
   calendar: { name: "Calendar", base: "/calendar", searchPh: "Search events" },
+  // Not a landing-page "app" — registered here only so shared chrome
+  // (TopHeader, AppSwitcher lookups, search placeholders, etc.) works
+  // when rendered with app="settings". Deliberately excluded from
+  // LANDING_ORDER so it never appears as a tile/menu option.
+  settings: {
+    name: "Settings",
+    base: "/settings",
+    searchPh: "Search settings...",
+  },
 };
 
 // Landing tile order: 7 apps (Clients + Notes removed in Phase A)
+// NOTE: "settings" is intentionally excluded — it's not a landing-page app,
+// just a registered entry so TopHeader/AppSwitcher config lookups work.
 export const LANDING_ORDER = [
   "boq",
   "projects",
@@ -47,9 +64,11 @@ export const LANDING_ORDER = [
   "tasks",
   "calendar",
 ];
+
 const I = (label, slug) => ({ label, slug });
 
 export const APP_MENUS = {
+  dashboard: [],
   boq: [
     { label: "BOQ", items: [I("All BOQs", "all"), I("Create BOQ", "new")] },
     {
@@ -193,6 +212,26 @@ export const APP_MENUS = {
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles and Permissions", "roles"),
         I("Activity", "activity"),
+      ],
+    },
+  ],
+  settings: [
+    {
+      label: "Account",
+      items: [
+        I("Edit Profile", "/settings"),
+        I("Security", "security"),
+        I("Notifications", "notifications"),
+        I("Billing", "billing"),
+        I("Estimate Signature", "estimate-signature"),
+      ],
+    },
+    {
+      label: "Workspace",
+      items: [
+        I("Users", "users"),
+        I("Roles & Permissions", "roles-permissions"),
+        I("Super Admin", "super-admin"),
       ],
     },
   ],

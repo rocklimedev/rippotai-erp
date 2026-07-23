@@ -22,11 +22,19 @@ export default function UserMenu() {
           data-testid="topbar-user"
           className="flex items-center gap-2 h-11 pl-1 pr-3 rounded-full hover:bg-[#F4F6F7]"
         >
-          <div
-            className="w-8 h-8 rounded-full text-[12px] font-semibold flex items-center justify-center"
-            style={{ background: "#1F453B", color: "#FFF" }}
-          >
-            {user?.avatar_initials || "?"}
+          <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-[#1F453B] text-white text-[12px] font-semibold">
+            {user?.avatar_url ? (
+              <img
+                src={user.avatar_url}
+                alt={user?.name || "User"}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+              />
+            ) : (
+              (user?.name?.charAt(0) || "?").toUpperCase()
+            )}
           </div>
           <div className="text-left hidden lg:block min-w-0 max-w-[160px]">
             <div

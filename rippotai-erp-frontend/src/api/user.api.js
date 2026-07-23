@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { API_URL } from "../lib/config";
+
 const baseQuery = fetchBaseQuery({
   baseUrl: API_URL,
   credentials: "include",
@@ -12,6 +13,10 @@ const baseQuery = fetchBaseQuery({
     if (cdnToken) {
       headers.set("x-cdn-secret", cdnToken);
     }
+    // NOTE: no Content-Type header is set here on purpose. When the body is
+    // a FormData instance (avatar upload), fetchBaseQuery skips JSON
+    // stringifying it and lets the browser set the multipart boundary
+    // itself - setting Content-Type manually would break that.
     return headers;
   },
 });
@@ -52,12 +57,41 @@ export const usersApi = createApi({
       providesTags: ["Users"],
     }),
 
+    // Admin-facing update - can also change role_id / is_active / etc.
     updateUser: builder.mutation({
       query: ({ id, ...body }) => ({
         url: `/users/${id}`,
         method: "PATCH",
         body,
       }),
+      invalidatesTags: ["Users"],
+    }),
+
+    // Self-service profile update - name / email / phone / job_title only.
+    // This is what the "Profile Settings" screen should call; role is
+    // intentionally not accepted by the backend on this route.
+    updateProfile: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/users/${id}/profile`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["Users"],
+    }),
+
+    // Avatar upload - sends the raw File as multipart/form-data so it goes
+    // straight to the backend -> CdnService (SFTP) -> avatar_url on the user.
+    uploadAvatar: builder.mutation({
+      query: ({ id, file }) => {
+        const formData = new FormData();
+        formData.append("avatar", file);
+
+        return {
+          url: `/users/${id}/avatar`,
+          method: "PATCH",
+          body: formData,
+        };
+      },
       invalidatesTags: ["Users"],
     }),
 
@@ -88,6 +122,8 @@ export const {
   useGetUsersQuery,
   useGetUserByIdQuery,
   useUpdateUserMutation,
+  useUpdateProfileMutation,
+  useUploadAvatarMutation,
   useDeactivateUserMutation,
   useDeleteUserMutation,
 } = usersApi;

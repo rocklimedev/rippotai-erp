@@ -5,7 +5,7 @@ import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { Plus, X, Lock, Check, Search, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { APP_ICONS } from "@/components/AppIcons";
+import { APP_ICONS } from "./AppIcons";
 import { APP_META } from "@/config/appNav";
 import { WIDGETS as WIDGET_COMPONENTS } from "@/widgets/registry";
 import {

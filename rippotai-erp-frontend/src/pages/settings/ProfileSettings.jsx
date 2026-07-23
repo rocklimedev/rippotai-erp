@@ -1,27 +1,34 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { Camera, Save } from "lucide-react";
+import { Camera, Save, Loader2, ShieldCheck } from "lucide-react";
+import {
+  useUpdateProfileMutation,
+  useUploadAvatarMutation,
+} from "../../api/user.api";
 
 export default function ProfileSettings() {
   const { user, updateUser } = useAuth();
-  const [isSaving, setIsSaving] = useState(false);
+  const [updateProfile, { isLoading: isSaving }] = useUpdateProfileMutation();
+  const [uploadAvatar, { isLoading: isUploadingAvatar }] =
+    useUploadAvatarMutation();
 
-  // Field names now match the backend (job_title, avatar_url) so the
-  // payload can be sent straight through to updateUser without remapping.
   const [formData, setFormData] = useState({
     name: user?.name || "",
     email: user?.email || "",
     phone: user?.phone || "",
     job_title: user?.job_title || "",
   });
+
+  // Local optimistic preview shown the instant a file is picked, before the
+  // upload round-trip resolves.
   const [avatarPreview, setAvatarPreview] = useState(null);
 
   const handleInputChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleAvatarChange = (e) => {
+  const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -29,35 +36,56 @@ export default function ProfileSettings() {
       toast.error("Image must be 2MB or smaller");
       return;
     }
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
 
+    // Show it immediately while the real upload happens in the background.
     const reader = new FileReader();
     reader.onloadend = () => setAvatarPreview(reader.result);
     reader.readAsDataURL(file);
+
+    try {
+      const updated = await uploadAvatar({ id: user.id, file }).unwrap();
+      // Swap the local base64 preview for the real CDN url once it's back,
+      // and sync the rest of the app's view of the user (navbar, etc.).
+      setAvatarPreview(null);
+      updateUser?.(updated);
+      toast.success("Profile picture updated");
+    } catch (err) {
+      setAvatarPreview(null);
+      toast.error(err?.data?.message || "Failed to upload profile picture");
+      console.error(err);
+    } finally {
+      // allow re-selecting the same file again later
+      e.target.value = "";
+    }
   };
 
   const handleProfileSave = async () => {
-    setIsSaving(true);
     try {
-      if (!updateUser) {
-        throw new Error("updateUser is not available from AuthContext");
-      }
+      const updated = await updateProfile({
+        id: user.id,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        job_title: formData.job_title,
+      }).unwrap();
 
-      await updateUser({
-        ...formData,
-        // Only send avatar_url if the person picked a new image; otherwise
-        // leave the existing one alone rather than overwriting with null.
-        ...(avatarPreview ? { avatar_url: avatarPreview } : {}),
-      });
+      updateUser?.(updated);
       toast.success("Profile updated successfully");
     } catch (err) {
-      toast.error("Failed to update profile");
+      toast.error(err?.data?.message || "Failed to update profile");
       console.error(err);
-    } finally {
-      setIsSaving(false);
     }
   };
 
   const avatarSrc = avatarPreview || user?.avatar_url || null;
+  // useAuth's user shape returns role as a plain string (e.g. "ADMIN"),
+  // not a nested { role: { name } } object - see role_id which is the
+  // separate FK, kept out of this form entirely.
+  const roleName = user?.role || "No role assigned";
 
   return (
     <div>
@@ -83,6 +111,11 @@ export default function ProfileSettings() {
             ) : (
               user?.name?.charAt(0) || "?"
             )}
+            {isUploadingAvatar && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <Loader2 size={22} className="animate-spin text-white" />
+              </div>
+            )}
           </div>
           <label
             htmlFor="avatar-upload"
@@ -95,6 +128,7 @@ export default function ProfileSettings() {
             type="file"
             accept="image/*"
             className="hidden"
+            disabled={isUploadingAvatar}
             onChange={handleAvatarChange}
           />
         </div>
@@ -151,6 +185,23 @@ export default function ProfileSettings() {
             onChange={handleInputChange}
             className="w-full bg-white border border-[rgba(31,69,59,0.2)] rounded-xl px-4 py-3 focus:border-[#1F453B] focus:ring-2 focus:ring-[rgba(31,69,59,0.18)] outline-none text-[15px]"
           />
+        </div>
+
+        {/* Role is assigned by an admin - shown for visibility only, never
+            submitted from this form (the backend's self-service profile
+            endpoint doesn't even accept role_id, so this is defense in
+            depth, not the only safeguard). */}
+        <div>
+          <label className="block text-sm font-medium mb-2 text-[#1F453B]">
+            Role
+          </label>
+          <div className="w-full bg-[#F3F5F4] border border-[rgba(31,69,59,0.12)] rounded-xl px-4 py-3 text-[15px] text-[#4B5A56] flex items-center gap-2 cursor-not-allowed select-none">
+            <ShieldCheck size={16} className="text-[#6B7B7C] shrink-0" />
+            {roleName}
+          </div>
+          <p className="text-xs text-[#8A9694] mt-1.5">
+            Contact an administrator to change your role
+          </p>
         </div>
       </div>
 
