@@ -7,13 +7,17 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 import { UniqueConstraintError } from 'sequelize';
 import * as bcrypt from 'bcryptjs';
+
 import { User } from './models/user.model';
 import { CreateUserDto, UpdateUserDto, UpdateProfileDto } from './dto/user.dto';
+
 import { CdnService } from '@/modules/cdn/cdn.service';
+import { ActivityLogForUserService } from '../engagement/services/activity-log-user.service';
+import { NotificationForUserService } from '../engagement/services/notification-user.service';
 
 const SALT_ROUNDS = 10;
 const PUBLIC_ATTRIBUTES = { exclude: ['password_hash'] };
-const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // keep in sync with frontend + Multer limit
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const ALLOWED_AVATAR_MIME = [
   'image/jpeg',
   'image/png',
@@ -26,11 +30,16 @@ export class UsersService {
   constructor(
     @InjectModel(User)
     private readonly userModel: typeof User,
+
     private readonly cdnService: CdnService,
+    private readonly activityLogForUserService: ActivityLogForUserService,
+    private readonly notificationForUserService: NotificationForUserService,
   ) {}
 
-  // ✅ CREATE USER
-  async create(dto: CreateUserDto): Promise<User> {
+  // =========================
+  // CREATE USER
+  // =========================
+  async create(dto: CreateUserDto, actor?: any): Promise<User> {
     const password_hash = await bcrypt.hash(dto.password, SALT_ROUNDS);
 
     try {
@@ -45,7 +54,20 @@ export class UsersService {
         created_by: dto.created_by ?? null,
       } as any);
 
-      return this.findOne(user.id);
+      const createdUser = await this.findOne(user.id);
+
+      // === Activity Log & Notification ===
+      await this.activityLogForUserService.logUserCreated(
+        createdUser,
+        dto.created_by,
+        actor,
+      );
+      await this.notificationForUserService.notifyUserCreated(
+        createdUser,
+        dto.created_by,
+      );
+
+      return createdUser;
     } catch (err) {
       if (err instanceof UniqueConstraintError) {
         throw new ConflictException(
@@ -56,7 +78,9 @@ export class UsersService {
     }
   }
 
-  // ✅ GET ALL USERS
+  // =========================
+  // FIND ALL
+  // =========================
   async findAll(
     filters: { role_id?: string; is_active?: boolean } = {},
   ): Promise<User[]> {
@@ -73,19 +97,22 @@ export class UsersService {
     });
   }
 
-  // ✅ GET ONE USER
+  // =========================
+  // FIND ONE
+  // =========================
   async findOne(id: string): Promise<User> {
     const user = await this.userModel.findByPk(id, {
       attributes: PUBLIC_ATTRIBUTES,
-      include: ['role'], // needed so the frontend can render the (read-only) role name
+      include: ['role'],
     });
 
     if (!user) throw new NotFoundException(`User ${id} not found`);
-
     return user;
   }
 
-  // ✅ AUTH USE CASE (keep password)
+  // =========================
+  // FIND BY EMAIL (FOR AUTH)
+  // =========================
   async findByEmailWithSecret(email: string): Promise<User | null> {
     return this.userModel.findOne({
       where: { email },
@@ -93,10 +120,11 @@ export class UsersService {
     });
   }
 
-  // ✅ UPDATE USER (admin-facing - can touch role_id / is_active / etc.)
-  async update(id: string, dto: UpdateUserDto): Promise<User> {
+  // =========================
+  // UPDATE USER (Admin)
+  // =========================
+  async update(id: string, dto: UpdateUserDto, actor?: any): Promise<User> {
     const user = await this.userModel.findByPk(id);
-
     if (!user) throw new NotFoundException(`User ${id} not found`);
 
     const payload: Record<string, any> = {
@@ -105,7 +133,6 @@ export class UsersService {
       phone: dto.phone,
       job_title: dto.job_title,
       is_active: dto.is_active,
-      created_by: dto.created_by,
       role_id: dto.role_id,
     };
 
@@ -115,7 +142,21 @@ export class UsersService {
 
     try {
       await user.update(payload);
-      return this.findOne(id);
+      const updatedUser = await this.findOne(id);
+
+      // === Activity Log & Notification ===
+      await this.activityLogForUserService.logUserUpdated(
+        updatedUser,
+        actor?.id,
+        actor,
+      );
+
+      await this.notificationForUserService.notifyUserUpdated(
+        updatedUser,
+        actor?.id,
+      );
+
+      return updatedUser;
     } catch (err) {
       if (err instanceof UniqueConstraintError) {
         throw new ConflictException(
@@ -126,12 +167,15 @@ export class UsersService {
     }
   }
 
-  // ✅ UPDATE OWN PROFILE (self-service - name/email/phone/job_title only,
-  // role/is_active/created_by are intentionally not accepted here so a
-  // user can never grant themselves a different role via this endpoint)
-  async updateProfile(id: string, dto: UpdateProfileDto): Promise<User> {
+  // =========================
+  // UPDATE PROFILE (Self)
+  // =========================
+  async updateProfile(
+    id: string,
+    dto: UpdateProfileDto,
+    actorId: string,
+  ): Promise<User> {
     const user = await this.userModel.findByPk(id);
-
     if (!user) throw new NotFoundException(`User ${id} not found`);
 
     try {
@@ -141,7 +185,20 @@ export class UsersService {
         phone: dto.phone,
         job_title: dto.job_title,
       });
-      return this.findOne(id);
+
+      const updatedUser = await this.findOne(id);
+
+      // === Activity Log & Notification ===
+      await this.activityLogForUserService.logUserProfileUpdated(
+        updatedUser,
+        actorId,
+      );
+      await this.notificationForUserService.notifyUserProfileUpdated(
+        updatedUser,
+        actorId,
+      );
+
+      return updatedUser;
     } catch (err) {
       if (err instanceof UniqueConstraintError) {
         throw new ConflictException(
@@ -152,14 +209,15 @@ export class UsersService {
     }
   }
 
-  // ✅ UPLOAD / REPLACE AVATAR
-  // Pushes the file to the CDN over SFTP via CdnService, then persists the
-  // resulting URL on the user row. Best-effort deletes the old avatar file
-  // afterwards so orphaned images don't accumulate on the CDN.
-  async uploadAvatar(id: string, file: Express.Multer.File): Promise<User> {
-    if (!file) {
-      throw new BadRequestException('No file uploaded');
-    }
+  // =========================
+  // UPLOAD AVATAR
+  // =========================
+  async uploadAvatar(
+    id: string,
+    file: Express.Multer.File,
+    actorId: string,
+  ): Promise<User> {
+    if (!file) throw new BadRequestException('No file uploaded');
     if (!ALLOWED_AVATAR_MIME.includes(file.mimetype)) {
       throw new BadRequestException(
         'Avatar must be a JPG, PNG, GIF or WEBP image',
@@ -173,34 +231,58 @@ export class UsersService {
     if (!user) throw new NotFoundException(`User ${id} not found`);
 
     const previousAvatarUrl = user.avatar_url;
-
-    const { url, filename } = await this.cdnService.uploadFile(file);
+    const { url } = await this.cdnService.uploadFile(file);
 
     await user.update({ avatar_url: url });
 
+    // Cleanup old avatar (non-blocking)
     if (previousAvatarUrl) {
       const previousFilename = previousAvatarUrl.split('/').pop();
-      if (previousFilename && previousFilename !== filename) {
-        // don't let a slow/failed cleanup block the response to the user
+      if (previousFilename) {
         this.cdnService.deleteFile(previousFilename).catch(() => {});
       }
     }
 
-    return this.findOne(id);
+    const updatedUser = await this.findOne(id);
+
+    // === Activity Log & Notification ===
+    await this.activityLogForUserService.logAvatarUpdated(updatedUser, actorId);
+    await this.notificationForUserService.notifyAvatarUpdated(
+      updatedUser,
+      actorId,
+    );
+
+    return updatedUser;
   }
 
-  // ✅ DEACTIVATE USER
-  async deactivate(id: string): Promise<User> {
+  // =========================
+  // DEACTIVATE USER
+  // =========================
+  async deactivate(id: string, actor?: any): Promise<User> {
     const user = await this.userModel.findByPk(id);
-
     if (!user) throw new NotFoundException(`User ${id} not found`);
 
     await user.update({ is_active: false });
 
-    return this.findOne(id);
+    const deactivatedUser = await this.findOne(id);
+
+    // === Activity Log & Notification ===
+    await this.activityLogForUserService.logUserDeactivated(
+      deactivatedUser,
+      actor?.id,
+      actor,
+    );
+    await this.notificationForUserService.notifyUserDeactivated(
+      deactivatedUser,
+      actor?.id,
+    );
+
+    return deactivatedUser;
   }
 
-  // ✅ UPDATE LAST LOGIN
+  // =========================
+  // UPDATE LAST LOGIN
+  // =========================
   async touchLastLogin(id: string): Promise<void> {
     await this.userModel.update(
       { last_login_at: new Date() },
@@ -208,12 +290,30 @@ export class UsersService {
     );
   }
 
-  // ✅ DELETE USER
-  async remove(id: string): Promise<void> {
+  // =========================
+  // DELETE USER
+  // =========================
+  async remove(id: string, actor?: any): Promise<void> {
     const user = await this.userModel.findByPk(id);
-
     if (!user) throw new NotFoundException(`User ${id} not found`);
 
+    const userName = user.name;
+    const email = user.email;
+
     await user.destroy();
+
+    // === Activity Log & Notification ===
+    await this.activityLogForUserService.logUserDeleted(
+      userName,
+      email,
+      id,
+      actor?.id,
+      actor,
+    );
+    await this.notificationForUserService.notifyUserDeleted(
+      userName,
+      email,
+      actor?.id,
+    );
   }
 }

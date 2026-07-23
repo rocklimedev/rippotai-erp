@@ -7,7 +7,7 @@ import { NotificationsService } from './notifications.service';
 import { NotificationType } from '@/common/enums';
 
 interface BroadcastParams {
-  excludedUserId: string;
+  excludedUserId?: string;
   type: NotificationType;
   title: string;
   message: string;
@@ -27,15 +27,22 @@ export class NotificationBroadcastService {
     title,
     message,
   }: BroadcastParams): Promise<void> {
+    const where = excludedUserId ? { id: { [Op.ne]: excludedUserId } } : {};
+
     const users = await this.userModel.findAll({
-      where: { id: { [Op.ne]: excludedUserId } },
+      where,
       attributes: ['id'],
     });
 
     if (!users.length) return;
 
     await this.notificationsService.createMany(
-      users.map((user) => ({ user_id: user.id, type, title, message })),
+      users.map((user) => ({
+        user_id: user.id,
+        type,
+        title,
+        message,
+      })),
     );
   }
 }

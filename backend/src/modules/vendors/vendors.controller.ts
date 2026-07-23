@@ -11,27 +11,35 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+
 import { VendorsService } from './vendors.service';
-import { VendorDashboardService } from './vendor-dashboard.service'; // ← Import added
+import { VendorDashboardService } from './vendor-dashboard.service';
+
 import { CreateVendorDto, UpdateVendorDto } from './dto/vendor.dto';
 import { VendorStatus } from '@/common/enums';
-import { CurrentUser } from '@/common/decorator/current-user.decorator';
+
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
+import { CurrentUser } from '@/common/decorator/current-user.decorator';
 
 @Controller('vendors')
 @UseGuards(JwtAuthGuard)
 export class VendorsController {
   constructor(
     private readonly vendorsService: VendorsService,
-    private readonly vendorDashboardService: VendorDashboardService, // ← Injected
+    private readonly vendorDashboardService: VendorDashboardService,
   ) {}
 
-  // Existing routes...
+  // =========================
+  // CREATE
+  // =========================
   @Post()
-  create(@Body() dto: CreateVendorDto, @CurrentUser() user: any) {
+  create(@Body() dto: CreateVendorDto, @CurrentUser() user?: any) {
     return this.vendorsService.create(dto, user);
   }
 
+  // =========================
+  // GET ALL
+  // =========================
   @Get()
   findAll(
     @Query('status') status?: VendorStatus,
@@ -45,86 +53,92 @@ export class VendorsController {
     });
   }
 
+  // =========================
+  // GET ONE
+  // =========================
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.vendorsService.findOne(id);
   }
 
+  // =========================
+  // GET QUOTATIONS BY VENDOR
+  // =========================
+  @Get(':id/quotations')
+  getQuotationsByVendor(@Param('id') id: string) {
+    return this.vendorsService.getQuotationsByVendor(id);
+  }
+
+  // =========================
+  // UPDATE
+  // =========================
   @Patch(':id')
   update(
     @Param('id') id: string,
     @Body() dto: UpdateVendorDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user?: any,
   ) {
     return this.vendorsService.update(id, dto, user);
   }
 
+  // =========================
+  // SET STATUS
+  // =========================
   @Patch(':id/status')
   setStatus(
     @Param('id') id: string,
     @Body('status') status: VendorStatus,
-    @CurrentUser() user: any,
+    @CurrentUser() user?: any,
   ) {
     return this.vendorsService.setStatus(id, status, user);
   }
 
-  @Get(':id/quotations')
-  async getQuotations(@Param('id') id: string) {
-    return {
-      success: true,
-      data: await this.vendorsService.getQuotationsByVendor(id),
-    };
-  }
-
+  // =========================
+  // DELETE
+  // =========================
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string, @CurrentUser() user: any) {
+  remove(@Param('id') id: string, @CurrentUser() user?: any) {
     return this.vendorsService.remove(id, user);
   }
 
-  // ==================== NEW DASHBOARD ROUTES ====================
-  /**
-   * Dashboard summary cards
-   */
+  // =========================
+  // DASHBOARD ROUTES
+  // =========================
   @Get('dashboard/summary')
-  async getDashboardSummary() {
+  getDashboardSummary() {
     return this.vendorDashboardService.getDashboardSummary();
   }
-  /** Get vendors grouped by category with counts */
+
   @Get('dashboard/by-category')
-  async getVendorsByCategory() {
+  getVendorsByCategory() {
     return this.vendorDashboardService.getVendorsByCategory();
   }
 
-  /** Project-wise assigned vendors (top 10) */
   @Get('dashboard/project-wise')
-  async getVendorsProjectWise() {
+  getVendorsProjectWise() {
     return this.vendorDashboardService.getVendorsProjectWise();
   }
 
-  /** Count of vendors requiring attention */
   @Get('dashboard/requiring-attention')
-  async getVendorsRequiringAttention() {
+  getVendorsRequiringAttention() {
     return this.vendorDashboardService.getVendorsRequiringAttention();
   }
 
-  /** Vendor onboarding trend (cumulative verified) */
   @Get('dashboard/onboarding-trend')
-  async getVendorsOnboardingTrend(@Query('months') months?: string) {
-    const monthsNum = months ? parseInt(months) : 6;
+  getVendorsOnboardingTrend(@Query('months') months?: string) {
+    const monthsNum = months ? parseInt(months, 10) : 6;
     return this.vendorDashboardService.getVendorsOnboardingTrend(monthsNum);
   }
 
-  /** Current vendor availability mix (for donut/pie chart) */
   @Get('dashboard/availability-mix')
-  async getVendorsAvailabilityMix() {
+  getVendorsAvailabilityMix() {
     return this.vendorDashboardService.getVendorsAvailabilityMix();
   }
 
-  /** Recently added vendors */
   @Get('dashboard/recently-added')
-  async getVendorsRecentlyAdded(@Query('limit') limit?: string) {
-    const limitNum = limit ? parseInt(limit) : 5;
+  getVendorsRecentlyAdded(@Query('limit') limit?: string) {
+    const limitNum = limit ? parseInt(limit, 10) : 5;
     return this.vendorDashboardService.getVendorsRecentlyAdded(limitNum);
   }
 }

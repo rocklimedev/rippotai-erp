@@ -1,24 +1,29 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, fn, col, literal, WhereOptions } from 'sequelize';
+
 import { Quotation } from '@/modules/quotations/models/quotations.model';
 import { Project } from './models/projects.model';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { ProjectStatus } from '../../common/enums';
+
 import { ActivityLogForProjectService } from '../engagement/services/activity-log-project.service';
 import { NotificationForProjectService } from '../engagement/services/notification-project.service';
-import { Vendor } from '../vendors/models/vendors.model';
 import { ClientsService } from '../clients/clients.service';
 import { User } from '@/modules/users/models/user.model';
+import { Vendor } from '../vendors/models/vendors.model';
 @Injectable()
 export class ProjectsService {
   constructor(
     @InjectModel(Project)
     private readonly projectModel: typeof Project,
+
     private readonly activityLogForProjectService: ActivityLogForProjectService,
     private readonly notificationForProjectService: NotificationForProjectService,
+
     private readonly clientsService: ClientsService,
   ) {}
+
   private slugify(name: string): string {
     return name
       .trim()
@@ -26,6 +31,7 @@ export class ProjectsService {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
   }
+
   private async generateUniqueSlug(
     name: string,
     excludeId?: string,
@@ -62,6 +68,13 @@ export class ProjectsService {
       slug,
       created_by: user?.id ?? null,
     } as any);
+
+    // Log Activity & Send Notification
+    await this.activityLogForProjectService.logProjectCreated(project, user);
+    await this.notificationForProjectService.notifyProjectCreated(
+      project,
+      user?.id,
+    );
 
     return project;
   }
@@ -163,6 +176,7 @@ export class ProjectsService {
       order: [['created_at', 'DESC']],
     });
   }
+
   // =========================
   // FIND ONE
   // =========================
@@ -287,7 +301,11 @@ export class ProjectsService {
   // =========================
   // UPDATE
   // =========================
-  async update(id: string, dto: UpdateProjectDto, user?: User) {
+  async update(
+    id: string,
+    dto: UpdateProjectDto,
+    user?: User,
+  ): Promise<Project> {
     const project = await this.findOne(id);
 
     if (dto.client_id) {
@@ -307,13 +325,25 @@ export class ProjectsService {
 
     await project.update(updateData);
 
+    // Log Activity & Send Notification
+    await this.activityLogForProjectService.logProjectUpdated(
+      project,
+      user,
+      dto,
+    );
+
+    await this.notificationForProjectService.notifyProjectUpdated(
+      project,
+      user?.id,
+    );
+
     return project;
   }
 
   // =========================
   // ARCHIVE
   // =========================
-  async archive(id: string, user?: User) {
+  async archive(id: string, user?: User): Promise<Project> {
     const project = await this.findOne(id);
 
     await project.update({
@@ -322,13 +352,20 @@ export class ProjectsService {
       status: ProjectStatus.INACTIVE,
     });
 
+    // Log Activity & Send Notification
+    await this.activityLogForProjectService.logProjectArchived(project, user);
+    await this.notificationForProjectService.notifyProjectArchived(
+      project,
+      user?.id,
+    );
+
     return project;
   }
 
   // =========================
   // RESTORE
   // =========================
-  async restore(id: string, user?: User) {
+  async restore(id: string, user?: User): Promise<Project> {
     const project = await this.findOne(id, true);
 
     await project.update({
@@ -336,6 +373,13 @@ export class ProjectsService {
       archived_by: null,
       status: ProjectStatus.ACTIVE,
     });
+
+    // Log Activity & Send Notification
+    await this.activityLogForProjectService.logProjectRestored(project, user);
+    await this.notificationForProjectService.notifyProjectRestored(
+      project,
+      user?.id,
+    );
 
     return project;
   }
@@ -353,5 +397,12 @@ export class ProjectsService {
     });
 
     await project.destroy();
+
+    // Log Activity & Send Notification
+    await this.activityLogForProjectService.logProjectDeleted(id, user);
+    await this.notificationForProjectService.notifyProjectDeleted(
+      projectName,
+      user?.id,
+    );
   }
 }

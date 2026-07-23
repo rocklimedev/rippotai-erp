@@ -75,19 +75,6 @@ export enum QuotationStatus {
 
 export enum NotificationType {
   // =========================
-  // QUOTATIONS
-  // =========================
-  QUOTATION_CREATED = 'quotation_created',
-  QUOTATION_SUBMITTED = 'quotation_submitted',
-  QUOTATION_APPROVED = 'quotation_approved',
-  QUOTATION_RETURNED = 'quotation_returned',
-  QUOTATION_DECLINED = 'quotation_declined',
-  QUOTATION_UPDATED = 'quotation_updated',
-  QUOTATION_ARCHIVED = 'quotation_archived',
-  QUOTATION_RESTORED = 'quotation_restored',
-  QUOTATION_DELETED = 'quotation_deleted',
-
-  // =========================
   // PROJECTS
   // =========================
   PROJECT_CREATED = 'project_created',
@@ -97,12 +84,62 @@ export enum NotificationType {
   PROJECT_DELETED = 'project_deleted',
 
   // =========================
+  // BRIEFS
+  // =========================
+  BRIEF_CREATED = 'brief_created',
+  BRIEF_UPDATED = 'brief_updated',
+  BRIEF_DELETED = 'brief_deleted',
+
+  // =========================
+  // CALENDAR
+  // =========================
+  CALENDAR_EVENT_CREATED = 'calendar_event_created',
+  CALENDAR_EVENT_UPDATED = 'calendar_event_updated',
+  CALENDAR_EVENT_DELETED = 'calendar_event_deleted',
+
+  // =========================
+  // CLIENTS
+  // =========================
+  CLIENT_CREATED = 'client_created',
+  CLIENT_UPDATED = 'client_updated',
+  CLIENT_DELETED = 'client_deleted',
+  CLIENT_RESTORED = 'client_restored',
+
+  // =========================
+  // DRAWINGS
+  // =========================
+  DRAWING_UPLOADED = 'drawing_uploaded',
+  DRAWING_SUPERSEDED = 'drawing_superseded',
+
+  // =========================
+  // LEADS
+  // =========================
+  LEAD_CREATED = 'lead_created',
+  LEAD_UPDATED = 'lead_updated',
+  LEAD_STAGE_CHANGED = 'lead_stage_changed',
+  LEAD_NOTE_ADDED = 'lead_note_added',
+  LEAD_PROPOSAL_SENT = 'lead_proposal_sent',
+  LEAD_DELETED = 'lead_deleted',
+
+  // =========================
+  // QUOTATIONS
+  // =========================
+  QUOTATION_CREATED = 'quotation_created',
+  QUOTATION_UPDATED = 'quotation_updated',
+  QUOTATION_SUBMITTED = 'quotation_submitted',
+  QUOTATION_APPROVED = 'quotation_approved',
+  QUOTATION_RETURNED_FOR_EDITING = 'quotation_returned_for_editing',
+  QUOTATION_DECLINED = 'quotation_declined',
+  QUOTATION_CANCELLED = 'quotation_cancelled',
+  QUOTATION_DELETED = 'quotation_deleted',
+  QUOTATION_RESTORED = 'quotation_restored',
+
+  // =========================
   // VENDORS
   // =========================
   VENDOR_CREATED = 'vendor_created',
   VENDOR_UPDATED = 'vendor_updated',
-  VENDOR_ARCHIVED = 'vendor_archived',
-  VENDOR_RESTORED = 'vendor_restored',
+  VENDOR_STATUS_CHANGED = 'vendor_status_changed',
   VENDOR_DELETED = 'vendor_deleted',
 
   // =========================
@@ -110,12 +147,30 @@ export enum NotificationType {
   // =========================
   USER_CREATED = 'user_created',
   USER_UPDATED = 'user_updated',
+  USER_PROFILE_UPDATED = 'user_profile_updated',
+  USER_AVATAR_UPDATED = 'user_avatar_updated',
+  USER_DEACTIVATED = 'user_deactivated',
   USER_DELETED = 'user_deleted',
-  USER_ROLE_CHANGED = 'user_role_changed',
-  USER_STATUS_CHANGED = 'user_status_changed',
 
   // =========================
-  // PURCHASE ORDERS
+  // TASKS
+  // =========================
+  TASK_CREATED = 'task_created',
+  TASK_UPDATED = 'task_updated',
+  TASK_STATUS_CHANGED = 'task_status_changed',
+  TASK_COMPLETED = 'task_completed',
+  TASK_DELETED = 'task_deleted',
+
+  // =========================
+  // SITE RECCE
+  // =========================
+  SITE_RECCE_CREATED = 'site_recce_created',
+  SITE_RECCE_UPDATED = 'site_recce_updated',
+  SITE_RECCE_STATUS_CHANGED = 'site_recce_status_changed',
+  SITE_RECCE_DELETED = 'site_recce_deleted',
+
+  // =========================
+  // PURCHASE ORDERS (already present)
   // =========================
   PURCHASE_ORDER_CREATED = 'purchase_order_created',
   PURCHASE_ORDER_UPDATED = 'purchase_order_updated',
@@ -148,6 +203,8 @@ export enum ActivityAction {
   // =====================
   USER_CREATED = 'user_created',
   USER_UPDATED = 'user_updated',
+  USER_PROFILE_UPDATED = 'user_profile_updated',
+  USER_AVATAR_UPDATED = 'user_avatar_updated',
   USER_DEACTIVATED = 'user_deactivated',
   USER_REACTIVATED = 'user_reactivated',
   USER_DELETED = 'user_deleted',
@@ -167,6 +224,47 @@ export enum ActivityAction {
   PROJECT_STATUS_CHANGED = 'project_status_changed',
 
   // =====================
+  // CLIENTS
+  // =====================
+  CLIENT_CREATED = 'client_created',
+  CLIENT_UPDATED = 'client_updated',
+  CLIENT_DELETED = 'client_deleted',
+  CLIENT_RESTORED = 'client_restored',
+
+  // =====================
+  // BRIEFS
+  // =====================
+  BRIEF_CREATED = 'brief_created',
+  BRIEF_UPDATED = 'brief_updated',
+  BRIEF_DELETED = 'brief_deleted',
+
+  // =====================
+  // CALENDAR
+  // =====================
+  CALENDAR_EVENT_CREATED = 'calendar_event_created',
+  CALENDAR_EVENT_UPDATED = 'calendar_event_updated',
+  CALENDAR_EVENT_DELETED = 'calendar_event_deleted',
+
+  // =====================
+  // TASKS
+  // =====================
+  TASK_CREATED = 'task_created',
+  TASK_UPDATED = 'task_updated',
+  TASK_STATUS_CHANGED = 'task_status_changed',
+  TASK_COMPLETED = 'task_completed',
+  TASK_DELETED = 'task_deleted',
+
+  // =====================
+  // LEADS
+  // =====================
+  LEAD_CREATED = 'lead_created',
+  LEAD_UPDATED = 'lead_updated',
+  LEAD_STAGE_CHANGED = 'lead_stage_changed',
+  LEAD_NOTE_ADDED = 'lead_note_added',
+  LEAD_PROPOSAL_SENT = 'lead_proposal_sent',
+  LEAD_DELETED = 'lead_deleted',
+
+  // =====================
   // QUOTATIONS
   // =====================
   QUOTATION_CREATED = 'quotation_created',
@@ -175,10 +273,12 @@ export enum ActivityAction {
   QUOTATION_APPROVED = 'quotation_approved',
   QUOTATION_RETURNED = 'quotation_returned',
   QUOTATION_DECLINED = 'quotation_declined',
+  QUOTATION_CANCELLED = 'quotation_cancelled',
   QUOTATION_DELETED = 'quotation_deleted',
   QUOTATION_REVISION_CREATED = 'quotation_revision_created',
   QUOTATION_SENT_TO_CLIENT = 'quotation_sent_to_client',
   QUOTATION_RESTORED = 'quotation_restored',
+
   // =====================
   // VENDORS
   // =====================
@@ -187,6 +287,21 @@ export enum ActivityAction {
   VENDOR_DELETED = 'vendor_deleted',
   VENDOR_APPROVED = 'vendor_approved',
   VENDOR_REJECTED = 'vendor_rejected',
+  VENDOR_STATUS_CHANGED = 'vendor_status_changed',
+
+  // =====================
+  // DRAWINGS
+  // =====================
+  DRAWING_UPLOADED = 'drawing_uploaded',
+  DRAWING_SUPERSEDED = 'drawing_superseded',
+
+  // =====================
+  // SITE RECCE
+  // =====================
+  SITE_RECCE_CREATED = 'site_recce_created',
+  SITE_RECCE_UPDATED = 'site_recce_updated',
+  SITE_RECCE_STATUS_CHANGED = 'site_recce_status_changed',
+  SITE_RECCE_DELETED = 'site_recce_deleted',
 
   // =====================
   // SETTINGS / CONFIG

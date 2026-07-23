@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
+
 import { SiteRecce } from './models/site-recce.model';
 import { SiteRecceFloor } from './models/site-recce-floor.model';
 import { SiteRecceRoom } from './models/site-recce-room.model';
@@ -13,7 +14,10 @@ import { SiteImageAttachment } from './models/site-image-attachment.model';
 import { SiteRecceDocument } from './models/site-recce-document.model';
 import { Project } from '../projects/models/projects.model';
 import { Document } from '../documents/models/document.model';
+
 import { DocumentsService } from '../documents/document.service';
+import { ActivityLogForSiteRecceService } from '../engagement/services/activity-log-site-recce.service';
+import { NotificationForSiteRecceService } from '../engagement/services/notification-site-recce.service';
 
 @Injectable()
 export class SiteRecceService {
@@ -30,10 +34,14 @@ export class SiteRecceService {
     private readonly imageModel: typeof SiteImageAttachment,
     @InjectModel(SiteRecceDocument)
     private readonly documentModel: typeof SiteRecceDocument,
-    @InjectModel(Document) // ← Inject Document model if needed for direct queries
+    @InjectModel(Document)
     private readonly documentModelDirect: typeof Document,
+
     private readonly sequelize: Sequelize,
     private readonly documentsService: DocumentsService,
+
+    private readonly activityLogForSiteRecceService: ActivityLogForSiteRecceService,
+    private readonly notificationForSiteRecceService: NotificationForSiteRecceService,
   ) {}
 
   // ========================================
@@ -54,6 +62,7 @@ export class SiteRecceService {
         },
         { transaction },
       );
+
       // Floors + Rooms
       if (createData.floors && Array.isArray(createData.floors)) {
         for (const floorData of createData.floors) {
@@ -71,9 +80,11 @@ export class SiteRecceService {
           }
         }
       }
+
       // Layout Attachments + Images
       const layoutImages = files?.layoutImages || [];
       let imageFileIndex = 0;
+
       if (
         createData.layoutAttachments &&
         Array.isArray(createData.layoutAttachments)
@@ -84,9 +95,11 @@ export class SiteRecceService {
             : [];
           const createdImageDocs: { documentId: string; meta: any }[] = [];
           let layoutDocumentId: string | undefined;
+
           for (const imageMeta of imagesMeta) {
             const file = layoutImages[imageFileIndex];
             if (!file) continue;
+
             const doc = await this.documentsService.create(
               {
                 project_id: createData.project_id,
@@ -99,15 +112,18 @@ export class SiteRecceService {
               undefined,
               transaction,
             );
+
             if (!layoutDocumentId) layoutDocumentId = doc.id;
             createdImageDocs.push({ documentId: doc.id, meta: imageMeta });
             imageFileIndex++;
           }
+
           if (!layoutDocumentId) {
             throw new BadRequestException(
               `Layout "${layoutData.title || ''}" requires at least one image`,
             );
           }
+
           const layout = await this.layoutModel.create(
             {
               title: layoutData.title,
@@ -120,6 +136,7 @@ export class SiteRecceService {
             } as any,
             { transaction },
           );
+
           for (const { documentId, meta } of createdImageDocs) {
             await this.imageModel.create(
               {
@@ -134,6 +151,7 @@ export class SiteRecceService {
           }
         }
       }
+
       // Additional Documents
       if (createData.documents && Array.isArray(createData.documents)) {
         for (const docData of createData.documents) {
@@ -143,8 +161,22 @@ export class SiteRecceService {
           );
         }
       }
+
       await transaction.commit();
-      return this.findOneWithRelations(recce.id);
+
+      const createdRecce = await this.findOneWithRelations(recce.id);
+
+      // === Activity Log & Notification ===
+      await this.activityLogForSiteRecceService.logSiteRecceCreated(
+        createdRecce,
+        { id: createdBy },
+      );
+      await this.notificationForSiteRecceService.notifySiteRecceCreated(
+        createdRecce,
+        createdBy,
+      );
+
+      return createdRecce;
     } catch (error: unknown) {
       await transaction.rollback();
       console.error('Create Full Recce Error:', error);
@@ -155,7 +187,7 @@ export class SiteRecceService {
   }
 
   // ========================================
-  // FIND ONE WITH ALL RELATIONS (incl. Project + Documents)
+  // FIND ONE WITH ALL RELATIONS
   // ========================================
   async findOneWithRelations(id: string) {
     const recce = await this.siteRecceModel.findByPk(id, {
@@ -169,85 +201,16 @@ export class SiteRecceService {
           include: [
             {
               model: SiteImageAttachment,
-              include: [
-                {
-                  model: Document,
-                },
-              ],
+              include: [{ model: Document }],
             },
+            { model: Document },
+          ],
+        },
+        {
+          model: SiteRecceDocument,
+          include: [
             {
               model: Document,
-            },
-          ],
-        },
-        {
-          model: SiteRecceDocument,
-          include: [
-            {
-              model: Document, // ← Fetch full Document details
-              as: 'document', // Adjust alias based on your SiteRecceDocument association
-              attributes: [
-                'id',
-                'title',
-                'filename',
-                'url',
-                'mime',
-                'size',
-                'category',
-                'status',
-                'visibility',
-                'version',
-                'documentDate',
-                'docNo',
-                // Add any other fields you need
-              ],
-            },
-          ],
-        },
-        {
-          model: Project,
-          attributes: ['id', 'name', 'slug', 'site_location', 'client_id'],
-        },
-      ],
-      order: [
-        [{ model: SiteRecceFloor, as: 'floors' }, 'floor_order', 'ASC'],
-        [
-          { model: SiteLayoutAttachment, as: 'layoutAttachments' },
-          'sort_order',
-          'ASC',
-        ],
-      ],
-    });
-    if (!recce) {
-      throw new NotFoundException(`Site Recce with ID ${id} not found`);
-    }
-    return recce;
-  }
-
-  // ========================================
-  // FIND ALL (incl. Project + Documents)
-  // ========================================
-  async findAll(projectId?: string, status?: string) {
-    const where: any = {};
-    if (projectId) where.project_id = projectId;
-    if (status) where.status = status;
-
-    return this.siteRecceModel.findAll({
-      where,
-      include: [
-        {
-          model: SiteRecceFloor,
-          include: [SiteRecceRoom],
-        },
-        {
-          model: SiteLayoutAttachment,
-          include: [SiteImageAttachment],
-        },
-        {
-          model: SiteRecceDocument,
-          include: [
-            {
-              model: Document, // ← Fetch full Document details
               as: 'document',
               attributes: [
                 'id',
@@ -268,8 +231,43 @@ export class SiteRecceService {
         },
         {
           model: Project,
-          attributes: ['id', 'name', 'slug'],
+          attributes: ['id', 'name', 'slug', 'site_location', 'client_id'],
         },
+      ],
+      order: [
+        [{ model: SiteRecceFloor, as: 'floors' }, 'floor_order', 'ASC'],
+        [
+          { model: SiteLayoutAttachment, as: 'layoutAttachments' },
+          'sort_order',
+          'ASC',
+        ],
+      ],
+    });
+
+    if (!recce) {
+      throw new NotFoundException(`Site Recce with ID ${id} not found`);
+    }
+    return recce;
+  }
+
+  // ========================================
+  // FIND ALL
+  // ========================================
+  async findAll(projectId?: string, status?: string) {
+    const where: any = {};
+    if (projectId) where.project_id = projectId;
+    if (status) where.status = status;
+
+    return this.siteRecceModel.findAll({
+      where,
+      include: [
+        { model: SiteRecceFloor, include: [SiteRecceRoom] },
+        { model: SiteLayoutAttachment, include: [SiteImageAttachment] },
+        {
+          model: SiteRecceDocument,
+          include: [{ model: Document, as: 'document' }],
+        },
+        { model: Project, attributes: ['id', 'name', 'slug'] },
       ],
       order: [
         ['recce_date', 'DESC'],
@@ -279,22 +277,49 @@ export class SiteRecceService {
   }
 
   // ========================================
-  // UPDATE & OTHER METHODS (unchanged)
+  // UPDATE
   // ========================================
   async update(id: string, updateData: any, updatedBy: string) {
     const recce = await this.siteRecceModel.findByPk(id);
     if (!recce) throw new NotFoundException('Recce not found');
+
+    const oldStatus = recce.status;
+
     await recce.update({ ...updateData, updated_by: updatedBy });
-    return this.findOneWithRelations(id);
+
+    const updatedRecce = await this.findOneWithRelations(id);
+
+    // === Activity Log & Notification ===
+    await this.activityLogForSiteRecceService.logSiteRecceUpdated(
+      updatedRecce,
+      { id: updatedBy },
+    );
+    await this.notificationForSiteRecceService.notifySiteRecceUpdated(
+      updatedRecce,
+      updatedBy,
+    );
+
+    if (oldStatus !== updatedRecce.status) {
+      await this.activityLogForSiteRecceService.logSiteRecceStatusChanged(
+        updatedRecce,
+        oldStatus,
+        updatedRecce.status,
+        { id: updatedBy },
+      );
+      await this.notificationForSiteRecceService.notifySiteRecceStatusChanged(
+        updatedRecce,
+        oldStatus,
+        updatedRecce.status,
+        updatedBy,
+      );
+    }
+
+    return updatedRecce;
   }
 
-  async remove(id: string) {
-    const recce = await this.siteRecceModel.findByPk(id);
-    if (!recce) throw new NotFoundException('Recce not found');
-    await recce.destroy();
-    return { message: 'Site Recce deleted successfully' };
-  }
-
+  // ========================================
+  // UPDATE STATUS
+  // ========================================
   async updateStatus(id: string, status: string, updatedBy: string) {
     const validStatuses = [
       'draft',
@@ -307,19 +332,66 @@ export class SiteRecceService {
     if (!validStatuses.includes(status)) {
       throw new BadRequestException('Invalid status');
     }
+
     const recce = await this.siteRecceModel.findByPk(id);
     if (!recce) throw new NotFoundException('Recce not found');
+
+    const oldStatus = recce.status;
+
     await recce.update({ status, updated_by: updatedBy });
-    return recce;
+
+    const updatedRecce = await this.findOneWithRelations(id);
+
+    // === Activity Log & Notification ===
+    await this.activityLogForSiteRecceService.logSiteRecceStatusChanged(
+      updatedRecce,
+      oldStatus,
+      status,
+      { id: updatedBy },
+    );
+    await this.notificationForSiteRecceService.notifySiteRecceStatusChanged(
+      updatedRecce,
+      oldStatus,
+      status,
+      updatedBy,
+    );
+
+    return updatedRecce;
   }
 
+  // ========================================
+  // DELETE
+  // ========================================
+  async remove(id: string, deletedBy: string) {
+    const recce = await this.findOneWithRelations(id);
+    if (!recce) throw new NotFoundException('Recce not found');
+
+    const projectName = recce.project?.name || null;
+
+    await recce.destroy();
+
+    // === Activity Log & Notification ===
+    await this.activityLogForSiteRecceService.logSiteRecceDeleted(
+      id,
+      projectName,
+      { id: deletedBy },
+    );
+    await this.notificationForSiteRecceService.notifySiteRecceDeleted(
+      id,
+      projectName,
+      deletedBy,
+    );
+
+    return { message: 'Site Recce deleted successfully' };
+  }
+
+  // ========================================
+  // ADDITIONAL HELPER METHODS
+  // ========================================
   async addFloor(recceId: string, floorData: any) {
     const recce = await this.siteRecceModel.findByPk(recceId);
     if (!recce) throw new NotFoundException('Recce not found');
-    return this.floorModel.create({
-      ...floorData,
-      site_recce_id: recceId,
-    });
+    return this.floorModel.create({ ...floorData, site_recce_id: recceId });
   }
 
   async addRoom(floorId: string, roomData: any) {

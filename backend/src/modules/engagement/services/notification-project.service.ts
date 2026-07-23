@@ -10,7 +10,10 @@ export class NotificationForProjectService {
     private readonly notificationBroadcastService: NotificationBroadcastService,
   ) {}
 
-  async notifyProjectCreated(project: Project, actorId: string): Promise<void> {
+  async notifyProjectCreated(
+    project: Project,
+    actorId?: string,
+  ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
       excludedUserId: actorId,
       type: NotificationType.PROJECT_CREATED,
@@ -19,7 +22,10 @@ export class NotificationForProjectService {
     });
   }
 
-  async notifyProjectUpdated(project: Project, actorId: string): Promise<void> {
+  async notifyProjectUpdated(
+    project: Project,
+    actorId?: string,
+  ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
       excludedUserId: actorId,
       type: NotificationType.PROJECT_UPDATED,
@@ -30,7 +36,7 @@ export class NotificationForProjectService {
 
   async notifyProjectArchived(
     project: Project,
-    actorId: string,
+    actorId?: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
       excludedUserId: actorId,
@@ -42,7 +48,7 @@ export class NotificationForProjectService {
 
   async notifyProjectRestored(
     project: Project,
-    actorId: string,
+    actorId?: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
       excludedUserId: actorId,
@@ -54,7 +60,7 @@ export class NotificationForProjectService {
 
   async notifyProjectDeleted(
     projectName: string,
-    actorId: string,
+    actorId?: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
       excludedUserId: actorId,
