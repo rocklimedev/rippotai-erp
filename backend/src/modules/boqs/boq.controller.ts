@@ -21,6 +21,9 @@ import {
   UpdateBoqCategoryDto,
 } from './dto/create-boq-category.dto';
 import { CreateBoqItemDto, UpdateBoqItemDto } from './dto/create-boq-item.dto';
+import { CreateBoqMiscellaneousDto } from './dto/create-boq-miscellaneous.dto';
+import { UpdateBoqMiscellaneousDto } from './dto/update-boq-miscellaneous.dto';
+import { ReorderMiscellaneousDto } from './dto/reorder-miscellaneous.dto';
 import { ReorderItemsDto } from './dto/reorder-items.dto';
 import { BulkUpdateItemsDto } from './dto/bulk-update-items.dto';
 import {
@@ -117,6 +120,10 @@ export class BoqController {
     return this.boqService.compareVersions(id, vs);
   }
 
+  @Post('combine')
+  async combine(@Body() dto: { boqIds: string[]; title?: string }, @Req() req) {
+    return this.boqService.combineBoqs(dto, req.user?.id);
+  }
   // Rename version (global versionId route)
   @Patch('versions/:versionId')
   renameVersion(
@@ -276,6 +283,51 @@ export class BoqController {
     @CurrentUser() user?: User,
   ) {
     return this.boqService.bulkUpdateItems(id, dto, user?.id);
+  }
+
+  // ==================== MISCELLANEOUS ====================
+  // Free-form named financial entries (e.g. "Contingency", "Mobilization
+  // charge") that don't fit the category/item structure. Their sum is
+  // exposed as misc_amount on the BOQ payload — see
+  // BoqService.withComputedTotals.
+
+  // NOTE: registered after '/items/*' and before the reorder route so
+  // ':miscId' below never shadows a more specific path.
+  @Post(':id/miscellaneous')
+  addMiscellaneous(
+    @Param('id') id: string,
+    @Body() dto: CreateBoqMiscellaneousDto,
+    @CurrentUser() user?: User,
+  ) {
+    return this.boqService.addMiscellaneous(id, dto, user?.id);
+  }
+
+  @Post(':id/miscellaneous/reorder')
+  reorderMiscellaneous(
+    @Param('id') id: string,
+    @Body() dto: ReorderMiscellaneousDto,
+    @CurrentUser() user?: User,
+  ) {
+    return this.boqService.reorderMiscellaneous(id, dto.ordered_ids, user?.id);
+  }
+
+  @Patch(':id/miscellaneous/:miscId')
+  updateMiscellaneous(
+    @Param('id') id: string,
+    @Param('miscId') miscId: string,
+    @Body() dto: UpdateBoqMiscellaneousDto,
+    @CurrentUser() user?: User,
+  ) {
+    return this.boqService.updateMiscellaneous(id, miscId, dto, user?.id);
+  }
+
+  @Delete(':id/miscellaneous/:miscId')
+  removeMiscellaneous(
+    @Param('id') id: string,
+    @Param('miscId') miscId: string,
+    @CurrentUser() user?: User,
+  ) {
+    return this.boqService.removeMiscellaneous(id, miscId, user?.id);
   }
 
   // ==================== EXPORT ====================

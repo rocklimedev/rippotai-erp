@@ -9,6 +9,7 @@ import { fn, col, Transaction } from 'sequelize';
 import { Boq } from './models/boq.model';
 import { BoqCategory } from './models/boq-category.model';
 import { BoqItem } from './models/boq-item.model';
+import { BoqMiscellaneous } from './models/boq-miscellaneous.model';
 import { BoqTemplate } from './models/boq-template.model';
 import { BoqTemplateCategory } from './models/boq-template-category.model';
 import { BoqTemplateItem } from './models/boq-template-item.model';
@@ -21,6 +22,8 @@ import {
   UpdateBoqCategoryDto,
 } from './dto/create-boq-category.dto';
 import { CreateBoqItemDto, UpdateBoqItemDto } from './dto/create-boq-item.dto';
+import { CreateBoqMiscellaneousDto } from './dto/create-boq-miscellaneous.dto';
+import { UpdateBoqMiscellaneousDto } from './dto/update-boq-miscellaneous.dto';
 import { ReorderItemsDto } from './dto/reorder-items.dto';
 import { BulkUpdateItemsDto } from './dto/bulk-update-items.dto';
 import {
@@ -34,7 +37,7 @@ import { BoqActivityAction, BoqStatus } from '@/common/enums/boq-enums';
 import { User } from '../users/models/user.model';
 import { TermsService } from '../metas/terms.service';
 import { ApplyTermsDto } from '../metas/dto/apply-terms.dto';
-
+import { Client } from '../clients/models/client.model';
 const LOCKED_STATUSES = [
   BoqStatus.APPROVED,
   BoqStatus.FINAL,
@@ -51,6 +54,7 @@ interface ProjectBillingFields {
 
 export interface BoqItemJSON {
   id: string;
+  name: string;
   amount: number | string;
   [key: string]: unknown;
 }
@@ -64,6 +68,15 @@ export interface BoqCategoryJSON {
   [key: string]: unknown;
 }
 
+export interface BoqMiscellaneousJSON {
+  id: string;
+  name: string;
+  value: number | string;
+  notes?: string | null;
+  sort_order?: number;
+  [key: string]: unknown;
+}
+
 export interface BoqJSON {
   id: string;
   design_amount: number | string;
@@ -73,6 +86,7 @@ export interface BoqJSON {
   misc_pct: number | string;
   categories?: BoqCategoryJSON[];
   items?: BoqItemJSON[];
+  miscellaneous?: BoqMiscellaneousJSON[];
   project_total?: number;
   misc_amount?: number;
   final_total?: number;
@@ -87,6 +101,8 @@ export class BoqService {
     private readonly categoryModel: typeof BoqCategory,
     @InjectModel(BoqItem)
     private readonly itemModel: typeof BoqItem,
+    @InjectModel(BoqMiscellaneous)
+    private readonly miscModel: typeof BoqMiscellaneous,
     @InjectModel(BoqTemplate)
     private readonly templateModel: typeof BoqTemplate,
     @InjectModel(BoqTemplateCategory)
@@ -102,7 +118,20 @@ export class BoqService {
   async findAll(project_id?: string) {
     return this.boqModel.findAll({
       where: project_id ? { project_id } : undefined,
-      include: [{ model: Project, as: 'project', attributes: ['id', 'name'] }],
+      include: [
+        {
+          model: Project,
+          as: 'project',
+          attributes: ['id', 'name'],
+          include: [
+            {
+              model: Client,
+              as: 'client',
+              attributes: ['id', 'name'],
+            },
+          ],
+        },
+      ],
       order: [['updated_at', 'DESC']],
     });
   }
@@ -114,6 +143,11 @@ export class BoqService {
           model: Project,
           as: 'project',
           include: [
+            {
+              model: Client,
+              as: 'client',
+              attributes: ['id', 'name'],
+            },
             {
               model: User,
               as: 'creator',
@@ -155,6 +189,10 @@ export class BoqService {
             },
           ],
         },
+        {
+          model: BoqMiscellaneous,
+          as: 'miscellaneous',
+        },
       ],
       order: [
         [{ model: BoqCategory, as: 'categories' }, 'sort_order', 'ASC'],
@@ -164,6 +202,7 @@ export class BoqService {
           'sort_order',
           'ASC',
         ],
+        [{ model: BoqMiscellaneous, as: 'miscellaneous' }, 'sort_order', 'ASC'],
       ],
     });
 
@@ -465,9 +504,10 @@ export class BoqService {
   }
 
   /**
-   * Deep-clones this BOQ (categories + items) into a fresh draft at
-   * version + 1. Used by both "Create New Version" (from the locked-edit
-   * modal) and "Duplicate Version" (explicit reason/note dialog).
+   * Deep-clones this BOQ (categories + items + miscellaneous entries)
+   * into a fresh draft at version + 1. Used by both "Create New Version"
+   * (from the locked-edit modal) and "Duplicate Version" (explicit
+   * reason/note dialog).
    *
    * The clone is chained into the *same* version lineage as `source`:
    * we resolve the family's root boq id off `source` (falling back to
@@ -555,6 +595,27 @@ export class BoqService {
             { transaction: t },
           );
         }
+      }
+
+      // Carry over miscellaneous entries verbatim, same as categories/items —
+      // a new version starts as an exact snapshot of the source.
+      const miscRows = await this.miscModel.findAll({
+        where: { boq_id: id },
+        order: [['sort_order', 'ASC']],
+        transaction: t,
+      });
+
+      for (const m of miscRows) {
+        await this.miscModel.create(
+          {
+            boq_id: clone.id,
+            name: m.name,
+            value: m.value,
+            notes: m.notes,
+            sort_order: m.sort_order,
+          } as BoqMiscellaneous,
+          { transaction: t },
+        );
       }
 
       await this.recomputeTotal(clone.id, t);
@@ -673,7 +734,210 @@ export class BoqService {
       updated,
     };
   }
+  /**
+   * Combines multiple BOQs from the SAME project and client into one new BOQ.
+   * Categories and items are merged intelligently to avoid duplicates.
+   */
+  async combineBoqs(
+    dto: { boqIds: string[]; title?: string; versionName?: string },
+    actorId?: string,
+  ) {
+    const { boqIds, title } = dto;
+    if (boqIds.length < 2) {
+      throw new BadRequestException(
+        'At least two BOQs are required to combine',
+      );
+    }
 
+    const uniqueBoqIds = [...new Set(boqIds)];
+
+    // Fetch all BOQs with full data
+    const boqs = await Promise.all(uniqueBoqIds.map((id) => this.findOne(id)));
+
+    if (boqs.length !== uniqueBoqIds.length) {
+      throw new NotFoundException('One or more BOQs not found');
+    }
+
+    // Validation: Same project & client
+    const projectId = boqs[0].project_id;
+    const clientName = boqs[0].client_name;
+
+    for (const boq of boqs) {
+      if (boq.project_id !== projectId) {
+        throw new BadRequestException(
+          'All BOQs must belong to the same project',
+        );
+      }
+      if (boq.client_name !== clientName) {
+        throw new BadRequestException(
+          'All BOQs must belong to the same client',
+        );
+      }
+    }
+
+    const combinedId = await this.sequelize.transaction(
+      async (t: Transaction) => {
+        // Create new combined BOQ
+        const newBoq = await this.boqModel.create(
+          {
+            project_id: projectId,
+            title:
+              title ||
+              `Combined BOQ - ${new Date().toISOString().split('T')[0]}`,
+            status: BoqStatus.DRAFT,
+            client_name: clientName,
+            location: boqs[0].location,
+            created_by: actorId ?? null,
+            misc_pct: boqs[0].misc_pct, // Take from first
+          } as Boq,
+          { transaction: t },
+        );
+
+        // Merge categories and items
+        const categoryMap = new Map<string, any>(); // key: normalized category name
+
+        for (const sourceBoq of boqs) {
+          for (const cat of sourceBoq.categories || []) {
+            const catKey = cat.name.toLowerCase().trim();
+            let targetCat = categoryMap.get(catKey);
+
+            if (!targetCat) {
+              targetCat = await this.categoryModel.create(
+                {
+                  boq_id: newBoq.id,
+                  name: cat.name,
+                  sort_order: categoryMap.size, // sequential order
+                } as BoqCategory,
+                { transaction: t },
+              );
+              categoryMap.set(catKey, targetCat);
+            }
+
+            // Merge items in this category
+            const itemMap = new Map<string, any>(); // key: library_item_id or name
+
+            // Existing items in target category
+            const existingItems = await this.itemModel.findAll({
+              where: { boq_category_id: targetCat.id },
+              transaction: t,
+            });
+
+            for (const item of existingItems) {
+              const itemKey = item.library_item_id
+                ? `lib_${item.library_item_id}`
+                : item.name.toLowerCase().trim();
+              itemMap.set(itemKey, item);
+            }
+
+            // Add/merge source items
+            for (const item of cat.items || []) {
+              const itemKey = item.library_item_id
+                ? `lib_${item.library_item_id}`
+                : item.name.toLowerCase().trim();
+
+              const existing = itemMap.get(itemKey);
+
+              if (existing) {
+                // Merge: add quantities, take higher rate
+                const newQuantity =
+                  Number(existing.quantity) + Number(item.quantity || 0);
+                const newRate = Math.max(
+                  Number(existing.rate),
+                  Number(item.rate || 0),
+                );
+
+                await existing.update(
+                  {
+                    quantity: newQuantity,
+                    rate: newRate,
+                    amount: newQuantity * newRate,
+                  },
+                  { transaction: t },
+                );
+              } else {
+                // Create new item
+                await this.itemModel.create(
+                  {
+                    boq_category_id: targetCat.id,
+                    library_item_id: item.library_item_id,
+                    name: item.name,
+                    unit_id: item.unit_id,
+                    unit: item.unit,
+                    quantity: Number(item.quantity || 0),
+                    rate: Number(item.rate || 0),
+                    amount: Number(item.amount || 0),
+                    calc_type: item.calc_type || 'M',
+                    location: item.location,
+                    detail: item.detail,
+                    notes: item.notes,
+                    sort_order: itemMap.size,
+                    hidden: item.hidden || false,
+                  } as BoqItem,
+                  { transaction: t },
+                );
+              }
+            }
+          }
+
+          // Merge Miscellaneous
+          for (const misc of sourceBoq.miscellaneous || []) {
+            // Simple dedup by name
+            const existingMisc = await this.miscModel.findOne({
+              where: {
+                boq_id: newBoq.id,
+                name: misc.name,
+              },
+              transaction: t,
+            });
+
+            if (existingMisc) {
+              await existingMisc.update(
+                { value: Number(existingMisc.value) + Number(misc.value || 0) },
+                { transaction: t },
+              );
+            } else {
+              await this.miscModel.create(
+                {
+                  boq_id: newBoq.id,
+                  name: misc.name,
+                  value: Number(misc.value || 0),
+                  notes: misc.notes,
+                  sort_order: 0, // Will be reordered later if needed
+                } as BoqMiscellaneous,
+                { transaction: t },
+              );
+            }
+          }
+        }
+
+        await this.recomputeTotal(newBoq.id, t);
+
+        // Create version record
+        await this.boqVersionService.createVersionRecord(
+          newBoq.id,
+          {
+            rootBoqId: newBoq.id,
+            version: 1,
+            versionName: dto.versionName || 'Combined Version',
+          },
+          t,
+        );
+
+        await this.activity.log({
+          boq_id: newBoq.id,
+          user_id: actorId,
+          action: BoqActivityAction.CREATED,
+          target: `Combined BOQ · ${newBoq.title}`,
+          details: `Combined ${boqs.length} BOQs: ${uniqueBoqIds.join(', ')}`,
+          transaction: t,
+        });
+
+        return newBoq.id;
+      },
+    );
+
+    return this.findOne(combinedId);
+  }
   // ---------- Categories ----------
 
   async addCategory(
@@ -995,6 +1259,117 @@ export class BoqService {
 
     return this.findOne(boqId);
   }
+
+  // ---------- Miscellaneous ----------
+  //
+  // Free-form named financial entries attached to a BOQ (e.g. "Contingency",
+  // "Mobilization charge", "Escalation adjustment") that don't correspond to
+  // a catalog/library item and therefore can't live in BoqItem. Their sum
+  // feeds into misc_amount / final_total in withComputedTotals(), replacing
+  // the previous hardcoded misc_amount = 0.
+
+  async addMiscellaneous(
+    boqId: string,
+    dto: CreateBoqMiscellaneousDto,
+    actorId?: string,
+  ) {
+    const boq = await this.getOrThrow(boqId);
+    this.assertEditable(boq);
+
+    const misc = await this.miscModel.create({
+      boq_id: boqId,
+      name: dto.name,
+      value: dto.value ?? 0,
+      notes: dto.notes ?? null,
+      sort_order: dto.sort_order ?? 0,
+    } as BoqMiscellaneous);
+
+    await this.activity.log({
+      boq_id: boqId,
+      user_id: actorId,
+      action: BoqActivityAction.UPDATED,
+      target: `Miscellaneous · ${misc.name}`,
+      details: `Added misc entry: ${misc.name} = ${misc.value}`,
+    });
+
+    return this.findOne(boqId);
+  }
+
+  async updateMiscellaneous(
+    boqId: string,
+    miscId: string,
+    dto: UpdateBoqMiscellaneousDto,
+    actorId?: string,
+  ) {
+    const boq = await this.getOrThrow(boqId);
+    this.assertEditable(boq);
+    const misc = await this.getMiscOrThrow(boqId, miscId);
+
+    await misc.update(dto);
+
+    await this.activity.log({
+      boq_id: boqId,
+      user_id: actorId,
+      action: BoqActivityAction.UPDATED,
+      target: `Miscellaneous · ${misc.name}`,
+      details:
+        dto.value !== undefined
+          ? `Misc entry value updated to ${dto.value}`
+          : undefined,
+    });
+
+    return this.findOne(boqId);
+  }
+
+  async removeMiscellaneous(boqId: string, miscId: string, actorId?: string) {
+    const boq = await this.getOrThrow(boqId);
+    this.assertEditable(boq);
+    const misc = await this.getMiscOrThrow(boqId, miscId);
+    await misc.destroy();
+
+    await this.activity.log({
+      boq_id: boqId,
+      user_id: actorId,
+      action: BoqActivityAction.UPDATED,
+      target: `Miscellaneous · ${misc.name}`,
+      details: 'Removed misc entry',
+    });
+
+    return this.findOne(boqId);
+  }
+
+  async reorderMiscellaneous(
+    boqId: string,
+    orderedIds: string[],
+    actorId?: string,
+  ) {
+    const boq = await this.getOrThrow(boqId);
+    this.assertEditable(boq);
+
+    await this.sequelize.transaction(async (t) => {
+      await Promise.all(
+        orderedIds.map((miscId, idx) =>
+          this.miscModel.update(
+            { sort_order: idx },
+            {
+              where: { id: miscId, boq_id: boqId },
+              transaction: t,
+            },
+          ),
+        ),
+      );
+    });
+
+    await this.activity.log({
+      boq_id: boqId,
+      user_id: actorId,
+      action: BoqActivityAction.UPDATED,
+      target: 'Miscellaneous entries reordered',
+    });
+
+    return this.findOne(boqId);
+  }
+
   // ---------- Catalog (for "Add Category" picker) ----------
 
   async getCatalog() {
@@ -1045,6 +1420,14 @@ export class BoqService {
     return item;
   }
 
+  private async getMiscOrThrow(boqId: string, miscId: string) {
+    const misc = await this.miscModel.findOne({
+      where: { id: miscId, boq_id: boqId },
+    });
+    if (!misc) throw new NotFoundException('Miscellaneous entry not found');
+    return misc;
+  }
+
   private actionForStatus(status: BoqStatus): BoqActivityAction {
     switch (status) {
       case BoqStatus.AWAITING_APPROVAL:
@@ -1090,6 +1473,12 @@ export class BoqService {
    * server-side, but the summary panel and pre-export checklist both
    * need project_total / misc_amount / final_total computed from live
    * line items rather than trusted client input.
+   *
+   * misc_amount is the sum of this BOQ's related BoqMiscellaneous rows
+   * (see the "Miscellaneous" section above) — free-form named financial
+   * entries that don't fit the category/item structure (e.g.
+   * "Contingency", "Escalation"). This replaces the previous hardcoded
+   * misc_amount = 0.
    */
   private withComputedTotals(boq: Boq): BoqJSON {
     const plain = boq.toJSON() as unknown as BoqJSON;
@@ -1104,6 +1493,10 @@ export class BoqService {
 
     plain.items = plain.categories.flatMap((c) => c.items ?? []);
 
+    plain.miscellaneous = (plain.miscellaneous ?? [])
+      .slice()
+      .sort((a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0));
+
     const lineItemsTotal = plain.items.reduce(
       (sum, i) => sum + Number(i.amount || 0),
       0,
@@ -1116,11 +1509,14 @@ export class BoqService {
       Number(plain.supervisor_amount || 0) +
       Number(plain.additional_total || 0);
 
-    // Do not calculate misc amount
-    const miscAmount = 0;
+    // misc_amount = sum of this BOQ's miscellaneous entries.
+    const miscAmount = plain.miscellaneous.reduce(
+      (sum, m) => sum + Number(m.value || 0),
+      0,
+    );
 
     plain.project_total = Math.round(projectTotal * 100) / 100;
-    plain.misc_amount = miscAmount;
+    plain.misc_amount = Math.round(miscAmount * 100) / 100;
     plain.final_total = Math.round((projectTotal + miscAmount) * 100) / 100;
 
     return plain;

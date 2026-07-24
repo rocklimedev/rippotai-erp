@@ -4,6 +4,7 @@ import {
   BoqJSON,
   BoqItemJSON,
   BoqCategoryJSON,
+  BoqMiscellaneousJSON,
 } from './boq.service';
 import * as puppeteer from 'puppeteer';
 import ExcelJS from 'exceljs';
@@ -23,6 +24,10 @@ interface CompanyProfile {
 interface BoqProjectJSON {
   name?: string;
   site_location?: string;
+  client?: {
+    id?: string;
+    name?: string;
+  };
 }
 
 @Injectable()
@@ -69,10 +74,36 @@ export class BoqExportService {
       });
     });
 
+    // ---- Miscellaneous (free-form named entries, e.g. Contingency) ----
+    const miscRows = boq.miscellaneous ?? [];
+    if (miscRows.length) {
+      sheet.addRow([]);
+      const miscHeaderRow = sheet.addRow(['Miscellaneous']);
+      miscHeaderRow.font = { bold: true };
+
+      miscRows.forEach((m) => {
+        sheet.addRow({
+          description: this.formatValue(
+            m.notes ? `${m.name} (${m.notes})` : m.name,
+          ),
+          amount: this.formatValue(m.value),
+        });
+      });
+
+      sheet.addRow({
+        description: 'Miscellaneous Total',
+        amount: this.formatValue(boq.misc_amount),
+      });
+    }
+
     sheet.addRow([]);
     sheet.addRow({
       description: 'Total Value',
       amount: this.formatValue(boq.total_value),
+    });
+    sheet.addRow({
+      description: 'Final Total',
+      amount: this.formatValue(boq.final_total),
     });
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -137,7 +168,7 @@ export class BoqExportService {
     const project = boq.project as BoqProjectJSON | undefined;
     const projectName = project?.name || boq.title;
     const projectLocation = boq.location || project?.site_location;
-
+    const clientName = project?.client?.name ?? boq.client_name ?? '';
     return `
 <!DOCTYPE html>
 <html>
@@ -269,6 +300,20 @@ export class BoqExportService {
     font-size: 15px;
     font-weight: bold;
   }
+  .misc-block {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px dashed #B5C4B6;
+  }
+  .misc-line {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+    font-size: 11px;
+    color: #6B7B7C;
+  }
+  .misc-line .misc-name { max-width: 70%; }
+  .misc-line .misc-notes { color: #B5C4B6; font-size: 10px; }
 
   /* ---- Terms & Conditions (final page) ---- */
   .tc-page h2 {
@@ -313,6 +358,7 @@ export class BoqExportService {
       <div class="meta-left">
         <div class="line">${this.formatValue(projectName)}</div>
         <div class="line">${this.formatValue(projectLocation)}</div>
+                <div class="line">${this.formatValue(clientName)}</div>
       </div>
       <div class="meta-divider"></div>
       <div class="meta-right">
@@ -409,6 +455,33 @@ export class BoqExportService {
       .join('');
   }
 
+  /**
+   * Renders each BoqMiscellaneous row (name + optional notes + value)
+   * inside the cost summary box, followed by the Miscellaneous subtotal
+   * line (boq.misc_amount, computed server-side — see
+   * BoqService.withComputedTotals). Returns '' when there are no rows,
+   * so the summary box looks identical to before this feature existed.
+   */
+  private renderMiscLines(rows: BoqMiscellaneousJSON[]): string {
+    if (!rows.length) return '';
+
+    const lines = rows
+      .map(
+        (m) => `
+      <div class="misc-line">
+        <span class="misc-name">${this.formatValue(m.name)}${
+          m.notes
+            ? ` <span class="misc-notes">(${this.formatValue(m.notes)})</span>`
+            : ''
+        }</span>
+        <span>${this.formatCurrency(m.value)}</span>
+      </div>`,
+      )
+      .join('');
+
+    return `<div class="misc-block">${lines}</div>`;
+  }
+
   private renderSummaryBox(boq: BoqJSON): string {
     const extras: Array<[string, unknown]> = [
       ['Design Amount', boq.design_amount],
@@ -416,6 +489,9 @@ export class BoqExportService {
       ['Supervisor Amount', boq.supervisor_amount],
       ['Additional Total', boq.additional_total],
     ].filter(([, v]) => Number(v || 0) !== 0) as Array<[string, unknown]>;
+
+    const miscRows = boq.miscellaneous ?? [];
+    const miscAmount = Number(boq.misc_amount || 0);
 
     return `
   <div class="summary-box">
@@ -428,10 +504,12 @@ export class BoqExportService {
       )
       .join('')}
 
-    <!-- <div class="summary-line">
-      <span>Miscellaneous (${this.formatValue(boq.misc_pct)}%)</span>
-      <span>${this.formatCurrency(boq.misc_amount)}</span>
-    </div> -->
+    ${
+      miscAmount !== 0
+        ? `<div class="summary-line"><span>Miscellaneous</span><span>${this.formatCurrency(miscAmount)}</span></div>
+           ${this.renderMiscLines(miscRows)}`
+        : ''
+    }
 
     <div class="summary-line total"><span>Final Total</span><span>${this.formatCurrency(boq.final_total)}</span></div>
   </div>

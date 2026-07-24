@@ -30,6 +30,7 @@ import { BoqVersion } from './models/boq-version.model';
 import { BoqVersionService } from './boq-version.service';
 import { BoqDashboardService } from './boq-dashboard.service';
 import { TermsModule } from '../metas/terms.module';
+import { BoqMiscellaneous } from './models/boq-miscellaneous.model';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { TermsModule } from '../metas/terms.module';
       BoqTemplate,
       BoqTemplateCategory,
       BoqTemplateItem,
+      BoqMiscellaneous,
       BoqVersion,
       BoqActivity,
       LibraryCategory,

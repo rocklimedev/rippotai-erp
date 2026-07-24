@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { RefreshCw, FileText, PenLine } from "lucide-react";
+import { RefreshCw, FileText, PenLine, Plus, X, Pencil } from "lucide-react";
 import { formatINR } from "@/lib/format";
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
 import { useGetTermsTemplatesQuery } from "../../api/terms.api";
@@ -23,6 +23,194 @@ function plainTextToHtml(text) {
   );
 }
 
+// Extra named financial entries that don't fit the category/item structure
+// (e.g. "Contingency", "Mobilization charge"). Rendered as a small editable
+// list; their sum is boq.misc_amount, computed server-side from the
+// BoqMiscellaneous rows (see BoqService.withComputedTotals).
+function MiscellaneousList({
+  boq,
+  disabled,
+  onLockedEdit,
+  onAddMisc,
+  onUpdateMisc,
+  onDeleteMisc,
+}) {
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const [value, setValue] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editValue, setEditValue] = useState("");
+
+  const rows = boq.miscellaneous || [];
+
+  const startAdd = () => {
+    if (disabled) return onLockedEdit();
+    setAdding(true);
+  };
+
+  const cancelAdd = () => {
+    setAdding(false);
+    setName("");
+    setValue("");
+  };
+
+  const submitAdd = async () => {
+    if (!name.trim()) return;
+    await onAddMisc({ name: name.trim(), value: Number(value) || 0 });
+    cancelAdd();
+  };
+
+  const startEdit = (row) => {
+    if (disabled) return onLockedEdit();
+    setEditingId(row.id);
+    setEditName(row.name);
+    setEditValue(String(row.value ?? ""));
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditName("");
+    setEditValue("");
+  };
+
+  const submitEdit = async (row) => {
+    if (!editName.trim()) return;
+    await onUpdateMisc(row.id, {
+      name: editName.trim(),
+      value: Number(editValue) || 0,
+    });
+    cancelEdit();
+  };
+
+  return (
+    <div className="mt-4 pt-4 border-t border-[#B5C4B6]">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
+          Miscellaneous
+        </span>
+        <button
+          onClick={startAdd}
+          className="text-[11.5px] font-semibold text-[#1F453B] hover:underline flex items-center gap-1"
+          data-testid="add-misc-btn"
+        >
+          <Plus size={12} /> Add
+        </button>
+      </div>
+
+      {rows.length === 0 && !adding && (
+        <p className="text-[12px] text-[#B5C4B6]">
+          No miscellaneous entries yet.
+        </p>
+      )}
+
+      <ul className="space-y-1.5" data-testid="misc-list">
+        {rows.map((row) =>
+          editingId === row.id ? (
+            <li key={row.id} className="flex items-center gap-2">
+              <input
+                className="bc-input h-8 py-0 text-[12px] flex-1"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Name"
+              />
+              <input
+                className="bc-input h-8 py-0 text-[12px] w-28 text-right"
+                type="number"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                placeholder="Value"
+              />
+              <button
+                onClick={() => submitEdit(row)}
+                className="h-8 px-2 rounded-lg bg-[#1F453B] text-white text-[11.5px] font-semibold"
+              >
+                Save
+              </button>
+              <button
+                onClick={cancelEdit}
+                className="h-8 w-8 rounded-lg border border-[#B5C4B6] flex items-center justify-center text-[#6B7B7C]"
+              >
+                <X size={12} />
+              </button>
+            </li>
+          ) : (
+            <li
+              key={row.id}
+              className="flex items-center justify-between text-[13px] group"
+              data-testid="misc-row"
+            >
+              <span className="text-[#6B7B7C] flex items-center gap-1.5">
+                {row.name}
+                {row.notes && (
+                  <span className="text-[11px] text-[#B5C4B6]">
+                    ({row.notes})
+                  </span>
+                )}
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="font-semibold text-[#333333]">
+                  {formatINR(row.value || 0)}
+                </span>
+                <button
+                  onClick={() => startEdit(row)}
+                  className="opacity-0 group-hover:opacity-100 text-[#6B7B7C] hover:text-[#333333]"
+                  title="Edit"
+                >
+                  <Pencil size={12} />
+                </button>
+                <button
+                  onClick={() =>
+                    disabled ? onLockedEdit() : onDeleteMisc(row.id)
+                  }
+                  className="opacity-0 group-hover:opacity-100 text-[#6B7B7C] hover:text-red-600"
+                  title="Remove"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            </li>
+          ),
+        )}
+
+        {adding && (
+          <li className="flex items-center gap-2">
+            <input
+              autoFocus
+              className="bc-input h-8 py-0 text-[12px] flex-1"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Contingency"
+              data-testid="misc-name-input"
+            />
+            <input
+              className="bc-input h-8 py-0 text-[12px] w-28 text-right"
+              type="number"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="Value"
+              data-testid="misc-value-input"
+            />
+            <button
+              onClick={submitAdd}
+              className="h-8 px-2 rounded-lg bg-[#1F453B] text-white text-[11.5px] font-semibold"
+              data-testid="misc-submit-btn"
+            >
+              Add
+            </button>
+            <button
+              onClick={cancelAdd}
+              className="h-8 w-8 rounded-lg border border-[#B5C4B6] flex items-center justify-center text-[#6B7B7C]"
+            >
+              <X size={12} />
+            </button>
+          </li>
+        )}
+      </ul>
+    </div>
+  );
+}
+
 export function CostSummaryPanel({
   boq,
   disabled,
@@ -31,6 +219,9 @@ export function CostSummaryPanel({
   onSaveMiscPct,
   onApplyTerms,
   applyingTerms,
+  onAddMisc,
+  onUpdateMisc,
+  onDeleteMisc,
 }) {
   // Local buffer for the textarea so typing isn't clobbered by prop
   // updates that lag behind the save request.
@@ -191,7 +382,25 @@ export function CostSummaryPanel({
               </span>
             </div>
           )}
+          {boq.misc_amount > 0 && (
+            <div className="flex justify-between" data-testid="misc-amount-row">
+              <span className="text-[#6B7B7C]">Miscellaneous</span>
+              <span className="font-semibold">
+                {formatINR(boq.misc_amount)}
+              </span>
+            </div>
+          )}
         </div>
+
+        <MiscellaneousList
+          boq={boq}
+          disabled={disabled}
+          onLockedEdit={onLockedEdit}
+          onAddMisc={onAddMisc}
+          onUpdateMisc={onUpdateMisc}
+          onDeleteMisc={onDeleteMisc}
+        />
+
         <div className="mt-4 pt-4 border-t border-[#B5C4B6] flex items-baseline justify-between">
           <span className="text-[11.5px] uppercase tracking-widest text-[#B5C4B6]">
             Total Amount
