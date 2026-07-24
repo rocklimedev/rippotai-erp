@@ -27,9 +27,7 @@ export class CalendarController {
   constructor(private readonly calendarService: CalendarService) {}
 
   /**
-   * Get all calendar events
-   * Admin endpoint
-   *
+   * Get all calendar events (Admin)
    * GET /calendar/events
    */
   @Get()
@@ -39,7 +37,6 @@ export class CalendarController {
 
   /**
    * Get my calendar events
-   *
    * GET /calendar/events/my-events
    */
   @Get('my-events')
@@ -52,7 +49,6 @@ export class CalendarController {
 
   /**
    * Get today's events
-   *
    * GET /calendar/events/today
    */
   @Get('today')
@@ -62,26 +58,18 @@ export class CalendarController {
 
   /**
    * Get upcoming events
-   *
    * GET /calendar/events/upcoming?days=30
    */
   @Get('upcoming')
   getUpcomingEvents(
     @CurrentUser() user: User,
-    @Query(
-      'days',
-      new ParseIntPipe({
-        optional: true,
-      }),
-    )
-    days?: number,
+    @Query('days', new ParseIntPipe({ optional: true })) days?: number,
   ) {
     return this.calendarService.getUpcomingEvents(user.id, days ?? 30);
   }
 
   /**
    * Dashboard statistics
-   *
    * GET /calendar/events/stats
    */
   @Get('stats')
@@ -91,69 +79,50 @@ export class CalendarController {
 
   /**
    * Get events for a project
-   *
    * GET /calendar/events/project/:projectId
    */
   @Get('project/:projectId')
-  getProjectEvents(
-    @Param('projectId', ParseUUIDPipe)
-    projectId: string,
-  ) {
+  getProjectEvents(@Param('projectId', ParseUUIDPipe) projectId: string) {
     return this.calendarService.getProjectEvents(projectId);
   }
 
   /**
    * Get single event
-   *
    * GET /calendar/events/:id
    */
   @Get(':id')
-  findOne(
-    @Param('id', ParseUUIDPipe)
-    id: string,
-  ) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.calendarService.findOne(id);
   }
 
   /**
    * Create calendar event
-   *
    * POST /calendar/events
    */
   @Post()
-  create(
-    @Body()
-    dto: CreateCalendarEventDto,
-    @CurrentUser() user: User,
-  ) {
-    return this.calendarService.create(dto, user.id);
+  create(@Body() dto: CreateCalendarEventDto, @CurrentUser() user: User) {
+    return this.calendarService.create(dto, user);
   }
 
   /**
    * Update calendar event
-   *
    * PATCH /calendar/events/:id
    */
   @Patch(':id')
   update(
-    @Param('id', ParseUUIDPipe)
-    id: string,
-    @Body()
-    dto: UpdateCalendarEventDto,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateCalendarEventDto,
+    @CurrentUser() user: User,
   ) {
-    return this.calendarService.update(id, dto);
+    return this.calendarService.update(id, dto, user);
   }
 
   /**
    * Delete calendar event
-   *
    * DELETE /calendar/events/:id
    */
   @Delete(':id')
-  remove(
-    @Param('id', ParseUUIDPipe)
-    id: string,
-  ) {
-    return this.calendarService.remove(id);
+  remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return this.calendarService.remove(id, user);
   }
 }

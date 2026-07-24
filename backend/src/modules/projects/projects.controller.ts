@@ -16,8 +16,10 @@ import {
 
 import { ProjectsService } from './projects.service';
 import { ProjectDashboardService } from './project-dashboard.service';
+
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { ProjectStatus } from '../../common/enums';
+
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
 import { User } from '@/modules/users/models/user.model';
@@ -30,28 +32,32 @@ export class ProjectsController {
     private readonly dashboardService: ProjectDashboardService,
   ) {}
 
+  // =========================
+  // CREATE
+  // =========================
   @Post()
   create(@Body() dto: CreateProjectDto, @CurrentUser() user?: User) {
     return this.projectsService.create(dto, user);
   }
 
+  // =========================
+  // GET ALL
+  // =========================
   @Get()
   findAll(
     @Query('status') status?: string,
     @Query('includeArchived') includeArchived?: string,
     @Query('includeDeleted') includeDeleted?: string,
+    @Query('client_id') clientId?: string,
   ) {
     let parsedStatus: ProjectStatus | undefined;
 
     if (status) {
       if (!Object.values(ProjectStatus).includes(status as ProjectStatus)) {
         throw new BadRequestException(
-          `Invalid status "${status}". Expected one of: ${Object.values(
-            ProjectStatus,
-          ).join(', ')}`,
+          `Invalid status "${status}". Expected one of: ${Object.values(ProjectStatus).join(', ')}`,
         );
       }
-
       parsedStatus = status as ProjectStatus;
     }
 
@@ -59,13 +65,13 @@ export class ProjectsController {
       status: parsedStatus,
       includeArchived: includeArchived === 'true',
       includeDeleted: includeDeleted === 'true',
+      client_id: clientId,
     });
   }
 
-  // ===========================
-  // Dashboard Routes
-  // ===========================
-
+  // =========================
+  // DASHBOARD ROUTES
+  // =========================
   @Get('summary')
   getSummary() {
     return this.dashboardService.getProjectsSummary();
@@ -111,10 +117,9 @@ export class ProjectsController {
     return this.dashboardService.getRecentActivity(Number(limit));
   }
 
-  // ===========================
-  // CRUD Routes
-  // ===========================
-
+  // =========================
+  // GET ONE
+  // =========================
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
@@ -123,6 +128,9 @@ export class ProjectsController {
     return this.projectsService.findOne(id, includeDeleted === 'true');
   }
 
+  // =========================
+  // UPDATE
+  // =========================
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -132,16 +140,25 @@ export class ProjectsController {
     return this.projectsService.update(id, dto, user);
   }
 
+  // =========================
+  // ARCHIVE
+  // =========================
   @Patch(':id/archive')
   archive(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user?: User) {
     return this.projectsService.archive(id, user);
   }
 
+  // =========================
+  // RESTORE
+  // =========================
   @Patch(':id/restore')
   restore(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user?: User) {
     return this.projectsService.restore(id, user);
   }
 
+  // =========================
+  // DELETE
+  // =========================
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(

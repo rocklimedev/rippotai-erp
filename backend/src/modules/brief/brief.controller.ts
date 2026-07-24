@@ -1,4 +1,3 @@
-// brief.controller.ts
 import {
   Body,
   Controller,
@@ -8,8 +7,11 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+
 import { BriefService } from './brief.service';
 import { CreateProjectBriefDto } from './dto/create-project-brief.dto';
+import { CurrentUser } from '@/common/decorator/current-user.decorator';
+import { User } from '@/modules/users/models/user.model';
 
 // Matches endpoint="/documents/forms/project-brief" from ProjectBriefForm
 @Controller('documents/forms/project-brief')
@@ -17,11 +19,11 @@ export class BriefController {
   constructor(private readonly briefService: BriefService) {}
 
   @Post()
-  create(@Body() dto: CreateProjectBriefDto) {
-    return this.briefService.create(dto);
+  create(@Body() dto: CreateProjectBriefDto, @CurrentUser() user: User) {
+    return this.briefService.create(dto, user);
   }
 
-  // NEW: GET /documents/forms/project-brief?project_id=...
+  // GET /documents/forms/project-brief?project_id=...
   @Get()
   findAll(@Query('project_id') project_id?: string) {
     return this.briefService.findAll({ project_id });

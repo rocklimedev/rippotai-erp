@@ -6,24 +6,30 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, UniqueConstraintError } from 'sequelize';
+
 import { Quotation } from './models/quotations.model';
 import { QuotationItem } from './models/quotation-items.model';
+import { QuotationComparison } from './models/quotation-comparisons.model';
+
 import { ProjectsService } from '../projects/projects.service';
 import { VendorsService } from '../vendors/vendors.service';
+import { QuotationVersionsService } from './quotation-versions.service';
+
+import { ActivityLogForQuotationService } from '../engagement/services/activity-log-quotation.service';
+import { NotificationForQuotationService } from '../engagement/services/notification-quotation.service';
+
 import {
   CreateQuotationDto,
   UpdateQuotationDto,
   ReviewQuotationDto,
 } from './dto/quotation.dto';
-import { QuotationStatus } from '../../common/enums';
-import { QuotationVersionsService } from './quotation-versions.service';
-import { ActivityLogForQuotationService } from '../engagement/services/activity-log-quotation.service';
-import { QuotationComparison } from './models/quotation-comparisons.model';
 import { CreateQuotationComparisonDto } from './dto/quotation-comparison.dto';
+import { QuotationStatus } from '../../common/enums';
+
 const EDITABLE_STATUSES = [
   QuotationStatus.DRAFT,
   QuotationStatus.RETURNED_FOR_EDITING,
-  QuotationStatus.SUBMITTED, // allow editing submitted too
+  QuotationStatus.SUBMITTED,
 ];
 
 @Injectable()
@@ -38,7 +44,9 @@ export class QuotationsService {
     private readonly projectsService: ProjectsService,
     private readonly vendorsService: VendorsService,
     private readonly versionsService: QuotationVersionsService,
+
     private readonly activityLogForQuotationService: ActivityLogForQuotationService,
+    private readonly notificationForQuotationService: NotificationForQuotationService,
   ) {}
 
   private resolveActorId(
@@ -50,13 +58,10 @@ export class QuotationsService {
 
   private getClientSlug(clientName: string): string {
     const parts = clientName.trim().split(/\s+/).filter(Boolean);
-
     if (parts.length === 0) return 'XX';
-
     if (parts.length === 1) {
       return parts[0].slice(0, 2).toUpperCase().padEnd(2, 'X');
     }
-
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
@@ -65,21 +70,18 @@ export class QuotationsService {
     projectName: string,
   ): Promise<string> {
     const today = new Date();
-
     const datePart = today.toISOString().slice(0, 10).replace(/-/g, '');
 
-    // ✅ use project name instead of vendor
     const projectSlug = this.getClientSlug(projectName);
-
     const existingCount = await this.quotationModel.count({
       where: { projectId },
       paranoid: false,
     });
 
     const nextSeq = existingCount + 1;
-
     return `QT-${projectSlug}-${datePart}-${String(nextSeq).padStart(3, '0')}`;
   }
+
   private computeTotals(
     items: { rate: number; quantity: number; amount?: number }[],
     additional_charges = 0,
@@ -98,9 +100,7 @@ export class QuotationsService {
         : global_discount_value;
 
     const taxable = subtotal + Number(additional_charges) - Number(discount);
-
     const tax_amount = Math.round(((taxable * tax_percent) / 100) * 100) / 100;
-
     const total_amount = Math.round((taxable + tax_amount) * 100) / 100;
 
     return {
@@ -110,6 +110,10 @@ export class QuotationsService {
       total_amount,
     };
   }
+
+  // =========================
+  // CREATE
+  // =========================
   async create(dto: CreateQuotationDto, user?: any): Promise<Quotation> {
     const project = await this.projectsService.findOne(dto.project_id);
     const vendor = await this.vendorsService.findOne(dto.vendor_id);
@@ -119,8 +123,6 @@ export class QuotationsService {
     const global_discount_value = dto.global_discount_value ?? 0;
     const tax_percent = dto.tax_percent ?? 0;
 
-    // Always derive from the authenticated user; dto.created_by is only a
-    // fallback for system/service-account callers with no request user.
     const createdBy = this.resolveActorId(user, dto.created_by);
 
     const { subtotal, discount, tax_amount, total_amount } = this.computeTotals(
@@ -137,10 +139,10 @@ export class QuotationsService {
 
     while (true) {
       attempt++;
-
       const quotation_number =
         dto.quotation_number ??
         (await this.generateQuotationNumber(dto.project_id, project.name));
+
       try {
         quotation = await this.quotationModel.create({
           quotationNumber: quotation_number,
@@ -161,22 +163,15 @@ export class QuotationsService {
           termsConditions: dto.terms_conditions,
           createdBy,
         } as any);
-        break; // success
+        break;
       } catch (err) {
         if (err instanceof UniqueConstraintError) {
-          // If the caller explicitly supplied a quotation_number, don't
-          // silently override it — fail fast with a clear 409 instead.
           if (dto.quotation_number) {
             throw new ConflictException(
               `Quotation number "${quotation_number}" already exists`,
             );
           }
-          // Auto-generated number collided with a concurrent insert for the
-          // same project — retry with a freshly re-counted number rather
-          // than failing the request outright.
-          if (attempt < MAX_ATTEMPTS) {
-            continue;
-          }
+          if (attempt < MAX_ATTEMPTS) continue;
           throw new ConflictException(
             `Could not generate a unique quotation number after ${MAX_ATTEMPTS} attempts`,
           );
@@ -208,12 +203,23 @@ export class QuotationsService {
     );
 
     const created = await this.findOne(quotation.id);
+
+    // Activity Log & Notification
     await this.activityLogForQuotationService.logQuotationCreated(
       created,
       user,
     );
+    await this.notificationForQuotationService.notifyQuotationCreated(
+      created,
+      user?.id,
+    );
+
     return created;
   }
+
+  // =========================
+  // FIND ALL
+  // =========================
   findAll(
     filters: {
       status?: QuotationStatus;
@@ -234,20 +240,17 @@ export class QuotationsService {
       order: [['quotationDate', 'DESC']],
       include: [
         'items',
-        {
-          association: 'creator',
-          attributes: ['id', 'name', 'email'],
-        },
+        { association: 'creator', attributes: ['id', 'name', 'email'] },
       ],
     });
   }
 
+  // =========================
+  // FIND ONE
+  // =========================
   async findOne(id: string): Promise<Quotation> {
     const quotation = await this.quotationModel.findOne({
-      where: {
-        id,
-        deletedAt: null,
-      },
+      where: { id, deletedAt: null },
       include: ['items', 'project', 'vendor'],
     });
 
@@ -265,6 +268,9 @@ export class QuotationsService {
     }
   }
 
+  // =========================
+  // UPDATE
+  // =========================
   async update(
     id: string,
     dto: UpdateQuotationDto,
@@ -275,15 +281,11 @@ export class QuotationsService {
 
     const additional_charges =
       dto.additional_charges ?? quotation.additionalCharges;
-
     const global_discount_type =
       dto.global_discount_type ?? quotation.globalDiscountType;
-
     const global_discount_value =
       dto.global_discount_value ?? Number(quotation.globalDiscountValue);
-
     const tax_percent = dto.tax_percent ?? Number(quotation.taxPercent);
-
     const items = dto.items ?? quotation.items;
 
     const updatedBy = this.resolveActorId(user, dto.updated_by);
@@ -295,10 +297,9 @@ export class QuotationsService {
       Number(global_discount_value),
       Number(tax_percent),
     );
-    // Update items if provided
+
     if (dto.items) {
       await QuotationItem.destroy({ where: { quotation_id: id } });
-
       await Promise.all(
         dto.items.map((item, idx) =>
           QuotationItem.create({
@@ -318,10 +319,8 @@ export class QuotationsService {
     await quotation.update({
       quotationDate: dto.quotation_date ?? quotation.quotationDate,
       additionalCharges: additional_charges,
-
       globalDiscountType: global_discount_type,
       globalDiscountValue: global_discount_value,
-
       discount,
       taxPercent: tax_percent,
       subtotal,
@@ -331,7 +330,6 @@ export class QuotationsService {
       updatedBy,
     });
 
-    // Create version after update
     await this.versionsService.createVersion(
       id,
       updatedBy ?? null,
@@ -340,15 +338,23 @@ export class QuotationsService {
 
     const updated = await this.findOne(id);
 
+    // Activity Log & Notification
     await this.activityLogForQuotationService.logQuotationUpdated(
       updated,
       user,
       dto,
     );
+    await this.notificationForQuotationService.notifyQuotationUpdated(
+      updated,
+      user?.id,
+    );
 
     return updated;
   }
 
+  // =========================
+  // SUBMIT
+  // =========================
   async submit(
     id: string,
     submitted_by?: string,
@@ -373,21 +379,28 @@ export class QuotationsService {
 
     const submitted = await this.findOne(id);
 
+    // Activity Log & Notification
     await this.activityLogForQuotationService.logQuotationSubmitted(
       submitted,
       user,
+    );
+    await this.notificationForQuotationService.notifyQuotationSubmitted(
+      submitted,
+      user?.id,
     );
 
     return submitted;
   }
 
+  // =========================
+  // APPROVE
+  // =========================
   async approve(
     id: string,
     dto: ReviewQuotationDto,
     user?: any,
   ): Promise<Quotation> {
     const quotation = await this.requireStatus(id, QuotationStatus.SUBMITTED);
-
     const reviewedBy = this.resolveActorId(user, dto.reviewed_by);
 
     await quotation.update({
@@ -405,22 +418,29 @@ export class QuotationsService {
 
     const approved = await this.findOne(id);
 
+    // Activity Log & Notification
     await this.activityLogForQuotationService.logQuotationApproved(
       approved,
       user,
       dto.review_remarks,
     );
+    await this.notificationForQuotationService.notifyQuotationApproved(
+      approved,
+      user?.id,
+    );
 
     return approved;
   }
 
+  // =========================
+  // RETURN FOR EDITING
+  // =========================
   async returnForEditing(
     id: string,
     dto: ReviewQuotationDto,
     user?: any,
   ): Promise<Quotation> {
     const quotation = await this.requireStatus(id, QuotationStatus.SUBMITTED);
-
     const reviewedBy = this.resolveActorId(user, dto.reviewed_by);
 
     await quotation.update({
@@ -438,22 +458,30 @@ export class QuotationsService {
 
     const returned = await this.findOne(id);
 
+    // Activity Log & Notification
     await this.activityLogForQuotationService.logQuotationReturnedForEditing(
       returned,
       user,
       dto.review_remarks,
     );
+    await this.notificationForQuotationService.notifyQuotationReturnedForEditing(
+      returned,
+      dto.review_remarks,
+      user?.id,
+    );
 
     return returned;
   }
 
+  // =========================
+  // DECLINE
+  // =========================
   async decline(
     id: string,
     dto: ReviewQuotationDto,
     user?: any,
   ): Promise<Quotation> {
     const quotation = await this.requireStatus(id, QuotationStatus.SUBMITTED);
-
     const reviewedBy = this.resolveActorId(user, dto.reviewed_by);
 
     await quotation.update({
@@ -471,15 +499,24 @@ export class QuotationsService {
 
     const declined = await this.findOne(id);
 
+    // Activity Log & Notification
     await this.activityLogForQuotationService.logQuotationDeclined(
       declined,
       user,
       dto.review_remarks,
     );
+    await this.notificationForQuotationService.notifyQuotationDeclined(
+      declined,
+      dto.review_remarks,
+      user?.id,
+    );
 
     return declined;
   }
 
+  // =========================
+  // CANCEL
+  // =========================
   async cancel(
     id: string,
     updated_by?: string,
@@ -512,12 +549,78 @@ export class QuotationsService {
 
     const cancelled = await this.findOne(id);
 
+    // Activity Log & Notification
     await this.activityLogForQuotationService.logQuotationCancelled(
       cancelled,
       user,
     );
+    await this.notificationForQuotationService.notifyQuotationCancelled(
+      cancelled,
+      user?.id,
+    );
 
     return cancelled;
+  }
+
+  // =========================
+  // SOFT DELETE
+  // =========================
+  async softDelete(id: string, deleted_by?: string, user?: any): Promise<void> {
+    const quotation = await this.findOne(id);
+    const deletedBy = this.resolveActorId(user, deleted_by);
+
+    await quotation.update({
+      deletedAt: new Date(),
+      deletedBy,
+    });
+
+    await this.versionsService.createVersion(
+      id,
+      deletedBy ?? null,
+      'Soft deleted',
+    );
+
+    // Activity Log & Notification
+    await this.activityLogForQuotationService.logQuotationDeleted(id, user);
+    await this.notificationForQuotationService.notifyQuotationDeleted(
+      quotation.quotationNumber,
+      user?.id,
+    );
+  }
+
+  // =========================
+  // RESTORE
+  // =========================
+  async restore(id: string, user?: any): Promise<Quotation> {
+    const quotation = await this.quotationModel.findByPk(id);
+    if (!quotation) {
+      throw new NotFoundException(`Quotation ${id} not found`);
+    }
+
+    await quotation.update({
+      deletedAt: null,
+      deletedBy: null,
+    });
+
+    await this.versionsService.createVersion(
+      id,
+      this.resolveActorId(user) ?? null,
+      'Restored',
+    );
+
+    const restored = await this.findOne(id);
+
+    // Activity Log & Notification
+    await this.activityLogForQuotationService.logQuotationRestored(
+      restored,
+      user,
+    );
+    await this.notificationForQuotationService.notifyQuotationRestored(
+      restored,
+      user?.id,
+    );
+
+    return restored;
   }
 
   private async requireStatus(
@@ -533,60 +636,18 @@ export class QuotationsService {
     return quotation;
   }
 
-  async softDelete(id: string, deleted_by?: string, user?: any): Promise<void> {
-    const quotation = await this.findOne(id);
-
-    const deletedBy = this.resolveActorId(user, deleted_by);
-
-    await quotation.update({
-      deletedAt: new Date(),
-      deletedBy,
-    });
-
-    await this.versionsService.createVersion(
-      id,
-      deletedBy ?? null,
-      'Soft deleted',
-    );
-
-    await this.activityLogForQuotationService.logQuotationDeleted(id, user);
-  }
-
-  async restore(id: string, user?: any): Promise<Quotation> {
-    const quotation = await this.quotationModel.findByPk(id);
-
-    if (!quotation) {
-      throw new NotFoundException(`Quotation ${id} not found`);
-    }
-
-    await quotation.update({
-      deletedAt: null,
-      deletedBy: null,
-    });
-
-    // Create a version to reflect restore
-    await this.versionsService.createVersion(
-      id,
-      this.resolveActorId(user) ?? null,
-      'Restored',
-    );
-
-    const restored = await this.findOne(id);
-
-    await this.activityLogForQuotationService.logQuotationRestored(
-      restored,
-      user,
-    );
-
-    return restored;
-  }
-
+  // =========================
+  // HARD DELETE
+  // =========================
   async remove(id: string): Promise<void> {
     const quotation = await this.quotationModel.findByPk(id);
     if (!quotation) throw new NotFoundException(`Quotation ${id} not found`);
     await quotation.destroy();
   }
 
+  // =========================
+  // COMPARE QUOTATIONS
+  // =========================
   async compareQuotations(ids: string[]) {
     if (!ids.length) {
       throw new BadRequestException('At least one quotation ID required');
@@ -594,24 +655,13 @@ export class QuotationsService {
 
     const quotations = await this.quotationModel.findAll({
       where: {
-        id: {
-          [Op.in]: ids,
-        },
+        id: { [Op.in]: ids },
         deletedAt: null,
       },
       include: [
-        {
-          association: 'items',
-          include: ['unit'],
-        },
-        {
-          association: 'vendor',
-          include: ['vendorCategory', 'businessType'],
-        },
-        {
-          association: 'project',
-          include: ['client', 'project_type'],
-        },
+        { association: 'items', include: ['unit'] },
+        { association: 'vendor', include: ['vendorCategory', 'businessType'] },
+        { association: 'project', include: ['client', 'project_type'] },
       ],
     });
 
@@ -625,28 +675,11 @@ export class QuotationsService {
         : lowest,
     );
 
-    const lineItemsMap = new Map<
-      string,
-      {
-        sno: number;
-        description: string;
-        unit: string;
-        boq_rate: number | null;
-        quotes: Record<
-          string,
-          {
-            quantity: number;
-            rate: number;
-            amount: number;
-          }
-        >;
-      }
-    >();
+    const lineItemsMap = new Map();
 
     for (const quotation of quotations) {
       for (const item of quotation.items) {
         const key = `${item.sno}-${item.particular}`;
-
         if (!lineItemsMap.has(key)) {
           lineItemsMap.set(key, {
             sno: item.sno,
@@ -656,7 +689,6 @@ export class QuotationsService {
             quotes: {},
           });
         }
-
         lineItemsMap.get(key)!.quotes[quotation.id] = {
           quantity: Number(item.quantity),
           rate: Number(item.rate),
@@ -667,27 +699,18 @@ export class QuotationsService {
 
     return {
       lowest_id: lowestQuotation.id,
-
       quotations: quotations.map((q) => ({
         id: q.id,
-
         vendor_name:
           q.vendor?.company_name ||
           q.vendor?.name ||
           (q.vendorSnapshot as any)?.name,
-
         project_name: q.project?.name || (q.projectSnapshot as any)?.name,
-
         project_type: q.project?.project_type?.name ?? null,
-
         client_name: q.project?.client?.name ?? null,
-
         quotation_number: q.quotationNumber,
-
         quotation_date: q.quotationDate,
-
         status: q.status,
-
         subtotals: {
           base: Number(q.subtotal),
           additional_charges: Number(q.additionalCharges),
@@ -695,26 +718,21 @@ export class QuotationsService {
           tax: Number(q.taxAmount),
           total: Number(q.totalAmount),
         },
-
         commercial_terms: q.termsConditions,
-
         vendor: q.vendor,
-
         vendor_category: q.vendor?.vendorCategory?.name ?? null,
-
         business_type: q.vendor?.businessType?.name ?? null,
-
         selected: false,
       })),
-
       line_items: [...lineItemsMap.values()],
     };
   }
 
+  // =========================
+  // MARK SELECTED
+  // =========================
   async markQuotationSelected(id: string, remarks?: string, user?: any) {
     const quotation = await this.findOne(id);
-    // Add a selected flag or relation if needed (without changing model - use a separate table or field if added later)
-    // For now, just log
     await this.activityLogForQuotationService.logQuotationUpdated(
       quotation,
       user,
@@ -723,12 +741,14 @@ export class QuotationsService {
     return quotation;
   }
 
-  // For saved comparisons
+  // =========================
+  // SAVE COMPARISON
+  // =========================
   async saveComparison(dto: CreateQuotationComparisonDto, user?: any) {
-    // Validation: ensure all quotations exist and belong to project
     const existing = await this.quotationModel.count({
       where: { id: { [Op.in]: dto.quotation_ids } },
     });
+
     if (existing !== dto.quotation_ids.length) {
       throw new NotFoundException('Some quotations not found');
     }

@@ -11,12 +11,17 @@ import {
   ParseBoolPipe,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import { CreateClientDto, UpdateClientDto } from './dto/client.dto';
-// import { CurrentUser } from '@/common/decorators/current-user.decorator'; // uncomment if you have this
+
+import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
+import { CurrentUser } from '@/common/decorator/current-user.decorator';
+import { User } from '@/modules/users/models/user.model';
 
 @Controller('clients')
+@UseGuards(JwtAuthGuard)
 export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
 
@@ -24,8 +29,8 @@ export class ClientsController {
   // CREATE
   // =========================
   @Post()
-  create(@Body() dto: CreateClientDto) {
-    return this.clientsService.create(dto);
+  create(@Body() dto: CreateClientDto, @CurrentUser() user: User) {
+    return this.clientsService.create(dto, user);
   }
 
   // =========================
@@ -55,16 +60,20 @@ export class ClientsController {
   // UPDATE
   // =========================
   @Patch(':id')
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateClientDto) {
-    return this.clientsService.update(id, dto);
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateClientDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.clientsService.update(id, dto, user);
   }
 
   // =========================
   // RESTORE
   // =========================
   @Patch(':id/restore')
-  restore(@Param('id', ParseUUIDPipe) id: string) {
-    return this.clientsService.restore(id);
+  restore(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return this.clientsService.restore(id, user);
   }
 
   // =========================
@@ -72,7 +81,10 @@ export class ClientsController {
   // =========================
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.clientsService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: User,
+  ): Promise<void> {
+    return this.clientsService.remove(id, user);
   }
 }

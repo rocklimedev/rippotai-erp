@@ -19,6 +19,8 @@ import {
   StuckMode,
   DocType,
 } from '@/common/enums/leads.enums';
+import { ActivityLogForLeadService } from '../engagement/services/activity-log-lead.service';
+import { NotificationForLeadService } from '../engagement/services/notification-lead.service';
 
 const DEFAULT_OWNER_POOL = ['A. Mehra', 'S. Kapoor'];
 const STUCK_DAYS_DEFAULT = 7;
@@ -30,6 +32,9 @@ export class LeadsService {
     @InjectModel(Lead) private leadModel: typeof Lead,
     @InjectModel(LeadNote) private noteModel: typeof LeadNote,
     @InjectModel(LeadActivity) private activityModel: typeof LeadActivity,
+
+    private readonly activityLogService: ActivityLogForLeadService,
+    private readonly notificationService: NotificationForLeadService,
   ) {}
 
   private include() {
@@ -113,27 +118,20 @@ export class LeadsService {
   }
 
   private async addActivity(leadId: string, text: string) {
-    await this.activityModel.create({
-      leadId,
-      text,
-    } as any); // ✅ Fixed
+    await this.activityModel.create({ leadId, text } as any);
   }
 
   private async findOrThrow(id: string) {
     const lead = await this.leadModel.findByPk(id, {
       include: [LeadNote, LeadActivity],
     });
-
-    if (!lead) {
-      throw new NotFoundException('Lead not found');
-    }
-
+    if (!lead) throw new NotFoundException('Lead not found');
     return lead;
   }
 
-  // ---------------- CRUD ----------------
+  // ==================== MAIN CRUD ====================
 
-  async create(dto: CreateLeadDto) {
+  async create(dto: CreateLeadDto, user?: any) {
     const count = await this.leadModel.count();
     const owner = DEFAULT_OWNER_POOL[count % DEFAULT_OWNER_POOL.length];
 
@@ -143,13 +141,17 @@ export class LeadsService {
       stage: LeadStage.CAPTURE,
       stageEnteredAt: new Date(),
       days: 0,
-    } as any); // ✅ Fixed
+    } as any);
 
     await this.addActivity(
       lead.id,
       `Lead captured via ${dto.source || 'Unknown'}`,
     );
     await this.addActivity(lead.id, `Auto-assigned to ${owner}`);
+
+    // Activity Log + Notification
+    await this.activityLogService.logLeadCreated(lead, user);
+    await this.notificationService.notifyLeadCreated(lead, user?.id);
 
     return this.serialize(await this.findOrThrow(lead.id));
   }
@@ -174,7 +176,6 @@ export class LeadsService {
     });
 
     let serialized = leads.map((l) => this.serialize(l));
-
     if (query.sort) serialized = this.sortContacts(serialized, query.sort);
     return serialized;
   }
@@ -215,25 +216,36 @@ export class LeadsService {
     return this.serialize(await this.findOrThrow(id));
   }
 
-  async update(id: string, dto: UpdateLeadDto) {
+  async update(id: string, dto: UpdateLeadDto, user?: any) {
     const lead = await this.findOrThrow(id);
     Object.assign(lead, dto);
     await lead.save();
     await this.addActivity(id, 'Lead details updated');
+
+    await this.activityLogService.logLeadUpdated(lead, user);
+    await this.notificationService.notifyLeadUpdated(lead, user?.id);
+
     return this.serialize(await this.findOrThrow(id));
   }
 
-  async remove(id: string) {
+  async remove(id: string, user?: any) {
     const lead = await this.findOrThrow(id);
+    const leadName = lead.name;
     await lead.destroy();
+
+    await this.activityLogService.logLeadDeleted(leadName, id, user);
+    await this.notificationService.notifyLeadDeleted(leadName, user?.id);
+
     return { id, deleted: true };
   }
 
-  async moveStage(id: string, dto: MoveStageDto) {
+  async moveStage(id: string, dto: MoveStageDto, user?: any) {
     const lead = await this.findOrThrow(id);
     if (lead.stage === dto.stage) return this.serialize(lead);
 
-    const fromLabel = STAGE_LABELS[lead.stage];
+    const fromStage = lead.stage;
+    const fromLabel = STAGE_LABELS[fromStage];
+
     lead.stage = dto.stage;
     lead.stageEnteredAt = new Date();
     lead.days = 0;
@@ -244,37 +256,65 @@ export class LeadsService {
       id,
       `Moved from ${fromLabel} to ${STAGE_LABELS[dto.stage]}${suffix}`,
     );
+
+    await this.activityLogService.logLeadStageChanged(
+      lead,
+      fromStage,
+      dto.stage,
+      user,
+    );
+    await this.notificationService.notifyLeadStageChanged(
+      lead,
+      fromStage,
+      dto.stage,
+      user?.id,
+    );
+
     return this.serialize(await this.findOrThrow(id));
   }
 
-  async markNurture(id: string) {
-    return this.moveStage(id, { stage: LeadStage.NURTURE });
+  async markNurture(id: string, user?: any) {
+    return this.moveStage(id, { stage: LeadStage.NURTURE }, user);
   }
 
-  async markLost(id: string) {
-    return this.moveStage(id, { stage: LeadStage.LOST });
+  async markLost(id: string, user?: any) {
+    return this.moveStage(id, { stage: LeadStage.LOST }, user);
   }
 
-  async addNote(id: string, dto: AddNoteDto) {
+  async addNote(id: string, dto: AddNoteDto, user?: any) {
     await this.findOrThrow(id);
     await this.noteModel.create({
       leadId: id,
       author: dto.author || 'A. Mehra',
       text: dto.text,
-    } as any); // ✅ Fixed
+    } as any);
+
     await this.addActivity(id, `Note added by ${dto.author || 'A. Mehra'}`);
-    return this.serialize(await this.findOrThrow(id));
+
+    const currentLead = await this.findOrThrow(id);
+
+    await this.activityLogService.logLeadNoteAdded(
+      currentLead,
+      dto.text,
+      dto.author || 'A. Mehra',
+      user,
+    );
+    await this.notificationService.notifyLeadNoteAdded(
+      currentLead.name,
+      dto.author || 'A. Mehra',
+      user?.id,
+    );
+
+    return this.serialize(currentLead);
   }
 
-  async setProposal(id: string, dto: ProposalDto) {
+  async setProposal(id: string, dto: ProposalDto, user?: any) {
     const lead = await this.findOrThrow(id);
-    lead.proposalAmount = dto.amount;
+    lead.proposalAmount = dto.amount.toString();
     lead.proposalTimeline = dto.timeline || '1–3 months';
     lead.proposalRemarks = dto.remarks || null;
 
-    if (lead.docProposal === 0) {
-      lead.docProposal = 1;
-    }
+    if (lead.docProposal === 0) lead.docProposal = 1;
 
     const movedStage = lead.stage !== LeadStage.PROP;
     const fromLabel = STAGE_LABELS[lead.stage];
@@ -298,18 +338,26 @@ export class LeadsService {
         leadId: id,
         author: dto.author || 'A. Mehra',
         text: `Proposal: ${dto.remarks}`,
-      } as any); // ✅ Fixed
+      } as any);
     }
     await this.addActivity(
       id,
       `Proposal quoted ${dto.amount} · ${lead.proposalTimeline}`,
     );
+
+    await this.activityLogService.logProposalSent(lead, dto.amount, user);
+    await this.notificationService.notifyProposalSent(
+      lead,
+      dto.amount,
+      user?.id,
+    );
+
     return this.serialize(await this.findOrThrow(id));
   }
 
+  // Other internal methods (no major user action)
   async updateDoc(id: string, docType: DocType, dto: UpdateDocDto) {
     const lead = await this.findOrThrow(id);
-
     const field =
       docType === DocType.BRIEF
         ? 'docBrief'
@@ -329,11 +377,11 @@ export class LeadsService {
       proposal: 'Design Proposal',
       contract: 'Contract',
     };
-
     await this.addActivity(
       id,
       `${docNames[docType]}: ${labels[prev]} → ${labels[next]}`,
     );
+
     return this.serialize(await this.findOrThrow(id));
   }
 

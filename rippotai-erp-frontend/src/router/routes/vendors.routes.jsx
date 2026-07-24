@@ -6,6 +6,7 @@ import ShortlistsIndex from "@/pages/vendors/ShortlistsIndex";
 import ShortlistDetail from "@/pages/vendors/ShortlistDetail";
 import VendorActivity from "@/pages/vendors/VendorActivity";
 import VendorProfile from "@/pages/vendors/VendorProfile";
+import ComingSoon from "../../pages/ComingSoon";
 
 export const vendorsRoutes = [
   {
@@ -22,8 +23,8 @@ export const vendorsRoutes = [
       { index: true, element: <AppDashboard appKey="vendors" /> },
       { path: "directory", element: <VendorsDashboard /> },
       { path: "new", element: <VendorNew /> },
-      { path: "shortlists", element: <ShortlistsIndex /> },
-      { path: "shortlists/:id", element: <ShortlistDetail /> },
+      { path: "shortlists", element: <ComingSoon /> },
+      { path: "shortlists/:id", element: <ComingSoon /> },
       { path: "activity", element: <VendorActivity /> },
       { path: ":id/edit", element: <VendorNew /> },
       { path: ":id", element: <VendorProfile /> },

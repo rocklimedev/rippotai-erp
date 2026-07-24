@@ -10,18 +10,23 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
+
 import { QuotationsService } from './quotations.service';
+import { QuotationDashboardService } from './quotation-dashboard.service';
+
 import {
   CreateQuotationDto,
   UpdateQuotationDto,
   ReviewQuotationDto,
 } from './dto/quotation.dto';
 import { CreateQuotationComparisonDto } from './dto/quotation-comparison.dto';
+
 import { QuotationStatus } from '../../common/enums';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
-import { QuotationDashboardService } from './quotation-dashboard.service';
+
 @Controller('quotations')
 @UseGuards(JwtAuthGuard)
 export class QuotationsController {
@@ -30,11 +35,17 @@ export class QuotationsController {
     private readonly quotationDashboardService: QuotationDashboardService,
   ) {}
 
+  // =========================
+  // CREATE
+  // =========================
   @Post()
-  create(@Body() dto: CreateQuotationDto, @CurrentUser() user: any) {
+  create(@Body() dto: CreateQuotationDto, @CurrentUser() user?: any) {
     return this.quotationsService.create(dto, user);
   }
 
+  // =========================
+  // GET ALL
+  // =========================
   @Get()
   findAll(
     @Query('status') status?: QuotationStatus,
@@ -49,8 +60,10 @@ export class QuotationsController {
       includeDeleted: includeDeleted === 'true',
     });
   }
-  // ==================== DASHBOARD ====================
 
+  // =========================
+  // DASHBOARD
+  // =========================
   @Get('summary')
   getSummary() {
     return this.quotationDashboardService.getSummary();
@@ -91,30 +104,35 @@ export class QuotationsController {
       limit ? Number(limit) : 6,
     );
   }
-  // ==================== COMPARISON FEATURE ====================
 
+  // =========================
+  // COMPARISON
+  // =========================
   @Get('compare')
   async compare(@Query('ids') ids: string) {
+    if (!ids) {
+      throw new BadRequestException('Query parameter "ids" is required');
+    }
+
     const idList = ids
-      ? ids
-          .split(',')
-          .map((id) => id.trim())
-          .filter(Boolean)
-      : [];
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean);
 
     return this.quotationsService.compareQuotations(idList);
   }
 
   @Post('quotation-comparisons')
-  async saveComparison(
+  saveComparison(
     @Body() dto: CreateQuotationComparisonDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user?: any,
   ) {
     return this.quotationsService.saveComparison(dto, user);
   }
 
-  // ==================== ID ROUTES ====================
-
+  // =========================
+  // SINGLE QUOTATION ROUTES
+  // =========================
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.quotationsService.findOne(id);
@@ -124,7 +142,7 @@ export class QuotationsController {
   update(
     @Param('id') id: string,
     @Body() dto: UpdateQuotationDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user?: any,
   ) {
     return this.quotationsService.update(id, dto, user);
   }
@@ -132,8 +150,8 @@ export class QuotationsController {
   @Patch(':id/submit')
   submit(
     @Param('id') id: string,
-    @Body('submitted_by') submitted_by: string | undefined,
-    @CurrentUser() user: any,
+    @Body('submitted_by') submitted_by?: string,
+    @CurrentUser() user?: any,
   ) {
     return this.quotationsService.submit(id, submitted_by, user);
   }
@@ -142,7 +160,7 @@ export class QuotationsController {
   approve(
     @Param('id') id: string,
     @Body() dto: ReviewQuotationDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user?: any,
   ) {
     return this.quotationsService.approve(id, dto, user);
   }
@@ -151,7 +169,7 @@ export class QuotationsController {
   returnForEditing(
     @Param('id') id: string,
     @Body() dto: ReviewQuotationDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user?: any,
   ) {
     return this.quotationsService.returnForEditing(id, dto, user);
   }
@@ -160,7 +178,7 @@ export class QuotationsController {
   decline(
     @Param('id') id: string,
     @Body() dto: ReviewQuotationDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user?: any,
   ) {
     return this.quotationsService.decline(id, dto, user);
   }
@@ -168,19 +186,19 @@ export class QuotationsController {
   @Patch(':id/cancel')
   cancel(
     @Param('id') id: string,
-    @Body('updated_by') updated_by: string | undefined,
-    @CurrentUser() user: any,
+    @Body('updated_by') updated_by?: string,
+    @CurrentUser() user?: any,
   ) {
     return this.quotationsService.cancel(id, updated_by, user);
   }
 
   @Patch(':id/restore')
-  restore(@Param('id') id: string, @CurrentUser() user: any) {
+  restore(@Param('id') id: string, @CurrentUser() user?: any) {
     return this.quotationsService.restore(id, user);
   }
 
   @Post(':id/mark-selected')
-  async markSelected(
+  markSelected(
     @Param('id') id: string,
     @Body('remarks') remarks?: string,
     @CurrentUser() user?: any,
@@ -188,12 +206,15 @@ export class QuotationsController {
     return this.quotationsService.markQuotationSelected(id, remarks, user);
   }
 
+  // =========================
+  // DELETE
+  // =========================
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   softDelete(
     @Param('id') id: string,
-    @Body('deleted_by') deleted_by: string | undefined,
-    @CurrentUser() user: any,
+    @Body('deleted_by') deleted_by?: string,
+    @CurrentUser() user?: any,
   ) {
     return this.quotationsService.softDelete(id, deleted_by, user);
   }

@@ -2,10 +2,10 @@ import {
   Controller,
   Get,
   Post,
-  Body,
   Patch,
-  Param,
   Delete,
+  Body,
+  Param,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -14,6 +14,7 @@ import { Request } from 'express';
 import { TasksService } from './task.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 
 interface AuthRequest extends Request {
@@ -30,7 +31,7 @@ export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   // =========================
-  // Get All Tasks
+  // GET ALL TASKS
   // =========================
   @Get()
   findAll() {
@@ -38,7 +39,7 @@ export class TasksController {
   }
 
   // =========================
-  // Get Task Board
+  // GLOBAL BOARD
   // =========================
   @Get('board')
   getBoard() {
@@ -46,7 +47,7 @@ export class TasksController {
   }
 
   // =========================
-  // Get My Tasks
+  // MY TASKS
   // =========================
   @Get('my-tasks')
   getMyTasks(@Req() req: AuthRequest) {
@@ -54,7 +55,7 @@ export class TasksController {
   }
 
   // =========================
-  // Get My Task Board
+  // MY BOARD
   // =========================
   @Get('my-board')
   getMyBoard(@Req() req: AuthRequest) {
@@ -62,7 +63,7 @@ export class TasksController {
   }
 
   // =========================
-  // Get Task By ID
+  // GET ONE
   // =========================
   @Get(':id')
   findOne(@Param('id') id: string) {
@@ -70,34 +71,38 @@ export class TasksController {
   }
 
   // =========================
-  // Create Task
+  // CREATE
   // =========================
   @Post()
   create(@Body() createTaskDto: CreateTaskDto, @Req() req: AuthRequest) {
-    return this.tasksService.create(createTaskDto, req.user.id);
+    return this.tasksService.create(createTaskDto, req.user.id, req.user);
   }
 
   // =========================
-  // Toggle Task Status
-  // =========================
-  @Patch(':id/toggle')
-  toggleStatus(@Param('id') id: string) {
-    return this.tasksService.toggleStatus(id);
-  }
-
-  // =========================
-  // Update Task
+  // UPDATE
   // =========================
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTaskDto: UpdateTaskDto) {
-    return this.tasksService.update(id, updateTaskDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateTaskDto: UpdateTaskDto,
+    @Req() req: AuthRequest,
+  ) {
+    return this.tasksService.update(id, updateTaskDto, req.user);
   }
 
   // =========================
-  // Delete Task
+  // TOGGLE STATUS
+  // =========================
+  @Patch(':id/toggle')
+  toggleStatus(@Param('id') id: string, @Req() req: AuthRequest) {
+    return this.tasksService.toggleStatus(id, req.user);
+  }
+
+  // =========================
+  // DELETE
   // =========================
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.tasksService.remove(id);
+  remove(@Param('id') id: string, @Req() req: AuthRequest) {
+    return this.tasksService.remove(id, req.user);
   }
 }

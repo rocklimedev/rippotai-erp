@@ -1,4 +1,3 @@
-// brief.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ProjectBrief } from './models/project-brief.model';
@@ -7,15 +6,23 @@ import {
   BRIEF_SECTIONS,
   BRIEF_DOC_PREFIX,
 } from '@/common/constants/document-sections.constants';
+import { ActivityLogForBriefService } from '../engagement/services/activity-log-brief.service';
+import { NotificationForBriefService } from '../engagement/services/notification-brief.service';
 
 @Injectable()
 export class BriefService {
   constructor(
     @InjectModel(ProjectBrief)
     private readonly projectBriefModel: typeof ProjectBrief,
+
+    private readonly activityLogService: ActivityLogForBriefService,
+    private readonly notificationService: NotificationForBriefService,
   ) {}
 
-  async create(dto: CreateProjectBriefDto, userId?: string) {
+  /**
+   * Create a new project brief with activity log and notification
+   */
+  async create(dto: CreateProjectBriefDto, user?: any) {
     const doc_no = await this.generateDocNo();
     const pdfBuffer = await this.renderPdf(dto.sections);
 
@@ -25,11 +32,14 @@ export class BriefService {
       sections: dto.sections,
       pdf_path: `briefs/${doc_no}.pdf`,
       pdf_size: pdfBuffer.length,
-      created_by: userId ?? null,
+      created_by: user?.id ?? null,
     } as ProjectBrief);
 
-    // Shape matches what the frontend SectionForm.submit() expects back:
-    // data.doc_no, data.pdf_size, data.id
+    // Log activity and send notifications
+    await this.activityLogService.logBriefCreated(brief, user);
+    await this.notificationService.notifyBriefCreated(brief, user?.id);
+
+    // Return shape expected by frontend
     return {
       id: brief.id,
       doc_no: brief.doc_no,
@@ -38,8 +48,9 @@ export class BriefService {
     };
   }
 
-  // NEW: list endpoint backing ProjectBriefList.jsx / useGetProjectBriefsQuery.
-  // Optional project_id filter, most recent first.
+  /**
+   * List all briefs (with optional project filter)
+   */
   async findAll(filters: { project_id?: string } = {}) {
     const where: Record<string, unknown> = {};
     if (filters.project_id) where.project_id = filters.project_id;
@@ -50,9 +61,6 @@ export class BriefService {
       order: [['createdAt', 'DESC']],
     });
 
-    // Reshaped to match what the list page reads: project_name, sections
-    // length, createdByName, createdAt/updatedAt — same spirit as create()
-    // reshaping its return value for the frontend that consumes it.
     return briefs.map((b) => ({
       id: b.id,
       doc_no: b.doc_no,
@@ -65,16 +73,24 @@ export class BriefService {
     }));
   }
 
+  /**
+   * Get single brief by ID
+   */
   async findOne(id: string) {
     const brief = await this.projectBriefModel.findByPk(id, {
       include: [{ association: 'project' }, { association: 'creator' }],
     });
+
     if (!brief) {
       throw new NotFoundException('Project brief not found');
     }
+
     return brief;
   }
 
+  /**
+   * Generate unique document number (e.g., BRF-2026-0001)
+   */
   private async generateDocNo(): Promise<string> {
     const year = new Date().getFullYear();
     const count = await this.projectBriefModel.count();
@@ -82,9 +98,7 @@ export class BriefService {
   }
 
   /**
-   * TODO: replace with a real PDF rendering pipeline (e.g. Puppeteer/PDFKit
-   * against a template) driven by BRIEF_SECTIONS labels. Left as a plain-text
-   * stub so this module compiles and returns a realistic pdf_size on its own.
+   * Render PDF (placeholder - replace with real PDF generation later)
    */
   private async renderPdf(
     sections: Record<string, Record<string, string>>,

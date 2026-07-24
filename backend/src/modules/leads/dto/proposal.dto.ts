@@ -1,9 +1,10 @@
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
-
+import { IsNumber } from 'class-validator';
+import { Type } from 'class-transformer';
 export class ProposalDto {
-  @IsString()
-  @IsNotEmpty()
-  amount: string;
+  @Type(() => Number)
+  @IsNumber()
+  amount: number;
 
   @IsOptional()
   @IsString()
