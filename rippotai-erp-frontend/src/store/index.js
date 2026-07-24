@@ -26,6 +26,7 @@ import { calendarApi } from "../api/calendar.api";
 import { dashboardApi } from "../api/dashboard.api";
 import { leadsApi } from "../api/leads.api";
 import { searchApi } from "../api/search.api";
+import { termsApi } from "../api/terms.api";
 // -------------------------------
 // API LIST (clean management layer)
 // -------------------------------
@@ -55,6 +56,7 @@ const apiReducers = {
   [dashboardApi.reducerPath]: dashboardApi.reducer,
   [leadsApi.reducerPath]: leadsApi.reducer,
   [searchApi.reducerPath]: searchApi.reducer,
+  [termsApi.reducerPath]: termsApi.reducer,
 };
 
 const apiMiddlewares = [
@@ -78,6 +80,7 @@ const apiMiddlewares = [
   documentApi.middleware,
   leadsApi.middleware,
   cdnApi.middleware,
+  termsApi.middleware,
   drawingApi.middleware,
   rekiApi.middleware,
   briefApi.middleware,

@@ -232,6 +232,7 @@ export const APP_MENUS = {
         I("Users", "users"),
         I("Roles & Permissions", "roles-permissions"),
         I("Super Admin", "super-admin"),
+        I("Terms & Conditions", "terms-and-conditions"),
       ],
     },
   ],

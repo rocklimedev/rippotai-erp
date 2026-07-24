@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { SearchModule } from '../search/search.module'; // <-- ADD THIS
 
 // Models owned by this module
 import { Boq } from './models/boq.model';
@@ -30,7 +29,7 @@ import { BoqActivityController } from './boq-activity.controller';
 import { BoqVersion } from './models/boq-version.model';
 import { BoqVersionService } from './boq-version.service';
 import { BoqDashboardService } from './boq-dashboard.service';
-import { BoqSearchService } from '../search/services/boq-search.service';
+import { TermsModule } from '../metas/terms.module';
 
 @Module({
   imports: [
@@ -49,6 +48,7 @@ import { BoqSearchService } from '../search/services/boq-search.service';
       Unit,
       User,
     ]),
+    TermsModule,
   ],
   controllers: [
     BoqController,

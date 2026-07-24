@@ -32,6 +32,9 @@ import { BoqActivityService } from './boq-activity.service';
 import { BoqVersionService } from './boq-version.service';
 import { BoqActivityAction, BoqStatus } from '@/common/enums/boq-enums';
 import { User } from '../users/models/user.model';
+import { TermsService } from '../metas/terms.service';
+import { ApplyTermsDto } from '../metas/dto/apply-terms.dto';
+
 const LOCKED_STATUSES = [
   BoqStatus.APPROVED,
   BoqStatus.FINAL,
@@ -93,6 +96,7 @@ export class BoqService {
     private readonly sequelize: Sequelize,
     private readonly activity: BoqActivityService,
     private readonly boqVersionService: BoqVersionService,
+    private readonly termsService: TermsService,
   ) {}
 
   async findAll(project_id?: string) {
@@ -179,6 +183,10 @@ export class BoqService {
    * is created with boq_id pointing at this same boq, and the boq's
    * boq_version_id is set to that row. Every later clone
    * (see cloneAsNewVersion) chains off this root.
+   *
+   * If dto.terms_template_id is supplied, the terms snapshot is applied
+   * in the same transaction via applyTermsInternal — see applyTerms()
+   * for why this is a snapshot-copy rather than a live reference.
    */
   async create(dto: CreateBoqDto, actorId?: string) {
     const project = await this.projectModel.findByPk(dto.project_id);
@@ -286,6 +294,12 @@ export class BoqService {
         t,
       );
 
+      const dtoTermsTemplateId = (dto as Partial<{ terms_template_id: string }>)
+        .terms_template_id;
+      if (dtoTermsTemplateId) {
+        await this.applyTermsInternal(boq, dtoTermsTemplateId, undefined, t);
+      }
+
       await this.activity.log({
         boq_id: boq.id,
         user_id: actorId,
@@ -333,6 +347,59 @@ export class BoqService {
     });
 
     return { id, deleted: true };
+  }
+
+  // ---------- Terms & conditions ----------
+
+  /**
+   * Applies a TermsTemplate (optionally pinned to a historical version)
+   * to this BOQ by copying its content into terms_html and recording
+   * which template/version it came from. This is always a copy, never
+   * a live reference — so if someone edits the master TermsTemplate
+   * tomorrow, an already-approved BOQ's PDF still shows exactly what
+   * the client agreed to.
+   *
+   * Locked BOQs are excluded, same as any other content edit — create
+   * a new version first if terms need to change on an approved BOQ.
+   */
+  async applyTerms(id: string, dto: ApplyTermsDto, actorId?: string) {
+    const boq = await this.getOrThrow(id);
+    this.assertEditable(boq);
+
+    await this.sequelize.transaction(async (t: Transaction) => {
+      await this.applyTermsInternal(boq, dto.terms_template_id, dto.version, t);
+    });
+
+    await this.activity.log({
+      boq_id: id,
+      user_id: actorId,
+      action: BoqActivityAction.UPDATED,
+      target: `BOQ · ${boq.title}`,
+      details: `Terms & conditions applied from template ${dto.terms_template_id}`,
+    });
+
+    return this.findOne(id);
+  }
+
+  private async applyTermsInternal(
+    boq: Boq,
+    termsTemplateId: string,
+    version: number | undefined,
+    t: Transaction,
+  ) {
+    const snapshot = await this.termsService.resolveSnapshot(
+      termsTemplateId,
+      version,
+    );
+
+    await boq.update(
+      {
+        terms_html: snapshot.content_html,
+        terms_template_id: snapshot.terms_template_id,
+        terms_template_version: snapshot.terms_template_version,
+      },
+      { transaction: t },
+    );
   }
 
   // ---------- Workflow: submit / approve / lock ----------
@@ -407,6 +474,11 @@ export class BoqService {
    * `source.id` itself if `source` has no boq_version_id yet — e.g. a
    * legacy row created before versioning existed) and create a new
    * BoqVersion row under that same root for the clone.
+   *
+   * terms_html is carried over verbatim along with the
+   * terms_template_id/terms_template_version reference — the clone
+   * keeps exactly the terms wording the source had, even if the
+   * underlying TermsTemplate has since moved to a newer version.
    */
   async cloneAsNewVersion(
     id: string,
@@ -433,6 +505,8 @@ export class BoqService {
           prepared_by: source.prepared_by,
           date: source.date,
           terms_html: source.terms_html,
+          terms_template_id: source.terms_template_id,
+          terms_template_version: source.terms_template_version,
           misc_pct: source.misc_pct,
           design_amount: source.design_amount,
           execution_amount: source.execution_amount,
@@ -1027,21 +1101,23 @@ export class BoqService {
         0,
       ),
     }));
+
     plain.items = plain.categories.flatMap((c) => c.items ?? []);
 
     const lineItemsTotal = plain.items.reduce(
       (sum, i) => sum + Number(i.amount || 0),
       0,
     );
+
     const projectTotal =
       lineItemsTotal +
       Number(plain.design_amount || 0) +
       Number(plain.execution_amount || 0) +
       Number(plain.supervisor_amount || 0) +
       Number(plain.additional_total || 0);
-    const miscAmount =
-      Math.round(projectTotal * (Number(plain.misc_pct || 0) / 100) * 100) /
-      100;
+
+    // Do not calculate misc amount
+    const miscAmount = 0;
 
     plain.project_total = Math.round(projectTotal * 100) / 100;
     plain.misc_amount = miscAmount;

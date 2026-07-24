@@ -26,6 +26,7 @@ import { CalendarModule } from './modules/calendar/calendar.module';
 import { DashboardsModule } from './modules/dashboard/dashboard.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { SearchModule } from './modules/search/search.module';
+import { TermsModule } from './modules/metas/terms.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -60,6 +61,7 @@ import { SearchModule } from './modules/search/search.module';
     BriefModule,
     SiteRecceModule,
     SearchModule,
+    TermsModule,
     TasksModule,
     CalendarModule,
     DashboardsModule,

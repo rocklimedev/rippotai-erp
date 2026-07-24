@@ -51,6 +51,7 @@ import {
   useCreateBoqNewVersionMutation,
   useExportBoqExcelMutation,
   useExportBoqPdfMutation,
+  useApplyBoqTermsMutation,
 } from "../../api/boq.api";
 import { isBoqDisabled } from "../../hooks/constants";
 import { SaveChip } from "../../components/boqs/StatusIndicators";
@@ -85,6 +86,8 @@ export default function BoqWorkspace() {
     useCreateBoqNewVersionMutation();
   const [exportExcel] = useExportBoqExcelMutation();
   const [exportPdf] = useExportBoqPdfMutation();
+  const [applyBoqTerms, { isLoading: applyingTerms }] =
+    useApplyBoqTermsMutation();
 
   const [saveState, setSaveState] = useState("idle");
   const [addCatOpen, setAddCatOpen] = useState(false);
@@ -106,9 +109,10 @@ export default function BoqWorkspace() {
   const withSaveChip = async (promise) => {
     setSaveState("saving");
     try {
-      await promise;
+      const result = await promise;
       setSaveState("saved");
       setTimeout(() => setSaveState((s) => (s === "saved" ? "idle" : s)), 1500);
+      return result;
     } catch (e) {
       if (e?.status === 423 || e?.originalStatus === 423) {
         toast.error("This BOQ is locked. Duplicate to edit.");
@@ -116,6 +120,7 @@ export default function BoqWorkspace() {
         toast.error("Save failed");
       }
       setSaveState("error");
+      return undefined;
     }
   };
 
@@ -126,6 +131,16 @@ export default function BoqWorkspace() {
 
   const patchItem = (itemId, patch) =>
     withSaveChip(updateItem({ boqId: id, itemId, ...patch }).unwrap());
+
+  const handleApplyTerms = (termsTemplateId, version) =>
+    withSaveChip(
+      applyBoqTerms({ id, terms_template_id: termsTemplateId, version })
+        .unwrap()
+        .then((updated) => {
+          toast.success("Terms applied");
+          return updated;
+        }),
+    );
 
   const toggleHide = async (itemId, hide) => {
     try {
@@ -646,6 +661,8 @@ export default function BoqWorkspace() {
           onLockedEdit={onLockedEdit}
           onSaveTerms={(terms_html) => debouncedUpdateBoq({ terms_html })}
           onSaveMiscPct={(misc_pct) => debouncedUpdateBoq({ misc_pct })}
+          onApplyTerms={handleApplyTerms}
+          applyingTerms={applyingTerms}
         />
       </main>
 
