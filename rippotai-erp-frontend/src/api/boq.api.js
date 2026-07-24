@@ -151,7 +151,14 @@ export const boqApi = createApi({
         { type: "BOQ_VERSION", id: vs },
       ],
     }),
-
+    applyBoqTerms: builder.mutation({
+      query: ({ id, terms_template_id, version }) => ({
+        url: `/boqs/${id}/terms`,
+        method: "PATCH",
+        body: { terms_template_id, version },
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: "Boq", id }],
+    }),
     // ==========================
     // BOQ Categories
     // ==========================
@@ -561,7 +568,7 @@ export const {
   useReorderTemplateItemsMutation,
 
   useGetActivityQuery,
-
+  useApplyBoqTermsMutation,
   useGetLibraryCategoriesQuery,
   useCreateLibraryCategoryMutation,
   useGetLibraryItemsQuery,

@@ -10,6 +10,7 @@ import {
   Res,
   BadRequestException,
 } from '@nestjs/common';
+import { Req } from '@nestjs/common';
 import type { Response } from 'express';
 import { BoqService } from './boq.service';
 import { BoqExportService, PdfVariant } from './boq-export.service';
@@ -30,6 +31,7 @@ import {
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
 import { User } from '@/modules/users/models/user.model';
 import { BoqDashboardService } from './boq-dashboard.service';
+import { ApplyTermsDto } from '../metas/dto/apply-terms.dto';
 
 const PDF_VARIANTS: readonly PdfVariant[] = [
   'internal',
@@ -199,6 +201,14 @@ export class BoqController {
     return this.boqService.addCategory(id, dto, user?.id);
   }
 
+  @Patch(':id/terms')
+  applyTerms(
+    @Param('id') id: string,
+    @Body() dto: ApplyTermsDto,
+    @Req() req: any,
+  ) {
+    return this.boqService.applyTerms(id, dto, req.user?.id);
+  }
   @Patch(':id/categories/:categoryId')
   updateCategory(
     @Param('id') id: string,

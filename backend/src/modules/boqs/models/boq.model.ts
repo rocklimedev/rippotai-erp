@@ -16,7 +16,7 @@ import { BoqStatus } from '@/common/enums/boq-enums';
 import { BoqTemplate } from './boq-template.model';
 import { BoqCategory } from './boq-category.model';
 import { BoqVersion } from './boq-version.model';
-
+import { TermsTemplate } from '@/modules/metas/models/terms-templates.model';
 @Table({
   tableName: 'boqs',
   timestamps: true,
@@ -99,8 +99,30 @@ export class Boq extends Model<Boq> {
   @Column(DataType.DATEONLY)
   declare date: string | null;
 
+  // Frozen snapshot of the applicable terms & conditions at the time
+  // they were applied. Never edited directly by the user — it's
+  // written by BoqService.applyTerms()/cloneAsNewVersion() from a
+  // TermsTemplate (see terms_template_id below). Editing the source
+  // TermsTemplate later never changes this value, so an approved BOQ's
+  // PDF never silently changes underneath it.
   @Column(DataType.TEXT)
   declare terms_html: string | null;
+
+  @ForeignKey(() => TermsTemplate)
+  @Column({
+    type: DataType.CHAR(36),
+    allowNull: true,
+  })
+  declare terms_template_id: string | null;
+
+  // Which version of terms_template_id was snapshotted into
+  // terms_html. Null if terms_html was hand-typed/legacy and never
+  // came from a template.
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+  })
+  declare terms_template_version: number | null;
 
   @Column({
     type: DataType.DECIMAL(5, 2),
@@ -168,6 +190,12 @@ export class Boq extends Model<Boq> {
     as: 'currentVersion',
   })
   declare currentVersion: BoqVersion;
+
+  @BelongsTo(() => TermsTemplate, {
+    foreignKey: 'terms_template_id',
+    as: 'termsTemplate',
+  })
+  declare termsTemplate: TermsTemplate;
 
   @BelongsTo(() => User, {
     foreignKey: 'created_by',
