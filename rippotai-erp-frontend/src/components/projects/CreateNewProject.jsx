@@ -1,9 +1,13 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
-import { X } from "lucide-react";
+import { X, Plus } from "lucide-react";
 
 import { useCreateProjectMutation } from "../../api/project.api";
 import { useGetProjectTypesQuery } from "../../api/project-type.api";
+import {
+  useGetClientsQuery,
+  useCreateClientMutation,
+} from "../../api/client.api";
 
 /**
  * NewProjectModal
@@ -12,38 +16,102 @@ import { useGetProjectTypesQuery } from "../../api/project-type.api";
  * project.api.js. On success it calls onCreated(project) so the parent
  * (e.g. BoqNew) can auto-select the freshly created project.
  *
- * NOTE: client is still a plain text field because there's no client list
- * API wired into this file yet. If you have useGetClientsQuery, swap the
- * client input for a select the same way project_type was done below.
+ * Client is now a real relation: pulled from useGetClientsQuery and sent
+ * as client_id on submit. An inline "+ Add New Client" affordance lets the
+ * user create a client on the fly via useCreateClientMutation without
+ * leaving the modal; the new client is auto-selected once created.
  */
 export default function NewProjectModal({ open, onClose, onCreated }) {
   const [name, setName] = useState("");
   const [siteLocation, setSiteLocation] = useState("");
-  const [clientName, setClientName] = useState("");
+  const [clientId, setClientId] = useState("");
   const [projectTypeId, setProjectTypeId] = useState("");
   const [priority, setPriority] = useState("MEDIUM");
   const [expectedCompletionDate, setExpectedCompletionDate] = useState("");
   const [description, setDescription] = useState("");
 
+  // Inline "new client" mini-form state
+  const [showNewClient, setShowNewClient] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientEmail, setNewClientEmail] = useState("");
+  const [newClientPhone, setNewClientPhone] = useState("");
+
   const [createProject, { isLoading: busy }] = useCreateProjectMutation();
   const { data: projectTypes = [], isLoading: projectTypesLoading } =
     useGetProjectTypesQuery(undefined, { skip: !open });
+
+  const {
+    data: clients = [],
+    isLoading: clientsLoading,
+    isFetching: clientsFetching,
+  } = useGetClientsQuery(undefined, { skip: !open });
+
+  const [createClient, { isLoading: creatingClient }] =
+    useCreateClientMutation();
 
   if (!open) return null;
 
   const reset = () => {
     setName("");
     setSiteLocation("");
-    setClientName("");
+    setClientId("");
     setProjectTypeId("");
     setPriority("MEDIUM");
     setExpectedCompletionDate("");
     setDescription("");
+    setShowNewClient(false);
+    setNewClientName("");
+    setNewClientEmail("");
+    setNewClientPhone("");
   };
 
   const handleClose = () => {
     reset();
     onClose();
+  };
+
+  const handleClientSelectChange = (e) => {
+    const value = e.target.value;
+    if (value === "__new__") {
+      setShowNewClient(true);
+      setClientId("");
+      return;
+    }
+    setShowNewClient(false);
+    setClientId(value);
+  };
+
+  const cancelNewClient = () => {
+    setShowNewClient(false);
+    setNewClientName("");
+    setNewClientEmail("");
+    setNewClientPhone("");
+  };
+
+  const saveNewClient = async () => {
+    if (!newClientName.trim()) {
+      toast.error("Client name is required.");
+      return;
+    }
+
+    try {
+      const client = await createClient({
+        name: newClientName.trim(),
+        email: newClientEmail.trim() || undefined,
+        phone: newClientPhone.trim() || undefined,
+      }).unwrap();
+
+      toast.success("Client created.");
+      setClientId(client.id);
+      setShowNewClient(false);
+      setNewClientName("");
+      setNewClientEmail("");
+      setNewClientPhone("");
+    } catch (err) {
+      toast.error(
+        err?.data?.message || err?.data?.detail || "Failed to create client.",
+      );
+    }
   };
 
   const submit = async (e) => {
@@ -63,7 +131,7 @@ export default function NewProjectModal({ open, onClose, onCreated }) {
       const project = await createProject({
         name: name.trim(),
         site_location: siteLocation.trim(),
-        client_name: clientName || undefined,
+        client_id: clientId || undefined,
         project_type_id: projectTypeId || undefined,
         priority,
         expected_completion_date: expectedCompletionDate || undefined,
@@ -129,12 +197,26 @@ export default function NewProjectModal({ open, onClose, onCreated }) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block mb-2 text-sm font-medium">Client</label>
-              <input
+              <select
                 className="bc-input"
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                placeholder="Client name"
-              />
+                value={showNewClient ? "__new__" : clientId}
+                onChange={handleClientSelectChange}
+                disabled={clientsLoading}
+              >
+                <option value="">
+                  {clientsLoading || clientsFetching
+                    ? "Loading..."
+                    : "Select Client"}
+                </option>
+
+                {clients.map((client) => (
+                  <option key={client.id} value={client.id}>
+                    {client.name}
+                  </option>
+                ))}
+
+                <option value="__new__">+ Add New Client</option>
+              </select>
             </div>
 
             <div>
@@ -159,6 +241,55 @@ export default function NewProjectModal({ open, onClose, onCreated }) {
               </select>
             </div>
           </div>
+
+          {showNewClient && (
+            <div className="rounded-xl border border-dashed p-4 space-y-3 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium flex items-center gap-1.5">
+                  <Plus size={14} /> New Client
+                </p>
+                <button
+                  type="button"
+                  onClick={cancelNewClient}
+                  className="text-xs text-gray-400 hover:text-black"
+                >
+                  Cancel
+                </button>
+              </div>
+
+              <input
+                className="bc-input"
+                value={newClientName}
+                onChange={(e) => setNewClientName(e.target.value)}
+                placeholder="Client name *"
+              />
+
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  className="bc-input"
+                  value={newClientEmail}
+                  onChange={(e) => setNewClientEmail(e.target.value)}
+                  placeholder="Email (optional)"
+                  type="email"
+                />
+                <input
+                  className="bc-input"
+                  value={newClientPhone}
+                  onChange={(e) => setNewClientPhone(e.target.value)}
+                  placeholder="Phone (optional)"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={saveNewClient}
+                disabled={creatingClient}
+                className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-sm"
+              >
+                {creatingClient ? "Saving..." : "Save Client"}
+              </button>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>

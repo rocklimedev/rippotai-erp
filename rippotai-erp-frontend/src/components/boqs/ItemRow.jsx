@@ -216,6 +216,21 @@ export function ItemRow({
         className="min-w-[280px]"
       />
 
+      {/* NOTES */}
+
+      <EditableCell
+        value={item.notes || ""}
+        onChange={(v) =>
+          onPatch({
+            notes: v,
+          })
+        }
+        disabled={disabled}
+        onLockedEdit={onLockedEdit}
+        testid={`item-notes-${item.id}`}
+        className="min-w-[280px]"
+      />
+
       {/* LOCATION */}
 
       <EditableCell

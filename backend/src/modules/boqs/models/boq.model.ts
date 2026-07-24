@@ -9,7 +9,7 @@ import {
   BelongsTo,
   HasMany,
 } from 'sequelize-typescript';
-
+import { BoqMiscellaneous } from './boq-miscellaneous.model';
 import { Project } from '@/modules/projects/models/projects.model';
 import { User } from '@/modules/users/models/user.model';
 import { BoqStatus } from '@/common/enums/boq-enums';
@@ -219,6 +219,11 @@ export class Boq extends Model<Boq> {
     foreignKey: 'boq_id',
     as: 'categories',
   })
+  @HasMany(() => BoqMiscellaneous, {
+    foreignKey: 'boq_id',
+    as: 'miscellaneous',
+  })
+  declare miscellaneous: BoqMiscellaneous[];
   declare categories: BoqCategory[];
   @Column(DataType.DATE)
   declare created_at: Date;

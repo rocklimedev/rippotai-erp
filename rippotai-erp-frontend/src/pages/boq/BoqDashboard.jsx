@@ -5,9 +5,8 @@ import {
   useDuplicateBoqVersionMutation,
   useCreateBoqNewVersionMutation,
   useLazyGetBoqVersionHistoryQuery,
-  // Add these when you create them in boqApi:
-  // useGetBoqsSummaryQuery,
-} from "../../api/boq.api"; // ← adjust import path
+  useCombineBoqsMutation, // ← Added
+} from "../../api/boq.api";
 import { useGetProjectsQuery } from "../../api/project.api";
 import { formatINR, relativeTime } from "@/lib/format";
 import { toast } from "sonner";
@@ -25,6 +24,7 @@ import {
   Eye,
   Archive,
   Download,
+  Combine, // ← New icon for combine
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -48,9 +48,6 @@ const STATUS_META = {
   archived: { label: "Archived", bg: "#B5C4B6", fg: "#6B7B7C" },
 };
 
-// Statuses where the BOQ is priced/locked and editing requires spinning
-// off a new version rather than editing in place — mirrors
-// LOCKED_STATUSES in BoqService on the backend.
 const LOCKED_STATUSES = ["approved", "final", "awaiting_approval"];
 
 function StatusChip({ status }) {
@@ -75,6 +72,13 @@ export default function BoqDashboard() {
     q: "",
   });
 
+  const [selectedBoqs, setSelectedBoqs] = useState(new Set());
+  // TODO: Replace this with real RTK Query when you add the endpoint
+  const [summary, setSummary] = useState(null);
+  useEffect(() => {
+    // Temporary fallback - replace with useGetBoqsSummaryQuery()
+    // api.get("/boqs/summary").then(r => setSummary(r.data));
+  }, []);
   // Sync with URL on back/forward navigation
   useEffect(() => {
     const statusFromUrl =
@@ -85,18 +89,14 @@ export default function BoqDashboard() {
   }, [location.search]);
 
   // ==================== RTK Query ====================
-  const {
-    data: rows = [],
-    isLoading: isBoqsLoading,
-    isError,
-  } = useGetBoqsQuery({
+  const { data: rows = [], isLoading: isBoqsLoading } = useGetBoqsQuery({
     project_id: filters.project_id || undefined,
     status: filters.status || undefined,
     q: filters.q || undefined,
   });
 
   const { data: projects = [] } = useGetProjectsQuery({
-    limit: 100, // or remove limit if your endpoint supports it
+    limit: 100,
   });
 
   const [duplicateVersion, { isLoading: isDuplicating }] =
@@ -104,19 +104,12 @@ export default function BoqDashboard() {
   const [createNewVersion, { isLoading: isVersioning }] =
     useCreateBoqNewVersionMutation();
   const [fetchVersionHistory] = useLazyGetBoqVersionHistoryQuery();
-
-  // TODO: Replace this with real RTK Query when you add the endpoint
-  const [summary, setSummary] = useState(null);
-  useEffect(() => {
-    // Temporary fallback - replace with useGetBoqsSummaryQuery()
-    // api.get("/boqs/summary").then(r => setSummary(r.data));
-  }, []);
+  const [combineBoqs, { isLoading: isCombining }] = useCombineBoqsMutation(); // ← New
 
   const filterByStatus = (status) => {
     const qs = status ? `?status=${status}` : "";
     nav(`/boq/all${qs}`);
   };
-
   const summaryCards = [
     { k: "total", l: "Total BOQs", v: summary?.total ?? "—", status: "" },
     {
@@ -145,17 +138,56 @@ export default function BoqDashboard() {
     },
   ];
 
-  // ==================== Actions ====================
+  // ==================== Combine Handler ====================
+  const handleCombine = async () => {
+    if (selectedBoqs.size < 2) {
+      toast.error("Please select at least 2 BOQs to combine");
+      return;
+    }
 
-  // "Duplicate Version" — always available. Spins off a new draft
-  // (version + 1) from this BOQ, whether or not it's locked, with an
-  // optional reason recorded on the activity log and the version label.
+    const title = window.prompt(
+      "Enter a name for the combined BOQ:",
+      `Combined BOQ - ${new Date().toLocaleDateString()}`,
+    );
+
+    if (title === null) return; // User cancelled
+
+    try {
+      const result = await combineBoqs({
+        boqIds: Array.from(selectedBoqs),
+        title: title.trim() || undefined,
+      }).unwrap();
+
+      toast.success("BOQs combined successfully!");
+      setSelectedBoqs(new Set()); // Clear selection
+      nav(`/boq/${result.id}`);
+    } catch (err) {
+      toast.error(err?.data?.message || "Failed to combine BOQs");
+    }
+  };
+
+  const toggleSelect = (id) => {
+    const newSet = new Set(selectedBoqs);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setSelectedBoqs(newSet);
+  };
+
+  const selectAll = () => {
+    if (selectedBoqs.size === rows.length) {
+      setSelectedBoqs(new Set());
+    } else {
+      setSelectedBoqs(new Set(rows.map((b) => b.id)));
+    }
+  };
+
+  // ==================== Existing Actions ====================
   const duplicate = async (id) => {
     const reason = window.prompt(
       "Reason for duplicating this version (optional):",
       "",
     );
-    if (reason === null) return; // user cancelled the prompt
+    if (reason === null) return;
 
     try {
       const result = await duplicateVersion({
@@ -169,8 +201,6 @@ export default function BoqDashboard() {
     }
   };
 
-  // "Create New Version" — only meaningful for a locked/approved BOQ,
-  // which can no longer be edited in place. Skips the reason prompt.
   const createVersion = async (id) => {
     try {
       const result = await createNewVersion({ id }).unwrap();
@@ -181,9 +211,6 @@ export default function BoqDashboard() {
     }
   };
 
-  // "Version History" — fetches the full lineage (oldest → newest) for
-  // whichever BOQ id is clicked; works regardless of which version in
-  // the family you start from.
   const viewVersionHistory = async (id) => {
     try {
       const history = await fetchVersionHistory(id).unwrap();
@@ -201,12 +228,7 @@ export default function BoqDashboard() {
   };
 
   const downloadBoq = async (b) => {
-    try {
-      // You can keep this as-is or create a mutation + download logic
-      toast.info("Download functionality - keep or migrate");
-    } catch (e) {
-      toast.error("Download failed");
-    }
+    toast.info("Download functionality - keep or migrate");
   };
 
   return (
@@ -227,6 +249,18 @@ export default function BoqDashboard() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Combine Button - Prominent when items selected */}
+          {selectedBoqs.size >= 2 && (
+            <button
+              onClick={handleCombine}
+              disabled={isCombining}
+              className="h-10 px-5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-[13px] font-semibold flex items-center gap-2 shadow-sm"
+            >
+              <Combine size={16} />
+              Combine {selectedBoqs.size} BOQs
+            </button>
+          )}
+
           <button
             onClick={() => nav("/boq/templates")}
             className="h-10 px-4 rounded-xl border border-[#B5C4B6] bg-white hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C] flex items-center gap-2"
@@ -247,7 +281,6 @@ export default function BoqDashboard() {
           </button>
         </div>
       </div>
-
       {/* Summary Cards */}
       <section
         className="grid grid-cols-2 md:grid-cols-5 gap-3"
@@ -331,6 +364,16 @@ export default function BoqDashboard() {
           <table className="w-full text-left">
             <thead>
               <tr className="text-[10.5px] uppercase tracking-widest text-[#B5C4B6] bg-[#EAEEF0] border-b border-[#B5C4B6]">
+                <th className="px-3 py-3 w-10">
+                  <input
+                    type="checkbox"
+                    checked={
+                      selectedBoqs.size === rows.length && rows.length > 0
+                    }
+                    onChange={selectAll}
+                    className="rounded"
+                  />
+                </th>
                 <th className="px-3 py-3 font-semibold">BOQ Number</th>
                 <th className="px-4 py-3 font-semibold">BOQ Title</th>
                 <th className="px-3 py-3 font-semibold">Client</th>
@@ -346,7 +389,7 @@ export default function BoqDashboard() {
               {isBoqsLoading &&
                 [1, 2, 3, 4].map((i) => (
                   <tr key={i} className="border-b border-[#B5C4B6]">
-                    {Array(9)
+                    {Array(10)
                       .fill(0)
                       .map((_, j) => (
                         <td key={j} className="px-3 py-4">
@@ -360,13 +403,26 @@ export default function BoqDashboard() {
                 rows.map((b) => {
                   const isLocked =
                     b.locked || LOCKED_STATUSES.includes(b.status);
+                  const isSelected = selectedBoqs.has(b.id);
 
                   return (
                     <tr
                       key={b.id}
-                      className="border-b border-[#B5C4B6] hover:bg-[#EAEEF0] cursor-pointer"
+                      className={`border-b border-[#B5C4B6] hover:bg-[#EAEEF0] cursor-pointer ${isSelected ? "bg-[#F0F7F4]" : ""}`}
                       onClick={() => nav(`/boq/${b.id}`)}
                     >
+                      <td
+                        className="px-3 py-3"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelect(b.id)}
+                          className="rounded"
+                        />
+                      </td>
+
                       <td className="px-3 py-3 whitespace-nowrap">
                         <span className="text-[12px] font-mono font-bold text-[#333333] bg-[#EAEEF0] px-2 py-0.5 rounded">
                           {b.boq_number || `BOQ-V${b.version || 1}`}
@@ -377,6 +433,7 @@ export default function BoqDashboard() {
                           </div>
                         )}
                       </td>
+
                       <td className="px-4 py-3 min-w-[220px]">
                         <div className="text-[13.5px] font-semibold text-[#333333]">
                           {b.project?.name || b.project_name}
@@ -385,26 +442,33 @@ export default function BoqDashboard() {
                           {b.title || "BOQ"}
                         </div>
                       </td>
+
                       <td className="px-3 py-3 text-[12.5px] text-[#6B7B7C]">
                         {b.client_name || b.project?.client?.name || "—"}
                       </td>
+
                       <td className="px-3 py-3">
                         <StatusChip status={b.status} />
                       </td>
+
                       <td className="px-3 py-3 text-[12.5px] text-[#6B7B7C] text-right">
                         {b.category_count ?? b.categories?.length ?? 0}
                       </td>
+
                       <td className="px-3 py-3 text-[12.5px] text-[#6B7B7C] text-right">
                         {b.item_count ?? 0}
                       </td>
+
                       <td className="px-3 py-3 text-[13px] font-semibold text-[#333333] text-right whitespace-nowrap">
                         {formatINR(
                           b.total_value ?? b.final_total ?? b.total_amount ?? 0,
                         )}
                       </td>
+
                       <td className="px-3 py-3 text-[11.5px] text-[#B5C4B6] whitespace-nowrap">
                         {relativeTime(b.updated_at)}
                       </td>
+
                       <td
                         className="px-3 py-3 text-right"
                         onClick={(e) => e.stopPropagation()}
@@ -474,7 +538,7 @@ export default function BoqDashboard() {
 
               {!isBoqsLoading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-14 text-center">
+                  <td colSpan={10} className="px-4 py-14 text-center">
                     <div className="w-12 h-12 mx-auto rounded-2xl bg-[#EAEEF0] flex items-center justify-center mb-3">
                       <FileSpreadsheet size={20} className="text-[#333333]" />
                     </div>

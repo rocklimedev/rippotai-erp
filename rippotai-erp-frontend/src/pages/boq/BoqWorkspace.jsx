@@ -45,6 +45,9 @@ import {
   useDeleteBoqItemMutation,
   useReorderBoqItemsMutation,
   useBulkUpdateBoqItemsMutation,
+  useAddBoqMiscellaneousMutation,
+  useUpdateBoqMiscellaneousMutation,
+  useDeleteBoqMiscellaneousMutation,
   useSubmitBoqForApprovalMutation,
   useApproveBoqMutation,
   useDuplicateBoqVersionMutation,
@@ -79,6 +82,9 @@ export default function BoqWorkspace() {
   const [deleteItem] = useDeleteBoqItemMutation();
   const [reorderItems] = useReorderBoqItemsMutation();
   const [bulkUpdateItems] = useBulkUpdateBoqItemsMutation();
+  const [addMiscellaneous] = useAddBoqMiscellaneousMutation();
+  const [updateMiscellaneous] = useUpdateBoqMiscellaneousMutation();
+  const [deleteMiscellaneous] = useDeleteBoqMiscellaneousMutation();
   const [submitForApproval] = useSubmitBoqForApprovalMutation();
   const [approveBoq] = useApproveBoqMutation();
   const [duplicateVersion] = useDuplicateBoqVersionMutation();
@@ -141,6 +147,37 @@ export default function BoqWorkspace() {
           return updated;
         }),
     );
+
+  // ---- Miscellaneous entries (Contingency, Mobilization, etc.) ----
+
+  const handleAddMisc = async (payload) => {
+    try {
+      await withSaveChip(addMiscellaneous({ boqId: id, ...payload }).unwrap());
+      toast.success("Miscellaneous entry added");
+    } catch {
+      toast.error("Failed to add entry");
+    }
+  };
+
+  const handleUpdateMisc = async (miscId, payload) => {
+    try {
+      await withSaveChip(
+        updateMiscellaneous({ boqId: id, miscId, ...payload }).unwrap(),
+      );
+      toast.success("Miscellaneous entry updated");
+    } catch {
+      toast.error("Failed to update entry");
+    }
+  };
+
+  const handleDeleteMisc = async (miscId) => {
+    try {
+      await withSaveChip(deleteMiscellaneous({ boqId: id, miscId }).unwrap());
+      toast.success("Miscellaneous entry removed");
+    } catch {
+      toast.error("Failed to remove entry");
+    }
+  };
 
   const toggleHide = async (itemId, hide) => {
     try {
@@ -609,6 +646,7 @@ export default function BoqWorkspace() {
                       S. No.
                     </th>
                     <th className="p-2 text-left">Description</th>
+                    <th className="p-2 text-left w-[120px]">Notes</th>
                     <th className="p-2 text-left w-[120px]">Location</th>
                     <th className="p-2 text-left w-[92px]">Unit</th>
                     <th className="p-2 text-right w-[80px]">Quantity</th>
@@ -663,6 +701,9 @@ export default function BoqWorkspace() {
           onSaveMiscPct={(misc_pct) => debouncedUpdateBoq({ misc_pct })}
           onApplyTerms={handleApplyTerms}
           applyingTerms={applyingTerms}
+          onAddMisc={handleAddMisc}
+          onUpdateMisc={handleUpdateMisc}
+          onDeleteMisc={handleDeleteMisc}
         />
       </main>
 

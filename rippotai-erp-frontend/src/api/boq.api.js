@@ -109,7 +109,17 @@ export const boqApi = createApi({
         { type: "BOQ_VERSION", id },
       ],
     }),
-
+    // ==========================
+    // Combine Multiple BOQs
+    // ==========================
+    combineBoqs: builder.mutation({
+      query: (body) => ({
+        url: "/boqs/combine",
+        method: "POST",
+        body, // { boqIds: string[], title?: string, versionName?: string }
+      }),
+      invalidatesTags: ["BOQ"],
+    }),
     createBoqNewVersion: builder.mutation({
       query: ({ id }) => ({
         url: `/boqs/${id}/new-version`,
@@ -249,6 +259,57 @@ export const boqApi = createApi({
         url: `/boqs/${boqId}/items/bulk`,
         method: "POST",
         body: { ids, op, value },
+      }),
+      invalidatesTags: (result, error, { boqId }) => [
+        { type: "BOQ", id: boqId },
+      ],
+    }),
+
+    // ==========================
+    // BOQ Miscellaneous
+    // ==========================
+    // Free-form named financial entries (e.g. "Contingency",
+    // "Mobilization charge") that don't fit the category/item structure.
+    // Their sum feeds misc_amount / final_total on the BOQ payload —
+    // see BoqService.withComputedTotals on the backend.
+
+    addBoqMiscellaneous: builder.mutation({
+      query: ({ boqId, ...body }) => ({
+        url: `/boqs/${boqId}/miscellaneous`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (result, error, { boqId }) => [
+        { type: "BOQ", id: boqId },
+      ],
+    }),
+
+    updateBoqMiscellaneous: builder.mutation({
+      query: ({ boqId, miscId, ...body }) => ({
+        url: `/boqs/${boqId}/miscellaneous/${miscId}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: (result, error, { boqId }) => [
+        { type: "BOQ", id: boqId },
+      ],
+    }),
+
+    deleteBoqMiscellaneous: builder.mutation({
+      query: ({ boqId, miscId }) => ({
+        url: `/boqs/${boqId}/miscellaneous/${miscId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, { boqId }) => [
+        { type: "BOQ", id: boqId },
+      ],
+    }),
+
+    reorderBoqMiscellaneous: builder.mutation({
+      query: ({ boqId, orderedIds }) => ({
+        url: `/boqs/${boqId}/miscellaneous/reorder`,
+        method: "POST",
+        body: { ordered_ids: orderedIds },
       }),
       invalidatesTags: (result, error, { boqId }) => [
         { type: "BOQ", id: boqId },
@@ -547,6 +608,11 @@ export const {
   useReorderBoqItemsMutation,
   useBulkUpdateBoqItemsMutation,
 
+  useAddBoqMiscellaneousMutation,
+  useUpdateBoqMiscellaneousMutation,
+  useDeleteBoqMiscellaneousMutation,
+  useReorderBoqMiscellaneousMutation,
+  useCombineBoqsMutation,
   useExportBoqExcelMutation,
   useExportBoqPdfMutation,
   useGetBoqPdfThumbnailQuery,

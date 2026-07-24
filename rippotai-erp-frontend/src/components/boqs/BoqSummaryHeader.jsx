@@ -67,7 +67,7 @@ export function BoqSummaryHeader({ boq, disabled }) {
                 Prepared By
               </div>
               <div className="text-[#333333] mt-0.5">
-                {boq.prepared_by || "—"}
+                {boq?.project?.creator?.name || "—"}
               </div>
             </div>
 
