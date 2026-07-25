@@ -1,31 +1,6 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { API_URL } from "../lib/config";
-const baseQuery = fetchBaseQuery({
-  baseUrl: API_URL,
-  credentials: "include",
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem("bc_token"); // aligned with AuthContext
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-    const cdnToken = import.meta.env.VITE_CDN_TOKEN;
-    if (cdnToken) {
-      headers.set("x-cdn-secret", cdnToken);
-    }
-    return headers;
-  },
-});
+import { baseApi } from "../store/baseApi";
 
-export const quotationApi = createApi({
-  reducerPath: "quotationApi",
-  baseQuery,
-  tagTypes: [
-    "Quotations",
-    "QuotationItems",
-    "QuotationVersions",
-    "QuotationDashboard",
-  ],
-
+export const quotationApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // =========================
     // QUOTATIONS
@@ -37,7 +12,7 @@ export const quotationApi = createApi({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Quotations"],
+      invalidatesTags: ["Quotation"],
     }),
 
     getQuotations: builder.query({
@@ -52,12 +27,12 @@ export const quotationApi = createApi({
 
         return `/quotations?${params.toString()}`;
       },
-      providesTags: ["Quotations"],
+      providesTags: ["Quotation"],
     }),
 
     getQuotationById: builder.query({
       query: (id) => `/quotations/${id}`,
-      providesTags: ["Quotations"],
+      providesTags: ["Quotation"],
     }),
 
     updateQuotation: builder.mutation({
@@ -66,7 +41,7 @@ export const quotationApi = createApi({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["Quotations"],
+      invalidatesTags: ["Quotation"],
     }),
 
     submitQuotation: builder.mutation({
@@ -75,7 +50,7 @@ export const quotationApi = createApi({
         method: "PATCH",
         body: { submitted_by },
       }),
-      invalidatesTags: ["Quotations"],
+      invalidatesTags: ["Quotation"],
     }),
 
     approveQuotation: builder.mutation({
@@ -84,7 +59,7 @@ export const quotationApi = createApi({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["Quotations"],
+      invalidatesTags: ["Quotation"],
     }),
 
     returnQuotation: builder.mutation({
@@ -93,7 +68,7 @@ export const quotationApi = createApi({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["Quotations"],
+      invalidatesTags: ["Quotation"],
     }),
 
     declineQuotation: builder.mutation({
@@ -102,7 +77,7 @@ export const quotationApi = createApi({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["Quotations"],
+      invalidatesTags: ["Quotation"],
     }),
 
     cancelQuotation: builder.mutation({
@@ -111,7 +86,7 @@ export const quotationApi = createApi({
         method: "PATCH",
         body: { updated_by },
       }),
-      invalidatesTags: ["Quotations"],
+      invalidatesTags: ["Quotation"],
     }),
 
     restoreQuotation: builder.mutation({
@@ -119,7 +94,7 @@ export const quotationApi = createApi({
         url: `/quotations/${id}/restore`,
         method: "PATCH",
       }),
-      invalidatesTags: ["Quotations"],
+      invalidatesTags: ["Quotation"],
     }),
 
     softDeleteQuotation: builder.mutation({
@@ -128,7 +103,7 @@ export const quotationApi = createApi({
         method: "DELETE",
         body: { deleted_by },
       }),
-      invalidatesTags: ["Quotations"],
+      invalidatesTags: ["Quotation"],
     }),
 
     deleteQuotationPermanent: builder.mutation({
@@ -136,7 +111,7 @@ export const quotationApi = createApi({
         url: `/quotations/${id}/permanent`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Quotations"],
+      invalidatesTags: ["Quotation"],
     }),
 
     // =========================
@@ -215,7 +190,7 @@ export const quotationApi = createApi({
         method: "POST",
         body: { created_by, remarks },
       }),
-      invalidatesTags: ["Quotations", "QuotationItems", "QuotationVersions"],
+      invalidatesTags: ["Quotation", "QuotationItems", "QuotationVersions"],
     }),
 
     // Get a single version by id
@@ -240,7 +215,7 @@ export const quotationApi = createApi({
         method: "POST",
         body: { restored_by },
       }),
-      invalidatesTags: ["Quotations", "QuotationItems", "QuotationVersions"],
+      invalidatesTags: ["Quotation", "QuotationItems", "QuotationVersions"],
     }),
 
     // =========================
@@ -255,7 +230,7 @@ export const quotationApi = createApi({
           ids: ids.join(","),
         },
       }),
-      providesTags: ["Quotations"],
+      providesTags: ["Quotation"],
     }),
 
     // Save a comparison
@@ -265,7 +240,7 @@ export const quotationApi = createApi({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Quotations"],
+      invalidatesTags: ["Quotation"],
     }),
 
     // Mark quotation as selected
@@ -275,7 +250,7 @@ export const quotationApi = createApi({
         method: "POST",
         body: { remarks },
       }),
-      invalidatesTags: ["Quotations"],
+      invalidatesTags: ["Quotation"],
     }),
 
     // =========================
@@ -326,6 +301,7 @@ export const quotationApi = createApi({
       providesTags: ["QuotationDashboard"],
     }),
   }),
+  overrideExisting: false,
 });
 
 // =========================

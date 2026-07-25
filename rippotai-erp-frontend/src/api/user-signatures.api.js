@@ -1,25 +1,5 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { API_URL } from "../lib/config";
-const baseQuery = fetchBaseQuery({
-  baseUrl: API_URL,
-  credentials: "include",
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem("bc_token"); // aligned with AuthContext
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-    const cdnToken = import.meta.env.VITE_CDN_TOKEN;
-    if (cdnToken) {
-      headers.set("x-cdn-secret", cdnToken);
-    }
-    return headers;
-  },
-});
-export const userSignatureApi = createApi({
-  reducerPath: "userSignaturesApi",
-  baseQuery,
-  tagTypes: ["UsersSignatures"],
-
+import { baseApi } from "../store/baseApi";
+export const userSignatureApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Upload / Update Signature
     uploadSignature: builder.mutation({

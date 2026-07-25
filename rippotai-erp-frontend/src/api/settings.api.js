@@ -1,27 +1,6 @@
-// services/settingsApi.js
+import { baseApi } from "../store/baseApi";
 
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { API_URL } from "../lib/config";
-const baseQuery = fetchBaseQuery({
-  baseUrl: API_URL,
-  credentials: "include",
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem("bc_token"); // aligned with AuthContext
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-    const cdnToken = import.meta.env.VITE_CDN_TOKEN;
-    if (cdnToken) {
-      headers.set("x-cdn-secret", cdnToken);
-    }
-    return headers;
-  },
-});
-export const settingsApi = createApi({
-  reducerPath: "settingsApi",
-  baseQuery,
-
-  tagTypes: ["Settings"],
+export const settingsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // POST /settings
     createSetting: builder.mutation({
@@ -86,6 +65,7 @@ export const settingsApi = createApi({
       invalidatesTags: ["Settings"],
     }),
   }),
+  overrideExisting: false,
 });
 
 export const {

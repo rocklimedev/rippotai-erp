@@ -32,30 +32,15 @@ export default function Dashboard() {
         {/* Logo top-left */}
         <button
           onClick={() => navigate("/dashboard")}
-          data-testid="inos-logo"
-          className="flex items-center gap-2.5"
+          data-testid="rippotai-logo"
+          className="flex items-center"
         >
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-[16px] font-semibold"
-            style={{ background: "#1F453B", fontFamily: "Poppins" }}
-          >
-            B
-          </div>
-          <div className="hidden sm:block">
-            <div
-              className="text-[16px] font-semibold"
-              style={{
-                fontFamily: "Poppins",
-                color: "#1F453B",
-                letterSpacing: "0.02em",
-              }}
-            >
-              INOS
-            </div>
-            <div className="eyebrow leading-none mt-1">ERP · Beta</div>
-          </div>
+          <img
+            src="/rippotai_logo.png"
+            alt="Rippotai ERP"
+            className="h-10 w-auto object-contain"
+          />
         </button>
-
         {/* Notifications + avatar top-right */}
         <div className="flex items-center gap-3">
           <NotificationsBell />

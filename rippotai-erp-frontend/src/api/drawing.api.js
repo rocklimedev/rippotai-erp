@@ -1,35 +1,16 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { API_URL } from "../lib/config";
-const baseQuery = fetchBaseQuery({
-  baseUrl: API_URL, // change to your backend URL
-  credentials: "include", // IMPORTANT for cookie-based auth
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem("bc_token"); // aligned with AuthContext
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-    const cdnToken = import.meta.env.VITE_CDN_TOKEN;
-    if (cdnToken) {
-      headers.set("x-cdn-secret", cdnToken);
-    }
-    return headers;
-  },
-});
-export const drawingApi = createApi({
-  reducerPath: "drawingApi",
-  baseQuery,
-  tagTypes: ["Drawings"],
+import { baseApi } from "../store/baseApi";
 
+export const drawingApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getDrawings: builder.query({
       query: () => "/drawings",
-      providesTags: ["Drawings"],
+      providesTags: ["Drawing"],
     }),
 
-    // NEW: single-drawing detail query backing DrawingsView.jsx
+    // single-drawing detail query backing DrawingsView.jsx
     getDrawingById: builder.query({
       query: (id) => `/drawings/${id}`,
-      providesTags: (result, error, id) => [{ type: "Drawings", id }],
+      providesTags: (result, error, id) => [{ type: "Drawing", id }],
     }),
 
     uploadDrawing: builder.mutation({
@@ -51,9 +32,10 @@ export const drawingApi = createApi({
         };
       },
 
-      invalidatesTags: ["Drawings"],
+      invalidatesTags: ["Drawing"],
     }),
   }),
+  overrideExisting: false,
 });
 
 export const {

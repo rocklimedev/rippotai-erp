@@ -1,29 +1,5 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { API_URL } from "../lib/config";
-
-const baseQuery = fetchBaseQuery({
-  baseUrl: API_URL,
-  credentials: "include",
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem("bc_token");
-
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-
-    const cdnToken = import.meta.env.VITE_CDN_TOKEN;
-    if (cdnToken) {
-      headers.set("x-cdn-secret", cdnToken);
-    }
-
-    return headers;
-  },
-});
-
-export const termsApi = createApi({
-  reducerPath: "termsApi",
-  baseQuery,
-  tagTypes: ["TermsTemplates", "TermsVersions"],
+import { baseApi } from "../store/baseApi";
+export const termsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // ==========================================================
     // GET ALL TEMPLATES
@@ -113,6 +89,7 @@ export const termsApi = createApi({
       invalidatesTags: ["TermsTemplates"],
     }),
   }),
+  overrideExisting: false,
 });
 
 export const {

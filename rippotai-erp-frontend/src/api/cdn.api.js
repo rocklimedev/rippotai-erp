@@ -1,24 +1,6 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { API_URL } from "../lib/config";
-const baseQuery = fetchBaseQuery({
-  baseUrl: API_URL, // change to your backend URL
-  credentials: "include", // IMPORTANT for cookie-based auth
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem("bc_token"); // aligned with AuthContext
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-    const cdnToken = import.meta.env.VITE_CDN_TOKEN;
-    if (cdnToken) {
-      headers.set("x-cdn-secret", cdnToken);
-    }
-    return headers;
-  },
-});
-export const cdnApi = createApi({
-  reducerPath: "cdnApi",
-  baseQuery,
-  tagTypes: ["CDN"],
+import { baseApi } from "../store/baseApi";
+
+export const cdnApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     uploadFileToCdn: builder.mutation({
       query: (file) => {
@@ -31,9 +13,10 @@ export const cdnApi = createApi({
           body: formData,
         };
       },
-      invalidatesTags: ["CDN"],
+      invalidatesTags: ["Cdn"],
     }),
   }),
+  overrideExisting: false,
 });
 
 export const { useUploadFileToCdnMutation } = cdnApi;

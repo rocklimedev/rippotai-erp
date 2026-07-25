@@ -1,31 +1,5 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { API_URL } from "../lib/config";
-
-const baseQuery = fetchBaseQuery({
-  baseUrl: API_URL,
-  credentials: "include",
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem("bc_token"); // aligned with AuthContext
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-    const cdnToken = import.meta.env.VITE_CDN_TOKEN;
-    if (cdnToken) {
-      headers.set("x-cdn-secret", cdnToken);
-    }
-    // NOTE: no Content-Type header is set here on purpose. When the body is
-    // a FormData instance (avatar upload), fetchBaseQuery skips JSON
-    // stringifying it and lets the browser set the multipart boundary
-    // itself - setting Content-Type manually would break that.
-    return headers;
-  },
-});
-
-export const usersApi = createApi({
-  reducerPath: "usersApi",
-  baseQuery,
-  tagTypes: ["Users"],
-
+import { baseApi } from "../store/baseApi";
+export const usersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // =========================
     // USERS
@@ -111,6 +85,7 @@ export const usersApi = createApi({
       invalidatesTags: ["Users"],
     }),
   }),
+  overrideExisting: false,
 });
 
 // =========================

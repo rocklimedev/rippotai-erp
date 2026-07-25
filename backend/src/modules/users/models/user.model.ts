@@ -9,7 +9,34 @@ import {
   BelongsTo,
 } from 'sequelize-typescript';
 
+import { Optional } from 'sequelize';
 import { Role } from '@/modules/rbac/models/role.model';
+
+export interface UserAttributes {
+  id: string;
+  name: string;
+  email: string;
+  password_hash: string;
+  phone: string | null;
+  job_title: string | null;
+  avatar_url: string | null;
+  role_id: string | null;
+  is_active: boolean;
+  last_login_at: Date | null;
+  created_by: string | null;
+}
+
+export interface UserCreationAttributes extends Optional<
+  UserAttributes,
+  | 'id'
+  | 'phone'
+  | 'job_title'
+  | 'avatar_url'
+  | 'role_id'
+  | 'is_active'
+  | 'last_login_at'
+  | 'created_by'
+> {}
 
 @Table({
   tableName: 'users',
@@ -17,10 +44,12 @@ import { Role } from '@/modules/rbac/models/role.model';
   createdAt: 'created_at',
   updatedAt: 'updated_at',
 })
-export class User extends Model<User> {
+export class User extends Model<UserAttributes, UserCreationAttributes> {
   @PrimaryKey
   @Default(DataType.UUIDV4)
-  @Column({ type: DataType.CHAR(36) })
+  @Column({
+    type: DataType.CHAR(36),
+  })
   declare id: string;
 
   @Column({
@@ -42,7 +71,6 @@ export class User extends Model<User> {
   })
   declare password_hash: string;
 
-  // --- newly added profile fields ---
   @Column({
     type: DataType.STRING(50),
     allowNull: true,
@@ -56,14 +84,10 @@ export class User extends Model<User> {
   declare job_title: string | null;
 
   @Column({
-    // TEXT because a base64 data URL preview can exceed a VARCHAR limit.
-    // If you move to real file uploads (S3/Cloud storage), switch this
-    // back to STRING and store only the resulting URL.
     type: DataType.TEXT,
     allowNull: true,
   })
   declare avatar_url: string | null;
-  // --- end newly added profile fields ---
 
   @ForeignKey(() => Role)
   @Column({

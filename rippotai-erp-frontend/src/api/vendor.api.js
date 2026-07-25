@@ -1,36 +1,5 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { API_URL } from "../lib/config";
-
-const baseQuery = fetchBaseQuery({
-  baseUrl: API_URL,
-  credentials: "include",
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem("bc_token");
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-    const cdnToken = import.meta.env.VITE_CDN_TOKEN;
-    if (cdnToken) {
-      headers.set("x-cdn-secret", cdnToken);
-    }
-    return headers;
-  },
-});
-
-export const vendorsApi = createApi({
-  reducerPath: "vendorsApi",
-  baseQuery,
-  tagTypes: [
-    "Vendors",
-    "VendorCategories",
-    "BusinessTypes",
-    "VendorSummary",
-    "SavedSearches",
-    "Shortlists",
-    "VendorQuotations",
-    "VendorDashboard", // ← Added for dashboard widgets
-  ],
-
+import { baseApi } from "../store/baseApi";
+export const vendorsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // =====================================
     // Vendor Categories
@@ -249,6 +218,7 @@ export const vendorsApi = createApi({
       providesTags: ["VendorDashboard"],
     }),
   }),
+  overrideExisting: false,
 });
 
 // =====================================

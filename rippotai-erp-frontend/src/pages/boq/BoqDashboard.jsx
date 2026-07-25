@@ -5,7 +5,9 @@ import {
   useDuplicateBoqVersionMutation,
   useCreateBoqNewVersionMutation,
   useLazyGetBoqVersionHistoryQuery,
-  useCombineBoqsMutation, // ← Added
+  useCombineBoqsMutation,
+  useDeleteBoqMutation,
+  useExportBoqPdfMutation, // ← Added
 } from "../../api/boq.api";
 import { useGetProjectsQuery } from "../../api/project.api";
 import { formatINR, relativeTime } from "@/lib/format";
@@ -22,9 +24,10 @@ import {
   FilePlus2,
   History,
   Eye,
-  Archive,
+  Trash2, // ← New icon for delete (replaces Archive)
   Download,
-  Combine, // ← New icon for combine
+  Combine,
+  Loader2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -104,7 +107,10 @@ export default function BoqDashboard() {
   const [createNewVersion, { isLoading: isVersioning }] =
     useCreateBoqNewVersionMutation();
   const [fetchVersionHistory] = useLazyGetBoqVersionHistoryQuery();
-  const [combineBoqs, { isLoading: isCombining }] = useCombineBoqsMutation(); // ← New
+  const [combineBoqs, { isLoading: isCombining }] = useCombineBoqsMutation();
+  const [deleteBoq, { isLoading: isDeleting }] = useDeleteBoqMutation();
+  const [exportPdf] = useExportBoqPdfMutation(); // ← New
+  const [exportingId, setExportingId] = useState(null); // which row's PDF is being generated
 
   const filterByStatus = (status) => {
     const qs = status ? `?status=${status}` : "";
@@ -228,7 +234,42 @@ export default function BoqDashboard() {
   };
 
   const downloadBoq = async (b) => {
-    toast.info("Download functionality - keep or migrate");
+    const filename = `${b.boq_number || b.title || "BOQ"}.pdf`;
+    setExportingId(b.id);
+    try {
+      await exportPdf({
+        boqId: b.id,
+        variant: "client",
+        filename,
+      }).unwrap();
+      toast.success("PDF downloaded");
+    } catch (e) {
+      toast.error(e?.data?.message || "Failed to export PDF");
+    } finally {
+      setExportingId(null);
+    }
+  };
+
+  // ==================== Delete Handler ====================
+  const handleDelete = async (b) => {
+    const label = b.boq_number || b.title || "this BOQ";
+    const confirmed = window.confirm(
+      `Delete ${label}? This action cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    try {
+      await deleteBoq(b.id).unwrap();
+      toast.success("BOQ deleted");
+      setSelectedBoqs((prev) => {
+        if (!prev.has(b.id)) return prev;
+        const next = new Set(prev);
+        next.delete(b.id);
+        return next;
+      });
+    } catch (e) {
+      toast.error(e?.data?.message || "Failed to delete BOQ");
+    }
   };
 
   return (
@@ -476,9 +517,15 @@ export default function BoqDashboard() {
                         <div className="inline-flex items-center gap-1">
                           <button
                             onClick={() => downloadBoq(b)}
-                            className="p-1.5 rounded hover:bg-[#EAEEF0]"
+                            disabled={exportingId === b.id}
+                            className="p-1.5 rounded hover:bg-[#EAEEF0] disabled:opacity-50"
+                            title="Download PDF"
                           >
-                            <Download size={16} />
+                            {exportingId === b.id ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                              <Download size={16} />
+                            )}
                           </button>
 
                           <DropdownMenu>
@@ -520,13 +567,27 @@ export default function BoqDashboard() {
                               >
                                 <Eye size={13} className="mr-2" /> Preview
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => downloadBoq(b)}>
-                                <Download size={13} className="mr-2" /> Download
-                                BOQ
+                              <DropdownMenuItem
+                                disabled={exportingId === b.id}
+                                onClick={() => downloadBoq(b)}
+                              >
+                                {exportingId === b.id ? (
+                                  <Loader2
+                                    size={13}
+                                    className="mr-2 animate-spin"
+                                  />
+                                ) : (
+                                  <Download size={13} className="mr-2" />
+                                )}
+                                Download BOQ (PDF)
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-[#333333]">
-                                <Archive size={13} className="mr-2" /> Archive
+                              <DropdownMenuItem
+                                disabled={isDeleting}
+                                onClick={() => handleDelete(b)}
+                                className="text-red-600 focus:text-red-700"
+                              >
+                                <Trash2 size={13} className="mr-2" /> Delete BOQ
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

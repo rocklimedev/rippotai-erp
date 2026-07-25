@@ -1,34 +1,6 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { API_URL } from "../lib/config";
+import { baseApi } from "../store/baseApi";
 
-export const boqApi = createApi({
-  reducerPath: "boqApi",
-
-  baseQuery: fetchBaseQuery({
-    baseUrl: API_URL,
-    credentials: "include", // Remove if using Bearer token
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem("bc_token"); // aligned with AuthContext
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-      const cdnToken = import.meta.env.VITE_CDN_TOKEN;
-      if (cdnToken) {
-        headers.set("x-cdn-secret", cdnToken);
-      }
-      return headers;
-    },
-  }),
-
-  tagTypes: [
-    "BOQ",
-    "BOQ_TEMPLATE",
-    "BOQ_ACTIVITY",
-    "LIBRARY",
-    "BOQ_CATALOG",
-    "BOQ_VERSION",
-  ],
-
+export const boqApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // ==========================
     // BOQ
@@ -96,8 +68,6 @@ export const boqApi = createApi({
       invalidatesTags: (result, error, { id }) => [{ type: "BOQ", id }],
     }),
 
-    // `reason`/`note` are shown in the activity log; `versionName` (optional)
-    // becomes the label on the new BoqVersion row, e.g. "Client revision 2".
     duplicateBoqVersion: builder.mutation({
       query: ({ id, reason, note, versionName }) => ({
         url: `/boqs/${id}/duplicate-version`,
@@ -109,14 +79,12 @@ export const boqApi = createApi({
         { type: "BOQ_VERSION", id },
       ],
     }),
-    // ==========================
-    // Combine Multiple BOQs
-    // ==========================
+
     combineBoqs: builder.mutation({
       query: (body) => ({
         url: "/boqs/combine",
         method: "POST",
-        body, // { boqIds: string[], title?: string, versionName?: string }
+        body,
       }),
       invalidatesTags: ["BOQ"],
     }),
@@ -131,16 +99,11 @@ export const boqApi = createApi({
       ],
     }),
 
-    // Full version history (oldest → newest) for the family a boq
-    // belongs to — works from any version's id, not just v1's.
     getBoqVersionHistory: builder.query({
       query: (id) => `/boqs/${id}/versions`,
       providesTags: (result, error, id) => [{ type: "BOQ_VERSION", id }],
     }),
 
-    // Relabels one BoqVersion row without touching its Boq snapshot.
-    // Pass `boqId` (any id in the family) so the history cache for
-    // that family gets invalidated and refetches.
     renameBoqVersion: builder.mutation({
       query: ({ versionId, versionName }) => ({
         url: `/boqs/versions/${versionId}`,
@@ -151,9 +114,6 @@ export const boqApi = createApi({
         boqId ? [{ type: "BOQ_VERSION", id: boqId }] : ["BOQ_VERSION"],
     }),
 
-    // Line-item diff between two boq snapshots (`id` vs `vs`), for the
-    // "Compare current with…" panel. `id`/`vs` can be any two ids in
-    // (or out of) the same family.
     compareBoqVersions: builder.query({
       query: ({ id, vs }) => `/boqs/${id}/compare?vs=${vs}`,
       providesTags: (result, error, { id, vs }) => [
@@ -169,12 +129,12 @@ export const boqApi = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [{ type: "Boq", id }],
     }),
+
     // ==========================
     // BOQ Categories
     // ==========================
 
     addBoqCategory: builder.mutation({
-      // body may include { name } or { catalog_code, include_items }
       query: ({ boqId, ...body }) => ({
         url: `/boqs/${boqId}/categories`,
         method: "POST",
@@ -222,7 +182,6 @@ export const boqApi = createApi({
     }),
 
     updateBoqItem: builder.mutation({
-      // also used for the hide/show toggle: { boqId, itemId, hidden: true }
       query: ({ boqId, itemId, ...body }) => ({
         url: `/boqs/${boqId}/items/${itemId}`,
         method: "PATCH",
@@ -268,10 +227,6 @@ export const boqApi = createApi({
     // ==========================
     // BOQ Miscellaneous
     // ==========================
-    // Free-form named financial entries (e.g. "Contingency",
-    // "Mobilization charge") that don't fit the category/item structure.
-    // Their sum feeds misc_amount / final_total on the BOQ payload —
-    // see BoqService.withComputedTotals on the backend.
 
     addBoqMiscellaneous: builder.mutation({
       query: ({ boqId, ...body }) => ({
@@ -364,7 +319,7 @@ export const boqApi = createApi({
     }),
 
     // ==========================
-    // Catalog (predefined categories + preset items for "Add Category")
+    // Catalog
     // ==========================
 
     getBoqCatalog: builder.query({
@@ -571,6 +526,7 @@ export const boqApi = createApi({
       providesTags: ["BOQ"],
     }),
   }),
+  overrideExisting: false,
 });
 
 function downloadBlob(blob, filename) {
@@ -588,7 +544,6 @@ export const {
   useCreateBoqMutation,
   useUpdateBoqMutation,
   useDeleteBoqMutation,
-
   useSubmitBoqForApprovalMutation,
   useApproveBoqMutation,
   useDuplicateBoqVersionMutation,
@@ -597,17 +552,14 @@ export const {
   useLazyGetBoqVersionHistoryQuery,
   useRenameBoqVersionMutation,
   useLazyCompareBoqVersionsQuery,
-
   useAddBoqCategoryMutation,
   useUpdateBoqCategoryMutation,
   useDeleteBoqCategoryMutation,
-
   useAddBoqItemMutation,
   useUpdateBoqItemMutation,
   useDeleteBoqItemMutation,
   useReorderBoqItemsMutation,
   useBulkUpdateBoqItemsMutation,
-
   useAddBoqMiscellaneousMutation,
   useUpdateBoqMiscellaneousMutation,
   useDeleteBoqMiscellaneousMutation,
@@ -616,23 +568,18 @@ export const {
   useExportBoqExcelMutation,
   useExportBoqPdfMutation,
   useGetBoqPdfThumbnailQuery,
-
   useGetBoqCatalogQuery,
-
   useGetTemplatesQuery,
   useGetTemplateByIdQuery,
   useCreateTemplateMutation,
   useUpdateTemplateMutation,
   useDeleteTemplateMutation,
-
   useAddTemplateCategoryMutation,
   useDeleteTemplateCategoryMutation,
-
   useAddTemplateItemMutation,
   useUpdateTemplateItemMutation,
   useDeleteTemplateItemMutation,
   useReorderTemplateItemsMutation,
-
   useGetActivityQuery,
   useApplyBoqTermsMutation,
   useGetLibraryCategoriesQuery,
@@ -642,7 +589,6 @@ export const {
   useCreateLibraryItemMutation,
   useUpdateLibraryItemMutation,
   useDeleteLibraryItemMutation,
-
   useGetBoqSummaryQuery,
   useGetBoqProductivityQuery,
   useGetBoqProjectWiseQuery,

@@ -1,26 +1,6 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { API_URL } from "../lib/config";
+import { baseApi } from "../store/baseApi";
 
-export const projectTypesApi = createApi({
-  reducerPath: "projectTypesApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: API_URL,
-    credentials: "include", // Remove if using Bearer token
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem("bc_token"); // aligned with AuthContext
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-      const cdnToken = import.meta.env.VITE_CDN_TOKEN;
-      if (cdnToken) {
-        headers.set("x-cdn-secret", cdnToken);
-      }
-      return headers;
-    },
-  }),
-
-  tagTypes: ["ProjectTypes"],
-
+export const projectTypesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // =========================
     // Get All Project Types
@@ -82,6 +62,7 @@ export const projectTypesApi = createApi({
       invalidatesTags: [{ type: "ProjectTypes", id: "LIST" }],
     }),
   }),
+  overrideExisting: false,
 });
 
 export const {

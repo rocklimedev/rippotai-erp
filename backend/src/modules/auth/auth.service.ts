@@ -152,7 +152,90 @@ export class AuthService {
 
     return this.getCurrentUserFromPayload(payload);
   }
+  /**
+   * Signup
+   */
+  async signup(data: {
+    name: string;
+    email: string;
+    password: string;
+    phone?: string;
+    job_title?: string;
+    avatar_url?: string;
+  }) {
+    const existingUser = await this.userModel.findOne({
+      where: {
+        email: data.email,
+      },
+    });
 
+    if (existingUser) {
+      throw new BadRequestException('Email already exists.');
+    }
+
+    // Optional: Assign default USER role
+    const defaultRole = await Role.findOne({
+      where: {
+        name: 'USER',
+      },
+    });
+
+    const passwordHash = await bcrypt.hash(data.password, 10);
+
+    const user = await this.userModel.create({
+      name: data.name,
+      email: data.email,
+      password_hash: passwordHash,
+      phone: data.phone ?? null,
+      job_title: data.job_title ?? null,
+      avatar_url: data.avatar_url ?? null,
+      role_id: defaultRole?.id ?? null,
+      is_active: true,
+      last_login_at: new Date(),
+    });
+
+    const rawToken = randomUUID();
+
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await this.authTokensService.create({
+      user_id: user.id,
+      token_hash: tokenHash,
+      type: AuthTokenType.REFRESH,
+      expires_at: expiresAt,
+    });
+
+    const token = jwt.sign(
+      {
+        sub: user.id,
+        email: user.email,
+        role: defaultRole?.name,
+        role_id: defaultRole?.id,
+        type: 'access',
+      },
+      process.env.JWT_SECRET!,
+      {
+        expiresIn: '7d',
+        jwtid: rawToken,
+      },
+    );
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: defaultRole?.name,
+        role_id: defaultRole?.id,
+        phone: user.phone,
+        job_title: user.job_title,
+        avatar_url: user.avatar_url,
+      },
+    };
+  }
   async logout(token: string) {
     try {
       const payload = jwt.verify(token, process.env.JWT_SECRET!) as any;

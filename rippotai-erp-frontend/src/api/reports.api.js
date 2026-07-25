@@ -1,21 +1,6 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { API_URL } from "../lib/config";
-export const reportsApi = createApi({
-  reducerPath: "reportsApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: API_URL,
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem("bc_token"); // aligned with AuthContext
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-      const cdnToken = import.meta.env.VITE_CDN_TOKEN;
-      if (cdnToken) {
-        headers.set("x-cdn-secret", cdnToken);
-      }
-      return headers;
-    },
-  }),
+import { baseApi } from "../store/baseApi";
+
+export const reportsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Overview
     getReportsOverview: builder.query({
@@ -42,6 +27,7 @@ export const reportsApi = createApi({
       query: () => "/reports/by-employee",
     }),
   }),
+  overrideExisting: false,
 });
 
 // Export hooks

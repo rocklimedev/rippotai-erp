@@ -1,24 +1,6 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { API_URL } from "../lib/config";
-const baseQuery = fetchBaseQuery({
-  baseUrl: API_URL, // change to your backend URL
-  credentials: "include", // IMPORTANT for cookie-based auth
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem("bc_token"); // aligned with AuthContext
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-    const cdnToken = import.meta.env.VITE_CDN_TOKEN;
-    if (cdnToken) {
-      headers.set("x-cdn-secret", cdnToken);
-    }
-    return headers;
-  },
-});
-export const documentApi = createApi({
-  reducerPath: "documentApi",
-  baseQuery,
-  tagTypes: ["Documents"],
+import { baseApi } from "../store/baseApi";
+
+export const documentApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getDocuments: builder.query({
       query: ({ q, category, project_id } = {}) => {
@@ -30,7 +12,7 @@ export const documentApi = createApi({
 
         return `/documents?${params.toString()}`;
       },
-      providesTags: ["Documents"],
+      providesTags: ["Document"],
     }),
 
     createDocument: builder.mutation({
@@ -51,7 +33,7 @@ export const documentApi = createApi({
           body: formData,
         };
       },
-      invalidatesTags: ["Documents"],
+      invalidatesTags: ["Document"],
     }),
 
     updateDocument: builder.mutation({
@@ -60,7 +42,7 @@ export const documentApi = createApi({
         method: "PATCH",
         body: data,
       }),
-      invalidatesTags: ["Documents"],
+      invalidatesTags: ["Document"],
     }),
 
     replaceDocumentFile: builder.mutation({
@@ -74,7 +56,7 @@ export const documentApi = createApi({
           body: formData,
         };
       },
-      invalidatesTags: ["Documents"],
+      invalidatesTags: ["Document"],
     }),
 
     deleteDocument: builder.mutation({
@@ -82,7 +64,7 @@ export const documentApi = createApi({
         url: `/documents/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Documents"],
+      invalidatesTags: ["Document"],
     }),
 
     lockDocument: builder.mutation({
@@ -90,7 +72,7 @@ export const documentApi = createApi({
         url: `/documents/${id}/lock`,
         method: "POST",
       }),
-      invalidatesTags: ["Documents"],
+      invalidatesTags: ["Document"],
     }),
 
     unlockDocument: builder.mutation({
@@ -98,7 +80,7 @@ export const documentApi = createApi({
         url: `/documents/${id}/unlock`,
         method: "POST",
       }),
-      invalidatesTags: ["Documents"],
+      invalidatesTags: ["Document"],
     }),
 
     downloadDocument: builder.query({
@@ -119,28 +101,11 @@ export const documentApi = createApi({
       query: (id) => `/documents/${id}/reki`,
     }),
 
-    createProjectBrief: builder.mutation({
-      query: (data) => ({
-        url: "/documents/forms/project-brief",
-        method: "POST",
-        body: data,
-      }),
-      invalidatesTags: ["Documents"],
-    }),
-
-    createSiteReki: builder.mutation({
-      query: (data) => ({
-        url: "/documents/forms/site-reki",
-        method: "POST",
-        body: data,
-      }),
-      invalidatesTags: ["Documents"],
-    }),
-
     getDocumentsWorkspace: builder.query({
       query: (projectId) => `/projects/${projectId}/documents-workspace`,
     }),
   }),
+  overrideExisting: false,
 });
 
 export const {
@@ -154,7 +119,6 @@ export const {
   useLazyDownloadDocumentQuery,
   useLazyDownloadAttachmentQuery,
   useGetDocumentRekiQuery,
-  useCreateProjectBriefMutation,
-  useCreateSiteRekiMutation,
+
   useGetDocumentsWorkspaceQuery,
 } = documentApi;

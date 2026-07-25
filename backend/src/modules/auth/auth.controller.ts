@@ -18,6 +18,7 @@ import { ForgotPasswordService } from './forgot-password.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { SignupDto } from './dto/signup.dto';
 class LoginDto {
   @IsEmail()
   email: string;
@@ -38,7 +39,10 @@ export class AuthController {
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password);
   }
-
+  @Post('signup')
+  async signup(@Body() dto: SignupDto) {
+    return this.authService.signup(dto);
+  }
   @Get('me')
   @UseGuards(JwtAuthGuard)
   async me(@Req() req: RequestWithUser) {

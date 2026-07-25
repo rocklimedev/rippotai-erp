@@ -1,103 +1,54 @@
 import { configureStore } from "@reduxjs/toolkit";
 
-// APIs
-import { authApi } from "../api/auth.api";
-import { rbacApi } from "../api/rbac.api";
-import { quotationApi } from "../api/quotation.api";
-import { usersApi } from "../api/user.api";
-import { vendorsApi } from "../api/vendor.api";
-import { notificationsApi } from "../api/notification.api";
-import { activityLogsApi } from "../api/activity-logs.api";
-import { projectsApi } from "../api/project.api";
-import { settingsApi } from "../api/settings.api";
-import { reportsApi } from "../api/reports.api";
-import { userSignatureApi } from "../api/user-signatures.api";
-import { unitApi } from "../api/unit.api";
-import { projectTypesApi } from "../api/project-type.api";
-import { clientsApi } from "../api/client.api";
-import { boqApi } from "../api/boq.api";
-import { documentApi } from "../api/document.api";
-import { drawingApi } from "../api/drawing.api";
-import { cdnApi } from "../api/cdn.api";
-import { rekiApi } from "../api/reki.api";
-import { briefApi } from "../api/brief.api";
-import { tasksApi } from "../api/task.api";
-import { calendarApi } from "../api/calendar.api";
-import { dashboardApi } from "../api/dashboard.api";
-import { leadsApi } from "../api/leads.api";
-import { searchApi } from "../api/search.api";
-import { termsApi } from "../api/terms.api";
+// Single shared RTK Query API
+import { baseApi } from "./baseApi";
 // -------------------------------
-// API LIST (clean management layer)
+// FEATURE API FILES
 // -------------------------------
-const apiReducers = {
-  [authApi.reducerPath]: authApi.reducer,
-  [rbacApi.reducerPath]: rbacApi.reducer,
-  [quotationApi.reducerPath]: quotationApi.reducer,
-  [usersApi.reducerPath]: usersApi.reducer,
-  [vendorsApi.reducerPath]: vendorsApi.reducer,
-  [notificationsApi.reducerPath]: notificationsApi.reducer,
-  [activityLogsApi.reducerPath]: activityLogsApi.reducer,
-  [projectsApi.reducerPath]: projectsApi.reducer,
-  [settingsApi.reducerPath]: settingsApi.reducer,
-  [reportsApi.reducerPath]: reportsApi.reducer,
-  [userSignatureApi.reducerPath]: userSignatureApi.reducer,
-  [unitApi.reducerPath]: unitApi.reducer,
-  [projectTypesApi.reducerPath]: projectTypesApi.reducer,
-  [clientsApi.reducerPath]: clientsApi.reducer,
-  [boqApi.reducerPath]: boqApi.reducer,
-  [documentApi.reducerPath]: documentApi.reducer,
-  [drawingApi.reducerPath]: drawingApi.reducer,
-  [cdnApi.reducerPath]: cdnApi.reducer,
-  [rekiApi.reducerPath]: rekiApi.reducer,
-  [briefApi.reducerPath]: briefApi.reducer,
-  [tasksApi.reducerPath]: tasksApi.reducer,
-  [calendarApi.reducerPath]: calendarApi.reducer,
-  [dashboardApi.reducerPath]: dashboardApi.reducer,
-  [leadsApi.reducerPath]: leadsApi.reducer,
-  [searchApi.reducerPath]: searchApi.reducer,
-  [termsApi.reducerPath]: termsApi.reducer,
-};
-
-const apiMiddlewares = [
-  authApi.middleware,
-  rbacApi.middleware,
-  quotationApi.middleware,
-  usersApi.middleware,
-  vendorsApi.middleware,
-  notificationsApi.middleware,
-  calendarApi.middleware,
-  activityLogsApi.middleware,
-  projectsApi.middleware,
-  settingsApi.middleware,
-  reportsApi.middleware,
-  userSignatureApi.middleware,
-  unitApi.middleware,
-  projectTypesApi.middleware,
-  searchApi.middleware,
-  clientsApi.middleware,
-  boqApi.middleware,
-  documentApi.middleware,
-  leadsApi.middleware,
-  cdnApi.middleware,
-  termsApi.middleware,
-  drawingApi.middleware,
-  rekiApi.middleware,
-  briefApi.middleware,
-  tasksApi.middleware,
-  dashboardApi.middleware,
-];
+// These no longer export their own reducer/middleware — each one calls
+// baseApi.injectEndpoints(...) under the hood, registering its endpoints
+// on the single baseApi instance. We still need to import them here (even
+// though nothing is used from them directly) purely for the side effect of
+// running that injection before the store is created.
+import "../api/auth.api";
+import "../api/rbac.api";
+import "../api/quotation.api";
+import "../api/user.api";
+import "../api/vendor.api";
+import "../api/notification.api";
+import "../api/activity-logs.api";
+import "../api/project.api";
+import "../api/settings.api";
+import "../api/reports.api";
+import "../api/user-signatures.api";
+import "../api/unit.api";
+import "../api/project-type.api";
+import "../api/client.api";
+import "../api/boq.api";
+import "../api/document.api";
+import "../api/drawing.api";
+import "../api/cdn.api";
+import "../api/reki.api";
+import "../api/brief.api";
+import "../api/task.api";
+import "../api/calendar.api";
+import "../api/dashboard.api";
+import "../api/leads.api";
+import "../api/search.api";
+import "../api/terms.api";
 
 // -------------------------------
 // STORE
 // -------------------------------
 export const store = configureStore({
-  reducer: apiReducers,
+  reducer: {
+    [baseApi.reducerPath]: baseApi.reducer,
+  },
 
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false, // RTK Query safety (optional but common)
-    }).concat(...apiMiddlewares),
+    }).concat(baseApi.middleware),
 
   devTools: process.env.NODE_ENV !== "production",
 });

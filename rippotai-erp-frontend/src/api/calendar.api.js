@@ -1,31 +1,6 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { API_URL } from "../lib/config";
+import { baseApi } from "../store/baseApi";
 
-const baseQuery = fetchBaseQuery({
-  baseUrl: API_URL,
-  credentials: "include",
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem("bc_token");
-
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-
-    const cdnToken = import.meta.env.VITE_CDN_TOKEN;
-
-    if (cdnToken) {
-      headers.set("x-cdn-secret", cdnToken);
-    }
-
-    return headers;
-  },
-});
-
-export const calendarApi = createApi({
-  reducerPath: "calendarApi",
-  baseQuery,
-  tagTypes: ["CalendarEvents", "CalendarStats"],
-
+export const calendarApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // =========================
     // CALENDAR EVENTS
@@ -111,34 +86,24 @@ export const calendarApi = createApi({
       invalidatesTags: ["CalendarEvents", "CalendarStats"],
     }),
   }),
+  overrideExisting: false,
 });
-
-// =========================
-// EXPORT HOOKS
-// =========================
 
 export const {
   useGetCalendarEventsQuery,
   useLazyGetCalendarEventsQuery,
-
   useGetMyCalendarEventsQuery,
   useLazyGetMyCalendarEventsQuery,
-
   useGetTodayCalendarEventsQuery,
   useLazyGetTodayCalendarEventsQuery,
-
   useGetUpcomingCalendarEventsQuery,
   useLazyGetUpcomingCalendarEventsQuery,
-
   useGetProjectCalendarEventsQuery,
   useLazyGetProjectCalendarEventsQuery,
-
   useGetCalendarStatsQuery,
   useLazyGetCalendarStatsQuery,
-
   useGetCalendarEventQuery,
   useLazyGetCalendarEventQuery,
-
   useCreateCalendarEventMutation,
   useUpdateCalendarEventMutation,
   useDeleteCalendarEventMutation,

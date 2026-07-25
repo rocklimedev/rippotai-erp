@@ -1,28 +1,19 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { API_URL } from "../lib/config";
+import { baseApi } from "../store/baseApi";
 
-export const leadsApi = createApi({
-  reducerPath: "leadsApi",
-
-  baseQuery: fetchBaseQuery({
-    baseUrl: `${API_URL}/leads`,
-  }),
-
-  tagTypes: ["Board", "Leads", "Lead", "Review", "LeadActivity"],
-
+export const leadsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // ==========================================
     // LEADS
     // ==========================================
 
     getBoard: builder.query({
-      query: () => "/board",
-      providesTags: ["Board"],
+      query: () => "/leads/board",
+      providesTags: ["Leads"],
     }),
 
     getLeads: builder.query({
       query: (params) => ({
-        url: "",
+        url: "/leads",
         params,
       }),
 
@@ -30,11 +21,11 @@ export const leadsApi = createApi({
     }),
 
     getLead: builder.query({
-      query: (id) => `/${id}`,
+      query: (id) => `/leads/${id}`,
 
       providesTags: (result, error, id) => [
         {
-          type: "Lead",
+          type: "Leads",
           id,
         },
       ],
@@ -42,11 +33,11 @@ export const leadsApi = createApi({
 
     getReview: builder.query({
       query: (stuckDays) => ({
-        url: "/review",
+        url: "/leads/review",
         params: stuckDays ? { stuckDays } : {},
       }),
 
-      providesTags: ["Review"],
+      providesTags: ["Leads"],
     }),
 
     // ==========================================
@@ -68,11 +59,11 @@ export const leadsApi = createApi({
      */
     getLeadActivities: builder.query({
       query: (params) => ({
-        url: "/activity",
+        url: "/leads/activity",
         params,
       }),
 
-      providesTags: ["LeadActivity"],
+      providesTags: ["Leads"],
     }),
 
     /**
@@ -81,11 +72,11 @@ export const leadsApi = createApi({
      * GET /leads/activity/lead/:leadId
      */
     getLeadActivityByLead: builder.query({
-      query: (leadId) => `/activity/lead/${leadId}`,
+      query: (leadId) => `/leads/activity/lead/${leadId}`,
 
       providesTags: (result, error, leadId) => [
         {
-          type: "LeadActivity",
+          type: "Leads",
           id: leadId,
         },
       ],
@@ -98,11 +89,11 @@ export const leadsApi = createApi({
      */
     deleteLeadActivity: builder.mutation({
       query: (id) => ({
-        url: `/activity/${id}`,
+        url: `/leads/activity/${id}`,
         method: "DELETE",
       }),
 
-      invalidatesTags: ["LeadActivity", "Lead", "Board"],
+      invalidatesTags: ["Leads"],
     }),
 
     // ==========================================
@@ -111,40 +102,38 @@ export const leadsApi = createApi({
 
     createLead: builder.mutation({
       query: (body) => ({
-        url: "",
+        url: "/leads",
         method: "POST",
         body,
       }),
 
-      invalidatesTags: ["Board", "Leads", "Review"],
+      invalidatesTags: ["Leads"],
     }),
 
     updateLead: builder.mutation({
       query: ({ id, ...body }) => ({
-        url: `/${id}`,
+        url: `/leads/${id}`,
         method: "PATCH",
         body,
       }),
 
       invalidatesTags: (result, error, { id }) => [
         {
-          type: "Lead",
+          type: "Leads",
           id,
         },
 
-        "Board",
         "Leads",
-        "Review",
       ],
     }),
 
     deleteLead: builder.mutation({
       query: (id) => ({
-        url: `/${id}`,
+        url: `/leads/${id}`,
         method: "DELETE",
       }),
 
-      invalidatesTags: ["Board", "Leads", "Review"],
+      invalidatesTags: ["Leads"],
     }),
 
     // ==========================================
@@ -153,7 +142,7 @@ export const leadsApi = createApi({
 
     moveStage: builder.mutation({
       query: ({ id, stage, via }) => ({
-        url: `/${id}/stage`,
+        url: `/leads/${id}/stage`,
         method: "PATCH",
 
         body: {
@@ -164,49 +153,43 @@ export const leadsApi = createApi({
 
       invalidatesTags: (result, error, { id }) => [
         {
-          type: "Lead",
+          type: "Leads",
           id,
         },
 
-        "Board",
         "Leads",
-        "Review",
       ],
     }),
 
     markNurture: builder.mutation({
       query: (id) => ({
-        url: `/${id}/nurture`,
+        url: `/leads/${id}/nurture`,
         method: "PATCH",
       }),
 
       invalidatesTags: (result, error, id) => [
         {
-          type: "Lead",
+          type: "Leads",
           id,
         },
 
-        "Board",
         "Leads",
-        "Review",
       ],
     }),
 
     markLost: builder.mutation({
       query: (id) => ({
-        url: `/${id}/lost`,
+        url: `/leads/${id}/lost`,
         method: "PATCH",
       }),
 
       invalidatesTags: (result, error, id) => [
         {
-          type: "Lead",
+          type: "Leads",
           id,
         },
 
-        "Board",
         "Leads",
-        "Review",
       ],
     }),
 
@@ -216,7 +199,7 @@ export const leadsApi = createApi({
 
     addNote: builder.mutation({
       query: ({ id, text, author }) => ({
-        url: `/${id}/notes`,
+        url: `/leads/${id}/notes`,
 
         method: "POST",
 
@@ -228,11 +211,11 @@ export const leadsApi = createApi({
 
       invalidatesTags: (result, error, { id }) => [
         {
-          type: "Lead",
+          type: "Leads",
           id,
         },
 
-        "Board",
+        "Leads",
       ],
     }),
 
@@ -242,7 +225,7 @@ export const leadsApi = createApi({
 
     setProposal: builder.mutation({
       query: ({ id, ...body }) => ({
-        url: `/${id}/proposal`,
+        url: `/leads/${id}/proposal`,
 
         method: "POST",
 
@@ -251,11 +234,10 @@ export const leadsApi = createApi({
 
       invalidatesTags: (result, error, { id }) => [
         {
-          type: "Lead",
+          type: "Leads",
           id,
         },
 
-        "Board",
         "Leads",
       ],
     }),
@@ -266,7 +248,7 @@ export const leadsApi = createApi({
 
     updateDoc: builder.mutation({
       query: ({ id, docType, status }) => ({
-        url: `/${id}/docs/${docType}`,
+        url: `/leads/${id}/docs/${docType}`,
 
         method: "PATCH",
 
@@ -280,7 +262,7 @@ export const leadsApi = createApi({
 
       invalidatesTags: (result, error, { id }) => [
         {
-          type: "Lead",
+          type: "Leads",
           id,
         },
       ],
@@ -292,7 +274,7 @@ export const leadsApi = createApi({
 
     updateColor: builder.mutation({
       query: ({ id, color }) => ({
-        url: `/${id}/color`,
+        url: `/leads/${id}/color`,
 
         method: "PATCH",
 
@@ -303,11 +285,11 @@ export const leadsApi = createApi({
 
       invalidatesTags: (result, error, { id }) => [
         {
-          type: "Lead",
+          type: "Leads",
           id,
         },
 
-        "Board",
+        "Leads",
       ],
     }),
 
@@ -317,7 +299,7 @@ export const leadsApi = createApi({
 
     updateFollowUp: builder.mutation({
       query: ({ id, followUp }) => ({
-        url: `/${id}/follow-up`,
+        url: `/leads/${id}/follow-up`,
 
         method: "PATCH",
 
@@ -328,12 +310,13 @@ export const leadsApi = createApi({
 
       invalidatesTags: (result, error, { id }) => [
         {
-          type: "Lead",
+          type: "Leads",
           id,
         },
       ],
     }),
   }),
+  overrideExisting: false,
 });
 
 // ==========================================
@@ -342,44 +325,26 @@ export const leadsApi = createApi({
 
 export const {
   // Leads
-
   useGetBoardQuery,
-
   useGetLeadsQuery,
-
   useGetLeadQuery,
-
   useGetReviewQuery,
 
   // Activity
-
   useGetLeadActivitiesQuery,
-
   useGetLeadActivityByLeadQuery,
-
   useDeleteLeadActivityMutation,
 
   // Mutations
-
   useCreateLeadMutation,
-
   useUpdateLeadMutation,
-
   useDeleteLeadMutation,
-
   useMoveStageMutation,
-
   useMarkNurtureMutation,
-
   useMarkLostMutation,
-
   useAddNoteMutation,
-
   useSetProposalMutation,
-
   useUpdateDocMutation,
-
   useUpdateColorMutation,
-
   useUpdateFollowUpMutation,
 } = leadsApi;

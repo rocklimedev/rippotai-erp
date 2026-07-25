@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import {
   useLoginMutation,
+  useSignupMutation,
   useLogoutMutation,
   useLazyMeQuery,
 } from "../api/auth.api";
@@ -23,9 +24,11 @@ export function AuthProvider({ children }) {
       return null;
     }
   });
+
   const [ready, setReady] = useState(false);
 
   const [loginMutation] = useLoginMutation();
+  const [signupMutation] = useSignupMutation();
   const [logoutMutation] = useLogoutMutation();
   const [triggerMe] = useLazyMeQuery();
   const [updateUserMutation] = useUpdateUserMutation();
@@ -53,7 +56,8 @@ export function AuthProvider({ children }) {
     try {
       const response = await triggerMe().unwrap();
 
-      const userData = response.user; // <-- FIX
+      // Backend returns either { user } or user directly
+      const userData = response.user ?? response;
 
       localStorage.setItem("bc_user", JSON.stringify(userData));
       setUser(userData);
@@ -64,49 +68,61 @@ export function AuthProvider({ children }) {
       setReady(true);
     }
   }, [triggerMe]);
+
   useEffect(() => {
     refresh();
   }, [refresh]);
 
+  /**
+   * Login
+   */
   const login = async (email, password) => {
-    // backend returns { token, user }, NOT access_token
     const { token, user: userData } = await loginMutation({
       email,
       password,
     }).unwrap();
+
     persistSession(token, userData);
+
     return userData;
   };
 
-  // NOTE: no /auth/register or /auth/signup endpoint exists in the AuthController
-  // shown — these assume you'll add matching routes on the Nest side that return
-  // the same { token, user } shape as login. Wire up authApi.register/signup
-  // mutations there before relying on these.
-  const register = async (payload) => {
-    const { token, user: userData } = await loginMutation(payload).unwrap(); // placeholder — swap for a real registerMutation once it exists
+  /**
+   * Signup
+   */
+  const signup = async (payload) => {
+    const { token, user: userData } = await signupMutation(payload).unwrap();
+
     persistSession(token, userData);
+
     return userData;
   };
 
-  const signup = register; // alias until backend distinguishes the two flows
+  /**
+   * Alias for signup
+   */
+  const register = signup;
 
+  /**
+   * Logout
+   */
   const logout = async () => {
     try {
       await logoutMutation().unwrap();
-    } catch {
-      // proceed with local cleanup even if the server call fails
+    } catch (err) {
+      console.error(err);
     } finally {
       clearSession();
     }
   };
 
-  // Patches the current user's profile (name/email/phone/job_title/avatar_url)
-  // via PATCH /users/:id, then syncs both React state and localStorage so the
-  // rest of the app (and a page refresh) sees the new values immediately.
+  /**
+   * Update current user profile
+   */
   const updateUser = useCallback(
     async (payload) => {
       if (!user?.id) {
-        throw new Error("updateUser called with no authenticated user");
+        throw new Error("No authenticated user.");
       }
 
       const result = await updateUserMutation({
@@ -114,14 +130,18 @@ export function AuthProvider({ children }) {
         ...payload,
       }).unwrap();
 
-      // Backend may respond with either the raw user row or { user: {...} }.
-      // Handle both shapes rather than assuming one.
-      const updatedUser = result?.user ?? result;
+      const updatedUser = result.user ?? result;
 
-      const merged = { ...user, ...updatedUser };
-      localStorage.setItem("bc_user", JSON.stringify(merged));
-      setUser(merged);
-      return merged;
+      const mergedUser = {
+        ...user,
+        ...updatedUser,
+      };
+
+      localStorage.setItem("bc_user", JSON.stringify(mergedUser));
+
+      setUser(mergedUser);
+
+      return mergedUser;
     },
     [user, updateUserMutation],
   );
@@ -132,8 +152,8 @@ export function AuthProvider({ children }) {
         user,
         ready,
         login,
-        register,
         signup,
+        register,
         logout,
         refresh,
         updateUser,
@@ -144,4 +164,12 @@ export function AuthProvider({ children }) {
   );
 }
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+
+  return context;
+};

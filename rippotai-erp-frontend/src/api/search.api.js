@@ -1,31 +1,6 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { API_URL } from "../lib/config";
+import { baseApi } from "../store/baseApi";
 
-const baseQuery = fetchBaseQuery({
-  baseUrl: API_URL,
-  credentials: "include",
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem("bc_token");
-
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-
-    const cdnToken = import.meta.env.VITE_CDN_TOKEN;
-
-    if (cdnToken) {
-      headers.set("x-cdn-secret", cdnToken);
-    }
-
-    return headers;
-  },
-});
-
-export const searchApi = createApi({
-  reducerPath: "searchApi",
-  baseQuery,
-  tagTypes: ["Search"],
-
+export const searchApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // =====================================================
     // GLOBAL SEARCH
@@ -220,6 +195,7 @@ export const searchApi = createApi({
       invalidatesTags: ["Search"],
     }),
   }),
+  overrideExisting: false,
 });
 
 export const {

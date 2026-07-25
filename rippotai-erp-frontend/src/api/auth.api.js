@@ -1,26 +1,6 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { API_URL } from "../lib/config";
-const baseQuery = fetchBaseQuery({
-  baseUrl: API_URL, // change to your backend URL
-  credentials: "include", // IMPORTANT for cookie-based auth
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem("bc_token"); // aligned with AuthContext
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-    const cdnToken = import.meta.env.VITE_CDN_TOKEN;
-    if (cdnToken) {
-      headers.set("x-cdn-secret", cdnToken);
-    }
-    return headers;
-  },
-});
+import { baseApi } from "../store/baseApi";
 
-export const authApi = createApi({
-  reducerPath: "authApi",
-  baseQuery,
-  tagTypes: ["AuthUser", "AuthTokens", "VerificationTokens"],
-
+export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // =========================
     // AUTH CONTROLLER
@@ -34,7 +14,14 @@ export const authApi = createApi({
       }),
       invalidatesTags: ["AuthUser"],
     }),
-
+    signup: builder.mutation({
+      query: (body) => ({
+        url: "/auth/signup",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["AuthUser"],
+    }),
     logout: builder.mutation({
       query: () => ({
         url: "/auth/logout",
@@ -146,14 +133,12 @@ export const authApi = createApi({
       invalidatesTags: ["VerificationTokens"],
     }),
   }),
+  overrideExisting: false,
 });
-
-// =========================
-// EXPORT HOOKS
-// =========================
 
 export const {
   useLoginMutation,
+  useSignupMutation,
   useLogoutMutation,
   useMeQuery,
   useLazyMeQuery,
