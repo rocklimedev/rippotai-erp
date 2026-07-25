@@ -1,11 +1,13 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { fmtINR, relativeTime, StatusChip } from "@/lib/format";
-// Blob downloads (PDF/Excel export) aren't covered by the RTK Query slice below,
-// so those two calls still go through the plain axios client.
+// Excel export (blob download) isn't covered by the RTK Query slice below,
+// so that call still goes through the plain axios client. PDF export no
+// longer hits the backend at all — see exportPdf() below.
 import api from "@/lib/api";
+import PrintableQuotation from "../../components/quotations/PrintableQuotation"; // adjust to wherever PrintableQuotation.jsx actually lives
 import {
   useGetQuotationByIdQuery,
   useSubmitQuotationMutation,
@@ -39,14 +41,7 @@ import {
   Archive,
 } from "lucide-react";
 
-const TABS = [
-  "Items",
-  "Commercial Terms",
-  "Approval History",
-  "Versions",
-
-
-];
+const TABS = ["Items", "Commercial Terms", "Approval History", "Versions"];
 
 export default function QuotationDetail() {
   const { id } = useParams();
@@ -82,24 +77,59 @@ export default function QuotationDetail() {
   const [remark, setRemark] = useState("");
   const busy = submitting || approving || returning || declining || cancelling;
 
+  // --- Derived values, mapped from the real payload shape ---
+  // (Declared before the early returns below so hook order stays stable —
+  // useMemo further down depends on these.)
+  const vendor = q?.vendor || q?.vendorSnapshot || {};
+  const project = q?.project || q?.projectSnapshot || {};
+  const readOnly = q?.status === "approved" && !isAdmin;
+  const editable = !readOnly && ["draft", "returned"].includes(q?.status);
+  const isDeleted = !!q?.deletedAt;
+
+  const subtotal = Number(q?.subtotal || 0);
+  const taxAmount = Number(q?.taxAmount || 0);
+  const additionalCharges = Number(q?.additionalCharges || 0);
+  const discountValue = Number(q?.discount ?? q?.globalDiscountValue ?? 0);
+  const total = Number(q?.totalAmount || 0);
+
+  // Normalize this page's camelCase quotation shape into the snake_case
+  // shape PrintableQuotation expects, so it can be reused directly for the
+  // print/PDF view without a backend round-trip.
+  const printableQuotation = useMemo(() => {
+    if (!q) return null;
+
+    return {
+      quotation_date: q.quotationDate || q.quotation_date,
+      quotation_number: q.quotationNumber || q.quotation_number,
+      status: q.status,
+      expiryDate: q.expiryDate,
+
+      // Snapshots
+      vendor_snapshot: q.vendorSnapshot || q.vendor_snapshot || q.vendor || {},
+      project_snapshot:
+        q.projectSnapshot || q.project_snapshot || q.project || {},
+
+      items: q.items || [],
+
+      // Financials
+      subtotal: Number(q.subtotal || 0),
+      additional_charges: Number(q.additionalCharges || 0),
+      global_discount_type: q.globalDiscountType || "fixed",
+      global_discount_value: Number(q.globalDiscountValue || q.discount || 0),
+      discount: Number(q.discount || 0),
+      tax_percent: Number(q.taxPercent || 0),
+      tax_amount: Number(q.taxAmount || 0),
+      total_amount: Number(q.totalAmount || 0),
+
+      terms_conditions: q.termsConditions || q.terms_conditions || "",
+    };
+  }, [q]);
+
   if (isLoading) return <div className="p-8 text-[#6B7B7C]">Loading…</div>;
   if (isError || !q)
     return (
       <div className="p-8 text-[#6B7B7C]">Couldn't load this quotation.</div>
     );
-
-  // --- Derived values, mapped from the real payload shape ---
-  const vendor = q.vendor || q.vendorSnapshot || {};
-  const project = q.project || q.projectSnapshot || {};
-  const readOnly = q.status === "approved" && !isAdmin;
-  const editable = !readOnly && ["draft", "returned"].includes(q.status);
-  const isDeleted = !!q.deletedAt;
-
-  const subtotal = Number(q.subtotal || 0);
-  const taxAmount = Number(q.taxAmount || 0);
-  const additionalCharges = Number(q.additionalCharges || 0);
-  const discountValue = Number(q.discount ?? q.globalDiscountValue ?? 0);
-  const total = Number(q.totalAmount || 0);
 
   const runAction = async (mutationFn, args, successMsg = "Done") => {
     try {
@@ -162,21 +192,46 @@ export default function QuotationDetail() {
     }
   };
 
+  // Renders the already-fetched quotation through PrintableQuotation and
+  // hands off to the browser's native print dialog ("Save as PDF" works in
+  // every modern browser) instead of round-tripping to a backend PDF
+  // export endpoint.
+  const exportPdf = () => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Please allow popups to print");
+      return;
+    }
 
-  const exportPdf = async () => {
-    const res = await api.post(
-      `/quotations/${id}/export/pdf`,
-      {},
-      { responseType: "blob" },
-    );
-    const url = URL.createObjectURL(
-      new Blob([res.data], { type: "application/pdf" }),
-    );
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Quotation_${q.quotationNumber}.pdf`;
-    a.click();
+    const printContent = document.getElementById(
+      "printable-quotation-root",
+    ).innerHTML;
+
+    printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Quotation ${q.quotationNumber}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+          @media print { body { margin: 0; } }
+        </style>
+      </head>
+      <body>
+        ${printContent}
+      </body>
+    </html>
+  `);
+
+    printWindow.document.close();
+    printWindow.focus();
+
+    setTimeout(() => {
+      printWindow.print();
+      // printWindow.close(); // Uncomment if you want auto close
+    }, 500);
   };
+
   const exportXlsx = async () => {
     const res = await api.get(`/quotations/${id}/export/excel`, {
       responseType: "blob",
@@ -190,6 +245,26 @@ export default function QuotationDetail() {
 
   return (
     <div className="max-w-[1440px] mx-auto p-6">
+      {/* Print styles: when printing, hide the whole app shell and show
+          only the hidden PrintableQuotation container below. */}
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #printable-quotation-root,
+          #printable-quotation-root * {
+            visibility: visible;
+          }
+          #printable-quotation-root {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+          }
+        }
+      `}</style>
+
       <button
         onClick={() => nav("/quotations")}
         className="text-[13px] text-[#6B7B7C] hover:text-[#333333] inline-flex items-center gap-1 mb-3"
@@ -583,8 +658,6 @@ export default function QuotationDetail() {
             isAdmin={isAdmin}
           />
         )}
-
-    
       </div>
 
       {remarkModal && (
@@ -627,6 +700,23 @@ export default function QuotationDetail() {
           </div>
         </div>
       )}
+
+      {/* Hidden print target: invisible on screen, shown (and everything
+          else hidden) only under the @media print rule above. This is what
+          window.print() in exportPdf() actually outputs. */}
+      {/* Hidden print target */}
+      <div id="printable-quotation-root" style={{ display: "none" }}>
+        <div style={{ display: "block" }} className="print:block">
+          {printableQuotation && (
+            <PrintableQuotation
+              quotation={printableQuotation}
+              termsConditions={q.termsConditions || q.terms_conditions}
+              // Optional: pass company info if you have it
+              // company={companyData}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -15,6 +15,8 @@ import { useGetVendorsQuery } from "../../api/vendor.api";
 import { useGetProjectsQuery } from "../../api/project.api"; // adjust import path to wherever projectsApi.js lives
 import { useGetUnitsQuery } from "../../api/unit.api"; // adjust import path to wherever unitApi.js lives
 import NewVendorModal from "../../components/vendors/AddVendorModal";
+import NewProjectModal from "../../components/projects/CreateNewProject"; // adjust import path
+import { AddUnitModal } from "../../components/boqs/AddUnitModal"; // adjust import path
 import { X, Plus, Copy, Trash2, GripVertical, Search } from "lucide-react";
 import {
   DndContext,
@@ -82,7 +84,17 @@ const Select = (props) => (
   />
 );
 
-function ItemRow({ item, index, disabled, units, unitsLoading, onChange, onDup, onDel }) {
+function ItemRow({
+  item,
+  index,
+  disabled,
+  units,
+  unitsLoading,
+  onChange,
+  onDup,
+  onDel,
+  onAddUnit,
+}) {
   const {
     attributes,
     listeners,
@@ -158,9 +170,17 @@ function ItemRow({ item, index, disabled, units, unitsLoading, onChange, onDup, 
         <select
           disabled={disabled || unitsLoading}
           value={item.unit_id || ""}
-          onChange={(e) =>
-            onChange(item.id, { unit_id: e.target.value || null })
-          }
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === "__new__") {
+              // Open the "Add Unit" modal for this specific row instead of
+              // treating "__new__" as a real unit id. The row's unit_id is
+              // left untouched until the modal reports back a created unit.
+              onAddUnit(item.id);
+              return;
+            }
+            onChange(item.id, { unit_id: val || null });
+          }}
           className="h-10 w-full px-2 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13px]"
           data-testid={`row-unit-${item.id}`}
         >
@@ -170,6 +190,7 @@ function ItemRow({ item, index, disabled, units, unitsLoading, onChange, onDup, 
               {u.name}
             </option>
           ))}
+          <option value="__new__">+ Add New Unit</option>
         </select>
       </td>
       <td className="px-2 py-1.5 text-right text-[13px] font-semibold text-[#333333] whitespace-nowrap">
@@ -249,9 +270,13 @@ export default function EstimateForm() {
   const [showNewVendor, setShowNewVendor] = useState(false);
   // Project
   const [project, setProject] = useState(null);
+  const [showNewProject, setShowNewProject] = useState(false);
   // Units (for the item rows' unit dropdown)
   const { data: unitsData, isLoading: unitsLoading } = useGetUnitsQuery();
   const units = Array.isArray(unitsData) ? unitsData : unitsData?.data || [];
+  // Tracks which item row triggered "+ Add New Unit", so we know which row
+  // to patch with the newly created unit's id once the modal succeeds.
+  const [newUnitRowId, setNewUnitRowId] = useState(null);
   // Items
   const [items, setItems] = useState([emptyItem()]);
   // Totals
@@ -303,8 +328,8 @@ export default function EstimateForm() {
         company: v.company || v.company_name,
         name: v.name,
         primary_category: v.primary_category || v.vendorCategory?.name,
-        category: v.category,
-        city: v.city,
+        category: v.category || v.businessType?.name,
+        city: v.city || v.address,
       });
     }
 
@@ -506,8 +531,6 @@ export default function EstimateForm() {
       //    Only fire this if the quotation isn't already past draft — an
       //    edit to an already-submitted/approved estimate shouldn't try to
       //    re-submit it.
-      const canSubmit =
-        !isEdit || status === QUOTATION_STATUS.DRAFT || !isEdit;
       if (
         targetStatus === QUOTATION_STATUS.SUBMITTED &&
         (!isEdit || status === QUOTATION_STATUS.DRAFT)
@@ -518,9 +541,7 @@ export default function EstimateForm() {
       toast.success(isEdit ? "Estimate updated" : "Estimate saved");
       nav(`/quotations/${qid}`);
     } catch (e) {
-      toast.error(
-        e?.data?.message || e?.error || "Failed to save estimate",
-      );
+      toast.error(e?.data?.message || e?.error || "Failed to save estimate");
     } finally {
       setBusy(false);
     }
@@ -627,18 +648,27 @@ export default function EstimateForm() {
                           <button
                             key={v.id}
                             onClick={() => {
-                              setVendor(v);
+                              setVendor({
+                                id: v.id,
+                                company: v.company_name || v.name,
+                                name: v.name,
+                                primary_category: v.vendorCategory?.name,
+                                category: v.businessType?.name,
+                                city: v.address || "", // vendor model has no dedicated city field
+                              });
                               setVendorSearch("");
                             }}
                             className="w-full text-left px-3 py-2 hover:bg-[#EAEEF0] border-b border-[#EAEEF0] text-[13px]"
                             data-testid={`vendor-opt-${v.id}`}
                           >
                             <div className="font-semibold text-[#333333]">
-                              {v.company || v.name}
+                              {v.company_name || v.name}
                             </div>
                             <div className="text-[11.5px] text-[#6B7B7C]">
-                              {v.primary_category || v.category || "—"} ·{" "}
-                              {v.city || ""}
+                              {v.vendorCategory?.name ||
+                                v.businessType?.name ||
+                                "—"}
+                              {v.address ? ` · ${v.address}` : ""}
                             </div>
                           </button>
                         ))}
@@ -668,9 +698,15 @@ export default function EstimateForm() {
               disabled={readOnly || projectsLoading}
               value={project?.id || ""}
               onChange={(e) => {
-                const selected = projects.find(
-                  (p) => String(p.id) === e.target.value,
-                );
+                const val = e.target.value;
+                if (val === "__new__") {
+                  // Open the "Add Project" modal instead of treating
+                  // "__new__" as a real project id; current selection (if
+                  // any) is left untouched until the modal creates one.
+                  setShowNewProject(true);
+                  return;
+                }
+                const selected = projects.find((p) => String(p.id) === val);
                 setProject(selected || null);
               }}
               data-testid="project-select"
@@ -683,6 +719,13 @@ export default function EstimateForm() {
                   {p.name}
                 </option>
               ))}
+              {/* Keep a just-created project visible/selected even before
+                  the projects list has refetched from the server. */}
+              {project &&
+                !projects.some((p) => String(p.id) === String(project.id)) && (
+                  <option value={project.id}>{project.name}</option>
+                )}
+              <option value="__new__">+ Add New Project</option>
             </Select>
           </Field>
           <Field label="Site Location">
@@ -734,6 +777,7 @@ export default function EstimateForm() {
                       onChange={setItem}
                       onDup={dupItem}
                       onDel={delItem}
+                      onAddUnit={setNewUnitRowId}
                     />
                   ))}
                 </tbody>
@@ -857,7 +901,8 @@ export default function EstimateForm() {
               className="border border-[#DDD8CE] rounded-lg p-4 min-h-[120px] bg-[#FAF8F5]"
               data-testid="approved-by-block"
             >
-              {existingQuotation?.reviewedBy || existingQuotation?.reviewed_by ? (
+              {existingQuotation?.reviewedBy ||
+              existingQuotation?.reviewed_by ? (
                 <div className="text-[13px] text-[#333333]">
                   <div className="font-semibold">
                     {existingQuotation.reviewedBy?.name ||
@@ -921,6 +966,32 @@ export default function EstimateForm() {
           onCreated={(v) => {
             setVendor(v);
             setShowNewVendor(false);
+          }}
+        />
+      )}
+
+      {showNewProject && (
+        <NewProjectModal
+          open={showNewProject}
+          onClose={() => setShowNewProject(false)}
+          onCreated={(p) => {
+            setProject({
+              id: p.id,
+              name: p.name,
+              location: p.site_location || p.location,
+            });
+            setShowNewProject(false);
+          }}
+        />
+      )}
+
+      {newUnitRowId && (
+        <AddUnitModal
+          open={!!newUnitRowId}
+          onClose={() => setNewUnitRowId(null)}
+          onCreated={(u) => {
+            setItem(newUnitRowId, { unit_id: u.id });
+            setNewUnitRowId(null);
           }}
         />
       )}
