@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
@@ -7,6 +11,7 @@ import { randomUUID, createHash } from 'crypto';
 import { User } from '../users/models/user.model';
 import { Role } from '@/modules/rbac/models/role.model';
 import { AuthTokensService } from './auth-tokens.service';
+import { PasswordResetToken } from './models/password-reset-token.model';
 import { AuthTokenType } from '@/common/enums';
 
 @Injectable()
@@ -14,6 +19,9 @@ export class AuthService {
   constructor(
     @InjectModel(User)
     private readonly userModel: typeof User,
+
+    @InjectModel(PasswordResetToken)
+    private readonly passwordResetModel: typeof PasswordResetToken,
 
     private readonly authTokensService: AuthTokensService,
   ) {}
@@ -101,10 +109,6 @@ export class AuthService {
   async getCurrentUserFromPayload(payload: any) {
     const tokenHash = createHash('sha256').update(payload.jti).digest('hex');
 
-    // NOTE: authTokensService.findByHash must include the User association
-    // with these attributes (phone, job_title, avatar_url) as well, or
-    // authToken.user below simply won't have them. That file wasn't
-    // provided here, so double check its `attributes`/`include` list.
     const authToken = await this.authTokensService.findByHash(tokenHash);
 
     if (!authToken) {
@@ -134,9 +138,12 @@ export class AuthService {
   }
 
   async getCurrentUser(token: string) {
-    if (!token) throw new UnauthorizedException('No token provided');
+    if (!token) {
+      throw new UnauthorizedException('No token provided');
+    }
 
     let payload: any;
+
     try {
       payload = jwt.verify(token, process.env.JWT_SECRET!);
     } catch (err: any) {
@@ -158,5 +165,124 @@ export class AuthService {
         await this.authTokensService.revoke(authToken.id);
       }
     } catch {}
+  }
+
+  /**
+   * Change Password (authenticated user, knows their current password)
+   */
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
+    const user = await this.userModel.findByPk(userId, {
+      attributes: ['id', 'password_hash'],
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found.');
+    }
+
+    const valid = await bcrypt.compare(currentPassword, user.password_hash);
+
+    if (!valid) {
+      throw new BadRequestException('Current password is incorrect.');
+    }
+
+    const isSamePassword = await bcrypt.compare(
+      newPassword,
+      user.password_hash,
+    );
+
+    if (isSamePassword) {
+      throw new BadRequestException(
+        'New password must be different from the current password.',
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    await user.update({
+      password_hash: passwordHash,
+    });
+
+    /**
+     * Revoke every active session for this user as a security measure.
+     * Note: this also logs out the session making this request. If you'd
+     * rather keep the current session alive, extend revokeAllForUser to
+     * accept an "exclude token id" parameter and pass the current token's
+     * jti through from the controller.
+     */
+    await this.authTokensService.revokeAllForUser(user.id);
+
+    return {
+      message: 'Password changed successfully.',
+    };
+  }
+
+  /**
+   * Reset Password
+   */
+  async resetPassword(
+    token: string,
+    password: string,
+  ): Promise<{
+    message: string;
+  }> {
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+
+    const resetToken = await this.passwordResetModel.findOne({
+      where: {
+        token_hash: tokenHash,
+      },
+    });
+
+    if (!resetToken) {
+      throw new BadRequestException('Invalid reset token.');
+    }
+
+    if (resetToken.used_at) {
+      throw new BadRequestException('This reset link has already been used.');
+    }
+
+    if (new Date(resetToken.expires_at) < new Date()) {
+      throw new BadRequestException('Reset link has expired.');
+    }
+
+    const user = await this.userModel.findByPk(resetToken.user_id);
+
+    if (!user) {
+      throw new BadRequestException('User not found.');
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    await user.update({
+      password_hash: passwordHash,
+    });
+
+    /**
+     * Mark every password reset token as used.
+     */
+    await this.passwordResetModel.update(
+      {
+        used_at: new Date(),
+      },
+      {
+        where: {
+          user_id: user.id,
+          used_at: null,
+        },
+      },
+    );
+
+    /**
+     * Revoke all login sessions.
+     */
+    await this.authTokensService.revokeAllForUser(user.id);
+
+    return {
+      message: 'Password reset successfully.',
+    };
   }
 }

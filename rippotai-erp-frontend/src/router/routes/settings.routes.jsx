@@ -17,8 +17,7 @@ export const settingsRoutes = [
     children: [
       { index: true, element: <ProfileSettings /> },
       { path: "security", element: <SecuritySettings /> },
-      { path: "notifications", element: <NotificationSettings /> },
-      { path: "billing", element: <BillingSettings /> },
+
       { path: "estimate-signature", element: <EstimateSignature /> },
       { path: "users", element: <UsersSettings /> },
       { path: "roles-permissions", element: <RolesPermissions /> },

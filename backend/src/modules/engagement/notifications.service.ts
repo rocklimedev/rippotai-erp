@@ -105,4 +105,12 @@ export class NotificationsService {
     await notification.destroy();
     await this.redis.del(this.unreadKey(notification.user_id));
   }
+  async deleteUserNotifications(user_id: string): Promise<void> {
+    await this.notificationModel.destroy({
+      where: { user_id },
+    });
+
+    // Clear unread count cache
+    await this.redis.del(this.unreadKey(user_id));
+  }
 }

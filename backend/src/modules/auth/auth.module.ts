@@ -14,10 +14,18 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import { User } from '@/modules/users/models/user.model';
 import { AuthToken } from './models/auth-token.model';
 import { VerificationToken } from './models/verification-token.model';
+import { ForgotPasswordService } from './forgot-password.service';
+import { PasswordResetToken } from './models/password-reset-token.model';
+import { MailService } from '@/common/mail/mail.service';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([User, AuthToken, VerificationToken]),
+    SequelizeModule.forFeature([
+      User,
+      AuthToken,
+      VerificationToken,
+      PasswordResetToken,
+    ]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
   ],
   controllers: [
@@ -29,6 +37,8 @@ import { VerificationToken } from './models/verification-token.model';
     AuthService,
     AuthTokensService,
     VerificationTokensService,
+    ForgotPasswordService,
+    MailService,
     JwtStrategy,
     JwtAuthGuard,
   ],

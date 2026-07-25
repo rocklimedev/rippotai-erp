@@ -28,6 +28,20 @@ export default function SuperAdmin() {
   const clearLogFilters = () =>
     setLogFilters({ user_id: "", action: "", entity_type: "", entity_id: "" });
 
+  // `changes` is an object like { name: "...", email: "...", is_active: true, ... }
+  // Render it as a compact "key: value" list instead of raw JSON.
+  const formatChanges = (changes) => {
+    if (!changes || typeof changes !== "object") return "—";
+    const entries = Object.entries(changes).filter(([, v]) => v !== null);
+    if (entries.length === 0) return "—";
+    return entries
+      .map(
+        ([key, value]) =>
+          `${key}: ${typeof value === "boolean" ? (value ? "true" : "false") : value}`,
+      )
+      .join(", ");
+  };
+
   if (!isSuperAdmin) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -109,10 +123,10 @@ export default function SuperAdmin() {
           <thead className="bg-[#F7F7F5] text-xs uppercase tracking-widest text-[#6B7B7C]">
             <tr>
               <th className="text-left px-4 py-3">When</th>
-              <th className="text-left px-4 py-3">User</th>
+              <th className="text-left px-4 py-3">Actor</th>
               <th className="text-left px-4 py-3">Action</th>
               <th className="text-left px-4 py-3">Entity</th>
-              <th className="text-left px-4 py-3">Details</th>
+              <th className="text-left px-4 py-3">Changes</th>
             </tr>
           </thead>
           <tbody>
@@ -138,7 +152,17 @@ export default function SuperAdmin() {
                     {fmtDateTime(log.created_at)}
                   </td>
                   <td className="px-4 py-3 text-[#333333]">
-                    {log.user_name || log.user_id || "—"}
+                    <div>{log.user_email || "—"}</div>
+                    {log.user_role && (
+                      <div className="text-xs text-[#6B7B7C] uppercase tracking-wide">
+                        {log.user_role}
+                      </div>
+                    )}
+                    {log.ip_address && (
+                      <div className="text-xs text-[#6B7B7C]">
+                        {log.ip_address}
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <span className="px-2 py-1 rounded-full text-xs font-semibold bg-[#EAF0EC] text-[#1F453B]">
@@ -146,15 +170,13 @@ export default function SuperAdmin() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-[#333333]">
-                    {log.entity_type}
-                    {log.entity_id ? ` #${log.entity_id}` : ""}
+                    <div>{log.entity_type}</div>
+                    <div className="text-xs text-[#6B7B7C]">
+                      {log.entity_label || log.entity_id || "—"}
+                    </div>
                   </td>
-                  <td className="px-4 py-3 text-[#6B7B7C] max-w-[280px] truncate">
-                    {typeof log.details === "string"
-                      ? log.details
-                      : log.details
-                        ? JSON.stringify(log.details)
-                        : "—"}
+                  <td className="px-4 py-3 text-[#6B7B7C] max-w-[320px]">
+                    {formatChanges(log.changes)}
                   </td>
                 </tr>
               ))

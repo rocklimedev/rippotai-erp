@@ -2,9 +2,15 @@ import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { ShieldAlert, UserPlus } from "lucide-react";
-import { useGetUsersQuery, useUpdateUserMutation } from "../../api/user.api";
-import { ROLES, ROLE_LABEL, fmtDate } from "../../lib/settings.utils";
+import {
+  useGetUsersQuery,
+  useUpdateUserMutation,
+  useDeleteUserMutation,
+} from "../../api/user.api";
+import { ROLE_LABEL, fmtDate } from "../../lib/settings.utils";
 import InviteUserModal from "../../components/users/InviteUserModal";
+import UserActionsMenu from "../../components/users/UserActionsMenu";
+
 export default function UsersSettings() {
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
@@ -16,25 +22,15 @@ export default function UsersSettings() {
   } = useGetUsersQuery({}, { skip: !isAdmin });
 
   const [updateUserMutation] = useUpdateUserMutation();
+  const [deleteUserMutation] = useDeleteUserMutation();
   const [savingId, setSavingId] = useState(null);
-  const [showInviteModal, setShowInviteModal] = useState(false);
+
+  // null = closed, "new" = invite flow, a user object = edit flow
+  const [modalUser, setModalUser] = useState(null);
 
   useEffect(() => {
     if (usersError) toast.error("Failed to load users");
   }, [usersError]);
-
-  const onRoleChange = async (u, newRole) => {
-    if (newRole === u.role) return;
-    setSavingId(u.id);
-    try {
-      await updateUserMutation({ id: u.id, role: newRole }).unwrap();
-      toast.success(`${u.name} → ${ROLE_LABEL[newRole]}`);
-    } catch (e) {
-      toast.error(e?.data?.detail || "Failed to update role");
-    } finally {
-      setSavingId(null);
-    }
-  };
 
   const toggleActive = async (u) => {
     setSavingId(u.id);
@@ -44,6 +40,20 @@ export default function UsersSettings() {
       toast.success(`${u.name} ${next ? "activated" : "deactivated"}`);
     } catch (e) {
       toast.error(e?.data?.detail || "Failed to update status");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const deleteUser = async (u) => {
+    if (!window.confirm(`Delete ${u.name}? This can't be undone.`)) return;
+
+    setSavingId(u.id);
+    try {
+      await deleteUserMutation(u.id).unwrap();
+      toast.success(`${u.name} deleted`);
+    } catch (e) {
+      toast.error(e?.data?.detail || "Failed to delete user");
     } finally {
       setSavingId(null);
     }
@@ -71,7 +81,7 @@ export default function UsersSettings() {
           </p>
         </div>
         <button
-          onClick={() => setShowInviteModal(true)}
+          onClick={() => setModalUser("new")}
           className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg text-white text-sm font-semibold"
           style={{ backgroundColor: "#1F453B" }}
         >
@@ -88,7 +98,7 @@ export default function UsersSettings() {
               <th className="px-5 py-3">Role</th>
               <th className="px-5 py-3">Joined</th>
               <th className="px-5 py-3">Status</th>
-              <th className="px-5 py-3">Actions</th>
+              <th className="px-5 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -107,6 +117,7 @@ export default function UsersSettings() {
             ) : (
               users.map((u) => {
                 const active = u.is_active !== false;
+                const isSelf = u.id === user.id;
                 return (
                   <tr
                     key={u.id}
@@ -126,19 +137,8 @@ export default function UsersSettings() {
                     <td className="px-5 py-3 text-sm text-[#252525]">
                       {u.email}
                     </td>
-                    <td className="px-5 py-3">
-                      <select
-                        value={u.role}
-                        disabled={savingId === u.id || u.id === user.id}
-                        onChange={(e) => onRoleChange(u, e.target.value)}
-                        className="h-9 px-2 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-sm"
-                      >
-                        {ROLES.map((r) => (
-                          <option key={r} value={r}>
-                            {ROLE_LABEL[r]}
-                          </option>
-                        ))}
-                      </select>
+                    <td className="px-5 py-3 text-sm text-[#333333]">
+                      {u.role?.name || "-"}
                     </td>
                     <td className="px-5 py-3 text-sm text-[#6B7B7C]">
                       {fmtDate(u.created_at)}
@@ -153,14 +153,15 @@ export default function UsersSettings() {
                         {active ? "Active" : "Inactive"}
                       </span>
                     </td>
-                    <td className="px-5 py-3">
-                      <button
-                        onClick={() => toggleActive(u)}
-                        disabled={savingId === u.id || u.id === user.id}
-                        className="text-sm font-semibold text-[#333333] hover:underline disabled:opacity-40"
-                      >
-                        {active ? "Deactivate" : "Activate"}
-                      </button>
+                    <td className="px-5 py-3 text-right">
+                      <UserActionsMenu
+                        isSelf={isSelf}
+                        isActive={active}
+                        saving={savingId === u.id}
+                        onEdit={() => setModalUser(u)}
+                        onToggleActive={() => toggleActive(u)}
+                        onDelete={() => deleteUser(u)}
+                      />
                     </td>
                   </tr>
                 );
@@ -170,8 +171,11 @@ export default function UsersSettings() {
         </table>
       </div>
 
-      {showInviteModal && (
-        <InviteUserModal onClose={() => setShowInviteModal(false)} />
+      {modalUser && (
+        <InviteUserModal
+          user={modalUser === "new" ? undefined : modalUser}
+          onClose={() => setModalUser(null)}
+        />
       )}
     </div>
   );

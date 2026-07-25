@@ -221,8 +221,7 @@ export const APP_MENUS = {
       items: [
         I("Edit Profile", "/settings"),
         I("Security", "security"),
-        I("Notifications", "notifications"),
-        I("Billing", "billing"),
+
         I("Estimate Signature", "estimate-signature"),
       ],
     },

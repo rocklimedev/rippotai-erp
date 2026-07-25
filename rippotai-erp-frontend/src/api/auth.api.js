@@ -73,7 +73,13 @@ export const authApi = createApi({
       }),
       invalidatesTags: ["AuthTokens"],
     }),
-
+    forgotPassword: builder.mutation({
+      query: (body) => ({
+        url: "/auth/forgot-password",
+        method: "POST",
+        body,
+      }),
+    }),
     revokeAllAuthTokensForUser: builder.mutation({
       query: (userId) => ({
         url: `/auth/tokens/user/${userId}/revoke-all`,
@@ -81,7 +87,23 @@ export const authApi = createApi({
       }),
       invalidatesTags: ["AuthTokens"],
     }),
-
+    resetPassword: builder.mutation({
+      query: (body) => ({
+        url: "/auth/reset-password",
+        method: "POST",
+        body,
+      }),
+    }),
+    // Authenticated user changing their own password (knows current password).
+    // Distinct from resetPassword, which is the token-based forgot-password flow.
+    changePassword: builder.mutation({
+      query: (body) => ({
+        url: "/auth/change-password",
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["AuthTokens"],
+    }),
     deleteAuthToken: builder.mutation({
       query: (id) => ({
         url: `/auth/tokens/${id}`,
@@ -140,7 +162,9 @@ export const {
   useRevokeAuthTokenMutation,
   useRevokeAllAuthTokensForUserMutation,
   useDeleteAuthTokenMutation,
-
+  useForgotPasswordMutation,
+  useResetPasswordMutation,
+  useChangePasswordMutation,
   useCreateVerificationTokenMutation,
   useValidateVerificationTokenQuery,
   useConsumeVerificationTokenMutation,
