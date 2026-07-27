@@ -164,14 +164,6 @@ export default function BoqNew() {
 
               <option value={CREATE_NEW_PROJECT}>+ Create New Project…</option>
             </select>
-
-            {selectedProject && (
-              <div className="mt-2 text-xs text-gray-500">
-                Client: {selectedProject.client_name}
-                <br />
-                Location: {selectedProject.location}
-              </div>
-            )}
           </div>
 
           <div>

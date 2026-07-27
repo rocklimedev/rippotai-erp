@@ -26,4 +26,8 @@ export class ActivityLogsController {
       entity_id,
     });
   }
+  @Get('entity-label')
+  async getByEntityLabel(@Query('entityLabel') entityLabel: string) {
+    return this.activityLogsService.getActivityLogsByEntityLabel(entityLabel);
+  }
 }

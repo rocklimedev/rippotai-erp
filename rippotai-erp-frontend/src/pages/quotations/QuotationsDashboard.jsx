@@ -33,17 +33,10 @@ import {
 const TABS = [
   { k: "all", l: "All" },
   { k: "draft", l: "Draft" },
-  { k: "requested", l: "Requested" },
-  { k: "received", l: "Received" },
-  { k: "under_review", l: "Under Review" },
   { k: "awaiting_approval", l: "Awaiting Approval" },
-  { k: "returned", l: "Returned" },
+  { k: "returned_for_editing", l: "Returned" },
   { k: "approved", l: "Approved" },
-  { k: "rejected", l: "Rejected" },
-  { k: "selected", l: "Selected" },
-  { k: "not_selected", l: "Not Selected" },
-  { k: "expired", l: "Expired" },
-  { k: "archived", l: "Archived" },
+  { k: "cancelled", l: "Cancelled" },
 ];
 
 function SummaryCard({ label, value, onClick }) {
@@ -598,9 +591,7 @@ export default function QuotationsDashboard() {
                               </DropdownMenuItem>
 
                               <DropdownMenuItem
-                                onSelect={() =>
-                                  nav(`/quotations/${r.id}/edit`)
-                                }
+                                onSelect={() => nav(`/quotations/${r.id}/edit`)}
                               >
                                 <Edit size={16} className="mr-2" /> Edit
                               </DropdownMenuItem>
@@ -612,8 +603,8 @@ export default function QuotationsDashboard() {
                                   }
                                   className="text-amber-700"
                                 >
-                                  <Archive size={16} className="mr-2" />{" "}
-                                  Archive / Trash
+                                  <Archive size={16} className="mr-2" /> Archive
+                                  / Trash
                                 </DropdownMenuItem>
                               ) : (
                                 <DropdownMenuItem
@@ -629,15 +620,12 @@ export default function QuotationsDashboard() {
 
                               <DropdownMenuItem
                                 onSelect={() =>
-                                  handlePermanentDelete(
-                                    r.id,
-                                    r.quotationNumber,
-                                  )
+                                  handlePermanentDelete(r.id, r.quotationNumber)
                                 }
                                 className="text-red-600"
                               >
-                                <Trash2 size={16} className="mr-2" />{" "}
-                                Permanent Delete
+                                <Trash2 size={16} className="mr-2" /> Permanent
+                                Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

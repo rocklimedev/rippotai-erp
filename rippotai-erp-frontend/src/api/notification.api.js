@@ -24,7 +24,6 @@ export const notificationsApi = baseApi.injectEndpoints({
         return `/notifications/user/${userId}?${params.toString()}`;
       },
       transformResponse: (response) => {
-        console.log("NOTIFICATION RESPONSE:", response);
         return response;
       },
       providesTags: ["Notifications"],

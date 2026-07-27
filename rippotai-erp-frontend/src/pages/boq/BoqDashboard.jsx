@@ -308,12 +308,7 @@ export default function BoqDashboard() {
           >
             <LayoutTemplate size={15} /> Templates
           </button>
-          <button
-            onClick={() => toast.info("Excel import coming soon")}
-            className="h-10 px-4 rounded-xl border border-[#B5C4B6] bg-white hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C] flex items-center gap-2"
-          >
-            <Upload size={15} /> Import Excel
-          </button>
+
           <button
             onClick={() => nav("/boq/new")}
             className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold flex items-center gap-2 shadow-sm"

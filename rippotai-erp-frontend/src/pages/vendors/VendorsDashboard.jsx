@@ -45,6 +45,7 @@ import {
   useAddVendorToShortlistMutation,
   useDeleteVendorMutation,
 } from "../../api/vendor.api";
+import { useSearchVendorsQuery } from "../../api/search.api";
 
 const STATUS_OPTIONS = ["active", "inactive", "blocked"];
 
@@ -176,12 +177,31 @@ export default function VendorsDashboard() {
   const [newSearchName, setNewSearchName] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
-  const { data: rows, isFetching } = useGetVendorsQuery(f);
+  // A vendor category/business-type/status filter is active whenever any of
+  // those fields are set. When that's the case (or there's no query text at
+  // all) we use the regular filtered list endpoint. Plain free-text search
+  // with no other filters active goes through the dedicated search index
+  // instead, since it searches across name/company/contact fields server-side.
+  const hasQuery = f.q.trim().length > 0;
+  const hasOtherFilters = Boolean(
+    f.vendor_category_id || f.business_type_id || f.status,
+  );
+  const useSearchIndex = hasQuery && !hasOtherFilters;
+
+  const { data: filteredRows, isFetching: isFetchingFiltered } =
+    useGetVendorsQuery(f, { skip: useSearchIndex });
+
+  const { data: searchResults, isFetching: isFetchingSearch } =
+    useSearchVendorsQuery(f.q, { skip: !useSearchIndex });
+
+  const rows = useSearchIndex ? searchResults : filteredRows;
+  const isFetching = useSearchIndex ? isFetchingSearch : isFetchingFiltered;
+
   const { data: summary } = useGetVendorsSummaryQuery();
   const { data: categories = [] } = useGetVendorCategoriesQuery();
   const { data: businessTypes = [] } = useGetBusinessTypesQuery(
     f.vendor_category_id,
-    { skip: !f.vendor_category_id }
+    { skip: !f.vendor_category_id },
   );
   const { data: savedSearches = [] } = useGetSavedSearchesQuery();
 
@@ -271,19 +291,6 @@ export default function VendorsDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => toast.info("Import coming soon")}
-            className="h-10 px-4 rounded-xl border border-[#B5C4B6] bg-white hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C] flex items-center gap-2"
-          >
-            <Upload size={15} /> Import
-          </button>
-          <button
-            onClick={exportCsv}
-            className="h-10 px-4 rounded-xl border border-[#B5C4B6] bg-white hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C] flex items-center gap-2"
-            data-testid="export-csv-btn"
-          >
-            <Download size={15} /> Export
-          </button>
           <button
             onClick={() => nav("/vendors/shortlists")}
             className="h-10 px-4 rounded-xl border border-[#B5C4B6] bg-white hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C] flex items-center gap-2"
@@ -493,7 +500,10 @@ export default function VendorsDashboard() {
                           <div className="text-[13px] font-semibold text-[#333333] flex items-center gap-1">
                             {v.name}
                             {v.status === "active" && (
-                              <ShieldCheck size={12} className="text-[#333333]" />
+                              <ShieldCheck
+                                size={12}
+                                className="text-[#333333]"
+                              />
                             )}
                           </div>
                           <div className="text-[11.5px] text-[#B5C4B6]">
@@ -519,7 +529,10 @@ export default function VendorsDashboard() {
                       )}
                     </td>
                     <td className="px-3 py-3 text-[12px] text-[#6B7B7C] max-w-[220px] truncate">
-                      <MapPin size={11} className="inline mr-1 text-[#B5C4B6]" />
+                      <MapPin
+                        size={11}
+                        className="inline mr-1 text-[#B5C4B6]"
+                      />
                       {v.address || "—"}
                     </td>
                     <td className="px-3 py-3">
@@ -536,7 +549,9 @@ export default function VendorsDashboard() {
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => nav(`/vendors/${v.id}`)}>
+                          <DropdownMenuItem
+                            onClick={() => nav(`/vendors/${v.id}`)}
+                          >
                             View Profile
                           </DropdownMenuItem>
                           <DropdownMenuItem
@@ -552,7 +567,9 @@ export default function VendorsDashboard() {
                             Add to Shortlist
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => nav(`/quotations/new?vendor=${v.id}`)}
+                            onClick={() =>
+                              nav(`/quotations/new?vendor=${v.id}`)
+                            }
                           >
                             Open in Quotations
                           </DropdownMenuItem>
@@ -633,13 +650,17 @@ export default function VendorsDashboard() {
       />
 
       {/* Delete Confirmation */}
-      <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+      <Dialog
+        open={!!deleteConfirm}
+        onOpenChange={() => setDeleteConfirm(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Vendor</DialogTitle>
           </DialogHeader>
           <p className="text-[13.5px] text-[#6B7B7C]">
-            Are you sure you want to permanently delete this vendor? This action cannot be undone.
+            Are you sure you want to permanently delete this vendor? This action
+            cannot be undone.
           </p>
           <DialogFooter>
             <button

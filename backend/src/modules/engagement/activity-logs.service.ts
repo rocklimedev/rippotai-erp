@@ -62,4 +62,15 @@ export class ActivityLogsService {
       limit: 500,
     });
   }
+  async getActivityLogsByEntityLabel(
+    entityLabel: string,
+  ): Promise<ActivityLog[]> {
+    return this.activityLogModel.findAll({
+      where: {
+        entity_label: entityLabel,
+      },
+      order: [['created_at', 'DESC']],
+      limit: 500,
+    });
+  }
 }

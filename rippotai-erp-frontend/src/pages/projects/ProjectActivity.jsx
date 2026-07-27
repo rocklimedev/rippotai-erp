@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { useGetLeadActivitiesQuery } from "../../api/leads.api";
-
+import { useGetActivityLogByEntityLabelQuery } from "../../api/activity-logs.api";
 /* ============ Leads Activity ============ */
 
 export function ProjectActivity() {
@@ -11,7 +10,7 @@ export function ProjectActivity() {
     date_to: "",
   });
 
-  const { data: rows = [], isLoading } = useGetLeadActivitiesQuery({
+  const { data: rows = [], isLoading } = useGetActivityLogByEntityLabelQuery({
     ...(filters.user && {
       user: filters.user,
     }),

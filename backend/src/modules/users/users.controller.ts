@@ -10,7 +10,8 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
-  Req,
+  UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
@@ -18,13 +19,14 @@ import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto, UpdateProfileDto } from './dto/user.dto';
 
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
-
+import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 @Controller('users')
+@UseGuards(JwtAuthGuard) // ← Recommended: Protect all routes by default
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   // =========================
-  // CREATE USER (Admin)
+  // CREATE USER (Admin) - Optional: May need different guard (e.g., AdminGuard)
   // =========================
   @Post()
   create(@Body() dto: CreateUserDto, @CurrentUser() actor?: any) {
@@ -62,11 +64,14 @@ export class UsersController {
     @Body() dto: UpdateProfileDto,
     @CurrentUser() actor: any,
   ) {
+    if (!actor?.id) {
+      throw new UnauthorizedException('Authentication required');
+    }
     return this.usersService.updateProfile(id, dto, actor.id);
   }
 
   // =========================
-  // UPLOAD AVATAR
+  // UPLOAD AVATAR - Fixed
   // =========================
   @Patch(':id/avatar')
   @UseInterceptors(
@@ -89,6 +94,11 @@ export class UsersController {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
+
+    if (!actor?.id) {
+      throw new UnauthorizedException('Authentication required');
+    }
+
     return this.usersService.uploadAvatar(id, file, actor.id);
   }
 
