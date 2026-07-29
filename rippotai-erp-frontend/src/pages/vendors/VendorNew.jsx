@@ -134,10 +134,6 @@ export default function VendorNew() {
     }
   };
 
-  // Edit mode: once the vendor loads, hydrate the form from it. Guarded by
-  // `hydrated` so a background refetch doesn't clobber what's being typed,
-  // and suppresses the very next autosave so we don't immediately PATCH
-  // back the data we just fetched.
   useEffect(() => {
     if (!isEdit || !vendor || hydrated) return;
     setForm({
@@ -201,7 +197,10 @@ export default function VendorNew() {
 
   if (isEdit && vendorLoading && !hydrated) {
     return (
-      <div className="max-w-3xl mx-auto space-y-6" data-testid="vendor-new-form">
+      <div
+        className="max-w-3xl mx-auto space-y-6"
+        data-testid="vendor-new-form"
+      >
         <div className="text-[13px] text-[#6B7B7C]">Loading vendor…</div>
       </div>
     );
@@ -210,15 +209,13 @@ export default function VendorNew() {
   const backTarget = isEdit ? `/vendors/${vendorId}` : "/vendors";
 
   return (
-    <div
-      className="max-w-3xl mx-auto space-y-6"
-      data-testid="vendor-new-form"
-    >
+    <div className="max-w-3xl mx-auto space-y-6" data-testid="vendor-new-form">
       <button
         onClick={() => nav(backTarget)}
         className="text-[13px] text-[#6B7B7C] hover:text-[#333333] flex items-center gap-1"
       >
-        <ArrowLeftIcon size={14} /> {isEdit ? "Back to Vendor" : "Back to Vendors"}
+        <ArrowLeftIcon size={14} />{" "}
+        {isEdit ? "Back to Vendor" : "Back to Vendors"}
       </button>
       <div>
         <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6] mb-1.5">

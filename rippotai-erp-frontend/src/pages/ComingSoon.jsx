@@ -4,13 +4,6 @@ import { ArrowLeft } from "lucide-react";
 import { APP_ICONS } from "@/components/dashboard/AppIcons";
 import { APP_META, sectionNameFor } from "@/config/appNav";
 
-/**
- * Auto-resolving ComingSoon:
- * - When rendered inside AppLayout via a wildcard route, reads pathname
- *   to determine the section slug, and shows the correct label.
- * - Can also be used with explicit `appKey` + `sectionName` props.
- * - Legacy usage `<ComingSoon title="…" description="…" />` still works.
- */
 export default function ComingSoon(props) {
   const navigate = useNavigate();
   const location = useLocation();

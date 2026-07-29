@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { UniqueConstraintError } from 'sequelize';
+import { Sequelize } from 'sequelize-typescript';
 
 import { RolePermission } from './models/role_permission.model';
 import { Role } from '../rbac/models/role.model';
@@ -25,6 +26,8 @@ export class RolePermissionsService {
 
     @InjectModel(Permission)
     private readonly permissionModel: typeof Permission,
+
+    private readonly sequelize: Sequelize,
   ) {}
 
   async grant(dto: CreateRolePermissionDto): Promise<RolePermission> {
@@ -49,6 +52,37 @@ export class RolePermissionsService {
 
     return this.rolePermissionModel.bulkCreate(rows as any, {
       ignoreDuplicates: true,
+    });
+  }
+
+  /**
+   * Replace a role's entire permission set in one call — mirrors
+   * RoleAppsService.setForRole. Used by a matrix/checklist admin UI
+   * that submits the full desired state rather than incremental
+   * grant/revoke calls.
+   */
+  async setForRole(
+    role_id: string,
+    permission_ids: string[],
+    granted_by?: string,
+  ): Promise<RolePermission[]> {
+    return this.sequelize.transaction(async (t) => {
+      await this.rolePermissionModel.destroy({
+        where: { role_id },
+        transaction: t,
+      });
+
+      if (permission_ids.length === 0) return [];
+
+      const rows = permission_ids.map((permission_id) => ({
+        role_id,
+        permission_id,
+        granted_by: granted_by ?? null,
+      }));
+
+      return this.rolePermissionModel.bulkCreate(rows as any, {
+        transaction: t,
+      });
     });
   }
 

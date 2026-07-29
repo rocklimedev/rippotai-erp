@@ -9,7 +9,8 @@ import {
 } from 'sequelize-typescript';
 
 import { User } from '@/modules/users/models/user.model';
-
+import { RoleApp } from './role-app.model';
+import { RolePermission } from './role_permission.model';
 @Table({
   tableName: 'roles',
   timestamps: true,
@@ -42,4 +43,11 @@ export class Role extends Model<Role> {
     foreignKey: 'role_id',
   })
   declare users: User[];
+
+  // role.model.ts additions
+  @HasMany(() => RoleApp, { foreignKey: 'role_id' })
+  declare roleApps: RoleApp[];
+
+  @HasMany(() => RolePermission, { foreignKey: 'role_id' })
+  declare rolePermissions: RolePermission[];
 }

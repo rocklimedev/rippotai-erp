@@ -41,4 +41,9 @@ export class RolesController {
   remove(@Param('id') id: string) {
     return this.rolesService.remove(id);
   }
+  // roles.controller.ts — add this method
+  @Get(':id/access')
+  findOneWithAccess(@Param('id') id: string) {
+    return this.rolesService.findOneWithAccess(id);
+  }
 }

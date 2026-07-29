@@ -25,13 +25,22 @@ export const rbacApi = baseApi.injectEndpoints({
       providesTags: ["Roles"],
     }),
 
+    getRoleWithAccess: builder.query({
+      query: (id) => `/rbac/${id}/access`,
+      providesTags: (_res, _err, id) => [
+        { type: "Roles", id },
+        "RoleApps",
+        "RolePermissions",
+      ],
+    }),
+
     updateRole: builder.mutation({
       query: ({ id, ...body }) => ({
         url: `/rbac/${id}`,
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["Roles"],
+      invalidatesTags: ["Roles", "RoleApps"],
     }),
 
     deleteRole: builder.mutation({
@@ -39,7 +48,7 @@ export const rbacApi = baseApi.injectEndpoints({
         url: `/rbac/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Roles"],
+      invalidatesTags: ["Roles", "RoleApps", "RolePermissions"],
     }),
 
     // =========================
@@ -121,6 +130,56 @@ export const rbacApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["RolePermissions"],
     }),
+
+    // =========================
+    // ROLE-APPS
+    // =========================
+
+    grantAppToRole: builder.mutation({
+      query: (body) => ({
+        url: "/role-apps",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["RoleApps"],
+    }),
+
+    bulkAssignApps: builder.mutation({
+      query: (body) => ({
+        url: "/role-apps/bulk",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["RoleApps"],
+    }),
+
+    setRoleApps: builder.mutation({
+      query: ({ roleId, app_codes, granted_by }) => ({
+        url: `/role-apps/${roleId}`,
+        method: "PUT",
+        body: { app_codes, granted_by },
+      }),
+      invalidatesTags: ["RoleApps"],
+    }),
+
+    getRoleApps: builder.query({
+      query: (roleId) =>
+        roleId ? `/role-apps?role_id=${roleId}` : "/role-apps",
+      providesTags: ["RoleApps"],
+    }),
+
+    getRoleAppMatrix: builder.query({
+      query: () => "/role-apps/matrix",
+      providesTags: ["RoleApps"],
+    }),
+
+    revokeRoleApp: builder.mutation({
+      query: ({ roleId, appCode }) => ({
+        url: `/role-apps/${roleId}/${appCode}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["RoleApps"],
+    }),
   }),
   overrideExisting: false,
 });
@@ -134,6 +193,7 @@ export const {
   useCreateRoleMutation,
   useGetRolesQuery,
   useGetRoleByIdQuery,
+  useGetRoleWithAccessQuery,
   useUpdateRoleMutation,
   useDeleteRoleMutation,
 
@@ -144,9 +204,18 @@ export const {
   useUpdatePermissionMutation,
   useDeletePermissionMutation,
   useGetRolePermissionMatrixQuery,
+
   // role-permissions
   useGrantPermissionToRoleMutation,
   useBulkAssignPermissionsMutation,
   useGetRolePermissionsQuery,
   useRevokeRolePermissionMutation,
+
+  // role-apps
+  useGrantAppToRoleMutation,
+  useBulkAssignAppsMutation,
+  useSetRoleAppsMutation,
+  useGetRoleAppsQuery,
+  useGetRoleAppMatrixQuery,
+  useRevokeRoleAppMutation,
 } = rbacApi;

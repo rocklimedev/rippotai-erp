@@ -9,18 +9,6 @@ import {
   useCreateClientMutation,
 } from "../../api/client.api";
 
-/**
- * NewProjectModal
- *
- * Lightweight "create project" modal. Wraps useCreateProjectMutation from
- * project.api.js. On success it calls onCreated(project) so the parent
- * (e.g. BoqNew) can auto-select the freshly created project.
- *
- * Client is now a real relation: pulled from useGetClientsQuery and sent
- * as client_id on submit. An inline "+ Add New Client" affordance lets the
- * user create a client on the fly via useCreateClientMutation without
- * leaving the modal; the new client is auto-selected once created.
- */
 export default function NewProjectModal({ open, onClose, onCreated }) {
   const [name, setName] = useState("");
   const [siteLocation, setSiteLocation] = useState("");

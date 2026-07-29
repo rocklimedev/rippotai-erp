@@ -27,6 +27,7 @@ import { DashboardsModule } from './modules/dashboard/dashboard.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { SearchModule } from './modules/search/search.module';
 import { TermsModule } from './modules/metas/terms.module';
+import { AppsModule } from './modules/rbac/app.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -61,6 +62,7 @@ import { TermsModule } from './modules/metas/terms.module';
     BriefModule,
     SiteRecceModule,
     SearchModule,
+    AppsModule,
     TermsModule,
     TasksModule,
     CalendarModule,

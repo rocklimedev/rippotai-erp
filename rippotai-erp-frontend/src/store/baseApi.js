@@ -38,6 +38,8 @@ export const baseApi = createApi({
     "Roles",
     "Permissions",
     "RolePermissions",
+    "Apps",
+    "RoleApps",
     // quotation
     "Quotation",
     "QuotationItems",

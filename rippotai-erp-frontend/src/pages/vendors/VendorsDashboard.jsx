@@ -177,11 +177,6 @@ export default function VendorsDashboard() {
   const [newSearchName, setNewSearchName] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
-  // A vendor category/business-type/status filter is active whenever any of
-  // those fields are set. When that's the case (or there's no query text at
-  // all) we use the regular filtered list endpoint. Plain free-text search
-  // with no other filters active goes through the dedicated search index
-  // instead, since it searches across name/company/contact fields server-side.
   const hasQuery = f.q.trim().length > 0;
   const hasOtherFilters = Boolean(
     f.vendor_category_id || f.business_type_id || f.status,

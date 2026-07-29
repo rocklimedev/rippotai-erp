@@ -1,15 +1,31 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+// dto/role.dto.ts
+import { IsString, IsOptional, IsArray } from 'class-validator';
 
 export class CreateRoleDto {
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(50)
   name: string;
 
-  @IsOptional()
   @IsString()
+  @IsOptional()
   description?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  app_codes?: string[];
 }
 
-export class UpdateRoleDto extends PartialType(CreateRoleDto) {}
+export class UpdateRoleDto {
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  app_codes?: string[];
+}
