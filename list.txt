@@ -1,0 +1,100 @@
+Client Brief *
+
+Project Scope + risk flags *
+
+Budget Sheet *
+
+Scope of Work builder   *
+ Measurement + photo capture *
+
+Site Analysis (auto-drafted)   *
+
+Site Brief generator     DONE
+
+Scope of Approval     *
+  Layout (Existing → Proposed)  DONE
+
+Moodboard & Reference     DONE
+
+Concept 3D 01/02    DONE
+
+Design Development 01/02                DONE
+
+Material Selection Board              *                            
+Pitch Deck + Business Proposal *
+
+Concept 3D presentation mode     *
+
+Design-close summary                        *                       
+Token collection      *
+
+Payment Phase invoicing    *
+
+Payment schedule             *  
+12-trade vendor directory      *
+
+Site visit scheduler          *
+
+Contractor lineup          *                 
+Estimate builder (2 paths)       DONE
+
+Approval → auto Quotation     DONE
+
+BOQ generator (hard-gated)           DONE                        
+ Requirement intake
+
+Sourcing & sample board
+
+Spec linker                         
+  Purchase orders
+
+Staged delivery tracking
+
+Site inventory register                                      
+  Tender set (8 groups)
+
+Working / GFC set (6 groups)
+
+Fixed furniture detail pack                                   
+      Work packages from BOQ
+
+Trade progress tracker (fixed % milestones)                          
+     QC checklist & sign-off (blocking)
+
+Daily site report
+
+Site visit log
+
+Mockup approvals                                     
+    Design clarification / RFI log
+
+Supplementary estimate requests            
+   Budget management
+
+Initial Estimate check (new)
+
+Milestone billing
+
+Consolidated billing                                     
+      Snag list & rectification
+
+Deep clean tracker
+
+Completion certificate
+
+Handover pack                         
+     Programme / timeline
+
+Scope chain tracker
+
+Strategy notes                        
+    Phase-tagged deliverable index
+
+Version history
+
+Cross-module search                  
+  Role directory with active-span presets
+
+12-trade contractor directory
+
+Stripped client view 
