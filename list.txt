@@ -1,100 +1,791 @@
-Client Brief *
+# RIPPOTAI Automation Engine — Complete the Remaining Implementation
 
-Project Scope + risk flags *
+You are working inside the existing **RIPPOTAI ERP NestJS backend**.
 
-Budget Sheet *
+The repository already contains a substantial Automation Engine under:
 
-Scope of Work builder   *
- Measurement + photo capture *
+```text
+src/modules/automation/
+```
 
-Site Analysis (auto-drafted)   *
+**Do NOT rebuild the existing Automation Engine. Do NOT replace the architecture. Do NOT create a second automation system.**
 
-Site Brief generator     DONE
+Your task is to **inspect the existing implementation and complete only the missing capabilities**, while preserving the existing architecture, interfaces, persistence model, queue architecture, idempotency, concurrency, versioning, and detachable-core design.
 
-Scope of Approval     *
-  Layout (Existing → Proposed)  DONE
+---
 
-Moodboard & Reference     DONE
+## 1. FIRST: AUDIT BEFORE WRITING CODE
 
-Concept 3D 01/02    DONE
+Before changing anything:
 
-Design Development 01/02                DONE
+1. Read the entire existing:
 
-Material Selection Board              *                            
-Pitch Deck + Business Proposal *
+```text
+src/modules/automation/
+```
 
-Concept 3D presentation mode     *
+2. Inspect all existing files, services, entities, interfaces, DTOs, controllers, queue/processor code, workflow code, action code, condition code, trigger code, scheduler code, audit code, idempotency code, and concurrency code.
 
-Design-close summary                        *                       
-Token collection      *
+3. Inspect the existing RIPPOTAI modules that the automation system will integrate with.
 
-Payment Phase invoicing    *
+4. Identify what is already implemented.
 
-Payment schedule             *  
-12-trade vendor directory      *
+5. Identify what is partially implemented.
 
-Site visit scheduler          *
+6. Identify what is missing.
 
-Contractor lineup          *                 
-Estimate builder (2 paths)       DONE
+7. Do NOT duplicate existing functionality.
 
-Approval → auto Quotation     DONE
+8. Do NOT rename existing files/classes unless absolutely necessary.
 
-BOQ generator (hard-gated)           DONE                        
- Requirement intake
+9. Reuse existing abstractions whenever possible.
 
-Sourcing & sample board
+10. Before implementing a new capability, determine where it belongs in the current architecture.
 
-Spec linker                         
-  Purchase orders
+---
 
-Staged delivery tracking
+# 2. ARCHITECTURAL RULE — CRITICAL
 
-Site inventory register                                      
-  Tender set (8 groups)
+The Automation Engine must remain **detachable from RIPPOTAI**.
 
-Working / GFC set (6 groups)
+The generic Automation Core must NOT directly import RIPPOTAI business services/models such as:
 
-Fixed furniture detail pack                                   
-      Work packages from BOQ
+```text
+ProjectService
+BoqService
+QuotationService
+VendorService
+TaskService
+ProcurementService
+DocumentService
+```
 
-Trade progress tracker (fixed % milestones)                          
-     QC checklist & sign-off (blocking)
+The generic engine must only communicate with the host application through interfaces, tokens, registries, adapters, context providers, event providers, action providers, authorization providers, audit providers, etc.
 
-Daily site report
+The architecture must remain:
 
-Site visit log
+```text
+                    RIPPOTAI
+                       │
+                 RIPPOTAI ADAPTERS
+                       │
+                 EXTENSION INTERFACES
+                       │
+              GENERIC AUTOMATION CORE
+                       │
+       ┌───────────────┼────────────────┐
+       │               │                │
+     Events         Workflows        Actions
+       │               │                │
+     Rules           Gates          Conditions
+       │               │                │
+       └───────────────┼────────────────┘
+                       │
+                Queue / Scheduler
+                       │
+                    Redis
+                       │
+                    Worker
+```
 
-Mockup approvals                                     
-    Design clarification / RFI log
+The generic core must not become coupled to construction ERP terminology.
 
-Supplementary estimate requests            
-   Budget management
+---
 
-Initial Estimate check (new)
+# 3. COMPLETE THE GATE SYSTEM
 
-Milestone billing
+Implement a generic Gate capability.
 
-Consolidated billing                                     
-      Snag list & rectification
+Create the gate capability only if equivalent functionality does not already exist.
 
-Deep clean tracker
+Recommended structure:
 
-Completion certificate
+```text
+src/modules/automation/gates/
 
-Handover pack                         
-     Programme / timeline
+├── gate.engine.ts
+├── gate.evaluator.ts
+├── gate.registry.ts
+├── gate.types.ts
+└── gate.errors.ts
+```
 
-Scope chain tracker
+Adapt this structure to the existing architecture if better abstractions already exist.
 
-Strategy notes                        
-    Phase-tagged deliverable index
+---
 
-Version history
+## Gate Definition
 
-Cross-module search                  
-  Role directory with active-span presets
+A gate represents a checkpoint that must pass before workflow execution can continue.
 
-12-trade contractor directory
+It should conceptually support:
 
-Stripped client view 
+```text
+GateDefinition
+    id
+    name
+    mode
+    checks
+```
+
+Modes should support at minimum:
+
+```text
+ALL
+ANY
+```
+
+A check should support concepts such as:
+
+```text
+path
+operator
+expected value
+```
+
+Reuse the existing Condition Engine and operators wherever possible.
+
+Do NOT create a second condition evaluation system.
+
+---
+
+# 4. Gate Evaluation
+
+The Gate Engine must produce a structured result.
+
+Conceptually:
+
+```text
+PASSED
+BLOCKED
+ERROR
+```
+
+The result should contain enough information for the UI and audit system to explain:
+
+```text
+which checks passed
+which checks failed
+why a check failed
+```
+
+Example:
+
+```text
+Execution Gate
+
+✓ Contract approved
+✓ BOQ approved
+✗ Contractor selected
+
+STATUS: BLOCKED
+
+Reason:
+Contractor has not been selected.
+```
+
+Do not hardcode construction terminology into the generic Gate Engine.
+
+---
+
+# 5. GATE + CONTEXT PROVIDER
+
+The Gate Engine must obtain business data through the existing automation context/extension mechanism.
+
+Never do:
+
+```text
+GateEngine
+    ↓
+ProjectService
+```
+
+Instead:
+
+```text
+GateEngine
+    ↓
+AutomationContext / ContextProvider
+    ↓
+RIPPOTAI Adapter
+    ↓
+ProjectService
+```
+
+The generic engine should be capable of evaluating:
+
+```text
+project.contractApproved
+project.boqApproved
+vendor.selected
+```
+
+without knowing what those objects actually represent.
+
+---
+
+# 6. GATE + CONDITION ENGINE
+
+Do not duplicate:
+
+```text
+equals
+not equals
+greater than
+less than
+contains
+AND
+OR
+NOT
+```
+
+Reuse the existing Condition Engine and operator architecture.
+
+The relationship should be:
+
+```text
+Gate
+  ↓
+Gate Checks
+  ↓
+Condition Engine
+  ↓
+Condition Result
+  ↓
+Gate Result
+```
+
+If the existing Condition Engine lacks an operator required by the gate implementation, add it to the existing condition architecture rather than creating a separate operator system.
+
+---
+
+# 7. GATE + WORKFLOW ENGINE
+
+Integrate gates with the existing Workflow Engine.
+
+A workflow should be capable of:
+
+```text
+Step A
+   ↓
+Gate
+   ↓
+Step B
+```
+
+If the gate passes:
+
+```text
+Gate PASSED
+    ↓
+Continue workflow
+```
+
+If it fails:
+
+```text
+Gate BLOCKED
+    ↓
+Workflow WAITING
+```
+
+Use the existing persisted workflow waiting/resume state.
+
+Do NOT create a second waiting-state implementation.
+
+---
+
+# 8. GATE RESUME
+
+A blocked gate must be able to resume when relevant business events occur.
+
+The intended architecture is:
+
+```text
+Gate BLOCKED
+      ↓
+Workflow WAITING
+      ↓
+Relevant Domain Event
+      ↓
+Event Registry
+      ↓
+Find affected workflow
+      ↓
+Re-evaluate Gate
+      ↓
+PASSED
+      ↓
+Resume Workflow
+```
+
+Do not implement inefficient global polling if the existing event architecture can support event-driven resume.
+
+Do not re-evaluate every waiting workflow for every event.
+
+Use correlation/context information where appropriate.
+
+---
+
+# 9. HUMAN APPROVAL CAPABILITY
+
+Inspect the existing RIPPOTAI approval functionality first.
+
+If RIPPOTAI already has an approval system:
+
+**DO NOT create a duplicate approval system.**
+
+Instead, create an automation adapter/capability that allows a workflow to:
+
+```text
+REQUEST_APPROVAL
+WAIT_FOR_APPROVAL
+APPROVAL_COMPLETED
+APPROVAL_REJECTED
+```
+
+Generic Automation Core should only understand the generic lifecycle.
+
+RIPPOTAI should provide the actual approval implementation.
+
+Architecture:
+
+```text
+Automation
+    ↓
+Request Approval
+    ↓
+RIPPOTAI Approval Adapter
+    ↓
+Existing Approval System
+    ↓
+Approval Event
+    ↓
+Automation Event System
+    ↓
+Workflow Resume
+```
+
+---
+
+# 10. WORKFLOW DECISION / BRANCHING
+
+Inspect the existing workflow implementation first.
+
+If branching is not already implemented, add generic decision/branching capability to the workflow architecture.
+
+Do NOT create an entirely independent execution engine.
+
+The desired conceptual model is:
+
+```text
+                 Decision
+                    │
+             ┌──────┴──────┐
+             │             │
+           TRUE          FALSE
+             │             │
+          Action A      Action B
+```
+
+Reuse the existing Condition Engine.
+
+---
+
+# 11. PARALLEL EXECUTION
+
+Inspect the existing workflow execution model.
+
+If parallel branches are not already supported, implement generic:
+
+```text
+PARALLEL
+JOIN
+```
+
+capabilities.
+
+Example:
+
+```text
+Project Approved
+       ↓
+    PARALLEL
+    /   |   \
+   /    |    \
+ BOQ   QC   Documents
+   \    |    /
+    \   |   /
+      JOIN
+       ↓
+Continue
+```
+
+The implementation must safely persist state and support retries/resume.
+
+Do not assume in-memory state is sufficient.
+
+---
+
+# 12. TIMEOUTS
+
+Extend the existing scheduler/delayed-job infrastructure where possible.
+
+Workflows should be able to define a timeout for waiting states.
+
+Example:
+
+```text
+WAITING_FOR_APPROVAL
+
+timeout:
+72 hours
+```
+
+On timeout, support generic outcomes such as:
+
+```text
+FAIL
+CANCEL
+ESCALATE
+RUN ACTION
+```
+
+Do not create another scheduler.
+
+Reuse:
+
+```text
+existing scheduler
+existing queue
+existing delayed jobs
+existing workflow state
+```
+
+---
+
+# 13. ESCALATION
+
+If timeout/escalation is not already present, implement a generic escalation concept.
+
+The generic engine should understand:
+
+```text
+EscalationPolicy
+```
+
+but must not know:
+
+```text
+manager
+project manager
+procurement manager
+director
+```
+
+RIPPOTAI should resolve those through its adapter/context/authorization layer.
+
+Example:
+
+```text
+Approval waiting
+       ↓
+24 hours
+       ↓
+Notify approver
+       ↓
+48 hours
+       ↓
+Escalate
+```
+
+---
+
+# 14. OBSERVABILITY
+
+Use the existing:
+
+```text
+automation-run
+automation-run-step
+audit
+```
+
+infrastructure.
+
+Do not duplicate execution persistence.
+
+Ensure every significant workflow transition can be diagnosed:
+
+```text
+trigger received
+automation selected
+conditions evaluated
+gate evaluated
+action started
+action completed
+action failed
+workflow waiting
+workflow resumed
+workflow completed
+workflow failed
+```
+
+Errors should contain useful structured information.
+
+---
+
+# 15. ERROR HANDLING
+
+Inspect the existing error hierarchy.
+
+Do not randomly introduce:
+
+```ts
+throw new Error(...)
+```
+
+where a domain-specific automation error already exists.
+
+Use structured errors for:
+
+```text
+validation
+configuration
+execution
+condition evaluation
+gate failure
+workflow failure
+action failure
+```
+
+Preserve error information in:
+
+```text
+automation runs
+automation run steps
+audit logs
+```
+
+where appropriate.
+
+---
+
+# 16. IDEMPOTENCY
+
+Do NOT modify the existing idempotency architecture unless the audit shows a real defect.
+
+Every new event-driven capability must respect existing idempotency.
+
+A duplicate event must not cause:
+
+```text
+duplicate workflow
+duplicate PO
+duplicate notification
+duplicate approval
+duplicate action
+```
+
+unless the action is explicitly designed to be repeatable.
+
+---
+
+# 17. CONCURRENCY
+
+Respect the existing concurrency/cycle protection.
+
+Do not introduce:
+
+```text
+recursive execution
+unbounded workflow loops
+duplicate parallel execution
+```
+
+Add protections if required by the new workflow/gate/parallel capabilities.
+
+---
+
+# 18. ACTION SYSTEM
+
+Use the existing:
+
+```text
+ActionRegistry
+ActionEngine
+Action adapters
+```
+
+Do NOT create another action mechanism.
+
+RIPPOTAI-specific actions should remain adapters.
+
+Examples that may eventually be required:
+
+```text
+CREATE_TASK
+UPDATE_TASK
+CREATE_PO
+UPDATE_PROJECT
+CREATE_DOCUMENT
+SEND_NOTIFICATION
+REQUEST_APPROVAL
+```
+
+Only implement actions that are actually required by existing RIPPOTAI modules and existing automation use cases.
+
+Do not invent unnecessary business actions.
+
+---
+
+# 19. RIPPOTAI ADAPTERS
+
+After the generic engine capabilities are complete, inspect the actual RIPPOTAI modules and identify the required adapters.
+
+Possible areas:
+
+```text
+projects
+boqs
+quotations
+vendors
+procurement
+tasks
+documents
+notifications
+approvals
+```
+
+For each adapter:
+
+```text
+Generic Automation Interface
+          ↓
+RIPPOTAI Adapter
+          ↓
+Existing RIPPOTAI Service
+```
+
+Never bypass the existing business-service layer to directly manipulate domain tables from the automation engine.
+
+---
+
+# 20. DATABASE
+
+Do not create a separate Automation database.
+
+Keep automation persistence inside the existing RIPPOTAI database unless there is an explicit existing architectural reason not to.
+
+Reuse existing entities:
+
+```text
+automation
+automation-version
+automation-run
+automation-run-step
+processed-event
+scheduled-automation
+workflow-definition
+workflow-instance
+```
+
+Only add new entities if the feature genuinely requires persistence that cannot be represented by the existing model.
+
+Potential future entities may include gate configuration/state, but do not create them automatically if gates can safely be represented inside existing workflow definitions/steps.
+
+---
+
+# 21. REDIS / BULLMQ
+
+Keep the existing:
+
+```text
+Redis
+BullMQ
+Automation Queue
+Automation Processor
+```
+
+architecture.
+
+Do not move automation execution into synchronous HTTP requests.
+
+The desired execution path remains:
+
+```text
+HTTP / Domain Event
+        ↓
+Persist event/run
+        ↓
+Queue
+        ↓
+Worker
+        ↓
+Automation Engine
+        ↓
+Actions
+```
+
+---
+
+# 22. DETACHABILITY TEST
+
+After implementation, perform an architectural check.
+
+The generic Automation Core must NOT import RIPPOTAI-specific classes.
+
+Search for imports referencing:
+
+```text
+ProjectService
+BoqService
+QuotationService
+VendorService
+TaskService
+ProcurementService
+```
+
+inside the generic engine.
+
+If found, refactor them behind an adapter/interface.
+
+RIPPOTAI-specific code should live on the integration/adapter side.
+
+---
+
+# 23. DO NOT OVERENGINEER
+
+The current expected traffic is approximately:
+
+```text
+~500 events/day currently
+```
+
+with a possible future scale of:
+
+```text
+10k+ users/day
+```
+
+The system should therefore be production-safe and horizontally scalable, but do NOT introduce unnecessary microservices, distributed systems, Kafka, Kubernetes, separate databases, or other infrastructure unless the existing code genuinely requires them.
+
+Current target:
+
+```text
+RIPPOTAI API
+      │
+      ├── Automation Module
+      │
+      └── Automation Worker
+              │
+            BullMQ
+              │
+            Redis
+              │
+            MySQL
+```
+
+The Automation Worker may run as a separate process/container while remaining in the same repository and using the same automation module.
+
+---
