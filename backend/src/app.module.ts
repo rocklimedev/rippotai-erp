@@ -28,6 +28,19 @@ import { LeadsModule } from './modules/leads/leads.module';
 import { SearchModule } from './modules/search/search.module';
 import { TermsModule } from './modules/metas/terms.module';
 import { AppsModule } from './modules/rbac/app.module';
+import { ProcessModule } from './modules/process/process.module';
+import { SiteInventoryItemsModule } from './modules/inventory/site-inventory-items.module';
+import { SiteInventoryTransactionsModule } from './modules/inventory/site-inventory-transactions.module';
+import { MaterialRateSheetsModule } from './modules/materials/material-rate-sheets.module';
+import { MaterialRequirementsModule } from './modules/materials/material-requirements.module';
+import { DeliveryChallansModule } from './modules/purchase-orders/delivery-challans.module';
+import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.module';
+import { PurchaseOrderItemsModule } from './modules/purchase-orders/purchase-order-items.module';
+import { EstimatesModule } from './modules/quotations/estimates.module';
+import { ContractorLineupModule } from './modules/vendors/contractor-lineup.module';
+import { SampleBoardsModule } from './modules/vendors/sample-boards.module';
+import { VendorSiteMeasurementsModule } from './modules/vendors/vendor-site-measurements.module';
+import { VendorTenderResponsesModule } from './modules/vendors/vendor-tender-responses.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -62,6 +75,19 @@ import { AppsModule } from './modules/rbac/app.module';
     BriefModule,
     SiteRecceModule,
     SearchModule,
+    ProcessModule,
+    SiteInventoryItemsModule,
+    SiteInventoryTransactionsModule,
+    MaterialRateSheetsModule,
+    MaterialRequirementsModule,
+    DeliveryChallansModule,
+    PurchaseOrdersModule,
+    PurchaseOrderItemsModule,
+    EstimatesModule,
+    ContractorLineupModule,
+    SampleBoardsModule,
+    VendorSiteMeasurementsModule,
+    VendorTenderResponsesModule,
     AppsModule,
     TermsModule,
     TasksModule,

@@ -1096,7 +1096,6 @@ CREATE TABLE IF NOT EXISTS `verification_tokens` (
 -- MODULE 0 — TRADE / TEAM MASTER
 -- (ARC, SUP, ADM, ACC, PLN, PRC, CLI + the 12 contractor trades)
 -- ============================================================
-
 CREATE TABLE IF NOT EXISTS `trade_teams` (
   `id` char(36) COLLATE utf8_unicode_ci NOT NULL,
   `code` varchar(10) COLLATE utf8_unicode_ci NOT NULL,
