@@ -17,7 +17,7 @@ import type {
 
 import { Project } from '@/modules/projects/models/projects.model';
 import { User } from '@/modules/users/models/user.model';
-import { SampleBoard } from '@/modules/vendors/models/sample-board.model';
+import { SampleBoard } from '@/modules/materials/models/sample-board.model';
 
 export enum MaterialRequirementStatus {
   PENDING = 'PENDING',

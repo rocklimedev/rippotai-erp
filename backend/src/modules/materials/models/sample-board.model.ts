@@ -19,7 +19,7 @@ import type {
 import { Document } from '@/modules/documents/models/document.model';
 import { Project } from '@/modules/projects/models/projects.model';
 import { User } from '@/modules/users/models/user.model';
-import { Vendor } from './vendors.model';
+import { Vendor } from '../../vendors/models/vendors.model';
 import { MaterialRequirement } from '@/modules/materials/models/material-requirement.model';
 
 export enum SampleBoardStatus {

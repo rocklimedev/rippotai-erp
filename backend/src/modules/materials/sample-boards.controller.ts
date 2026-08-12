@@ -9,7 +9,10 @@ import {
   Query,
 } from '@nestjs/common';
 import { SampleBoardsService } from './sample-boards.service';
-import { CreateSampleBoardDto, UpdateSampleBoardDto } from './dto/sample-board.dto';
+import {
+  CreateSampleBoardDto,
+  UpdateSampleBoardDto,
+} from './dto/sample-board.dto';
 
 @Controller('sample-boards')
 export class SampleBoardsController {

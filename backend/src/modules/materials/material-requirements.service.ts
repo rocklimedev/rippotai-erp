@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { randomUUID } from 'crypto';
 import { MaterialRequirementStatus } from './models/material-requirement.model';
 import { MaterialRequirement } from './models/material-requirement.model';
-import { SampleBoard } from '../vendors/models/sample-board.model';
+import { SampleBoard } from './models/sample-board.model';
 
 import {
   CreateMaterialRequirementDto,
