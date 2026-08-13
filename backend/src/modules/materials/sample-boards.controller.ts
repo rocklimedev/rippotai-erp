@@ -14,7 +14,7 @@ import {
   UpdateSampleBoardDto,
 } from './dto/sample-board.dto';
 
-@Controller('materials/sample-boards')
+@Controller('material/sample-boards')
 export class SampleBoardsController {
   constructor(private readonly service: SampleBoardsService) {}
 
