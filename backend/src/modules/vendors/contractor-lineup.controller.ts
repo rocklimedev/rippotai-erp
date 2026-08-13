@@ -15,7 +15,7 @@ import { UpdateContractorLineupDto } from './dto/update-contractor-lineup.dto';
 import { UpdateLineupStatusDto } from './dto/update-lineup-status.dto';
 import { ContractorLineupStatus } from '@/common/enums/estimate.enums';
 
-@Controller('contractor-lineup')
+@Controller('vendor/contractor-lineup')
 export class ContractorLineupController {
   constructor(private readonly service: ContractorLineupService) {}
 

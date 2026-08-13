@@ -15,7 +15,7 @@ import { CreateProjectHandoverDto } from './dto/create-project-handover.dto';
 import { UpdateProjectHandoverDto } from './dto/update-project-handover.dto';
 import { SignOffProjectHandoverDto } from './dto/sign-off-project-handover.dto';
 
-@Controller('project-handovers')
+@Controller('handover/project-handovers')
 export class ProjectHandoversController {
   constructor(
     private readonly projectHandoversService: ProjectHandoversService,

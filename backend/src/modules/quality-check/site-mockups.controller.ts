@@ -15,7 +15,7 @@ import { SiteMockupsService } from './site-mockups.service';
 import { CreateSiteMockupDto } from './dto/create-site-mockup.dto';
 import { UpdateSiteMockupDto } from './dto/update-site-mockup.dto';
 
-@Controller('site-mockups')
+@Controller('qc/site-mockups')
 export class SiteMockupsController {
   constructor(private readonly siteMockupsService: SiteMockupsService) {}
 

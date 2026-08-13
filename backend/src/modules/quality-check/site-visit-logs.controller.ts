@@ -15,7 +15,7 @@ import { SiteVisitLogsService } from './site-visit-logs.service';
 import { CreateSiteVisitLogDto } from './dto/create-site-visit-log.dto';
 import { UpdateSiteVisitLogDto } from './dto/update-site-visit-log.dto';
 
-@Controller('site-visit-logs')
+@Controller('qc/site-visit-logs')
 export class SiteVisitLogsController {
   constructor(private readonly siteVisitLogsService: SiteVisitLogsService) {}
 

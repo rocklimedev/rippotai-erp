@@ -14,7 +14,7 @@ import {
   UpdateMaterialRateSheetDto,
 } from './dto/material-rate-sheet.dto';
 
-@Controller('material-rate-sheets')
+@Controller('material/rate-sheets')
 export class MaterialRateSheetsController {
   constructor(private readonly service: MaterialRateSheetsService) {}
 

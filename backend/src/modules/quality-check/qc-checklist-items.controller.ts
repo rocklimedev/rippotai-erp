@@ -15,7 +15,7 @@ import { QcChecklistItemsService } from './qc-checklist-items.service';
 import { CreateQcChecklistItemDto } from './dto/create-qc-checklist-item.dto';
 import { UpdateQcChecklistItemDto } from './dto/update-qc-checklist-item.dto';
 
-@Controller('qc-checklist-items')
+@Controller('qc/checklist-items')
 export class QcChecklistItemsController {
   constructor(
     private readonly qcChecklistItemsService: QcChecklistItemsService,

@@ -15,7 +15,7 @@ import { QcChecklistTemplatesService } from './qc-checklist-templates.service';
 import { CreateQcChecklistTemplateDto } from './dto/create-qc-checklist-template.dto';
 import { UpdateQcChecklistTemplateDto } from './dto/update-qc-checklist-template.dto';
 
-@Controller('qc-checklist-templates')
+@Controller('qc/checklist-templates')
 export class QcChecklistTemplatesController {
   constructor(
     private readonly qcChecklistTemplatesService: QcChecklistTemplatesService,

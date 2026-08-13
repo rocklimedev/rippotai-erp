@@ -15,7 +15,7 @@ import { PhaseQcSignoffsService } from './phase-qc-signoffs.service';
 import { CreatePhaseQcSignoffDto } from './dto/create-phase-qc-signoff.dto';
 import { UpdatePhaseQcSignoffDto } from './dto/update-phase-qc-signoff.dto';
 
-@Controller('phase-qc-signoffs')
+@Controller('qc/signoffs')
 export class PhaseQcSignoffsController {
   constructor(
     private readonly phaseQcSignoffsService: PhaseQcSignoffsService,

@@ -17,7 +17,7 @@ import { UpdateDesignClarificationDto } from './dto/update-design-clarification.
 import { RespondDesignClarificationDto } from './dto/respond-design-clarification.dto';
 import { DesignClarificationStatus } from './models/design-clarification.model';
 
-@Controller('design-clarifications')
+@Controller('qc/design-clarifications')
 export class DesignClarificationsController {
   constructor(
     private readonly designClarificationsService: DesignClarificationsService,

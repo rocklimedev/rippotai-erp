@@ -14,7 +14,7 @@ import {
   UpdateMaterialRequirementDto,
 } from './dto/material-requirement.dto';
 
-@Controller('material-requirements')
+@Controller('material/requirements')
 export class MaterialRequirementsController {
   constructor(private readonly service: MaterialRequirementsService) {}
 

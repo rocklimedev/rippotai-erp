@@ -15,7 +15,7 @@ import { UpdateVendorTenderResponseDto } from './dto/update-vendor-tender-respon
 import { CreateEstimateFromResponseDto } from './dto/create-estimate-from-response.dto';
 import { TenderResponseStatus } from '@/common/enums/estimate.enums';
 
-@Controller('vendor-tender-responses')
+@Controller('vendor/tender-responses')
 export class VendorTenderResponsesController {
   constructor(private readonly service: VendorTenderResponsesService) {}
 

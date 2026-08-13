@@ -15,7 +15,7 @@ import { WorkPackagesService } from './work-packages.service';
 import { CreateWorkPackageDto } from './dto/create-work-package.dto';
 import { UpdateWorkPackageDto } from './dto/update-work-package.dto';
 
-@Controller('work-packages')
+@Controller('projects/work-packages')
 export class WorkPackagesController {
   constructor(private readonly workPackagesService: WorkPackagesService) {}
 

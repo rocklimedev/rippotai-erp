@@ -16,7 +16,7 @@ import { CreateSnagItemDto } from './dto/create-snag-item.dto';
 import { UpdateSnagItemDto } from './dto/update-snag-item.dto';
 import { SnagItemStatus } from './models/snag-item.model';
 
-@Controller('snag-items')
+@Controller('handover/snag-items')
 export class SnagItemsController {
   constructor(private readonly snagItemsService: SnagItemsService) {}
 

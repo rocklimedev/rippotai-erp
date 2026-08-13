@@ -15,7 +15,7 @@ import { DailySiteReportsService } from './daily-site-reports.service';
 import { CreateDailySiteReportDto } from './dto/create-daily-site-report.dto';
 import { UpdateDailySiteReportDto } from './dto/update-daily-site-report.dto';
 
-@Controller('daily-site-reports')
+@Controller('qc/site-reports')
 export class DailySiteReportsController {
   constructor(
     private readonly dailySiteReportsService: DailySiteReportsService,

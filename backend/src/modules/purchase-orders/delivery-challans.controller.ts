@@ -11,7 +11,7 @@ import {
 import { DeliveryChallansService } from './delivery-challans.service';
 import { CreateDeliveryChallanDto } from './dto/delivery-challan.dto';
 
-@Controller('delivery-challans')
+@Controller('purchase-orders/delivery-challans')
 export class DeliveryChallansController {
   constructor(private readonly service: DeliveryChallansService) {}
 

@@ -14,7 +14,7 @@ import {
   UpdateSiteInventoryItemDto,
 } from './dto/site-inventory-item.dto';
 
-@Controller('site-inventory-items')
+@Controller('site-inventory/items')
 export class SiteInventoryItemsController {
   constructor(private readonly service: SiteInventoryItemsService) {}
 

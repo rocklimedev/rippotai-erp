@@ -13,7 +13,7 @@ import { VendorSiteMeasurementsService } from './vendor-site-measurements.servic
 import { CreateVendorSiteMeasurementDto } from './dto/create-vendor-site-measurement.dto';
 import { UpdateVendorSiteMeasurementDto } from './dto/update-vendor-site-measurement.dto';
 
-@Controller('vendor-site-measurements')
+@Controller('vendor/site-measurements')
 export class VendorSiteMeasurementsController {
   constructor(private readonly service: VendorSiteMeasurementsService) {}
 
@@ -37,7 +37,10 @@ export class VendorSiteMeasurementsController {
   }
 
   @Patch(':id')
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateVendorSiteMeasurementDto) {
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateVendorSiteMeasurementDto,
+  ) {
     return this.service.update(id, dto);
   }
 

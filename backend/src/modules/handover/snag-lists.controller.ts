@@ -15,7 +15,7 @@ import { SnagListsService } from './snag-lists.service';
 import { CreateSnagListDto } from './dto/create-snag-list.dto';
 import { UpdateSnagListDto } from './dto/update-snag-list.dto';
 
-@Controller('snag-lists')
+@Controller('handovers/snag-lists')
 export class SnagListsController {
   constructor(private readonly snagListsService: SnagListsService) {}
 
