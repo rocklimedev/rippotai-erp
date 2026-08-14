@@ -1,100 +1,61 @@
-Client Brief *
+BOQ:
+BOQ ALL 
+BOQ ADD 
+RATE AND ITEM LIBRARY
+BOQ TEMPLATES 
+PROJECTS
+SETTINGS BOQ
 
-Project Scope + risk flags *
+PROJECTS:
+PROEJCTS LIST 
+CREATE PROJECTS
+SETTINGS PROJECTS
 
-Budget Sheet *
+ESTIMATE: 
+ESTIMATES LIST
+ESTIOMATES CREATE 
+PROJECTS 
+SETTINGS ESTIMATES 
 
-Scope of Work builder   *
- Measurement + photo capture *
+VENDORS 
+VENDORS LIST 
+VENDORS ADD 
+SETTINGS VENDORS 
 
-Site Analysis (auto-drafted)   *
+DOCUMENTS:
+ALL DOCUMENTS 
+UPLOAD DOCUMENTS
+PROJECTS 
+FORMS : [
+  PROJECT BRIEF LIST + ADD
+  SITE BRIEF LIST + ADD 
+]
+DRAWINGS [list + upload]
+SETTINGS DOCUMENTS
 
-Site Brief generator     DONE
+LEADS : 
+PIPELINE
+CREATE LEADS
+SOURCES 
+SETTINGS LEADS 
 
-Scope of Approval     *
-  Layout (Existing → Proposed)  DONE
 
-Moodboard & Reference     DONE
+TASKS: 
+TASKS LIST
+MY TASKS 
+SETTINGS TASKS 
 
-Concept 3D 01/02    DONE
+CALENDAR : 
+CALENDAR MAIN
+CALENDAR MY 
+CANDAR TEAM
+SETTINGS CALANDAR
 
-Design Development 01/02                DONE
-
-Material Selection Board              *                            
-Pitch Deck + Business Proposal *
-
-Concept 3D presentation mode     *
-
-Design-close summary                        *                       
-Token collection      *
-
-Payment Phase invoicing    *
-
-Payment schedule             *  
-12-trade vendor directory      *
-
-Site visit scheduler          *
-
-Contractor lineup          *                 
-Estimate builder (2 paths)       DONE
-
-Approval → auto Quotation     DONE
-
-BOQ generator (hard-gated)           DONE                        
- Requirement intake
-
-Sourcing & sample board
-
-Spec linker                         
-  Purchase orders
-
-Staged delivery tracking
-
-Site inventory register                                      
-  Tender set (8 groups)
-
-Working / GFC set (6 groups)
-
-Fixed furniture detail pack                                   
-      Work packages from BOQ
-
-Trade progress tracker (fixed % milestones)                          
-     QC checklist & sign-off (blocking)
-
-Daily site report
-
-Site visit log
-
-Mockup approvals                                     
-    Design clarification / RFI log
-
-Supplementary estimate requests            
-   Budget management
-
-Initial Estimate check (new)
-
-Milestone billing
-
-Consolidated billing                                     
-      Snag list & rectification
-
-Deep clean tracker
-
-Completion certificate
-
-Handover pack                         
-     Programme / timeline
-
-Scope chain tracker
-
-Strategy notes                        
-    Phase-tagged deliverable index
-
-Version history
-
-Cross-module search                  
-  Role directory with active-span presets
-
-12-trade contractor directory
-
-Stripped client view 
+SETTINGS (MAIN): 
+EDIT PROFILE
+SECURITY 
+ESTIMATE SIGNATRE
+USERS LIST
+ROLES AND PERMISSIONS 
+SUPER ADMIN CONSOLE (ACTIVITY LOGS)
+TERMS AND CONDITIONS LIST AND + CREATE + MANAGE 

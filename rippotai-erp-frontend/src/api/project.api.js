@@ -2,6 +2,10 @@ import { baseApi } from "../store/baseApi";
 
 export const projectsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    // ============================================================
+    // Projects
+    // ============================================================
+
     // =========================
     // Create Project
     // =========================
@@ -29,7 +33,7 @@ export const projectsApi = baseApi.injectEndpoints({
     }),
 
     // =========================
-    // Get Projects Summary (counts for the dashboard cards)
+    // Get Projects Summary
     // =========================
     getProjectsSummary: builder.query({
       query: () => "/projects/summary",
@@ -37,7 +41,7 @@ export const projectsApi = baseApi.injectEndpoints({
     }),
 
     // =========================
-    // Get Full Projects List (dashboard table: progress, timeline, phase, etc.)
+    // Get Full Projects List
     // =========================
     getProjectsFull: builder.query({
       query: () => "/projects/full",
@@ -83,7 +87,9 @@ export const projectsApi = baseApi.injectEndpoints({
       query: ({ id, archived_by }) => ({
         url: `/projects/${id}/archive`,
         method: "PATCH",
-        body: { archived_by },
+        body: {
+          archived_by,
+        },
       }),
       invalidatesTags: (result, error, { id }) => [
         "Projects",
@@ -116,25 +122,99 @@ export const projectsApi = baseApi.injectEndpoints({
       invalidatesTags: ["Projects"],
     }),
 
+    // ============================================================
+    // Project Phases
+    // ============================================================
+
     // =========================
+    // Create Project Phase
+    // POST /projects-phases
+    // =========================
+    createProjectPhase: builder.mutation({
+      query: (body) => ({
+        url: "/projects-phases",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["ProjectPhases"],
+    }),
+
+    // =========================
+    // Get All Project Phases
+    // GET /projects-phases
+    // GET /projects-phases?search=MEP
+    // =========================
+    getProjectPhases: builder.query({
+      query: ({ search } = {}) => ({
+        url: "/projects-phases",
+        params: {
+          search,
+        },
+      }),
+      providesTags: ["ProjectPhases"],
+    }),
+
+    // =========================
+    // Get Project Phase By ID
+    // GET /projects-phases/:id
+    // =========================
+    getProjectPhaseById: builder.query({
+      query: (id) => `/projects-phases/${id}`,
+      providesTags: (result, error, id) => [{ type: "ProjectPhases", id }],
+    }),
+
+    // =========================
+    // Update Project Phase
+    // PATCH /projects-phases/:id
+    // =========================
+    updateProjectPhase: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/projects-phases/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        "ProjectPhases",
+        { type: "ProjectPhases", id },
+      ],
+    }),
+
+    // =========================
+    // Delete Project Phase
+    // DELETE /projects-phases/:id
+    // =========================
+    deleteProjectPhase: builder.mutation({
+      query: (id) => ({
+        url: `/projects-phases/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, id) => [
+        "ProjectPhases",
+        { type: "ProjectPhases", id },
+      ],
+    }),
+    // ============================================================
     // Milestones
-    // =========================
+    // ============================================================
+
     getUpcomingMilestones: builder.query({
       query: (limit = 5) => `/projects/milestones/upcoming?limit=${limit}`,
       providesTags: ["Milestones"],
     }),
 
-    // =========================
+    // ============================================================
     // Activity
-    // =========================
+    // ============================================================
+
     getRecentActivity: builder.query({
       query: (limit = 10) => `/projects/activity/recent?limit=${limit}`,
       providesTags: ["Activity"],
     }),
 
-    // =========================
-    // Dashboards — Phase 8 tables
-    // =========================
+    // ============================================================
+    // Dashboards — Phase 8
+    // ============================================================
+
     getProjectsProgress: builder.query({
       query: () => "/projects/progress",
       providesTags: ["Projects"],
@@ -145,9 +225,10 @@ export const projectsApi = baseApi.injectEndpoints({
       providesTags: ["Milestones"],
     }),
 
-    // =========================
-    // Dashboards — Phase 10 charts
-    // =========================
+    // ============================================================
+    // Dashboards — Phase 10
+    // ============================================================
+
     getProjectsProgressTrend: builder.query({
       query: (months = 6) => `/projects/progress-trend?months=${months}`,
       providesTags: ["Projects"],
@@ -163,10 +244,15 @@ export const projectsApi = baseApi.injectEndpoints({
       providesTags: ["Projects"],
     }),
   }),
+
   overrideExisting: false,
 });
 
 export const {
+  // ============================================================
+  // Projects
+  // ============================================================
+
   useCreateProjectMutation,
   useGetProjectsQuery,
   useGetProjectsSummaryQuery,
@@ -178,12 +264,34 @@ export const {
   useRestoreProjectMutation,
   useDeleteProjectMutation,
 
+  // ============================================================
+  // Project Phases
+  // ============================================================
+
+  useCreateProjectPhaseMutation,
+  useGetProjectPhasesQuery,
+  useGetProjectPhaseByIdQuery,
+  useUpdateProjectPhaseMutation,
+  useDeleteProjectPhaseMutation,
+
+  // ============================================================
+  // Milestones
+  // ============================================================
+
   useGetUpcomingMilestonesQuery,
+
+  // ============================================================
+  // Activity
+  // ============================================================
+
   useGetRecentActivityQuery,
+
+  // ============================================================
+  // Dashboard
+  // ============================================================
 
   useGetProjectsProgressQuery,
   useGetUpcomingMilestones4Query,
-
   useGetProjectsProgressTrendQuery,
   useGetProjectsPhaseMixQuery,
   useGetProjectsVarianceByProjectQuery,

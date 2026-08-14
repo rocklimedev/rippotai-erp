@@ -63,6 +63,7 @@ export const baseApi = createApi({
     // projects
     "Projects",
     "ProjectStatus",
+    "ProjectPhases",
     "Milestones",
     "Activity",
     // settings
@@ -84,6 +85,8 @@ export const baseApi = createApi({
     "LIBRARY",
     "BOQ_CATALOG",
     "BOQ_VERSION",
+    "PlanOfActions",
+    "TeamMembers",
     // documents
     "Document",
     // drawing

@@ -148,8 +148,10 @@ export const APP_MENUS = {
       items: [
         I("Project Brief", "forms/project-brief"),
         I("Site Reki", "forms/site-reki"),
+        I("Plan of Action", "forms/plan-of-action"),
         I("All Site Recce", "recce/all"),
         I("All Project Brief", "brief/all"),
+        I("All Plan Of Action", "plan-of-action/all"),
       ],
     },
     {
