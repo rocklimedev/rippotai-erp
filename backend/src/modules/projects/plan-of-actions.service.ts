@@ -119,7 +119,6 @@ export class PlanOfActionsService {
         // --------------------------------------------------------
 
         if (dto.team_members?.length) {
-          console.log('POA create — team_members received:', dto.team_members);
           await this.teamService.replaceAll(
             TeamMemberOwnerType.PLAN_OF_ACTION,
             plan.id,
@@ -152,7 +151,31 @@ export class PlanOfActionsService {
         {
           association: 'phases',
           through: {
-            attributes: ['id', 'sort_order'],
+            attributes: [
+              'id',
+              'plan_of_action_id',
+              'project_phase_id',
+
+              // Duration
+              'duration_min_days',
+              'duration_max_days',
+
+              // Notes
+              'parallel_work_note',
+              'inclusion_note',
+
+              // Gantt
+              'gantt_start_offset_days',
+              'gantt_duration_days',
+
+              // Ordering
+              'sort_order',
+
+              // Timestamps
+              'created_at',
+              'updated_at',
+              'deleted_at',
+            ],
           },
         },
         {
@@ -168,18 +191,10 @@ export class PlanOfActionsService {
       throw new NotFoundException('Plan of Action not found');
     }
 
-    // ----------------------------------------------------------
-    // Team members
-    // ----------------------------------------------------------
-
     const team_members = await this.teamService.list(
       TeamMemberOwnerType.PLAN_OF_ACTION,
       id,
     );
-
-    // ----------------------------------------------------------
-    // Sort phases using pivot sort_order
-    // ----------------------------------------------------------
 
     const json = plan.toJSON();
 
@@ -192,9 +207,10 @@ export class PlanOfActionsService {
       });
     }
 
-    return Object.assign(json, {
+    return {
+      ...json,
       team_members,
-    });
+    };
   }
 
   // ============================================================
