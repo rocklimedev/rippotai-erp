@@ -2,42 +2,6 @@ import React from "react";
 import { formatCurrency, formatDate } from "../../lib/helpers";
 import logoUrl from "../../assets/rippotai_logo.png";
 
-/**
- * PrintableEstimate
- *
- * Rebuilt to match the "ESTIMATE" format shown in the reference PDF
- * (Vendor Type / Vendor Name / Phone / Address block on the left,
- * Project Name / Project Address block on the right, a simple
- * S.no / Particular / Rate / Quantity / Amount / Remarks items table,
- * Subtotal + Grand Total only, a Payment Terms table, Terms & Conditions,
- * and an APPROVED BY / CONTRACTOR'S SIGNATURE footer).
- *
- * NOTE ON DATA SHAPE:
- * The original component was written for a "quotation" object with a
- * different shape (vendor_snapshot, project_snapshot, discount/tax, etc).
- * The reference PDF doesn't have those fields, so this component expects
- * an `estimate` object shaped like the fields visible on the PDF. Adjust
- * the field names below (marked with comments) to match your actual
- * backend response if they differ.
- *
- * expected `estimate` shape:
- * {
- *   estimate_number,        // optional, not shown on PDF but kept for reference
- *   estimate_date,          // shown top-right as "Date"
- *   vendor_type,            // e.g. "Plumbing"
- *   vendor_name,            // e.g. "Dinesh"
- *   phone_number,
- *   address,
- *   project_name,
- *   project_address,
- *   items: [{ sno, particular, rate, quantity, amount, remarks }],
- *   subtotal,
- *   grand_total,
- *   payment_terms: [{ stage, date, amount, remarks }], // optional rows, blank rows padded to 4
- *   terms_conditions,       // free text, additional lines below the fixed note
- * }
- */
-
 export default function PrintableEstimate({
   estimate,
   adminSignature,

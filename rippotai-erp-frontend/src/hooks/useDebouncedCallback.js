@@ -9,7 +9,12 @@ export function useDebouncedCallback(fn, delay = 800) {
   const fnRef = useRef(fn);
   fnRef.current = fn;
 
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
 
   return (...args) => {
     if (timer.current) clearTimeout(timer.current);

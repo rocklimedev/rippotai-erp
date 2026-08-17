@@ -26,9 +26,12 @@ export function SectionForm({
       if (Array.isArray(val)) {
         count += val.length > 0 ? 1 : 0;
       } else if (typeof val === "object" && val !== null) {
-        count += Object.values(val).filter((v) =>
-          v !== "" && v !== null && v !== undefined && 
-          !(Array.isArray(v) && v.length === 0)
+        count += Object.values(val).filter(
+          (v) =>
+            v !== "" &&
+            v !== null &&
+            v !== undefined &&
+            !(Array.isArray(v) && v.length === 0),
         ).length;
       } else if (val !== "" && val !== null && val !== undefined) {
         count++;
@@ -48,7 +51,11 @@ export function SectionForm({
           className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-2 disabled:opacity-60"
         >
           <Save size={15} />
-          {isSubmitting ? "Saving..." : title.includes("Recce") ? "Save Site Recce" : "Generate Brief"}
+          {isSubmitting
+            ? "Saving..."
+            : title.includes("Recce")
+              ? "Save Site Recce"
+              : "Generate Brief"}
         </button>
       }
     >
@@ -122,7 +129,11 @@ export function SectionForm({
                         rows={field.rows || 4}
                         value={fieldValue}
                         onChange={(e) =>
-                          onFieldChange(currentSection.title, field.key, e.target.value)
+                          onFieldChange(
+                            currentSection.title,
+                            field.key,
+                            e.target.value,
+                          )
                         }
                       />
                     ) : field.type === "date" ? (
@@ -130,7 +141,11 @@ export function SectionForm({
                         type="date"
                         value={fieldValue}
                         onChange={(e) =>
-                          onFieldChange(currentSection.title, field.key, e.target.value)
+                          onFieldChange(
+                            currentSection.title,
+                            field.key,
+                            e.target.value,
+                          )
                         }
                       />
                     ) : field.type === "time" ? (
@@ -138,7 +153,11 @@ export function SectionForm({
                         type="time"
                         value={fieldValue}
                         onChange={(e) =>
-                          onFieldChange(currentSection.title, field.key, e.target.value)
+                          onFieldChange(
+                            currentSection.title,
+                            field.key,
+                            e.target.value,
+                          )
                         }
                       />
                     ) : field.type === "select" ? (
@@ -146,7 +165,11 @@ export function SectionForm({
                         className="bc-input h-10 w-full"
                         value={fieldValue}
                         onChange={(e) =>
-                          onFieldChange(currentSection.title, field.key, e.target.value)
+                          onFieldChange(
+                            currentSection.title,
+                            field.key,
+                            e.target.value,
+                          )
                         }
                       >
                         <option value="">Select...</option>
@@ -161,7 +184,11 @@ export function SectionForm({
                         type={field.type || "text"}
                         value={fieldValue}
                         onChange={(e) =>
-                          onFieldChange(currentSection.title, field.key, e.target.value)
+                          onFieldChange(
+                            currentSection.title,
+                            field.key,
+                            e.target.value,
+                          )
                         }
                       />
                     )}

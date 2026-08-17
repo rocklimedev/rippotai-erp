@@ -1,8 +1,8 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import { Download, Printer } from "lucide-react";
-
+import { Download } from "lucide-react";
+import logo from "../../assets/rippotai_logo.png";
 const A4_HEIGHT = 1122; // approximate screen px at 96dpi
 const PAGE_PADDING_TOP = 70;
 const PAGE_PADDING_BOTTOM = 70;
@@ -49,65 +49,84 @@ const formatDate = (value) => {
   }).format(date);
 };
 
+const romanish = (n) => String(n).padStart(2, "0");
+
 /* ============================================================
-   STATUS
+   LOGO — reserved slot. Drop in your own mark, e.g.:
+   <img src="/logo.svg" alt="Rippōtai" style={{ width: size, height: size }} />
 ============================================================ */
 
-const StatusBadge = ({ status }) => {
-  const styles = {
-    PENDING: "bg-amber-100 text-amber-800 border-amber-200",
-    DUE: "bg-orange-100 text-orange-800 border-orange-200",
-    INVOICED: "bg-blue-100 text-blue-800 border-blue-200",
-    PAID: "bg-emerald-100 text-emerald-800 border-emerald-200",
-    OVERDUE: "bg-red-100 text-red-800 border-red-200",
-  };
+const LogoSlot = ({ size = 160 }) => (
+  <div
+    style={{
+      width: size,
+      height: size,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    }}
+    aria-hidden="true"
+  >
+    <img
+      src={logo}
+      alt="Rippotai"
+      style={{
+        maxWidth: "100%",
+        maxHeight: "100%",
+        width: "auto",
+        height: "auto",
+        objectFit: "contain",
+        display: "block",
+      }}
+    />
+  </div>
+);
 
-  return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-        styles[status] || "bg-gray-100 text-gray-700 border-gray-200"
-      }`}
+/* ============================================================
+   PAGE CHROME
+============================================================ */
+
+const PageHeader = ({ projectLine }) => (
+  <div
+    className="page-header px-14 pt-11 pb-5 border-b"
+    style={{ borderColor: "var(--line)" }}
+  >
+    <p
+      className="text-[10px] tracking-[0.28em] uppercase"
+      style={{ color: "var(--ink-soft)" }}
     >
-      {status || "PENDING"}
-    </span>
-  );
-};
-
-/* ============================================================
-   PAGE COMPONENT
-============================================================ */
+      Payment Schedule
+      <span style={{ color: "var(--gold-dark)" }}> · {projectLine}</span>
+    </p>
+  </div>
+);
 
 const DocumentPage = ({ children, pageNumber, totalPages, pageRef }) => {
   return (
     <section
       ref={pageRef}
-      className="
-        payment-page
-        relative
-        bg-white
-        shadow-xl
-        print:shadow-none
-      "
+      className="payment-page relative shadow-xl print:shadow-none"
+      style={{ background: "var(--paper)" }}
     >
-      <div
-        className="
-          flex
-          flex-col
-          min-h-[297mm]
-          h-[297mm]
-          overflow-hidden
-        "
-      >
+      <div className="flex flex-col min-h-[297mm] h-[297mm] overflow-hidden">
         <div className="flex-1 overflow-hidden">{children}</div>
 
-        <footer className="px-12 pb-7 pt-5 border-t border-gray-100 flex items-center justify-between shrink-0">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
-            RIPPŌTAI • Payment Schedule
+        <footer
+          className="px-14 pb-8 pt-4 flex items-center justify-between shrink-0 border-t"
+          style={{ borderColor: "var(--line)" }}
+        >
+          <span
+            className="text-[9px] tracking-[0.28em] uppercase"
+            style={{ color: "var(--ink-soft)" }}
+          >
+            Rippōtai · Payment Schedule
           </span>
-
-          <span className="text-[10px] text-gray-400">
-            Page {pageNumber}
-            {totalPages ? ` of ${totalPages}` : ""}
+          <span
+            className="text-[9px] tracking-[0.1em]"
+            style={{ color: "var(--ink-soft)" }}
+          >
+            {String(pageNumber).padStart(2, "0")}
+            {totalPages ? ` / ${String(totalPages).padStart(2, "0")}` : ""}
           </span>
         </footer>
       </div>
@@ -116,84 +135,58 @@ const DocumentPage = ({ children, pageNumber, totalPages, pageRef }) => {
 };
 
 /* ============================================================
-   MILESTONE CARD
+   MILESTONE ROW (table style, matches "Milestone detail")
 ============================================================ */
 
-const MilestoneCard = ({ milestone }) => {
-  return (
-    <div className="milestone-card rounded-2xl border border-gray-200 overflow-hidden bg-white">
-      <div className="px-6 py-5 bg-gray-50 flex items-start justify-between gap-6">
-        <div className="flex gap-4">
-          <div className="w-10 h-10 shrink-0 rounded-xl bg-emerald-800 text-white flex items-center justify-center font-semibold">
-            {String(milestone.milestoneNumber || 0).padStart(2, "0")}
-          </div>
-
-          <div>
-            <p className="text-xs uppercase tracking-wider text-gray-400">
-              {milestone.milestoneCode || `M${milestone.milestoneNumber}`}
-            </p>
-
-            <h3 className="mt-1 text-lg font-semibold text-gray-900">
-              {milestone.title || "Untitled milestone"}
-            </h3>
-
-            <div className="mt-2">
-              <StatusBadge status={milestone.status} />
-            </div>
-          </div>
-        </div>
-
-        <div className="text-right shrink-0">
-          <p className="text-xs uppercase tracking-wider text-gray-400">
-            Share
-          </p>
-
-          <p className="mt-1 text-2xl font-bold text-emerald-800">
-            {formatPercent(milestone.percentage)}
-          </p>
-
-          <p className="mt-1 text-sm font-semibold text-gray-900">
-            {formatCurrency(milestone.amount)}
-          </p>
-        </div>
-      </div>
-
-      <div className="px-6 py-5">
-        <p className="text-sm leading-6 text-gray-600">
-          {milestone.description || "No description provided."}
-        </p>
-
-        {(milestone.releaseTrigger || milestone.dueDate) && (
-          <div className="mt-5 grid grid-cols-2 gap-5">
-            {milestone.releaseTrigger && (
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400">
-                  Release Trigger
-                </p>
-
-                <p className="mt-1 text-sm text-gray-700">
-                  {milestone.releaseTrigger}
-                </p>
-              </div>
-            )}
-
-            {milestone.dueDate && (
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400">
-                  Due Date
-                </p>
-
-                <p className="mt-1 text-sm text-gray-700">
-                  {formatDate(milestone.dueDate)}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+const MilestoneRow = ({ milestone }) => (
+  <div
+    className="milestone-row grid grid-cols-[64px_1fr_88px] gap-6 py-6 border-b"
+    style={{ borderColor: "var(--line)" }}
+  >
+    <div>
+      <span
+        className="inline-flex w-10 h-10 items-center justify-center rounded-full text-sm font-semibold"
+        style={{ background: "var(--forest)", color: "var(--paper)" }}
+      >
+        {romanish(milestone.milestoneNumber || 0)}
+      </span>
     </div>
-  );
-};
+
+    <div>
+      <h3 className="text-[15px] font-semibold" style={{ color: "var(--ink)" }}>
+        {milestone.title || "Untitled milestone"}
+      </h3>
+      <p
+        className="mt-1.5 text-[12.5px] leading-6"
+        style={{ color: "var(--ink-soft)" }}
+      >
+        {milestone.description || "No description provided."}
+      </p>
+      {milestone.releaseTrigger && (
+        <p
+          className="mt-2 text-[10px] font-medium tracking-[0.06em] uppercase"
+          style={{ color: "var(--gold-dark)" }}
+        >
+          {milestone.releaseTrigger}
+        </p>
+      )}
+      {milestone.dueDate && (
+        <p className="mt-1 text-[10.5px]" style={{ color: "var(--ink-soft)" }}>
+          Due {formatDate(milestone.dueDate)}
+        </p>
+      )}
+    </div>
+
+    <div className="text-right">
+      <p className="text-xl font-bold" style={{ color: "var(--forest)" }}>
+        {formatPercent(milestone.percentage)}
+      </p>
+      <p className="mt-1 text-[11px]" style={{ color: "var(--ink-soft)" }}>
+        {formatCurrency(milestone.amount)}
+      </p>
+    </div>
+  </div>
+);
 
 /* ============================================================
    MAIN COMPONENT
@@ -203,33 +196,34 @@ const PaymentScheduleView = ({ schedule, className = "" }) => {
   const documentRef = useRef(null);
 
   const [milestonePages, setMilestonePages] = useState([]);
-
   const [termsPages, setTermsPages] = useState([]);
 
   const sortedMilestones = useMemo(() => {
     if (!schedule?.milestones) return [];
-
     return [...schedule.milestones].sort(
       (a, b) => Number(a.milestoneNumber || 0) - Number(b.milestoneNumber || 0),
     );
   }, [schedule]);
 
-  const totalPercentage = useMemo(() => {
-    return sortedMilestones.reduce(
-      (sum, milestone) => sum + (Number(milestone.percentage) || 0),
-      0,
-    );
-  }, [sortedMilestones]);
+  const totalPercentage = useMemo(
+    () =>
+      sortedMilestones.reduce((sum, m) => sum + (Number(m.percentage) || 0), 0),
+    [sortedMilestones],
+  );
 
-  const totalMilestoneAmount = useMemo(() => {
-    return sortedMilestones.reduce(
-      (sum, milestone) => sum + (Number(milestone.amount) || 0),
-      0,
-    );
-  }, [sortedMilestones]);
+  const totalMilestoneAmount = useMemo(
+    () => sortedMilestones.reduce((sum, m) => sum + (Number(m.amount) || 0), 0),
+    [sortedMilestones],
+  );
+
+  const projectLine = `${schedule?.project?.name || "Untitled Project"}${
+    schedule?.project?.site_location
+      ? ` · ${schedule.project.site_location}`
+      : ""
+  }`;
 
   /* ============================================================
-     DYNAMIC MILESTONE PAGINATION
+     DYNAMIC MILESTONE PAGINATION (table rows)
   ============================================================ */
 
   useEffect(() => {
@@ -238,30 +232,16 @@ const PaymentScheduleView = ({ schedule, className = "" }) => {
       return;
     }
 
-    /*
-     * We use an invisible measuring container.
-     *
-     * Every milestone is rendered individually.
-     * We calculate its real height.
-     *
-     * If it doesn't fit:
-     *
-     * current page -> finished
-     * milestone -> next page
-     */
     const measureContainer = document.createElement("div");
-
     measureContainer.style.position = "absolute";
     measureContainer.style.visibility = "hidden";
     measureContainer.style.pointerEvents = "none";
     measureContainer.style.width = "794px";
-
     measureContainer.className = "px-14";
-
     document.body.appendChild(measureContainer);
 
     const pageContentHeight =
-      A4_HEIGHT - PAGE_PADDING_TOP - PAGE_PADDING_BOTTOM - 70;
+      A4_HEIGHT - PAGE_PADDING_TOP - PAGE_PADDING_BOTTOM - 90;
 
     const pages = [];
     let currentPage = [];
@@ -269,105 +249,42 @@ const PaymentScheduleView = ({ schedule, className = "" }) => {
 
     sortedMilestones.forEach((milestone) => {
       const wrapper = document.createElement("div");
-
-      wrapper.className = "milestone-card mb-5";
-
       wrapper.innerHTML = `
-        <div style="
-          border: 1px solid #e5e7eb;
-          border-radius: 16px;
-          overflow: hidden;
-          background: white;
-        ">
-          <div style="
-            padding: 20px;
-            background: #f9fafb;
-            display: flex;
-            justify-content: space-between;
-          ">
-            <div>
-              <div style="
-                font-size: 12px;
-                color: #9ca3af;
-              ">
-                ${milestone.milestoneCode || `M${milestone.milestoneNumber}`}
-              </div>
-
-              <div style="
-                font-size: 18px;
-                font-weight: 600;
-                margin-top: 4px;
-              ">
-                ${milestone.title || "Untitled milestone"}
-              </div>
-            </div>
-
-            <div style="
-              font-size: 20px;
-              font-weight: 700;
-            ">
-              ${formatPercent(milestone.percentage)}
-            </div>
-          </div>
-
-          <div style="padding: 20px;">
-            <div style="
-              font-size: 14px;
-              line-height: 24px;
-              color: #4b5563;
-            ">
-              ${milestone.description || "No description provided."}
-            </div>
-
+        <div style="display:grid;grid-template-columns:64px 1fr 88px;gap:24px;padding:24px 0;border-bottom:1px solid #dcdfd9;">
+          <div><span style="display:inline-flex;width:40px;height:40px;align-items:center;justify-content:center;border-radius:9999px;font-size:14px;">${romanish(
+            milestone.milestoneNumber || 0,
+          )}</span></div>
+          <div>
+            <div style="font-size:15px;font-weight:600;">${milestone.title || "Untitled milestone"}</div>
+            <div style="margin-top:6px;font-size:12.5px;line-height:24px;">${
+              milestone.description || "No description provided."
+            }</div>
             ${
               milestone.releaseTrigger
-                ? `
-                  <div style="
-                    margin-top: 15px;
-                    font-size: 12px;
-                    color: #6b7280;
-                  ">
-                    Release Trigger:
-                    ${milestone.releaseTrigger}
-                  </div>
-                `
+                ? `<div style="margin-top:8px;font-size:10px;">${milestone.releaseTrigger}</div>`
                 : ""
             }
-
             ${
               milestone.dueDate
-                ? `
-                  <div style="
-                    margin-top: 10px;
-                    font-size: 12px;
-                    color: #6b7280;
-                  ">
-                    Due:
-                    ${formatDate(milestone.dueDate)}
-                  </div>
-                `
+                ? `<div style="margin-top:4px;font-size:10.5px;">Due ${formatDate(milestone.dueDate)}</div>`
                 : ""
             }
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:20px;font-weight:700;">${formatPercent(milestone.percentage)}</div>
           </div>
         </div>
       `;
 
       measureContainer.appendChild(wrapper);
-
-      const height = wrapper.getBoundingClientRect().height + 20;
-
+      const height = wrapper.getBoundingClientRect().height + 4;
       measureContainer.removeChild(wrapper);
 
-      /*
-       * If the milestone does not fit,
-       * start another page.
-       */
       if (
         currentPage.length > 0 &&
         currentHeight + height > pageContentHeight
       ) {
         pages.push(currentPage);
-
         currentPage = [];
         currentHeight = 0;
       }
@@ -376,12 +293,9 @@ const PaymentScheduleView = ({ schedule, className = "" }) => {
       currentHeight += height;
     });
 
-    if (currentPage.length) {
-      pages.push(currentPage);
-    }
+    if (currentPage.length) pages.push(currentPage);
 
     document.body.removeChild(measureContainer);
-
     setMilestonePages(pages);
   }, [sortedMilestones]);
 
@@ -394,37 +308,25 @@ const PaymentScheduleView = ({ schedule, className = "" }) => {
       setTermsPages([
         "<p>No terms and conditions have been defined for this payment schedule.</p>",
       ]);
-
       return;
     }
 
-    /*
-     * Terms are split by block-level HTML elements.
-     *
-     * This prevents an entire huge terms document from
-     * being forced onto one page.
-     */
     const parser = new DOMParser();
-
     const doc = parser.parseFromString(
       schedule.termsTemplate.content_html,
       "text/html",
     );
-
     const blocks = Array.from(doc.body.children);
 
     const measureContainer = document.createElement("div");
-
     measureContainer.style.position = "absolute";
     measureContainer.style.visibility = "hidden";
     measureContainer.style.width = "794px";
-
-    measureContainer.className = "text-sm leading-7";
-
+    measureContainer.className = "text-[12.5px] leading-7";
     document.body.appendChild(measureContainer);
 
     const pageContentHeight =
-      A4_HEIGHT - PAGE_PADDING_TOP - PAGE_PADDING_BOTTOM - 70;
+      A4_HEIGHT - PAGE_PADDING_TOP - PAGE_PADDING_BOTTOM - 90;
 
     const pages = [];
     let currentBlocks = [];
@@ -432,11 +334,8 @@ const PaymentScheduleView = ({ schedule, className = "" }) => {
 
     blocks.forEach((block) => {
       const clone = block.cloneNode(true);
-
       measureContainer.appendChild(clone);
-
       const height = clone.getBoundingClientRect().height + 16;
-
       measureContainer.removeChild(clone);
 
       if (
@@ -444,22 +343,17 @@ const PaymentScheduleView = ({ schedule, className = "" }) => {
         currentHeight + height > pageContentHeight
       ) {
         pages.push(currentBlocks.join(""));
-
         currentBlocks = [];
         currentHeight = 0;
       }
 
       currentBlocks.push(block.outerHTML);
-
       currentHeight += height;
     });
 
-    if (currentBlocks.length) {
-      pages.push(currentBlocks.join(""));
-    }
+    if (currentBlocks.length) pages.push(currentBlocks.join(""));
 
     document.body.removeChild(measureContainer);
-
     setTermsPages(pages);
   }, [schedule?.termsTemplate?.content_html]);
 
@@ -473,7 +367,6 @@ const PaymentScheduleView = ({ schedule, className = "" }) => {
     const pages = Array.from(
       documentRef.current.querySelectorAll(".payment-page"),
     );
-
     if (!pages.length) return;
 
     const pdf = new jsPDF({
@@ -485,25 +378,18 @@ const PaymentScheduleView = ({ schedule, className = "" }) => {
 
     for (let index = 0; index < pages.length; index++) {
       const page = pages[index];
-
       const canvas = await html2canvas(page, {
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: "#ffffff",
+        backgroundColor: "#faf8f3",
       });
-
       const imgData = canvas.toDataURL("image/jpeg", 0.95);
-
-      if (index > 0) {
-        pdf.addPage();
-      }
-
+      if (index > 0) pdf.addPage();
       pdf.addImage(imgData, "JPEG", 0, 0, 210, 297, undefined, "FAST");
     }
 
     const projectName = schedule?.project?.name || "Project";
-
     const safeProjectName = projectName
       .replace(/[<>:"/\\|?*]+/g, "")
       .replace(/\s+/g, "_");
@@ -513,496 +399,488 @@ const PaymentScheduleView = ({ schedule, className = "" }) => {
     );
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   if (!schedule) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-500">
+      <div
+        className="flex items-center justify-center h-64"
+        style={{ color: "var(--ink-soft)" }}
+      >
         No payment schedule selected
       </div>
     );
   }
 
   const project = schedule.project || {};
-
   const contractValue = Number(schedule.totalContractValue) || 0;
-
   const gstAmount = Number(schedule.gstAmount) || 0;
-
   const totalPayable = Number(schedule.totalPayable) || 0;
-
   const gstRate = Number(schedule.gstRate) || 0;
 
-  /*
-   * Static pages:
-   *
-   * 1 Cover
-   * 2 Payment Summary
-   * N Milestones
-   * N Terms
-   * 1 Financial
-   * 1 Acceptance
-   */
   const totalPages = 2 + milestonePages.length + termsPages.length + 2;
-
   let pageCounter = 0;
 
   return (
-    <div className={`bg-gray-100 min-h-screen ${className}`}>
-      {/* ======================================================
-          TOOLBAR
-      ====================================================== */}
+    <div
+      className={`min-h-screen ${className}`}
+      style={{ background: "var(--canvas)" }}
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap');
 
-      <div className="sticky top-0 z-30 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between print:hidden">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">
-            Payment Schedule
-          </h1>
+        .payment-schedule-root, .payment-schedule-root * { font-family: 'Inter', sans-serif; }
+        .payment-schedule-root .font-display { font-family: 'Fraunces', serif; }
 
-          <p className="text-sm text-gray-500">
-            {project.name || "Untitled Project"}
-          </p>
-        </div>
+        :root {
+          --forest: #16362d;
+          --forest-light: #274f42;
+          --paper: #faf8f3;
+          --canvas: #eef0ea;
+          --ink: #1c2622;
+          --ink-soft: #6b7871;
+          --gold: #c3a06a;
+          --gold-dark: #9c7c46;
+          --line: #dfe1d8;
+        }
 
-        <div className="flex gap-3">
-          <button
-            onClick={handlePrint}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            <Printer className="w-4 h-4" />
-            Print
-          </button>
+        @media print {
+          @page { size: A4; margin: 0; }
+          html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
+          .payment-page {
+            width: 210mm !important;
+            height: 297mm !important;
+            min-height: 297mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            page-break-after: always;
+            break-after: page;
+            overflow: hidden !important;
+          }
+          .payment-page:last-child { page-break-after: auto; break-after: auto; }
+        }
+
+        @media screen {
+          .payment-page { width: 210mm; height: 297mm; min-height: 297mm; }
+        }
+
+        .terms-content h1 { font-family: 'Fraunces', serif; font-size: 22px; margin-bottom: 18px; color: var(--forest); }
+        .terms-content h2 {
+          font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+          margin-top: 24px; margin-bottom: 10px; color: var(--gold-dark);
+        }
+        .terms-content h3 { font-weight: 600; margin-top: 18px; margin-bottom: 8px; color: var(--ink); }
+        .terms-content p { margin-bottom: 14px; }
+        .terms-content ul { list-style: disc; padding-left: 22px; margin-bottom: 16px; }
+        .terms-content ol { list-style: decimal; padding-left: 22px; margin-bottom: 16px; }
+        .terms-content li { margin-bottom: 8px; }
+      `}</style>
+
+      <div className="payment-schedule-root">
+        {/* ==================================================
+            TOOLBAR
+        ================================================== */}
+        <div
+          className="sticky top-0 z-30 px-6 py-4 flex items-center justify-between print:hidden border-b"
+          style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+        >
+          <div>
+            <h1
+              className="font-display text-xl"
+              style={{ color: "var(--ink)" }}
+            >
+              Payment Schedule
+            </h1>
+            <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
+              {project.name || "Untitled Project"}
+            </p>
+          </div>
 
           <button
             onClick={handleDownloadPDF}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-700 rounded-lg hover:bg-emerald-800"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full"
+            style={{ background: "var(--forest)", color: "var(--paper)" }}
           >
             <Download className="w-4 h-4" />
             Download PDF
           </button>
         </div>
-      </div>
 
-      {/* ======================================================
-          DOCUMENT
-      ====================================================== */}
+        {/* ==================================================
+            DOCUMENT
+        ================================================== */}
+        <div
+          ref={documentRef}
+          className="max-w-[900px] mx-auto py-10 space-y-8 print:py-0 print:space-y-0"
+        >
+          {/* ---------- COVER ---------- */}
+          <DocumentPage pageNumber={++pageCounter} totalPages={totalPages}>
+            <div className="px-14 pt-24 flex flex-col items-center text-center">
+              <LogoSlot size={160} />
 
-      <div
-        ref={documentRef}
-        className="
-          max-w-[900px]
-          mx-auto
-          py-10
-          space-y-8
-          print:py-0
-          print:space-y-0
-        "
-      >
-        {/* ====================================================
-            COVER
-        ==================================================== */}
-
-        <DocumentPage pageNumber={++pageCounter} totalPages={totalPages}>
-          <div className="px-14 pt-20">
-            <div className="flex justify-center">
-              <div className="w-24 h-24 rounded-3xl bg-emerald-800 text-white flex items-center justify-center text-4xl font-bold">
-                R
-              </div>
-            </div>
-
-            <div className="mt-10 text-center">
-              <h1 className="text-4xl font-bold text-emerald-900">RIPPŌTAI</h1>
-
-              <p className="mt-3 text-sm tracking-[0.35em] uppercase text-gray-400">
+              <h1
+                className="font-display mt-8 text-[34px] tracking-[0.14em]"
+                style={{ color: "var(--forest)" }}
+              >
+                RIPPŌTAI
+              </h1>
+              <p
+                className="mt-3 text-[11px] tracking-[0.42em] uppercase"
+                style={{ color: "var(--ink-soft)" }}
+              >
                 Payment Schedule
               </p>
-            </div>
 
-            <div className="mt-20 border-l-4 border-emerald-800 pl-6">
-              <p className="text-xs uppercase tracking-wider text-gray-400">
-                Project
-              </p>
-
-              <h2 className="mt-2 text-3xl font-bold text-gray-900">
-                {project.name || "Untitled Project"}
-              </h2>
-
-              <p className="mt-3 text-gray-500">
-                Payment milestones from booking through project handover.
-              </p>
-            </div>
-
-            <div className="mt-20 grid grid-cols-2 gap-10">
-              <div>
-                <p className="text-xs uppercase tracking-wider text-gray-400">
-                  Client
-                </p>
-
-                <p className="mt-2 font-medium text-gray-900">
-                  {project.clientName || "—"}
+              {/* PROJECT — full-width field, matches source layout */}
+              <div className="mt-28 w-full text-left">
+                <p
+                  className="text-[10px] tracking-[0.22em] uppercase"
+                  style={{ color: "var(--ink-soft)" }}
+                >
+                  Project:
+                  <span
+                    className="ml-2 text-[13px] tracking-normal normal-case font-medium"
+                    style={{ color: "var(--ink)" }}
+                  >
+                    {project.name || "Untitled Project"}
+                  </span>
                 </p>
               </div>
 
-              <div>
-                <p className="text-xs uppercase tracking-wider text-gray-400">
-                  Project Lead
-                </p>
-
-                <p className="mt-2 font-medium text-gray-900">
-                  {project.projectLead || "—"}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs uppercase tracking-wider text-gray-400">
-                  Address
-                </p>
-
-                <p className="mt-2 font-medium text-gray-900">
-                  {project.site_location || "—"}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs uppercase tracking-wider text-gray-400">
-                  Created
-                </p>
-
-                <p className="mt-2 font-medium text-gray-900">
-                  {formatDate(schedule.createdAt)}
-                </p>
-              </div>
-            </div>
-          </div>
-        </DocumentPage>
-
-        {/* ====================================================
-            PAYMENT SUMMARY
-        ==================================================== */}
-
-        <DocumentPage pageNumber={++pageCounter} totalPages={totalPages}>
-          <div className="px-14 pt-14">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
-              01 • Payment Overview
-            </p>
-
-            <h2 className="mt-3 text-3xl font-bold text-gray-900">
-              Payment Release Schedule
-            </h2>
-
-            <div className="mt-12 grid grid-cols-2 gap-6">
-              <div className="rounded-2xl bg-emerald-800 p-7 text-white">
-                <p className="text-xs uppercase tracking-wider text-emerald-200">
-                  Contract Coverage
-                </p>
-
-                <p className="mt-3 text-5xl font-bold">
-                  {formatPercent(totalPercentage)}
-                </p>
-              </div>
-
-              <div className="rounded-2xl bg-gray-50 p-7">
-                <p className="text-xs uppercase tracking-wider text-gray-400">
-                  Milestones
-                </p>
-
-                <p className="mt-3 text-5xl font-bold text-gray-900">
-                  {sortedMilestones.length}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-14 space-y-5">
-              {sortedMilestones.map((milestone) => {
-                const pct = Number(milestone.percentage) || 0;
-
-                return (
-                  <div key={milestone.id}>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm font-medium">
-                        {milestone.title || "Untitled milestone"}
+              {/* ADDRESS / CLIENT and PRINCIPAL ARCHITECT / PROJECT LEAD pairs */}
+              <div className="mt-6 w-full grid grid-cols-2 gap-x-10 gap-y-6 text-left">
+                {[
+                  ["Address", project.site_location],
+                  ["Client", project.clientName],
+                  ["Principal Architect", project.principalArchitect],
+                  ["Project Lead", project.projectLead],
+                ].map(([label, value]) => (
+                  <div
+                    key={label}
+                    className="border-b pb-3"
+                    style={{ borderColor: "var(--line)" }}
+                  >
+                    <p
+                      className="text-[10px] tracking-[0.22em] uppercase"
+                      style={{ color: "var(--ink-soft)" }}
+                    >
+                      {label}:
+                      <span
+                        className="ml-2 text-[13px] tracking-normal normal-case font-medium"
+                        style={{ color: "var(--ink)" }}
+                      >
+                        {value || ""}
                       </span>
-
-                      <span className="text-sm font-semibold text-emerald-800">
-                        {formatPercent(pct)}
-                      </span>
-                    </div>
-
-                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-emerald-700 rounded-full"
-                        style={{
-                          width: `${Math.min(pct, 100)}%`,
-                        }}
-                      />
-                    </div>
+                    </p>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        </DocumentPage>
-
-        {/* ====================================================
-            DYNAMIC MILESTONE PAGES
-        ==================================================== */}
-
-        {milestonePages.map((milestones, index) => (
-          <DocumentPage
-            key={`milestone-page-${index}`}
-            pageNumber={++pageCounter}
-            totalPages={totalPages}
-          >
-            <div className="px-14 pt-14">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
-                02 • Milestone Details
-              </p>
-
-              <h2 className="mt-3 text-3xl font-bold text-gray-900">
-                Payment Milestones
-              </h2>
-
-              <div className="mt-10 space-y-5">
-                {milestones.map((milestone) => (
-                  <MilestoneCard key={milestone.id} milestone={milestone} />
                 ))}
               </div>
             </div>
           </DocumentPage>
-        ))}
 
-        {/* ====================================================
-            DYNAMIC TERMS PAGES
-        ==================================================== */}
+          {/* ---------- PAYMENT OVERVIEW ---------- */}
+          <DocumentPage pageNumber={++pageCounter} totalPages={totalPages}>
+            <PageHeader projectLine={projectLine} />
 
-        {termsPages.map((content, index) => (
-          <DocumentPage
-            key={`terms-${index}`}
-            pageNumber={++pageCounter}
-            totalPages={totalPages}
-          >
-            <div className="px-14 pt-14">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
-                04 • Legal Terms
+            <div className="px-14 pt-10">
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <p
+                    className="font-display text-6xl"
+                    style={{ color: "var(--forest)" }}
+                  >
+                    {String(sortedMilestones.length).padStart(2, "0")}
+                  </p>
+                  <p
+                    className="mt-2 text-[12.5px]"
+                    style={{ color: "var(--ink-soft)" }}
+                  >
+                    Payment milestones from booking to handover
+                  </p>
+                </div>
+                <div>
+                  <p
+                    className="font-display text-6xl"
+                    style={{ color: "var(--forest)" }}
+                  >
+                    {formatPercent(totalPercentage)}
+                  </p>
+                  <p
+                    className="mt-2 text-[12.5px]"
+                    style={{ color: "var(--ink-soft)" }}
+                  >
+                    Of contract value, exclusive of GST and variations
+                  </p>
+                </div>
+              </div>
+
+              <p
+                className="mt-14 text-[11px] font-semibold tracking-[0.28em] uppercase"
+                style={{ color: "var(--gold-dark)" }}
+              >
+                Payment Release — Against Phases
               </p>
 
-              <h2 className="mt-3 text-3xl font-bold text-gray-900">
-                Terms & Conditions
-              </h2>
+              <div className="mt-6">
+                {sortedMilestones.map((milestone) => (
+                  <div
+                    key={milestone.id}
+                    className="flex items-center justify-between py-3.5 border-b"
+                    style={{ borderColor: "var(--line)" }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <span
+                        className="font-display text-sm"
+                        style={{ color: "var(--gold-dark)" }}
+                      >
+                        M{milestone.milestoneNumber}
+                      </span>
+                      <span
+                        className="text-[13px] font-medium tracking-[0.02em] uppercase"
+                        style={{ color: "var(--ink)" }}
+                      >
+                        {milestone.title || "Untitled milestone"}
+                      </span>
+                    </div>
+                    <span
+                      className="text-[13px] font-semibold"
+                      style={{ color: "var(--forest)" }}
+                    >
+                      {formatPercent(milestone.percentage)}
+                    </span>
+                  </div>
+                ))}
+              </div>
 
               <div
-                className="
-                    mt-10
-                    text-sm
-                    text-gray-700
-                    leading-7
-
-                    [&_h1]:text-2xl
-                    [&_h1]:font-bold
-                    [&_h1]:mb-5
-
-                    [&_h2]:text-xl
-                    [&_h2]:font-semibold
-                    [&_h2]:mt-7
-                    [&_h2]:mb-4
-
-                    [&_h3]:font-semibold
-                    [&_h3]:mt-6
-                    [&_h3]:mb-2
-
-                    [&_p]:mb-4
-
-                    [&_ul]:list-disc
-                    [&_ul]:pl-6
-                    [&_ul]:mb-5
-
-                    [&_ol]:list-decimal
-                    [&_ol]:pl-6
-                    [&_ol]:mb-5
-
-                    [&_li]:mb-2
-                  "
-                dangerouslySetInnerHTML={{
-                  __html: content,
-                }}
-              />
+                className="mt-8 relative h-1.5 rounded-full"
+                style={{ background: "var(--line)" }}
+              >
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full"
+                  style={{ width: "100%", background: "var(--forest)" }}
+                />
+              </div>
+              <div
+                className="mt-2 flex justify-between text-[10px] tracking-[0.2em] uppercase"
+                style={{ color: "var(--ink-soft)" }}
+              >
+                <span>On Signing</span>
+                <span>On Handover</span>
+              </div>
             </div>
           </DocumentPage>
-        ))}
 
-        {/* ====================================================
-            FINANCIAL SUMMARY
-        ==================================================== */}
+          {/* ---------- MILESTONE DETAIL (paginated table) ---------- */}
+          {milestonePages.map((milestones, index) => (
+            <DocumentPage
+              key={`milestone-page-${index}`}
+              pageNumber={++pageCounter}
+              totalPages={totalPages}
+            >
+              <PageHeader
+                eyebrow="02 · Milestone Detail"
+                projectLine={projectLine}
+              />
 
-        <DocumentPage pageNumber={++pageCounter} totalPages={totalPages}>
-          <div className="px-14 pt-14">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
-              03 • Financial Summary
-            </p>
+              <div className="px-14 pt-8">
+                {index === 0 && (
+                  <div
+                    className="grid grid-cols-[64px_1fr_88px] gap-6 pb-3 text-[10px] tracking-[0.2em] uppercase"
+                    style={{ color: "var(--ink-soft)" }}
+                  >
+                    <span>No.</span>
+                    <span>Coverage &amp; Release Trigger</span>
+                    <span className="text-right">Share</span>
+                  </div>
+                )}
+                {milestones.map((milestone) => (
+                  <MilestoneRow key={milestone.id} milestone={milestone} />
+                ))}
+              </div>
+            </DocumentPage>
+          ))}
 
-            <h2 className="mt-3 text-3xl font-bold text-gray-900">
-              Contract & Payment Summary
-            </h2>
+          {/* ---------- TERMS & CONDITIONS (paginated) ---------- */}
+          {termsPages.map((content, index) => (
+            <DocumentPage
+              key={`terms-${index}`}
+              pageNumber={++pageCounter}
+              totalPages={totalPages}
+            >
+              <PageHeader
+                eyebrow="03 · Terms & Conditions"
+                projectLine={projectLine}
+              />
 
-            <div className="mt-12 space-y-5">
-              <div className="p-7 rounded-2xl bg-gray-50 flex justify-between">
+              <div className="px-14 pt-8">
+                <div
+                  className="terms-content text-[12.5px] leading-7"
+                  style={{ color: "var(--ink)" }}
+                  dangerouslySetInnerHTML={{ __html: content }}
+                />
+              </div>
+            </DocumentPage>
+          ))}
+
+          {/* ---------- FINANCIAL SUMMARY ---------- */}
+          <DocumentPage pageNumber={++pageCounter} totalPages={totalPages}>
+            <PageHeader
+              eyebrow="04 · Financial Summary"
+              projectLine={projectLine}
+            />
+
+            <div className="px-14 pt-10">
+              <div
+                className="flex items-baseline justify-between py-6 border-b"
+                style={{ borderColor: "var(--line)" }}
+              >
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-gray-400">
+                  <p
+                    className="text-[10px] tracking-[0.22em] uppercase"
+                    style={{ color: "var(--ink-soft)" }}
+                  >
                     Contract Value
                   </p>
-
-                  <p className="mt-2 text-lg font-medium">
+                  <p
+                    className="mt-1 text-[13px]"
+                    style={{ color: "var(--ink)" }}
+                  >
                     Base contract value
                   </p>
                 </div>
-
-                <p className="text-2xl font-bold">
+                <p
+                  className="font-display text-2xl"
+                  style={{ color: "var(--ink)" }}
+                >
                   {formatCurrency(contractValue)}
                 </p>
               </div>
 
-              <div className="p-7 rounded-2xl bg-gray-50 flex justify-between">
+              <div
+                className="flex items-baseline justify-between py-6 border-b"
+                style={{ borderColor: "var(--line)" }}
+              >
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-gray-400">
+                  <p
+                    className="text-[10px] tracking-[0.22em] uppercase"
+                    style={{ color: "var(--ink-soft)" }}
+                  >
                     GST
                   </p>
-
-                  <p className="mt-2 text-lg font-medium">GST at {gstRate}%</p>
+                  <p
+                    className="mt-1 text-[13px]"
+                    style={{ color: "var(--ink)" }}
+                  >
+                    GST at {gstRate}%
+                  </p>
                 </div>
-
-                <p className="text-2xl font-bold">
+                <p
+                  className="font-display text-2xl"
+                  style={{ color: "var(--ink)" }}
+                >
                   {formatCurrency(gstAmount)}
                 </p>
               </div>
 
-              <div className="p-8 rounded-2xl bg-emerald-800 text-white flex justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-emerald-200">
-                    Total Payable
-                  </p>
-                </div>
-
-                <p className="text-4xl font-bold">
+              <div
+                className="mt-8 flex items-baseline justify-between rounded-2xl px-8 py-8"
+                style={{ background: "var(--forest)", color: "var(--paper)" }}
+              >
+                <p
+                  className="text-[10px] tracking-[0.22em] uppercase"
+                  style={{ color: "var(--gold)" }}
+                >
+                  Total Payable
+                </p>
+                <p className="font-display text-4xl">
                   {formatCurrency(totalPayable)}
                 </p>
               </div>
             </div>
-          </div>
-        </DocumentPage>
+          </DocumentPage>
 
-        {/* ====================================================
-            ACCEPTANCE
-        ==================================================== */}
+          {/* ---------- ACCEPTANCE ---------- */}
+          <DocumentPage pageNumber={++pageCounter} totalPages={totalPages}>
+            <PageHeader eyebrow="05 · Acceptance" projectLine={projectLine} />
 
-        <DocumentPage pageNumber={++pageCounter} totalPages={totalPages}>
-          <div className="px-14 pt-14">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
-              05 • Acceptance
-            </p>
-
-            <h2 className="mt-3 text-3xl font-bold text-gray-900">
-              Client Acceptance
-            </h2>
-
-            <div className="mt-12 rounded-2xl bg-gray-50 p-7">
-              <p className="text-sm leading-7 text-gray-600">
+            <div className="px-14 pt-10">
+              <p
+                className="text-[13px] leading-7"
+                style={{ color: "var(--ink-soft)" }}
+              >
                 The Client confirms having read and accepted the milestones,
                 percentages and terms set out in this schedule, which forms an
                 integral part of the Plan of Action and the signed Agreement for
                 this project.
               </p>
-            </div>
 
-            <div className="mt-24 grid grid-cols-2 gap-16">
-              <div>
-                <p className="text-xs font-semibold tracking-wider text-gray-400 uppercase">
-                  For Rippotai
-                </p>
+              <div className="mt-24 grid grid-cols-2 gap-16">
+                <div>
+                  <p
+                    className="text-[10px] font-semibold tracking-[0.22em] uppercase"
+                    style={{ color: "var(--gold-dark)" }}
+                  >
+                    For Rippotai
+                  </p>
+                  <div
+                    className="mt-20 border-b"
+                    style={{ borderColor: "var(--ink-soft)" }}
+                  />
+                  <p
+                    className="mt-4 text-[12.5px]"
+                    style={{ color: "var(--ink-soft)" }}
+                  >
+                    Authorised Signatory
+                  </p>
+                  <p
+                    className="mt-4 text-[13px]"
+                    style={{ color: "var(--ink)" }}
+                  >
+                    Name: __________________
+                  </p>
+                  <p
+                    className="mt-3 text-[12px]"
+                    style={{ color: "var(--ink-soft)" }}
+                  >
+                    Date: __________________
+                  </p>
+                </div>
 
-                <div className="mt-20 border-b border-gray-300" />
-
-                <p className="mt-4 text-sm text-gray-600">
-                  Authorised Signatory
-                </p>
-
-                <p className="mt-4 text-sm">Name: __________________</p>
-
-                <p className="mt-3 text-sm text-gray-500">
-                  Date: __________________
-                </p>
+                <div>
+                  <p
+                    className="text-[10px] font-semibold tracking-[0.22em] uppercase"
+                    style={{ color: "var(--gold-dark)" }}
+                  >
+                    Accepted by the Client
+                  </p>
+                  <div
+                    className="mt-20 border-b"
+                    style={{ borderColor: "var(--ink-soft)" }}
+                  />
+                  <p
+                    className="mt-4 text-[12.5px]"
+                    style={{ color: "var(--ink-soft)" }}
+                  >
+                    Client Signature
+                  </p>
+                  <p
+                    className="mt-4 text-[13px]"
+                    style={{ color: "var(--ink)" }}
+                  >
+                    Name: __________________
+                  </p>
+                  <p
+                    className="mt-3 text-[12px]"
+                    style={{ color: "var(--ink-soft)" }}
+                  >
+                    Date: __________________
+                  </p>
+                </div>
               </div>
-
-              <div>
-                <p className="text-xs font-semibold tracking-wider text-gray-400 uppercase">
-                  Accepted by the Client
-                </p>
-
-                <div className="mt-20 border-b border-gray-300" />
-
-                <p className="mt-4 text-sm text-gray-600">Client Signature</p>
-
-                <p className="mt-4 text-sm">Name: __________________</p>
-
-                <p className="mt-3 text-sm text-gray-500">
-                  Date: __________________
-                </p>
-              </div>
             </div>
-          </div>
-        </DocumentPage>
+          </DocumentPage>
+        </div>
       </div>
-
-      {/* ======================================================
-          PRINT
-      ====================================================== */}
-
-      <style>
-        {`
-          @media print {
-            @page {
-              size: A4;
-              margin: 0;
-            }
-
-            html,
-            body {
-              margin: 0 !important;
-              padding: 0 !important;
-              background: white !important;
-            }
-
-            .payment-page {
-              width: 210mm !important;
-              height: 297mm !important;
-              min-height: 297mm !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              box-shadow: none !important;
-
-              page-break-after: always;
-              break-after: page;
-
-              overflow: hidden !important;
-            }
-
-            .payment-page:last-child {
-              page-break-after: auto;
-              break-after: auto;
-            }
-          }
-
-          @media screen {
-            .payment-page {
-              width: 210mm;
-              height: 297mm;
-              min-height: 297mm;
-              border-radius: 4px;
-            }
-          }
-        `}
-      </style>
     </div>
   );
 };

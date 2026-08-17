@@ -29,28 +29,6 @@ export function LeadsActivity() {
     }),
   });
 
-  /*
-    Transform API response
-
-    API:
-    {
-      text,
-      lead:{
-        name,
-        owner,
-        stage
-      }
-    }
-
-    UI:
-    {
-      action,
-      user,
-      target,
-      details
-    }
-  */
-
   const activities = rows.map((r) => ({
     id: r.id,
     createdAt: r.createdAt,

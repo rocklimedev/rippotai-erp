@@ -1,397 +1,980 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>INOS ERP — App Deployment Map</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --ink:#1A1917; --paper:#FBFAF8; --line:#DDD9D0; --sub:#6E6B64; --panel:#F2EFE9;
-  }
-  *{margin:0;padding:0;box-sizing:border-box;}
-  body{background:var(--paper);color:var(--ink);font-family:'Lato',sans-serif;-webkit-font-smoothing:antialiased;}
-  ::selection{background:#1A1917;color:#FBFAF8;}
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>INOS ERP — App Deployment Map</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;0,900;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #1a1917;
+        --paper: #fbfaf8;
+        --line: #ddd9d0;
+        --sub: #6e6b64;
+        --panel: #f2efe9;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--paper);
+        color: var(--ink);
+        font-family: "Lato", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      ::selection {
+        background: #1a1917;
+        color: #fbfaf8;
+      }
 
-  /* ── Header ───────────────────────────────────────── */
-  header{padding:56px 48px 28px;border-bottom:3px solid var(--ink);}
-  .eyebrow{font-size:11px;font-weight:900;letter-spacing:.22em;color:var(--sub);text-transform:uppercase;margin-bottom:14px;}
-  h1{font-size:44px;font-weight:900;letter-spacing:-0.02em;line-height:1.05;}
-  h1 span{color:var(--sub);font-weight:400;font-style:italic;}
-  .dek{margin-top:14px;max-width:760px;font-size:15px;line-height:1.6;color:#3A3833;}
-  .stat-row{display:flex;gap:28px;margin-top:26px;flex-wrap:wrap;}
-  .stat{border-left:2px solid var(--ink);padding:2px 0 2px 12px;}
-  .stat b{display:block;font-size:22px;font-weight:900;}
-  .stat span{font-size:10.5px;font-weight:700;letter-spacing:.09em;color:var(--sub);text-transform:uppercase;}
+      /* ── Header ───────────────────────────────────────── */
+      header {
+        padding: 56px 48px 28px;
+        border-bottom: 3px solid var(--ink);
+      }
+      .eyebrow {
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.22em;
+        color: var(--sub);
+        text-transform: uppercase;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: 44px;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        line-height: 1.05;
+      }
+      h1 span {
+        color: var(--sub);
+        font-weight: 400;
+        font-style: italic;
+      }
+      .dek {
+        margin-top: 14px;
+        max-width: 760px;
+        font-size: 15px;
+        line-height: 1.6;
+        color: #3a3833;
+      }
+      .stat-row {
+        display: flex;
+        gap: 28px;
+        margin-top: 26px;
+        flex-wrap: wrap;
+      }
+      .stat {
+        border-left: 2px solid var(--ink);
+        padding: 2px 0 2px 12px;
+      }
+      .stat b {
+        display: block;
+        font-size: 22px;
+        font-weight: 900;
+      }
+      .stat span {
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.09em;
+        color: var(--sub);
+        text-transform: uppercase;
+      }
 
-  /* ── Controls ─────────────────────────────────────── */
-  .controls{display:flex;flex-wrap:wrap;gap:8px;padding:20px 48px;border-bottom:1px solid var(--line);align-items:center;background:rgba(26,25,23,0.02);}
-  .controls .lbl{font-size:10px;font-weight:900;letter-spacing:.1em;color:var(--sub);text-transform:uppercase;margin-right:6px;}
-  .chip{display:flex;align-items:center;gap:7px;padding:5px 11px 6px 9px;border:1px solid var(--line);border-radius:2px;cursor:pointer;background:transparent;font-size:11.5px;font-weight:700;color:var(--ink);user-select:none;transition:opacity .15s;}
-  .chip .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
-  .chip.on{border-color:var(--ink);background:#F5F3EE;}
-  .chip.off{opacity:.38;}
+      /* ── Controls ─────────────────────────────────────── */
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 20px 48px;
+        border-bottom: 1px solid var(--line);
+        align-items: center;
+        background: rgba(26, 25, 23, 0.02);
+      }
+      .controls .lbl {
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        color: var(--sub);
+        text-transform: uppercase;
+        margin-right: 6px;
+      }
+      .chip {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 5px 11px 6px 9px;
+        border: 1px solid var(--line);
+        border-radius: 2px;
+        cursor: pointer;
+        background: transparent;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--ink);
+        user-select: none;
+        transition: opacity 0.15s;
+      }
+      .chip .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .chip.on {
+        border-color: var(--ink);
+        background: #f5f3ee;
+      }
+      .chip.off {
+        opacity: 0.38;
+      }
 
-  /* ── Chart shell ──────────────────────────────────── */
-  .chart-scroll{overflow-x:auto;padding:0 0 60px;}
-  .chart{position:relative;width:1500px;margin:0 48px;padding-top:6px;}
+      /* ── Chart shell ──────────────────────────────────── */
+      .chart-scroll {
+        overflow-x: auto;
+        padding: 0 0 60px;
+      }
+      .chart {
+        position: relative;
+        width: 1500px;
+        margin: 0 48px;
+        padding-top: 6px;
+      }
 
-  .ruler{position:relative;height:26px;margin-left:300px;border-bottom:1px solid var(--ink);}
-  .ruler .seg{position:absolute;bottom:0;height:26px;display:flex;align-items:center;padding:0 6px;border-left:1px solid var(--ink);font-size:9px;font-weight:900;letter-spacing:.1em;white-space:nowrap;overflow:hidden;}
-  .ruler .seg.even{background:rgba(26,25,23,.05);}
+      .ruler {
+        position: relative;
+        height: 26px;
+        margin-left: 300px;
+        border-bottom: 1px solid var(--ink);
+      }
+      .ruler .seg {
+        position: absolute;
+        bottom: 0;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        padding: 0 6px;
+        border-left: 1px solid var(--ink);
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      .ruler .seg.even {
+        background: rgba(26, 25, 23, 0.05);
+      }
 
-  .gatelines{position:absolute;top:26px;bottom:0;left:300px;right:0;pointer-events:none;}
-  .gateline{position:absolute;top:0;bottom:0;width:1px;border-left:1px dashed rgba(26,25,23,.3);}
-  .gateflag{position:absolute;transform:translateX(-4px);display:flex;align-items:center;gap:4px;font-size:8.5px;font-weight:900;letter-spacing:.08em;color:var(--sub);white-space:nowrap;background:var(--paper);padding:0 4px;}
-  .gateflag::before{content:'◆';font-size:7px;color:var(--ink);}
+      .gatelines {
+        position: absolute;
+        top: 26px;
+        bottom: 0;
+        left: 300px;
+        right: 0;
+        pointer-events: none;
+      }
+      .gateline {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        border-left: 1px dashed rgba(26, 25, 23, 0.3);
+      }
+      .gateflag {
+        position: absolute;
+        transform: translateX(-4px);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 8.5px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        color: var(--sub);
+        white-space: nowrap;
+        background: var(--paper);
+        padding: 0 4px;
+      }
+      .gateflag::before {
+        content: "◆";
+        font-size: 7px;
+        color: var(--ink);
+      }
 
-  /* ── Section headers ──────────────────────────────── */
-  .section-head{display:flex;align-items:baseline;gap:12px;margin:34px 0 4px;padding-bottom:8px;border-bottom:2px solid var(--ink);}
-  .section-head h2{font-size:15px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;}
-  .section-head .n{font-size:11px;font-weight:700;color:var(--sub);letter-spacing:.06em;}
+      /* ── Section headers ──────────────────────────────── */
+      .section-head {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        margin: 34px 0 4px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid var(--ink);
+      }
+      .section-head h2 {
+        font-size: 15px;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .section-head .n {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--sub);
+        letter-spacing: 0.06em;
+      }
 
-  /* ── Module group ─────────────────────────────────── */
-  .module{border-bottom:1px solid var(--line);}
-  .module-head{display:grid;grid-template-columns:300px 1200px;align-items:center;min-height:34px;background:rgba(26,25,23,.035);}
-  .module-head .lbl{padding-left:2px;font-size:10.5px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
-  .module-head .sw{width:11px;height:11px;border-radius:2px;flex-shrink:0;}
-  .module-head .owner{font-size:9.5px;font-weight:700;color:var(--sub);letter-spacing:.05em;}
+      /* ── Module group ─────────────────────────────────── */
+      .module {
+        border-bottom: 1px solid var(--line);
+      }
+      .module-head {
+        display: grid;
+        grid-template-columns: 300px 1200px;
+        align-items: center;
+        min-height: 34px;
+        background: rgba(26, 25, 23, 0.035);
+      }
+      .module-head .lbl {
+        padding-left: 2px;
+        font-size: 10.5px;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .module-head .sw {
+        width: 11px;
+        height: 11px;
+        border-radius: 2px;
+        flex-shrink: 0;
+      }
+      .module-head .owner {
+        font-size: 9.5px;
+        font-weight: 700;
+        color: var(--sub);
+        letter-spacing: 0.05em;
+      }
 
-  .app-row{display:grid;grid-template-columns:300px 1200px;align-items:center;min-height:52px;border-top:1px solid #F0EDE6;cursor:pointer;transition:opacity .15s;}
-  .app-row:hover{background:rgba(26,25,23,.02);}
-  .app-row .label{padding:6px 14px 6px 20px;}
-  .app-row .label .name{font-size:12.5px;font-weight:700;line-height:1.3;}
-  .app-row .label .meta{margin-top:2px;font-size:9.5px;color:var(--sub);font-weight:700;letter-spacing:.03em;}
-  .app-row .track{position:relative;height:52px;}
-  .app-row .bar{position:absolute;top:50%;transform:translateY(-50%);height:15px;border-radius:2px;}
-  .app-row .bar .featcount{position:absolute;top:50%;left:8px;transform:translateY(-50%);font-size:9px;font-weight:900;color:var(--paper);}
-  .app-row .taillabel{position:absolute;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:var(--sub);white-space:nowrap;}
+      .app-row {
+        display: grid;
+        grid-template-columns: 300px 1200px;
+        align-items: center;
+        min-height: 52px;
+        border-top: 1px solid #f0ede6;
+        cursor: pointer;
+        transition: opacity 0.15s;
+      }
+      .app-row:hover {
+        background: rgba(26, 25, 23, 0.02);
+      }
+      .app-row .label {
+        padding: 6px 14px 6px 20px;
+      }
+      .app-row .label .name {
+        font-size: 12.5px;
+        font-weight: 700;
+        line-height: 1.3;
+      }
+      .app-row .label .meta {
+        margin-top: 2px;
+        font-size: 9.5px;
+        color: var(--sub);
+        font-weight: 700;
+        letter-spacing: 0.03em;
+      }
+      .app-row .track {
+        position: relative;
+        height: 52px;
+      }
+      .app-row .bar {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        height: 15px;
+        border-radius: 2px;
+      }
+      .app-row .bar .featcount {
+        position: absolute;
+        top: 50%;
+        left: 8px;
+        transform: translateY(-50%);
+        font-size: 9px;
+        font-weight: 900;
+        color: var(--paper);
+      }
+      .app-row .taillabel {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--sub);
+        white-space: nowrap;
+      }
 
-  .app-row.dim{opacity:.22;}
+      .app-row.dim {
+        opacity: 0.22;
+      }
 
-  /* expand panel */
-  .detail{max-height:0;overflow:hidden;transition:max-height .22s ease;background:var(--panel);border-top:1px solid var(--line);}
-  .detail-inner{display:grid;grid-template-columns:300px 1fr;gap:0 24px;padding:16px 20px 18px;}
-  .detail-inner .why{grid-column:1/-1;font-size:12px;font-style:italic;color:#4A4740;line-height:1.55;margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--line);}
-  .detail-inner .feats{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;}
-  .feat-pill{font-size:11px;font-weight:600;background:#fff;border:1px solid var(--line);border-radius:2px;padding:5px 10px;line-height:1.3;}
-  .src-row{grid-column:1/-1;margin-top:10px;font-size:10px;font-weight:700;letter-spacing:.03em;color:var(--sub);}
-  .src-row b{color:var(--ink);}
+      /* expand panel */
+      .detail {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.22s ease;
+        background: var(--panel);
+        border-top: 1px solid var(--line);
+      }
+      .detail-inner {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 0 24px;
+        padding: 16px 20px 18px;
+      }
+      .detail-inner .why {
+        grid-column: 1/-1;
+        font-size: 12px;
+        font-style: italic;
+        color: #4a4740;
+        line-height: 1.55;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px dashed var(--line);
+      }
+      .detail-inner .feats {
+        grid-column: 1/-1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .feat-pill {
+        font-size: 11px;
+        font-weight: 600;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 2px;
+        padding: 5px 10px;
+        line-height: 1.3;
+      }
+      .src-row {
+        grid-column: 1/-1;
+        margin-top: 10px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        color: var(--sub);
+      }
+      .src-row b {
+        color: var(--ink);
+      }
 
-  .app-row.expanded{background:rgba(26,25,23,.02);}
+      .app-row.expanded {
+        background: rgba(26, 25, 23, 0.02);
+      }
 
-  /* ── Platform services (full-width dashed) ───────── */
-  .platform .app-row .bar{border:1.5px dashed var(--ink);background:repeating-linear-gradient(135deg, rgba(26,25,23,.05) 0 6px, transparent 6px 12px);}
-  .platform .app-row .label .name::before{content:'◆ ';}
+      /* ── Platform services (full-width dashed) ───────── */
+      .platform .app-row .bar {
+        border: 1.5px dashed var(--ink);
+        background: repeating-linear-gradient(
+          135deg,
+          rgba(26, 25, 23, 0.05) 0 6px,
+          transparent 6px 12px
+        );
+      }
+      .platform .app-row .label .name::before {
+        content: "◆ ";
+      }
 
-  /* ── Legend footer ────────────────────────────────── */
-  footer{padding:26px 48px 50px;border-top:2px solid var(--ink);font-size:11px;color:var(--sub);line-height:1.7;max-width:900px;}
-  footer b{color:var(--ink);}
-</style>
-</head>
-<body>
+      /* ── Legend footer ────────────────────────────────── */
+      footer {
+        padding: 26px 48px 50px;
+        border-top: 2px solid var(--ink);
+        font-size: 11px;
+        color: var(--sub);
+        line-height: 1.7;
+        max-width: 900px;
+      }
+      footer b {
+        color: var(--ink);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="eyebrow">INOS · Construction &amp; Interior Design ERP</div>
+      <h1>
+        App Deployment Map <span>— overlaid on the RIPPOTAI process brain</span>
+      </h1>
+      <p class="dek">
+        Every app below is positioned on the same 0–100 project timeline as the
+        Master Process Brain, so you can see exactly when in a real project each
+        app goes live, how long it stays active, and which gate opens or closes
+        it. Click any row to see its features and the process steps it was built
+        from.
+      </p>
+      <div class="stat-row">
+        <div class="stat"><b>11</b><span>Modules</span></div>
+        <div class="stat"><b>17</b><span>Module Apps</span></div>
+        <div class="stat"><b>4</b><span>Platform Services</span></div>
+        <div class="stat"><b>12</b><span>Gates Enforced</span></div>
+      </div>
+    </header>
 
-<header>
-  <div class="eyebrow">INOS · Construction &amp; Interior Design ERP</div>
-  <h1>App Deployment Map <span>— overlaid on the RIPPOTAI process brain</span></h1>
-  <p class="dek">Every app below is positioned on the same 0–100 project timeline as the Master Process Brain, so you can see exactly when in a real project each app goes live, how long it stays active, and which gate opens or closes it. Click any row to see its features and the process steps it was built from.</p>
-  <div class="stat-row">
-    <div class="stat"><b>11</b><span>Modules</span></div>
-    <div class="stat"><b>17</b><span>Module Apps</span></div>
-    <div class="stat"><b>4</b><span>Platform Services</span></div>
-    <div class="stat"><b>12</b><span>Gates Enforced</span></div>
-  </div>
-</header>
+    <div class="controls" id="legend">
+      <span class="lbl">Filter by module</span>
+    </div>
 
-<div class="controls" id="legend">
-  <span class="lbl">Filter by module</span>
-</div>
+    <div class="chart-scroll">
+      <div class="chart" id="chart">
+        <div class="ruler" id="ruler"></div>
+        <div class="gatelines" id="gatelines"></div>
+        <div id="sections"></div>
+      </div>
+    </div>
 
-<div class="chart-scroll">
-  <div class="chart" id="chart">
-    <div class="ruler" id="ruler"></div>
-    <div class="gatelines" id="gatelines"></div>
-    <div id="sections"></div>
-  </div>
-</div>
+    <footer>
+      <b>Reading the map:</b> solid bars are module apps, colour-coded by
+      module. Dashed cross-hatched bars are platform services — shared
+      infrastructure (the Estimate→Quotation→BOQ engine, the Gate/Approval
+      engine, the Document Register, and Role &amp; Team Directory + Client
+      Portal) that every module app plugs into rather than rebuilding. Diamond
+      markers on the ruler mark the same 12 gates from the process brain — an
+      app's start almost always lines up with one.
+    </footer>
 
-<footer>
-  <b>Reading the map:</b> solid bars are module apps, colour-coded by module. Dashed cross-hatched bars are platform services — shared infrastructure (the Estimate→Quotation→BOQ engine, the Gate/Approval engine, the Document Register, and Role &amp; Team Directory + Client Portal) that every module app plugs into rather than rebuilding. Diamond markers on the ruler mark the same 12 gates from the process brain — an app's start almost always lines up with one.
-</footer>
+    <script>
+      const W = 12; // px per timeline unit (0-100 scale)
+      const L = (u) => u * W;
 
-<script>
-const W = 12; // px per timeline unit (0-100 scale)
-const L = u => u * W;
+      const PHASE_RULER = [
+        [0, 3.5, "BRIEF"],
+        [3.5, 6.5, "SURVEY"],
+        [6.5, 17, "PRE-DESIGN"],
+        [17, 21, "PAYMENT"],
+        [21, 40, "DESIGN"],
+        [40, 52, "TENDER DWGS"],
+        [52, 62, "WORKING DWGS"],
+        [62, 96.5, "EXECUTION"],
+        [96.5, 100, "HANDOVER"],
+      ];
+      const GATES = [
+        [12, "LAYOUT FINALISED"],
+        [17, "PITCH+CONCEPT01"],
+        [18.5, "TOKEN"],
+        [21, "MOBILISED"],
+        [27, "CONCEPT 02"],
+        [37, "DESIGN CLOSED"],
+        [40, "PAYMENT 01"],
+        [52, "TENDER DWGS"],
+        [59, "ESTIMATE APPR."],
+        [66, "CONTRACTOR LINEUP"],
+        [70, "GFC ISSUED"],
+        [100, "HANDOVER"],
+      ];
 
-const PHASE_RULER = [
-  [0,3.5,'BRIEF'], [3.5,6.5,'SURVEY'], [6.5,17,'PRE-DESIGN'], [17,21,'PAYMENT'],
-  [21,40,'DESIGN'], [40,52,'TENDER DWGS'], [52,62,'WORKING DWGS'],
-  [62,96.5,'EXECUTION'], [96.5,100,'HANDOVER']
-];
-const GATES = [
-  [12,'LAYOUT FINALISED'],[17,'PITCH+CONCEPT01'],[18.5,'TOKEN'],[21,'MOBILISED'],
-  [27,'CONCEPT 02'],[37,'DESIGN CLOSED'],[40,'PAYMENT 01'],[52,'TENDER DWGS'],
-  [59,'ESTIMATE APPR.'],[66,'CONTRACTOR LINEUP'],[70,'GFC ISSUED'],[100,'HANDOVER']
-];
+      const MODULES = {
+        crm: { name: "CRM & Pre-Sales", color: "oklch(0.55 0.14 24)" },
+        survey: { name: "Site Survey", color: "oklch(0.58 0.13 58)" },
+        design: { name: "Design Studio", color: "oklch(0.55 0.12 95)" },
+        sales: { name: "Sales & Payments", color: "oklch(0.52 0.13 320)" },
+        vendor: {
+          name: "Vendor & Tender Management",
+          color: "oklch(0.55 0.10 140)",
+        },
+        procure: {
+          name: "Procurement & Materials",
+          color: "oklch(0.52 0.09 195)",
+        },
+        drawing: { name: "Drawing Management", color: "oklch(0.53 0.11 250)" },
+        exec: { name: "Execution & Site Ops", color: "oklch(0.55 0.11 275)" },
+        finance: { name: "Finance & Accounts", color: "oklch(0.50 0.10 305)" },
+        snag: { name: "Snag & Handover", color: "oklch(0.53 0.09 15)" },
+        planning: {
+          name: "Planning & Programme",
+          color: "oklch(0.52 0.07 175)",
+        },
+      };
 
-const MODULES = {
-  crm:      { name:'CRM & Pre-Sales',            color:'oklch(0.55 0.14 24)'  },
-  survey:   { name:'Site Survey',                color:'oklch(0.58 0.13 58)'  },
-  design:   { name:'Design Studio',               color:'oklch(0.55 0.12 95)'  },
-  sales:    { name:'Sales & Payments',            color:'oklch(0.52 0.13 320)' },
-  vendor:   { name:'Vendor & Tender Management',  color:'oklch(0.55 0.10 140)' },
-  procure:  { name:'Procurement & Materials',     color:'oklch(0.52 0.09 195)' },
-  drawing:  { name:'Drawing Management',          color:'oklch(0.53 0.11 250)' },
-  exec:     { name:'Execution & Site Ops',        color:'oklch(0.55 0.11 275)' },
-  finance:  { name:'Finance & Accounts',          color:'oklch(0.50 0.10 305)' },
-  snag:     { name:'Snag & Handover',             color:'oklch(0.53 0.09 15)'  },
-  planning: { name:'Planning & Programme',        color:'oklch(0.52 0.07 175)' },
-};
+      const APPS = [
+        {
+          mod: "crm",
+          name: "Project Intake",
+          owner: "Architect",
+          a: 0,
+          b: 3.5,
+          why: "One app because brief, scope, budget, and scope-of-work are all the same motion — capturing what the project is before design starts.",
+          feats: [
+            "Client Brief capture",
+            "Project Scope + feasibility flags",
+            "Budget Sheet",
+            "Scope of Work builder (auto-escalates → Scope of Approval)",
+          ],
+          src: "1.1 · 1.2 · 1.3 · 1.4",
+        },
 
-const APPS = [
-  { mod:'crm', name:'Project Intake', owner:'Architect', a:0, b:3.5,
-    why:'One app because brief, scope, budget, and scope-of-work are all the same motion — capturing what the project is before design starts.',
-    feats:['Client Brief capture','Project Scope + feasibility flags','Budget Sheet','Scope of Work builder (auto-escalates → Scope of Approval)'],
-    src:'1.1 · 1.2 · 1.3 · 1.4' },
+        {
+          mod: "survey",
+          name: "Survey & Site Brief",
+          owner: "Architect + Site Supervisor",
+          a: 3,
+          b: 7.5,
+          why: "One continuous field-to-office workflow — measure on site, then turn that into usable documents.",
+          feats: [
+            "Measurement + photo capture (mobile)",
+            "Site Analysis (auto-drafted)",
+            "Site Brief generator",
+            "Scope of Approval (escalated)",
+          ],
+          src: "2.1 · 2.2 · 2.3 · 2.4",
+        },
 
-  { mod:'survey', name:'Survey & Site Brief', owner:'Architect + Site Supervisor', a:3, b:7.5,
-    why:'One continuous field-to-office workflow — measure on site, then turn that into usable documents.',
-    feats:['Measurement + photo capture (mobile)','Site Analysis (auto-drafted)','Site Brief generator','Scope of Approval (escalated)'],
-    src:'2.1 · 2.2 · 2.3 · 2.4' },
+        {
+          mod: "design",
+          name: "Design Workspace",
+          owner: "Architect",
+          a: 6.5,
+          b: 37,
+          why: "Everything the Architect produces internally before it is shown to anyone — one continuous design file that evolves in place.",
+          feats: [
+            "Layout (Existing → Proposed)",
+            "Moodboard & Reference",
+            "Concept 3D — 01 & 02",
+            "Design Development — 01 & 02",
+            "Material Selection Board (live from Procurement)",
+          ],
+          src: "3.1 · 3.2 · 3.3 · 3.5 · 5.1 · 5.3 · 5.4",
+        },
 
-  { mod:'design', name:'Design Workspace', owner:'Architect', a:6.5, b:37,
-    why:'Everything the Architect produces internally before it is shown to anyone — one continuous design file that evolves in place.',
-    feats:['Layout (Existing → Proposed)','Moodboard & Reference','Concept 3D — 01 & 02','Design Development — 01 & 02','Material Selection Board (live from Procurement)'],
-    src:'3.1 · 3.2 · 3.3 · 3.5 · 5.1 · 5.3 · 5.4' },
+        {
+          mod: "design",
+          name: "Client Presentation",
+          owner: "Architect + Accounts",
+          a: 12,
+          b: 37,
+          why: "Different audience, different action — the client sees and signs, doesn't edit. Kept separate from Design Workspace for that reason.",
+          feats: [
+            "Pitch Deck + Business Proposal builder",
+            "Presentation mode for Concept 3D reveals",
+            "Design-close summary for sign-off",
+          ],
+          src: "3.4 · ◆ Client Sign-off · ◆ Design Closed",
+        },
 
-  { mod:'design', name:'Client Presentation', owner:'Architect + Accounts', a:12, b:37,
-    why:'Different audience, different action — the client sees and signs, doesn\'t edit. Kept separate from Design Workspace for that reason.',
-    feats:['Pitch Deck + Business Proposal builder','Presentation mode for Concept 3D reveals','Design-close summary for sign-off'],
-    src:'3.4 · ◆ Client Sign-off · ◆ Design Closed' },
+        {
+          mod: "sales",
+          name: "Payment Collection",
+          owner: "Accounts & Finance",
+          a: 17,
+          b: 40,
+          why: "Every money-in event, one ledger.",
+          feats: [
+            "Token collection",
+            "Payment Phase invoicing",
+            "Payment schedule vs. deliverable list",
+          ],
+          src: "4.1 · 4.4 · 5.5",
+        },
 
-  { mod:'sales', name:'Payment Collection', owner:'Accounts & Finance', a:17, b:40,
-    why:'Every money-in event, one ledger.',
-    feats:['Token collection','Payment Phase invoicing','Payment schedule vs. deliverable list'],
-    src:'4.1 · 4.4 · 5.5' },
+        {
+          mod: "sales",
+          name: "Agreement & Mobilisation",
+          owner: "Accounts + Planning",
+          a: 18.5,
+          b: 21,
+          why: "Both fire once, right after token, and both produce the documents that unlock every other module.",
+          feats: [
+            "Agreement / Contract generator (execution vs. consultancy)",
+            "Plan of Action (execution plan + timeline + drawings plan)",
+          ],
+          src: "4.2 · 4.3 · 4.5",
+        },
 
-  { mod:'sales', name:'Agreement & Mobilisation', owner:'Accounts + Planning', a:18.5, b:21,
-    why:'Both fire once, right after token, and both produce the documents that unlock every other module.',
-    feats:['Agreement / Contract generator (execution vs. consultancy)','Plan of Action (execution plan + timeline + drawings plan)'],
-    src:'4.2 · 4.3 · 4.5' },
+        {
+          mod: "vendor",
+          name: "Vendor Directory & Scheduling",
+          owner: "Admin Coordinator",
+          a: 12,
+          b: 66,
+          why: 'Search and site-visit scheduling are the same "finding and moving vendors" activity.',
+          feats: [
+            "12-trade vendor directory + shortlist",
+            "Site visit scheduler (vendor + contractor + Supervisor)",
+            "Contractor lineup — final confirmation",
+          ],
+          src: "A.1 · A.2 · A.8",
+        },
 
-  { mod:'vendor', name:'Vendor Directory & Scheduling', owner:'Admin Coordinator', a:12, b:66,
-    why:'Search and site-visit scheduling are the same "finding and moving vendors" activity.',
-    feats:['12-trade vendor directory + shortlist','Site visit scheduler (vendor + contractor + Supervisor)','Contractor lineup — final confirmation'],
-    src:'A.1 · A.2 · A.8' },
+        {
+          mod: "procure",
+          name: "Material Sourcing",
+          owner: "Procurement Team",
+          a: 27,
+          b: 48,
+          why: 'Requirement intake, sourcing, and spec-linking are one continuous "what are we buying and where does it go" workflow.',
+          feats: [
+            "Requirement intake (from Architect)",
+            "Sourcing & sample board",
+            "Spec linker (pins materials to drawings)",
+          ],
+          src: "B.1 · B.2 · B.3",
+        },
 
-  { mod:'procure', name:'Material Sourcing', owner:'Procurement Team', a:27, b:48,
-    why:'Requirement intake, sourcing, and spec-linking are one continuous "what are we buying and where does it go" workflow.',
-    feats:['Requirement intake (from Architect)','Sourcing & sample board','Spec linker (pins materials to drawings)'],
-    src:'B.1 · B.2 · B.3' },
+        {
+          mod: "procure",
+          name: "Procurement & Inventory",
+          owner: "Procurement + Supervisor",
+          a: 56,
+          b: 97,
+          why: "Purchase, delivery, and inventory are the same physical-goods pipeline once quotation is approved.",
+          feats: [
+            "Purchase orders",
+            "Staged delivery tracking (challans)",
+            "Site inventory register (dual reconciled)",
+          ],
+          src: "B.5 · B.6 · B.7",
+        },
 
-  { mod:'procure', name:'Procurement & Inventory', owner:'Procurement + Supervisor', a:56, b:97,
-    why:'Purchase, delivery, and inventory are the same physical-goods pipeline once quotation is approved.',
-    feats:['Purchase orders','Staged delivery tracking (challans)','Site inventory register (dual reconciled)'],
-    src:'B.5 · B.6 · B.7' },
+        {
+          mod: "drawing",
+          name: "Drawing Set Manager",
+          owner: "Architect",
+          a: 40,
+          b: 70,
+          why: "Tender and working sets are the same drawing library at two maturity stages; trade-tagging is metadata on top.",
+          feats: [
+            "Tender set (8 drawing groups)",
+            "Working / GFC set (6 drawing groups)",
+            "Fixed furniture detail pack",
+            "Auto-tags contractor team per drawing group",
+          ],
+          src: "06.1–8 · 07.1–7.5",
+        },
 
-  { mod:'drawing', name:'Drawing Set Manager', owner:'Architect', a:40, b:70,
-    why:'Tender and working sets are the same drawing library at two maturity stages; trade-tagging is metadata on top.',
-    feats:['Tender set (8 drawing groups)','Working / GFC set (6 drawing groups)','Fixed furniture detail pack','Auto-tags contractor team per drawing group'],
-    src:'06.1–8 · 07.1–7.5' },
+        {
+          mod: "exec",
+          name: "Work Package & Progress",
+          owner: "Site Supervisor + Accounts",
+          a: 62,
+          b: 97.5,
+          why: "Package split and progress tracking are the same data — a package's progress is just its schedule filled in over time.",
+          feats: [
+            "BOQ split into per-contractor work packages",
+            "Trade progress tracker (fixed % milestones per trade)",
+          ],
+          src: "8.0 · 5.3 · 5.5",
+        },
 
-  { mod:'exec', name:'Work Package & Progress', owner:'Site Supervisor + Accounts', a:62, b:97.5,
-    why:'Package split and progress tracking are the same data — a package\'s progress is just its schedule filled in over time.',
-    feats:['BOQ split into per-contractor work packages','Trade progress tracker (fixed % milestones per trade)'],
-    src:'8.0 · 5.3 · 5.5' },
+        {
+          mod: "exec",
+          name: "Site Quality & Reporting",
+          owner: "Site Supervisor",
+          a: 64,
+          b: 98,
+          why: "The Supervisor's daily toolkit — one app because it's used continuously, by the same person, every day.",
+          feats: [
+            "QC checklist & sign-off (blocking gate)",
+            "Daily site report",
+            "Site visit log",
+            "Mockup approvals",
+          ],
+          src: "● continuous · 8.1",
+        },
 
-  { mod:'exec', name:'Site Quality & Reporting', owner:'Site Supervisor', a:64, b:98,
-    why:'The Supervisor\'s daily toolkit — one app because it\'s used continuously, by the same person, every day.',
-    feats:['QC checklist & sign-off (blocking gate)','Daily site report','Site visit log','Mockup approvals'],
-    src:'● continuous · 8.1' },
+        {
+          mod: "exec",
+          name: "RFI & Supplementary Estimates",
+          owner: "Architect + Accounts + Procurement",
+          a: 64,
+          b: 97,
+          why: 'Both are "something unplanned came up on site" — a clarification or a new cost, both need a fast loop back to the office.',
+          feats: [
+            "Design clarification / RFI log",
+            "Supplementary estimate requests (re-enters shared BOQ engine)",
+          ],
+          src: "● continuous",
+        },
 
-  { mod:'exec', name:'RFI & Supplementary Estimates', owner:'Architect + Accounts + Procurement', a:64, b:97,
-    why:'Both are "something unplanned came up on site" — a clarification or a new cost, both need a fast loop back to the office.',
-    feats:['Design clarification / RFI log','Supplementary estimate requests (re-enters shared BOQ engine)'],
-    src:'● continuous' },
+        {
+          mod: "finance",
+          name: "Budget & Billing",
+          owner: "Accounts & Finance",
+          a: 1.6,
+          b: 100,
+          why: "Runs the full length of the project — from the first budget sheet to the last consolidated bill.",
+          feats: [
+            "Budget management",
+            "Milestone billing",
+            "Consolidated billing at handover",
+          ],
+          src: "1.3 · 8.0 · 9.4",
+        },
 
-  { mod:'finance', name:'Budget & Billing', owner:'Accounts & Finance', a:1.6, b:100,
-    why:'Runs the full length of the project — from the first budget sheet to the last consolidated bill.',
-    feats:['Budget management','Milestone billing','Consolidated billing at handover'],
-    src:'1.3 · 8.0 · 9.4' },
+        {
+          mod: "snag",
+          name: "Snag & Handover",
+          owner: "Admin + Site Supervisor",
+          a: 96.5,
+          b: 100,
+          why: "A single linear closeout sequence, not separate concerns.",
+          feats: [
+            "Snag list & rectification (trade by trade)",
+            "Deep clean & styling tracker",
+            "Completion certificate",
+            "Handover pack (warranty, as-built, care notes)",
+          ],
+          src: "9.1 · 9.2 · 9.3 · 9.4",
+        },
 
-  { mod:'snag', name:'Snag & Handover', owner:'Admin + Site Supervisor', a:96.5, b:100,
-    why:'A single linear closeout sequence, not separate concerns.',
-    feats:['Snag list & rectification (trade by trade)','Deep clean & styling tracker','Completion certificate','Handover pack (warranty, as-built, care notes)'],
-    src:'9.1 · 9.2 · 9.3 · 9.4' },
+        {
+          mod: "planning",
+          name: "Planning & Programme",
+          owner: "Planning Team",
+          a: 0.8,
+          b: 66,
+          why: "Runs parallel to nearly the entire process — sequencing and feasibility re-tested against every move.",
+          feats: [
+            "Programme / timeline",
+            "Scope chain tracker (Scope of Work → Approval → Plan of Action)",
+            "Strategy notes",
+          ],
+          src: "5.0 · 1.4 · 2.4 · 4.5",
+        },
+      ];
 
-  { mod:'planning', name:'Planning & Programme', owner:'Planning Team', a:0.8, b:66,
-    why:'Runs parallel to nearly the entire process — sequencing and feasibility re-tested against every move.',
-    feats:['Programme / timeline','Scope chain tracker (Scope of Work → Approval → Plan of Action)','Strategy notes'],
-    src:'5.0 · 1.4 · 2.4 · 4.5' },
-];
+      const PLATFORM = [
+        {
+          name: "Estimate → Quotation → BOQ Engine",
+          owner: "Admin + Accounts + Procurement",
+          a: 46,
+          b: 64,
+          why: "Vendor & Tender and Procurement & Materials run the identical estimate→approval→quotation conversion. Built once, called by both.",
+          feats: [
+            "Rate-card & vendor-quote estimate builder",
+            "Approval → auto-converts to Quotation",
+            "BOQ generator (hard-gated on Tender Drawings Finalised)",
+          ],
+          src: "A.3–A.7 · B.4",
+        },
+        {
+          name: "Gate / Approval Engine",
+          owner: "Platform",
+          a: 0,
+          b: 100,
+          why: "All 12 ◆ gates. Every module fires or unlocks off a gate, not a date — this is the workflow backbone.",
+          feats: [
+            "12 gate definitions with trigger conditions",
+            "Owner-to-owner handoff routing",
+            "Blocks downstream apps until a gate clears",
+          ],
+          src: "All 12 ◆ gates",
+        },
+        {
+          name: "Document Register",
+          owner: "Platform",
+          a: 0,
+          b: 100,
+          why: "Every deliverable across all 11 phases, one searchable, phase-tagged repository that every app writes into.",
+          feats: [
+            "Phase-tagged deliverable index",
+            "Version history per document",
+            "Cross-module search",
+          ],
+          src: "All d:[...] deliverables",
+        },
+        {
+          name: "Role & Team Directory + Client Portal",
+          owner: "Platform",
+          a: 0,
+          b: 100,
+          why: "7 core roles + 12 trades, each pre-loaded with their active span. Client Portal exposes only the 4 points the client actually touches.",
+          feats: [
+            "Role directory with active-span presets",
+            "12-trade contractor directory",
+            "Stripped client view — 4 touchpoints only",
+          ],
+          src: "Continuity table · 4 client gates",
+        },
+      ];
 
-const PLATFORM = [
-  { name:'Estimate → Quotation → BOQ Engine', owner:'Admin + Accounts + Procurement', a:46, b:64,
-    why:'Vendor & Tender and Procurement & Materials run the identical estimate→approval→quotation conversion. Built once, called by both.',
-    feats:['Rate-card & vendor-quote estimate builder','Approval → auto-converts to Quotation','BOQ generator (hard-gated on Tender Drawings Finalised)'],
-    src:'A.3–A.7 · B.4' },
-  { name:'Gate / Approval Engine', owner:'Platform', a:0, b:100,
-    why:'All 12 ◆ gates. Every module fires or unlocks off a gate, not a date — this is the workflow backbone.',
-    feats:['12 gate definitions with trigger conditions','Owner-to-owner handoff routing','Blocks downstream apps until a gate clears'],
-    src:'All 12 ◆ gates' },
-  { name:'Document Register', owner:'Platform', a:0, b:100,
-    why:'Every deliverable across all 11 phases, one searchable, phase-tagged repository that every app writes into.',
-    feats:['Phase-tagged deliverable index','Version history per document','Cross-module search'],
-    src:'All d:[...] deliverables' },
-  { name:'Role & Team Directory + Client Portal', owner:'Platform', a:0, b:100,
-    why:'7 core roles + 12 trades, each pre-loaded with their active span. Client Portal exposes only the 4 points the client actually touches.',
-    feats:['Role directory with active-span presets','12-trade contractor directory','Stripped client view — 4 touchpoints only'],
-    src:'Continuity table · 4 client gates' },
-];
+      // ── Render ruler ──────────────────────────────────────
+      const ruler = document.getElementById("ruler");
+      PHASE_RULER.forEach((p, i) => {
+        const el = document.createElement("div");
+        el.className = "seg" + (i % 2 === 0 ? " even" : "");
+        el.style.left = L(p[0]) + "px";
+        el.style.width = (p[1] - p[0]) * W - 1 + "px";
+        el.textContent = p[2];
+        ruler.appendChild(el);
+      });
+      ruler.style.width = L(100) + "px";
 
-// ── Render ruler ──────────────────────────────────────
-const ruler = document.getElementById('ruler');
-PHASE_RULER.forEach((p,i)=>{
-  const el = document.createElement('div');
-  el.className = 'seg' + (i%2===0?' even':'');
-  el.style.left = L(p[0])+'px';
-  el.style.width = ((p[1]-p[0])*W - 1)+'px';
-  el.textContent = p[2];
-  ruler.appendChild(el);
-});
-ruler.style.width = (L(100))+'px';
+      const gatelines = document.getElementById("gatelines");
+      GATES.forEach((g, i) => {
+        const line = document.createElement("div");
+        line.className = "gateline";
+        line.style.left = L(g[0]) + "px";
+        gatelines.appendChild(line);
+        const flag = document.createElement("div");
+        flag.className = "gateflag";
+        flag.style.left = L(g[0]) + "px";
+        flag.style.top = 2 + (i % 4) * 14 + "px";
+        flag.textContent = g[1];
+        gatelines.appendChild(flag);
+      });
+      gatelines.style.height = 52 * 20 + 300 + "px";
 
-const gatelines = document.getElementById('gatelines');
-GATES.forEach((g,i)=>{
-  const line = document.createElement('div');
-  line.className='gateline';
-  line.style.left = L(g[0])+'px';
-  gatelines.appendChild(line);
-  const flag = document.createElement('div');
-  flag.className='gateflag';
-  flag.style.left = L(g[0])+'px';
-  flag.style.top = (2+(i%4)*14)+'px';
-  flag.textContent = g[1];
-  gatelines.appendChild(flag);
-});
-gatelines.style.height = (52*20 + 300) + 'px';
+      // ── Legend / filters ──────────────────────────────────
+      const legend = document.getElementById("legend");
+      let activeFilter = null;
+      Object.entries(MODULES).forEach(([key, m]) => {
+        const chip = document.createElement("div");
+        chip.className = "chip on";
+        chip.innerHTML =
+          '<span class="dot" style="background:' +
+          m.color +
+          '"></span>' +
+          m.name;
+        chip.onclick = () => {
+          activeFilter = activeFilter === key ? null : key;
+          document.querySelectorAll(".chip[data-mod]").forEach((c) => {
+            const k = c.getAttribute("data-mod");
+            c.className =
+              "chip " + (!activeFilter || activeFilter === k ? "on" : "off");
+          });
+          document.querySelectorAll(".app-row[data-mod]").forEach((r) => {
+            const k = r.getAttribute("data-mod");
+            r.classList.toggle("dim", !!activeFilter && activeFilter !== k);
+          });
+        };
+        chip.setAttribute("data-mod", key);
+        legend.appendChild(chip);
+      });
 
-// ── Legend / filters ──────────────────────────────────
-const legend = document.getElementById('legend');
-let activeFilter = null;
-Object.entries(MODULES).forEach(([key,m])=>{
-  const chip = document.createElement('div');
-  chip.className='chip on';
-  chip.innerHTML = '<span class="dot" style="background:'+m.color+'"></span>'+m.name;
-  chip.onclick = ()=>{
-    activeFilter = (activeFilter===key) ? null : key;
-    document.querySelectorAll('.chip[data-mod]').forEach(c=>{
-      const k = c.getAttribute('data-mod');
-      c.className = 'chip ' + ((!activeFilter || activeFilter===k) ? 'on':'off');
-    });
-    document.querySelectorAll('.app-row[data-mod]').forEach(r=>{
-      const k = r.getAttribute('data-mod');
-      r.classList.toggle('dim', !!activeFilter && activeFilter!==k);
-    });
-  };
-  chip.setAttribute('data-mod', key);
-  legend.appendChild(chip);
-});
+      // ── Render sections ──────────────────────────────────
+      const sections = document.getElementById("sections");
 
-// ── Render sections ──────────────────────────────────
-const sections = document.getElementById('sections');
+      function makeBar(a, b, color, label) {
+        const bar = document.createElement("div");
+        bar.className = "bar";
+        bar.style.left = L(a) + "px";
+        bar.style.width = Math.max((b - a) * W - 2, 4) + "px";
+        bar.style.background = color;
+        return bar;
+      }
 
-function makeBar(a,b,color,label){
-  const bar = document.createElement('div');
-  bar.className='bar';
-  bar.style.left = L(a)+'px';
-  bar.style.width = Math.max((b-a)*W-2, 4)+'px';
-  bar.style.background = color;
-  return bar;
-}
+      function buildRow(app, color, isPlatform) {
+        const row = document.createElement("div");
+        row.className = "app-row";
+        if (!isPlatform) row.setAttribute("data-mod", app.mod);
 
-function buildRow(app, color, isPlatform){
-  const row = document.createElement('div');
-  row.className='app-row';
-  if(!isPlatform) row.setAttribute('data-mod', app.mod);
+        const label = document.createElement("div");
+        label.className = "label";
+        label.innerHTML =
+          '<div class="name">' +
+          app.name +
+          '</div><div class="meta">' +
+          app.owner +
+          "</div>";
 
-  const label = document.createElement('div');
-  label.className='label';
-  label.innerHTML = '<div class="name">'+app.name+'</div><div class="meta">'+app.owner+'</div>';
+        const track = document.createElement("div");
+        track.className = "track";
+        const bar = isPlatform
+          ? document.createElement("div")
+          : makeBar(app.a, app.b, color, app.name);
+        if (isPlatform) {
+          bar.className = "bar";
+          bar.style.left = L(app.a) + "px";
+          bar.style.width = Math.max((app.b - app.a) * W - 2, 4) + "px";
+        }
+        const tail = document.createElement("div");
+        tail.className = "taillabel";
+        const x = L(app.b);
+        const flip = x > 1150;
+        tail.style.left = (flip ? L(app.a) - 6 : x + 8) + "px";
+        tail.style.transform = flip
+          ? "translate(-100%,-50%)"
+          : "translateY(-50%)";
+        tail.textContent = app.a.toFixed(1) + " → " + app.b.toFixed(1);
+        track.appendChild(bar);
+        track.appendChild(tail);
 
-  const track = document.createElement('div');
-  track.className='track';
-  const bar = isPlatform ? document.createElement('div') : makeBar(app.a, app.b, color, app.name);
-  if(isPlatform){
-    bar.className='bar';
-    bar.style.left = L(app.a)+'px';
-    bar.style.width = Math.max((app.b-app.a)*W-2,4)+'px';
-  }
-  const tail = document.createElement('div');
-  tail.className='taillabel';
-  const x = L(app.b);
-  const flip = x > 1150;
-  tail.style.left = (flip ? (L(app.a)-6) : (x+8)) + 'px';
-  tail.style.transform = flip ? 'translate(-100%,-50%)' : 'translateY(-50%)';
-  tail.textContent = app.a.toFixed(1)+' → '+app.b.toFixed(1);
-  track.appendChild(bar);
-  track.appendChild(tail);
+        row.appendChild(label);
+        row.appendChild(track);
 
-  row.appendChild(label);
-  row.appendChild(track);
+        const detail = document.createElement("div");
+        detail.className = "detail";
+        const feats = app.feats
+          .map((f) => '<span class="feat-pill">' + f + "</span>")
+          .join("");
+        detail.innerHTML =
+          '<div class="detail-inner">' +
+          '<div class="why">' +
+          app.why +
+          "</div>" +
+          '<div class="feats">' +
+          feats +
+          "</div>" +
+          '<div class="src-row"><b>Source steps:</b> ' +
+          app.src +
+          "</div>" +
+          "</div>";
 
-  const detail = document.createElement('div');
-  detail.className='detail';
-  const feats = app.feats.map(f=>'<span class="feat-pill">'+f+'</span>').join('');
-  detail.innerHTML = '<div class="detail-inner">'+
-    '<div class="why">'+app.why+'</div>'+
-    '<div class="feats">'+feats+'</div>'+
-    '<div class="src-row"><b>Source steps:</b> '+app.src+'</div>'+
-  '</div>';
+        row.onclick = () => {
+          const open = row.classList.toggle("expanded");
+          detail.style.maxHeight = open ? detail.scrollHeight + "px" : "0";
+        };
 
-  row.onclick = ()=>{
-    const open = row.classList.toggle('expanded');
-    detail.style.maxHeight = open ? detail.scrollHeight+'px' : '0';
-  };
+        const wrap = document.createElement("div");
+        wrap.appendChild(row);
+        wrap.appendChild(detail);
+        return wrap;
+      }
 
-  const wrap = document.createElement('div');
-  wrap.appendChild(row);
-  wrap.appendChild(detail);
-  return wrap;
-}
+      // module sections
+      const head1 = document.createElement("div");
+      head1.className = "section-head";
+      head1.innerHTML =
+        '<h2>Module Apps</h2><span class="n">17 apps · owned by a single team</span>';
+      sections.appendChild(head1);
 
-// module sections
-const head1 = document.createElement('div');
-head1.className='section-head';
-head1.innerHTML = '<h2>Module Apps</h2><span class="n">17 apps · owned by a single team</span>';
-sections.appendChild(head1);
+      Object.entries(MODULES).forEach(([key, m]) => {
+        const apps = APPS.filter((a) => a.mod === key);
+        if (!apps.length) return;
+        const mod = document.createElement("div");
+        mod.className = "module";
+        const mh = document.createElement("div");
+        mh.className = "module-head";
+        mh.innerHTML =
+          '<div class="lbl"><span class="sw" style="background:' +
+          m.color +
+          '"></span>' +
+          m.name +
+          "</div><div></div>";
+        mod.appendChild(mh);
+        apps.forEach((app) => mod.appendChild(buildRow(app, m.color, false)));
+        sections.appendChild(mod);
+      });
 
-Object.entries(MODULES).forEach(([key,m])=>{
-  const apps = APPS.filter(a=>a.mod===key);
-  if(!apps.length) return;
-  const mod = document.createElement('div');
-  mod.className='module';
-  const mh = document.createElement('div');
-  mh.className='module-head';
-  mh.innerHTML = '<div class="lbl"><span class="sw" style="background:'+m.color+'"></span>'+m.name+'</div><div></div>';
-  mod.appendChild(mh);
-  apps.forEach(app=> mod.appendChild(buildRow(app, m.color, false)) );
-  sections.appendChild(mod);
-});
+      const head2 = document.createElement("div");
+      head2.className = "section-head";
+      head2.innerHTML =
+        '<h2>Platform Services</h2><span class="n">4 shared services · every module plugs in</span>';
+      sections.appendChild(head2);
 
-const head2 = document.createElement('div');
-head2.className='section-head';
-head2.innerHTML = '<h2>Platform Services</h2><span class="n">4 shared services · every module plugs in</span>';
-sections.appendChild(head2);
+      const platMod = document.createElement("div");
+      platMod.className = "module platform";
+      PLATFORM.forEach((app) =>
+        platMod.appendChild(buildRow(app, "var(--ink)", true)),
+      );
+      sections.appendChild(platMod);
 
-const platMod = document.createElement('div');
-platMod.className='module platform';
-PLATFORM.forEach(app=> platMod.appendChild(buildRow(app, 'var(--ink)', true)) );
-sections.appendChild(platMod);
-
-document.getElementById('chart').style.width = (L(100)+300+120)+'px';
-</script>
-</body>
+      document.getElementById("chart").style.width = L(100) + 300 + 120 + "px";
+    </script>
+  </body>
 </html>

@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 export function ItemDetailDrawer({ open, onClose, item, disabled, onPatch }) {
   const [detail, setDetail] = useState(item?.detail || {});
@@ -27,21 +32,30 @@ export function ItemDetailDrawer({ open, onClose, item, disabled, onPatch }) {
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent side="right" className="w-full sm:max-w-[520px] bg-white overflow-y-auto">
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-[520px] bg-white overflow-y-auto"
+      >
         <SheetHeader>
           <SheetTitle className="text-[11px] uppercase tracking-widest text-[#B5C4B6] font-normal">
             Item Detail
           </SheetTitle>
-          <div className="text-[16px] font-bold text-[#333333]">{item.description}</div>
+          <div className="text-[16px] font-bold text-[#333333]">
+            {item.description}
+          </div>
         </SheetHeader>
         <div className="mt-4 space-y-4 text-[13px]">
           <div>
-            <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">Calc Formula</label>
+            <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
+              Calc Formula
+            </label>
             <select
               className="bc-input mt-1"
               disabled={disabled}
               value={detail.formula || "Manual"}
-              onChange={(e) => setDetail((d) => ({ ...d, formula: e.target.value }))}
+              onChange={(e) =>
+                setDetail((d) => ({ ...d, formula: e.target.value }))
+              }
             >
               <option value="Manual">Manual</option>
               <option value="LxW">Length × Width</option>
@@ -53,25 +67,46 @@ export function ItemDetailDrawer({ open, onClose, item, disabled, onPatch }) {
             </select>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            {["length", "width", "height", "depth", "repetitions", "count", "std_qty", "deduction", "wastage_pct"].map((k) => (
+            {[
+              "length",
+              "width",
+              "height",
+              "depth",
+              "repetitions",
+              "count",
+              "std_qty",
+              "deduction",
+              "wastage_pct",
+            ].map((k) => (
               <div key={k}>
-                <label className="text-[10.5px] uppercase tracking-widest text-[#B5C4B6]">{k.replace("_", " ")}</label>
+                <label className="text-[10.5px] uppercase tracking-widest text-[#B5C4B6]">
+                  {k.replace("_", " ")}
+                </label>
                 <input
                   type="number"
                   className="bc-input mt-1"
                   disabled={disabled}
                   value={detail[k] ?? ""}
-                  onChange={(e) => setDetail((d) => ({ ...d, [k]: e.target.value === "" ? "" : Number(e.target.value) }))}
+                  onChange={(e) =>
+                    setDetail((d) => ({
+                      ...d,
+                      [k]: e.target.value === "" ? "" : Number(e.target.value),
+                    }))
+                  }
                 />
               </div>
             ))}
           </div>
           <div className="p-3 rounded-lg bg-[#EAEEF0] border border-[#B5C4B6] text-[12px] text-[#6B7B7C]">
-            <span className="text-[10.5px] uppercase tracking-widest text-[#B5C4B6] mr-2">Preview</span>
+            <span className="text-[10.5px] uppercase tracking-widest text-[#B5C4B6] mr-2">
+              Preview
+            </span>
             {previewQty()}
           </div>
           <div>
-            <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">Internal Notes</label>
+            <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
+              Internal Notes
+            </label>
             <textarea
               className="bc-input mt-1 min-h-[80px]"
               disabled={disabled}

@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { ChevronDown, ChevronRight, MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  MoreHorizontal,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,7 +44,9 @@ export function CategoryBlock({
   onToggleHide,
   onLockedEdit,
 }) {
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+  );
   const [collapsed, setCollapsed] = useState(!!cat.collapsed);
   const guarded = (fn) => () => {
     if (disabled) {
@@ -53,14 +61,26 @@ export function CategoryBlock({
       <tr className="boq-category-row" data-testid={`category-row-${cat.code}`}>
         <td colSpan={9}>
           <div className="flex items-center gap-3">
-            <button onClick={() => setCollapsed((c) => !c)} className="p-1 rounded hover:bg-[#B5C4B6]" data-testid={`cat-collapse-${cat.code}`}>
-              {collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+            <button
+              onClick={() => setCollapsed((c) => !c)}
+              className="p-1 rounded hover:bg-[#B5C4B6]"
+              data-testid={`cat-collapse-${cat.code}`}
+            >
+              {collapsed ? (
+                <ChevronRight size={16} />
+              ) : (
+                <ChevronDown size={16} />
+              )}
             </button>
             <div className="w-8 h-8 rounded bg-[#1F453B] text-white text-[13px] font-bold flex items-center justify-center">
               {cat.code}
             </div>
-            <h3 className="font-serif-bc text-[18px] text-[#333333] flex-1">{cat.name}</h3>
-            <div className="text-[11.5px] text-[#B5C4B6]">{items.length} items</div>
+            <h3 className="font-serif-bc text-[18px] text-[#333333] flex-1">
+              {cat.name}
+            </h3>
+            <div className="text-[11.5px] text-[#B5C4B6]">
+              {items.length} items
+            </div>
             <div className="text-[13px] font-semibold text-[#333333] min-w-[120px] text-right">
               SUBTOTAL {formatINR(cat.subtotal || 0)}
             </div>
@@ -72,7 +92,10 @@ export function CategoryBlock({
             />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-1 rounded hover:bg-[#B5C4B6]" data-testid={`cat-menu-${cat.code}`}>
+                <button
+                  className="p-1 rounded hover:bg-[#B5C4B6]"
+                  data-testid={`cat-menu-${cat.code}`}
+                >
                   <MoreHorizontal size={16} />
                 </button>
               </DropdownMenuTrigger>
@@ -80,7 +103,10 @@ export function CategoryBlock({
                 <DropdownMenuItem onSelect={guarded(() => onAddItem(cat.id))}>
                   <Plus size={13} className="mr-2" /> Add line
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={guarded(() => onDeleteCat(cat.id))} className="text-[#333333]">
+                <DropdownMenuItem
+                  onSelect={guarded(() => onDeleteCat(cat.id))}
+                  className="text-[#333333]"
+                >
                   <Trash2 size={13} className="mr-2" /> Delete category
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -100,10 +126,16 @@ export function CategoryBlock({
             }
             const oldIndex = items.findIndex((i) => i.id === e.active.id);
             const newIndex = items.findIndex((i) => i.id === e.over.id);
-            onReorderItems(cat.id, arrayMove(items, oldIndex, newIndex).map((i) => i.id));
+            onReorderItems(
+              cat.id,
+              arrayMove(items, oldIndex, newIndex).map((i) => i.id),
+            );
           }}
         >
-          <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext
+            items={items.map((i) => i.id)}
+            strategy={verticalListSortingStrategy}
+          >
             {items.map((it, idx) => (
               <ItemRow
                 key={it.id}
@@ -125,9 +157,15 @@ export function CategoryBlock({
       )}
       {!collapsed && items.length === 0 && (
         <tr>
-          <td colSpan={9} className="text-center py-6 text-[12.5px] text-[#B5C4B6]">
+          <td
+            colSpan={9}
+            className="text-center py-6 text-[12.5px] text-[#B5C4B6]"
+          >
             No items in this category.{" "}
-            <button className="text-[#333333] font-semibold hover:underline" onClick={guarded(() => onAddItem(cat.id))}>
+            <button
+              className="text-[#333333] font-semibold hover:underline"
+              onClick={guarded(() => onAddItem(cat.id))}
+            >
               Add line item
             </button>
           </td>
