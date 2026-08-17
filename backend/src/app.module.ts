@@ -53,6 +53,7 @@ import { SearchModule } from './modules/search/search.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { TeamModule } from './modules/users/team.module';
 import { PlanOfActionsModule } from './modules/projects/plan-of-actions.module';
+import { PaymentSchedulesModule } from './modules/payments/payment-schedule.module';
 
 @Module({
   imports: [
@@ -91,6 +92,7 @@ import { PlanOfActionsModule } from './modules/projects/plan-of-actions.module';
     ClientsModule,
     VendorsModule,
     PlanOfActionsModule,
+    PaymentSchedulesModule,
     // ============================================================
     // Engagement
     // ============================================================

@@ -2,194 +2,345 @@ import React from "react";
 import { formatCurrency, formatDate } from "../../lib/helpers";
 import logoUrl from "../../assets/rippotai_logo.png";
 
-export default function PrintableQuotation({
-  quotation,
+/**
+ * PrintableEstimate
+ *
+ * Rebuilt to match the "ESTIMATE" format shown in the reference PDF
+ * (Vendor Type / Vendor Name / Phone / Address block on the left,
+ * Project Name / Project Address block on the right, a simple
+ * S.no / Particular / Rate / Quantity / Amount / Remarks items table,
+ * Subtotal + Grand Total only, a Payment Terms table, Terms & Conditions,
+ * and an APPROVED BY / CONTRACTOR'S SIGNATURE footer).
+ *
+ * NOTE ON DATA SHAPE:
+ * The original component was written for a "quotation" object with a
+ * different shape (vendor_snapshot, project_snapshot, discount/tax, etc).
+ * The reference PDF doesn't have those fields, so this component expects
+ * an `estimate` object shaped like the fields visible on the PDF. Adjust
+ * the field names below (marked with comments) to match your actual
+ * backend response if they differ.
+ *
+ * expected `estimate` shape:
+ * {
+ *   estimate_number,        // optional, not shown on PDF but kept for reference
+ *   estimate_date,          // shown top-right as "Date"
+ *   vendor_type,            // e.g. "Plumbing"
+ *   vendor_name,            // e.g. "Dinesh"
+ *   phone_number,
+ *   address,
+ *   project_name,
+ *   project_address,
+ *   items: [{ sno, particular, rate, quantity, amount, remarks }],
+ *   subtotal,
+ *   grand_total,
+ *   payment_terms: [{ stage, date, amount, remarks }], // optional rows, blank rows padded to 4
+ *   terms_conditions,       // free text, additional lines below the fixed note
+ * }
+ */
+
+export default function PrintableEstimate({
+  estimate,
   adminSignature,
   termsConditions,
   company,
 }) {
-  if (!quotation) return null;
+  if (!estimate) return null;
 
-  const q = quotation;
-  const isApproved = q.status === "approved";
+  const e = estimate;
+  const companyName = company?.name || "Rippotai";
 
-  const companyName = company?.name || "Your Company";
+  // Pad payment terms rows out to at least 4 for a consistent table height
+  const paymentRows = [...(e.payment_terms || [])];
+  while (paymentRows.length < 4) paymentRows.push({});
 
-  const discountIsPercentage = q.global_discount_type === "percentage";
+  const formatQty = (qty) =>
+    qty === undefined || qty === null || qty === ""
+      ? ""
+      : Number(qty)
+          .toFixed(3)
+          .replace(/\.?0+$/, "");
 
   return (
     <div
-      className="print-quotation-content bg-white mx-auto"
+      className="print-estimate-content bg-white mx-auto"
       style={{
         width: "210mm",
         minHeight: "297mm",
-        padding: "18mm",
-        color: "#222",
+        padding: "14mm",
+        color: "#111",
         fontFamily: "Arial, Helvetica, sans-serif",
-        fontSize: "13px",
-        lineHeight: 1.5,
+        fontSize: "12px",
+        lineHeight: 1.4,
       }}
     >
       {/* ===========================================================
-          COMPANY HEADER
+          HEADER: logo (left) + Date box (right)
       =========================================================== */}
-
-      <div
+      <table
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          borderBottom: "3px solid #000",
-          paddingBottom: 16,
-          marginBottom: 20,
+          width: "100%",
+          borderCollapse: "collapse",
+          marginBottom: 10,
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 18,
-          }}
-        >
-          <img
-            src={logoUrl}
-            alt={companyName}
-            style={{
-              width: 90,
-              height: 90,
-              objectFit: "contain",
-            }}
-          />
-
-          <div>
-            <div
+        <tbody>
+          <tr>
+            <td
               style={{
-                fontSize: 26,
-                fontWeight: 700,
-                marginBottom: 4,
+                border: "1px solid #000",
+                padding: "10px 14px",
+                width: "70%",
+                verticalAlign: "middle",
               }}
             >
-              {companyName}
-            </div>
+              <img
+                src={logoUrl}
+                alt={companyName}
+                style={{ height: 40, objectFit: "contain" }}
+              />
+            </td>
 
-            {company?.tagline && (
-              <div
-                style={{
-                  color: "#666",
-                  marginBottom: 8,
-                }}
-              >
-                {company.tagline}
-              </div>
-            )}
+            <td
+              style={{
+                border: "1px solid #000",
+                padding: 0,
+                width: "30%",
+                verticalAlign: "top",
+              }}
+            >
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <tbody>
+                  <tr>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #000",
+                        padding: "6px 10px",
+                        fontWeight: 700,
+                        textAlign: "center",
+                      }}
+                    >
+                      Date
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      style={{
+                        padding: "6px 10px",
+                        fontWeight: 600,
+                        textAlign: "center",
+                      }}
+                    >
+                      {e.estimate_date ? formatDate(e.estimate_date) : "-"}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
-            {company?.address && <div>{company.address}</div>}
+      {/* ===========================================================
+          TITLE
+      =========================================================== */}
+      <div
+        style={{
+          textAlign: "center",
+          fontSize: 20,
+          fontWeight: 700,
+          letterSpacing: 2,
+          marginBottom: 10,
+        }}
+      >
+        ESTIMATE
+      </div>
 
-            <div>
-              {company?.phone && <span>Phone: {company.phone}</span>}
+      {/* ===========================================================
+          VENDOR / PROJECT INFO
+      =========================================================== */}
+      <table
+        style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          marginBottom: 14,
+        }}
+      >
+        <tbody>
+          <tr>
+            <td style={cellLabel}>Vendor Type</td>
+            <td style={cellValue}>{e.vendor_type || "-"}</td>
+            <td style={{ ...cellLabel, width: "18%" }}>Project Name</td>
+            <td style={{ ...cellValue, width: "27%" }} rowSpan={2}>
+              {e.project_name || "-"}
+            </td>
+          </tr>
+          <tr>
+            <td style={cellLabel}>Vendor Name</td>
+            <td style={cellValue}>{e.vendor_name || "-"}</td>
+          </tr>
+          <tr>
+            <td style={cellLabel}>Phone Number</td>
+            <td style={cellValue}>{e.phone_number || ""}</td>
+            <td style={cellLabel}>Project Address</td>
+            <td style={cellValue} rowSpan={2}>
+              {e.project_address || "-"}
+            </td>
+          </tr>
+          <tr>
+            <td style={cellLabel}>Address</td>
+            <td style={cellValue}>{e.address || ""}</td>
+          </tr>
+        </tbody>
+      </table>
 
-              {company?.phone && company?.email && <span> | </span>}
+      {/* ===========================================================
+          ITEMS TABLE
+      =========================================================== */}
+      <table
+        style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          marginBottom: 0,
+        }}
+      >
+        <thead>
+          <tr style={{ background: "#33473E", color: "#fff" }}>
+            <th style={{ ...th, width: 45 }}>S.no</th>
+            <th style={{ ...th, textAlign: "left" }}>Particular</th>
+            <th style={{ ...th, width: 80 }}>Rate (₹)</th>
+            <th style={{ ...th, width: 70 }}>Quantity</th>
+            <th style={{ ...th, width: 100 }}>Amount (₹)</th>
+            <th style={{ ...th, width: 130 }}>Remarks</th>
+          </tr>
+        </thead>
 
-              {company?.email && <span>{company.email}</span>}
-            </div>
+        <tbody>
+          {e.items?.map((item, index) => (
+            <tr key={index}>
+              <td style={{ ...td, textAlign: "center" }}>
+                {item.sno || index + 1}
+              </td>
+              <td style={td}>{item.particular}</td>
+              <td style={{ ...td, textAlign: "right" }}>
+                {item.rate ? formatCurrency(item.rate) : ""}
+              </td>
+              <td style={{ ...td, textAlign: "right" }}>
+                {formatQty(item.quantity)}
+              </td>
+              <td style={{ ...td, textAlign: "right", fontWeight: 600 }}>
+                {item.amount ? formatCurrency(item.amount) : ""}
+              </td>
+              <td style={{ ...td, fontSize: 11 }}>{item.remarks || ""}</td>
+            </tr>
+          ))}
 
-            {company?.gst_number && <div>GSTIN : {company.gst_number}</div>}
-          </div>
-        </div>
+          <tr>
+            <td style={td}></td>
+            <td style={td}></td>
+            <td style={{ ...td, fontWeight: 700 }} colSpan={2}>
+              Subtotal
+            </td>
+            <td style={{ ...td, textAlign: "right", fontWeight: 700 }}>
+              {formatCurrency(e.subtotal)}
+            </td>
+            <td style={td}></td>
+          </tr>
 
-        {/* Quotation Details */}
+          <tr style={{ background: "#f0f0f0" }}>
+            <td style={td}></td>
+            <td style={td}></td>
+            <td style={{ ...td, fontWeight: 700 }} colSpan={2}>
+              Grand Total
+            </td>
+            <td style={{ ...td, textAlign: "right", fontWeight: 700 }}>
+              {formatCurrency(e.grand_total)}
+            </td>
+            <td style={td}></td>
+          </tr>
+        </tbody>
+      </table>
 
-        <table
-          style={{
-            borderCollapse: "collapse",
-            minWidth: 270,
-            fontSize: 13,
-          }}
-        >
+      {/* ===========================================================
+          PAYMENT TERMS
+      =========================================================== */}
+      <div style={{ marginTop: 14, marginBottom: 0 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr>
+              <th colSpan={4} style={sectionHeader}>
+                Payment Terms :
+              </th>
+            </tr>
+            <tr>
+              <th style={{ ...th, background: "#fff", color: "#000" }}>
+                Stages
+              </th>
+              <th style={{ ...th, background: "#fff", color: "#000" }}>Date</th>
+              <th style={{ ...th, background: "#fff", color: "#000" }}>
+                Amount
+              </th>
+              <th style={{ ...th, background: "#fff", color: "#000" }}>
+                Remarks
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {paymentRows.map((row, i) => (
+              <tr key={i}>
+                <td style={{ ...td, height: 22 }}>{row.stage || ""}</td>
+                <td style={td}>{row.date ? formatDate(row.date) : ""}</td>
+                <td style={{ ...td, textAlign: "right" }}>
+                  {row.amount ? formatCurrency(row.amount) : ""}
+                </td>
+                <td style={td}>{row.remarks || ""}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ===========================================================
+          TERMS & CONDITIONS
+      =========================================================== */}
+      <div style={{ marginTop: 14, marginBottom: 40 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <tbody>
             <tr>
               <td
                 style={{
                   border: "1px solid #000",
-                  padding: 8,
-                  fontWeight: 600,
-                  width: 110,
+                  padding: "6px 10px",
+                  fontWeight: 700,
                 }}
               >
-                Quotation No
-              </td>
-
-              <td
-                style={{
-                  border: "1px solid #000",
-                  padding: 8,
-                }}
-              >
-                {q.quotation_number}
+                Terms &amp; Conditions:
               </td>
             </tr>
-
             <tr>
               <td
                 style={{
                   border: "1px solid #000",
-                  padding: 8,
+                  padding: "6px 10px",
                   fontWeight: 600,
                 }}
               >
-                Date
-              </td>
-
-              <td
-                style={{
-                  border: "1px solid #000",
-                  padding: 8,
-                }}
-              >
-                {formatDate(q.quotation_date)}
+                Final payment will be made after satisfactory completion of
+                work.
               </td>
             </tr>
-
             <tr>
               <td
                 style={{
                   border: "1px solid #000",
-                  padding: 8,
-                  fontWeight: 600,
+                  padding: "10px",
+                  minHeight: 80,
+                  height: 80,
+                  whiteSpace: "pre-wrap",
+                  fontSize: 11,
+                  verticalAlign: "top",
                 }}
               >
-                Valid Till
-              </td>
-
-              <td
-                style={{
-                  border: "1px solid #000",
-                  padding: 8,
-                }}
-              >
-                {q.expiryDate ? formatDate(q.expiryDate) : "-"}
-              </td>
-            </tr>
-
-            <tr>
-              <td
-                style={{
-                  border: "1px solid #000",
-                  padding: 8,
-                  fontWeight: 600,
-                }}
-              >
-                Status
-              </td>
-
-              <td
-                style={{
-                  border: "1px solid #000",
-                  padding: 8,
-                  textTransform: "capitalize",
-                }}
-              >
-                {q.status}
+                {termsConditions || e.terms_conditions || ""}
               </td>
             </tr>
           </tbody>
@@ -197,650 +348,106 @@ export default function PrintableQuotation({
       </div>
 
       {/* ===========================================================
-            TITLE
+          SIGNATURES
       =========================================================== */}
-
-      <div
-        style={{
-          textAlign: "center",
-          marginBottom: 24,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 28,
-            fontWeight: 700,
-            letterSpacing: 4,
-          }}
-        >
-          QUOTATION
-        </div>
-
-        <div
-          style={{
-            width: 120,
-            height: 3,
-            background: "#000",
-            margin: "10px auto 0",
-          }}
-        />
-      </div>
-
-      {/* ===========================================================
-            VENDOR & PROJECT
-      =========================================================== */}
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 20,
-          marginBottom: 28,
-        }}
-      >
-        {/* Vendor */}
-
-        <div
-          style={{
-            border: "2px solid #000",
-            padding: 16,
-          }}
-        >
-          <div
-            style={{
-              fontWeight: 700,
-              fontSize: 15,
-              marginBottom: 12,
-              borderBottom: "1px solid #000",
-              paddingBottom: 6,
-            }}
-          >
-            TO
-          </div>
-
-          <div
-            style={{
-              fontWeight: 700,
-              fontSize: 15,
-            }}
-          >
-            {q.vendor_snapshot?.name}
-          </div>
-
-          {q.vendor_snapshot?.company_name && (
-            <div
-              style={{
-                marginTop: 3,
-              }}
-            >
-              {q.vendor_snapshot.company_name}
-            </div>
-          )}
-
-          {q.vendor_snapshot?.contact_number && (
-            <div
-              style={{
-                marginTop: 3,
-              }}
-            >
-              Contact : {q.vendor_snapshot.contact_number}
-            </div>
-          )}
-
-          {q.vendor_snapshot?.email && (
-            <div
-              style={{
-                marginTop: 3,
-              }}
-            >
-              Email : {q.vendor_snapshot.email}
-            </div>
-          )}
-
-          {q.vendor_snapshot?.address && (
-            <div
-              style={{
-                marginTop: 8,
-                whiteSpace: "pre-line",
-              }}
-            >
-              {q.vendor_snapshot.address}
-            </div>
-          )}
-        </div>
-
-        {/* Project */}
-
-        <div
-          style={{
-            border: "2px solid #000",
-            padding: 16,
-          }}
-        >
-          <div
-            style={{
-              fontWeight: 700,
-              fontSize: 15,
-              marginBottom: 12,
-              borderBottom: "1px solid #000",
-              paddingBottom: 6,
-            }}
-          >
-            PROJECT DETAILS
-          </div>
-
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-            }}
-          >
-            <tbody>
-              <tr>
-                <td
-                  style={{
-                    width: 110,
-                    fontWeight: 600,
-                    paddingBottom: 8,
-                  }}
-                >
-                  Project
-                </td>
-
-                <td>{q.project_snapshot?.name || "-"}</td>
-              </tr>
-
-              <tr>
-                <td
-                  style={{
-                    fontWeight: 600,
-                    paddingBottom: 8,
-                  }}
-                >
-                  Site
-                </td>
-
-                <td>{q.project_snapshot?.site_location || "-"}</td>
-              </tr>
-
-              <tr>
-                <td
-                  style={{
-                    fontWeight: 600,
-                    paddingBottom: 8,
-                  }}
-                >
-                  Reference
-                </td>
-
-                <td>{q.reference_number || "-"}</td>
-              </tr>
-
-              <tr>
-                <td
-                  style={{
-                    fontWeight: 600,
-                  }}
-                >
-                  Prepared By
-                </td>
-
-                <td>{q.createdBy?.name || "-"}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* ===========================================================
-            ITEMS TABLE
-            (Continue in Part 2)
-      =========================================================== */}
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          marginBottom: 30,
-          fontSize: 13,
-        }}
-      >
-        <thead>
-          <tr
-            style={{
-              background: "#1A1A1A",
-              color: "#fff",
-            }}
-          >
-            <th
-              style={{
-                border: "1px solid #000",
-                padding: 10,
-                width: 50,
-              }}
-            >
-              S.No
-            </th>
-
-            <th
-              style={{
-                border: "1px solid #000",
-                padding: 10,
-                textAlign: "left",
-              }}
-            >
-              Description
-            </th>
-
-            <th
-              style={{
-                border: "1px solid #000",
-                padding: 10,
-                width: 80,
-              }}
-            >
-              Unit
-            </th>
-
-            <th
-              style={{
-                border: "1px solid #000",
-                padding: 10,
-                width: 70,
-              }}
-            >
-              Qty
-            </th>
-
-            <th
-              style={{
-                border: "1px solid #000",
-                padding: 10,
-                width: 110,
-              }}
-            >
-              Rate
-            </th>
-
-            <th
-              style={{
-                border: "1px solid #000",
-                padding: 10,
-                width: 120,
-              }}
-            >
-              Amount
-            </th>
-
-            <th
-              style={{
-                border: "1px solid #000",
-                padding: 10,
-                width: 170,
-              }}
-            >
-              Remarks
-            </th>
-          </tr>
-        </thead>
-
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <tbody>
-          {q.items?.map((item, index) => (
-            <tr key={index}>
-              <td
-                style={{
-                  border: "1px solid #000",
-                  padding: 8,
-                  textAlign: "center",
-                }}
-              >
-                {item.sno || index + 1}
-              </td>
-
-              <td
-                style={{
-                  border: "1px solid #000",
-                  padding: 8,
-                }}
-              >
-                {item.particular}
-              </td>
-
-              <td
-                style={{
-                  border: "1px solid #000",
-                  padding: 8,
-                  textAlign: "center",
-                }}
-              >
-                {item.unit || "-"}
-              </td>
-
-              <td
-                style={{
-                  border: "1px solid #000",
-                  padding: 8,
-                  textAlign: "right",
-                }}
-              >
-                {Number(item.quantity)
-                  .toFixed(3)
-                  .replace(/\.?0+$/, "")}
-              </td>
-
-              <td
-                style={{
-                  border: "1px solid #000",
-                  padding: 8,
-                  textAlign: "right",
-                }}
-              >
-                {formatCurrency(item.rate)}
-              </td>
-
-              <td
-                style={{
-                  border: "1px solid #000",
-                  padding: 8,
-                  textAlign: "right",
-                  fontWeight: 600,
-                }}
-              >
-                {formatCurrency(item.amount)}
-              </td>
-
-              <td
-                style={{
-                  border: "1px solid #000",
-                  padding: 8,
-                  fontSize: 12,
-                }}
-              >
-                {item.remarks || "-"}
-              </td>
-            </tr>
-          ))}
+          <tr>
+            <td
+              style={{
+                border: "1px solid #000",
+                borderBottom: "none",
+                padding: 10,
+                width: "50%",
+                height: 60,
+                textAlign: "center",
+                verticalAlign: "bottom",
+              }}
+            >
+              {adminSignature?.signature_url && (
+                <img
+                  src={adminSignature.signature_url}
+                  alt="Approved By"
+                  style={{ maxHeight: 50, objectFit: "contain" }}
+                />
+              )}
+            </td>
+            <td
+              style={{
+                border: "1px solid #000",
+                borderBottom: "none",
+                borderLeft: "none",
+                padding: 10,
+                width: "50%",
+                height: 60,
+              }}
+            ></td>
+          </tr>
+          <tr>
+            <td
+              style={{
+                border: "1px solid #000",
+                borderTop: "1px solid #000",
+                padding: 8,
+                fontWeight: 700,
+                textAlign: "center",
+              }}
+            >
+              APPROVED BY
+            </td>
+            <td
+              style={{
+                border: "1px solid #000",
+                borderLeft: "none",
+                padding: 8,
+                fontWeight: 700,
+                textAlign: "center",
+              }}
+            >
+              CONTRACTOR'S SIGNATURE
+            </td>
+          </tr>
         </tbody>
       </table>
-
-      {/* ========================================= */}
-      {/* TOTAL SUMMARY */}
-      {/* ========================================= */}
-
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          marginBottom: 25,
-        }}
-      >
-        <div
-          style={{
-            width: 360,
-            border: "2px solid #000",
-          }}
-        >
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-            }}
-          >
-            <tbody>
-              <tr>
-                <td
-                  style={{
-                    padding: 10,
-                    borderBottom: "1px solid #ddd",
-                  }}
-                >
-                  Sub Total
-                </td>
-
-                <td
-                  style={{
-                    padding: 10,
-                    textAlign: "right",
-                    borderBottom: "1px solid #ddd",
-                  }}
-                >
-                  {formatCurrency(q.subtotal)}
-                </td>
-              </tr>
-
-              {Number(q.additional_charges) > 0 && (
-                <tr>
-                  <td
-                    style={{
-                      padding: 10,
-                      borderBottom: "1px solid #ddd",
-                    }}
-                  >
-                    Additional Charges
-                  </td>
-
-                  <td
-                    style={{
-                      padding: 10,
-                      textAlign: "right",
-                      borderBottom: "1px solid #ddd",
-                    }}
-                  >
-                    {formatCurrency(q.additional_charges)}
-                  </td>
-                </tr>
-              )}
-
-              {Number(q.discount) > 0 && (
-                <tr>
-                  <td
-                    style={{
-                      padding: 10,
-                      borderBottom: "1px solid #ddd",
-                    }}
-                  >
-                    Discount
-                    {discountIsPercentage &&
-                      q.global_discount_value > 0 &&
-                      ` (${q.global_discount_value}%)`}
-                  </td>
-
-                  <td
-                    style={{
-                      padding: 10,
-                      textAlign: "right",
-                      color: "#cc0000",
-                      borderBottom: "1px solid #ddd",
-                    }}
-                  >
-                    - {formatCurrency(q.discount)}
-                  </td>
-                </tr>
-              )}
-
-              {Number(q.tax_percent) > 0 && (
-                <tr>
-                  <td
-                    style={{
-                      padding: 10,
-                      borderBottom: "1px solid #ddd",
-                    }}
-                  >
-                    Tax ({q.tax_percent}%)
-                  </td>
-
-                  <td
-                    style={{
-                      padding: 10,
-                      textAlign: "right",
-                      borderBottom: "1px solid #ddd",
-                    }}
-                  >
-                    {formatCurrency(q.tax_amount)}
-                  </td>
-                </tr>
-              )}
-
-              <tr
-                style={{
-                  background: "#f4f4f4",
-                }}
-              >
-                <td
-                  style={{
-                    padding: 12,
-                    fontWeight: 700,
-                    fontSize: 15,
-                  }}
-                >
-                  GRAND TOTAL
-                </td>
-
-                <td
-                  style={{
-                    padding: 12,
-                    textAlign: "right",
-                    fontWeight: 700,
-                    fontSize: 15,
-                  }}
-                >
-                  {formatCurrency(q.total_amount)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* ========================================= */}
-      {/* AMOUNT IN WORDS */}
-      {/* ========================================= */}
-
-      <div
-        style={{
-          border: "2px solid #000",
-          padding: 14,
-          marginBottom: 25,
-        }}
-      >
-        <div
-          style={{
-            fontWeight: 700,
-            marginBottom: 6,
-          }}
-        >
-          Amount in Words
-        </div>
-
-        <div>
-          {q.amount_in_words || "______________________________________"}
-        </div>
-      </div>
-
-      {/* ========================================= */}
-      {/* TERMS */}
-      {/* ========================================= */}
-
-      <div
-        style={{
-          marginBottom: 40,
-        }}
-      >
-        <div
-          style={{
-            fontWeight: 700,
-            marginBottom: 8,
-            fontSize: 15,
-          }}
-        >
-          Terms & Conditions
-        </div>
-
-        <div
-          style={{
-            border: "2px solid #000",
-            padding: 15,
-            minHeight: 120,
-            whiteSpace: "pre-wrap",
-            fontSize: 12,
-          }}
-        >
-          {termsConditions || q.terms_conditions || "No Terms & Conditions"}
-        </div>
-      </div>
-
-      {/* ========================================= */}
-      {/* SIGNATURES */}
-      {/* ========================================= */}
-
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-end",
-          marginTop: 70,
-        }}
-      >
-        <div
-          style={{
-            width: "42%",
-            textAlign: "center",
-          }}
-        >
-          {isApproved && adminSignature?.signature_url && (
-            <img
-              src={adminSignature.signature_url}
-              alt="Authorized Signature"
-              style={{
-                maxHeight: 70,
-                marginBottom: 10,
-                objectFit: "contain",
-              }}
-            />
-          )}
-
-          <div
-            style={{
-              borderTop: "2px solid #000",
-              paddingTop: 8,
-              fontWeight: 600,
-            }}
-          >
-            For {companyName}
-          </div>
-
-          <div
-            style={{
-              marginTop: 5,
-              fontSize: 12,
-            }}
-          >
-            Authorized Signatory
-          </div>
-        </div>
-
-        <div
-          style={{
-            width: "42%",
-            textAlign: "center",
-          }}
-        >
-          <div
-            style={{
-              height: 70,
-            }}
-          />
-
-          <div
-            style={{
-              borderTop: "2px solid #000",
-              paddingTop: 8,
-              fontWeight: 600,
-            }}
-          >
-            Contractor Signature
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
+
+/* ===========================================================
+   Shared cell styles
+=========================================================== */
+const cellLabel = {
+  border: "1px solid #000",
+  padding: "6px 10px",
+  fontWeight: 600,
+  width: "18%",
+  background: "#fafafa",
+};
+
+const cellValue = {
+  border: "1px solid #000",
+  padding: "6px 10px",
+  width: "37%",
+};
+
+const th = {
+  border: "1px solid #000",
+  padding: 8,
+  fontSize: 12,
+  textAlign: "center",
+};
+
+const td = {
+  border: "1px solid #000",
+  padding: 6,
+  fontSize: 12,
+};
+
+const sectionHeader = {
+  border: "1px solid #000",
+  padding: 6,
+  textAlign: "center",
+  fontWeight: 700,
+  background: "#fff",
+  color: "#000",
+};

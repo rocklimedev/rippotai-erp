@@ -4,10 +4,12 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { fmtINR, relativeTime, StatusChip } from "@/lib/format";
 // Excel export (blob download) isn't covered by the RTK Query slice below,
-// so that call still goes through the plain axios client. PDF export no
-// longer hits the backend at all — see exportPdf() below.
+// so that call still goes through the plain axios client.
 import api from "@/lib/api";
-import PrintableQuotation from "../../components/quotations/PrintableQuotation"; // adjust to wherever PrintableQuotation.jsx actually lives
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import html2pdf from "html2pdf.js"; // npm i html2pdf.js
+import PrintableEstimate from "../../components/quotations/PrintableQuotation"; // adjust path if needed
 import {
   useGetQuotationByIdQuery,
   useSubmitQuotationMutation,
@@ -24,7 +26,7 @@ import {
   useCreateQuotationVersionMutation,
   useRestoreQuotationVersionMutation,
   useDeleteQuotationVersionMutation,
-} from "../../api/quotation.api"; // adjust to wherever quotationApi.js actually lives
+} from "../../api/quotation.api"; // adjust path if needed
 import {
   ArrowLeft,
   Download,
@@ -42,6 +44,13 @@ import {
 } from "lucide-react";
 
 const TABS = ["Items", "Commercial Terms", "Approval History", "Versions"];
+
+// A4 at 96dpi — matches the width the hidden PrintableEstimate root is
+// rendered at (see the offscreen wrapper below), so what html2canvas
+// captures maps 1:1 onto an A4 page.
+const A4_WIDTH_PX = 794;
+const A4_WIDTH_MM = 210;
+const A4_HEIGHT_MM = 297;
 
 export default function QuotationDetail() {
   const { id } = useParams();
@@ -75,11 +84,16 @@ export default function QuotationDetail() {
   const [tab, setTab] = useState("Items");
   const [remarkModal, setRemarkModal] = useState(null); // { label, onConfirm(remarks) }
   const [remark, setRemark] = useState("");
+  const [exporting, setExporting] = useState(false);
   const busy = submitting || approving || returning || declining || cancelling;
 
   // --- Derived values, mapped from the real payload shape ---
   // (Declared before the early returns below so hook order stays stable —
   // useMemo further down depends on these.)
+  // NOTE: the live payload nests both a flat convenience object (q.vendor /
+  // q.project) AND a point-in-time snapshot (q.vendorSnapshot /
+  // q.projectSnapshot) captured when the quotation was created. They're
+  // usually identical; we prefer the flat one and fall back to the snapshot.
   const vendor = q?.vendor || q?.vendorSnapshot || {};
   const project = q?.project || q?.projectSnapshot || {};
   const readOnly = q?.status === "approved" && !isAdmin;
@@ -92,38 +106,56 @@ export default function QuotationDetail() {
   const discountValue = Number(q?.discount ?? q?.globalDiscountValue ?? 0);
   const total = Number(q?.totalAmount || 0);
 
-  // Normalize this page's camelCase quotation shape into the snake_case
-  // shape PrintableQuotation expects, so it can be reused directly for the
+  // Normalize this page's real API payload shape into the flat shape
+  // PrintableEstimate expects, so it can be reused directly for the
   // print/PDF view without a backend round-trip.
-  const printableQuotation = useMemo(() => {
+  //
+  // Field mapping notes (based on the actual API response):
+  //  - "Vendor Type" on the printed estimate is the vendor's trade/business
+  //    type (e.g. "Plumbing", "Laminates") -> vendor.businessType.name.
+  //    vendor.vendorCategory.name ("Material" / "Labour" / ...) is a
+  //    broader classification and is NOT what's printed as Vendor Type.
+  //  - "Project Address" on the estimate -> project.site_location.
+  //  - The API has no payment-terms sub-resource yet, so payment_terms
+  //    falls back to an empty array (PrintableEstimate pads it with blank
+  //    rows so the table still prints correctly).
+  const printableEstimate = useMemo(() => {
     if (!q) return null;
 
     return {
-      quotation_date: q.quotationDate || q.quotation_date,
-      quotation_number: q.quotationNumber || q.quotation_number,
+      estimate_number: q.quotationNumber || q.quotation_number,
+      estimate_date: q.quotationDate || q.quotation_date,
       status: q.status,
-      expiryDate: q.expiryDate,
 
-      // Snapshots
-      vendor_snapshot: q.vendorSnapshot || q.vendor_snapshot || q.vendor || {},
-      project_snapshot:
-        q.projectSnapshot || q.project_snapshot || q.project || {},
+      vendor_type:
+        vendor.businessType?.name || vendor.vendorCategory?.name || "",
+      vendor_name: vendor.name || "",
+      phone_number: vendor.contact_number || vendor.phone || "",
+      address: vendor.address || "",
 
-      items: q.items || [],
+      project_name: project.name || "",
+      project_address: project.site_location || project.address || "",
 
-      // Financials
+      items: (q.items || []).map((it) => ({
+        sno: it.sno,
+        particular: it.particular,
+        rate: Number(it.rate || 0),
+        quantity: Number(it.quantity || 0),
+        amount: Number(it.amount || 0),
+        remarks: it.remarks || "",
+      })),
+
+      // Financials — the reference format only prints Subtotal + Grand
+      // Total, so additional charges / discount / tax aren't surfaced on
+      // the printout even though they exist on the record.
       subtotal: Number(q.subtotal || 0),
-      additional_charges: Number(q.additionalCharges || 0),
-      global_discount_type: q.globalDiscountType || "fixed",
-      global_discount_value: Number(q.globalDiscountValue || q.discount || 0),
-      discount: Number(q.discount || 0),
-      tax_percent: Number(q.taxPercent || 0),
-      tax_amount: Number(q.taxAmount || 0),
-      total_amount: Number(q.totalAmount || 0),
+      grand_total: Number(q.totalAmount || 0),
+
+      payment_terms: q.paymentTerms || q.payment_terms || [],
 
       terms_conditions: q.termsConditions || q.terms_conditions || "",
     };
-  }, [q]);
+  }, [q, vendor, project]);
 
   if (isLoading) return <div className="p-8 text-[#6B7B7C]">Loading…</div>;
   if (isError || !q)
@@ -192,45 +224,187 @@ export default function QuotationDetail() {
     }
   };
 
-  // Renders the already-fetched quotation through PrintableQuotation and
-  // hands off to the browser's native print dialog ("Save as PDF" works in
-  // every modern browser) instead of round-tripping to a backend PDF
-  // export endpoint.
-  const exportPdf = () => {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      toast.error("Please allow popups to print");
+  // ---------------------------------------------------------------------
+  // PDF export – uses html2pdf.js for correct multi-page pagination
+  // that avoids cutting tables, totals, terms, signatures mid-element.
+  // ---------------------------------------------------------------------
+  const exportPdf = async () => {
+    const source = document.getElementById("printable-estimate-root");
+    if (!source || !printableEstimate) {
+      toast.error("Printable content not ready");
       return;
     }
 
-    const printContent = document.getElementById(
-      "printable-quotation-root",
-    ).innerHTML;
+    setExporting(true);
 
-    printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Quotation ${q.quotationNumber}</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-          @media print { body { margin: 0; } }
-        </style>
-      </head>
-      <body>
-        ${printContent}
-      </body>
-    </html>
-  `);
+    // Clone so we never touch the live off-screen element
+    const clone = source.cloneNode(true);
+    clone.id = "printable-estimate-clone";
 
-    printWindow.document.close();
-    printWindow.focus();
+    // Force the clone to be fully visible and correctly sized
+    Object.assign(clone.style, {
+      position: "fixed",
+      top: "0px",
+      left: "0px",
+      width: `${A4_WIDTH_PX}px`,
+      maxWidth: `${A4_WIDTH_PX}px`,
+      backgroundColor: "#ffffff",
+      zIndex: "99999",
+      opacity: "1",
+      visibility: "visible",
+      pointerEvents: "none",
+      overflow: "visible",
+      transform: "none",
+      margin: "0",
+      padding: "0",
+    });
 
-    setTimeout(() => {
-      printWindow.print();
-      // printWindow.close(); // Uncomment if you want auto close
-    }, 500);
+    document.body.appendChild(clone);
+
+    try {
+      // Force browser to calculate layout
+      clone.offsetHeight;
+      await new Promise((resolve) => setTimeout(resolve, 250));
+
+      // Safety check
+      if (clone.scrollHeight < 80) {
+        throw new Error(
+          "PrintableEstimate has almost zero height. Check the component rendering.",
+        );
+      }
+
+      const opt = {
+        margin: [10, 10, 12, 10], // mm
+        filename: `Estimate_${q.quotationNumber}.pdf`,
+        image: { type: "jpeg", quality: 0.95 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+          windowWidth: A4_WIDTH_PX,
+          width: A4_WIDTH_PX,
+          height: clone.scrollHeight,
+        },
+        jsPDF: {
+          unit: "mm",
+          format: "a4",
+          orientation: "portrait",
+        },
+        pagebreak: {
+          mode: ["avoid-all", "css", "legacy"],
+          avoid: [
+            "tr",
+            "td",
+            "th",
+            ".no-break",
+            ".totals-block",
+            ".terms-box",
+            ".signature-row",
+          ],
+        },
+      };
+
+      // Use the clone
+      await html2pdf().set(opt).from(clone).save();
+      toast.success("PDF exported");
+    } catch (err) {
+      console.error("PDF export error:", err);
+      toast.error("Failed to export PDF – check console");
+    } finally {
+      // Clean up
+      if (clone.parentNode) {
+        clone.parentNode.removeChild(clone);
+      }
+      setExporting(false);
+    }
   };
+
+  // Fallback pure html2canvas + jsPDF version (if you ever remove html2pdf.js)
+  // Uncomment and use instead of the function above if needed.
+  /*
+  const exportPdf = async () => {
+    const el = document.getElementById("printable-estimate-root");
+    if (!el || !printableEstimate) return;
+
+    setExporting(true);
+    try {
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        windowWidth: A4_WIDTH_PX,
+        logging: false,
+      });
+
+      const pdf = new jsPDF({
+        unit: "mm",
+        format: "a4",
+        orientation: "portrait",
+      });
+
+      const marginMm = 10;
+      const usableWidthMm = A4_WIDTH_MM - marginMm * 2;
+      const usableHeightMm = A4_HEIGHT_MM - marginMm * 2;
+
+      const pxPerMm = canvas.width / A4_WIDTH_MM;
+      const pageHeightPx = usableHeightMm * pxPerMm;
+
+      let renderedPx = 0;
+      let pageIndex = 0;
+
+      while (renderedPx < canvas.height) {
+        const sliceHeightPx = Math.min(pageHeightPx, canvas.height - renderedPx);
+
+        const pageCanvas = document.createElement("canvas");
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeightPx;
+
+        const ctx = pageCanvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+        ctx.drawImage(
+          canvas,
+          0,
+          renderedPx,
+          canvas.width,
+          sliceHeightPx,
+          0,
+          0,
+          canvas.width,
+          sliceHeightPx,
+        );
+
+        const imgData = pageCanvas.toDataURL("image/jpeg", 0.95);
+
+        if (pageIndex > 0) pdf.addPage();
+
+        pdf.addImage(
+          imgData,
+          "JPEG",
+          marginMm,
+          marginMm,
+          usableWidthMm,
+          sliceHeightPx / pxPerMm,
+          undefined,
+          "FAST",
+        );
+
+        renderedPx += sliceHeightPx;
+        pageIndex += 1;
+      }
+
+      pdf.save(`Estimate_${q.quotationNumber}.pdf`);
+      toast.success("PDF exported");
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to export PDF");
+    } finally {
+      setExporting(false);
+    }
+  };
+  */
 
   const exportXlsx = async () => {
     const res = await api.get(`/quotations/${id}/export/excel`, {
@@ -245,26 +419,6 @@ export default function QuotationDetail() {
 
   return (
     <div className="max-w-[1440px] mx-auto p-6">
-      {/* Print styles: when printing, hide the whole app shell and show
-          only the hidden PrintableQuotation container below. */}
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #printable-quotation-root,
-          #printable-quotation-root * {
-            visibility: visible;
-          }
-          #printable-quotation-root {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-          }
-        }
-      `}</style>
-
       <button
         onClick={() => nav("/quotations")}
         className="text-[13px] text-[#6B7B7C] hover:text-[#333333] inline-flex items-center gap-1 mb-3"
@@ -321,10 +475,12 @@ export default function QuotationDetail() {
                   <span>{vendor.company_name}</span>
                 </>
               )}
-              {vendor.vendorCategory?.name && (
+              {(vendor.businessType?.name || vendor.vendorCategory?.name) && (
                 <>
                   <span className="text-[#B5C4B6]">·</span>
-                  <span>{vendor.vendorCategory.name}</span>
+                  <span>
+                    {vendor.businessType?.name || vendor.vendorCategory?.name}
+                  </span>
                 </>
               )}
             </div>
@@ -362,10 +518,11 @@ export default function QuotationDetail() {
         <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[#B5C4B6]">
           <button
             onClick={exportPdf}
+            disabled={exporting}
             data-testid="btn-export-pdf"
-            className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px] font-semibold inline-flex items-center gap-1"
+            className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px] font-semibold inline-flex items-center gap-1 disabled:opacity-50"
           >
-            <Download size={13} /> PDF
+            <Download size={13} /> {exporting ? "Exporting…" : "PDF"}
           </button>
           <button
             onClick={exportXlsx}
@@ -460,7 +617,11 @@ export default function QuotationDetail() {
             key={t}
             onClick={() => setTab(t)}
             data-testid={`detail-tab-${t.replace(/\s+/g, "-").toLowerCase()}`}
-            className={`px-4 py-2 text-[13px] font-semibold whitespace-nowrap ${tab === t ? "text-[#333333] border-b-2 border-[#1F453B]" : "text-[#6B7B7C]"}`}
+            className={`px-4 py-2 text-[13px] font-semibold whitespace-nowrap ${
+              tab === t
+                ? "text-[#333333] border-b-2 border-[#1F453B]"
+                : "text-[#6B7B7C]"
+            }`}
           >
             {t}
           </button>
@@ -701,21 +862,30 @@ export default function QuotationDetail() {
         </div>
       )}
 
-      {/* Hidden print target: invisible on screen, shown (and everything
-          else hidden) only under the @media print rule above. This is what
-          window.print() in exportPdf() actually outputs. */}
-      {/* Hidden print target */}
-      <div id="printable-quotation-root" style={{ display: "none" }}>
-        <div style={{ display: "block" }} className="print:block">
-          {printableQuotation && (
-            <PrintableQuotation
-              quotation={printableQuotation}
-              termsConditions={q.termsConditions || q.terms_conditions}
-              // Optional: pass company info if you have it
-              // company={companyData}
-            />
-          )}
-        </div>
+      {/* Off-screen export target for html2canvas / html2pdf.
+          Deliberately NOT display:none — several browsers skip layout for
+          display:none subtrees, which leaves html2canvas nothing real to capture.
+          Positioning it off-screen keeps it fully laid out (and inheriting
+          all of the app's normal CSS) while remaining invisible to the user.
+          Fixed to the A4 pixel width so the captured canvas maps cleanly onto A4 pages. */}
+      {/* Off-screen export target */}
+      <div
+        id="printable-estimate-root"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: "-10000px", // stays off-screen for normal UI
+          width: `${A4_WIDTH_PX}px`,
+          background: "#ffffff",
+          // do NOT set display:none or visibility:hidden here permanently
+        }}
+      >
+        {printableEstimate && (
+          <PrintableEstimate
+            estimate={printableEstimate}
+            termsConditions={q.termsConditions || q.terms_conditions}
+          />
+        )}
       </div>
     </div>
   );

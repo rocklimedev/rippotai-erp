@@ -98,6 +98,7 @@ export const baseApi = createApi({
     "SiteRecce",
     // brief
     "ProjectBrief",
+    "PaymentSchedule",
     // tasks
     "Tasks",
     // calendar

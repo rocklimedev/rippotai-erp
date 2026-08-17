@@ -15,6 +15,9 @@ import DrawingsView from "@/pages/documents/DrawingsView";
 import { PlanOfActionForm } from "../../pages/documents/PlanOfActionForm";
 import PlanOfActionList from "../../pages/documents/PlanOfActionList";
 import { PlanOfActionView } from "../../pages/documents/PlanOfActionView";
+import { PaymentScheduleForm } from "../../pages/documents/PaymentScheduleForm";
+import PaymentScheduleList from "../../pages/documents/PaymentScheduleList";
+import PaymentSchedulePage from "../../pages/documents/paymentSchedulePage";
 
 export const documentsRoutes = [
   {
@@ -41,13 +44,19 @@ export const documentsRoutes = [
       { path: "project-documents", element: <ProjectDocuments /> },
       { path: "brief/all", element: <ProjectBriefList /> },
       { path: "recce/all", element: <SiteRecceList /> },
+      { path: "payment-schedule/all", element: <PaymentScheduleList /> },
       { path: "plan-of-action/all", element: <PlanOfActionList /> },
       { path: "activity", element: <DocumentActivity /> },
       { path: "forms/project-brief", element: <BriefForm /> },
       { path: "forms/site-reki", element: <SiteRekiForm /> },
+      { path: "forms/payment-schedule", element: <PaymentScheduleForm /> },
       { path: "forms/plan-of-action", element: <PlanOfActionForm /> },
       { path: "site-recce/:id", element: <SiteRekiView /> },
       { path: "brief/:id", element: <ProjectBriefView /> },
+      {
+        path: "payment-schedule/:scheduleId",
+        element: <PaymentSchedulePage />,
+      },
       { path: "drawings", element: <DrawingsAll /> },
       { path: "plan-of-action/:id", element: <PlanOfActionView /> },
       { path: "drawings/:id", element: <DrawingsView /> },

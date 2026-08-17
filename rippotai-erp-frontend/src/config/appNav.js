@@ -149,9 +149,11 @@ export const APP_MENUS = {
         I("Project Brief", "forms/project-brief"),
         I("Site Reki", "forms/site-reki"),
         I("Plan of Action", "forms/plan-of-action"),
+        I("Payment Schedule", "forms/payment-schedule"),
         I("All Site Recce", "recce/all"),
         I("All Project Brief", "brief/all"),
         I("All Plan Of Action", "plan-of-action/all"),
+        I("All Payment Schedules", "payment-schedule/all"),
       ],
     },
     {
