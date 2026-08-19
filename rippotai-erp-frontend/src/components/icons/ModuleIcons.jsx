@@ -138,7 +138,27 @@ export const IconNotes = () =>
       <rect x="22" y="48" width="20" height="3.5" rx="2" fill={P} />
     </>,
   );
+export const IconMaterials = () =>
+  wrap(
+    <>
+      {/* Material / stacked boxes */}
+      <rect x="10" y="42" width="26" height="24" rx="5" fill={S} />
+      <rect x="44" y="42" width="26" height="24" rx="5" fill={P} />
 
+      {/* Top box */}
+      <path d="M40 10 L62 21 L40 32 L18 21 Z" fill={P} />
+
+      {/* Box center seam */}
+      <path d="M40 32 V58" stroke={W} strokeWidth="3.5" strokeLinecap="round" />
+
+      {/* Material lines */}
+      <path d="M24 49 H31" stroke={P} strokeWidth="3" strokeLinecap="round" />
+
+      <path d="M49 49 H63" stroke={W} strokeWidth="3" strokeLinecap="round" />
+
+      <path d="M49 56 H59" stroke={W} strokeWidth="3" strokeLinecap="round" />
+    </>,
+  );
 export const IconLeads = () =>
   wrap(
     <>
@@ -223,7 +243,8 @@ export const MODULE_ICONS = {
   vendors: IconVendors,
   leads: IconLeads,
   documents: IconDocuments,
-  clients: IconClients,
+  clients: IconClients, // Materials / Procurement
+  materials: IconMaterials,
   tasks: IconTasks,
   notes: IconNotes,
   inventory: IconInventory,

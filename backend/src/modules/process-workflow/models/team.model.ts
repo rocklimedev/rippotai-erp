@@ -18,7 +18,7 @@ import { ContinuityRole } from './continuity-role.model';
  * Accounts, Planning, Procurement, Client, and each of the 12 contractor trades
  * (type = TRADE, tradeCategory set).
  */
-@Table({ tableName: 'wf_teams', timestamps: true })
+@Table({ tableName: 'teams', timestamps: true })
 export class Team extends Model<Team> {
   @Column({ type: DataType.STRING(100), allowNull: false })
   name: string;

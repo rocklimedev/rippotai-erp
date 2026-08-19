@@ -21,7 +21,7 @@ import { GateLog } from './gate-log.model';
  * Working Drawings Issued - GFC, Final Client Sign-off, etc.) have isGate = true
  * and a gateName used for gate logging.
  */
-@Table({ tableName: 'wf_steps', timestamps: true, paranoid: true })
+@Table({ tableName: 'steps', timestamps: true, paranoid: true })
 export class Step extends Model<Step> {
   @ForeignKey(() => Phase)
   @Column({ type: DataType.INTEGER, allowNull: false })

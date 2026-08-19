@@ -1,9 +1,16 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { DailySiteReport } from './models/daily-site-report.model';
 import { ManpowerEntry } from './models/manpower-entry.model';
 import { Team } from '../process-workflow/models/team.model';
-import { CreateDailySiteReportDto, UpdateDailySiteReportDto } from './dto/daily-report.dto';
+import {
+  CreateDailySiteReportDto,
+  UpdateDailySiteReportDto,
+} from './dto/daily-report.dto';
 
 @Injectable()
 export class DailySiteReportService {
@@ -35,14 +42,20 @@ export class DailySiteReportService {
 
     if (dto.manpower?.length) {
       for (const entry of dto.manpower) {
-        await this.manpowerModel.create({ ...entry, dailySiteReportId: report.id } as any);
+        await this.manpowerModel.create({
+          ...entry,
+          dailySiteReportId: report.id,
+        } as any);
       }
     }
 
     return this.getReportOrThrow(report.id);
   }
 
-  async updateReport(id: number, dto: UpdateDailySiteReportDto): Promise<DailySiteReport> {
+  async updateReport(
+    id: number,
+    dto: UpdateDailySiteReportDto,
+  ): Promise<DailySiteReport> {
     const report = await this.getReportOrThrow(id);
     await report.update({
       weatherCondition: dto.weatherCondition ?? report.weatherCondition,
@@ -54,7 +67,10 @@ export class DailySiteReportService {
     if (dto.manpower?.length) {
       await this.manpowerModel.destroy({ where: { dailySiteReportId: id } });
       for (const entry of dto.manpower) {
-        await this.manpowerModel.create({ ...entry, dailySiteReportId: id } as any);
+        await this.manpowerModel.create({
+          ...entry,
+          dailySiteReportId: id,
+        } as any);
       }
     }
 
@@ -72,18 +88,26 @@ export class DailySiteReportService {
     const report = await this.reportModel.findByPk(id, {
       include: [{ model: this.manpowerModel, include: [this.teamModel] }],
     });
-    if (!report) throw new NotFoundException(`Daily site report ${id} not found`);
+    if (!report)
+      throw new NotFoundException(`Daily site report ${id} not found`);
     return report;
   }
 
-  async getReportByDate(projectId: number, reportDate: string): Promise<DailySiteReport | null> {
+  async getReportByDate(
+    projectId: number,
+    reportDate: string,
+  ): Promise<DailySiteReport | null> {
     return this.reportModel.findOne({
       where: { projectId, reportDate },
       include: [{ model: this.manpowerModel, include: [this.teamModel] }],
     });
   }
 
-  async listReports(projectId: number, from?: string, to?: string): Promise<DailySiteReport[]> {
+  async listReports(
+    projectId: number,
+    from?: string,
+    to?: string,
+  ): Promise<DailySiteReport[]> {
     const where: any = { projectId };
     if (from || to) {
       const { Op } = require('sequelize');

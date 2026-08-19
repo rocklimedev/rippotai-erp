@@ -8,6 +8,7 @@ import {
   ForeignKey,
   BelongsTo,
 } from 'sequelize-typescript';
+
 import { InventoryTransactionType } from '../../../common/enums/inventory-transaction-type.enum';
 import { SiteInventory } from './site-inventory.model';
 
@@ -24,38 +25,53 @@ export class InventoryTransaction extends Model {
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column(DataType.UUID)
-  id: string;
+  declare id: string;
 
   @ForeignKey(() => SiteInventory)
   @Column(DataType.UUID)
-  siteInventoryId: string;
+  declare siteInventoryId: string;
 
   @BelongsTo(() => SiteInventory, { onDelete: 'CASCADE' })
-  siteInventory: SiteInventory;
+  declare siteInventory: SiteInventory;
 
   // Present only for INWARD transactions that reconcile against a PO delivery
-  @Column({ type: DataType.UUID, allowNull: true })
-  purchaseOrderId: string;
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  declare purchaseOrderId: string;
 
-  @Column({ type: DataType.UUID, allowNull: true })
-  deliveryChallanId: string;
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  declare deliveryChallanId: string;
 
   @Column(DataType.ENUM(...Object.values(InventoryTransactionType)))
-  type: InventoryTransactionType;
+  declare type: InventoryTransactionType;
 
   // Always stored as a positive magnitude; direction is derived from `type`
   @Column(DataType.DECIMAL(14, 3))
-  quantity: number;
+  declare quantity: number;
 
   @Column(DataType.DECIMAL(14, 3))
-  balanceAfter: number;
+  declare balanceAfter: number;
 
-  @Column({ type: DataType.STRING, allowNull: true })
-  reference: string;
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  declare reference: string;
 
-  @Column({ type: DataType.TEXT, allowNull: true })
-  remarks: string;
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  declare remarks: string;
 
-  @Column({ type: DataType.STRING, allowNull: true })
-  transactedBy: string;
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  declare transactedBy: string;
 }

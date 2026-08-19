@@ -51,9 +51,12 @@ import { SearchModule } from './modules/search/search.module';
 
 // Reports
 import { ReportsModule } from './modules/reports/reports.module';
-import { TeamModule } from './modules/users/team.module';
+import { TeamModule } from './modules/process-workflow/team.module';
 import { PlanOfActionsModule } from './modules/projects/plan-of-actions.module';
 import { PaymentSchedulesModule } from './modules/payments/payment-schedule.module';
+import { ProcessWorkflowModule } from './modules/process-workflow/process-workflow.module';
+import { SiteOperationsModule } from './modules/site-operations/site-operations.module';
+import { MaterialProcurementModule } from './modules/material-procurement/material-procurement.module';
 
 @Module({
   imports: [
@@ -133,7 +136,9 @@ import { PaymentSchedulesModule } from './modules/payments/payment-schedule.modu
     // ============================================================
     CdnModule,
     SearchModule,
-
+    ProcessWorkflowModule,
+    SiteOperationsModule,
+    MaterialProcurementModule,
     // ============================================================
     // Reports
     // ============================================================

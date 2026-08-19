@@ -1,9 +1,8 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { TeamMember } from './models/team-member.model';
+import { TeamMember } from '../users/models/team-member.model';
 import { TeamService } from './team.service';
 import { TeamController } from './team.controller';
-
 @Module({
   imports: [SequelizeModule.forFeature([TeamMember])],
   controllers: [TeamController],

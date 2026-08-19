@@ -9,6 +9,7 @@ import {
   BelongsTo,
   HasOne,
 } from 'sequelize-typescript';
+
 import { ApprovalStatus } from '../../../common/enums/approval-status.enum';
 import { MaterialRequirement } from './material-requirement.model';
 import { MaterialQuotation } from './material-quotation.model';
@@ -19,51 +20,67 @@ import { MaterialQuotation } from './material-quotation.model';
  * rule used for trades: an estimate must reach ApprovalStatus.APPROVED
  * before it can be converted into a MaterialQuotation.
  */
-@Table({ tableName: 'material_estimates', timestamps: true, updatedAt: false })
+@Table({
+  tableName: 'material_estimates',
+  timestamps: true,
+  updatedAt: false,
+})
 export class MaterialEstimate extends Model {
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column(DataType.UUID)
-  id: string;
+  declare id: string;
 
   @ForeignKey(() => MaterialRequirement)
-  @Column({ type: DataType.UUID, unique: true })
-  materialRequirementId: string;
+  @Column({
+    type: DataType.UUID,
+    unique: true,
+  })
+  declare materialRequirementId: string;
 
   @BelongsTo(() => MaterialRequirement, { onDelete: 'CASCADE' })
-  materialRequirement: MaterialRequirement;
+  declare materialRequirement: MaterialRequirement;
 
-  @Column({ type: DataType.UUID, allowNull: true })
-  rateSheetId: string;
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  declare rateSheetId: string;
 
   @Column(DataType.DECIMAL(12, 3))
-  quantity: number;
+  declare quantity: number;
 
   @Column(DataType.STRING)
-  unit: string;
+  declare unit: string;
 
   @Column(DataType.DECIMAL(12, 2))
-  unitRate: number;
+  declare unitRate: number;
 
   @Column(DataType.DECIMAL(14, 2))
-  totalAmount: number;
+  declare totalAmount: number;
 
   @Default(ApprovalStatus.PENDING)
   @Column(DataType.ENUM(...Object.values(ApprovalStatus)))
-  approvalStatus: ApprovalStatus;
+  declare approvalStatus: ApprovalStatus;
 
-  @Column({ type: DataType.STRING, allowNull: true })
-  approvedBy: string;
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  declare approvedBy: string;
 
-  @Column({ type: DataType.DATE, allowNull: true })
-  approvedAt: Date;
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+  })
+  declare approvedAt: Date;
 
   // Set true only once the approved estimate has been converted
   // into a MaterialQuotation — mirrors the trades conversion rule.
   @Default(false)
   @Column(DataType.BOOLEAN)
-  convertedToQuotation: boolean;
+  declare convertedToQuotation: boolean;
 
   @HasOne(() => MaterialQuotation)
-  quotation: MaterialQuotation;
+  declare quotation: MaterialQuotation;
 }

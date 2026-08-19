@@ -7,7 +7,7 @@ import {
   BelongsTo,
   Default,
 } from 'sequelize-typescript';
-import { Project } from './project.model';
+import { Project } from '@/modules/projects/models/projects.model';
 import { Deliverable } from './deliverable.model';
 
 /**
@@ -15,38 +15,63 @@ import { Deliverable } from './deliverable.model';
  * Deliverable + Step + Phase produces the live document register for a project.
  */
 @Table({
-  tableName: 'wf_project_deliverable_records',
+  tableName: 'project_deliverable_records',
   timestamps: true,
-  indexes: [{ unique: true, fields: ['projectId', 'deliverableId'] }],
+  indexes: [
+    {
+      unique: true,
+      fields: ['projectId', 'deliverableId'],
+    },
+  ],
 })
 export class ProjectDeliverableRecord extends Model<ProjectDeliverableRecord> {
   @ForeignKey(() => Project)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  projectId: number;
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+  })
+  declare projectId: number;
 
   @BelongsTo(() => Project)
-  project: Project;
+  declare project: Project;
 
   @ForeignKey(() => Deliverable)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  deliverableId: number;
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+  })
+  declare deliverableId: number;
 
   @BelongsTo(() => Deliverable)
-  deliverable: Deliverable;
+  declare deliverable: Deliverable;
 
   @Default(false)
-  @Column({ type: DataType.BOOLEAN })
-  isSubmitted: boolean;
+  @Column({
+    type: DataType.BOOLEAN,
+  })
+  declare isSubmitted: boolean;
 
-  @Column({ type: DataType.DATE, allowNull: true })
-  submittedAt: Date | null;
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+  })
+  declare submittedAt: Date | null;
 
-  @Column({ type: DataType.STRING(500), allowNull: true })
-  fileUrl: string | null; // pointer to the stored file (S3 key, doc-store id, etc.)
+  @Column({
+    type: DataType.STRING(500),
+    allowNull: true,
+  })
+  declare fileUrl: string | null;
 
-  @Column({ type: DataType.STRING(150), allowNull: true })
-  submittedBy: string | null;
+  @Column({
+    type: DataType.STRING(150),
+    allowNull: true,
+  })
+  declare submittedBy: string | null;
 
-  @Column({ type: DataType.STRING(20), allowNull: true })
-  version: string | null;
+  @Column({
+    type: DataType.STRING(20),
+    allowNull: true,
+  })
+  declare version: string | null;
 }

@@ -9,6 +9,7 @@ import {
   BelongsTo,
   HasMany,
 } from 'sequelize-typescript';
+
 import { QuotationStatus } from '../../../common/enums/quotation-status.enum';
 import { MaterialEstimate } from './material-estimate.model';
 import { PurchaseOrder } from './purchase-order.model';
@@ -16,39 +17,55 @@ import { PurchaseOrder } from './purchase-order.model';
 /**
  * 3b. The quotation produced from an approved MaterialEstimate.
  */
-@Table({ tableName: 'material_quotations', timestamps: true, updatedAt: false })
+@Table({
+  tableName: 'material_quotations',
+  timestamps: true,
+  updatedAt: false,
+})
 export class MaterialQuotation extends Model {
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column(DataType.UUID)
-  id: string;
+  declare id: string;
 
   @ForeignKey(() => MaterialEstimate)
-  @Column({ type: DataType.UUID, unique: true })
-  estimateId: string;
+  @Column({
+    type: DataType.UUID,
+    unique: true,
+  })
+  declare estimateId: string;
 
   @BelongsTo(() => MaterialEstimate, { onDelete: 'CASCADE' })
-  estimate: MaterialEstimate;
+  declare estimate: MaterialEstimate;
 
-  @Column({ type: DataType.STRING, unique: true })
-  quotationNumber: string;
+  @Column({
+    type: DataType.STRING,
+    unique: true,
+  })
+  declare quotationNumber: string;
 
   @Column(DataType.DATEONLY)
-  quotationDate: string;
+  declare quotationDate: string;
 
   @Column(DataType.DECIMAL(14, 2))
-  totalAmount: number;
+  declare totalAmount: number;
 
-  @Column({ type: DataType.TEXT, allowNull: true })
-  terms: string;
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  declare terms: string;
 
   @Default(QuotationStatus.DRAFT)
   @Column(DataType.ENUM(...Object.values(QuotationStatus)))
-  status: QuotationStatus;
+  declare status: QuotationStatus;
 
-  @Column({ type: DataType.DATE, allowNull: true })
-  acceptedAt: Date;
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+  })
+  declare acceptedAt: Date;
 
   @HasMany(() => PurchaseOrder)
-  purchaseOrders: PurchaseOrder[];
+  declare purchaseOrders: PurchaseOrder[];
 }

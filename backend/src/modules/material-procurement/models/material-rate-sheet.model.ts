@@ -8,6 +8,7 @@ import {
   ForeignKey,
   BelongsTo,
 } from 'sequelize-typescript';
+
 import { ApprovalStatus } from '../../../common/enums/approval-status.enum';
 import { MaterialRequirement } from './material-requirement.model';
 
@@ -24,38 +25,47 @@ export class MaterialRateSheet extends Model {
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column(DataType.UUID)
-  id: string;
+  declare id: string;
 
   @ForeignKey(() => MaterialRequirement)
   @Column(DataType.UUID)
-  materialRequirementId: string;
+  declare materialRequirementId: string;
 
   @BelongsTo(() => MaterialRequirement, { onDelete: 'CASCADE' })
-  materialRequirement: MaterialRequirement;
+  declare materialRequirement: MaterialRequirement;
 
   @Column(DataType.STRING)
-  vendorName: string;
+  declare vendorName: string;
 
   @Column(DataType.STRING)
-  unit: string;
+  declare unit: string;
 
   @Column(DataType.DECIMAL(12, 2))
-  unitRate: number;
+  declare unitRate: number;
 
   @Default('INR')
   @Column(DataType.STRING)
-  currency: string;
+  declare currency: string;
 
-  @Column({ type: DataType.DATEONLY, allowNull: true })
-  validTill: string;
+  @Column({
+    type: DataType.DATEONLY,
+    allowNull: true,
+  })
+  declare validTill: string;
 
   @Default(ApprovalStatus.PENDING)
   @Column(DataType.ENUM(...Object.values(ApprovalStatus)))
-  approvalStatus: ApprovalStatus;
+  declare approvalStatus: ApprovalStatus;
 
-  @Column({ type: DataType.STRING, allowNull: true })
-  approvedBy: string;
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  declare approvedBy: string;
 
-  @Column({ type: DataType.DATE, allowNull: true })
-  approvedAt: Date;
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+  })
+  declare approvedAt: Date;
 }

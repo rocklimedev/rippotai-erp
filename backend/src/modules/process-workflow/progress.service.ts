@@ -4,12 +4,15 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Project } from './models/project.model';
-import { Step } from './models/step.model';
-import { Phase } from './models/phase.model';
+import { Project } from '../projects/models/projects.model';
+import { Step } from '../process-workflow/models/step.model';
+import { Phase } from '../process-workflow/models/phase.model';
 import { ProjectStepProgress } from './models/project-step-progress.model';
 import { Team } from './models/team.model';
-import { UpdateStepProgressDto, SignOffStepDto } from './dto/tracking.dto';
+import {
+  UpdateStepProgressDto,
+  SignOffStepDto,
+} from '../process-workflow/dto/tracking.dto';
 import {
   StepStatus,
   PhaseStatus,

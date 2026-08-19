@@ -7,7 +7,7 @@ import {
   BelongsTo,
   Default,
 } from 'sequelize-typescript';
-import { Project } from '../../process-workflow/models/project.model';
+import { Project } from '@/modules/projects/models/projects.model';
 import { Step } from '../../process-workflow/models/step.model';
 import { MockupStatus } from '../../../common/enums/site-operations.enums';
 
@@ -16,7 +16,7 @@ import { MockupStatus } from '../../../common/enums/site-operations.enums';
  * that must be proposed, reviewed, and approved before that finish is rolled
  * out at volume across the site.
  */
-@Table({ tableName: 'so_mockups', timestamps: true })
+@Table({ tableName: 'mockups', timestamps: true })
 export class Mockup extends Model<Mockup> {
   @ForeignKey(() => Project)
   @Column({ type: DataType.INTEGER, allowNull: false })

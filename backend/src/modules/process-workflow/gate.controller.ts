@@ -1,8 +1,15 @@
-import { Controller, Get, Post, Body, Param, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { GateService } from './gate.service';
 import { LogGateDto } from './dto/tracking.dto';
 
-@Controller('workflow/gates')
+@Controller('gates')
 export class GateController {
   constructor(private readonly gateService: GateService) {}
 

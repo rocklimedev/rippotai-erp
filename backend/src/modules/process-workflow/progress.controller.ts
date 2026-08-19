@@ -1,8 +1,16 @@
-import { Controller, Get, Post, Patch, Body, Param, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ProgressService } from './progress.service';
 import { UpdateStepProgressDto, SignOffStepDto } from './dto/tracking.dto';
 
-@Controller('workflow/projects/:projectId/progress')
+@Controller(':projectId/progress')
 export class ProgressController {
   constructor(private readonly progressService: ProgressService) {}
 

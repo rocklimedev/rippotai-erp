@@ -7,7 +7,7 @@ import {
   BelongsTo,
   Default,
 } from 'sequelize-typescript';
-import { Project } from '../../process-workflow/models/project.model';
+import { Project } from '@/modules/projects/models/projects.model';
 import { VisitAssignment } from './visit-assignment.model';
 import {
   VisitorType,
@@ -15,7 +15,7 @@ import {
 } from '../../../common/enums/site-operations.enums';
 
 /** A single logged (or missed/cancelled) site visit. */
-@Table({ tableName: 'so_site_visit_logs', timestamps: true })
+@Table({ tableName: 'site_visit_logs', timestamps: true })
 export class SiteVisitLog extends Model<SiteVisitLog> {
   @ForeignKey(() => Project)
   @Column({ type: DataType.INTEGER, allowNull: false })

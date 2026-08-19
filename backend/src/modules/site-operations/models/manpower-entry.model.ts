@@ -11,7 +11,7 @@ import { Team } from '../../process-workflow/models/team.model';
 
 /** Headcount for one trade/team on one day's report. */
 @Table({
-  tableName: 'so_manpower_entries',
+  tableName: 'manpower_entries',
   timestamps: true,
   indexes: [{ unique: true, fields: ['dailySiteReportId', 'teamId'] }],
 })

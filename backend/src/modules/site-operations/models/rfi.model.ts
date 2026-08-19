@@ -7,7 +7,7 @@ import {
   BelongsTo,
   Default,
 } from 'sequelize-typescript';
-import { Project } from '../../process-workflow/models/project.model';
+import { Project } from '@/modules/projects/models/projects.model';
 import { Step } from '../../process-workflow/models/step.model';
 import { Team } from '../../process-workflow/models/team.model';
 import {
@@ -20,7 +20,7 @@ import {
  * or a trade), routed to the Architect (or another team), and closed out with
  * a recorded response.
  */
-@Table({ tableName: 'so_rfis', timestamps: true })
+@Table({ tableName: 'rfis', timestamps: true })
 export class Rfi extends Model<Rfi> {
   @ForeignKey(() => Project)
   @Column({ type: DataType.INTEGER, allowNull: false })

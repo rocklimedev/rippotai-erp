@@ -4,7 +4,7 @@ import { CreateMaterialRateSheetDto } from '../dto/create-material-rate-sheet.dt
 import { ApproveDto, RejectDto } from '../dto/approve.dto';
 
 /** 2b. Sourcing — material rate sheets. */
-@Controller('material-procurement/rate-sheets')
+@Controller('procurement/rate-sheets')
 export class MaterialRateSheetController {
   constructor(private readonly service: MaterialRateSheetService) {}
 

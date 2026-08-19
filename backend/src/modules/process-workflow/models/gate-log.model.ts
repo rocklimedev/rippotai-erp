@@ -6,7 +6,8 @@ import {
   ForeignKey,
   BelongsTo,
 } from 'sequelize-typescript';
-import { Project } from './project.model';
+import { Project } from '../../projects/models/projects.model';
+
 import { Step } from './step.model';
 import { Team } from './team.model';
 
@@ -15,7 +16,7 @@ import { Team } from './team.model';
  * Design Closed, Tender Drawings Finalised, Working Drawings Issued - GFC,
  * Final Client Sign-off, etc.) for a project, with timestamp and approver.
  */
-@Table({ tableName: 'wf_gate_logs', timestamps: true })
+@Table({ tableName: 'gate_logs', timestamps: true })
 export class GateLog extends Model<GateLog> {
   @ForeignKey(() => Project)
   @Column({ type: DataType.INTEGER, allowNull: false })

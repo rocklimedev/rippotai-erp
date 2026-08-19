@@ -7,7 +7,7 @@ import { Step } from './models/step.model';
 import { Team } from './models/team.model';
 import { StepTeam } from './models/step-team.model';
 import { Deliverable } from './models/deliverable.model';
-import { Project } from './models/project.model';
+import { Project } from '../projects/models/projects.model';
 import { ProjectStepProgress } from './models/project-step-progress.model';
 import { GateLog } from './models/gate-log.model';
 import { ContinuityRole } from './models/continuity-role.model';
@@ -19,7 +19,7 @@ import { ProgressService } from './progress.service';
 import { GateService } from './gate.service';
 import { TimelineService } from './timeline.service';
 import { ContinuityService } from './continuity.service';
-import { DocumentRegisterService } from './document-register.service';
+import { DocumentRegisterService } from '../documents/document-register.service';
 
 // Controllers
 import { LibraryController } from './library.controller';
@@ -27,7 +27,7 @@ import { ProgressController } from './progress.controller';
 import { GateController } from './gate.controller';
 import { TimelineController } from './timeline.controller';
 import { ContinuityController } from './continuity.controller';
-import { DocumentRegisterController } from './document-register.controller';
+import { DocumentRegisterController } from '../documents/document-register.controller';
 
 /**
  * Process Workflow Engine — the "Master Process Brain".

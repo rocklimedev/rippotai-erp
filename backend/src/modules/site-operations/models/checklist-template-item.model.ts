@@ -11,7 +11,7 @@ import {
 import { ChecklistTemplate } from './checklist-template.model';
 import { QcSignOffItemResult } from './qc-sign-off-item-result.model';
 
-@Table({ tableName: 'so_checklist_template_items', timestamps: true })
+@Table({ tableName: 'checklist_template_items', timestamps: true })
 export class ChecklistTemplateItem extends Model<ChecklistTemplateItem> {
   @ForeignKey(() => ChecklistTemplate)
   @Column({ type: DataType.INTEGER, allowNull: false })

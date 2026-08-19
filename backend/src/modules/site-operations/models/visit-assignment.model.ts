@@ -8,7 +8,7 @@ import {
   Default,
   HasMany,
 } from 'sequelize-typescript';
-import { Project } from '../../process-workflow/models/project.model';
+import { Project } from '@/modules/projects/models/projects.model';
 import { Team } from '../../process-workflow/models/team.model';
 import {
   VisitorType,
@@ -22,7 +22,7 @@ import { SiteVisitLog } from './site-visit-log.model';
  * ad hoc or on their own cadence. SiteVisitLog entries are checked off against
  * these assignments (or logged as unscheduled/ad hoc visits).
  */
-@Table({ tableName: 'so_visit_assignments', timestamps: true })
+@Table({ tableName: 'visit_assignments', timestamps: true })
 export class VisitAssignment extends Model<VisitAssignment> {
   @ForeignKey(() => Project)
   @Column({ type: DataType.INTEGER, allowNull: false })

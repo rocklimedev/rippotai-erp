@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Project } from './models/project.model';
+import { Project } from '../projects/models/projects.model';
 import { Phase } from './models/phase.model';
 import { Step } from './models/step.model';
 import { ProjectStepProgress } from './models/project-step-progress.model';
@@ -70,7 +70,9 @@ export class TimelineService {
     });
 
     const bars: GanttBar[] = [];
-    let cursor = project.startDate ? new Date(project.startDate) : new Date();
+    let cursor = project.expected_completion_date
+      ? new Date(project.expected_completion_date)
+      : new Date();
 
     for (const phase of phases) {
       for (const step of phase.steps ?? []) {

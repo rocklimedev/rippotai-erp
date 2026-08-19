@@ -8,6 +8,7 @@ import {
   ForeignKey,
   BelongsTo,
 } from 'sequelize-typescript';
+
 import { ApprovalStatus } from '../../../common/enums/approval-status.enum';
 import { MaterialRequirement } from './material-requirement.model';
 
@@ -15,40 +16,59 @@ import { MaterialRequirement } from './material-requirement.model';
  * 2a. Sourcing & sample boards — sample boards tracked per requirement,
  * with approval status.
  */
-@Table({ tableName: 'sample_boards', timestamps: true, updatedAt: false })
+@Table({
+  tableName: 'sample_boards',
+  timestamps: true,
+  updatedAt: false,
+})
 export class SampleBoard extends Model {
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column(DataType.UUID)
-  id: string;
+  declare id: string;
 
   @ForeignKey(() => MaterialRequirement)
   @Column(DataType.UUID)
-  materialRequirementId: string;
+  declare materialRequirementId: string;
 
   @BelongsTo(() => MaterialRequirement, { onDelete: 'CASCADE' })
-  materialRequirement: MaterialRequirement;
+  declare materialRequirement: MaterialRequirement;
 
   @Column(DataType.STRING)
-  title: string;
+  declare title: string;
 
   // Stored as JSON on MySQL (Sequelize has no native array type here)
-  @Column({ type: DataType.JSON, allowNull: true })
-  imageUrls: string[];
+  @Column({
+    type: DataType.JSON,
+    allowNull: true,
+  })
+  declare imageUrls: string[];
 
-  @Column({ type: DataType.STRING, allowNull: true })
-  vendorName: string;
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  declare vendorName: string;
 
-  @Column({ type: DataType.TEXT, allowNull: true })
-  notes: string;
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  declare notes: string;
 
   @Default(ApprovalStatus.PENDING)
   @Column(DataType.ENUM(...Object.values(ApprovalStatus)))
-  approvalStatus: ApprovalStatus;
+  declare approvalStatus: ApprovalStatus;
 
-  @Column({ type: DataType.STRING, allowNull: true })
-  approvedBy: string;
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  declare approvedBy: string;
 
-  @Column({ type: DataType.DATE, allowNull: true })
-  approvedAt: Date;
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+  })
+  declare approvedAt: Date;
 }

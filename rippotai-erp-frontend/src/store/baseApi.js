@@ -117,6 +117,16 @@ export const baseApi = createApi({
     "Terms",
     "TermsTemplates",
     "TermsVersions",
+
+    "MaterialRequirement",
+    "SampleBoard",
+    "MaterialRateSheet",
+    "MaterialEstimate",
+    "MaterialQuotation",
+    "PurchaseOrder",
+    "DeliveryChallan",
+    "SiteInventory",
+    "InventoryTransaction",
   ],
   endpoints: () => ({}), // each feature file injects its own endpoints
 });

@@ -16,7 +16,7 @@ import { ResponsibilityType } from '../../../common/enums/process-workflow.enums
  * multiple rows here (e.g. Architect = OWNER, Client = APPROVER).
  */
 @Table({
-  tableName: 'wf_step_teams',
+  tableName: 'step_teams',
   timestamps: true,
   indexes: [
     { unique: true, fields: ['stepId', 'teamId', 'responsibilityType'] },

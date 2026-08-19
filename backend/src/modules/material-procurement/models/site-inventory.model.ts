@@ -7,6 +7,7 @@ import {
   PrimaryKey,
   HasMany,
 } from 'sequelize-typescript';
+
 import { InventoryTransaction } from './inventory-transaction.model';
 
 /**
@@ -19,31 +20,37 @@ import { InventoryTransaction } from './inventory-transaction.model';
   createdAt: false,
   updatedAt: 'lastUpdated',
   indexes: [
-    { unique: true, fields: ['projectId', 'materialRequirementId'] },
+    {
+      unique: true,
+      fields: ['projectId', 'materialRequirementId'],
+    },
   ],
 })
 export class SiteInventory extends Model {
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column(DataType.UUID)
-  id: string;
+  declare id: string;
 
   @Column(DataType.STRING)
-  projectId: string;
+  declare projectId: string;
 
-  @Column({ type: DataType.UUID, allowNull: true })
-  materialRequirementId: string;
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  declare materialRequirementId: string;
 
   @Column(DataType.STRING)
-  materialName: string;
+  declare materialName: string;
 
   @Column(DataType.STRING)
-  unit: string;
+  declare unit: string;
 
   @Default(0)
   @Column(DataType.DECIMAL(14, 3))
-  currentStock: number;
+  declare currentStock: number;
 
   @HasMany(() => InventoryTransaction)
-  transactions: InventoryTransaction[];
+  declare transactions: InventoryTransaction[];
 }

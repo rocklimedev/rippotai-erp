@@ -7,7 +7,7 @@ import {
   BelongsTo,
   Default,
 } from 'sequelize-typescript';
-import { Project } from './project.model';
+import { Project } from '../../projects/models/projects.model';
 import { Step } from './step.model';
 import { Team } from './team.model';
 import { StepStatus } from '../../../common/enums/process-workflow.enums';
@@ -18,7 +18,7 @@ import { StepStatus } from '../../../common/enums/process-workflow.enums';
  * that drive the Gantt timeline view.
  */
 @Table({
-  tableName: 'wf_project_step_progress',
+  tableName: 'project_step_progress',
   timestamps: true,
   indexes: [{ unique: true, fields: ['projectId', 'stepId'] }],
 })

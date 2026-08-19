@@ -8,7 +8,7 @@ import {
   Default,
   HasMany,
 } from 'sequelize-typescript';
-import { Project } from '../../process-workflow/models/project.model';
+import { Project } from '@/modules/projects/models/projects.model';
 import { Step } from '../../process-workflow/models/step.model';
 import { Team } from '../../process-workflow/models/team.model';
 import { ChecklistTemplate } from './checklist-template.model';
@@ -20,7 +20,7 @@ import { QcResult } from '../../../common/enums/site-operations.enums';
  * result (pass/fail/rework), the checking user, and the timestamp. A trade's
  * work cannot hand off to the next trade until this is PASS.
  */
-@Table({ tableName: 'so_qc_sign_offs', timestamps: true })
+@Table({ tableName: 'qc_sign_offs', timestamps: true })
 export class QcSignOff extends Model<QcSignOff> {
   @ForeignKey(() => Project)
   @Column({ type: DataType.INTEGER, allowNull: false })

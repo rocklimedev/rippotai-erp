@@ -12,8 +12,8 @@ import {
 } from '@nestjs/common';
 import { TeamService } from './team.service';
 import { TeamMemberOwnerType } from '@/common/enums/team.enums';
-import { AddTeamMemberDto } from './dto/add-team-member.dto';
-import { UpdateTeamMemberDto } from './dto/update-team-member.dto';
+import { AddTeamMemberDto } from '../users/dto/add-team-member.dto';
+import { UpdateTeamMemberDto } from '../users/dto/update-team-member.dto';
 
 // Mounted once, reused by every module that has a "Team" tab:
 //   GET    /team/PLAN_OF_ACTION/:ownerId

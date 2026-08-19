@@ -1,6 +1,19 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  Query,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { SiteVisitService } from './site-visit.service';
-import { CreateVisitAssignmentDto, LogSiteVisitDto, UpdateSiteVisitDto } from './dto/visit.dto';
+import {
+  CreateVisitAssignmentDto,
+  LogSiteVisitDto,
+  UpdateSiteVisitDto,
+} from './dto/visit.dto';
 
 @Controller('site-ops/visits')
 export class SiteVisitController {
@@ -29,7 +42,10 @@ export class SiteVisitController {
   }
 
   @Patch('log/:id')
-  updateVisit(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateSiteVisitDto) {
+  updateVisit(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateSiteVisitDto,
+  ) {
     return this.visitService.updateVisit(id, dto);
   }
 

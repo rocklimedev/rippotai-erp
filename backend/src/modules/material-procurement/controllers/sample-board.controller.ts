@@ -4,7 +4,7 @@ import { CreateSampleBoardDto } from '../dto/create-sample-board.dto';
 import { ApproveDto, RejectDto } from '../dto/approve.dto';
 
 /** 2a. Sourcing & sample boards. */
-@Controller('material-procurement/sample-boards')
+@Controller('procurement/sample-boards')
 export class SampleBoardController {
   constructor(private readonly service: SampleBoardService) {}
 

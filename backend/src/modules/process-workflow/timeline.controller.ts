@@ -1,7 +1,7 @@
 import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { TimelineService } from './timeline.service';
 
-@Controller('workflow/projects/:projectId/timeline')
+@Controller(':projectId/timeline')
 export class TimelineController {
   constructor(private readonly timelineService: TimelineService) {}
 

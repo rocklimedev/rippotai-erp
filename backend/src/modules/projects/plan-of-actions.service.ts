@@ -10,7 +10,7 @@ import { PlanOfActionPhase } from './models/plan-of-action-phase.model';
 import { TermsTemplate } from '../metas/models/terms-templates.model';
 import { TermsTemplateVersion } from '../metas/models/terms-template-version.model';
 
-import { TeamService } from '../users/team.service';
+import { TeamService } from '../process-workflow/team.service';
 import { TeamMemberOwnerType } from '@/common/enums/team.enums';
 import { PlanOfActionStatus } from '@/common/enums/plan-of-action.enums';
 

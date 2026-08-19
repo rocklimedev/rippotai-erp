@@ -1,6 +1,18 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  Query,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { DailySiteReportService } from './daily-site-report.service';
-import { CreateDailySiteReportDto, UpdateDailySiteReportDto } from './dto/daily-report.dto';
+import {
+  CreateDailySiteReportDto,
+  UpdateDailySiteReportDto,
+} from './dto/daily-report.dto';
 
 @Controller('site-ops/daily-reports')
 export class DailySiteReportController {
@@ -12,7 +24,10 @@ export class DailySiteReportController {
   }
 
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateDailySiteReportDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateDailySiteReportDto,
+  ) {
     return this.reportService.updateReport(id, dto);
   }
 

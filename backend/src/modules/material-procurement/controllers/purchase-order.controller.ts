@@ -3,7 +3,7 @@ import { PurchaseOrderService } from '../services/purchase-order.service';
 import { CreatePurchaseOrderDto } from '../dto/create-purchase-order.dto';
 
 /** 4. Purchase orders — issued against accepted quotations. */
-@Controller('material-procurement/purchase-orders')
+@Controller('procurement/purchase-orders')
 export class PurchaseOrderController {
   constructor(private readonly service: PurchaseOrderService) {}
 

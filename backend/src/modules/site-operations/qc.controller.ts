@@ -1,7 +1,19 @@
-import { Controller, Get, Post, Body, Param, Query, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ChecklistService } from './checklist.service';
 import { QcSignOffService } from './qc-sign-off.service';
-import { CreateChecklistTemplateDto, AddChecklistItemDto, RecordQcSignOffDto } from './dto/qc.dto';
+import {
+  CreateChecklistTemplateDto,
+  AddChecklistItemDto,
+  RecordQcSignOffDto,
+} from './dto/qc.dto';
 
 @Controller('site-ops/checklists')
 export class ChecklistController {

@@ -4,7 +4,7 @@ import { CreateMaterialEstimateDto } from '../dto/create-material-estimate.dto';
 import { ApproveDto, RejectDto } from '../dto/approve.dto';
 
 /** 3a. Material estimate — first half of the estimate → quotation flow. */
-@Controller('material-procurement/estimates')
+@Controller('procurement/estimates')
 export class MaterialEstimateController {
   constructor(private readonly service: MaterialEstimateService) {}
 

@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Transaction } from 'sequelize';
-import { TeamMember } from './models/team-member.model';
+import { TeamMember } from '../users/models/team-member.model';
 import { TeamMemberOwnerType } from '@/common/enums/team.enums';
-import { AddTeamMemberDto } from './dto/add-team-member.dto';
-import { UpdateTeamMemberDto } from './dto/update-team-member.dto';
+import { AddTeamMemberDto } from '../users/dto/add-team-member.dto';
+import { UpdateTeamMemberDto } from '../users/dto/update-team-member.dto';
 
 @Injectable()
 export class TeamService {

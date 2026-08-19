@@ -14,7 +14,7 @@ import { Mockup } from './models/mockup.model';
 import { Rfi } from './models/rfi.model';
 
 // Models — shared, from the Process Workflow Engine module
-import { Project } from '../process-workflow/models/project.model';
+import { Project } from '@/modules/projects/models/projects.model';
 import { Team } from '../process-workflow/models/team.model';
 import { Step } from '../process-workflow/models/step.model';
 

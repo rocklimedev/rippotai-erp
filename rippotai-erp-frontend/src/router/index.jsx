@@ -11,6 +11,7 @@ import { tasksRoutes } from "./routes/tasks.routes";
 import { settingsRoutes } from "./routes/settings.routes";
 import { clientRoutes } from "./routes/client.routes";
 import { redirectRoutes } from "./routes/redirect.routes";
+import { materialsRoutes } from "./routes/materials.routes";
 
 // Order matters only for readability here — react-router matches on
 // specificity, not array order, so new domains can be added anywhere.
@@ -28,6 +29,7 @@ const masterRoutes = [
   ...redirectRoutes,
   ...settingsRoutes,
   ...clientRoutes,
+  ...materialsRoutes,
 ];
 
 export default masterRoutes;

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ContinuityRole } from './models/continuity-role.model';
-import { Project } from './models/project.model';
+import { Project } from '../projects/models/projects.model';
 import { Team } from './models/team.model';
 import { Step } from './models/step.model';
 import { CreateContinuityRoleDto } from './dto/tracking.dto';

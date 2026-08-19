@@ -3,7 +3,7 @@ import { DeliveryChallanService } from '../services/delivery-challan.service';
 import { CreateDeliveryChallanDto } from '../dto/create-delivery-challan.dto';
 
 /** 5. Staged deliveries — delivery challans tagged to a site stage. */
-@Controller('material-procurement/delivery-challans')
+@Controller('procurement/delivery-challans')
 export class DeliveryChallanController {
   constructor(private readonly service: DeliveryChallanService) {}
 

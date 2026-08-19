@@ -16,7 +16,7 @@ import { ProjectDeliverableRecord } from './project-deliverable-record.model';
  * Per-project fulfilment is tracked in ProjectDeliverableRecord, and together
  * they generate the live document register for a project.
  */
-@Table({ tableName: 'wf_deliverables', timestamps: true })
+@Table({ tableName: 'deliverables', timestamps: true })
 export class Deliverable extends Model<Deliverable> {
   @ForeignKey(() => Step)
   @Column({ type: DataType.INTEGER, allowNull: false })

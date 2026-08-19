@@ -3,7 +3,7 @@ import { MaterialQuotationService } from '../services/material-quotation.service
 import { CreateMaterialQuotationDto } from '../dto/create-material-quotation.dto';
 
 /** 3b. Material quotation — generated only from an approved estimate. */
-@Controller('material-procurement/quotations')
+@Controller('procurement/quotations')
 export class MaterialQuotationController {
   constructor(private readonly service: MaterialQuotationService) {}
 

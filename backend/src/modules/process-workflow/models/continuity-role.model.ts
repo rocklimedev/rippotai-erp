@@ -7,7 +7,7 @@ import {
   BelongsTo,
   Default,
 } from 'sequelize-typescript';
-import { Project } from './project.model';
+import { Project } from '@/modules/projects/models/projects.model';
 import { Team } from './team.model';
 import { Step } from './step.model';
 import { ContinuityType } from '../../../common/enums/process-workflow.enums';
@@ -17,7 +17,7 @@ import { ContinuityType } from '../../../common/enums/process-workflow.enums';
  * end-to-end — Architect, Site Supervisor, Client) or gate-bound (opens and
  * closes at specific steps/gates — most trade contractors).
  */
-@Table({ tableName: 'wf_continuity_roles', timestamps: true })
+@Table({ tableName: 'continuity_roles', timestamps: true })
 export class ContinuityRole extends Model<ContinuityRole> {
   @ForeignKey(() => Project)
   @Column({ type: DataType.INTEGER, allowNull: false })

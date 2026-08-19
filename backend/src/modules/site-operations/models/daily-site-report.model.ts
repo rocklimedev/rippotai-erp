@@ -8,7 +8,7 @@ import {
   Default,
   HasMany,
 } from 'sequelize-typescript';
-import { Project } from '../../process-workflow/models/project.model';
+import { Project } from '@/modules/projects/models/projects.model';
 import { ManpowerEntry } from './manpower-entry.model';
 import { WeatherCondition } from '../../../common/enums/site-operations.enums';
 
@@ -17,7 +17,7 @@ import { WeatherCondition } from '../../../common/enums/site-operations.enums';
  * issues, shared with the whole team.
  */
 @Table({
-  tableName: 'so_daily_site_reports',
+  tableName: 'daily_site_reports',
   timestamps: true,
   indexes: [{ unique: true, fields: ['projectId', 'reportDate'] }],
 })

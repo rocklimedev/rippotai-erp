@@ -1,33 +1,41 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Project } from './models/project.model';
-import { Deliverable } from './models/deliverable.model';
-import { ProjectDeliverableRecord } from './models/project-deliverable-record.model';
-import { Step } from './models/step.model';
-import { Phase } from './models/phase.model';
-import { RecordDeliverableDto } from './dto/tracking.dto';
+import { Project } from '../projects/models/projects.model';
+import { Deliverable } from '../process-workflow/models/deliverable.model';
+import { ProjectDeliverableRecord } from '../process-workflow/models/project-deliverable-record.model';
+import { Step } from '../process-workflow/models/step.model';
+import { Phase } from '../process-workflow/models/phase.model';
+import { RecordDeliverableDto } from '../process-workflow/dto/tracking.dto';
 
 @Injectable()
 export class DocumentRegisterService {
   constructor(
     @InjectModel(Project) private projectModel: typeof Project,
     @InjectModel(Deliverable) private deliverableModel: typeof Deliverable,
-    @InjectModel(ProjectDeliverableRecord) private recordModel: typeof ProjectDeliverableRecord,
+    @InjectModel(ProjectDeliverableRecord)
+    private recordModel: typeof ProjectDeliverableRecord,
     @InjectModel(Step) private stepModel: typeof Step,
     @InjectModel(Phase) private phaseModel: typeof Phase,
   ) {}
 
   /** Marks a deliverable as submitted for a project (or updates the existing record). */
-  async recordDeliverable(dto: RecordDeliverableDto): Promise<ProjectDeliverableRecord> {
+  async recordDeliverable(
+    dto: RecordDeliverableDto,
+  ): Promise<ProjectDeliverableRecord> {
     const project = await this.projectModel.findByPk(dto.projectId);
-    if (!project) throw new NotFoundException(`Project ${dto.projectId} not found`);
+    if (!project)
+      throw new NotFoundException(`Project ${dto.projectId} not found`);
 
     const deliverable = await this.deliverableModel.findByPk(dto.deliverableId);
-    if (!deliverable) throw new NotFoundException(`Deliverable ${dto.deliverableId} not found`);
+    if (!deliverable)
+      throw new NotFoundException(`Deliverable ${dto.deliverableId} not found`);
 
     const [record] = await this.recordModel.findOrCreate({
       where: { projectId: dto.projectId, deliverableId: dto.deliverableId },
-      defaults: { projectId: dto.projectId, deliverableId: dto.deliverableId } as any,
+      defaults: {
+        projectId: dto.projectId,
+        deliverableId: dto.deliverableId,
+      } as any,
     });
 
     await record.update({

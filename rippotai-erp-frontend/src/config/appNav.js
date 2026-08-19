@@ -37,6 +37,14 @@ export const APP_META = {
     name: "Leads",
     base: "/leads",
     searchPh: "Search leads",
+  }, // ------------------------------------------------------------
+  // Materials
+  // ------------------------------------------------------------
+
+  materials: {
+    name: "Materials",
+    base: "/materials",
+    searchPh: "Search materials, requirements, orders",
   },
   tasks: { name: "Tasks", base: "/tasks", searchPh: "Search tasks" },
   calendar: { name: "Calendar", base: "/calendar", searchPh: "Search events" },
@@ -61,6 +69,7 @@ export const LANDING_ORDER = [
   "vendors",
   "documents",
   "leads",
+  "materials",
   "tasks",
   "calendar",
 ];
@@ -188,6 +197,42 @@ export const APP_MENUS = {
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles and Permissions", "roles"),
         I("Activity", "activity"),
+      ],
+    },
+  ],
+  materials: [
+    {
+      label: "Materials",
+      items: [
+        I("Requirements", "requirements"),
+        I("Sample Boards", "sample-boards"),
+        I("Rate Sheets", "rate-sheets"),
+      ],
+    },
+
+    {
+      label: "Procurement",
+      items: [
+        I("Estimates", "estimates"),
+        I("Quotations", "quotations"),
+        I("Purchase Orders", "purchase-orders"),
+      ],
+    },
+
+    {
+      label: "Delivery & Inventory",
+      items: [
+        I("Delivery Challans", "delivery-challans"),
+        I("Site Inventory", "inventory"),
+      ],
+    },
+
+    {
+      label: "Management",
+      items: [
+        I("Projects", "/projects/all"),
+        I("Activity", "activity"),
+        I("Settings", "edit-dashboard"),
       ],
     },
   ],

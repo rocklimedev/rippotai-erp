@@ -1,8 +1,15 @@
-import { Controller, Get, Post, Body, Param, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { DocumentRegisterService } from './document-register.service';
-import { RecordDeliverableDto } from './dto/tracking.dto';
+import { RecordDeliverableDto } from '../process-workflow/dto/tracking.dto';
 
-@Controller('workflow')
+@Controller('documents')
 export class DocumentRegisterController {
   constructor(private readonly registerService: DocumentRegisterService) {}
 
@@ -12,7 +19,7 @@ export class DocumentRegisterController {
   }
 
   /** The live document register for a project. */
-  @Get('projects/:projectId/document-register')
+  @Get(':projectId/document-register')
   getRegister(@Param('projectId', ParseIntPipe) projectId: number) {
     return this.registerService.getDocumentRegister(projectId);
   }

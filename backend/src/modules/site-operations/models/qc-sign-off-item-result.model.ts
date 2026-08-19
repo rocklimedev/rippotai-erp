@@ -12,7 +12,7 @@ import { ChecklistTemplateItem } from './checklist-template-item.model';
 import { QcItemResult } from '../../../common/enums/site-operations.enums';
 
 @Table({
-  tableName: 'so_qc_sign_off_item_results',
+  tableName: 'qc_sign_off_item_results',
   timestamps: true,
   indexes: [{ unique: true, fields: ['qcSignOffId', 'templateItemId'] }],
 })

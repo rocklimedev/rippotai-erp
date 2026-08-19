@@ -13,7 +13,7 @@ import { CreateMaterialRequirementDto } from '../dto/create-material-requirement
 import { UpdateMaterialRequirementDto } from '../dto/update-material-requirement.dto';
 
 /** 1. Material requirements — captured directly from the design team. */
-@Controller('material-procurement/requirements')
+@Controller('procurement/requirements')
 export class MaterialRequirementController {
   constructor(private readonly service: MaterialRequirementService) {}
 

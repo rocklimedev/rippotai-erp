@@ -1,4 +1,13 @@
-import { Table, Column, Model, DataType, ForeignKey, BelongsTo, Default, HasMany } from 'sequelize-typescript';
+import {
+  Table,
+  Column,
+  Model,
+  DataType,
+  ForeignKey,
+  BelongsTo,
+  Default,
+  HasMany,
+} from 'sequelize-typescript';
 import { Team } from '../../process-workflow/models/team.model';
 import { Step } from '../../process-workflow/models/step.model';
 import { ChecklistTemplateItem } from './checklist-template-item.model';
@@ -9,7 +18,11 @@ import { QcSignOff } from './qc-sign-off.model';
  * handoff to the next trade. One template can be reused across projects; a
  * project's actual pass/fail/rework record lives in QcSignOff.
  */
-@Table({ tableName: 'so_checklist_templates', timestamps: true, paranoid: true })
+@Table({
+  tableName: 'checklist_templates',
+  timestamps: true,
+  paranoid: true,
+})
 export class ChecklistTemplate extends Model<ChecklistTemplate> {
   @Column({ type: DataType.STRING(150), allowNull: false })
   name: string; // e.g. "Electrical First Fix QC", "Flooring Handover QC"

@@ -9,6 +9,7 @@ import {
   BelongsTo,
   HasMany,
 } from 'sequelize-typescript';
+
 import { PurchaseOrderStatus } from '../../../common/enums/purchase-order-status.enum';
 import { MaterialQuotation } from './material-quotation.model';
 import { PurchaseOrderItem } from './purchase-order-item.model';
@@ -18,43 +19,52 @@ import { DeliveryChallan } from './delivery-challan.model';
  * 4. Purchase orders — issued against approved material quotations,
  * with line-item tracking of delivered vs. ordered quantity.
  */
-@Table({ tableName: 'purchase_orders', timestamps: true })
+@Table({
+  tableName: 'purchase_orders',
+  timestamps: true,
+})
 export class PurchaseOrder extends Model {
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column(DataType.UUID)
-  id: string;
+  declare id: string;
 
   @ForeignKey(() => MaterialQuotation)
   @Column(DataType.UUID)
-  quotationId: string;
+  declare quotationId: string;
 
   @BelongsTo(() => MaterialQuotation)
-  quotation: MaterialQuotation;
+  declare quotation: MaterialQuotation;
 
-  @Column({ type: DataType.STRING, unique: true })
-  poNumber: string;
+  @Column({
+    type: DataType.STRING,
+    unique: true,
+  })
+  declare poNumber: string;
 
   @Column(DataType.STRING)
-  vendorName: string;
+  declare vendorName: string;
 
   @Column(DataType.DATEONLY)
-  orderDate: string;
+  declare orderDate: string;
 
-  @Column({ type: DataType.DATEONLY, allowNull: true })
-  expectedDeliveryDate: string;
+  @Column({
+    type: DataType.DATEONLY,
+    allowNull: true,
+  })
+  declare expectedDeliveryDate: string;
 
   @Default(PurchaseOrderStatus.OPEN)
   @Column(DataType.ENUM(...Object.values(PurchaseOrderStatus)))
-  status: PurchaseOrderStatus;
+  declare status: PurchaseOrderStatus;
 
   @Default(0)
   @Column(DataType.DECIMAL(14, 2))
-  totalAmount: number;
+  declare totalAmount: number;
 
   @HasMany(() => PurchaseOrderItem)
-  items: PurchaseOrderItem[];
+  declare items: PurchaseOrderItem[];
 
   @HasMany(() => DeliveryChallan)
-  deliveryChallans: DeliveryChallan[];
+  declare deliveryChallans: DeliveryChallan[];
 }

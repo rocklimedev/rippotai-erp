@@ -15,7 +15,7 @@ import { Step } from './step.model';
  * Payment, Design, Tender Drawings, Working Drawings, Execution, Snag & Handover,
  * OR a phase on one of the two parallel tracks (Vendor & Trades / Material & Procurement).
  */
-@Table({ tableName: 'wf_phases', timestamps: true, paranoid: true })
+@Table({ tableName: 'phases', timestamps: true, paranoid: true })
 export class Phase extends Model<Phase> {
   @Column({ type: DataType.STRING(120), allowNull: false })
   name: string;

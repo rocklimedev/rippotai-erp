@@ -3,7 +3,7 @@ import { SiteInventoryService } from '../services/site-inventory.service';
 import { RecordInventoryTransactionDto } from '../dto/record-inventory-transaction.dto';
 
 /** 6. Site inventory register. */
-@Controller('material-procurement/site-inventory')
+@Controller('procurement/site-inventory')
 export class SiteInventoryController {
   constructor(private readonly service: SiteInventoryService) {}
 
