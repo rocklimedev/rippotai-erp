@@ -8,50 +8,77 @@ export const APP_META = {
     base: "/dashboard",
     searchPh: "Search applications",
   },
+
   boq: {
     name: "BOQ",
     base: "/boq",
     searchPh: "Search BOQs, categories, items",
   },
+
   projects: {
     name: "Projects",
     base: "/projects",
     searchPh: "Search projects, clients, milestones",
   },
+
   quotations: {
     name: "Estimate",
     base: "/quotations",
     searchPh: "Search estimates, vendors",
   },
+
   vendors: {
     name: "Vendors",
     base: "/vendors",
     searchPh: "Search vendors, categories",
   },
+
   documents: {
     name: "Documents",
     base: "/documents",
     searchPh: "Search documents, forms",
   },
+
+  designStudio: {
+    name: "Design Studio",
+    base: "/design-studio",
+    searchPh: "Search drawings, projects, revisions",
+  },
+
   leads: {
     name: "Leads",
     base: "/leads",
     searchPh: "Search leads",
-  }, // ------------------------------------------------------------
-  // Materials
-  // ------------------------------------------------------------
+  },
 
+  siteOperations: {
+    name: "Site Operations",
+    base: "/site-operations",
+    searchPh: "Search reports, visits, QC, mockups, RFIs",
+  },
+  adminConsole: {
+    name: "Admin Console",
+    base: "/console",
+    searchPh: "Search users, roles, permissions, settings",
+  },
   materials: {
     name: "Materials",
     base: "/materials",
     searchPh: "Search materials, requirements, orders",
   },
-  tasks: { name: "Tasks", base: "/tasks", searchPh: "Search tasks" },
-  calendar: { name: "Calendar", base: "/calendar", searchPh: "Search events" },
-  // Not a landing-page "app" — registered here only so shared chrome
-  // (TopHeader, AppSwitcher lookups, search placeholders, etc.) works
-  // when rendered with app="settings". Deliberately excluded from
-  // LANDING_ORDER so it never appears as a tile/menu option.
+
+  tasks: {
+    name: "Tasks",
+    base: "/tasks",
+    searchPh: "Search tasks",
+  },
+
+  calendar: {
+    name: "Calendar",
+    base: "/calendar",
+    searchPh: "Search events",
+  },
+
   settings: {
     name: "Settings",
     base: "/settings",
@@ -65,13 +92,16 @@ export const APP_META = {
 export const LANDING_ORDER = [
   "boq",
   "projects",
+  "designStudio",
   "quotations",
   "vendors",
   "documents",
   "leads",
+  "siteOperations",
   "materials",
   "tasks",
   "calendar",
+  "adminConsole",
 ];
 
 const I = (label, slug) => ({ label, slug });
@@ -152,32 +182,48 @@ export const APP_MENUS = {
         I("All Project Brief", "brief/all"),
         I("All Plan Of Action", "plan-of-action/all"),
         I("All Payment Schedules", "payment-schedule/all"),
+        I("All Scope of Work", "scope-of-work/all"),
         I("Projects", "/projects/all"),
       ],
     },
+
     {
       label: "Forms",
       items: [
         I("Upload Document", "upload"),
         I("Project Brief", "forms/project-brief"),
-        I("Site Reki", "forms/site-reki"),
+        I("Site Recce", "forms/site-reki"),
         I("Plan of Action", "forms/plan-of-action"),
         I("Payment Schedule", "forms/payment-schedule"),
+        I("Scope Of Work", "forms/scope-of-work"),
       ],
     },
+
     {
-      label: "Drawings",
-      items: [
-        I("All Drawings", "drawings"),
-        I("Upload Drawing", "drawings/upload"),
-      ],
-    },
-    {
-      label: "Settings",
+      label: "Management",
       items: [
         I("Edit Dashboard", "edit-dashboard"),
-        I("Roles and Permissions", "roles"),
+        I("Roles & Permissions", "roles"),
         I("Activity", "activity"),
+      ],
+    },
+  ],
+  designStudio: [
+    {
+      label: "Drawings",
+      items: [I("All Drawings", "all"), I("Create Drawing", "new")],
+    },
+
+    {
+      label: "Management",
+      items: [I("Projects", "/projects/all"), I("Activity", "activity")],
+    },
+
+    {
+      label: "Administration",
+      items: [
+        I("Edit Dashboard", "edit-dashboard"),
+        I("Roles & Permissions", "roles"),
       ],
     },
   ],
@@ -197,6 +243,23 @@ export const APP_MENUS = {
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles and Permissions", "roles"),
         I("Activity", "activity"),
+      ],
+    },
+  ],
+  adminConsole: [
+    {
+      label: "Workspace",
+      items: [
+        I("Users", "users"),
+        I("Roles & Permissions", "roles-permissions"),
+      ],
+    },
+
+    {
+      label: "Administration",
+      items: [
+        I("Super Admin", "super-admin"),
+        I("Terms & Conditions", "terms-and-conditions"),
       ],
     },
   ],
@@ -233,6 +296,40 @@ export const APP_MENUS = {
         I("Projects", "/projects/all"),
         I("Activity", "activity"),
         I("Settings", "edit-dashboard"),
+      ],
+    },
+  ],
+  siteOperations: [
+    {
+      label: "Overview",
+      items: [I("Dashboard", "dashboard"), I("Activity", "activity")],
+    },
+
+    {
+      label: "Site Operations",
+      items: [
+        I("Daily Reports", "daily-reports"),
+        I("Visit Assignments", "visit-assignments"),
+        I("Projects", "/projects/all"),
+      ],
+    },
+
+    {
+      label: "Quality & Coordination",
+      items: [
+        I("QC Sign-offs", "qc/history"),
+        I("QC Handoff Status", "qc/handoff-status"),
+        I("Checklists", "qc/checklist-templates"),
+        I("Mockups", "mockups"),
+        I("RFIs / Clarifications", "rfis"),
+      ],
+    },
+
+    {
+      label: "Administration",
+      items: [
+        I("Edit Dashboard", "edit-dashboard"),
+        I("Roles & Permissions", "roles"),
       ],
     },
   ],

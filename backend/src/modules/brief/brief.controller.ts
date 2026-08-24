@@ -1,36 +1,99 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
-  ParseUUIDPipe,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
 
-import { BriefService } from './brief.service';
-import { CreateProjectBriefDto } from './dto/create-project-brief.dto';
-import { CurrentUser } from '@/common/decorator/current-user.decorator';
-import { User } from '@/modules/users/models/user.model';
+import { ProjectBriefsService } from './brief.service';
 
-// Matches endpoint="/documents/forms/project-brief" from ProjectBriefForm
-@Controller('documents/forms/project-brief')
-export class BriefController {
-  constructor(private readonly briefService: BriefService) {}
+import { CreateProjectBriefDto } from './dto/create-project-brief.dto';
+import { UpdateProjectBriefDto } from './dto/update-project-brief.dto';
+
+@Controller('project-briefs')
+export class ProjectBriefsController {
+  constructor(private readonly projectBriefsService: ProjectBriefsService) {}
+
+  // =========================================================
+  // CREATE
+  // =========================================================
 
   @Post()
-  create(@Body() dto: CreateProjectBriefDto, @CurrentUser() user: User) {
-    return this.briefService.create(dto, user);
+  create(@Body() dto: CreateProjectBriefDto) {
+    return this.projectBriefsService.create(dto);
   }
 
-  // GET /documents/forms/project-brief?project_id=...
+  // =========================================================
+  // LIST
+  // =========================================================
+
   @Get()
-  findAll(@Query('project_id') project_id?: string) {
-    return this.briefService.findAll({ project_id });
+  findAll(@Query('projectId') projectId?: string) {
+    return this.projectBriefsService.findAll(projectId);
   }
+
+  // =========================================================
+  // LATEST BY PROJECT
+  // =========================================================
+
+  @Get('project/:projectId/latest')
+  findLatestByProject(@Param('projectId') projectId: string) {
+    return this.projectBriefsService.findLatestByProject(projectId);
+  }
+
+  // =========================================================
+  // DETAIL
+  // =========================================================
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.briefService.findOne(id);
+  findOne(@Param('id') id: string) {
+    return this.projectBriefsService.findOne(id);
+  }
+
+  // =========================================================
+  // UPDATE
+  // =========================================================
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateProjectBriefDto) {
+    return this.projectBriefsService.update(id, dto);
+  }
+
+  // =========================================================
+  // STATUS
+  // =========================================================
+
+  @Patch(':id/status')
+  updateStatus(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      status: string;
+      userId?: string;
+    },
+  ) {
+    return this.projectBriefsService.updateStatus(id, body.status, body.userId);
+  }
+
+  // =========================================================
+  // NEW VERSION
+  // =========================================================
+
+  @Post(':id/new-version')
+  createNewVersion(@Param('id') id: string) {
+    return this.projectBriefsService.createNewVersion(id);
+  }
+
+  // =========================================================
+  // DELETE
+  // =========================================================
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.projectBriefsService.remove(id);
   }
 }

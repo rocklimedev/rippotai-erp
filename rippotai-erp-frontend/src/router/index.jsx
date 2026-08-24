@@ -12,6 +12,9 @@ import { settingsRoutes } from "./routes/settings.routes";
 import { clientRoutes } from "./routes/client.routes";
 import { redirectRoutes } from "./routes/redirect.routes";
 import { materialsRoutes } from "./routes/materials.routes";
+import { siteOperationsRoutes } from "./routes/site-operations.routes";
+import { designStudioRoutes } from "./routes/design-studio.routes";
+import { adminConsoleRoutes } from "./routes/admin-console.routes";
 
 // Order matters only for readability here — react-router matches on
 // specificity, not array order, so new domains can be added anywhere.
@@ -30,6 +33,9 @@ const masterRoutes = [
   ...settingsRoutes,
   ...clientRoutes,
   ...materialsRoutes,
+  ...siteOperationsRoutes,
+  ...designStudioRoutes,
+  ...adminConsoleRoutes,
 ];
 
 export default masterRoutes;

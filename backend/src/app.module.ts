@@ -38,7 +38,7 @@ import { DocumentsModule } from './modules/documents/document.module';
 import { DrawingsModule } from './modules/documents/drawing.module';
 
 // Project / Site
-import { BriefModule } from './modules/brief/brief.module';
+import { ProjectBriefsModule } from './modules/brief/brief.module';
 import { SiteRecceModule } from './modules/reki/reki.module';
 import { TasksModule } from './modules/tasks/task.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
@@ -57,6 +57,7 @@ import { PaymentSchedulesModule } from './modules/payments/payment-schedule.modu
 import { ProcessWorkflowModule } from './modules/process-workflow/process-workflow.module';
 import { SiteOperationsModule } from './modules/site-operations/site-operations.module';
 import { MaterialProcurementModule } from './modules/material-procurement/material-procurement.module';
+import { ScopeOfWorkModule } from './modules/scope-of-work/scope-of-work.module';
 
 @Module({
   imports: [
@@ -124,8 +125,9 @@ import { MaterialProcurementModule } from './modules/material-procurement/materi
     // ============================================================
     // Project / Site
     // ============================================================
-    BriefModule,
+    ProjectBriefsModule,
     SiteRecceModule,
+    ScopeOfWorkModule,
     TasksModule,
     CalendarModule,
     DashboardsModule,

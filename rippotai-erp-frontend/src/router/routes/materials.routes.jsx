@@ -7,6 +7,7 @@ import MaterialQuotationList from "@/pages/materials/MaterialQuotationList";
 import PurchaseOrderList from "@/pages/materials/PurchaseOrderList";
 import DeliveryChallanList from "@/pages/materials/DeliveryChallanList";
 import SiteInventoryList from "@/pages/materials/SiteInventoryList";
+import { MaterialRequirementForm } from "../../pages/materials/MaterialRequirementForm";
 
 export const materialsRoutes = [
   {
@@ -55,6 +56,10 @@ export const materialsRoutes = [
       {
         path: "sample-boards",
         element: <SampleBoardList />,
+      },
+      {
+        path: "add",
+        element: <MaterialRequirementForm />,
       },
 
       // ------------------------------------------------------------

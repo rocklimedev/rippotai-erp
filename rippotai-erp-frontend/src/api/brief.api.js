@@ -1,47 +1,126 @@
 import { baseApi } from "../store/baseApi";
 
-export const briefApi = baseApi.injectEndpoints({
+export const projectBriefsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    createProjectBrief: builder.mutation({
-      query: (body) => ({
-        url: "/documents/forms/project-brief",
-        method: "POST",
-        body, // { project_id, sections }
-      }),
-      invalidatesTags: ["ProjectBrief"],
-    }),
+    // =========================================================
+    // PROJECT BRIEFS
+    // =========================================================
 
     getProjectBriefs: builder.query({
-      query: ({ project_id, status } = {}) => ({
-        url: "/documents/forms/project-brief",
-        method: "GET",
-        params: { project_id, status },
+      query: (projectId) => ({
+        url: "/project-briefs",
+        params: projectId ? { projectId } : undefined,
       }),
-      providesTags: ["ProjectBrief"],
+      providesTags: ["ProjectBriefs"],
     }),
 
-    deleteProjectBrief: builder.mutation({
-      query: (id) => ({
-        url: `/documents/forms/project-brief/${id}`,
-        method: "DELETE",
+    // =========================================================
+    // LATEST BY PROJECT
+    // =========================================================
+
+    getLatestProjectBrief: builder.query({
+      query: (projectId) => ({
+        url: `/project-briefs/project/${projectId}/latest`,
       }),
-      invalidatesTags: ["ProjectBrief"],
+      providesTags: ["ProjectBriefs"],
     }),
+
+    // =========================================================
+    // DETAIL
+    // =========================================================
 
     getProjectBrief: builder.query({
       query: (id) => ({
-        url: `/documents/forms/project-brief/${id}`,
-        method: "GET",
+        url: `/project-briefs/${id}`,
       }),
-      providesTags: (result, error, id) => [{ type: "ProjectBrief", id }],
+      providesTags: ["ProjectBriefs"],
+    }),
+
+    // =========================================================
+    // CREATE
+    // =========================================================
+
+    createProjectBrief: builder.mutation({
+      query: (body) => ({
+        url: "/project-briefs",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["ProjectBriefs"],
+    }),
+
+    // =========================================================
+    // UPDATE
+    // =========================================================
+
+    updateProjectBrief: builder.mutation({
+      query: ({ id, body }) => ({
+        url: `/project-briefs/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["ProjectBriefs"],
+    }),
+
+    // =========================================================
+    // STATUS
+    // =========================================================
+
+    updateProjectBriefStatus: builder.mutation({
+      query: ({ id, status, userId }) => ({
+        url: `/project-briefs/${id}/status`,
+        method: "PATCH",
+        body: {
+          status,
+          ...(userId ? { userId } : {}),
+        },
+      }),
+      invalidatesTags: ["ProjectBriefs"],
+    }),
+
+    // =========================================================
+    // NEW VERSION
+    // =========================================================
+
+    createProjectBriefVersion: builder.mutation({
+      query: (id) => ({
+        url: `/project-briefs/${id}/new-version`,
+        method: "POST",
+      }),
+      invalidatesTags: ["ProjectBriefs"],
+    }),
+
+    // =========================================================
+    // DELETE
+    // =========================================================
+
+    deleteProjectBrief: builder.mutation({
+      query: (id) => ({
+        url: `/project-briefs/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["ProjectBriefs"],
     }),
   }),
+
   overrideExisting: false,
 });
 
 export const {
-  useCreateProjectBriefMutation,
+  // Queries
   useGetProjectBriefsQuery,
+  useLazyGetProjectBriefsQuery,
+
+  useGetLatestProjectBriefQuery,
+  useLazyGetLatestProjectBriefQuery,
+
   useGetProjectBriefQuery,
+  useLazyGetProjectBriefQuery,
+
+  // Mutations
+  useCreateProjectBriefMutation,
+  useUpdateProjectBriefMutation,
+  useUpdateProjectBriefStatusMutation,
+  useCreateProjectBriefVersionMutation,
   useDeleteProjectBriefMutation,
-} = briefApi;
+} = projectBriefsApi;

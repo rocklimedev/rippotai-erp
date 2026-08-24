@@ -2,26 +2,26 @@
 
 One file per backend module, each an RTK Query `createApi()` instance. Files map cleanly onto backend modules:
 
-| Frontend file | Backend module | Notable hooks |
-|---|---|---|
-| `auth.api.js` | Auth | `useLoginMutation`, `useLogoutMutation`, `useMeQuery`, plus token/verification-token CRUD |
-| `rbac.api.js` | RBAC | roles/permissions CRUD, `useBulkAssignPermissionsMutation`, `useGrantPermissionToRoleMutation` |
-| `quotation.api.js` | Quotations | full lifecycle: create/update/submit/approve/return/decline/cancel/restore/soft-delete/permanent-delete + items + versions |
-| `project.api.js` | Projects | CRUD + `useArchiveProjectMutation` / `useRestoreProjectMutation` |
-| `vendor.api.js` | Vendors | CRUD, `useSetVendorStatusMutation`, `useGetQuotationsByVendorQuery`, categories/business-types lookups |
-| `user.api.js` | Users | CRUD + `useDeactivateUserMutation` |
-| `user-signatures.api.js` | Users (signatures) | `useGetSignatureQuery`, `useUploadSignatureMutation`, `useDeleteSignatureMutation` |
-| `notification.api.js` | Engagement (notifications) | list, create, mark read/read-all, delete |
-| `activity-logs.api.js` | Engagement (activity logs) | create, list |
-| `reports.api.js` | Reports | overview, by-project, by-vendor, by-status, **by-employee** (⚠️ calls `GET /reports/by-employee`, marked "Admin only" in a code comment — but `reports.controller.ts` on the backend currently only defines `overview`/`by-project`/`by-vendor`/`by-status`. This call will 404 until the backend route is added; flag to the team) |
-| `settings.api.js` | Settings | CRUD + `useUpsertSettingMutation` |
-| `unit.api.js` | Metas (units) | standard CRUD |
+| Frontend file            | Backend module             | Notable hooks                                                                                                                                                                                                                                                                                                                       |
+| ------------------------ | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth.api.js`            | Auth                       | `useLoginMutation`, `useLogoutMutation`, `useMeQuery`, plus token/verification-token CRUD                                                                                                                                                                                                                                           |
+| `rbac.api.js`            | RBAC                       | roles/permissions CRUD, `useBulkAssignPermissionsMutation`, `useGrantPermissionToRoleMutation`                                                                                                                                                                                                                                      |
+| `quotation.api.js`       | Quotations                 | full lifecycle: create/update/submit/approve/return/decline/cancel/restore/soft-delete/permanent-delete + items + versions                                                                                                                                                                                                          |
+| `project.api.js`         | Projects                   | CRUD + `useArchiveProjectMutation` / `useRestoreProjectMutation`                                                                                                                                                                                                                                                                    |
+| `vendor.api.js`          | Vendors                    | CRUD, `useSetVendorStatusMutation`, `useGetQuotationsByVendorQuery`, categories/business-types lookups                                                                                                                                                                                                                              |
+| `user.api.js`            | Users                      | CRUD + `useDeactivateUserMutation`                                                                                                                                                                                                                                                                                                  |
+| `user-signatures.api.js` | Users (signatures)         | `useGetSignatureQuery`, `useUploadSignatureMutation`, `useDeleteSignatureMutation`                                                                                                                                                                                                                                                  |
+| `notification.api.js`    | Engagement (notifications) | list, create, mark read/read-all, delete                                                                                                                                                                                                                                                                                            |
+| `activity-logs.api.js`   | Engagement (activity logs) | create, list                                                                                                                                                                                                                                                                                                                        |
+| `reports.api.js`         | Reports                    | overview, by-project, by-vendor, by-status, **by-employee** (⚠️ calls `GET /reports/by-employee`, marked "Admin only" in a code comment — but `reports.controller.ts` on the backend currently only defines `overview`/`by-project`/`by-vendor`/`by-status`. This call will 404 until the backend route is added; flag to the team) |
+| `settings.api.js`        | Settings                   | CRUD + `useUpsertSettingMutation`                                                                                                                                                                                                                                                                                                   |
+| `unit.api.js`            | Metas (units)              | standard CRUD                                                                                                                                                                                                                                                                                                                       |
 
 ## Shared conventions (every `*.api.js` file)
 
 ```js
 const baseQuery = fetchBaseQuery({
-  baseUrl: API_URL,              // from lib/config.js
+  baseUrl: API_URL, // from lib/config.js
   credentials: "include",
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("token");
