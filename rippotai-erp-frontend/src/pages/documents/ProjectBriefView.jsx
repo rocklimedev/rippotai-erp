@@ -1,17 +1,20 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Edit3, Trash2, Printer } from "lucide-react";
+import { ArrowLeft, Edit3, Trash2, Download, Loader2 } from "lucide-react";
+import html2pdf from "html2pdf.js";
+
 import { Shell, Card } from "../../hooks/shared";
+
 import {
   useGetProjectBriefQuery,
   useDeleteProjectBriefMutation,
 } from "../../api/brief.api";
 
 // ---------------------------------------------------------------------------
-// Brand tokens — same palette used across the Rippotai document templates
-// (deep forest green wordmark, gold rule/accent, warm hairline dividers).
+// BRAND
 // ---------------------------------------------------------------------------
+
 const BRAND = {
   green: "#1B4332",
   greenSoft: "#3C6E58",
@@ -23,15 +26,12 @@ const BRAND = {
   paper: "#FFFFFF",
 };
 
-// Swap this for the real asset once it's available.
 const LOGO_SRC = "/assets/branding/rippotai-mark.png";
 
 // ---------------------------------------------------------------------------
-// Option lists mirroring every tick-box group printed on the Client Brief
-// template. Codes are assumed to match the enum values the API returns for
-// each collection (workTypes[].workType, services[].serviceType, etc.) —
-// adjust the `value`s here if the backend enums differ.
+// OPTIONS
 // ---------------------------------------------------------------------------
+
 const PROJECT_TYPE_OPTIONS = [
   { value: "RESIDENTIAL", label: "Residential" },
   { value: "COMMERCIAL", label: "Commercial" },
@@ -103,9 +103,6 @@ const PROCUREMENT_OPTIONS = [
   { value: "PAINTS_POLISHES", label: "Paints and Polishes" },
 ];
 
-// Façade work is printed as its own mini tick-list under material
-// procurement. Assumed to share the same `category` enum namespace with a
-// distinct set of codes — adjust if the backend uses a separate field.
 const FACADE_OPTIONS = [
   { value: "FRP", label: "FRP" },
   { value: "FACADE_METAL", label: "Metal" },
@@ -124,8 +121,13 @@ const STYLE_OPTIONS = [
   { value: "WARM_RUSTIC", label: "Warm rustic" },
 ];
 
+// ---------------------------------------------------------------------------
+// HELPERS
+// ---------------------------------------------------------------------------
+
 const formatDate = (value) => {
   if (!value) return "";
+
   try {
     return new Date(value).toLocaleDateString(undefined, {
       year: "numeric",
@@ -158,12 +160,9 @@ const formatUnit = (unit, otherUnit) => {
   }
 };
 
-// Collections like workTypes / services / procurementCategories arrive as an
-// array of records with one enum field each — flatten them into a Set so the
-// tick-box groups can do a simple `.has()` check. Tolerant of the field
-// already being a plain string array.
 const toSet = (arr, field) => {
   if (!Array.isArray(arr)) return new Set();
+
   return new Set(
     arr
       .map((entry) => (typeof entry === "string" ? entry : entry?.[field]))
@@ -172,7 +171,7 @@ const toSet = (arr, field) => {
 };
 
 // ---------------------------------------------------------------------------
-// Shared presentational primitives
+// PRESENTATIONAL COMPONENTS
 // ---------------------------------------------------------------------------
 
 function CoverField({ label, value }) {
@@ -184,6 +183,7 @@ function CoverField({ label, value }) {
       >
         {label}:
       </div>
+
       <span className="text-[13px] font-semibold" style={{ color: BRAND.ink }}>
         {value || ""}
       </span>
@@ -200,12 +200,14 @@ function SectionHeader({ number, title }) {
       >
         {number}
       </div>
+
       <h2
         className="text-lg font-semibold tracking-tight"
         style={{ color: BRAND.green }}
       >
         {title}
       </h2>
+
       <div className="flex-1 h-px" style={{ backgroundColor: BRAND.line }} />
     </div>
   );
@@ -220,6 +222,7 @@ function Field({ label, value }) {
       >
         {label}
       </span>
+
       <span
         className="text-sm font-medium whitespace-pre-line"
         style={{ color: BRAND.ink }}
@@ -239,6 +242,7 @@ function TextBlock({ label, value }) {
       >
         {label}
       </span>
+
       <p
         className="text-sm leading-relaxed whitespace-pre-line"
         style={{ color: BRAND.ink }}
@@ -271,6 +275,7 @@ function CheckOption({ label, checked }) {
           </svg>
         )}
       </span>
+
       <span className="text-sm" style={{ color: BRAND.ink }}>
         {label}
       </span>
@@ -295,6 +300,7 @@ function CheckGroup({
           {label}
         </span>
       )}
+
       <div className="flex flex-wrap gap-x-8 gap-y-3">
         {options.map((opt) => (
           <CheckOption
@@ -303,6 +309,7 @@ function CheckGroup({
             checked={activeSet.has(opt.value)}
           />
         ))}
+
         {otherValue !== undefined && (
           <CheckOption
             label={`${otherLabel}${otherValue ? `: ${otherValue}` : ""}`}
@@ -322,6 +329,7 @@ function DataTable({ columns, rows, emptyLabel = "None recorded." }) {
       </p>
     );
   }
+
   return (
     <table className="w-full text-sm">
       <thead>
@@ -340,11 +348,14 @@ function DataTable({ columns, rows, emptyLabel = "None recorded." }) {
           ))}
         </tr>
       </thead>
+
       <tbody>
         {rows.map((row, idx) => (
           <tr
             key={row.id || idx}
-            style={{ borderTop: `1px solid ${BRAND.line}` }}
+            style={{
+              borderTop: `1px solid ${BRAND.line}`,
+            }}
           >
             {columns.map((col) => (
               <td
@@ -355,7 +366,13 @@ function DataTable({ columns, rows, emptyLabel = "None recorded." }) {
                 {col.render
                   ? col.render(row)
                   : row[col.key] || (
-                      <span style={{ color: BRAND.line }}>—</span>
+                      <span
+                        style={{
+                          color: BRAND.line,
+                        }}
+                      >
+                        —
+                      </span>
                     )}
               </td>
             ))}
@@ -366,72 +383,233 @@ function DataTable({ columns, rows, emptyLabel = "None recorded." }) {
   );
 }
 
-function PageFooter({ address }) {
+// ---------------------------------------------------------------------------
+// PDF PAGE
+// ---------------------------------------------------------------------------
+
+function PdfPage({
+  children,
+  pageNumber,
+  totalPages,
+  footerAddress,
+  className = "",
+}) {
   return (
     <div
-      className="px-14 py-4 flex justify-between text-[10px] uppercase tracking-[0.12em]"
-      style={{ color: BRAND.muted, borderTop: `1px solid ${BRAND.line}` }}
+      className={`pdf-page ${className}`}
+      style={{
+        width: "210mm",
+        minHeight: "297mm",
+        height: "297mm",
+        background: BRAND.paper,
+        position: "relative",
+        overflow: "hidden",
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+      }}
     >
-      <span>Client Brief</span>
-      <span>{address}</span>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+        }}
+      >
+        {children}
+      </div>
+
+      <div
+        style={{
+          padding: "10px 14mm",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderTop: `1px solid ${BRAND.line}`,
+          color: BRAND.muted,
+          fontSize: "8px",
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          flexShrink: 0,
+        }}
+      >
+        <span>Client Brief</span>
+
+        <span>{footerAddress}</span>
+
+        <span>
+          {pageNumber} / {totalPages}
+        </span>
+      </div>
     </div>
   );
 }
 
-function Section({ number, title, address, children }) {
+// ---------------------------------------------------------------------------
+// SECTION WRAPPER
+// ---------------------------------------------------------------------------
+
+function Section({ number, title, children }) {
   return (
-    <>
-      <div
-        className="px-14 py-12"
-        style={{ borderTop: `1px solid ${BRAND.line}` }}
-      >
-        <SectionHeader number={number} title={title} />
-        {children}
-      </div>
-      <PageFooter address={address} />
-    </>
+    <div
+      style={{
+        padding: "15mm 14mm 10mm",
+        height: "100%",
+        boxSizing: "border-box",
+      }}
+    >
+      <SectionHeader number={number} title={title} />
+
+      {children}
+    </div>
   );
 }
 
+// ---------------------------------------------------------------------------
+// MAIN
 // ---------------------------------------------------------------------------
 
 export function ProjectBriefView() {
   const { id } = useParams();
   const nav = useNavigate();
 
+  const pdfRef = useRef(null);
+
+  const [downloading, setDownloading] = useState(false);
+
   const {
     data: brief,
     isFetching,
     isError,
-  } = useGetProjectBriefQuery(id, { skip: !id });
+  } = useGetProjectBriefQuery(id, {
+    skip: !id,
+  });
 
   const [deleteProjectBrief, { isLoading: deleting }] =
     useDeleteProjectBriefMutation();
 
+  // -------------------------------------------------------------------------
+  // DELETE
+  // -------------------------------------------------------------------------
+
   const removeBrief = async () => {
-    if (!window.confirm("Delete this project brief? This cannot be undone."))
+    if (!window.confirm("Delete this project brief? This cannot be undone.")) {
       return;
+    }
+
     try {
       await deleteProjectBrief(id).unwrap();
+
       toast.success("Project brief deleted");
+
       nav("/documents/all");
     } catch (e) {
       toast.error(e?.data?.detail || "Failed to delete");
     }
   };
 
-  const printReport = () => window.print();
+  // -------------------------------------------------------------------------
+  // DOWNLOAD PDF
+  // -------------------------------------------------------------------------
+
+  const downloadPdf = async () => {
+    if (!pdfRef.current || downloading) return;
+
+    try {
+      setDownloading(true);
+
+      toast.loading("Preparing Client Brief PDF...", {
+        id: "brief-pdf",
+      });
+
+      // Give browser a moment to finish rendering.
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      const filenameProject =
+        project?.name
+          ?.replace(/[^a-z0-9]+/gi, "-")
+          .replace(/^-|-$/g, "")
+          .toLowerCase() || "project";
+
+      const filename = `client-brief-${filenameProject}-v${
+        brief?.version || 1
+      }.pdf`;
+
+      const options = {
+        margin: 0,
+
+        filename,
+
+        image: {
+          type: "jpeg",
+          quality: 0.98,
+        },
+
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: "#ffffff",
+
+          logging: false,
+
+          // Important for large documents.
+          scrollX: 0,
+          scrollY: 0,
+
+          windowWidth: 794,
+          windowHeight: 1123,
+        },
+
+        jsPDF: {
+          unit: "mm",
+          format: "a4",
+          orientation: "portrait",
+          compress: true,
+        },
+
+        pagebreak: {
+          mode: ["css", "legacy"],
+        },
+      };
+
+      await html2pdf().set(options).from(pdfRef.current).save();
+
+      toast.success("Client Brief downloaded successfully", {
+        id: "brief-pdf",
+      });
+    } catch (error) {
+      console.error("Client brief PDF generation failed:", error);
+
+      toast.error("Failed to generate Client Brief PDF", {
+        id: "brief-pdf",
+      });
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  // -------------------------------------------------------------------------
+  // NORMALIZE COLLECTIONS
+  // -------------------------------------------------------------------------
 
   const sets = useMemo(
     () => ({
       workTypes: toSet(brief?.workTypes, "workType"),
+
       services: toSet(brief?.services, "serviceType"),
+
       procurement: toSet(brief?.procurementCategories, "category"),
+
       drawings: toSet(brief?.drawingsAvailable, "documentType"),
+
       styles: toSet(brief?.styleDirections, "styleDirection"),
     }),
     [brief],
   );
+
+  // -------------------------------------------------------------------------
+  // LOADING
+  // -------------------------------------------------------------------------
 
   if (isFetching) {
     return (
@@ -440,6 +618,10 @@ export function ProjectBriefView() {
       </Shell>
     );
   }
+
+  // -------------------------------------------------------------------------
+  // ERROR
+  // -------------------------------------------------------------------------
 
   if (isError || !brief) {
     return (
@@ -453,25 +635,41 @@ export function ProjectBriefView() {
     );
   }
 
+  // -------------------------------------------------------------------------
+  // DATA
+  // -------------------------------------------------------------------------
+
   const project = brief.project || {};
+
   const addressLine = [project.name, project.site_location || brief.siteAddress]
     .filter(Boolean)
     .join(", ");
+
   const spaceRequirements = [...(brief.spaceRequirements || [])].sort(
     (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
   );
+
   const phases = [...(brief.phases || [])].sort(
     (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
   );
+
   const occupants = [...(brief.occupants || [])].sort(
     (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
   );
+
   const references = [...(brief.references || [])].sort(
     (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
   );
+
   const otherStyle = (brief.styleDirections || []).find(
     (s) => s.styleDirection === "OTHER",
   );
+
+  const TOTAL_PAGES = 11;
+
+  // -------------------------------------------------------------------------
+  // UI
+  // -------------------------------------------------------------------------
 
   return (
     <Shell
@@ -479,592 +677,990 @@ export function ProjectBriefView() {
       subtitle={`${project.name || "Project"} • v${brief.version || 1}`}
       action={
         <div className="flex items-center gap-2">
+          {/* BACK */}
           <button
             onClick={() => nav("/documents/all")}
-            className="h-10 px-4 rounded-lg border border-[#DDD8CE] text-[13px] font-semibold text-[#333333] inline-flex items-center gap-1.5"
+            className="h-10 px-4 rounded-lg border border-[#DDD8CE] text-[13px] font-semibold text-[#333333] inline-flex items-center gap-1.5 hover:bg-[#F7F5EF] transition"
           >
-            <ArrowLeft size={14} /> Back
+            <ArrowLeft size={14} />
+            Back
           </button>
+
+          {/* EDIT */}
           <button
             onClick={() => nav(`/documents/brief/${id}/edit`)}
-            className="h-10 px-4 rounded-lg border border-[#B5C4B6] text-[13px] font-semibold text-[#333333] inline-flex items-center gap-1.5"
+            className="h-10 px-4 rounded-lg border border-[#B5C4B6] text-[13px] font-semibold text-[#333333] inline-flex items-center gap-1.5 hover:bg-[#F7F5EF] transition"
           >
-            <Edit3 size={14} /> Edit
+            <Edit3 size={14} />
+            Edit
           </button>
+
+          {/* DOWNLOAD */}
           <button
-            onClick={printReport}
-            className="h-10 px-4 rounded-lg border border-[#B5C4B6] text-[13px] font-semibold text-[#333333] inline-flex items-center gap-1.5"
+            onClick={downloadPdf}
+            disabled={downloading}
+            className="h-10 px-4 rounded-lg border border-[#1B4332] bg-[#1B4332] text-white text-[13px] font-semibold inline-flex items-center gap-1.5 hover:bg-[#143226] transition disabled:opacity-60"
           >
-            <Printer size={14} /> Print
+            {downloading ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Download size={14} />
+            )}
+
+            {downloading ? "Generating..." : "Download PDF"}
           </button>
+
+          {/* DELETE */}
           <button
             onClick={removeBrief}
             disabled={deleting}
-            className="h-10 px-4 rounded-lg border border-[#E3B7A4] text-[13px] font-semibold text-[#B04D26] inline-flex items-center gap-1.5 disabled:opacity-50"
+            className="h-10 px-4 rounded-lg border border-[#E3B7A4] text-[13px] font-semibold text-[#B04D26] inline-flex items-center gap-1.5 hover:bg-[#FEF5F1] transition disabled:opacity-50"
           >
-            <Trash2 size={14} /> Delete
+            <Trash2 size={14} />
+            Delete
           </button>
         </div>
       }
     >
+      {/* ================================================================= */}
+      {/* PDF DOCUMENT */}
+      {/* ================================================================= */}
+
       <div
-        className="max-w-4xl mx-auto shadow-sm print:shadow-none"
+        ref={pdfRef}
+        className="client-brief-document"
         style={{
-          backgroundColor: BRAND.paper,
-          border: `1px solid ${BRAND.line}`,
+          width: "210mm",
+          margin: "0 auto",
+          background: "#F5F3EE",
         }}
       >
-        {/* ================= COVER PAGE ================= */}
-        <div className="px-14 pt-20 pb-10 flex flex-col items-center text-center">
-          <img
-            src={LOGO_SRC}
-            alt="Rippotai"
-            className="w-24 h-24 object-contain mb-6"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-              e.currentTarget.nextSibling.style.display = "flex";
+        {/* =============================================================== */}
+        {/* PAGE 1 — COVER */}
+        {/* =============================================================== */}
+
+        <PdfPage
+          pageNumber={1}
+          totalPages={TOTAL_PAGES}
+          footerAddress={addressLine}
+        >
+          <div
+            style={{
+              height: "100%",
+              padding: "25mm 14mm 12mm",
+              boxSizing: "border-box",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
             }}
-          />
-          <div
-            className="w-24 h-24 rounded-full mb-6 items-center justify-center text-2xl font-semibold text-white"
-            style={{ backgroundColor: BRAND.green, display: "none" }}
           >
-            R
-          </div>
+            <img
+              src={LOGO_SRC}
+              alt="Rippotai"
+              crossOrigin="anonymous"
+              style={{
+                width: "25mm",
+                height: "25mm",
+                objectFit: "contain",
+                marginBottom: "6mm",
+              }}
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
 
-          <div
-            className="text-2xl tracking-[0.25em] font-medium"
-            style={{ color: BRAND.green }}
-          >
-            RIPPŌTAI
-          </div>
-          <div
-            className="text-lg tracking-[0.1em] mt-3"
-            style={{ color: BRAND.green }}
-          >
-            CLIENT BRIEF
-          </div>
-
-          <div className="h-24" />
-
-          <div className="w-full text-left space-y-4 mt-auto">
             <div
-              className="pb-3"
-              style={{ borderBottom: `1px solid ${BRAND.line}` }}
+              style={{
+                fontSize: "18px",
+                letterSpacing: "0.25em",
+                fontWeight: 500,
+                color: BRAND.green,
+              }}
             >
-              <CoverField label="Project" value={project.name} />
+              RIPPŌTAI
             </div>
+
             <div
-              className="grid grid-cols-2 gap-x-8 pb-3"
-              style={{ borderBottom: `1px solid ${BRAND.line}` }}
+              style={{
+                fontSize: "13px",
+                letterSpacing: "0.1em",
+                marginTop: "3mm",
+                color: BRAND.green,
+              }}
             >
-              <CoverField
-                label="Address"
-                value={project.site_location || brief.siteAddress}
-              />
-              <CoverField label="Client" value={project.client_name} />
+              CLIENT BRIEF
             </div>
+
+            <div style={{ height: "35mm" }} />
+
             <div
-              className="grid grid-cols-2 gap-x-8 pb-3"
-              style={{ borderBottom: `2px solid ${BRAND.gold}` }}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                marginTop: "auto",
+              }}
             >
-              <CoverField
-                label="Principle Architect"
-                value={project.principal_architect}
-              />
-              <CoverField label="Project Lead" value={project.project_lead} />
-            </div>
-          </div>
-        </div>
-        <PageFooter address={addressLine} />
-
-        {/* ================= 01 CLIENT & CONTACT ================= */}
-        <Section number="01" title="Client & contact" address={addressLine}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-10 gap-y-6 mb-10">
-            <Field label="Client Name" value={project.client_name} />
-            <Field label="Contact Person" value={brief.contactPerson} />
-            <Field label="Mobile" value={brief.mobile} />
-            <Field label="Email" value={brief.email} />
-            <Field label="Project Name" value={project.name} />
-            <Field
-              label="Relationship To Client"
-              value={brief.relationshipToClient}
-            />
-            <Field
-              label="Referred By / Source"
-              value={brief.referredBySource}
-            />
-            <Field label="Date Of Brief" value={formatDate(brief.briefDate)} />
-          </div>
-
-          <CheckGroup
-            label="Project Type — tick one"
-            options={PROJECT_TYPE_OPTIONS}
-            activeSet={
-              new Set([brief.projectType || project.type].filter(Boolean))
-            }
-            otherValue={brief.projectTypeOther}
-          />
-        </Section>
-
-        {/* ================= 02 SITE & PROPERTY DETAILS ================= */}
-        <Section
-          number="02"
-          title="Site & property details"
-          address={addressLine}
-        >
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-10 gap-y-6 mb-10">
-            <Field label="Site Address" value={brief.siteAddress} />
-            <Field label="Property Type" value={brief.propertyType} />
-            <Field
-              label="Site Area"
-              value={
-                brief.siteArea
-                  ? `${brief.siteArea} ${formatUnit(brief.siteAreaUnit, brief.siteAreaOtherUnit)}`
-                  : ""
-              }
-            />
-            <Field
-              label="Facing / Orientation"
-              value={brief.facingOrientation}
-            />
-            <Field label="Parking Provision" value={brief.parkingProvision} />
-            <Field label="Ownership Status" value={brief.ownershipStatus} />
-            <Field label="Number Of Floors" value={brief.numberOfFloors} />
-            <Field label="Lift Available" value={yesNo(brief.liftAvailable)} />
-          </div>
-
-          <div className="grid grid-cols-2 gap-x-10 gap-y-8 mb-10">
-            <CheckGroup
-              label="Site Type"
-              options={SITE_TYPE_OPTIONS}
-              activeSet={new Set([brief.siteType].filter(Boolean))}
-              otherValue={brief.siteTypeOther}
-            />
-            <CheckGroup
-              label="Site Condition"
-              options={SITE_CONDITION_OPTIONS}
-              activeSet={new Set([brief.siteCondition].filter(Boolean))}
-            />
-          </div>
-
-          <CheckGroup
-            label="Drawings And Documents Available With The Client"
-            options={DRAWINGS_OPTIONS}
-            activeSet={sets.drawings}
-            otherValue={brief.drawingsOther}
-          />
-        </Section>
-
-        {/* ================= 03 SCOPE OF WORK ================= */}
-        <Section number="03" title="Scope of work" address={addressLine}>
-          <div className="mb-10">
-            <CheckGroup
-              label="Type Of Work"
-              options={WORK_TYPE_OPTIONS}
-              activeSet={sets.workTypes}
-              otherValue={brief.workTypeOther}
-            />
-          </div>
-
-          <div className="mb-10">
-            <CheckGroup
-              label="Services Required"
-              options={SERVICE_OPTIONS}
-              activeSet={sets.services}
-              otherValue={brief.servicesOther}
-            />
-          </div>
-
-          {sets.services.has("MATERIAL_PROCUREMENT") && (
-            <div className="mb-10">
-              <span
-                className="text-[11px] uppercase tracking-wide block mb-3"
-                style={{ color: BRAND.muted }}
+              <div
+                style={{
+                  paddingBottom: "4mm",
+                  borderBottom: `1px solid ${BRAND.line}`,
+                  marginBottom: "4mm",
+                }}
               >
-                If Material Procurement
-              </span>
-              <div className="grid grid-cols-2 gap-x-8 gap-y-3 mb-6">
-                {PROCUREMENT_OPTIONS.map((opt) => (
-                  <CheckOption
-                    key={opt.value}
-                    label={opt.label}
-                    checked={sets.procurement.has(opt.value)}
-                  />
-                ))}
+                <CoverField label="Project" value={project.name} />
               </div>
-              <span
-                className="text-[11px] uppercase tracking-wide block mb-3"
-                style={{ color: BRAND.muted }}
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "8mm",
+                  paddingBottom: "4mm",
+                  borderBottom: `1px solid ${BRAND.line}`,
+                  marginBottom: "4mm",
+                }}
               >
-                Façade Work
-              </span>
-              <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-                {FACADE_OPTIONS.map((opt) => (
-                  <CheckOption
-                    key={opt.value}
-                    label={opt.label}
-                    checked={sets.procurement.has(opt.value)}
-                  />
-                ))}
+                <CoverField
+                  label="Address"
+                  value={project.site_location || brief.siteAddress}
+                />
+
+                <CoverField label="Client" value={project.client_name} />
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "8mm",
+                  paddingBottom: "4mm",
+                  borderBottom: `2px solid ${BRAND.gold}`,
+                }}
+              >
+                <CoverField
+                  label="Principal Architect"
+                  value={project.principal_architect}
+                />
+
+                <CoverField label="Project Lead" value={project.project_lead} />
               </div>
             </div>
-          )}
-
-          <div>
-            <span
-              className="text-[11px] uppercase tracking-wide block mb-4"
-              style={{ color: BRAND.muted }}
-            >
-              Scope Boundaries
-            </span>
-            <TextBlock
-              label="Areas Included In Scope"
-              value={brief.areasIncludedInScope}
-            />
-            <TextBlock
-              label="Areas Excluded From Scope"
-              value={brief.areasExcludedFromScope}
-            />
-            <TextBlock
-              label="Work Already Done By Others"
-              value={brief.workAlreadyDoneByOthers}
-            />
           </div>
-        </Section>
+        </PdfPage>
 
-        {/* ================= 04 SPACE REQUIREMENTS ================= */}
-        <Section number="04" title="Space requirements" address={addressLine}>
-          <p className="text-sm mb-6" style={{ color: BRAND.muted }}>
-            Space by space, in the client's own words. Anything not recorded
-            here is not part of the brief.
-          </p>
-          <DataTable
-            emptyLabel="No space requirements recorded."
-            columns={[
-              { key: "spaceName", header: "Space", width: "22%" },
-              {
-                key: "requirementDetails",
-                header: "Requirement Details",
-                width: "38%",
-              },
-              { key: "quantity", header: "Quantity", width: "15%" },
-              { key: "notes", header: "Notes", width: "25%" },
-            ]}
-            rows={spaceRequirements}
-          />
-        </Section>
+        {/* =============================================================== */}
+        {/* PAGE 2 — CLIENT & CONTACT */}
+        {/* =============================================================== */}
 
-        {/* ================= 05 DESIGN DIRECTION & PREFERENCES ================= */}
-        <Section
-          number="05"
-          title="Design direction & preferences"
-          address={addressLine}
+        <PdfPage
+          pageNumber={2}
+          totalPages={TOTAL_PAGES}
+          footerAddress={addressLine}
         >
-          <div className="mb-10">
-            <CheckGroup
-              label="Style Direction — tick all that apply"
-              options={STYLE_OPTIONS}
-              activeSet={sets.styles}
-              otherValue={otherStyle?.otherDescription}
-            />
-          </div>
+          <Section number="01" title="Client & contact">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-10 gap-y-6 mb-10">
+              <Field label="Client Name" value={project.client_name} />
 
-          <div className="grid grid-cols-2 gap-x-10">
-            <div>
-              <TextBlock
-                label="Vastu Requirements, If Any"
-                value={brief.vastuRequirements}
-              />
-              <TextBlock
-                label="Colours To Avoid"
-                value={brief.coloursToAvoid}
-              />
-              <TextBlock label="Materials Liked" value={brief.materialsLiked} />
-              <TextBlock
-                label="Materials Disliked — Hard No"
-                value={brief.materialsDislikedHardNo}
-              />
-            </div>
-            <div>
-              <TextBlock
-                label="Must-have Elements"
-                value={brief.mustHaveElements}
-              />
-              <TextBlock
-                label="Colours Preferred"
-                value={brief.coloursPreferred}
-              />
+              <Field label="Contact Person" value={brief.contactPerson} />
+
+              <Field label="Mobile" value={brief.mobile} />
+
+              <Field label="Email" value={brief.email} />
+
+              <Field label="Project Name" value={project.name} />
+
               <Field
-                label="Maintenance Appetite"
-                value={brief.maintenanceAppetite}
+                label="Relationship To Client"
+                value={brief.relationshipToClient}
+              />
+
+              <Field
+                label="Referred By / Source"
+                value={brief.referredBySource}
+              />
+
+              <Field
+                label="Date Of Brief"
+                value={formatDate(brief.briefDate)}
               />
             </div>
-          </div>
 
-          {references.length > 0 && (
-            <div className="mt-8">
-              <span
-                className="text-[11px] uppercase tracking-wide block mb-3"
-                style={{ color: BRAND.muted }}
-              >
-                References Shared By The Client
-              </span>
-              <ul className="space-y-2">
-                {references.map((ref) => (
-                  <li
-                    key={ref.id}
-                    className="text-sm"
-                    style={{ color: BRAND.ink }}
-                  >
-                    {ref.title && (
-                      <span className="font-medium">{ref.title}: </span>
-                    )}
-                    {ref.description}
-                    {ref.referenceUrl && (
-                      <a
-                        href={ref.referenceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="ml-1 underline"
-                        style={{ color: BRAND.greenSoft }}
-                      >
-                        link
-                      </a>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </Section>
-
-        {/* ================= 06 BUDGET ================= */}
-        <Section number="06" title="Budget" address={addressLine}>
-          <div className="grid grid-cols-2 gap-x-10 gap-y-6 mb-6">
-            <Field
-              label="Initial Client Budget"
-              value={
-                brief.initialClientBudget
-                  ? `${brief.budgetCurrency || ""} ${brief.initialClientBudget}`
-                  : ""
+            <CheckGroup
+              label="Project Type — tick one"
+              options={PROJECT_TYPE_OPTIONS}
+              activeSet={
+                new Set([brief.projectType || project.type].filter(Boolean))
               }
+              otherValue={brief.projectTypeOther}
             />
-            <Field
-              label="Budget Includes / Excludes GST"
-              value={brief.budgetGstStatus?.replace(/_/g, " ")}
-            />
-            <Field
-              label="Funding Stage"
-              value={brief.fundingStage?.replace(/_/g, " ")}
-            />
-            <Field
-              label="Flexibility Discussed"
-              value={brief.budgetFlexibility}
-            />
-          </div>
-          <p className="text-xs" style={{ color: BRAND.muted }}>
-            Recorded as stated by the client at briefing stage. It is not a
-            quotation and does not bind either party until the BOQ is priced and
-            frozen.
-          </p>
-        </Section>
+          </Section>
+        </PdfPage>
 
-        {/* ================= 07 TIMELINE ================= */}
-        <Section number="07" title="Timeline" address={addressLine}>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-x-10 gap-y-6 mb-10">
-            <Field
-              label="Desired Start Date"
-              value={formatDate(brief.desiredStartDate)}
-            />
-            <Field
-              label="Date Fixed Or Preferred"
-              value={brief.startDateStatus}
-            />
-            <Field
-              label="Site Handover Date"
-              value={formatDate(brief.siteHandoverDate)}
-            />
-            <Field
-              label="Target Completion"
-              value={formatDate(brief.targetCompletionDate)}
-            />
-            <Field
-              label="Reason For The Deadline"
-              value={brief.deadlineReason}
-            />
-            <Field
-              label="Phasing Required"
-              value={yesNo(brief.phasingRequired)}
-            />
-          </div>
+        {/* =============================================================== */}
+        {/* PAGE 3 — SITE */}
+        {/* =============================================================== */}
 
-          {brief.phasingRequired && (
+        <PdfPage
+          pageNumber={3}
+          totalPages={TOTAL_PAGES}
+          footerAddress={addressLine}
+        >
+          <Section number="02" title="Site & property details">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-10 gap-y-6 mb-10">
+              <Field label="Site Address" value={brief.siteAddress} />
+
+              <Field label="Property Type" value={brief.propertyType} />
+
+              <Field
+                label="Site Area"
+                value={
+                  brief.siteArea
+                    ? `${brief.siteArea} ${formatUnit(
+                        brief.siteAreaUnit,
+                        brief.siteAreaOtherUnit,
+                      )}`
+                    : ""
+                }
+              />
+
+              <Field
+                label="Facing / Orientation"
+                value={brief.facingOrientation}
+              />
+
+              <Field label="Parking Provision" value={brief.parkingProvision} />
+
+              <Field label="Ownership Status" value={brief.ownershipStatus} />
+
+              <Field label="Number Of Floors" value={brief.numberOfFloors} />
+
+              <Field
+                label="Lift Available"
+                value={yesNo(brief.liftAvailable)}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-10 gap-y-8 mb-10">
+              <CheckGroup
+                label="Site Type"
+                options={SITE_TYPE_OPTIONS}
+                activeSet={new Set([brief.siteType].filter(Boolean))}
+                otherValue={brief.siteTypeOther}
+              />
+
+              <CheckGroup
+                label="Site Condition"
+                options={SITE_CONDITION_OPTIONS}
+                activeSet={new Set([brief.siteCondition].filter(Boolean))}
+              />
+            </div>
+
+            <CheckGroup
+              label="Drawings And Documents Available With The Client"
+              options={DRAWINGS_OPTIONS}
+              activeSet={sets.drawings}
+              otherValue={brief.drawingsOther}
+            />
+          </Section>
+        </PdfPage>
+
+        {/* =============================================================== */}
+        {/* PAGE 4 — SCOPE */}
+        {/* =============================================================== */}
+
+        <PdfPage
+          pageNumber={4}
+          totalPages={TOTAL_PAGES}
+          footerAddress={addressLine}
+        >
+          <Section number="03" title="Scope of work">
+            <div className="mb-10">
+              <CheckGroup
+                label="Type Of Work"
+                options={WORK_TYPE_OPTIONS}
+                activeSet={sets.workTypes}
+                otherValue={brief.workTypeOther}
+              />
+            </div>
+
+            <div className="mb-10">
+              <CheckGroup
+                label="Services Required"
+                options={SERVICE_OPTIONS}
+                activeSet={sets.services}
+                otherValue={brief.servicesOther}
+              />
+            </div>
+
+            {sets.services.has("MATERIAL_PROCUREMENT") && (
+              <div className="mb-10">
+                <span
+                  className="text-[11px] uppercase tracking-wide block mb-3"
+                  style={{
+                    color: BRAND.muted,
+                  }}
+                >
+                  If Material Procurement
+                </span>
+
+                <div className="grid grid-cols-2 gap-x-8 gap-y-3 mb-6">
+                  {PROCUREMENT_OPTIONS.map((opt) => (
+                    <CheckOption
+                      key={opt.value}
+                      label={opt.label}
+                      checked={sets.procurement.has(opt.value)}
+                    />
+                  ))}
+                </div>
+
+                <span
+                  className="text-[11px] uppercase tracking-wide block mb-3"
+                  style={{
+                    color: BRAND.muted,
+                  }}
+                >
+                  Façade Work
+                </span>
+
+                <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+                  {FACADE_OPTIONS.map((opt) => (
+                    <CheckOption
+                      key={opt.value}
+                      label={opt.label}
+                      checked={sets.procurement.has(opt.value)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div>
               <span
-                className="text-[11px] uppercase tracking-wide block mb-3"
-                style={{ color: BRAND.muted }}
+                className="text-[11px] uppercase tracking-wide block mb-4"
+                style={{
+                  color: BRAND.muted,
+                }}
               >
-                Phasing, If Required
+                Scope Boundaries
               </span>
-              <DataTable
-                emptyLabel="No phases recorded."
-                columns={[
-                  { key: "phaseName", header: "Phase", width: "25%" },
-                  {
-                    key: "startDate",
-                    header: "Start Date",
-                    width: "20%",
-                    render: (r) => formatDate(r.startDate),
-                  },
-                  {
-                    key: "endDate",
-                    header: "End Date",
-                    width: "20%",
-                    render: (r) => formatDate(r.endDate),
-                  },
-                  {
-                    key: "expectedTime",
-                    header: "Expected Time",
-                    width: "15%",
-                  },
-                  { key: "notes", header: "Notes", width: "20%" },
-                ]}
-                rows={phases}
+
+              <TextBlock
+                label="Areas Included In Scope"
+                value={brief.areasIncludedInScope}
+              />
+
+              <TextBlock
+                label="Areas Excluded From Scope"
+                value={brief.areasExcludedFromScope}
+              />
+
+              <TextBlock
+                label="Work Already Done By Others"
+                value={brief.workAlreadyDoneByOthers}
               />
             </div>
-          )}
-        </Section>
+          </Section>
+        </PdfPage>
 
-        {/* ================= 08 APPROVALS, CONSTRAINTS & SITE RISKS ================= */}
-        <Section
-          number="08"
-          title="Approvals, constraints & site risks"
-          address={addressLine}
+        {/* =============================================================== */}
+        {/* PAGE 5 — SPACE REQUIREMENTS */}
+        {/* =============================================================== */}
+
+        <PdfPage
+          pageNumber={5}
+          totalPages={TOTAL_PAGES}
+          footerAddress={addressLine}
         >
-          <p className="text-sm mb-6" style={{ color: BRAND.muted }}>
-            Everything that could stop work at site. Recorded now so it is
-            priced and programmed, not discovered later.
-          </p>
-          <div className="grid grid-cols-2 gap-x-10 gap-y-6">
-            <Field
-              label="Society / RWA Permitted Work Timings"
-              value={brief.societyRwaPermittedWorkTimings}
-            />
-            <Field
-              label="NOC Or Security Deposit Required"
-              value={brief.nocOrSecurityDepositRequired}
-            />
-            <Field
-              label="Structural Changes Permitted"
-              value={brief.structuralChangesPermitted}
-            />
-            <Field
-              label="Material Movement Restrictions"
-              value={brief.materialMovementRestrictions}
-            />
-            <Field
-              label="Neighbour Sensitivities"
-              value={brief.neighbourSensitivities}
-            />
-            <Field
-              label="Power And Water Availability At Site"
-              value={brief.powerAndWaterAvailability}
-            />
-            <Field
-              label="Access, Storage And Debris Disposal"
-              value={brief.accessStorageDebrisDisposal}
-            />
-            <Field
-              label="Any Ongoing Work By Other Agencies"
-              value={brief.ongoingWorkByOtherAgencies}
-            />
-          </div>
-        </Section>
+          <Section number="04" title="Space requirements">
+            <p
+              className="text-sm mb-6"
+              style={{
+                color: BRAND.muted,
+              }}
+            >
+              Space by space, in the client's own words. Anything not recorded
+              here is not part of the brief.
+            </p>
 
-        {/* ================= 09 USERS & LIFESTYLE ================= */}
-        <Section number="09" title="Users & lifestyle" address={addressLine}>
-          <p className="text-sm mb-6" style={{ color: BRAND.muted }}>
-            Everyone who will use the space, and what each of them needs from
-            it.
-          </p>
-          <DataTable
-            emptyLabel="No occupants recorded."
-            columns={[
-              {
-                key: "name",
-                header: "Name & Relation",
-                width: "35%",
-                render: (r) =>
-                  [r.name, r.relationship].filter(Boolean).join(" · "),
-              },
-              {
-                key: "specificNeedsPreferences",
-                header: "Specific Needs Or Preferences",
-                width: "65%",
-              },
-            ]}
-            rows={occupants}
-          />
-          <div className="mt-6">
-            <TextBlock label="Household Notes" value={brief.householdNotes} />
-          </div>
-        </Section>
-
-        {/* ================= 10 SIGN-OFF ================= */}
-        <Section number="10" title="Sign-off" address={addressLine}>
-          <p className="text-sm mb-6" style={{ color: BRAND.muted }}>
-            This brief is the basis of the design. Anything added after sign-off
-            is a change of brief and carries its own cost and time implication.
-          </p>
-          <div className="mb-12">
-            <TextBlock
-              label="Open Points To Close Before Design Begins"
-              value={brief.openPointsToClose}
+            <DataTable
+              emptyLabel="No space requirements recorded."
+              columns={[
+                {
+                  key: "spaceName",
+                  header: "Space",
+                  width: "22%",
+                },
+                {
+                  key: "requirementDetails",
+                  header: "Requirement Details",
+                  width: "38%",
+                },
+                {
+                  key: "quantity",
+                  header: "Quantity",
+                  width: "15%",
+                },
+                {
+                  key: "notes",
+                  header: "Notes",
+                  width: "25%",
+                },
+              ]}
+              rows={spaceRequirements}
             />
-          </div>
+          </Section>
+        </PdfPage>
 
-          <div className="grid grid-cols-2 gap-x-16">
-            <div>
-              <div
-                className="text-[11px] uppercase tracking-wide mb-6"
-                style={{ color: BRAND.muted }}
-              >
-                Brief Taken By
-              </div>
-              <div
-                className="pt-8 mb-2"
-                style={{ borderTop: `1px solid ${BRAND.line}` }}
+        {/* =============================================================== */}
+        {/* PAGE 6 — DESIGN */}
+        {/* =============================================================== */}
+
+        <PdfPage
+          pageNumber={6}
+          totalPages={TOTAL_PAGES}
+          footerAddress={addressLine}
+        >
+          <Section number="05" title="Design direction & preferences">
+            <div className="mb-10">
+              <CheckGroup
+                label="Style Direction — tick all that apply"
+                options={STYLE_OPTIONS}
+                activeSet={sets.styles}
+                otherValue={otherStyle?.otherDescription}
               />
-              <div className="text-sm" style={{ color: BRAND.ink }}>
-                Name · {brief.briefTakenBy || "—"}
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-10">
+              <div>
+                <TextBlock
+                  label="Vastu Requirements, If Any"
+                  value={brief.vastuRequirements}
+                />
+
+                <TextBlock
+                  label="Colours To Avoid"
+                  value={brief.coloursToAvoid}
+                />
+
+                <TextBlock
+                  label="Materials Liked"
+                  value={brief.materialsLiked}
+                />
+
+                <TextBlock
+                  label="Materials Disliked — Hard No"
+                  value={brief.materialsDislikedHardNo}
+                />
               </div>
-              <div className="text-sm" style={{ color: BRAND.ink }}>
-                Date · {formatDate(brief.briefTakenDate) || "—"}
+
+              <div>
+                <TextBlock
+                  label="Must-have Elements"
+                  value={brief.mustHaveElements}
+                />
+
+                <TextBlock
+                  label="Colours Preferred"
+                  value={brief.coloursPreferred}
+                />
+
+                <Field
+                  label="Maintenance Appetite"
+                  value={brief.maintenanceAppetite}
+                />
               </div>
             </div>
 
-            <div>
-              <div
-                className="text-[11px] uppercase tracking-wide mb-6"
-                style={{ color: BRAND.muted }}
-              >
-                Confirmed By The Client
+            {references.length > 0 && (
+              <div className="mt-8">
+                <span
+                  className="text-[11px] uppercase tracking-wide block mb-3"
+                  style={{
+                    color: BRAND.muted,
+                  }}
+                >
+                  References Shared By The Client
+                </span>
+
+                <ul className="space-y-2">
+                  {references.map((ref) => (
+                    <li
+                      key={ref.id}
+                      className="text-sm"
+                      style={{
+                        color: BRAND.ink,
+                      }}
+                    >
+                      {ref.title && (
+                        <span className="font-medium">{ref.title}: </span>
+                      )}
+
+                      {ref.description}
+
+                      {ref.referenceUrl && (
+                        <a
+                          href={ref.referenceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-1 underline"
+                          style={{
+                            color: BRAND.greenSoft,
+                          }}
+                        >
+                          link
+                        </a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <div
-                className="pt-8 mb-2"
-                style={{ borderTop: `1px solid ${BRAND.line}` }}
+            )}
+          </Section>
+        </PdfPage>
+
+        {/* =============================================================== */}
+        {/* PAGE 7 — BUDGET */}
+        {/* =============================================================== */}
+
+        <PdfPage
+          pageNumber={7}
+          totalPages={TOTAL_PAGES}
+          footerAddress={addressLine}
+        >
+          <Section number="06" title="Budget">
+            <div className="grid grid-cols-2 gap-x-10 gap-y-6 mb-6">
+              <Field
+                label="Initial Client Budget"
+                value={
+                  brief.initialClientBudget
+                    ? `${brief.budgetCurrency || ""} ${
+                        brief.initialClientBudget
+                      }`
+                    : ""
+                }
               />
-              <div className="text-sm" style={{ color: BRAND.ink }}>
-                Name · {brief.confirmedByUserId || "—"}
+
+              <Field
+                label="Budget Includes / Excludes GST"
+                value={brief.budgetGstStatus?.replace(/_/g, " ")}
+              />
+
+              <Field
+                label="Funding Stage"
+                value={brief.fundingStage?.replace(/_/g, " ")}
+              />
+
+              <Field
+                label="Flexibility Discussed"
+                value={brief.budgetFlexibility}
+              />
+            </div>
+
+            <p
+              className="text-xs"
+              style={{
+                color: BRAND.muted,
+              }}
+            >
+              Recorded as stated by the client at briefing stage. It is not a
+              quotation and does not bind either party until the BOQ is priced
+              and frozen.
+            </p>
+          </Section>
+        </PdfPage>
+
+        {/* =============================================================== */}
+        {/* PAGE 8 — TIMELINE */}
+        {/* =============================================================== */}
+
+        <PdfPage
+          pageNumber={8}
+          totalPages={TOTAL_PAGES}
+          footerAddress={addressLine}
+        >
+          <Section number="07" title="Timeline">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-10 gap-y-6 mb-10">
+              <Field
+                label="Desired Start Date"
+                value={formatDate(brief.desiredStartDate)}
+              />
+
+              <Field
+                label="Date Fixed Or Preferred"
+                value={brief.startDateStatus}
+              />
+
+              <Field
+                label="Site Handover Date"
+                value={formatDate(brief.siteHandoverDate)}
+              />
+
+              <Field
+                label="Target Completion"
+                value={formatDate(brief.targetCompletionDate)}
+              />
+
+              <Field
+                label="Reason For The Deadline"
+                value={brief.deadlineReason}
+              />
+
+              <Field
+                label="Phasing Required"
+                value={yesNo(brief.phasingRequired)}
+              />
+            </div>
+
+            {brief.phasingRequired && (
+              <div>
+                <span
+                  className="text-[11px] uppercase tracking-wide block mb-3"
+                  style={{
+                    color: BRAND.muted,
+                  }}
+                >
+                  Phasing, If Required
+                </span>
+
+                <DataTable
+                  emptyLabel="No phases recorded."
+                  columns={[
+                    {
+                      key: "phaseName",
+                      header: "Phase",
+                      width: "25%",
+                    },
+                    {
+                      key: "startDate",
+                      header: "Start Date",
+                      width: "20%",
+                      render: (r) => formatDate(r.startDate),
+                    },
+                    {
+                      key: "endDate",
+                      header: "End Date",
+                      width: "20%",
+                      render: (r) => formatDate(r.endDate),
+                    },
+                    {
+                      key: "expectedTime",
+                      header: "Expected Time",
+                      width: "15%",
+                    },
+                    {
+                      key: "notes",
+                      header: "Notes",
+                      width: "20%",
+                    },
+                  ]}
+                  rows={phases}
+                />
               </div>
-              <div className="text-sm" style={{ color: BRAND.ink }}>
-                Date · {formatDate(brief.confirmedDate) || "—"}
+            )}
+          </Section>
+        </PdfPage>
+
+        {/* =============================================================== */}
+        {/* PAGE 9 — APPROVALS */}
+        {/* =============================================================== */}
+
+        <PdfPage
+          pageNumber={9}
+          totalPages={TOTAL_PAGES}
+          footerAddress={addressLine}
+        >
+          <Section number="08" title="Approvals, constraints & site risks">
+            <p
+              className="text-sm mb-6"
+              style={{
+                color: BRAND.muted,
+              }}
+            >
+              Everything that could stop work at site. Recorded now so it is
+              priced and programmed, not discovered later.
+            </p>
+
+            <div className="grid grid-cols-2 gap-x-10 gap-y-6">
+              <Field
+                label="Society / RWA Permitted Work Timings"
+                value={brief.societyRwaPermittedWorkTimings}
+              />
+
+              <Field
+                label="NOC Or Security Deposit Required"
+                value={brief.nocOrSecurityDepositRequired}
+              />
+
+              <Field
+                label="Structural Changes Permitted"
+                value={brief.structuralChangesPermitted}
+              />
+
+              <Field
+                label="Material Movement Restrictions"
+                value={brief.materialMovementRestrictions}
+              />
+
+              <Field
+                label="Neighbour Sensitivities"
+                value={brief.neighbourSensitivities}
+              />
+
+              <Field
+                label="Power And Water Availability At Site"
+                value={brief.powerAndWaterAvailability}
+              />
+
+              <Field
+                label="Access, Storage And Debris Disposal"
+                value={brief.accessStorageDebrisDisposal}
+              />
+
+              <Field
+                label="Any Ongoing Work By Other Agencies"
+                value={brief.ongoingWorkByOtherAgencies}
+              />
+            </div>
+          </Section>
+        </PdfPage>
+
+        {/* =============================================================== */}
+        {/* PAGE 10 — USERS */}
+        {/* =============================================================== */}
+
+        <PdfPage
+          pageNumber={10}
+          totalPages={TOTAL_PAGES}
+          footerAddress={addressLine}
+        >
+          <Section number="09" title="Users & lifestyle">
+            <p
+              className="text-sm mb-6"
+              style={{
+                color: BRAND.muted,
+              }}
+            >
+              Everyone who will use the space, and what each of them needs from
+              it.
+            </p>
+
+            <DataTable
+              emptyLabel="No occupants recorded."
+              columns={[
+                {
+                  key: "name",
+                  header: "Name & Relation",
+                  width: "35%",
+                  render: (r) =>
+                    [r.name, r.relationship].filter(Boolean).join(" · "),
+                },
+                {
+                  key: "specificNeedsPreferences",
+                  header: "Specific Needs Or Preferences",
+                  width: "65%",
+                },
+              ]}
+              rows={occupants}
+            />
+
+            <div className="mt-6">
+              <TextBlock label="Household Notes" value={brief.householdNotes} />
+            </div>
+          </Section>
+        </PdfPage>
+
+        {/* =============================================================== */}
+        {/* PAGE 11 — SIGN OFF */}
+        {/* =============================================================== */}
+
+        <PdfPage
+          pageNumber={11}
+          totalPages={TOTAL_PAGES}
+          footerAddress={addressLine}
+        >
+          <Section number="10" title="Sign-off">
+            <p
+              className="text-sm mb-6"
+              style={{
+                color: BRAND.muted,
+              }}
+            >
+              This brief is the basis of the design. Anything added after
+              sign-off is a change of brief and carries its own cost and time
+              implication.
+            </p>
+
+            <div className="mb-12">
+              <TextBlock
+                label="Open Points To Close Before Design Begins"
+                value={brief.openPointsToClose}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-16">
+              {/* RIPPOTAI */}
+              <div>
+                <div
+                  className="text-[11px] uppercase tracking-wide mb-6"
+                  style={{
+                    color: BRAND.muted,
+                  }}
+                >
+                  Brief Taken By
+                </div>
+
+                <div
+                  className="pt-8 mb-2"
+                  style={{
+                    borderTop: `1px solid ${BRAND.line}`,
+                  }}
+                />
+
+                <div
+                  className="text-sm"
+                  style={{
+                    color: BRAND.ink,
+                  }}
+                >
+                  Name · {brief.briefTakenBy || "—"}
+                </div>
+
+                <div
+                  className="text-sm"
+                  style={{
+                    color: BRAND.ink,
+                  }}
+                >
+                  Date · {formatDate(brief.briefTakenDate) || "—"}
+                </div>
+              </div>
+
+              {/* CLIENT */}
+              <div>
+                <div
+                  className="text-[11px] uppercase tracking-wide mb-6"
+                  style={{
+                    color: BRAND.muted,
+                  }}
+                >
+                  Confirmed By The Client
+                </div>
+
+                <div
+                  className="pt-8 mb-2"
+                  style={{
+                    borderTop: `1px solid ${BRAND.line}`,
+                  }}
+                />
+
+                <div
+                  className="text-sm"
+                  style={{
+                    color: BRAND.ink,
+                  }}
+                >
+                  Name · {brief.confirmedByUserId || "—"}
+                </div>
+
+                <div
+                  className="text-sm"
+                  style={{
+                    color: BRAND.ink,
+                  }}
+                >
+                  Date · {formatDate(brief.confirmedDate) || "—"}
+                </div>
               </div>
             </div>
-          </div>
-        </Section>
+          </Section>
+        </PdfPage>
       </div>
+
+      {/* ================================================================= */}
+      {/* DOCUMENT CSS */}
+      {/* ================================================================= */}
+
+      <style>{`
+        /*
+         * The actual PDF is constructed from fixed A4 pages.
+         * Keep these rules here rather than using browser print.
+         */
+
+        .client-brief-document {
+          font-family:
+            Inter,
+            ui-sans-serif,
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+        }
+
+        .pdf-page {
+          page-break-after: always;
+          break-after: page;
+        }
+
+        .pdf-page:last-child {
+          page-break-after: auto;
+          break-after: auto;
+        }
+
+        .client-brief-document table {
+          border-collapse: collapse;
+        }
+
+        .client-brief-document a {
+          text-decoration: underline;
+        }
+
+        /*
+         * Prevent individual rows from being split.
+         */
+        .client-brief-document tr {
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+
+        /*
+         * Prevent common blocks from being split.
+         */
+        .client-brief-document .mb-6,
+        .client-brief-document .mb-10,
+        .client-brief-document .mb-12 {
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+
+        /*
+         * During normal application usage the document has a subtle
+         * paper-like presentation.
+         */
+        .client-brief-document {
+          box-shadow:
+            0 12px 40px rgba(27, 67, 50, 0.08);
+        }
+
+        /*
+         * html2canvas should always see white pages.
+         */
+        .client-brief-document,
+        .client-brief-document .pdf-page {
+          background-color: #ffffff;
+        }
+
+        /*
+         * Responsive preview.
+         * The generated PDF remains A4.
+         */
+        @media screen and (max-width: 900px) {
+          .client-brief-document {
+            transform-origin: top center;
+          }
+        }
+      `}</style>
     </Shell>
   );
 }
