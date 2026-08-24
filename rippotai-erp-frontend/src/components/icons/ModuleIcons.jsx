@@ -31,7 +31,74 @@ export const IconBoq = () =>
       />
     </>,
   );
+export const IconDesignStudio = () =>
+  wrap(
+    <>
+      {/* Drawing sheet */}
+      <rect x="12" y="10" width="48" height="60" rx="7" fill={S} />
 
+      {/* Drawing sheet header */}
+      <rect x="12" y="10" width="48" height="12" rx="7" fill={P} />
+
+      {/* Architectural / technical drawing */}
+      <path
+        d="M22 34 L38 26 L52 34 L38 42 Z"
+        stroke={P}
+        strokeWidth="3"
+        strokeLinejoin="round"
+        fill={W}
+      />
+
+      <path d="M38 26 V42" stroke={P} strokeWidth="2.5" strokeLinecap="round" />
+
+      <path d="M22 34 H52" stroke={P} strokeWidth="2.5" strokeLinecap="round" />
+
+      {/* Drawing dimensions */}
+      <path d="M20 50 H52" stroke={P} strokeWidth="2.5" strokeLinecap="round" />
+
+      <path d="M20 56 H42" stroke={P} strokeWidth="2.5" strokeLinecap="round" />
+
+      {/* Create / edit indicator */}
+      <circle cx="58" cy="58" r="11" fill={P} />
+
+      <path d="M53 62 L55 57 L62 50 L66 54 L59 61 Z" fill={W} />
+
+      <path
+        d="M61 51 L65 55"
+        stroke={P}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </>,
+  );
+export const IconAdminConsole = () =>
+  wrap(
+    <>
+      {/* Shield / administration base */}
+      <path
+        d="M40 8 L64 18 V36 C64 52 54 64 40 70 C26 64 16 52 16 36 V18 Z"
+        fill={P}
+      />
+
+      {/* Inner shield */}
+      <path
+        d="M40 18 L54 24 V36 C54 46 48 54 40 58 C32 54 26 46 26 36 V24 Z"
+        fill={S}
+      />
+
+      {/* Admin user */}
+      <circle cx="40" cy="31" r="6" fill={P} />
+
+      <path d="M30 48 C30 41 34 38 40 38 C46 38 50 41 50 48 Z" fill={P} />
+
+      {/* Permission / control indicator */}
+      <circle cx="57" cy="57" r="10" fill={P} />
+
+      <path d="M52 57 H62" stroke={W} strokeWidth="2.5" strokeLinecap="round" />
+
+      <path d="M57 52 V62" stroke={W} strokeWidth="2.5" strokeLinecap="round" />
+    </>,
+  );
 export const IconProjects = () =>
   wrap(
     <>
@@ -48,7 +115,37 @@ export const IconProjects = () =>
       />
     </>,
   );
+export const IconSiteOperations = () =>
+  wrap(
+    <>
+      {/* Site / construction operations icon */}
 
+      {/* Back structure / building */}
+      <rect x="14" y="18" width="52" height="46" rx="6" fill={S} />
+
+      {/* Building roof / site structure */}
+      <path d="M10 28 L40 10 L70 28" fill={P} />
+
+      {/* Building interior */}
+      <rect x="23" y="34" width="12" height="18" rx="2" fill={P} />
+
+      <rect x="45" y="34" width="12" height="8" rx="2" fill={P} />
+
+      <rect x="45" y="46" width="12" height="6" rx="2" fill={P} />
+
+      {/* Operations / completion indicator */}
+      <circle cx="59" cy="58" r="11" fill={P} />
+
+      <path
+        d="M53 58 L57.5 62.5 L65 54"
+        stroke={W}
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </>,
+  );
 export const IconDocuments = () =>
   wrap(
     <>
@@ -138,7 +235,27 @@ export const IconNotes = () =>
       <rect x="22" y="48" width="20" height="3.5" rx="2" fill={P} />
     </>,
   );
+export const IconMaterials = () =>
+  wrap(
+    <>
+      {/* Material / stacked boxes */}
+      <rect x="10" y="42" width="26" height="24" rx="5" fill={S} />
+      <rect x="44" y="42" width="26" height="24" rx="5" fill={P} />
 
+      {/* Top box */}
+      <path d="M40 10 L62 21 L40 32 L18 21 Z" fill={P} />
+
+      {/* Box center seam */}
+      <path d="M40 32 V58" stroke={W} strokeWidth="3.5" strokeLinecap="round" />
+
+      {/* Material lines */}
+      <path d="M24 49 H31" stroke={P} strokeWidth="3" strokeLinecap="round" />
+
+      <path d="M49 49 H63" stroke={W} strokeWidth="3" strokeLinecap="round" />
+
+      <path d="M49 56 H59" stroke={W} strokeWidth="3" strokeLinecap="round" />
+    </>,
+  );
 export const IconLeads = () =>
   wrap(
     <>
@@ -223,12 +340,19 @@ export const MODULE_ICONS = {
   vendors: IconVendors,
   leads: IconLeads,
   documents: IconDocuments,
-  clients: IconClients,
+  designStudio: IconDesignStudio,
+
+  materials: IconMaterials,
+  siteOperations: IconSiteOperations,
+
   tasks: IconTasks,
   notes: IconNotes,
   inventory: IconInventory,
   calendar: IconCalendar,
   settings: IconSettings,
+  adminConsole: IconAdminConsole,
+
+  clients: IconClients,
 };
 export const APP_ICONS = MODULE_ICONS;
 export default MODULE_ICONS;

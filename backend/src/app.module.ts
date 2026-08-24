@@ -38,7 +38,7 @@ import { DocumentsModule } from './modules/documents/document.module';
 import { DrawingsModule } from './modules/documents/drawing.module';
 
 // Project / Site
-import { BriefModule } from './modules/brief/brief.module';
+import { ProjectBriefsModule } from './modules/brief/brief.module';
 import { SiteRecceModule } from './modules/reki/reki.module';
 import { TasksModule } from './modules/tasks/task.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
@@ -51,9 +51,13 @@ import { SearchModule } from './modules/search/search.module';
 
 // Reports
 import { ReportsModule } from './modules/reports/reports.module';
-import { TeamModule } from './modules/users/team.module';
+import { TeamModule } from './modules/process-workflow/team.module';
 import { PlanOfActionsModule } from './modules/projects/plan-of-actions.module';
 import { PaymentSchedulesModule } from './modules/payments/payment-schedule.module';
+import { ProcessWorkflowModule } from './modules/process-workflow/process-workflow.module';
+import { SiteOperationsModule } from './modules/site-operations/site-operations.module';
+import { MaterialProcurementModule } from './modules/material-procurement/material-procurement.module';
+import { ScopeOfWorkModule } from './modules/scope-of-work/scope-of-work.module';
 
 @Module({
   imports: [
@@ -121,8 +125,9 @@ import { PaymentSchedulesModule } from './modules/payments/payment-schedule.modu
     // ============================================================
     // Project / Site
     // ============================================================
-    BriefModule,
+    ProjectBriefsModule,
     SiteRecceModule,
+    ScopeOfWorkModule,
     TasksModule,
     CalendarModule,
     DashboardsModule,
@@ -133,7 +138,9 @@ import { PaymentSchedulesModule } from './modules/payments/payment-schedule.modu
     // ============================================================
     CdnModule,
     SearchModule,
-
+    ProcessWorkflowModule,
+    SiteOperationsModule,
+    MaterialProcurementModule,
     // ============================================================
     // Reports
     // ============================================================

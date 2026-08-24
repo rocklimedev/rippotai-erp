@@ -1,0 +1,227 @@
+INOS
+│── BOQ
+│   │
+│   ├── Dashboard
+│   │
+│   ├── BOQ LIST
+│   ├── ADD BOQ
+│   ├── RATE AND ITEM Library
+│   ├── BOQ TEMPLATES
+│   └── Settings
+│
+├── CRM
+│   │
+│   ├── Dashboard
+│   │
+│   ├── Pipeline
+│   ├── Leads
+│   ├── Lead Sources
+│   │
+│   └── Settings
+│
+├── PROJECTS
+│   │
+│   ├── Dashboard
+│   │
+│   ├── Projects List
+│   ├── Create Project
+│   │
+│   └── Settings
+│
+├── ESTIMATION
+│   │
+│   ├── Dashboard
+│   │
+│   ├── Estimates
+│   │   ├── Estimates List
+│   │   └── Create Estimate
+│   │
+│   └── Settings
+│
+├── DOCUMENTS
+│   │
+│   ├── Dashboard
+│   │
+│   ├── All Documents
+│   ├── Upload Documents
+│   │
+│   ├── Forms
+│   │   ├── Project Brief
+│   │   │   ├── List
+│   │   │   └── Add
+│   │   │
+│   │   ├── Site Brief
+│   │   │   ├── List
+│   │   │   └── Add
+│   │   │
+│   │   ├── Site Recce
+│   │   │   ├── List
+│   │   │   └── Add
+│   │   │
+│   │   ├── Plan of Action
+│   │   │   ├── List
+│   │   │   └── Add
+│   │   │
+│   │   └── Payment Schedules
+│   │
+│   ├── Drawings
+│   │   ├── List
+│   │   └── Upload
+│   │
+│   └── Settings
+│
+├── PROCUREMENT
+│   │
+│   ├── Dashboard
+│   │
+│   ├── Material Requirements
+│   ├── Vendor Quotations
+│   ├── Purchase Orders
+│   ├── Delivery Challans
+│   │
+│   └── Settings
+│
+├── MATERIALS
+│   │
+│   ├── Dashboard
+│   │
+│   ├── Material Library
+│   ├── Sample Boards
+│   ├── Material Rate Sheets
+│   ├── Site Inventory
+│   │
+│   └── Settings
+│
+├── VENDORS
+│   │
+│   ├── Dashboard
+│   │
+│   ├── Vendors List
+│   ├── Add Vendor
+│   ├── Vendor Categories
+│   ├── Vendor Performance
+│   │
+│   └── Settings
+│
+├── TASKS
+│   │
+│   ├── Dashboard
+│   │
+│   ├── Tasks List
+│   ├── My Tasks
+│   ├── Team Tasks
+│   │
+│   └── Settings
+│
+├── CALENDAR
+│   │
+│   ├── Dashboard
+│   │
+│   ├── Calendar Main
+│   ├── My Calendar
+│   ├── Team Calendar
+│   │
+│   └── Settings
+│
+├── REPORTS
+│   │
+│   ├── Dashboard
+│   │
+│   ├── Sales Reports
+│   ├── Project Reports
+│   ├── Estimation Reports
+│   ├── Procurement Reports
+│   ├── Material Reports
+│   ├── Vendor Reports
+│   └── Task Reports
+│
+└── ADMIN
+    │
+    ├── Dashboard
+    │
+    ├── Users
+    ├── Roles & Permissions
+    │
+    ├── Estimate Signature
+    ├── Terms & Conditions
+    │
+    ├── Company Settings
+    ├── Master Data
+    ├── Approval Workflows
+    │
+    └── Super Admin
+        └── Activity Logs
+
+        ├── REPORTS
+        │
+└── ACCOUNT
+│   │
+│   ├── Edit Profile
+│   ├── Security
+│   ├── DEV CONSOLE(DEV ROLE ONLY)
+
+
+
+
+Client-facing: 
+CLIENT BRIEF 
+Client Brief
+Business Proposal
+Scope of Work
+Budget Estimate
+Payment Schedule
+How We Work
+Plan of Action
+Client Presentation Shell
+
+Design & drawings: 
+Design Brief
+Concept Deck
+Drawing Register
+Drawing Issue Sheet
+Revision Log
+Material & Finish Schedule
+Design Approval Sheet
+
+Planning & BOQ: 
+BOQ Sheet
+Rate Analysis
+Cost Sheet
+Project Schedule
+Gate Checklist
+Variation Order
+
+Site operations: 
+Site Recce Form
+Daily Site Progress Report
+Site Visit Report
+Civil Quality Checklist
+Measurement Sheet
+Snag List
+Handover Checklist
+
+Procurement & vendors: 
+Vendor Onboarding Form
+Vendor Rating Sheet
+RFQ
+Comparative Statement
+Purchase Order
+Material Inward / GRN
+Vendor Site Visit Schedule
+
+Accounts & finance: 
+Client Invoice
+Running Bill
+Vendor Payment Request
+Expense Voucher
+Project P&L Tracker
+Collection Follow-up Sheet
+
+Legal & admin: 
+Client Agreement
+Vendor Work Order
+NDA
+Employee Role Card
+Onboarding Pack
+Attendance & Manpower Sheet
+Asset Register

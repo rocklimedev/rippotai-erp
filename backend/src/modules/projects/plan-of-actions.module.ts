@@ -11,7 +11,7 @@ import { TermsTemplateVersion } from '../metas/models/terms-template-version.mod
 import { PlanOfActionsService } from './plan-of-actions.service';
 import { PlanOfActionsController } from './plan-of-actions.controller';
 
-import { TeamModule } from '../users/team.module';
+import { TeamModule } from '../process-workflow/team.module';
 
 @Module({
   imports: [

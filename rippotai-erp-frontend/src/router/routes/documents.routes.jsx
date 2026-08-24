@@ -18,6 +18,9 @@ import { PlanOfActionView } from "../../pages/documents/PlanOfActionView";
 import { PaymentScheduleForm } from "../../pages/documents/PaymentScheduleForm";
 import PaymentScheduleList from "../../pages/documents/PaymentScheduleList";
 import PaymentSchedulePage from "../../pages/documents/paymentSchedulePage";
+import ScopeOfWorkList from "../../pages/documents/ScopeOfWorkList";
+import { ScopeOfWorkForm } from "../../pages/documents/ScopeOfWorkForm";
+import { ScopeOfWorkView } from "../../pages/documents/ScopeOfWorkView";
 
 export const documentsRoutes = [
   {
@@ -44,6 +47,8 @@ export const documentsRoutes = [
       { path: "project-documents", element: <ProjectDocuments /> },
       { path: "brief/all", element: <ProjectBriefList /> },
       { path: "recce/all", element: <SiteRecceList /> },
+      { path: "scope-of-work/all", element: <ScopeOfWorkList /> },
+      { path: "forms/scope-of-work", element: <ScopeOfWorkForm /> },
       { path: "payment-schedule/all", element: <PaymentScheduleList /> },
       { path: "plan-of-action/all", element: <PlanOfActionList /> },
       { path: "activity", element: <DocumentActivity /> },
@@ -53,6 +58,7 @@ export const documentsRoutes = [
       { path: "forms/plan-of-action", element: <PlanOfActionForm /> },
       { path: "site-recce/:id", element: <SiteRekiView /> },
       { path: "brief/:id", element: <ProjectBriefView /> },
+      { path: "scope-of-work/:id", element: <ScopeOfWorkView /> },
       {
         path: "payment-schedule/:scheduleId",
         element: <PaymentSchedulePage />,
