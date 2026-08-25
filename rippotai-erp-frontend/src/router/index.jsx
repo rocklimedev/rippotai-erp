@@ -1,7 +1,7 @@
 import { authRoutes } from "./routes/auth.routes";
 import { dashboardRoutes } from "./routes/dashboard.routes";
 import { boqRoutes } from "./routes/boq.routes";
-import { leadsRoutes } from "./routes/leads.routes";
+
 import { vendorsRoutes } from "./routes/vendors.routes";
 import { quotationsRoutes } from "./routes/quotations.routes";
 import { projectsRoutes } from "./routes/projects.routes";
@@ -15,6 +15,8 @@ import { materialsRoutes } from "./routes/materials.routes";
 import { siteOperationsRoutes } from "./routes/site-operations.routes";
 import { designStudioRoutes } from "./routes/design-studio.routes";
 import { adminConsoleRoutes } from "./routes/admin-console.routes";
+import { crmRoutes } from "./routes/crm.routes";
+import ledgerRoutes from "./routes/ledger.routes";
 
 // Order matters only for readability here — react-router matches on
 // specificity, not array order, so new domains can be added anywhere.
@@ -22,7 +24,7 @@ const masterRoutes = [
   ...authRoutes,
   ...dashboardRoutes,
   ...boqRoutes,
-  ...leadsRoutes,
+
   ...vendorsRoutes,
   ...quotationsRoutes,
   ...projectsRoutes,
@@ -35,6 +37,8 @@ const masterRoutes = [
   ...materialsRoutes,
   ...siteOperationsRoutes,
   ...designStudioRoutes,
+  ...ledgerRoutes,
+  ...crmRoutes,
   ...adminConsoleRoutes,
 ];
 

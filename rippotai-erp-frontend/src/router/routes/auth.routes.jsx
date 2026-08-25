@@ -10,7 +10,7 @@ export const authRoutes = [
   { type: "public", path: "/login", element: <Login /> },
   { type: "public", path: "/register", element: <Register /> },
   { type: "public", path: "/signup", element: <SignUp /> },
-  { path: "/forgot-password", element: <ForgotPassword /> },
-  { path: "/reset-password", element: <ResetPassword /> },
-  { path: "/no-access", element: <RequirePortalAccess /> },
+  { type: "public", path: "/forgot-password", element: <ForgotPassword /> },
+  { type: "public", path: "/reset-password", element: <ResetPassword /> },
+  { type: "public", path: "/no-access", element: <RequirePortalAccess /> },
 ];

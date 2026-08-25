@@ -45,12 +45,16 @@ export const APP_META = {
     searchPh: "Search drawings, projects, revisions",
   },
 
-  leads: {
-    name: "Leads",
-    base: "/leads",
-    searchPh: "Search leads",
+  crm: {
+    name: "CRM",
+    base: "/crm",
+    searchPh: "Search CRM",
   },
-
+  ledger: {
+    name: "Ledger",
+    base: "/ledger",
+    searchPh: "Search Ledger",
+  },
   siteOperations: {
     name: "Site Operations",
     base: "/site-operations",
@@ -96,7 +100,8 @@ export const LANDING_ORDER = [
   "quotations",
   "vendors",
   "documents",
-  "leads",
+  "crm",
+  "ledger",
   "siteOperations",
   "materials",
   "tasks",
@@ -176,32 +181,13 @@ export const APP_MENUS = {
   documents: [
     {
       label: "Documents",
-      items: [
-        I("All Documents", "all"),
-        I("All Site Recce", "recce/all"),
-        I("All Project Brief", "brief/all"),
-        I("All Plan Of Action", "plan-of-action/all"),
-        I("All Payment Schedules", "payment-schedule/all"),
-        I("All Scope of Work", "scope-of-work/all"),
-        I("Projects", "/projects/all"),
-      ],
-    },
-
-    {
-      label: "Forms",
-      items: [
-        I("Upload Document", "upload"),
-        I("Project Brief", "forms/project-brief"),
-        I("Site Recce", "forms/site-reki"),
-        I("Plan of Action", "forms/plan-of-action"),
-        I("Payment Schedule", "forms/payment-schedule"),
-        I("Scope Of Work", "forms/scope-of-work"),
-      ],
+      items: [I("All Documents", "all"), I("Upload Document", "upload")],
     },
 
     {
       label: "Management",
       items: [
+        I("Projects", "/projects/all"),
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles & Permissions", "roles"),
         I("Activity", "activity"),
@@ -227,16 +213,43 @@ export const APP_MENUS = {
       ],
     },
   ],
-  leads: [
+  crm: [
     {
       label: "Pipeline",
       slug: "pipeline",
     },
     {
       label: "Leads",
-      items: [I("Create Lead", "new"), I("Sources", "sources")],
+      items: [I("Create Lead", "leads/new"), I("Sources", "leads/sources")],
+    },
+    {
+      label: "Documents",
+      items: [
+        I("Site Recce", "recce/all"),
+        I("Client Brief", "brief/all"),
+        I("Plan Of Action", "plan-of-action/all"),
+        I("Payment Schedules", "payment-schedule/all"),
+        I("Scope of Work", "scope-of-work/all"),
+        I("Scope Of Approval", "scope-of-approval/all"),
+        I("Pitch Deck", "pitch-deck/all"),
+        I("Business Proposal", "business-proposal/all"),
+        I("Projects", "/projects/all"),
+      ],
     },
 
+    {
+      label: "Forms",
+      items: [
+        I("Project Brief", "forms/project-brief"),
+        I("Site Recce", "forms/site-reki"),
+        I("Plan of Action", "forms/plan-of-action"),
+        I("Payment Schedule", "forms/payment-schedule"),
+        I("Scope Of Work", "forms/scope-of-work"),
+        I("Scope Of Approval", "forms/scope-of-approval"),
+        I("Pitch Deck", "forms/pitch-deck"),
+        I("Business Proposal", "forms/business-proposal"),
+      ],
+    },
     {
       label: "Settings",
       items: [
@@ -252,6 +265,7 @@ export const APP_MENUS = {
       items: [
         I("Users", "users"),
         I("Roles & Permissions", "roles-permissions"),
+        I("Estimate Signature", "estimate-signature"),
       ],
     },
 
@@ -333,6 +347,27 @@ export const APP_MENUS = {
       ],
     },
   ],
+  ledger: [
+    {
+      label: "Ledger",
+      items: [I("My Ledger", "Ledger")],
+    },
+    {
+      label: "Documents",
+      items: [
+        I("Payment Schedules", "payment-schedules/all"),
+        I("Aggrements", "aggrements/all"),
+      ],
+    },
+    {
+      label: "Settings",
+      items: [
+        I("Edit Dashboard", "edit-dashboard"),
+        I("Roles and Permissions", "roles"),
+        I("Activity", "activity"),
+      ],
+    },
+  ],
   tasks: [
     {
       label: "Tasks",
@@ -364,21 +399,7 @@ export const APP_MENUS = {
   settings: [
     {
       label: "Account",
-      items: [
-        I("Edit Profile", "/settings"),
-        I("Security", "security"),
-
-        I("Estimate Signature", "estimate-signature"),
-      ],
-    },
-    {
-      label: "Workspace",
-      items: [
-        I("Users", "users"),
-        I("Roles & Permissions", "roles-permissions"),
-        I("Super Admin", "super-admin"),
-        I("Terms & Conditions", "terms-and-conditions"),
-      ],
+      items: [I("Edit Profile", "/settings"), I("Security", "security")],
     },
   ],
 };

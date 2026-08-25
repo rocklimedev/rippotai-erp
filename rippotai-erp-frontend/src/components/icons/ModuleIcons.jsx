@@ -11,7 +11,101 @@ const wrap = (kids) => (
     {kids}
   </svg>
 );
+export const IconCRM = () =>
+  wrap(
+    <>
+      {/* CRM / customer relationship network */}
 
+      {/* Central customer */}
+      <circle cx="40" cy="30" r="10" fill={P} />
+
+      <path d="M24 60 C24 48 30 42 40 42 C50 42 56 48 56 60 Z" fill={P} />
+
+      {/* Left contact */}
+      <circle cx="17" cy="34" r="7" fill={S} />
+
+      <path
+        d="M7 60 C7 51 11 46 17 46 C21 46 25 49 27 54"
+        stroke={S}
+        strokeWidth="7"
+        strokeLinecap="round"
+        fill="none"
+      />
+
+      {/* Right contact */}
+      <circle cx="63" cy="34" r="7" fill={S} />
+
+      <path
+        d="M73 60 C73 51 69 46 63 46 C59 46 55 49 53 54"
+        stroke={S}
+        strokeWidth="7"
+        strokeLinecap="round"
+        fill="none"
+      />
+
+      {/* Relationship connections */}
+      <path
+        d="M25 36 L31 33"
+        stroke={P}
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+
+      <path
+        d="M55 33 L61 36"
+        stroke={P}
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+
+      {/* CRM activity / relationship indicator */}
+      <circle cx="60" cy="59" r="10" fill={P} />
+
+      <path
+        d="M55 59 L58 62 L64 55"
+        stroke={W}
+        strokeWidth="2.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </>,
+  );
+export const IconLedger = () =>
+  wrap(
+    <>
+      {/* Ledger / financial records */}
+
+      {/* Main ledger book */}
+      <rect x="12" y="10" width="50" height="60" rx="7" fill={S} />
+
+      {/* Dark front cover */}
+      <rect x="20" y="10" width="48" height="60" rx="7" fill={P} />
+
+      {/* Ledger spine */}
+      <rect x="20" y="10" width="7" height="60" rx="3" fill={SS} />
+
+      {/* Ledger title / header */}
+      <rect x="32" y="20" width="26" height="5" rx="2.5" fill={W} />
+
+      {/* Transaction rows */}
+      <rect x="32" y="32" width="12" height="4" rx="2" fill={SS} />
+      <rect x="48" y="32" width="10" height="4" rx="2" fill={W} />
+
+      <rect x="32" y="42" width="12" height="4" rx="2" fill={SS} />
+      <rect x="48" y="42" width="10" height="4" rx="2" fill={W} />
+
+      <rect x="32" y="52" width="12" height="4" rx="2" fill={SS} />
+      <rect x="48" y="52" width="10" height="4" rx="2" fill={W} />
+
+      {/* Balance / transaction indicator */}
+      <circle cx="58" cy="60" r="10" fill={P} />
+
+      <path d="M53 60 H63" stroke={W} strokeWidth="2.5" strokeLinecap="round" />
+
+      <path d="M58 55 V65" stroke={W} strokeWidth="2.5" strokeLinecap="round" />
+    </>,
+  );
 export const IconBoq = () =>
   wrap(
     <>
@@ -339,20 +433,21 @@ export const MODULE_ICONS = {
   quotations: IconQuotations,
   vendors: IconVendors,
   leads: IconLeads,
+  clients: IconClients,
+  crm: IconCRM,
+
+  ledger: IconLedger,
+
   documents: IconDocuments,
   designStudio: IconDesignStudio,
-
   materials: IconMaterials,
   siteOperations: IconSiteOperations,
-
   tasks: IconTasks,
   notes: IconNotes,
   inventory: IconInventory,
   calendar: IconCalendar,
   settings: IconSettings,
   adminConsole: IconAdminConsole,
-
-  clients: IconClients,
 };
 export const APP_ICONS = MODULE_ICONS;
 export default MODULE_ICONS;

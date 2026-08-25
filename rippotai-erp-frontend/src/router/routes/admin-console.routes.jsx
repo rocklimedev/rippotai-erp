@@ -1,15 +1,14 @@
-import SettingsLayout from "@/layouts/SettingsLayout";
-
 import UsersSettings from "@/pages/settings/UserSettings";
 import RolesPermissions from "@/pages/settings/RolesPermissions";
 import SuperAdmin from "@/pages/settings/SuperAdmin";
 import TermsSettings from "@/pages/settings/TermsSettings";
-
+import EstimateSignature from "@/pages/settings/EstimateSignature";
+import AppLayout from "@/layouts/AppLayout";
 export const adminConsoleRoutes = [
   {
     type: "layout",
     path: "/console",
-    layout: SettingsLayout,
+    layout: AppLayout,
     layoutProps: {
       app: "adminConsole",
     },
@@ -29,7 +28,7 @@ export const adminConsoleRoutes = [
         path: "roles-permissions",
         element: <RolesPermissions />,
       },
-
+      { path: "estimate-signature", element: <EstimateSignature /> },
       // =========================================================
       // ADMINISTRATION
       // =========================================================
