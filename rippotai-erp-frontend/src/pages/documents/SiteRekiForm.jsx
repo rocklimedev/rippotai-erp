@@ -1,19 +1,171 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { SectionForm } from "../../components/SectionForm";
+import { SiteRecceSectionForm } from "../../components/SiteRecceSectionForm";
 import { useAutoSave } from "../../hooks/use-autosave";
 import { useGetProjectsQuery } from "../../api/project.api";
-import { useCreateSiteRecceMutation } from "../../api/reki.api";
+import { useGetUsersByRoleNameQuery } from "../../api/user.api";
+import { useCreateSiteRecceMutation } from "../../api/site-recce.api";
 import { REKI_SECTIONS } from "../../hooks/reki-sections";
 import { Plus, Trash2, Upload, X } from "lucide-react";
+import { useUploadSiteRecceImageMutation } from "../../api/site-recce.api";
 
 const SAVE_KEY = "bc.site-recce";
+
+// ============================================================
+// BACKEND ENUM CONSTANTS
+// (must stay in sync with CreateSiteRecceRoomDto / SiteRecceRoom model)
+// ============================================================
+
+const ROOM_TYPE_VALUES = [
+  "LIVING_DINING",
+  "MASTER_BEDROOM",
+  "BEDROOM",
+  "KITCHEN",
+  "BATHROOM",
+  "BALCONY",
+  "OTHER",
+];
+
+const MEASUREMENT_UNIT_VALUES = ["FT", "M", "IN", "CM"];
+
+// ============================================================
+// NORMALIZATION HELPERS
+//
+// The section-form UI stores everything as strings (since HTML
+// inputs always report e.target.value as a string). The backend
+// DTOs use class-validator decorators like @IsNumber / @IsInt
+// which reject "" and reject numeric strings. These helpers
+// convert form state into a payload the DTOs will accept.
+// ============================================================
+
+const toNumberOrUndefined = (v) => {
+  if (v === "" || v === null || v === undefined) return undefined;
+  const n = Number(v);
+  return Number.isNaN(n) ? undefined : n;
+};
+
+const toIntOrUndefined = (v) => {
+  const n = toNumberOrUndefined(v);
+  return n === undefined ? undefined : Math.trunc(n);
+};
+
+const strOrUndefined = (v) =>
+  v === "" || v === null || v === undefined ? undefined : v;
+
+const boolOrUndefined = (v) => {
+  if (v === "" || v === null || v === undefined) return undefined;
+  if (typeof v === "boolean") return v;
+  if (v === "true") return true;
+  if (v === "false") return false;
+  return Boolean(v);
+};
+
+const normalizeRoomType = (type) =>
+  ROOM_TYPE_VALUES.includes(type) ? type : "OTHER";
+
+const normalizeMeasurementUnit = (unit) => {
+  const upper = String(unit || "FT").toUpperCase();
+  return MEASUREMENT_UNIT_VALUES.includes(upper) ? upper : "FT";
+};
+
+// ------------------------------------------------------------
+// Build the `rooms` array in the exact shape
+// CreateSiteRecceRoomDto expects, nesting each room's photos
+// (matched off room_id) into CreateSiteReccePhotoDto[] under
+// `photos`. The section form keeps rooms/photos as two flat
+// arrays in `values`, so they need to be joined here.
+// ------------------------------------------------------------
+
+const buildRoomsPayload = (rooms, photos) => {
+  return (rooms || []).map((room, index) => {
+    const roomPhotos = (photos || [])
+      .filter((photo) => String(photo.room_id) === String(room.id))
+      .map((photo) => ({
+        shot_number: toIntOrUndefined(photo.shot_number),
+        layout_image_url: strOrUndefined(photo.layout_image_url),
+        layout_file_name: strOrUndefined(photo.layout_file_name),
+        photo_url: strOrUndefined(photo.photo_url),
+        photo_file_name: strOrUndefined(photo.photo_file_name),
+        standing_position: strOrUndefined(photo.standing_position),
+        camera_direction: strOrUndefined(photo.camera_direction),
+        notes: strOrUndefined(photo.notes),
+      }));
+
+    return {
+      room_name: room.room_name,
+      room_type: normalizeRoomType(room.room_type),
+      room_number: toIntOrUndefined(room.room_number),
+      length: toNumberOrUndefined(room.length),
+      width: toNumberOrUndefined(room.width),
+      height: toNumberOrUndefined(room.height),
+      measurement_unit: normalizeMeasurementUnit(room.measurement_unit),
+      existing_flooring: strOrUndefined(room.existing_flooring),
+      existing_ceiling: strOrUndefined(room.existing_ceiling),
+      notes: strOrUndefined(room.notes),
+      sort_order: index,
+      // Only include `photos` when there are any, rather than
+      // sending an empty array on every room.
+      ...(roomPhotos.length ? { photos: roomPhotos } : {}),
+    };
+  });
+};
+
+// ------------------------------------------------------------
+// Build the full CreateSiteRecceDto-shaped payload.
+// Every top-level field here corresponds 1:1 to a field on
+// CreateSiteRecceDto - nothing extra is sent.
+// ------------------------------------------------------------
+
+const buildSiteReccePayload = (projectId, values) => {
+  const rooms = buildRoomsPayload(values.rooms, values.photos);
+
+  return {
+    project_id: projectId,
+
+    project_name: strOrUndefined(values.project_name),
+    client_name: strOrUndefined(values.client_name),
+    site_address: strOrUndefined(values.site_address),
+
+    recce_date: values.recce_date,
+
+    site_engineer_id: strOrUndefined(values.site_engineer_id),
+    accompanied_by: strOrUndefined(values.accompanied_by),
+
+    unit_floor_no: strOrUndefined(values.unit_floor_no),
+    carpet_area_sqft: toNumberOrUndefined(values.carpet_area_sqft),
+    built_up_area_sqft: toNumberOrUndefined(values.built_up_area_sqft),
+    number_of_rooms: toIntOrUndefined(values.number_of_rooms) ?? rooms.length,
+    number_of_floors: toIntOrUndefined(values.number_of_floors),
+
+    site_type: strOrUndefined(values.site_type),
+
+    lift_available: boolOrUndefined(values.lift_available),
+    lift_size: strOrUndefined(values.lift_size),
+    staircase_width: strOrUndefined(values.staircase_width),
+    material_entry_point: strOrUndefined(values.material_entry_point),
+
+    water_connection: strOrUndefined(values.water_connection),
+    power_load_available: strOrUndefined(values.power_load_available),
+    drainage_point_location: strOrUndefined(values.drainage_point_location),
+
+    society_rwa_restrictions: strOrUndefined(values.society_rwa_restrictions),
+    working_hours_allowed: strOrUndefined(values.working_hours_allowed),
+    material_movement_rule: strOrUndefined(values.material_movement_rule),
+
+    existing_condition: strOrUndefined(values.existing_condition),
+
+    rooms,
+  };
+};
 
 export function SiteRekiForm() {
   const navigate = useNavigate();
   const { data: projects = [] } = useGetProjectsQuery();
+  const { data: siteEngineers = [] } =
+    useGetUsersByRoleNameQuery("SITE_ENGINEER");
   const [createSiteRecce, { isLoading }] = useCreateSiteRecceMutation();
+  const [uploadSiteRecceImage] = useUploadSiteRecceImageMutation();
 
   const [projectId, setProjectId] = useState("");
   const [values, setValues] = useAutoSave(SAVE_KEY, {
@@ -23,6 +175,53 @@ export function SiteRekiForm() {
     documents: [],
   });
 
+  const handleFileUpload = async (file, type) => {
+    try {
+      const result = await uploadSiteRecceImage(file).unwrap();
+
+      console.log("SITE RECCE UPLOAD RESULT:", result);
+
+      const url =
+        result?.url ||
+        result?.data?.url ||
+        result?.file?.url ||
+        result?.data?.file?.url;
+
+      if (!url) {
+        throw new Error("Upload succeeded but no file URL was returned.");
+      }
+
+      return url;
+    } catch (error) {
+      console.error("SITE RECCE IMAGE UPLOAD FAILED:", error);
+      throw error;
+    }
+  };
+  // Inject fetched site engineers into the static REKI_SECTIONS config so
+  // the "Site Engineer" select on the General Information section is
+  // populated dynamically instead of the hardcoded options: [].
+  const sections = useMemo(() => {
+    const engineerOptions = siteEngineers.map((user) => ({
+      label: user.name || user.full_name || user.email,
+      value: user.id,
+    }));
+
+    return REKI_SECTIONS.map((section) => {
+      if (!section.fields?.some((f) => f.key === "site_engineer_id")) {
+        return section;
+      }
+
+      return {
+        ...section,
+        fields: section.fields.map((field) =>
+          field.key === "site_engineer_id"
+            ? { ...field, options: engineerOptions }
+            : field,
+        ),
+      };
+    });
+  }, [siteEngineers]);
+
   const handleFieldChange = (_section, key, value) => {
     setValues((prev) => ({
       ...prev,
@@ -31,6 +230,17 @@ export function SiteRekiForm() {
   };
 
   // ====================== FLOORS & ROOMS SECTION ======================
+  //
+  // NOTE: This section captures floor/room data in a shape that has
+  // no corresponding backend table or DTO field (SiteRecceRoom has
+  // no `floor` relationship, and fields like ceiling_height /
+  // beam_column_details / floor-scoped rooms don't exist on
+  // CreateSiteRecceRoomDto). It is kept here as UI only and is
+  // intentionally NOT included in the submit payload below, so it
+  // won't trigger validation errors — but anything a user enters
+  // here is currently not persisted. If floor-level room capture is
+  // meant to be real, it needs backend support (a SiteRecceFloor
+  // table + DTO) before this section can submit successfully.
   const renderFloorsSection = () => {
     const floors = values.floors || [];
 
@@ -363,7 +573,17 @@ export function SiteRekiForm() {
     );
   };
 
-  // ====================== LAYOUT DRAWINGS SECTION (Fixed) ======================
+  // ====================== LAYOUT DRAWINGS SECTION ======================
+  //
+  // NOTE: Same caveat as floors — `layoutAttachments` (title,
+  // remark, floor_id, multi-image array with client-side object
+  // URLs) has no CreateSiteRecceDto field. Real photo/layout
+  // persistence goes through `rooms[].photos[]`, built via the
+  // "Room Photos & Layout References" section in
+  // SiteRecceSectionForm (values.photos), which IS included in
+  // the submit payload. This section's data is intentionally
+  // excluded from the payload below to avoid sending fields the
+  // backend doesn't recognize.
   const renderLayoutSection = () => {
     const layouts = values.layoutAttachments || [];
 
@@ -592,25 +812,55 @@ export function SiteRekiForm() {
   };
 
   const handleSubmit = async () => {
-    if (!projectId) return toast.error("Please select a project.");
+    if (!projectId) {
+      toast.error("Please select a project.");
+      return;
+    }
+
+    if (!values.recce_date) {
+      toast.error("Please select a recce date.");
+      return;
+    }
 
     try {
-      const payload = { project_id: projectId, ...values };
+      const payload = buildSiteReccePayload(projectId, values);
+
+      console.log("========== SITE RECCE VALUES ==========", values);
+
+      console.log("========== SITE RECCE PHOTOS ==========", values.photos);
+
+      console.log(
+        "========== SITE RECCE PAYLOAD ==========",
+        JSON.stringify(payload, null, 2),
+      );
+
       const recce = await createSiteRecce(payload).unwrap();
       toast.success("Site Recce created successfully.");
       localStorage.removeItem(SAVE_KEY);
       navigate(`/site-recce/${recce.id}`);
     } catch (error) {
       console.error(error);
-      toast.error("Failed to create Site Recce.");
+
+      // Surface backend validation messages when present, instead
+      // of a generic failure toast, so mismatches like the ones
+      // fixed here are easy to spot in the future.
+      const backendMessage = error?.data?.message;
+
+      if (Array.isArray(backendMessage) && backendMessage.length) {
+        toast.error(backendMessage[0]);
+      } else if (typeof backendMessage === "string") {
+        toast.error(backendMessage);
+      } else {
+        toast.error("Failed to create Site Recce.");
+      }
     }
   };
 
   return (
-    <SectionForm
+    <SiteRecceSectionForm
       title="Site Recce"
       subtitle="Complete site inspection form"
-      sections={REKI_SECTIONS}
+      sections={sections}
       values={values}
       onFieldChange={handleFieldChange}
       projects={projects}
@@ -619,6 +869,7 @@ export function SiteRekiForm() {
       onSubmit={handleSubmit}
       isSubmitting={isLoading}
       renderSection={renderSection}
+      onFileUpload={handleFileUpload}
     />
   );
 }

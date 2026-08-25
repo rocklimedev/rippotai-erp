@@ -1,151 +1,256 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
   Body,
-  Param,
-  Query,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
   HttpStatus,
-  UseGuards,
+  Param,
+  ParseIntPipe,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UploadedFile,
   UseInterceptors,
-  UploadedFiles,
 } from '@nestjs/common';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiQuery,
-  ApiConsumes,
-} from '@nestjs/swagger';
+
+import { FileInterceptor } from '@nestjs/platform-express';
 
 import { SiteRecceService } from './reki.service';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
-import { CurrentUser } from '@/common/decorator/current-user.decorator';
-import { User } from '@/modules/users/models/user.model';
 
-@ApiTags('Site Recce')
-@Controller('site-recce')
-@UseGuards(JwtAuthGuard)
+import { CreateSiteRecceDto } from './dto/create-site-recce.dto';
+import { UpdateSiteRecceDto } from './dto/update-site-recce.dto';
+
+@Controller('site-recces')
 export class SiteRecceController {
   constructor(private readonly siteRecceService: SiteRecceService) {}
 
-  // ========================================
-  // CREATE FULL RECCE (with files)
-  // ========================================
+  // ============================================================
+  // CREATE
+  // POST /site-recces
+  // ============================================================
+
   @Post()
-  @ApiOperation({
-    summary:
-      'Create a new Site Recce with floors, rooms, layouts & images. ' +
-      'Send as multipart/form-data: a "data" field containing the JSON ' +
-      'payload, plus "layoutImages" file(s).',
-  })
-  @ApiConsumes('multipart/form-data')
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Recce created successfully',
-  })
-  @UseInterceptors(
-    FileFieldsInterceptor([{ name: 'layoutImages', maxCount: 50 }]),
-  )
-  async create(
-    @Body() body: any,
-    @UploadedFiles()
-    files: { layoutImages?: Express.Multer.File[] },
-    @CurrentUser() user: User,
-  ) {
-    const createData =
-      typeof body?.data === 'string' ? JSON.parse(body.data) : body;
+  async create(@Body() dto: CreateSiteRecceDto, @Req() req: any) {
+    const userId = req.user?.id ?? null;
 
-    return this.siteRecceService.createFullRecce(createData, user.id, files);
+    return this.siteRecceService.create(dto, userId);
   }
 
-  // ========================================
+  // ============================================================
   // GET ALL
-  // ========================================
+  // GET /site-recces
+  // ============================================================
+
   @Get()
-  @ApiOperation({ summary: 'Get all Site Recces' })
-  @ApiQuery({ name: 'projectId', required: false })
-  @ApiQuery({ name: 'status', required: false })
-  async findAll(
-    @Query('projectId') projectId?: string,
-    @Query('status') status?: string,
-  ) {
-    return this.siteRecceService.findAll(projectId, status);
+  async findAll() {
+    return this.siteRecceService.findAll();
   }
 
-  // ========================================
-  // GET ONE (with full relations)
-  // ========================================
+  // ============================================================
+  // GET BY PROJECT
+  // GET /site-recces/project/:projectId
+  // ============================================================
+
+  @Get('project/:projectId')
+  async findByProject(
+    @Param('projectId', new ParseUUIDPipe())
+    projectId: string,
+  ) {
+    return this.siteRecceService.findByProject(projectId);
+  }
+
+  // ============================================================
+  // GET ONE
+  // GET /site-recces/:id
+  // ============================================================
+
   @Get(':id')
-  @ApiOperation({ summary: 'Get Site Recce by ID with all nested data' })
-  async findOne(@Param('id') id: string) {
-    return this.siteRecceService.findOneWithRelations(id);
+  async findOne(
+    @Param('id', new ParseUUIDPipe())
+    id: string,
+  ) {
+    return this.siteRecceService.findOne(id);
   }
 
-  // ========================================
-  // UPDATE RECCE
-  // ========================================
-  @Put(':id')
-  @ApiOperation({ summary: 'Update Site Recce basic information' })
+  // ============================================================
+  // UPDATE
+  // PATCH /site-recces/:id
+  // ============================================================
+
+  @Patch(':id')
   async update(
-    @Param('id') id: string,
-    @Body() updateData: any,
-    @CurrentUser() user: User,
+    @Param('id', new ParseUUIDPipe())
+    id: string,
+
+    @Body() dto: UpdateSiteRecceDto,
+
+    @Req() req: any,
   ) {
-    return this.siteRecceService.update(id, updateData, user.id);
+    const userId = req.user?.id ?? null;
+
+    return this.siteRecceService.update(id, dto, userId);
   }
 
-  // ========================================
-  // UPDATE STATUS
-  // ========================================
-  @Put(':id/status')
-  @ApiOperation({ summary: 'Update Site Recce status' })
-  async updateStatus(
-    @Param('id') id: string,
-    @Body('status') status: string,
-    @CurrentUser() user: User,
-  ) {
-    return this.siteRecceService.updateStatus(id, status, user.id);
-  }
+  // ============================================================
+  // DELETE
+  // DELETE /site-recces/:id
+  // ============================================================
 
-  // ========================================
-  // DELETE RECCE
-  // ========================================
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete Site Recce' })
-  async remove(@Param('id') id: string, @CurrentUser() user: User) {
-    return this.siteRecceService.remove(id, user.id);
-  }
-
-  // ========================================
-  // HELPER ROUTES
-  // ========================================
-  @Post(':recceId/floors')
-  @ApiOperation({ summary: 'Add a new floor to existing recce' })
-  async addFloor(@Param('recceId') recceId: string, @Body() floorData: any) {
-    return this.siteRecceService.addFloor(recceId, floorData);
-  }
-
-  @Post('floors/:floorId/rooms')
-  @ApiOperation({ summary: 'Add a new room to a floor' })
-  async addRoom(@Param('floorId') floorId: string, @Body() roomData: any) {
-    return this.siteRecceService.addRoom(floorId, roomData);
-  }
-
-  @Post(':recceId/layouts')
-  @ApiOperation({ summary: 'Add layout attachment' })
-  async addLayoutAttachment(
-    @Param('recceId') recceId: string,
-    @Body() layoutData: any,
-    @CurrentUser() user: User,
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(
+    @Param('id', new ParseUUIDPipe())
+    id: string,
   ) {
-    return this.siteRecceService.addLayoutAttachment(
-      recceId,
-      layoutData,
-      user.id,
+    await this.siteRecceService.remove(id);
+  }
+
+  // ============================================================
+  // RESTORE
+  // POST /site-recces/:id/restore
+  // ============================================================
+
+  @Post(':id/restore')
+  async restore(
+    @Param('id', new ParseUUIDPipe())
+    id: string,
+  ) {
+    return this.siteRecceService.restore(id);
+  }
+
+  // ============================================================
+  // UPLOAD PHOTO
+  //
+  // POST
+  // /site-recces/:siteRecceId/rooms/:roomId/photos
+  //
+  // multipart/form-data
+  //
+  // file
+  // shot_number
+  // standing_position
+  // camera_direction
+  // notes
+  // ============================================================
+
+  @Post(':siteRecceId/rooms/:roomId/photos')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadPhoto(
+    @Param('siteRecceId', new ParseUUIDPipe())
+    siteRecceId: string,
+
+    @Param('roomId', new ParseUUIDPipe())
+    roomId: string,
+
+    @UploadedFile() file: Express.Multer.File,
+
+    @Body('shot_number', ParseIntPipe)
+    shotNumber: number,
+
+    @Body('standing_position')
+    standingPosition?: string,
+
+    @Body('camera_direction')
+    cameraDirection?: string,
+
+    @Body('notes')
+    notes?: string,
+  ) {
+    return this.siteRecceService.uploadAndCreatePhoto(
+      siteRecceId,
+      roomId,
+      file,
+      shotNumber,
+      {
+        standing_position: standingPosition,
+
+        camera_direction: cameraDirection,
+
+        notes,
+      },
     );
+  }
+
+  // ============================================================
+  // UPLOAD IMAGE ONLY
+  //
+  // POST /site-recces/upload
+  //
+  // Useful when frontend wants CDN URL first
+  // and then sends the URL with the recce payload.
+  // ============================================================
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadImage(
+    @UploadedFile()
+    file: Express.Multer.File,
+  ) {
+    return this.siteRecceService.uploadPhoto(file);
+  }
+
+  // ============================================================
+  // REPLACE PHOTO
+  //
+  // PATCH
+  // /site-recces/photos/:photoId
+  //
+  // Uploads new image to CDN,
+  // deletes old CDN image,
+  // updates database.
+  // ============================================================
+
+  @Patch('photos/:photoId')
+  @UseInterceptors(FileInterceptor('file'))
+  async replacePhoto(
+    @Param('photoId', new ParseUUIDPipe())
+    photoId: string,
+
+    @UploadedFile()
+    file: Express.Multer.File,
+  ) {
+    return this.siteRecceService.replacePhoto(photoId, file);
+  }
+
+  // ============================================================
+  // UPLOAD / REPLACE LAYOUT IMAGE
+  //
+  // PATCH
+  // /site-recces/photos/:photoId/layout
+  // ============================================================
+
+  @Patch('photos/:photoId/layout')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadLayoutImage(
+    @Param('photoId', new ParseUUIDPipe())
+    photoId: string,
+
+    @UploadedFile()
+    file: Express.Multer.File,
+  ) {
+    return this.siteRecceService.uploadLayoutImage(photoId, file);
+  }
+
+  // ============================================================
+  // DELETE PHOTO
+  //
+  // DELETE /site-recces/photos/:photoId
+  //
+  // Deletes:
+  // 1. CDN photo
+  // 2. CDN layout image
+  // 3. Database record
+  // ============================================================
+
+  @Delete('photos/:photoId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removePhoto(
+    @Param('photoId', new ParseUUIDPipe())
+    photoId: string,
+  ) {
+    await this.siteRecceService.removePhoto(photoId);
   }
 }

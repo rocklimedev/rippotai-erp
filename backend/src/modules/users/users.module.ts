@@ -17,12 +17,13 @@ import { UserSignatureController } from './user-signature.controller';
 import { CdnModule } from '../cdn/cdn.module';
 import { NotificationsModule } from '../engagement/notifications.module';
 import { ActivityLogsModule } from '../engagement/activity-logs.module';
+import { RolesModule } from '../rbac/rbac.module';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([User, UserSignature]),
     CdnModule,
-
+    RolesModule,
     NotificationsModule,
     ActivityLogsModule,
   ],

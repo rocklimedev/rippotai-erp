@@ -28,7 +28,6 @@ import "../api/boq.api";
 import "../api/document.api";
 import "../api/drawing.api";
 import "../api/cdn.api";
-import "../api/reki.api";
 import "../api/brief.api";
 import "../api/task.api";
 import "../api/calendar.api";

@@ -1,13 +1,16 @@
 // src/modules/documents/services/documents-dashboard.service.ts
+
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, fn, col, literal, Sequelize } from 'sequelize';
+import { Op, fn, col, literal } from 'sequelize';
 import { Document } from './models/document.model';
 import { Drawing } from './models/drawing.model';
-import { SiteRecce } from '../reki/models/site-recce.model';
-import { ProjectBrief } from '../brief/models/project-brief.model';
-import { Quotation } from '../quotations/models/quotations.model';
-import { Boq } from '../boqs/models/boq.model';
+
+import { SiteRecce } from '@/modules/reki/models/site-recce.model';
+import { ProjectBrief } from '@/modules/brief/models/project-brief.model';
+import { Quotation } from '@/modules/quotations/models/quotations.model';
+import { Boq } from '@/modules/boqs/models/boq.model';
+
 import { Project } from '@/modules/projects/models/projects.model';
 import { Vendor } from '@/modules/vendors/models/vendors.model';
 
@@ -34,18 +37,27 @@ export class DocumentsDashboardService {
 
     @InjectModel(Project)
     private readonly projectModel: typeof Project,
+
     @InjectModel(Vendor)
     private readonly vendorModel: typeof Vendor,
   ) {}
 
-  /**
-   * Recent Activity (Documents + Drawings + Briefs + Site Recce)
-   */
+  // ============================================================
+  // RECENT ACTIVITY
+  // Documents + Drawings + Briefs + Site Recce
+  // ============================================================
+
   async getRecentDocuments(limit: number = 6) {
     const [documents, drawings, briefs, recce] = await Promise.all([
+      // --------------------------------------------------------
+      // DOCUMENTS
+      // --------------------------------------------------------
+
       this.documentModel.findAll({
         limit: 4,
+
         order: [['createdAt', 'DESC']],
+
         attributes: [
           'id',
           'title',
@@ -55,11 +67,24 @@ export class DocumentsDashboardService {
           'createdAt',
           'docType',
         ],
-        include: [{ model: Project, attributes: ['name'] }],
+
+        include: [
+          {
+            model: Project,
+            attributes: ['name'],
+          },
+        ],
       }),
+
+      // --------------------------------------------------------
+      // DRAWINGS
+      // --------------------------------------------------------
+
       this.drawingModel.findAll({
         limit: 3,
+
         order: [['createdAt', 'DESC']],
+
         attributes: [
           'id',
           'title',
@@ -69,22 +94,70 @@ export class DocumentsDashboardService {
           'createdAt',
         ],
       }),
+
+      // --------------------------------------------------------
+      // PROJECT BRIEFS
+      // --------------------------------------------------------
+
       this.projectBriefModel.findAll({
         limit: 2,
+
         order: [['createdAt', 'DESC']],
       }),
+
+      // --------------------------------------------------------
+      // SITE RECCE
+      // --------------------------------------------------------
+
       this.siteRecceModel.findAll({
         limit: 2,
+
         order: [['createdAt', 'DESC']],
-        attributes: ['id', 'status', 'recce_date', 'createdAt'],
+
+        attributes: [
+          'id',
+          'project_id',
+          'project_name',
+          'client_name',
+          'site_address',
+          'recce_date',
+          'site_engineer_id',
+          'accompanied_by',
+          'site_type',
+          'createdAt',
+        ],
+
+        include: [
+          {
+            model: Project,
+            as: 'project',
+            attributes: ['id', 'name'],
+            required: false,
+          },
+        ],
       }),
     ]);
 
     const combined = [
-      ...documents.map((d) => ({ type: 'document' as const, ...d.toJSON() })),
-      ...drawings.map((d) => ({ type: 'drawing' as const, ...d.toJSON() })),
-      ...briefs.map((b) => ({ type: 'project_brief' as const, ...b.toJSON() })),
-      ...recce.map((r) => ({ type: 'site_recce' as const, ...r.toJSON() })),
+      ...documents.map((d) => ({
+        type: 'document' as const,
+        ...d.toJSON(),
+      })),
+
+      ...drawings.map((d) => ({
+        type: 'drawing' as const,
+        ...d.toJSON(),
+      })),
+
+      ...briefs.map((b) => ({
+        type: 'project_brief' as const,
+        ...b.toJSON(),
+      })),
+
+      ...recce.map((r) => ({
+        type: 'site_recce' as const,
+        ...r.toJSON(),
+      })),
     ].sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -93,34 +166,70 @@ export class DocumentsDashboardService {
     return combined.slice(0, limit);
   }
 
-  /**
-   * Pending Items
-   */
+  // ============================================================
+  // PENDING ITEMS
+  // ============================================================
+
   async getPendingDocuments() {
     const [docs, drawings, recce] = await Promise.all([
+      // --------------------------------------------------------
+      // PENDING DOCUMENTS
+      // --------------------------------------------------------
+
       this.documentModel.count({
-        where: { status: { [Op.in]: ['draft', 'pending'] } },
+        where: {
+          status: {
+            [Op.in]: ['draft', 'pending'],
+          },
+        },
       }),
-      this.drawingModel.count({ where: { status: 'Draft' } }),
-      this.siteRecceModel.count({
-        where: { status: { [Op.in]: ['draft', 'scheduled'] } },
+
+      // --------------------------------------------------------
+      // DRAFT DRAWINGS
+      // --------------------------------------------------------
+
+      this.drawingModel.count({
+        where: {
+          status: 'Draft',
+        },
       }),
+
+      // --------------------------------------------------------
+      // SITE RECCE
+      // --------------------------------------------------------
+      //
+      // SiteRecce currently has NO status field.
+      //
+      // Therefore we do not filter by status here.
+      //
+      // This counts all active Site Recce records.
+      //
+      // Because SiteRecce uses paranoid: true, deleted records
+      // are automatically excluded by Sequelize.
+      // --------------------------------------------------------
+
+      this.siteRecceModel.count(),
     ]);
 
     return {
       documents: docs,
       drawings,
       siteRecce: recce,
+
       totalPending: docs + drawings + recce,
     };
   }
 
-  /**
-   * Expiring Soon Quotations (used by QuotProjectWiseExpiring widget)
-   */
+  // ============================================================
+  // EXPIRING SOON QUOTATIONS
+  // Used by QuotProjectWiseExpiring widget
+  // ============================================================
+
   async getExpiringQuotations(withinDays: number = 7) {
     const today = new Date();
+
     const expiryThreshold = new Date();
+
     expiryThreshold.setDate(today.getDate() + withinDays);
 
     const quotations = await this.quotationModel.findAll({
@@ -128,17 +237,24 @@ export class DocumentsDashboardService {
         expiryDate: {
           [Op.between]: [today, expiryThreshold],
         },
+
         status: {
           [Op.notIn]: ['approved', 'declined', 'cancelled'],
         },
       },
+
       include: [
-        { model: Project, attributes: ['name'] },
+        {
+          model: Project,
+          attributes: ['name'],
+        },
+
         {
           model: Vendor,
           attributes: ['name'],
         },
       ],
+
       attributes: [
         'id',
         'quotationNumber',
@@ -147,41 +263,59 @@ export class DocumentsDashboardService {
         'status',
         'totalAmount',
       ],
+
       order: [['expiryDate', 'ASC']],
+
       limit: 10,
     });
 
-    // Add computed days_left
+    // ----------------------------------------------------------
+    // ADD COMPUTED DAYS LEFT
+    // ----------------------------------------------------------
+
     return quotations.map((q) => {
       const daysLeft = Math.ceil(
         (new Date(q.expiryDate!).getTime() - today.getTime()) /
           (1000 * 3600 * 24),
       );
-      return { ...q.toJSON(), days_left: daysLeft > 0 ? daysLeft : 0 };
+
+      return {
+        ...q.toJSON(),
+
+        days_left: daysLeft > 0 ? daysLeft : 0,
+      };
     });
   }
 
-  /**
-   * BOQ vs Estimate (Quotation) Variance - Average Variation %
-   */
+  // ============================================================
+  // BOQ VS ESTIMATE / QUOTATION VARIANCE
+  // ============================================================
+
   async getBoqVariance() {
     const result = await this.boqModel.findAll({
       attributes: [
         [
           fn(
             'AVG',
-            literal(`(
-          SELECT AVG(
-            ((q.total_amount - b.total_value) / NULLIF(b.total_value, 0)) * 100
-          )
-          FROM quotations q
-          WHERE q.project_id = "Boq"."project_id"
-          AND q.status IN ('approved', 'submitted')
-        )`),
+            literal(`
+                (
+                  SELECT AVG(
+                    (
+                      (q.total_amount - b.total_value)
+                      / NULLIF(b.total_value, 0)
+                    ) * 100
+                  )
+                  FROM quotations q
+                  WHERE q.project_id = "Boq"."project_id"
+                  AND q.status IN ('approved', 'submitted')
+                )
+              `),
           ),
+
           'avg_variation_pct',
         ],
       ],
+
       include: [
         {
           model: this.quotationModel,
@@ -189,7 +323,9 @@ export class DocumentsDashboardService {
           required: false,
         },
       ],
+
       group: ['Boq.project_id'],
+
       raw: true,
     });
 
@@ -202,28 +338,44 @@ export class DocumentsDashboardService {
     };
   }
 
-  /**
-   * Draft Estimates (Quotations)
-   */
+  // ============================================================
+  // DRAFT ESTIMATES / QUOTATIONS
+  // ============================================================
+
   async getDraftEstimates() {
     const [drafts, awaitingReview] = await Promise.all([
+      // ------------------------------------------------------
+      // DRAFT
+      // ------------------------------------------------------
+
       this.quotationModel.count({
-        where: { status: 'draft' },
+        where: {
+          status: 'draft',
+        },
       }),
+
+      // ------------------------------------------------------
+      // SUBMITTED / AWAITING REVIEW
+      // ------------------------------------------------------
+
       this.quotationModel.count({
-        where: { status: 'submitted' },
+        where: {
+          status: 'submitted',
+        },
       }),
     ]);
 
     return {
       drafts,
+
       awaiting_review: awaitingReview,
     };
   }
 
-  /**
-   * Overall Dashboard Stats
-   */
+  // ============================================================
+  // OVERALL DASHBOARD STATS
+  // ============================================================
+
   async getDashboardStats() {
     const [
       totalDocs,
@@ -233,45 +385,106 @@ export class DocumentsDashboardService {
       totalQuotations,
       pendingQuotations,
     ] = await Promise.all([
+      // --------------------------------------------------------
+      // DOCUMENTS
+      // --------------------------------------------------------
+
       this.documentModel.count(),
+
+      // --------------------------------------------------------
+      // DRAWINGS
+      // --------------------------------------------------------
+
       this.drawingModel.count(),
+
+      // --------------------------------------------------------
+      // SITE RECCE
+      // --------------------------------------------------------
+
       this.siteRecceModel.count(),
+
+      // --------------------------------------------------------
+      // PROJECT BRIEFS
+      // --------------------------------------------------------
+
       this.projectBriefModel.count(),
+
+      // --------------------------------------------------------
+      // QUOTATIONS
+      // --------------------------------------------------------
+
       this.quotationModel.count(),
-      this.quotationModel.count({ where: { status: 'draft' } }),
+
+      // --------------------------------------------------------
+      // PENDING QUOTATIONS
+      // --------------------------------------------------------
+
+      this.quotationModel.count({
+        where: {
+          status: 'draft',
+        },
+      }),
     ]);
 
     return {
       totalDocuments: totalDocs,
+
       totalDrawings,
+
       totalSiteRecce: totalRecce,
+
       totalProjectBriefs: totalBriefs,
+
       totalQuotations,
+
       overallTotal:
         totalDocs + totalDrawings + totalRecce + totalBriefs + totalQuotations,
+
       pendingQuotations,
     };
   }
 
-  /**
-   * Project-wise Summary
-   */
+  // ============================================================
+  // PROJECT-WISE SUMMARY
+  // ============================================================
+
   async getProjectWiseDocuments(limit: number = 5) {
     return this.projectModel.findAll({
       attributes: [
         'id',
         'name',
+
         [fn('COUNT', col('documents.id')), 'document_count'],
+
         [fn('COUNT', col('drawings.id')), 'drawing_count'],
+
         [fn('COUNT', col('quotations.id')), 'quotation_count'],
       ],
+
       include: [
-        { model: Document, attributes: [], required: false },
-        { model: Drawing, attributes: [], required: false },
-        { model: Quotation, attributes: [], required: false },
+        {
+          model: Document,
+          attributes: [],
+          required: false,
+        },
+
+        {
+          model: Drawing,
+          attributes: [],
+          required: false,
+        },
+
+        {
+          model: Quotation,
+          attributes: [],
+          required: false,
+        },
       ],
+
       group: ['Project.id', 'Project.name'],
+
       order: [[literal('quotation_count'), 'DESC']],
+
       limit,
     });
   }

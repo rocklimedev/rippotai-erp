@@ -87,6 +87,7 @@ export const baseApi = createApi({
     "BOQ_VERSION",
     "PlanOfActions",
     "TeamMembers",
+    "SiteRecces",
     // documents
     "Document",
     // drawing

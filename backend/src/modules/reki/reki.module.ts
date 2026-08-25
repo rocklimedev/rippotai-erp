@@ -1,40 +1,55 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 
-import { SiteRecce } from './models/site-recce.model';
-import { SiteRecceFloor } from './models/site-recce-floor.model';
-import { SiteRecceRoom } from './models/site-recce-room.model';
-import { SiteLayoutAttachment } from './models/site-layout-attachment.model';
-import { SiteImageAttachment } from './models/site-image-attachment.model';
-import { SiteRecceDocument } from './models/site-recce-document.model';
-
 import { SiteRecceController } from './reki.controller';
 import { SiteRecceService } from './reki.service';
 
-import { DocumentsModule } from '../documents/document.module';
-import { Document } from '../documents/models/document.model';
+import { SiteRecce } from './models/site-recce.model';
+import { SiteRecceRoom } from './models/site-recce-room.model';
+import { SiteReccePhoto } from './models/site-recce-photo.model';
 
-import { NotificationsModule } from '../engagement/notifications.module';
-import { ActivityLogsModule } from '../engagement/activity-logs.module';
+import { Project } from '@/modules/projects/models/projects.model';
+import { User } from '@/modules/users/models/user.model';
+
+import { CdnModule } from '@/modules/cdn/cdn.module';
 
 @Module({
   imports: [
+    // ==========================================================
+    // DATABASE MODELS
+    // ==========================================================
+
     SequelizeModule.forFeature([
       SiteRecce,
-      SiteRecceFloor,
       SiteRecceRoom,
-      SiteLayoutAttachment,
-      SiteImageAttachment,
-      SiteRecceDocument,
-      Document,
+      SiteReccePhoto,
+      Project,
+      User,
     ]),
-    DocumentsModule,
 
-    NotificationsModule,
-    ActivityLogsModule,
+    // ==========================================================
+    // CDN
+    // ==========================================================
+
+    CdnModule,
   ],
+
+  // ============================================================
+  // CONTROLLER
+  // ============================================================
+
   controllers: [SiteRecceController],
+
+  // ============================================================
+  // SERVICES
+  // ============================================================
+
   providers: [SiteRecceService],
-  exports: [SequelizeModule, SiteRecceService],
+
+  // ============================================================
+  // EXPORTS
+  // ============================================================
+
+  exports: [SiteRecceService],
 })
 export class SiteRecceModule {}

@@ -86,9 +86,9 @@ const LogoSlot = ({ size = 160 }) => (
    PAGE CHROME
 ============================================================ */
 
-const PageHeader = ({ projectLine }) => (
+const PageHeader = ({ projectLine, eyebrow }) => (
   <div
-    className="page-header px-14 pt-11 pb-5 border-b"
+    className="page-header px-14 pt-11 pb-5 border-b flex items-center justify-between"
     style={{ borderColor: "var(--line)" }}
   >
     <p
@@ -98,10 +98,24 @@ const PageHeader = ({ projectLine }) => (
       Payment Schedule
       <span style={{ color: "var(--gold-dark)" }}> · {projectLine}</span>
     </p>
+    {eyebrow && (
+      <p
+        className="text-[10px] tracking-[0.28em] uppercase font-semibold"
+        style={{ color: "var(--gold-dark)" }}
+      >
+        {eyebrow}
+      </p>
+    )}
   </div>
 );
 
-const DocumentPage = ({ children, pageNumber, totalPages, pageRef }) => {
+const DocumentPage = ({
+  children,
+  pageNumber,
+  totalPages,
+  pageRef,
+  projectLine,
+}) => {
   return (
     <section
       ref={pageRef}
@@ -119,7 +133,13 @@ const DocumentPage = ({ children, pageNumber, totalPages, pageRef }) => {
             className="text-[9px] tracking-[0.28em] uppercase"
             style={{ color: "var(--ink-soft)" }}
           >
-            Rippōtai · Payment Schedule
+            Payment Schedule
+            {projectLine ? (
+              <span style={{ color: "var(--gold-dark)" }}>
+                {" "}
+                · {projectLine}
+              </span>
+            ) : null}
           </span>
           <span
             className="text-[9px] tracking-[0.1em]"
@@ -513,7 +533,11 @@ const PaymentScheduleView = ({ schedule, className = "" }) => {
           className="max-w-[900px] mx-auto py-10 space-y-8 print:py-0 print:space-y-0"
         >
           {/* ---------- COVER ---------- */}
-          <DocumentPage pageNumber={++pageCounter} totalPages={totalPages}>
+          <DocumentPage
+            pageNumber={++pageCounter}
+            totalPages={totalPages}
+            projectLine={project.site_location}
+          >
             <div className="px-14 pt-24 flex flex-col items-center text-center">
               <LogoSlot size={160} />
 
@@ -578,8 +602,15 @@ const PaymentScheduleView = ({ schedule, className = "" }) => {
           </DocumentPage>
 
           {/* ---------- PAYMENT OVERVIEW ---------- */}
-          <DocumentPage pageNumber={++pageCounter} totalPages={totalPages}>
-            <PageHeader projectLine={projectLine} />
+          <DocumentPage
+            pageNumber={++pageCounter}
+            totalPages={totalPages}
+            projectLine={project.site_location}
+          >
+            <PageHeader
+              eyebrow="01 · Payment Overview"
+              projectLine={projectLine}
+            />
 
             <div className="px-14 pt-10">
               <div className="grid grid-cols-2 gap-6">
@@ -676,6 +707,7 @@ const PaymentScheduleView = ({ schedule, className = "" }) => {
               key={`milestone-page-${index}`}
               pageNumber={++pageCounter}
               totalPages={totalPages}
+              projectLine={project.site_location}
             >
               <PageHeader
                 eyebrow="02 · Milestone Detail"
@@ -683,6 +715,14 @@ const PaymentScheduleView = ({ schedule, className = "" }) => {
               />
 
               <div className="px-14 pt-8">
+                {index === 0 && (
+                  <h2
+                    className="font-display text-2xl mb-6"
+                    style={{ color: "var(--forest)" }}
+                  >
+                    Milestone detail
+                  </h2>
+                )}
                 {index === 0 && (
                   <div
                     className="grid grid-cols-[64px_1fr_88px] gap-6 pb-3 text-[10px] tracking-[0.2em] uppercase"
@@ -700,36 +740,25 @@ const PaymentScheduleView = ({ schedule, className = "" }) => {
             </DocumentPage>
           ))}
 
-          {/* ---------- TERMS & CONDITIONS (paginated) ---------- */}
-          {termsPages.map((content, index) => (
-            <DocumentPage
-              key={`terms-${index}`}
-              pageNumber={++pageCounter}
-              totalPages={totalPages}
-            >
-              <PageHeader
-                eyebrow="03 · Terms & Conditions"
-                projectLine={projectLine}
-              />
-
-              <div className="px-14 pt-8">
-                <div
-                  className="terms-content text-[12.5px] leading-7"
-                  style={{ color: "var(--ink)" }}
-                  dangerouslySetInnerHTML={{ __html: content }}
-                />
-              </div>
-            </DocumentPage>
-          ))}
-
           {/* ---------- FINANCIAL SUMMARY ---------- */}
-          <DocumentPage pageNumber={++pageCounter} totalPages={totalPages}>
+          <DocumentPage
+            pageNumber={++pageCounter}
+            totalPages={totalPages}
+            projectLine={project.site_location}
+          >
             <PageHeader
-              eyebrow="04 · Financial Summary"
+              eyebrow="03 · Financial Summary"
               projectLine={projectLine}
             />
 
             <div className="px-14 pt-10">
+              <h2
+                className="font-display text-2xl mb-6"
+                style={{ color: "var(--forest)" }}
+              >
+                Financial Summary
+              </h2>
+
               <div
                 className="flex items-baseline justify-between py-6 border-b"
                 style={{ borderColor: "var(--line)" }}
@@ -799,8 +828,43 @@ const PaymentScheduleView = ({ schedule, className = "" }) => {
             </div>
           </DocumentPage>
 
+          {/* ---------- TERMS & CONDITIONS (paginated) ---------- */}
+          {termsPages.map((content, index) => (
+            <DocumentPage
+              key={`terms-${index}`}
+              pageNumber={++pageCounter}
+              totalPages={totalPages}
+              projectLine={project.site_location}
+            >
+              <PageHeader
+                eyebrow="04 · Terms & Conditions"
+                projectLine={projectLine}
+              />
+
+              <div className="px-14 pt-8">
+                {index === 0 && (
+                  <h2
+                    className="font-display text-2xl mb-6"
+                    style={{ color: "var(--forest)" }}
+                  >
+                    Terms & Conditions
+                  </h2>
+                )}
+                <div
+                  className="terms-content text-[12.5px] leading-7"
+                  style={{ color: "var(--ink)" }}
+                  dangerouslySetInnerHTML={{ __html: content }}
+                />
+              </div>
+            </DocumentPage>
+          ))}
+
           {/* ---------- ACCEPTANCE ---------- */}
-          <DocumentPage pageNumber={++pageCounter} totalPages={totalPages}>
+          <DocumentPage
+            pageNumber={++pageCounter}
+            totalPages={totalPages}
+            projectLine={project.site_location}
+          >
             <PageHeader eyebrow="05 · Acceptance" projectLine={projectLine} />
 
             <div className="px-14 pt-10">

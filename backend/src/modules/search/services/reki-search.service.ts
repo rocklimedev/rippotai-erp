@@ -3,13 +3,12 @@ import { InjectModel } from '@nestjs/sequelize';
 
 import { SearchService } from '@/modules/search/search.service';
 
-import { SiteRecce } from '../../reki/models/site-recce.model';
+import { SiteRecce } from '@/modules/reki/models/site-recce.model';
+import { SiteRecceRoom } from '@/modules/reki/models/site-recce-room.model';
+import { SiteReccePhoto } from '@/modules/reki/models/site-recce-photo.model';
+
 import { Project } from '@/modules/projects/models/projects.model';
 import { User } from '@/modules/users/models/user.model';
-import { Document } from '@/modules/documents/models/document.model';
-import { SiteRecceFloor } from '../../reki/models/site-recce-floor.model';
-import { SiteLayoutAttachment } from '../../reki/models/site-layout-attachment.model';
-import { SiteRecceDocument } from '../../reki/models/site-recce-document.model';
 
 @Injectable()
 export class SiteRecceSearchService {
@@ -24,103 +23,145 @@ export class SiteRecceSearchService {
     private readonly siteRecceModel: typeof SiteRecce,
   ) {}
 
-  /**
-   * Convert SiteRecce model into Elasticsearch document
-   */
+  // ============================================================
+  // CONVERT SITE RECCE -> ELASTICSEARCH DOCUMENT
+  // ============================================================
+
   private toDocument(recce: SiteRecce) {
     return {
       id: recce.id,
 
+      // ----------------------------------------------------------
+      // PROJECT
+      // ----------------------------------------------------------
+
       project_id: recce.project_id,
+      project_name: recce.project_name,
       project: recce.project?.name ?? '',
 
-      status: recce.status,
-      remarks: recce.remarks,
+      // ----------------------------------------------------------
+      // CLIENT / SITE
+      // ----------------------------------------------------------
+
+      client_name: recce.client_name,
+      site_address: recce.site_address,
+
+      // ----------------------------------------------------------
+      // RECCE
+      // ----------------------------------------------------------
 
       recce_date: recce.recce_date,
-      time_of_visit: recce.time_of_visit,
 
-      supervisor: recce.supervisor?.name ?? '',
+      site_engineer_id: recce.site_engineer_id,
+      site_engineer: recce.site_engineer?.name ?? '',
 
-      site_accessibility: recce.site_accessibility,
-      road_width_near_site: recce.road_width_near_site,
-      vehicle_entry_available: recce.vehicle_entry_available,
-      loading_unloading_space: recce.loading_unloading_space,
+      accompanied_by: recce.accompanied_by,
+
+      // ----------------------------------------------------------
+      // PROPERTY
+      // ----------------------------------------------------------
+
+      unit_floor_no: recce.unit_floor_no,
+
+      carpet_area_sqft: recce.carpet_area_sqft,
+      built_up_area_sqft: recce.built_up_area_sqft,
+
+      number_of_rooms: recce.number_of_rooms,
+      number_of_floors: recce.number_of_floors,
+
+      site_type: recce.site_type,
+
+      // ----------------------------------------------------------
+      // ACCESS
+      // ----------------------------------------------------------
+
       lift_available: recce.lift_available,
-      service_lift_available: recce.service_lift_available,
+      lift_size: recce.lift_size,
       staircase_width: recce.staircase_width,
-      floor_level: recce.floor_level,
-      parking_availability: recce.parking_availability,
-      access_restrictions: recce.access_restrictions,
+      material_entry_point: recce.material_entry_point,
 
-      current_site_status: recce.current_site_status,
-      existing_flooring_condition: recce.existing_flooring_condition,
-      existing_wall_condition: recce.existing_wall_condition,
-      existing_ceiling_condition: recce.existing_ceiling_condition,
-      existing_doors_windows_condition: recce.existing_doors_windows_condition,
-      leakage_dampness_observed: recce.leakage_dampness_observed,
-      cracks_observed: recce.cracks_observed,
+      // ----------------------------------------------------------
+      // UTILITIES
+      // ----------------------------------------------------------
 
-      existing_points_available: recce.existing_points_available,
-      main_db_location: recce.main_db_location,
-      meter_location: recce.meter_location,
-      power_supply_status: recce.power_supply_status,
+      water_connection: recce.water_connection,
+      power_load_available: recce.power_load_available,
+      drainage_point_location: recce.drainage_point_location,
 
-      water_supply_available: recce.water_supply_available,
-      drainage_line_available: recce.drainage_line_available,
-      existing_plumbing_condition: recce.existing_plumbing_condition,
-      kitchen_plumbing_checked: recce.kitchen_plumbing_checked,
-      bathroom_plumbing_checked: recce.bathroom_plumbing_checked,
+      // ----------------------------------------------------------
+      // SOCIETY / RWA
+      // ----------------------------------------------------------
 
-      floors_count: recce.floors?.length ?? 0,
-      attachments_count: recce.layoutAttachments?.length ?? 0,
-      documents_count: recce.documents?.length ?? 0,
+      society_rwa_restrictions: recce.society_rwa_restrictions,
+      working_hours_allowed: recce.working_hours_allowed,
+      material_movement_rule: recce.material_movement_rule,
 
-      created_by: recce.createdBy?.name ?? '',
-      updated_by: recce.updatedBy?.name ?? '',
+      // ----------------------------------------------------------
+      // EXISTING CONDITION
+      // ----------------------------------------------------------
+
+      existing_condition: recce.existing_condition,
+
+      // ----------------------------------------------------------
+      // COUNTS
+      // ----------------------------------------------------------
+
+      rooms_count: recce.rooms?.length ?? 0,
+      photos_count: recce.photos?.length ?? 0,
+
+      // ----------------------------------------------------------
+      // AUDIT
+      // ----------------------------------------------------------
+
+      created_by: recce.creator?.name ?? '',
+      updated_by: recce.updater?.name ?? '',
 
       created_at: recce.createdAt,
       updated_at: recce.updatedAt,
     };
   }
 
-  /**
-   * Index one Site Recce
-   */
+  // ============================================================
+  // INDEX ONE SITE RECCE
+  // ============================================================
+
   async indexSiteRecce(id: string) {
     const recce = await this.siteRecceModel.findByPk(id, {
       include: [
         {
           model: Project,
+          as: 'project',
         },
-        {
-          model: Document,
-        },
-        {
-          model: User,
-          as: 'supervisor',
-        },
+
         {
           model: User,
-          as: 'createdBy',
+          as: 'site_engineer',
         },
+
         {
           model: User,
-          as: 'updatedBy',
+          as: 'creator',
         },
+
         {
-          model: SiteRecceFloor,
+          model: User,
+          as: 'updater',
         },
+
         {
-          model: SiteLayoutAttachment,
+          model: SiteRecceRoom,
+          as: 'rooms',
         },
+
         {
-          model: SiteRecceDocument,
+          model: SiteReccePhoto,
+          as: 'photos',
         },
       ],
     });
 
     if (!recce) {
+      this.logger.warn(`Site Recce ${id} not found`);
       return;
     }
 
@@ -133,84 +174,96 @@ export class SiteRecceSearchService {
     this.logger.log(`Indexed Site Recce ${recce.id}`);
   }
 
-  /**
-   * Update Elasticsearch document
-   */
+  // ============================================================
+  // UPDATE
+  // ============================================================
+
   async updateSiteRecce(id: string) {
     return this.indexSiteRecce(id);
   }
 
-  /**
-   * Remove from Elasticsearch
-   */
+  // ============================================================
+  // DELETE
+  // ============================================================
+
   async removeSiteRecce(id: string) {
     await this.searchService.delete(this.INDEX, id);
 
     this.logger.log(`Removed Site Recce ${id}`);
   }
 
-  /**
-   * Search Site Recce
-   */
+  // ============================================================
+  // SEARCH
+  // ============================================================
+
   async search(query: string) {
     return this.searchService.search(this.INDEX, {
       multi_match: {
         query,
+
         fields: [
           'project^6',
-          'supervisor^5',
-          'remarks^4',
-          'status^3',
-          'site_accessibility',
-          'current_site_status',
-          'road_width_near_site',
-          'main_db_location',
-          'meter_location',
-          'access_restrictions',
-          'existing_flooring_condition',
-          'existing_wall_condition',
-          'existing_ceiling_condition',
-          'existing_doors_windows_condition',
-          'leakage_dampness_observed',
-          'cracks_observed',
+          'project_name^5',
+          'client_name^5',
+          'site_address^4',
+          'site_engineer^5',
+          'accompanied_by^3',
+
+          'site_type^3',
+          'unit_floor_no',
+
+          'material_entry_point',
+          'water_connection',
+          'power_load_available',
+          'drainage_point_location',
+
+          'society_rwa_restrictions',
+          'working_hours_allowed',
+          'material_movement_rule',
+
+          'existing_condition^3',
         ],
+
         fuzziness: 'AUTO',
       },
     });
   }
 
-  /**
-   * Reindex all Site Recce records
-   */
+  // ============================================================
+  // REINDEX ALL
+  // ============================================================
+
   async reindexAll() {
     const recceList = await this.siteRecceModel.findAll({
       include: [
         {
           model: Project,
+          as: 'project',
         },
-        {
-          model: Document,
-        },
-        {
-          model: User,
-          as: 'supervisor',
-        },
+
         {
           model: User,
-          as: 'createdBy',
+          as: 'site_engineer',
         },
+
         {
           model: User,
-          as: 'updatedBy',
+          as: 'creator',
         },
+
         {
-          model: SiteRecceFloor,
+          model: User,
+          as: 'updater',
         },
+
         {
-          model: SiteLayoutAttachment,
+          model: SiteRecceRoom,
+          as: 'rooms',
         },
+
         {
-          model: SiteRecceDocument,
+          model: SiteReccePhoto,
+          as: 'photos',
         },
       ],
     });

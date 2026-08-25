@@ -1,10 +1,14 @@
 import { baseApi } from "../store/baseApi";
+
 export const usersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // =========================
+    // =========================================================
     // USERS
-    // =========================
+    // =========================================================
 
+    // =========================
+    // CREATE USER
+    // =========================
     createUser: builder.mutation({
       query: (body) => ({
         url: "/users",
@@ -14,24 +18,52 @@ export const usersApi = baseApi.injectEndpoints({
       invalidatesTags: ["Users"],
     }),
 
+    // =========================
+    // GET ALL USERS
+    // =========================
     getUsers: builder.query({
-      query: ({ role, is_active } = {}) => {
+      query: ({ role_id, is_active } = {}) => {
         const params = new URLSearchParams();
 
-        if (role) params.append("role", role);
-        if (is_active !== undefined) params.append("is_active", is_active);
+        if (role_id) {
+          params.append("role_id", role_id);
+        }
 
-        return `/users?${params.toString()}`;
+        if (is_active !== undefined) {
+          params.append("is_active", String(is_active));
+        }
+
+        const queryString = params.toString();
+
+        return queryString ? `/users?${queryString}` : "/users";
       },
       providesTags: ["Users"],
     }),
 
+    // =========================
+    // GET USERS BY ROLE NAME
+    //
+    // Example:
+    // useGetUsersByRoleNameQuery("Site Engineer")
+    //
+    // GET /users/by-role/Site%20Engineer
+    // =========================
+    getUsersByRoleName: builder.query({
+      query: (roleName) => `/users/by-role/${encodeURIComponent(roleName)}`,
+      providesTags: ["Users"],
+    }),
+
+    // =========================
+    // GET ONE USER
+    // =========================
     getUserById: builder.query({
       query: (id) => `/users/${id}`,
       providesTags: ["Users"],
     }),
 
-    // Admin-facing update - can also change role_id / is_active / etc.
+    // =========================
+    // UPDATE USER (ADMIN)
+    // =========================
     updateUser: builder.mutation({
       query: ({ id, ...body }) => ({
         url: `/users/${id}`,
@@ -41,9 +73,9 @@ export const usersApi = baseApi.injectEndpoints({
       invalidatesTags: ["Users"],
     }),
 
-    // Self-service profile update - name / email / phone / job_title only.
-    // This is what the "Profile Settings" screen should call; role is
-    // intentionally not accepted by the backend on this route.
+    // =========================
+    // UPDATE PROFILE (SELF)
+    // =========================
     updateProfile: builder.mutation({
       query: ({ id, ...body }) => ({
         url: `/users/${id}/profile`,
@@ -53,11 +85,13 @@ export const usersApi = baseApi.injectEndpoints({
       invalidatesTags: ["Users"],
     }),
 
-    // Avatar upload - sends the raw File as multipart/form-data so it goes
-    // straight to the backend -> CdnService (SFTP) -> avatar_url on the user.
+    // =========================
+    // UPLOAD AVATAR
+    // =========================
     uploadAvatar: builder.mutation({
       query: ({ id, file }) => {
         const formData = new FormData();
+
         formData.append("avatar", file);
 
         return {
@@ -69,6 +103,9 @@ export const usersApi = baseApi.injectEndpoints({
       invalidatesTags: ["Users"],
     }),
 
+    // =========================
+    // DEACTIVATE USER
+    // =========================
     deactivateUser: builder.mutation({
       query: (id) => ({
         url: `/users/${id}/deactivate`,
@@ -77,6 +114,9 @@ export const usersApi = baseApi.injectEndpoints({
       invalidatesTags: ["Users"],
     }),
 
+    // =========================
+    // DELETE USER
+    // =========================
     deleteUser: builder.mutation({
       query: (id) => ({
         url: `/users/${id}`,
@@ -85,16 +125,18 @@ export const usersApi = baseApi.injectEndpoints({
       invalidatesTags: ["Users"],
     }),
   }),
+
   overrideExisting: false,
 });
 
-// =========================
+// =========================================================
 // EXPORT HOOKS
-// =========================
+// =========================================================
 
 export const {
   useCreateUserMutation,
   useGetUsersQuery,
+  useGetUsersByRoleNameQuery,
   useGetUserByIdQuery,
   useUpdateUserMutation,
   useUpdateProfileMutation,

@@ -10,7 +10,7 @@ import * as bcrypt from 'bcryptjs';
 
 import { User } from './models/user.model';
 import { CreateUserDto, UpdateUserDto, UpdateProfileDto } from './dto/user.dto';
-
+import { Role } from '@/modules/rbac/models/role.model';
 import { CdnService } from '@/modules/cdn/cdn.service';
 import { ActivityLogForUserService } from '../engagement/services/activity-log-user.service';
 import { NotificationForUserService } from '../engagement/services/notification-user.service';
@@ -30,7 +30,8 @@ export class UsersService {
   constructor(
     @InjectModel(User)
     private readonly userModel: typeof User,
-
+    @InjectModel(Role)
+    private readonly roleModel: typeof Role,
     private readonly cdnService: CdnService,
     private readonly activityLogForUserService: ActivityLogForUserService,
     private readonly notificationForUserService: NotificationForUserService,
@@ -279,7 +280,28 @@ export class UsersService {
 
     return deactivatedUser;
   }
+  // =========================
+  // FIND USERS BY ROLE NAME
+  // =========================
+  async findUsersByRoleName(roleName: string): Promise<User[]> {
+    const role = await this.roleModel.findOne({
+      where: { name: roleName },
+    });
 
+    if (!role) {
+      throw new NotFoundException(`Role "${roleName}" not found`);
+    }
+
+    return this.userModel.findAll({
+      where: {
+        role_id: role.id,
+        is_active: true,
+      },
+      attributes: PUBLIC_ATTRIBUTES,
+      include: ['role'],
+      order: [['name', 'ASC']],
+    });
+  }
   // =========================
   // UPDATE LAST LOGIN
   // =========================

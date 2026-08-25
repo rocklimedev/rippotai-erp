@@ -1,4 +1,7 @@
 export const REKI_SECTIONS = [
+  // ============================================================
+  // 01. GENERAL INFORMATION
+  // ============================================================
   {
     title: "General Information",
     fields: [
@@ -6,215 +9,328 @@ export const REKI_SECTIONS = [
         key: "recce_date",
         label: "Recce Date",
         type: "date",
+        required: true,
       },
       {
-        key: "time_of_visit",
-        label: "Time of Visit",
-        type: "time",
-      },
-      {
-        key: "status",
-        label: "Status",
+        key: "site_engineer_id",
+        label: "Site Engineer",
         type: "select",
-        options: [
-          "draft",
-          "scheduled",
-          "in_progress",
-          "completed",
-          "approved",
-          "cancelled",
-        ],
+        options: [],
+        required: true,
       },
       {
-        key: "remarks",
-        label: "General Remarks",
+        key: "accompanied_by",
+        label: "Accompanied By",
+        type: "text",
+      },
+      {
+        key: "project_name",
+        label: "Project Name",
+        type: "text",
+      },
+      {
+        key: "client_name",
+        label: "Client Name",
+        type: "text",
+      },
+      {
+        key: "site_address",
+        label: "Site Address",
         type: "textarea",
+        rows: 4,
       },
     ],
   },
 
+  // ============================================================
+  // 02. PROPERTY DETAILS
+  // ============================================================
   {
-    title: "Site Access Details",
+    title: "Property Details",
     fields: [
       {
-        key: "site_accessibility",
-        label: "Site Accessibility",
-        type: "select",
-        options: ["Easy", "Moderate", "Difficult"],
+        key: "unit_floor_no",
+        label: "Unit / Floor No.",
+        type: "text",
       },
       {
-        key: "road_width_near_site",
-        label: "Road Width Near Site",
+        key: "carpet_area_sqft",
+        label: "Carpet Area (sq.ft.)",
+        type: "number",
       },
       {
-        key: "vehicle_entry_available",
-        label: "Vehicle Entry Available",
-        type: "select",
-        options: ["Yes", "No"],
+        key: "built_up_area_sqft",
+        label: "Built-up Area (sq.ft.)",
+        type: "number",
       },
       {
-        key: "loading_unloading_space",
-        label: "Loading / Unloading Space",
-        type: "select",
-        options: ["Yes", "No", "Limited"],
+        key: "number_of_rooms",
+        label: "Number of Rooms",
+        type: "number",
       },
+      {
+        key: "number_of_floors",
+        label: "Number of Floors",
+        type: "number",
+      },
+      {
+        key: "site_type",
+        label: "Site Type",
+        type: "select",
+        options: [
+          { label: "Flat", value: "FLAT" },
+          { label: "Floor", value: "FLOOR" },
+          { label: "Kothi", value: "KOTHI" },
+          { label: "Raw", value: "RAW" },
+        ],
+      },
+    ],
+  },
+
+  // ============================================================
+  // 03. SITE ACCESS & MATERIAL MOVEMENT
+  // ============================================================
+  {
+    title: "Site Access & Material Movement",
+    fields: [
       {
         key: "lift_available",
         label: "Lift Available",
         type: "select",
-        options: ["Yes", "No"],
+        options: [
+          { label: "Yes", value: true },
+          { label: "No", value: false },
+        ],
       },
       {
-        key: "service_lift_available",
-        label: "Service Lift Available",
-        type: "select",
-        options: ["Yes", "No"],
+        key: "lift_size",
+        label: "Lift Size",
+        type: "text",
+        placeholder: "e.g. 7 ft × 5 ft × 8 ft",
       },
       {
         key: "staircase_width",
         label: "Staircase Width",
+        type: "text",
+        placeholder: "e.g. 4 ft",
       },
       {
-        key: "floor_level",
-        label: "Floor Level",
-      },
-      {
-        key: "parking_availability",
-        label: "Parking Availability",
-        type: "select",
-        options: ["Yes", "No", "Limited"],
-      },
-      {
-        key: "access_restrictions",
-        label: "Access Restrictions",
+        key: "material_entry_point",
+        label: "Material Entry Point",
         type: "textarea",
+        rows: 4,
       },
     ],
   },
 
+  // ============================================================
+  // 04. SITE UTILITIES
+  // ============================================================
   {
-    title: "Site Condition",
+    title: "Site Utilities",
     fields: [
       {
-        key: "current_site_status",
-        label: "Current Site Status",
+        key: "water_connection",
+        label: "Water Connection",
+        type: "textarea",
+        rows: 4,
+      },
+      {
+        key: "power_load_available",
+        label: "Power Load Available",
+        type: "text",
+        placeholder: "e.g. 10 KW",
+      },
+      {
+        key: "drainage_point_location",
+        label: "Drainage Point Location",
+        type: "textarea",
+        rows: 4,
+      },
+    ],
+  },
+
+  // ============================================================
+  // 05. SOCIETY / RWA RESTRICTIONS
+  // ============================================================
+  {
+    title: "Society / RWA Restrictions",
+    fields: [
+      {
+        key: "society_rwa_restrictions",
+        label: "Society / RWA Restrictions",
+        type: "textarea",
+        rows: 5,
+      },
+      {
+        key: "working_hours_allowed",
+        label: "Working Hours Allowed",
+        type: "text",
+        placeholder: "e.g. 9:00 AM - 6:00 PM",
+      },
+      {
+        key: "material_movement_rule",
+        label: "Material Movement Rules",
+        type: "textarea",
+        rows: 5,
+      },
+    ],
+  },
+
+  // ============================================================
+  // 06. EXISTING SITE CONDITION
+  // ============================================================
+  {
+    title: "Existing Site Condition",
+    fields: [
+      {
+        key: "existing_condition",
+        label: "Existing Site Condition",
+        type: "textarea",
+        rows: 7,
+      },
+    ],
+  },
+
+  // ============================================================
+  // 07. ROOM-WISE MEASUREMENTS
+  // ============================================================
+  {
+    title: "Room-wise Measurements",
+    type: "rooms",
+    description:
+      "Add all rooms and record their dimensions and existing conditions.",
+    fields: [
+      {
+        key: "room_name",
+        label: "Room Name",
+        type: "text",
+        required: true,
+      },
+      {
+        key: "room_type",
+        label: "Room Type",
         type: "select",
         options: [
-          "Empty Site",
-          "Under Construction",
-          "Renovation Site",
-          "Occupied Site",
-          "Partially Occupied",
-          "Demolition Required",
+          { label: "Living / Dining", value: "LIVING_DINING" },
+          { label: "Master Bedroom", value: "MASTER_BEDROOM" },
+          { label: "Bedroom", value: "BEDROOM" },
+          { label: "Kitchen", value: "KITCHEN" },
+          { label: "Bathroom", value: "BATHROOM" },
+          { label: "Balcony", value: "BALCONY" },
+          { label: "Other", value: "OTHER" },
         ],
       },
       {
-        key: "existing_flooring_condition",
+        key: "room_number",
+        label: "Room Number",
+        type: "number",
+      },
+      {
+        key: "length",
+        label: "Length",
+        type: "number",
+      },
+      {
+        key: "width",
+        label: "Width",
+        type: "number",
+      },
+      {
+        key: "height",
+        label: "Height",
+        type: "number",
+      },
+      {
+        key: "measurement_unit",
+        label: "Measurement Unit",
+        type: "select",
+        options: [
+          { label: "Feet", value: "FT" },
+          { label: "Meter", value: "M" },
+          { label: "Inches", value: "IN" },
+          { label: "Centimeter", value: "CM" },
+        ],
+      },
+      {
+        key: "existing_flooring",
         label: "Existing Flooring",
-      },
-      {
-        key: "existing_wall_condition",
-        label: "Existing Wall Condition",
-      },
-      {
-        key: "existing_ceiling_condition",
-        label: "Existing Ceiling Condition",
-      },
-      {
-        key: "existing_doors_windows_condition",
-        label: "Doors & Windows Condition",
-      },
-      {
-        key: "leakage_dampness_observed",
-        label: "Leakage / Dampness",
         type: "textarea",
+        rows: 3,
       },
       {
-        key: "cracks_observed",
-        label: "Cracks Observed",
+        key: "existing_ceiling",
+        label: "Existing Ceiling",
         type: "textarea",
+        rows: 3,
+      },
+      {
+        key: "notes",
+        label: "Room Notes",
+        type: "textarea",
+        rows: 3,
       },
     ],
   },
 
+  // ============================================================
+  // 08. ROOM PHOTOS & LAYOUT REFERENCES
+  // ============================================================
   {
-    title: "Electrical Survey",
+    title: "Room Photos & Layout References",
+    type: "roomPhotos",
+    description:
+      "Add photographs, layout references and shot information against each room.",
     fields: [
       {
-        key: "existing_points_available",
-        label: "Existing Electrical Points",
+        key: "room_id",
+        label: "Room",
         type: "select",
-        options: ["Yes", "No"],
+        options: [],
+        required: true,
       },
       {
-        key: "main_db_location",
-        label: "Main DB Location",
+        key: "shot_number",
+        label: "Shot Number",
+        type: "number",
+        required: true,
       },
       {
-        key: "meter_location",
-        label: "Meter Location",
+        key: "standing_position",
+        label: "Standing Position",
+        type: "text",
       },
       {
-        key: "power_supply_status",
-        label: "Power Supply Status",
-        type: "select",
-        options: [
-          "Available",
-          "Not Available",
-          "Temporary Connection Required",
-        ],
+        key: "camera_direction",
+        label: "Camera Direction",
+        type: "text",
+      },
+      {
+        key: "layout_image_url",
+        label: "Layout Image URL",
+        type: "text",
+      },
+      {
+        key: "photo_url",
+        label: "Actual Photo URL",
+        type: "text",
+      },
+      {
+        key: "layout_file_name",
+        label: "Layout File Name",
+        type: "text",
+      },
+      {
+        key: "photo_file_name",
+        label: "Photo File Name",
+        type: "text",
+      },
+      {
+        key: "notes",
+        label: "Photo Notes",
+        type: "textarea",
+        rows: 4,
       },
     ],
-  },
-
-  {
-    title: "Plumbing Survey",
-    fields: [
-      {
-        key: "water_supply_available",
-        label: "Water Supply",
-        type: "select",
-        options: ["Yes", "No"],
-      },
-      {
-        key: "drainage_line_available",
-        label: "Drainage Line",
-        type: "select",
-        options: ["Yes", "No"],
-      },
-      {
-        key: "existing_plumbing_condition",
-        label: "Existing Plumbing",
-        type: "select",
-        options: ["Good", "Average", "Poor", "Needs Replacement"],
-      },
-      {
-        key: "kitchen_plumbing_checked",
-        label: "Kitchen Plumbing Checked",
-        type: "select",
-        options: ["Yes", "No", "Not Applicable"],
-      },
-      {
-        key: "bathroom_plumbing_checked",
-        label: "Bathroom Plumbing Checked",
-        type: "select",
-        options: ["Yes", "No", "Not Applicable"],
-      },
-    ],
-  },
-
-  {
-    title: "Floor & Room Survey",
-    type: "floors",
-  },
-
-  {
-    title: "Layout Drawings",
-    type: "layoutAttachments",
-  },
-
-  {
-    title: "Additional Documents",
-    type: "documents",
   },
 ];

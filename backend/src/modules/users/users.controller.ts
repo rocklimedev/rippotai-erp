@@ -20,22 +20,23 @@ import { CreateUserDto, UpdateUserDto, UpdateProfileDto } from './dto/user.dto';
 
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
+
 @Controller('users')
-@UseGuards(JwtAuthGuard) // ← Recommended: Protect all routes by default
+@UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  // =========================
-  // CREATE USER (Admin) - Optional: May need different guard (e.g., AdminGuard)
-  // =========================
+  // =========================================================
+  // CREATE USER (Admin)
+  // =========================================================
   @Post()
   create(@Body() dto: CreateUserDto, @CurrentUser() actor?: any) {
     return this.usersService.create(dto, actor);
   }
 
-  // =========================
+  // =========================================================
   // GET ALL USERS
-  // =========================
+  // =========================================================
   @Get()
   findAll(
     @Query('role_id') role_id?: string,
@@ -47,17 +48,28 @@ export class UsersController {
     });
   }
 
-  // =========================
+  // =========================================================
+  // GET USERS BY ROLE NAME
+  //
+  // Example:
+  // GET /users/by-role/Site%20Engineer
+  // =========================================================
+  @Get('by-role/:roleName')
+  findUsersByRoleName(@Param('roleName') roleName: string) {
+    return this.usersService.findUsersByRoleName(roleName);
+  }
+
+  // =========================================================
   // GET ONE USER
-  // =========================
+  // =========================================================
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
 
-  // =========================
+  // =========================================================
   // UPDATE PROFILE (Self)
-  // =========================
+  // =========================================================
   @Patch(':id/profile')
   updateProfile(
     @Param('id') id: string,
@@ -67,21 +79,26 @@ export class UsersController {
     if (!actor?.id) {
       throw new UnauthorizedException('Authentication required');
     }
+
     return this.usersService.updateProfile(id, dto, actor.id);
   }
 
-  // =========================
-  // UPLOAD AVATAR - Fixed
-  // =========================
+  // =========================================================
+  // UPLOAD AVATAR
+  // =========================================================
   @Patch(':id/avatar')
   @UseInterceptors(
     FileInterceptor('avatar', {
-      limits: { fileSize: 2 * 1024 * 1024 },
+      limits: {
+        fileSize: 2 * 1024 * 1024,
+      },
+
       fileFilter: (_req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
           cb(new BadRequestException('Only image files are allowed'), false);
           return;
         }
+
         cb(null, true);
       },
     }),
@@ -102,9 +119,9 @@ export class UsersController {
     return this.usersService.uploadAvatar(id, file, actor.id);
   }
 
-  // =========================
+  // =========================================================
   // UPDATE USER (Admin)
-  // =========================
+  // =========================================================
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -114,17 +131,17 @@ export class UsersController {
     return this.usersService.update(id, dto, actor);
   }
 
-  // =========================
+  // =========================================================
   // DEACTIVATE USER
-  // =========================
+  // =========================================================
   @Patch(':id/deactivate')
   deactivate(@Param('id') id: string, @CurrentUser() actor?: any) {
     return this.usersService.deactivate(id, actor);
   }
 
-  // =========================
+  // =========================================================
   // DELETE USER
-  // =========================
+  // =========================================================
   @Delete(':id')
   remove(@Param('id') id: string, @CurrentUser() actor?: any) {
     return this.usersService.remove(id, actor);

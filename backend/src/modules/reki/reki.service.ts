@@ -1,412 +1,942 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
+
 import { Sequelize } from 'sequelize-typescript';
+import { Transaction } from 'sequelize';
 
 import { SiteRecce } from './models/site-recce.model';
-import { SiteRecceFloor } from './models/site-recce-floor.model';
 import { SiteRecceRoom } from './models/site-recce-room.model';
-import { SiteLayoutAttachment } from './models/site-layout-attachment.model';
-import { SiteImageAttachment } from './models/site-image-attachment.model';
-import { SiteRecceDocument } from './models/site-recce-document.model';
-import { Project } from '../projects/models/projects.model';
-import { Document } from '../documents/models/document.model';
+import { SiteReccePhoto } from './models/site-recce-photo.model';
 
-import { DocumentsService } from '../documents/document.service';
-import { ActivityLogForSiteRecceService } from '../engagement/services/activity-log-site-recce.service';
-import { NotificationForSiteRecceService } from '../engagement/services/notification-site-recce.service';
+import { Project } from '@/modules/projects/models/projects.model';
+import { User } from '@/modules/users/models/user.model';
+
+import { CreateSiteRecceDto } from './dto/create-site-recce.dto';
+import { UpdateSiteRecceDto } from './dto/update-site-recce.dto';
+
+import { CdnService } from '@/modules/cdn/cdn.service';
 
 @Injectable()
 export class SiteRecceService {
   constructor(
-    @InjectModel(SiteRecce)
-    private readonly siteRecceModel: typeof SiteRecce,
-    @InjectModel(SiteRecceFloor)
-    private readonly floorModel: typeof SiteRecceFloor,
-    @InjectModel(SiteRecceRoom)
-    private readonly roomModel: typeof SiteRecceRoom,
-    @InjectModel(SiteLayoutAttachment)
-    private readonly layoutModel: typeof SiteLayoutAttachment,
-    @InjectModel(SiteImageAttachment)
-    private readonly imageModel: typeof SiteImageAttachment,
-    @InjectModel(SiteRecceDocument)
-    private readonly documentModel: typeof SiteRecceDocument,
-    @InjectModel(Document)
-    private readonly documentModelDirect: typeof Document,
-
     private readonly sequelize: Sequelize,
-    private readonly documentsService: DocumentsService,
-
-    private readonly activityLogForSiteRecceService: ActivityLogForSiteRecceService,
-    private readonly notificationForSiteRecceService: NotificationForSiteRecceService,
+    private readonly cdnService: CdnService,
   ) {}
 
-  // ========================================
-  // CREATE FULL RECCE
-  // ========================================
-  async createFullRecce(
-    createData: any,
-    createdBy: string,
-    files?: { layoutImages?: Express.Multer.File[] },
-  ) {
+  // ============================================================
+  // CREATE SITE RECCE
+  // ============================================================
+
+  async create(dto: CreateSiteRecceDto, userId?: string): Promise<SiteRecce> {
     const transaction = await this.sequelize.transaction();
+
     try {
-      const recce = await this.siteRecceModel.create(
-        {
-          ...createData,
-          created_by: createdBy,
-          updated_by: createdBy,
+      // --------------------------------------------------------
+      // Validate project
+      // --------------------------------------------------------
+
+      const project = await Project.findByPk(dto.project_id, {
+        transaction,
+      });
+
+      if (!project) {
+        throw new NotFoundException('Project not found');
+      }
+
+      // --------------------------------------------------------
+      // Prevent duplicate site recce
+      // --------------------------------------------------------
+
+      const existing = await SiteRecce.findOne({
+        where: {
+          project_id: dto.project_id,
         },
-        { transaction },
+        transaction,
+      });
+
+      if (existing) {
+        throw new BadRequestException(
+          'A Site Recce already exists for this project',
+        );
+      }
+
+      // --------------------------------------------------------
+      // Create master record
+      // --------------------------------------------------------
+
+      const recce = await SiteRecce.create(
+        {
+          project_id: dto.project_id,
+
+          project_name: dto.project_name ?? project.name,
+
+          client_name: dto.client_name ?? null,
+
+          site_address: dto.site_address ?? project.site_location,
+
+          recce_date: dto.recce_date,
+
+          site_engineer_id: dto.site_engineer_id ?? null,
+
+          accompanied_by: dto.accompanied_by ?? null,
+
+          unit_floor_no: dto.unit_floor_no ?? null,
+
+          carpet_area_sqft: dto.carpet_area_sqft ?? null,
+
+          built_up_area_sqft: dto.built_up_area_sqft ?? null,
+
+          number_of_rooms: dto.number_of_rooms ?? null,
+
+          number_of_floors: dto.number_of_floors ?? null,
+
+          site_type: dto.site_type ?? null,
+
+          lift_available: dto.lift_available ?? null,
+
+          lift_size: dto.lift_size ?? null,
+
+          staircase_width: dto.staircase_width ?? null,
+
+          material_entry_point: dto.material_entry_point ?? null,
+
+          water_connection: dto.water_connection ?? null,
+
+          power_load_available: dto.power_load_available ?? null,
+
+          drainage_point_location: dto.drainage_point_location ?? null,
+
+          society_rwa_restrictions: dto.society_rwa_restrictions ?? null,
+
+          working_hours_allowed: dto.working_hours_allowed ?? null,
+
+          material_movement_rule: dto.material_movement_rule ?? null,
+
+          existing_condition: dto.existing_condition ?? null,
+
+          created_by: userId ?? null,
+
+          updated_by: userId ?? null,
+        } as any,
+        {
+          transaction,
+        },
       );
 
-      // Floors + Rooms
-      if (createData.floors && Array.isArray(createData.floors)) {
-        for (const floorData of createData.floors) {
-          const floor = await this.floorModel.create(
-            { ...floorData, site_recce_id: recce.id },
-            { transaction },
-          );
-          if (floorData.rooms && Array.isArray(floorData.rooms)) {
-            for (const roomData of floorData.rooms) {
-              await this.roomModel.create(
-                { ...roomData, floor_id: floor.id },
-                { transaction },
-              );
-            }
-          }
-        }
+      // --------------------------------------------------------
+      // Create rooms
+      // --------------------------------------------------------
+
+      if (dto.rooms?.length) {
+        await this.createRooms(recce.id, dto.rooms, transaction);
       }
 
-      // Layout Attachments + Images
-      const layoutImages = files?.layoutImages || [];
-      let imageFileIndex = 0;
-
-      if (
-        createData.layoutAttachments &&
-        Array.isArray(createData.layoutAttachments)
-      ) {
-        for (const layoutData of createData.layoutAttachments) {
-          const imagesMeta = Array.isArray(layoutData.images)
-            ? layoutData.images
-            : [];
-          const createdImageDocs: { documentId: string; meta: any }[] = [];
-          let layoutDocumentId: string | undefined;
-
-          for (const imageMeta of imagesMeta) {
-            const file = layoutImages[imageFileIndex];
-            if (!file) continue;
-
-            const doc = await this.documentsService.create(
-              {
-                project_id: createData.project_id,
-                category: 'Drawings',
-                title:
-                  imageMeta.caption || layoutData.title || file.originalname,
-                visibility: 'internal',
-              },
-              file,
-              undefined,
-              transaction,
-            );
-
-            if (!layoutDocumentId) layoutDocumentId = doc.id;
-            createdImageDocs.push({ documentId: doc.id, meta: imageMeta });
-            imageFileIndex++;
-          }
-
-          if (!layoutDocumentId) {
-            throw new BadRequestException(
-              `Layout "${layoutData.title || ''}" requires at least one image`,
-            );
-          }
-
-          const layout = await this.layoutModel.create(
-            {
-              title: layoutData.title,
-              remark: layoutData.remark,
-              floor_id: layoutData.floor_id,
-              site_recce_id: recce.id,
-              document_id: layoutDocumentId,
-              created_by: createdBy,
-              sort_order: layoutData.sort_order || 0,
-            } as any,
-            { transaction },
-          );
-
-          for (const { documentId, meta } of createdImageDocs) {
-            await this.imageModel.create(
-              {
-                site_layout_attachment_id: layout.id,
-                document_id: documentId,
-                caption: meta.caption || '',
-                sort_order: meta.sort_order || 0,
-                created_by: createdBy,
-              } as any,
-              { transaction },
-            );
-          }
-        }
-      }
-
-      // Additional Documents
-      if (createData.documents && Array.isArray(createData.documents)) {
-        for (const docData of createData.documents) {
-          await this.documentModel.create(
-            { ...docData, site_recce_id: recce.id },
-            { transaction },
-          );
-        }
-      }
+      // --------------------------------------------------------
+      // Commit
+      // --------------------------------------------------------
 
       await transaction.commit();
 
-      const createdRecce = await this.findOneWithRelations(recce.id);
+      // --------------------------------------------------------
+      // Return complete record
+      // --------------------------------------------------------
 
-      // === Activity Log & Notification ===
-      await this.activityLogForSiteRecceService.logSiteRecceCreated(
-        createdRecce,
-        { id: createdBy },
-      );
-      await this.notificationForSiteRecceService.notifySiteRecceCreated(
-        createdRecce,
-        createdBy,
-      );
-
-      return createdRecce;
-    } catch (error: unknown) {
+      return this.findOne(recce.id);
+    } catch (error) {
       await transaction.rollback();
-      console.error('Create Full Recce Error:', error);
-      throw new BadRequestException(
-        `Failed to create recce: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      throw error;
+    }
+  }
+
+  // ============================================================
+  // CREATE ROOMS
+  // ============================================================
+
+  private async createRooms(
+    siteRecceId: string,
+    rooms: any[],
+    transaction: Transaction,
+  ): Promise<void> {
+    for (let index = 0; index < rooms.length; index++) {
+      const roomDto = rooms[index];
+
+      // --------------------------------------------------------
+      // Validate room
+      // --------------------------------------------------------
+
+      if (!roomDto?.room_name) {
+        throw new BadRequestException(
+          `Room ${index + 1}: room_name is required`,
+        );
+      }
+
+      // --------------------------------------------------------
+      // Create room
+      // --------------------------------------------------------
+
+      const room = await SiteRecceRoom.create(
+        {
+          site_recce_id: siteRecceId,
+
+          room_name: roomDto.room_name,
+
+          room_type: roomDto.room_type ?? null,
+
+          room_number: roomDto.room_number ?? null,
+
+          length: roomDto.length ?? null,
+
+          width: roomDto.width ?? null,
+
+          height: roomDto.height ?? null,
+
+          measurement_unit: roomDto.measurement_unit ?? 'FT',
+
+          existing_flooring: roomDto.existing_flooring ?? null,
+
+          existing_ceiling: roomDto.existing_ceiling ?? null,
+
+          notes: roomDto.notes ?? null,
+
+          sort_order: roomDto.sort_order ?? index,
+        } as any,
+        {
+          transaction,
+        },
+      );
+
+      // --------------------------------------------------------
+      // Create photos
+      // --------------------------------------------------------
+
+      if (Array.isArray(roomDto.photos) && roomDto.photos.length) {
+        await this.createPhotos(
+          siteRecceId,
+          room.id,
+          roomDto.photos,
+          transaction,
+        );
+      }
+    }
+  }
+
+  // ============================================================
+  // CREATE PHOTOS
+  // ============================================================
+
+  private async createPhotos(
+    siteRecceId: string,
+    roomId: string,
+    photos: any[],
+    transaction: Transaction,
+  ): Promise<void> {
+    for (let index = 0; index < photos.length; index++) {
+      const photoDto = photos[index];
+
+      // --------------------------------------------------------
+      // Automatically determine shot number
+      //
+      // Priority:
+      // 1. shot_number
+      // 2. shotNumber
+      // 3. array index + 1
+      // --------------------------------------------------------
+
+      const rawShotNumber =
+        photoDto?.shot_number ?? photoDto?.shotNumber ?? index + 1;
+
+      const shotNumber = Number(rawShotNumber);
+
+      // --------------------------------------------------------
+      // Validate shot number
+      // --------------------------------------------------------
+
+      if (!Number.isInteger(shotNumber) || shotNumber < 1) {
+        throw new BadRequestException(
+          `Invalid shot_number for photo ${index + 1}`,
+        );
+      }
+
+      // --------------------------------------------------------
+      // Prevent duplicate shot number inside same room
+      // --------------------------------------------------------
+
+      const duplicate = await SiteReccePhoto.findOne({
+        where: {
+          room_id: roomId,
+          shot_number: shotNumber,
+        },
+        transaction,
+      });
+
+      if (duplicate) {
+        throw new BadRequestException(
+          `Shot ${shotNumber} already exists for this room`,
+        );
+      }
+
+      // --------------------------------------------------------
+      // Create photo
+      // --------------------------------------------------------
+
+      await SiteReccePhoto.create(
+        {
+          site_recce_id: siteRecceId,
+
+          room_id: roomId,
+
+          shot_number: shotNumber,
+
+          layout_image_url: photoDto?.layout_image_url ?? null,
+
+          photo_url: photoDto?.photo_url ?? null,
+
+          layout_file_name: photoDto?.layout_file_name ?? null,
+
+          photo_file_name: photoDto?.photo_file_name ?? null,
+
+          standing_position: photoDto?.standing_position ?? null,
+
+          camera_direction: photoDto?.camera_direction ?? null,
+
+          notes: photoDto?.notes ?? null,
+        } as any,
+        {
+          transaction,
+        },
       );
     }
   }
 
-  // ========================================
-  // FIND ONE WITH ALL RELATIONS
-  // ========================================
-  async findOneWithRelations(id: string) {
-    const recce = await this.siteRecceModel.findByPk(id, {
+  // ============================================================
+  // UPLOAD PHOTO + CREATE PHOTO RECORD
+  // ============================================================
+
+  async uploadAndCreatePhoto(
+    siteRecceId: string,
+    roomId: string,
+    file: Express.Multer.File,
+    shotNumber: number,
+    data?: {
+      standing_position?: string;
+      camera_direction?: string;
+      notes?: string;
+    },
+  ): Promise<SiteReccePhoto> {
+    // --------------------------------------------------------
+    // Validate file
+    // --------------------------------------------------------
+
+    if (!file) {
+      throw new BadRequestException('Image file is required');
+    }
+
+    // --------------------------------------------------------
+    // Validate Site Recce
+    // --------------------------------------------------------
+
+    const recce = await SiteRecce.findByPk(siteRecceId);
+
+    if (!recce) {
+      throw new NotFoundException('Site Recce not found');
+    }
+
+    // --------------------------------------------------------
+    // Validate room
+    // --------------------------------------------------------
+
+    const room = await SiteRecceRoom.findOne({
+      where: {
+        id: roomId,
+        site_recce_id: siteRecceId,
+      },
+    });
+
+    if (!room) {
+      throw new NotFoundException('Room not found for this Site Recce');
+    }
+
+    // --------------------------------------------------------
+    // Validate shot number
+    // --------------------------------------------------------
+
+    const parsedShotNumber = Number(shotNumber);
+
+    if (!Number.isInteger(parsedShotNumber) || parsedShotNumber < 1) {
+      throw new BadRequestException('shot_number must be a positive integer');
+    }
+
+    // --------------------------------------------------------
+    // Check duplicate shot
+    // --------------------------------------------------------
+
+    const existing = await SiteReccePhoto.findOne({
+      where: {
+        room_id: roomId,
+        shot_number: parsedShotNumber,
+      },
+    });
+
+    if (existing) {
+      throw new BadRequestException(
+        `Shot ${parsedShotNumber} already exists for this room`,
+      );
+    }
+
+    // --------------------------------------------------------
+    // Upload to CDN
+    // --------------------------------------------------------
+
+    const upload = await this.cdnService.uploadFile(file);
+
+    // --------------------------------------------------------
+    // Create DB record
+    // --------------------------------------------------------
+
+    const photo = await SiteReccePhoto.create({
+      site_recce_id: siteRecceId,
+
+      room_id: roomId,
+
+      shot_number: parsedShotNumber,
+
+      photo_url: upload.url,
+
+      photo_file_name: upload.filename,
+
+      layout_image_url: null,
+
+      layout_file_name: null,
+
+      standing_position: data?.standing_position ?? null,
+
+      camera_direction: data?.camera_direction ?? null,
+
+      notes: data?.notes ?? null,
+    } as any);
+
+    return photo;
+  }
+
+  // ============================================================
+  // UPLOAD PHOTO ONLY
+  // ============================================================
+
+  async uploadPhoto(file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Image file is required');
+    }
+
+    return this.cdnService.uploadFile(file);
+  }
+
+  // ============================================================
+  // FIND ALL
+  // ============================================================
+
+  async findAll(): Promise<SiteRecce[]> {
+    return SiteRecce.findAll({
       include: [
-        {
-          model: SiteRecceFloor,
-          include: [SiteRecceRoom],
-        },
-        {
-          model: SiteLayoutAttachment,
-          include: [
-            {
-              model: SiteImageAttachment,
-              include: [{ model: Document }],
-            },
-            { model: Document },
-          ],
-        },
-        {
-          model: SiteRecceDocument,
-          include: [
-            {
-              model: Document,
-              as: 'document',
-              attributes: [
-                'id',
-                'title',
-                'filename',
-                'url',
-                'mime',
-                'size',
-                'category',
-                'status',
-                'visibility',
-                'version',
-                'documentDate',
-                'docNo',
-              ],
-            },
-          ],
-        },
+        // ------------------------------------------------------
+        // Project
+        // ------------------------------------------------------
+
         {
           model: Project,
-          attributes: ['id', 'name', 'slug', 'site_location', 'client_id'],
+          as: 'project',
+        },
+
+        // ------------------------------------------------------
+        // Site Engineer
+        // ------------------------------------------------------
+
+        {
+          model: User,
+          as: 'site_engineer',
+          attributes: ['id', 'name', 'email'],
+        },
+
+        // ------------------------------------------------------
+        // Rooms
+        // ------------------------------------------------------
+
+        {
+          model: SiteRecceRoom,
+          as: 'rooms',
+
+          include: [
+            {
+              model: SiteReccePhoto,
+              as: 'photos',
+            },
+          ],
         },
       ],
+
       order: [
-        [{ model: SiteRecceFloor, as: 'floors' }, 'floor_order', 'ASC'],
+        ['recce_date', 'DESC'],
+
         [
-          { model: SiteLayoutAttachment, as: 'layoutAttachments' },
+          {
+            model: SiteRecceRoom,
+            as: 'rooms',
+          },
           'sort_order',
+          'ASC',
+        ],
+
+        [
+          {
+            model: SiteRecceRoom,
+            as: 'rooms',
+          },
+          {
+            model: SiteReccePhoto,
+            as: 'photos',
+          },
+          'shot_number',
+          'ASC',
+        ],
+      ],
+    });
+  }
+
+  // ============================================================
+  // FIND ONE
+  // ============================================================
+
+  async findOne(id: string): Promise<SiteRecce> {
+    const recce = await SiteRecce.findByPk(id, {
+      include: [
+        // ------------------------------------------------------
+        // Project
+        // ------------------------------------------------------
+
+        {
+          model: Project,
+          as: 'project',
+        },
+
+        // ------------------------------------------------------
+        // Site Engineer
+        // ------------------------------------------------------
+
+        {
+          model: User,
+          as: 'site_engineer',
+          attributes: ['id', 'name', 'email'],
+        },
+
+        // ------------------------------------------------------
+        // Rooms + Photos
+        // ------------------------------------------------------
+
+        {
+          model: SiteRecceRoom,
+          as: 'rooms',
+
+          include: [
+            {
+              model: SiteReccePhoto,
+              as: 'photos',
+            },
+          ],
+        },
+      ],
+
+      order: [
+        [
+          {
+            model: SiteRecceRoom,
+            as: 'rooms',
+          },
+          'sort_order',
+          'ASC',
+        ],
+
+        [
+          {
+            model: SiteRecceRoom,
+            as: 'rooms',
+          },
+          {
+            model: SiteReccePhoto,
+            as: 'photos',
+          },
+          'shot_number',
           'ASC',
         ],
       ],
     });
 
     if (!recce) {
-      throw new NotFoundException(`Site Recce with ID ${id} not found`);
+      throw new NotFoundException('Site Recce not found');
     }
+
     return recce;
   }
 
-  // ========================================
-  // FIND ALL
-  // ========================================
-  async findAll(projectId?: string, status?: string) {
-    const where: any = {};
-    if (projectId) where.project_id = projectId;
-    if (status) where.status = status;
+  // ============================================================
+  // FIND BY PROJECT
+  // ============================================================
 
-    return this.siteRecceModel.findAll({
-      where,
+  async findByProject(projectId: string): Promise<SiteRecce | null> {
+    return SiteRecce.findOne({
+      where: {
+        project_id: projectId,
+      },
+
       include: [
-        { model: SiteRecceFloor, include: [SiteRecceRoom] },
-        { model: SiteLayoutAttachment, include: [SiteImageAttachment] },
+        // ------------------------------------------------------
+        // Project
+        // ------------------------------------------------------
+
         {
-          model: SiteRecceDocument,
-          include: [{ model: Document, as: 'document' }],
+          model: Project,
+          as: 'project',
         },
-        { model: Project, attributes: ['id', 'name', 'slug'] },
+
+        // ------------------------------------------------------
+        // Site Engineer
+        // ------------------------------------------------------
+
+        {
+          model: User,
+          as: 'site_engineer',
+          attributes: ['id', 'name', 'email'],
+        },
+
+        // ------------------------------------------------------
+        // Rooms + Photos
+        // ------------------------------------------------------
+
+        {
+          model: SiteRecceRoom,
+          as: 'rooms',
+
+          include: [
+            {
+              model: SiteReccePhoto,
+              as: 'photos',
+            },
+          ],
+        },
       ],
+
       order: [
-        ['recce_date', 'DESC'],
-        ['created_at', 'DESC'],
+        [
+          {
+            model: SiteRecceRoom,
+            as: 'rooms',
+          },
+          'sort_order',
+          'ASC',
+        ],
+
+        [
+          {
+            model: SiteRecceRoom,
+            as: 'rooms',
+          },
+          {
+            model: SiteReccePhoto,
+            as: 'photos',
+          },
+          'shot_number',
+          'ASC',
+        ],
       ],
     });
   }
 
-  // ========================================
+  // ============================================================
   // UPDATE
-  // ========================================
-  async update(id: string, updateData: any, updatedBy: string) {
-    const recce = await this.siteRecceModel.findByPk(id);
-    if (!recce) throw new NotFoundException('Recce not found');
+  // ============================================================
 
-    const oldStatus = recce.status;
+  async update(
+    id: string,
+    dto: UpdateSiteRecceDto,
+    userId?: string,
+  ): Promise<SiteRecce> {
+    const transaction = await this.sequelize.transaction();
 
-    await recce.update({ ...updateData, updated_by: updatedBy });
+    try {
+      // --------------------------------------------------------
+      // Find existing recce
+      // --------------------------------------------------------
 
-    const updatedRecce = await this.findOneWithRelations(id);
+      const recce = await SiteRecce.findByPk(id, {
+        transaction,
+      });
 
-    // === Activity Log & Notification ===
-    await this.activityLogForSiteRecceService.logSiteRecceUpdated(
-      updatedRecce,
-      { id: updatedBy },
-    );
-    await this.notificationForSiteRecceService.notifySiteRecceUpdated(
-      updatedRecce,
-      updatedBy,
-    );
+      if (!recce) {
+        throw new NotFoundException('Site Recce not found');
+      }
 
-    if (oldStatus !== updatedRecce.status) {
-      await this.activityLogForSiteRecceService.logSiteRecceStatusChanged(
-        updatedRecce,
-        oldStatus,
-        updatedRecce.status,
-        { id: updatedBy },
-      );
-      await this.notificationForSiteRecceService.notifySiteRecceStatusChanged(
-        updatedRecce,
-        oldStatus,
-        updatedRecce.status,
-        updatedBy,
-      );
+      // --------------------------------------------------------
+      // Master fields
+      // --------------------------------------------------------
+
+      const masterData: Record<string, any> = {};
+
+      const fields = [
+        'project_name',
+        'client_name',
+        'site_address',
+        'recce_date',
+        'site_engineer_id',
+        'accompanied_by',
+        'unit_floor_no',
+        'carpet_area_sqft',
+        'built_up_area_sqft',
+        'number_of_rooms',
+        'number_of_floors',
+        'site_type',
+        'lift_available',
+        'lift_size',
+        'staircase_width',
+        'material_entry_point',
+        'water_connection',
+        'power_load_available',
+        'drainage_point_location',
+        'society_rwa_restrictions',
+        'working_hours_allowed',
+        'material_movement_rule',
+        'existing_condition',
+      ];
+
+      for (const field of fields) {
+        if ((dto as any)[field] !== undefined) {
+          masterData[field] = (dto as any)[field];
+        }
+      }
+
+      // --------------------------------------------------------
+      // Updated by
+      // --------------------------------------------------------
+
+      if (userId) {
+        masterData.updated_by = userId;
+      }
+
+      // --------------------------------------------------------
+      // Update master
+      // --------------------------------------------------------
+
+      if (Object.keys(masterData).length) {
+        await recce.update(masterData, {
+          transaction,
+        });
+      }
+
+      // --------------------------------------------------------
+      // Replace rooms
+      //
+      // undefined = don't touch existing rooms
+      // []        = remove all rooms
+      // array     = replace rooms
+      // --------------------------------------------------------
+
+      if (dto.rooms !== undefined) {
+        await SiteRecceRoom.destroy({
+          where: {
+            site_recce_id: id,
+          },
+          transaction,
+        });
+
+        if (dto.rooms.length) {
+          await this.createRooms(id, dto.rooms, transaction);
+        }
+      }
+
+      // --------------------------------------------------------
+      // Commit
+      // --------------------------------------------------------
+
+      await transaction.commit();
+
+      return this.findOne(id);
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
     }
-
-    return updatedRecce;
   }
 
-  // ========================================
-  // UPDATE STATUS
-  // ========================================
-  async updateStatus(id: string, status: string, updatedBy: string) {
-    const validStatuses = [
-      'draft',
-      'scheduled',
-      'in_progress',
-      'completed',
-      'approved',
-      'cancelled',
-    ];
-    if (!validStatuses.includes(status)) {
-      throw new BadRequestException('Invalid status');
-    }
-
-    const recce = await this.siteRecceModel.findByPk(id);
-    if (!recce) throw new NotFoundException('Recce not found');
-
-    const oldStatus = recce.status;
-
-    await recce.update({ status, updated_by: updatedBy });
-
-    const updatedRecce = await this.findOneWithRelations(id);
-
-    // === Activity Log & Notification ===
-    await this.activityLogForSiteRecceService.logSiteRecceStatusChanged(
-      updatedRecce,
-      oldStatus,
-      status,
-      { id: updatedBy },
-    );
-    await this.notificationForSiteRecceService.notifySiteRecceStatusChanged(
-      updatedRecce,
-      oldStatus,
-      status,
-      updatedBy,
-    );
-
-    return updatedRecce;
-  }
-
-  // ========================================
+  // ============================================================
   // DELETE
-  // ========================================
-  async remove(id: string, deletedBy: string) {
-    const recce = await this.findOneWithRelations(id);
-    if (!recce) throw new NotFoundException('Recce not found');
+  // ============================================================
 
-    const projectName = recce.project?.name || null;
+  async remove(id: string): Promise<void> {
+    const recce = await SiteRecce.findByPk(id);
+
+    if (!recce) {
+      throw new NotFoundException('Site Recce not found');
+    }
 
     await recce.destroy();
-
-    // === Activity Log & Notification ===
-    await this.activityLogForSiteRecceService.logSiteRecceDeleted(
-      id,
-      projectName,
-      { id: deletedBy },
-    );
-    await this.notificationForSiteRecceService.notifySiteRecceDeleted(
-      id,
-      projectName,
-      deletedBy,
-    );
-
-    return { message: 'Site Recce deleted successfully' };
   }
 
-  // ========================================
-  // ADDITIONAL HELPER METHODS
-  // ========================================
-  async addFloor(recceId: string, floorData: any) {
-    const recce = await this.siteRecceModel.findByPk(recceId);
-    if (!recce) throw new NotFoundException('Recce not found');
-    return this.floorModel.create({ ...floorData, site_recce_id: recceId });
-  }
+  // ============================================================
+  // RESTORE
+  // ============================================================
 
-  async addRoom(floorId: string, roomData: any) {
-    return this.roomModel.create({ ...roomData, floor_id: floorId });
-  }
+  async restore(id: string): Promise<SiteRecce> {
+    const recce = await SiteRecce.findOne({
+      where: {
+        id,
+      },
 
-  async addLayoutAttachment(
-    recceId: string,
-    layoutData: any,
-    createdBy: string,
-  ) {
-    return this.layoutModel.create({
-      ...layoutData,
-      site_recce_id: recceId,
-      created_by: createdBy,
+      paranoid: false,
     });
+
+    if (!recce) {
+      throw new NotFoundException('Site Recce not found');
+    }
+
+    await recce.restore();
+
+    return this.findOne(id);
+  }
+
+  // ============================================================
+  // DELETE PHOTO
+  // ============================================================
+
+  async removePhoto(photoId: string): Promise<void> {
+    const photo = await SiteReccePhoto.findByPk(photoId);
+
+    if (!photo) {
+      throw new NotFoundException('Site Recce photo not found');
+    }
+
+    // --------------------------------------------------------
+    // Delete physical photo from CDN
+    // --------------------------------------------------------
+
+    if (photo.photo_file_name) {
+      await this.cdnService.deleteFile(photo.photo_file_name);
+    }
+
+    // --------------------------------------------------------
+    // Delete layout file from CDN
+    // --------------------------------------------------------
+
+    if (photo.layout_file_name) {
+      await this.cdnService.deleteFile(photo.layout_file_name);
+    }
+
+    // --------------------------------------------------------
+    // Delete DB record
+    // --------------------------------------------------------
+
+    await photo.destroy();
+  }
+
+  // ============================================================
+  // UPLOAD LAYOUT IMAGE
+  // ============================================================
+
+  async uploadLayoutImage(
+    photoId: string,
+    file: Express.Multer.File,
+  ): Promise<SiteReccePhoto> {
+    // --------------------------------------------------------
+    // Validate file
+    // --------------------------------------------------------
+
+    if (!file) {
+      throw new BadRequestException('Layout image is required');
+    }
+
+    // --------------------------------------------------------
+    // Find photo
+    // --------------------------------------------------------
+
+    const photo = await SiteReccePhoto.findByPk(photoId);
+
+    if (!photo) {
+      throw new NotFoundException('Site Recce photo not found');
+    }
+
+    // --------------------------------------------------------
+    // Upload new layout
+    // --------------------------------------------------------
+
+    const upload = await this.cdnService.uploadFile(file);
+
+    // --------------------------------------------------------
+    // Delete previous layout
+    // --------------------------------------------------------
+
+    if (photo.layout_file_name) {
+      await this.cdnService.deleteFile(photo.layout_file_name);
+    }
+
+    // --------------------------------------------------------
+    // Update DB
+    // --------------------------------------------------------
+
+    await photo.update({
+      layout_image_url: upload.url,
+      layout_file_name: upload.filename,
+    } as any);
+
+    return photo;
+  }
+
+  // ============================================================
+  // REPLACE PHOTO IMAGE
+  // ============================================================
+
+  async replacePhoto(
+    photoId: string,
+    file: Express.Multer.File,
+  ): Promise<SiteReccePhoto> {
+    // --------------------------------------------------------
+    // Validate file
+    // --------------------------------------------------------
+
+    if (!file) {
+      throw new BadRequestException('Image file is required');
+    }
+
+    // --------------------------------------------------------
+    // Find existing photo
+    // --------------------------------------------------------
+
+    const photo = await SiteReccePhoto.findByPk(photoId);
+
+    if (!photo) {
+      throw new NotFoundException('Site Recce photo not found');
+    }
+
+    // --------------------------------------------------------
+    // Upload new image
+    // --------------------------------------------------------
+
+    const upload = await this.cdnService.uploadFile(file);
+
+    // --------------------------------------------------------
+    // Delete old CDN file
+    // --------------------------------------------------------
+
+    if (photo.photo_file_name) {
+      await this.cdnService.deleteFile(photo.photo_file_name);
+    }
+
+    // --------------------------------------------------------
+    // Update DB
+    // --------------------------------------------------------
+
+    await photo.update({
+      photo_url: upload.url,
+      photo_file_name: upload.filename,
+    } as any);
+
+    return photo;
   }
 }
