@@ -14,7 +14,10 @@ import { ScopeOfWork } from './models/scope-of-work.model';
 
 import { CreateScopeCategoryDto } from './dto/create-scope-category.dto';
 import { UpdateScopeCategoryDto } from './dto/update-scope-category.dto';
-
+import { Project } from '../projects/models/projects.model';
+import { User } from '../users/models/user.model';
+import { Client } from '../clients/models/client.model';
+import { TeamMember } from '../users/models/team-member.model';
 import { CreateProjectSpaceDto } from './dto/create-project-space.dto';
 import { UpdateProjectSpaceDto } from './dto/update-project-space.dto';
 
@@ -774,6 +777,40 @@ export class ScopeOfWorkService {
   async getScopeOfWorkById(id: string) {
     const scope = await this.scopeOfWorkModel.findByPk(id, {
       include: [
+        // ========================================================
+        // PROJECT
+        // ========================================================
+        {
+          model: Project,
+          as: 'project',
+          include: [
+            // ======================================================
+            // CLIENT
+            // ======================================================
+            {
+              model: Client,
+              as: 'client',
+            },
+
+            // ======================================================
+            // PROJECT TEAM MEMBERS
+            // ======================================================
+            {
+              model: TeamMember,
+              as: 'team_members',
+              include: [
+                {
+                  model: User,
+                  as: 'user',
+                },
+              ],
+            },
+          ],
+        },
+
+        // ========================================================
+        // SCOPE ITEMS
+        // ========================================================
         {
           model: ScopeItem,
           include: [
@@ -784,7 +821,30 @@ export class ScopeOfWorkService {
               model: ScopeCategory,
             },
           ],
-          order: [['sortOrder', 'ASC']],
+        },
+
+        // ========================================================
+        // PREPARED BY
+        // ========================================================
+        {
+          model: User,
+          as: 'preparedByUser',
+        },
+
+        // ========================================================
+        // REVIEWED BY
+        // ========================================================
+        {
+          model: User,
+          as: 'reviewedByUser',
+        },
+
+        // ========================================================
+        // ACCEPTED BY
+        // ========================================================
+        {
+          model: User,
+          as: 'acceptedByUser',
         },
       ],
     });

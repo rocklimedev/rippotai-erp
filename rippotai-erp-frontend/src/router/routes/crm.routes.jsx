@@ -23,6 +23,8 @@ import { ProjectBriefView } from "../../pages/documents/ProjectBriefView";
 import { PlanOfActionView } from "../../pages/documents/PlanOfActionView";
 
 import { ScopeOfWorkView } from "../../pages/documents/ScopeOfWorkView";
+import { BusinessProposalAll } from "../../pages/documents/BusinessProposal";
+import ProposalBuilder from "../../pages/documents/ProposalBuilder";
 
 export const crmRoutes = [
   {
@@ -87,6 +89,11 @@ export const crmRoutes = [
         element: <SiteRecceList />,
       },
       {
+        path: "business-proposal/all",
+        element: <BusinessProposalAll />,
+      },
+
+      {
         path: "recce/:id",
         element: <SiteRekiView />,
       },
@@ -119,7 +126,10 @@ export const crmRoutes = [
         path: "forms/project-brief",
         element: <BriefForm />,
       },
-
+      {
+        path: "forms/business-proposal",
+        element: <ProposalBuilder />,
+      },
       {
         path: "forms/site-reki",
         element: <SiteRekiForm />,

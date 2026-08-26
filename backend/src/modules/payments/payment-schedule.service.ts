@@ -9,7 +9,9 @@ import { PaymentSchedule } from './models/payment-schedule.model';
 import { PaymentScheduleMilestone } from './models/payment-schedule-milestone.model';
 import { Project } from '@/modules/projects/models/projects.model';
 import { TermsTemplate } from '../metas/models/terms-templates.model';
-
+import { TeamMember } from '../users/models/team-member.model';
+import { User } from '../users/models/user.model';
+import { Client } from '../clients/models/client.model';
 import { CreatePaymentScheduleDto } from './dto/create-payment-schedule.dto';
 import { UpdatePaymentScheduleDto } from './dto/update-payment-schedule.dto';
 import { CreateMilestoneDto } from './dto/create-milestone.dto';
@@ -201,6 +203,9 @@ export class PaymentSchedulesService {
   async findOne(id: string): Promise<PaymentSchedule> {
     const schedule = await this.paymentScheduleModel.findByPk(id, {
       include: [
+        // ========================================================
+        // PROJECT
+        // ========================================================
         {
           model: Project,
           as: 'project',
@@ -217,8 +222,60 @@ export class PaymentSchedulesService {
             'progress_pct',
             'timeline_status',
           ],
+
+          include: [
+            // ======================================================
+            // PROJECT CLIENT
+            // ======================================================
+            {
+              model: Client,
+              as: 'client',
+              attributes: [
+                'id',
+                'name',
+                'slug',
+                'contact_person',
+                'email',
+                'phone',
+                'address',
+              ],
+            },
+
+            // ======================================================
+            // PROJECT TEAM MEMBERS
+            // ======================================================
+            {
+              model: TeamMember,
+              as: 'team_members',
+              attributes: [
+                'id',
+                'owner_type',
+                'owner_id',
+                'user_id',
+                'role_label',
+                'is_primary',
+                'sort_order',
+              ],
+
+              include: [
+                // ==================================================
+                // TEAM MEMBER USER
+                // ==================================================
+                {
+                  model: User,
+                  as: 'user',
+                  attributes: ['id', 'name', 'email'],
+                },
+              ],
+
+              order: [['sort_order', 'ASC']],
+            },
+          ],
         },
 
+        // ========================================================
+        // TERMS TEMPLATE
+        // ========================================================
         {
           model: TermsTemplate,
           as: 'termsTemplate',
@@ -233,15 +290,24 @@ export class PaymentSchedulesService {
           ],
         },
 
+        // ========================================================
+        // PAYMENT MILESTONES
+        // ========================================================
         {
           model: PaymentScheduleMilestone,
           as: 'milestones',
         },
       ],
 
+      // ==========================================================
+      // ORDER MILESTONES
+      // ==========================================================
       order: [
         [
-          { model: PaymentScheduleMilestone, as: 'milestones' },
+          {
+            model: PaymentScheduleMilestone,
+            as: 'milestones',
+          },
           'sortOrder',
           'ASC',
         ],

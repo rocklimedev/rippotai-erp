@@ -2,8 +2,10 @@ import React, { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, Edit3, Trash2, Download, Loader2 } from "lucide-react";
-import html2pdf from "html2pdf.js";
-
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+// you can remove the html2pdf import entirely
+import logo from "../../assets/rippotai_logo.png";
 import { Shell, Card } from "../../hooks/shared";
 
 import {
@@ -26,7 +28,7 @@ const BRAND = {
   paper: "#FFFFFF",
 };
 
-const LOGO_SRC = "/assets/branding/rippotai-mark.png";
+const LOGO_SRC = logo;
 
 const PROJECT_TYPES = [
   "Residential",
@@ -326,7 +328,7 @@ function CoverPage({ project, addressLine, pageNumber, totalPages }) {
           >
             <CoverField label="Address" value={project.site_location} />
 
-            <CoverField label="Client" value={project.client_name} />
+            <CoverField label="Client" value={project.client?.name} />
           </div>
 
           <div
@@ -337,10 +339,21 @@ function CoverPage({ project, addressLine, pageNumber, totalPages }) {
           >
             <CoverField
               label="Principal Architect"
-              value={project.principal_architect}
+              value={
+                project.team_members?.find(
+                  (member) => member.role_label === "Principal Architect",
+                )?.user?.name || "-"
+              }
             />
 
-            <CoverField label="Project Lead" value={project.project_lead} />
+            <CoverField
+              label="Project Lead"
+              value={
+                project.team_members?.find(
+                  (member) => member.role_label === "Project Lead",
+                )?.user?.name || "-"
+              }
+            />
           </div>
         </div>
       </div>
@@ -1091,7 +1104,6 @@ export function ScopeOfWorkView() {
   // -------------------------------------------------------------------------
   // DOWNLOAD PDF
   // -------------------------------------------------------------------------
-
   const downloadPdf = async () => {
     if (isGeneratingPdf) {
       return;
@@ -1111,13 +1123,40 @@ export function ScopeOfWorkView() {
         id: "sow-pdf",
       });
 
-      /*
-       * Give the browser a moment to make sure
-       * images/fonts/layout are fully rendered.
-       */
-      await new Promise((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      // ---------------------------------------------------------
+      // WAIT FOR DOM TO FINISH RENDERING
+      // ---------------------------------------------------------
+
+      await new Promise((resolve) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            resolve();
+          });
+        });
+      });
+
+      // ---------------------------------------------------------
+      // WAIT FOR IMAGES
+      // ---------------------------------------------------------
+
+      const images = Array.from(element.querySelectorAll("img"));
+
+      await Promise.all(
+        images.map((img) => {
+          if (img.complete) {
+            return Promise.resolve();
+          }
+
+          return new Promise((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          });
+        }),
       );
+
+      // ---------------------------------------------------------
+      // FILE NAME
+      // ---------------------------------------------------------
 
       const projectName = sanitizeFilename(project.name || "Project");
 
@@ -1125,57 +1164,130 @@ export function ScopeOfWorkView() {
 
       const filename = `${projectName}-Scope-of-Work-v${version}.pdf`;
 
-      const options = {
-        margin: 0,
+      // ---------------------------------------------------------
+      // FIND ALL PDF PAGES
+      // ---------------------------------------------------------
 
-        filename,
+      const pages = Array.from(element.querySelectorAll(".sow-pdf-page"));
 
-        image: {
-          type: "jpeg",
-          quality: 0.98,
-        },
+      if (pages.length === 0) {
+        toast.error("No PDF pages found", {
+          id: "sow-pdf",
+        });
 
-        html2canvas: {
+        return;
+      }
+
+      console.log(`Generating ${pages.length} PDF pages...`);
+
+      // ---------------------------------------------------------
+      // CREATE PDF
+      // ---------------------------------------------------------
+
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+        compress: true,
+      });
+
+      const PDF_WIDTH = 210;
+      const PDF_HEIGHT = 297;
+
+      // ---------------------------------------------------------
+      // CAPTURE EACH PAGE
+      // ---------------------------------------------------------
+
+      for (let index = 0; index < pages.length; index++) {
+        const page = pages[index];
+
+        console.log(`Capturing PDF page ${index + 1}/${pages.length}`);
+
+        // -------------------------------------------------------
+        // FORCE EXACT A4 PIXEL SIZE
+        // -------------------------------------------------------
+
+        const originalWidth = page.style.width;
+        const originalHeight = page.style.height;
+        const originalMinHeight = page.style.minHeight;
+
+        page.style.width = "794px";
+        page.style.height = "1123px";
+        page.style.minHeight = "1123px";
+
+        // Force browser reflow
+        void page.offsetHeight;
+
+        // -------------------------------------------------------
+        // CAPTURE
+        // -------------------------------------------------------
+
+        const canvas = await html2canvas(page, {
           scale: 2,
 
           useCORS: true,
-
           allowTaint: false,
 
           backgroundColor: "#FFFFFF",
 
           logging: false,
 
-          /*
-           * A4 pixel dimensions.
-           */
           width: 794,
+          height: 1123,
 
           windowWidth: 794,
+          windowHeight: 1123,
+
+          x: 0,
+          y: 0,
 
           scrollX: 0,
-
           scrollY: 0,
-        },
+        });
 
-        jsPDF: {
-          unit: "px",
+        // -------------------------------------------------------
+        // RESTORE PAGE STYLES
+        // -------------------------------------------------------
 
-          format: [794, 1123],
+        page.style.width = originalWidth;
+        page.style.height = originalHeight;
+        page.style.minHeight = originalMinHeight;
 
-          orientation: "portrait",
+        // -------------------------------------------------------
+        // CONVERT CANVAS TO IMAGE
+        // -------------------------------------------------------
 
-          compress: true,
-        },
+        const imageData = canvas.toDataURL("image/jpeg", 0.95);
 
-        pagebreak: {
-          mode: ["css", "legacy"],
+        // -------------------------------------------------------
+        // ADD PDF PAGE
+        // -------------------------------------------------------
 
-          before: ".sow-pdf-page",
-        },
-      };
+        if (index > 0) {
+          pdf.addPage("a4", "portrait");
+        }
 
-      await html2pdf().set(options).from(element).save();
+        // -------------------------------------------------------
+        // ADD IMAGE
+        // -------------------------------------------------------
+
+        pdf.addImage(
+          imageData,
+          "JPEG",
+          0,
+          0,
+          PDF_WIDTH,
+          PDF_HEIGHT,
+          undefined,
+          "FAST",
+        );
+      }
+
+      // ---------------------------------------------------------
+      // SAVE
+      // ---------------------------------------------------------
+
+      pdf.save(filename);
 
       toast.success("Scope of work downloaded successfully", {
         id: "sow-pdf",
@@ -1190,7 +1302,6 @@ export function ScopeOfWorkView() {
       setIsGeneratingPdf(false);
     }
   };
-
   // -------------------------------------------------------------------------
   // RENDER
   // -------------------------------------------------------------------------

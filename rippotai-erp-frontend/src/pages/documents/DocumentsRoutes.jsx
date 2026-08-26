@@ -22,7 +22,7 @@ export function DrawingsAll() {
       subtitle={`${rows.length} drawing${rows.length !== 1 ? "s" : ""} · revisions preserved`}
       action={
         <a
-          href="/documents/drawings/upload"
+          href="/design-studio/new"
           className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-1.5"
         >
           <Upload size={14} /> Upload Drawing

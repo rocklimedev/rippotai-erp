@@ -574,9 +574,21 @@ const PaymentScheduleView = ({ schedule, className = "" }) => {
               <div className="mt-6 w-full grid grid-cols-2 gap-x-10 gap-y-6 text-left">
                 {[
                   ["Address", project.site_location],
-                  ["Client", project.clientName],
-                  ["Principal Architect", project.principalArchitect],
-                  ["Project Lead", project.projectLead],
+                  ["Client", project.client?.name],
+
+                  [
+                    "Principal Architect",
+                    project.team_members?.find(
+                      (member) => member.role_label === "Principal Architect",
+                    )?.user?.name,
+                  ],
+
+                  [
+                    "Project Lead",
+                    project.team_members?.find(
+                      (member) => member.role_label === "Project Lead",
+                    )?.user?.name,
+                  ],
                 ].map(([label, value]) => (
                   <div
                     key={label}
