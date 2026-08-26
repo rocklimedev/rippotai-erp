@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 import { Tabs } from "../../components/ui/tabs";
-import { Button } from "../../components/ui/Button";
+import { Button } from "../../components/ui/button";
 
 import ProjectDetailSection from "../../components/business-proposal/ProjectDetailSection";
 import ScopeOfWorkSection from "../../components/business-proposal/ScopeOfWorkSection";
