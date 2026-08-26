@@ -216,7 +216,7 @@ export default function SiteRecceList() {
           </div>
 
           <button
-            onClick={() => nav("/documents/forms/site-reki")}
+            onClick={() => nav("/crm/forms/site-reki")}
             className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-1.5 hover:bg-[#17372F]"
           >
             <Plus className="w-4 h-4" />
@@ -260,7 +260,7 @@ export default function SiteRecceList() {
         </div>
 
         <button
-          onClick={() => nav("/documents/forms/site-reki")}
+          onClick={() => nav("/crm/forms/site-reki")}
           className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-1.5 hover:bg-[#17372F] transition-colors"
           data-testid="site-recce-new-btn"
         >
@@ -471,9 +471,7 @@ export default function SiteRecceList() {
                       return (
                         <div
                           key={recce.id}
-                          onClick={() =>
-                            nav(`/documents/site-recce/${recce.id}`)
-                          }
+                          onClick={() => nav(`/crm/recce/${recce.id}`)}
                           className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F4F6F7] cursor-pointer px-6 py-4 transition-colors"
                           data-testid={`site-recce-row-${recce.id}`}
                         >
@@ -586,7 +584,7 @@ export default function SiteRecceList() {
                               onClick={(e) => e.stopPropagation()}
                             >
                               <button
-                                onClick={() => nav(`/site-recce/${recce.id}`)}
+                                onClick={() => nav(`/crm/recce/${recce.id}`)}
                                 className="p-1.5 rounded hover:bg-[#EAEEF0] text-[#333333]"
                                 title="View"
                                 data-testid={`site-recce-view-${recce.id}`}
@@ -596,7 +594,7 @@ export default function SiteRecceList() {
 
                               <button
                                 onClick={() =>
-                                  nav(`/site-recce/${recce.id}/edit`)
+                                  nav(`/crm/recce/${recce.id}/edit`)
                                 }
                                 className="p-1.5 rounded hover:bg-[#EAEEF0] text-[#333333]"
                                 title="Edit"
@@ -686,7 +684,7 @@ export default function SiteRecceList() {
                               onClick={(e) => e.stopPropagation()}
                             >
                               <button
-                                onClick={() => nav(`/site-recce/${recce.id}`)}
+                                onClick={() => nav(`/crm/recce/${recce.id}`)}
                                 className="p-2 rounded hover:bg-[#EAEEF0] text-[#333333]"
                                 title="View"
                               >
@@ -695,7 +693,7 @@ export default function SiteRecceList() {
 
                               <button
                                 onClick={() =>
-                                  nav(`/site-recce/${recce.id}/edit`)
+                                  nav(`/crm/recce/${recce.id}/edit`)
                                 }
                                 className="p-2 rounded hover:bg-[#EAEEF0] text-[#333333]"
                                 title="Edit"
@@ -743,7 +741,7 @@ export default function SiteRecceList() {
 
                 {!q && !siteType && (
                   <button
-                    onClick={() => nav("/documents/forms/site-reki")}
+                    onClick={() => nav("/crm/forms/site-reki")}
                     className="mt-5 h-10 px-4 rounded-lg bg-[#1F453B] text-white text-sm font-semibold inline-flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />

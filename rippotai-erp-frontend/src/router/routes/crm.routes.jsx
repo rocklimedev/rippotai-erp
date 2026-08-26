@@ -7,17 +7,22 @@ import ContactsView from "@/components/leads/ContactsView";
 import SiteRecceList from "@/pages/documents/SiteRecceList";
 import ProjectBriefList from "@/pages/documents/ProjectBriefList";
 import PlanOfActionList from "@/pages/documents/PlanOfActionList";
-import PaymentScheduleList from "@/pages/documents/PaymentScheduleList";
+
 import ScopeOfWorkList from "@/pages/documents/ScopeOfWorkList";
 import NewLeadPage from "@/components/leads/NewLeadPage";
 
 import { BriefForm } from "@/pages/documents/BriefForm";
 import { SiteRekiForm } from "@/pages/documents/SiteRekiForm";
 import { PlanOfActionForm } from "@/pages/documents/PlanOfActionForm";
-import { PaymentScheduleForm } from "@/pages/documents/PaymentScheduleForm";
+
 import { ScopeOfWorkForm } from "@/pages/documents/ScopeOfWorkForm";
 
 import DocumentActivity from "@/pages/documents/DocumentActivity";
+import { SiteRekiView } from "../../pages/documents/SiteRekiView";
+import { ProjectBriefView } from "../../pages/documents/ProjectBriefView";
+import { PlanOfActionView } from "../../pages/documents/PlanOfActionView";
+
+import { ScopeOfWorkView } from "../../pages/documents/ScopeOfWorkView";
 
 export const crmRoutes = [
   {
@@ -81,27 +86,35 @@ export const crmRoutes = [
         path: "recce/all",
         element: <SiteRecceList />,
       },
-
+      {
+        path: "recce/:id",
+        element: <SiteRekiView />,
+      },
       {
         path: "brief/all",
         element: <ProjectBriefList />,
       },
-
+      {
+        path: "brief/:id",
+        element: <ProjectBriefView />,
+      },
       {
         path: "plan-of-action/all",
         element: <PlanOfActionList />,
       },
-
       {
-        path: "payment-schedule/all",
-        element: <PaymentScheduleList />,
+        path: "plan-of-action/:id",
+        element: <PlanOfActionView />,
       },
 
       {
         path: "scope-of-work/all",
         element: <ScopeOfWorkList />,
       },
-
+      {
+        path: "scope-of-work/:id",
+        element: <ScopeOfWorkView />,
+      },
       {
         path: "forms/project-brief",
         element: <BriefForm />,
@@ -115,11 +128,6 @@ export const crmRoutes = [
       {
         path: "forms/plan-of-action",
         element: <PlanOfActionForm />,
-      },
-
-      {
-        path: "forms/payment-schedule",
-        element: <PaymentScheduleForm />,
       },
 
       {

@@ -68,7 +68,7 @@ export default function PaymentScheduleList() {
   // ------------------------------------------------------------
 
   const clearProjectFilter = () => {
-    nav("/payment-schedules");
+    nav("/ledger/payment-schedule/all");
   };
 
   // ------------------------------------------------------------
@@ -77,9 +77,9 @@ export default function PaymentScheduleList() {
 
   const handleCreate = () => {
     if (projectFilter) {
-      nav(`/documents/forms/payment-schedule?project_id=${projectFilter}`);
+      nav(`/ledger/forms/payment-schedule?project_id=${projectFilter}`);
     } else {
-      nav("/documents/forms/payment-schedule");
+      nav("/ledger/forms/payment-schedule");
     }
   };
 
@@ -248,7 +248,7 @@ export default function PaymentScheduleList() {
                   return (
                     <tr
                       key={r.id}
-                      onClick={() => nav(`/documents/payment-schedule/${r.id}`)}
+                      onClick={() => nav(`/ledger/payment-schedule/${r.id}`)}
                       className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F4F6F7] cursor-pointer"
                       data-testid={`payment-schedule-row-${r.id}`}
                     >
@@ -318,7 +318,7 @@ export default function PaymentScheduleList() {
                         <div className="inline-flex items-center gap-0.5">
                           <button
                             onClick={() =>
-                              nav(`/documents/payment-schedule/${r.id}`)
+                              nav(`/ledger/payment-schedule/${r.id}`)
                             }
                             className="p-1.5 rounded hover:bg-[#EAEEF0] text-[#333333]"
                             title="View"
@@ -329,7 +329,7 @@ export default function PaymentScheduleList() {
 
                           <button
                             onClick={() =>
-                              nav(`/payment-schedules/${r.id}/edit`)
+                              nav(`/ledger/payment-schedules/${r.id}/edit`)
                             }
                             className="p-1.5 rounded hover:bg-[#EAEEF0] text-[#333333]"
                             title="Edit"

@@ -98,9 +98,9 @@ export default function PlanOfActionList() {
 
   const handleCreate = () => {
     if (projectFilter) {
-      nav(`/documents/forms/plan-of-action?project_id=${projectFilter}`);
+      nav(`/crm/forms/plan-of-action?project_id=${projectFilter}`);
     } else {
-      nav("/documents/forms/plan-of-action");
+      nav("/crm/forms/plan-of-action");
     }
   };
 
@@ -194,7 +194,7 @@ export default function PlanOfActionList() {
                 filteredRows.map((r) => (
                   <tr
                     key={r.id}
-                    onClick={() => nav(`/documents/plan-of-action/${r.id}`)}
+                    onClick={() => nav(`/crm/plan-of-action/${r.id}`)}
                     className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F4F6F7] cursor-pointer"
                     data-testid={`plan-of-action-row-${r.id}`}
                   >
@@ -259,9 +259,7 @@ export default function PlanOfActionList() {
                     >
                       <div className="inline-flex items-center gap-0.5">
                         <button
-                          onClick={() =>
-                            nav(`/documents/plan-of-action/${r.id}`)
-                          }
+                          onClick={() => nav(`/crm/plan-of-action/${r.id}`)}
                           className="p-1.5 rounded hover:bg-[#EAEEF0] text-[#333333]"
                           title="View"
                           data-testid={`plan-of-action-view-${r.id}`}

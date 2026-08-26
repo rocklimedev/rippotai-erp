@@ -228,7 +228,7 @@ export const APP_MENUS = {
         I("Site Recce", "recce/all"),
         I("Client Brief", "brief/all"),
         I("Plan Of Action", "plan-of-action/all"),
-        I("Payment Schedules", "payment-schedule/all"),
+
         I("Scope of Work", "scope-of-work/all"),
         I("Scope Of Approval", "scope-of-approval/all"),
         I("Pitch Deck", "pitch-deck/all"),
@@ -243,7 +243,7 @@ export const APP_MENUS = {
         I("Project Brief", "forms/project-brief"),
         I("Site Recce", "forms/site-reki"),
         I("Plan of Action", "forms/plan-of-action"),
-        I("Payment Schedule", "forms/payment-schedule"),
+
         I("Scope Of Work", "forms/scope-of-work"),
         I("Scope Of Approval", "forms/scope-of-approval"),
         I("Pitch Deck", "forms/pitch-deck"),
@@ -355,7 +355,8 @@ export const APP_MENUS = {
     {
       label: "Documents",
       items: [
-        I("Payment Schedules", "payment-schedules/all"),
+        I("Payment Schedules", "payment-schedule/all"),
+        I("Create Payment Schedule", "forms/payment-schedule"),
         I("Aggrements", "aggrements/all"),
       ],
     },

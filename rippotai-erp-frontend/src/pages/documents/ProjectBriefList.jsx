@@ -131,7 +131,7 @@ export default function ProjectBriefList() {
       } across the workspace`}
       action={
         <button
-          onClick={() => nav("/project-brief/new")}
+          onClick={() => nav("/crm/forms/project-brief")}
           className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-1.5 hover:bg-[#17382F] transition-colors"
           data-testid="project-brief-new-btn"
         >
@@ -154,7 +154,7 @@ export default function ProjectBriefList() {
 
         {projectFilter && (
           <button
-            onClick={() => nav("/project-brief")}
+            onClick={() => nav("/crm/brief/all")}
             className="text-[13px] text-[#333333] font-semibold hover:text-[#1F453B]"
           >
             Clear project filter ×
@@ -214,7 +214,7 @@ export default function ProjectBriefList() {
                 filteredRows.map((brief) => (
                   <tr
                     key={brief.id}
-                    onClick={() => nav(`/documents/brief/${brief.id}`)}
+                    onClick={() => nav(`/crm/brief/${brief.id}`)}
                     className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F8FAF9] cursor-pointer transition-colors"
                     data-testid={`project-brief-row-${brief.id}`}
                   >
@@ -292,7 +292,7 @@ export default function ProjectBriefList() {
                     >
                       <div className="inline-flex items-center gap-1">
                         <button
-                          onClick={() => nav(`/documents/brief/${brief.id}`)}
+                          onClick={() => nav(`/crm/brief/${brief.id}`)}
                           className="p-1.5 rounded-md hover:bg-[#EAEEF0] text-[#333333] transition-colors"
                           title="View"
                           data-testid={`project-brief-view-${brief.id}`}
@@ -301,7 +301,7 @@ export default function ProjectBriefList() {
                         </button>
 
                         <button
-                          onClick={() => nav(`/project-brief/${brief.id}/edit`)}
+                          onClick={() => nav(`/crm/brief/${brief.id}/edit`)}
                           className="p-1.5 rounded-md hover:bg-[#EAEEF0] text-[#333333] transition-colors"
                           title="Edit"
                           data-testid={`project-brief-edit-${brief.id}`}

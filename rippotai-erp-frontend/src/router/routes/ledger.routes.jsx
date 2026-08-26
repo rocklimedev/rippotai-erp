@@ -1,5 +1,5 @@
 import AppLayout from "@/layouts/AppLayout";
-
+import PaymentSchedulePage from "../../pages/documents/paymentSchedulePage";
 import AppDashboard from "@/components/dashboard/AppDashboard";
 import PaymentScheduleList from "@/pages/documents/PaymentScheduleList";
 import { PaymentScheduleForm } from "@/pages/documents/PaymentScheduleForm";
@@ -41,10 +41,13 @@ export const ledgerRoutes = [
       // ============================================================
 
       {
-        path: "payment-schedules/all",
+        path: "payment-schedule/all",
         element: <PaymentScheduleList />,
       },
-
+      {
+        path: "payment-schedule/:scheduleId",
+        element: <PaymentSchedulePage />,
+      },
       {
         path: "forms/payment-schedule",
         element: <PaymentScheduleForm />,

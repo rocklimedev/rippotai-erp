@@ -117,11 +117,11 @@ export default function ScopeOfWorkList() {
 
   const handleCreate = () => {
     if (projectFilter) {
-      nav(`/documents/forms/scope-of-work?project_id=${projectFilter}`);
+      nav(`/crm/forms/scope-of-work?project_id=${projectFilter}`);
       return;
     }
 
-    nav("/documents/forms/scope-of-work");
+    nav("/crm/forms/scope-of-work");
   };
 
   // ============================================================
@@ -129,7 +129,7 @@ export default function ScopeOfWorkList() {
   // ============================================================
 
   const handleView = (id) => {
-    nav(`/documents/scope-of-work/${id}`);
+    nav(`/crm/scope-of-work/${id}`);
   };
 
   // ============================================================
@@ -137,7 +137,7 @@ export default function ScopeOfWorkList() {
   // ============================================================
 
   const handleEdit = (id) => {
-    nav(`/scope-of-work/${id}/edit`);
+    nav(`/crm/scope-of-work/${id}/edit`);
   };
 
   // ============================================================
