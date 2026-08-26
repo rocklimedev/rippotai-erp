@@ -70,11 +70,55 @@ export class ProjectsService {
 
     const slug = await this.generateUniqueSlug(dto.name);
 
+    // Strip team_members so it is never passed to Project.create
+    const { team_members, ...projectData } = dto;
+
     const project = await this.projectModel.create({
-      ...dto,
+      ...projectData,
       slug,
       created_by: user?.id ?? null,
     } as any);
+
+    // Create team members if provided
+    if (team_members?.length) {
+      for (const [index, member] of team_members.entries()) {
+        // Reuse the same uniqueness / is_primary logic as addTeamMember
+        const existing = await this.teamMemberModel.findOne({
+          where: {
+            owner_type: TeamMemberOwnerType.PROJECT,
+            owner_id: project.id,
+            user_id: member.user_id,
+            role_label: member.role_label,
+          },
+        });
+
+        if (existing) continue; // or throw if you prefer strict behaviour
+
+        if (member.is_primary) {
+          await this.teamMemberModel.update(
+            { is_primary: false },
+            {
+              where: {
+                owner_type: TeamMemberOwnerType.PROJECT,
+                owner_id: project.id,
+                role_label: member.role_label,
+                is_primary: true,
+              },
+            },
+          );
+        }
+
+        await this.teamMemberModel.create({
+          owner_type: TeamMemberOwnerType.PROJECT,
+          owner_id: project.id,
+          user_id: member.user_id,
+          role_label: member.role_label,
+          is_primary: member.is_primary ?? false,
+          sort_order: member.sort_order ?? index,
+          created_by: user?.id ?? null,
+        });
+      }
+    }
 
     // Log Activity & Send Notification
     await this.activityLogForProjectService.logProjectCreated(project, user);
