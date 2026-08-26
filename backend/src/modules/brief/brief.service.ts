@@ -21,7 +21,10 @@ import { ProjectBriefReference } from './models/project-bref-reference.model';
 import { ProjectBriefPhase } from './models/project-bref-phase.model';
 import { ProjectBriefOccupant } from './models/project-brief-occupant.model';
 import { ProjectBriefAttachment } from './models/project-brief-attachment.model';
-
+import { Project } from '../projects/models/projects.model';
+import { Client } from '../clients/models/client.model';
+import { User } from '../users/models/user.model';
+import { ProjectType } from '../projects/models/project-type.model';
 import { CreateProjectBriefDto } from './dto/create-project-brief.dto';
 import { UpdateProjectBriefDto } from './dto/update-project-brief.dto';
 // =========================================================
@@ -170,6 +173,51 @@ export class ProjectBriefsService {
   async findOne(id: string) {
     const brief = await this.projectBriefModel.findByPk(id, {
       include: [
+        // =========================================================
+        // PROJECT
+        // =========================================================
+        {
+          model: Project,
+          as: 'project',
+          include: [
+            {
+              model: Client,
+              as: 'client',
+            },
+            {
+              model: ProjectType,
+              as: 'project_type',
+            },
+            {
+              model: User,
+              as: 'creator',
+            },
+            {
+              model: User,
+              as: 'updater',
+            },
+            {
+              model: User,
+              as: 'archiver',
+            },
+          ],
+        },
+
+        // =========================================================
+        // PROJECT BRIEF USERS
+        // =========================================================
+        {
+          model: User,
+          as: 'briefTaker',
+        },
+        {
+          model: User,
+          as: 'confirmedBy',
+        },
+
+        // =========================================================
+        // PROJECT BRIEF CHILDREN
+        // =========================================================
         ProjectBriefDocument,
         ProjectBriefWorkType,
         ProjectBriefService,

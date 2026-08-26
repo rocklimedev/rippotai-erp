@@ -23,7 +23,8 @@ import { ProjectStatus } from '../../common/enums';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
 import { User } from '@/modules/users/models/user.model';
-
+import { UpdateProjectTeamMemberDto } from './dto/update-project-team-member.dto';
+import { AddProjectTeamMemberDto } from './dto/project-team-member.dto';
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
 export class ProjectsController {
@@ -166,5 +167,36 @@ export class ProjectsController {
     @CurrentUser() user?: User,
   ): Promise<void> {
     return this.projectsService.remove(id, user);
+  }
+
+  @Post(':id/team')
+  addTeamMember(
+    @Param('id') projectId: string,
+    @Body() dto: AddProjectTeamMemberDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.projectsService.addTeamMember(projectId, dto, user);
+  }
+
+  @Get(':id/team')
+  getTeam(@Param('id') projectId: string) {
+    return this.projectsService.getTeam(projectId);
+  }
+
+  @Patch(':id/team/:teamMemberId')
+  updateTeamMember(
+    @Param('id') projectId: string,
+    @Param('teamMemberId') teamMemberId: string,
+    @Body() dto: UpdateProjectTeamMemberDto,
+  ) {
+    return this.projectsService.updateTeamMember(projectId, teamMemberId, dto);
+  }
+
+  @Delete(':id/team/:teamMemberId')
+  removeTeamMember(
+    @Param('id') projectId: string,
+    @Param('teamMemberId') teamMemberId: string,
+  ) {
+    return this.projectsService.removeTeamMember(projectId, teamMemberId);
   }
 }

@@ -18,10 +18,17 @@ import { ProjectPhaseController } from './project-phase.controller';
 import { ActivityLogsModule } from '../engagement/activity-logs.module';
 import { NotificationsModule } from '../engagement/notifications.module';
 import { ClientsModule } from '../clients/clients.module';
+import { TeamMember } from '../users/models/team-member.model';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Project, ProjectType, Milestone, ProjectPhase]),
+    SequelizeModule.forFeature([
+      Project,
+      ProjectType,
+      Milestone,
+      ProjectPhase,
+      TeamMember,
+    ]),
 
     ActivityLogsModule,
     NotificationsModule,

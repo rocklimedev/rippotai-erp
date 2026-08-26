@@ -1,14 +1,49 @@
 import { PartialType, OmitType } from '@nestjs/mapped-types';
 import {
+  IsArray,
+  IsBoolean,
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
   IsDateString,
   MaxLength,
+  Min,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
 import { ProjectPriority, ProjectStatus } from '../../../common/enums';
+
+// ============================================
+// PROJECT TEAM MEMBER
+// ============================================
+
+export class CreateProjectTeamMemberDto {
+  @IsUUID()
+  @IsNotEmpty()
+  user_id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(150)
+  role_label: string;
+
+  @IsOptional()
+  @IsBoolean()
+  is_primary?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  sort_order?: number;
+}
+
+// ============================================
+// CREATE PROJECT
+// ============================================
 
 export class CreateProjectDto {
   @IsString()
@@ -16,10 +51,8 @@ export class CreateProjectDto {
   @MaxLength(255)
   name: string;
 
-  // `slug` is intentionally absent. It's derived from `name` and must be
-  // unique — accepting it from the client would let two projects collide
-  // on the same slug, or let a client set a slug that doesn't match `name`.
-  // The service generates it the same way ProjectTypeService does.
+  // `slug` is intentionally absent.
+  // It is generated server-side from `name`.
 
   @IsString()
   @IsNotEmpty()
@@ -50,19 +83,28 @@ export class CreateProjectDto {
   @IsUUID()
   project_type_id?: string;
 
-  // NOTE: created_by, updated_by, archived_by, deleted_by are intentionally
-  // absent. These are derived from the authenticated user in the service
-  // layer (@CurrentUser()) and must never be accepted from the request body,
-  // or a client could forge audit trail data.
+  // ============================================
+  // OPTIONAL PROJECT TEAM
+  // ============================================
 
-  // NOTE: approved_value / quotation_count are intentionally absent. Both
-  // are live-computed aggregates over the quotations table (see
-  // ProjectsService.findAll/findOne) and are not user-settable.
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateProjectTeamMemberDto)
+  team_members?: CreateProjectTeamMemberDto[];
+
+  // NOTE:
+  // created_by, updated_by, archived_by, deleted_by
+  // are intentionally absent.
+  //
+  // approved_value / quotation_count are also
+  // intentionally absent because they are computed.
 }
 
-// `name` is deliberately still updatable, but doing so must re-derive and
-// re-check `slug` server-side (same as ProjectTypeService.update) — there's
-// nothing to OmitType here since slug was never on CreateProjectDto.
+// ============================================
+// UPDATE PROJECT
+// ============================================
+
 export class UpdateProjectDto extends PartialType(
-  OmitType(CreateProjectDto, [] as const),
+  OmitType(CreateProjectDto, ['team_members'] as const),
 ) {}

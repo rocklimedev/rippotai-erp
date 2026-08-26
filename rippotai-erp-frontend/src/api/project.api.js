@@ -123,12 +123,94 @@ export const projectsApi = baseApi.injectEndpoints({
     }),
 
     // ============================================================
+    // PROJECT TEAM
+    // ============================================================
+
+    // =========================
+    // Get Project Team
+    // GET /projects/:id/team
+    // =========================
+    getProjectTeam: builder.query({
+      query: (projectId) => `/projects/${projectId}/team`,
+      providesTags: (result, error, projectId) => [
+        {
+          type: "ProjectTeam",
+          id: projectId,
+        },
+      ],
+    }),
+
+    // =========================
+    // Add Project Team Member
+    // POST /projects/:id/team
+    // =========================
+    addProjectTeamMember: builder.mutation({
+      query: ({ projectId, ...body }) => ({
+        url: `/projects/${projectId}/team`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        {
+          type: "ProjectTeam",
+          id: projectId,
+        },
+        {
+          type: "Projects",
+          id: projectId,
+        },
+      ],
+    }),
+
+    // =========================
+    // Update Project Team Member
+    // PATCH /projects/:id/team/:teamMemberId
+    // =========================
+    updateProjectTeamMember: builder.mutation({
+      query: ({ projectId, teamMemberId, ...body }) => ({
+        url: `/projects/${projectId}/team/${teamMemberId}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        {
+          type: "ProjectTeam",
+          id: projectId,
+        },
+        {
+          type: "Projects",
+          id: projectId,
+        },
+      ],
+    }),
+
+    // =========================
+    // Remove Project Team Member
+    // DELETE /projects/:id/team/:teamMemberId
+    // =========================
+    removeProjectTeamMember: builder.mutation({
+      query: ({ projectId, teamMemberId }) => ({
+        url: `/projects/${projectId}/team/${teamMemberId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        {
+          type: "ProjectTeam",
+          id: projectId,
+        },
+        {
+          type: "Projects",
+          id: projectId,
+        },
+      ],
+    }),
+
+    // ============================================================
     // Project Phases
     // ============================================================
 
     // =========================
     // Create Project Phase
-    // POST /projects-phases
     // =========================
     createProjectPhase: builder.mutation({
       query: (body) => ({
@@ -141,8 +223,6 @@ export const projectsApi = baseApi.injectEndpoints({
 
     // =========================
     // Get All Project Phases
-    // GET /projects-phases
-    // GET /projects-phases?search=MEP
     // =========================
     getProjectPhases: builder.query({
       query: ({ search } = {}) => ({
@@ -156,16 +236,19 @@ export const projectsApi = baseApi.injectEndpoints({
 
     // =========================
     // Get Project Phase By ID
-    // GET /projects-phases/:id
     // =========================
     getProjectPhaseById: builder.query({
       query: (id) => `/projects-phases/${id}`,
-      providesTags: (result, error, id) => [{ type: "ProjectPhases", id }],
+      providesTags: (result, error, id) => [
+        {
+          type: "ProjectPhases",
+          id,
+        },
+      ],
     }),
 
     // =========================
     // Update Project Phase
-    // PATCH /projects-phases/:id
     // =========================
     updateProjectPhase: builder.mutation({
       query: ({ id, ...body }) => ({
@@ -175,13 +258,15 @@ export const projectsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (result, error, { id }) => [
         "ProjectPhases",
-        { type: "ProjectPhases", id },
+        {
+          type: "ProjectPhases",
+          id,
+        },
       ],
     }),
 
     // =========================
     // Delete Project Phase
-    // DELETE /projects-phases/:id
     // =========================
     deleteProjectPhase: builder.mutation({
       query: (id) => ({
@@ -190,9 +275,13 @@ export const projectsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (result, error, id) => [
         "ProjectPhases",
-        { type: "ProjectPhases", id },
+        {
+          type: "ProjectPhases",
+          id,
+        },
       ],
     }),
+
     // ============================================================
     // Milestones
     // ============================================================
@@ -263,6 +352,15 @@ export const {
   useArchiveProjectMutation,
   useRestoreProjectMutation,
   useDeleteProjectMutation,
+
+  // ============================================================
+  // Project Team
+  // ============================================================
+
+  useGetProjectTeamQuery,
+  useAddProjectTeamMemberMutation,
+  useUpdateProjectTeamMemberMutation,
+  useRemoveProjectTeamMemberMutation,
 
   // ============================================================
   // Project Phases

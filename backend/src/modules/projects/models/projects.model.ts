@@ -16,7 +16,8 @@ import { ProjectPriority, ProjectStatus } from '@/common/enums';
 import { User } from '@/modules/users/models/user.model';
 import { Quotation } from '@/modules/quotations/models/quotations.model';
 import { Boq } from '@/modules/boqs/models/boq.model';
-
+import { TeamMemberOwnerType } from '@/common/enums/team.enums';
+import { TeamMember } from '@/modules/users/models/team-member.model';
 @Table({
   tableName: 'projects',
   timestamps: true,
@@ -152,4 +153,13 @@ export class Project extends Model<Project> {
     as: 'project_type',
   })
   declare project_type: ProjectType;
+  @HasMany(() => TeamMember, {
+    foreignKey: 'owner_id',
+    constraints: false,
+    scope: {
+      owner_type: TeamMemberOwnerType.PROJECT,
+    },
+    as: 'team_members',
+  })
+  declare team_members: TeamMember[];
 }

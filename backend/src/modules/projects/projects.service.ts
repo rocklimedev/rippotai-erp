@@ -10,20 +10,27 @@ import { ProjectStatus } from '../../common/enums';
 import { ActivityLogForProjectService } from '../engagement/services/activity-log-project.service';
 import { NotificationForProjectService } from '../engagement/services/notification-project.service';
 import { ClientsService } from '../clients/clients.service';
+
 import { User } from '@/modules/users/models/user.model';
+import { Role } from '@/modules/rbac/models/role.model';
 import { Vendor } from '../vendors/models/vendors.model';
+import { TeamMember } from '../users/models/team-member.model';
+import { TeamMemberOwnerType } from '@/common/enums/team.enums';
 @Injectable()
 export class ProjectsService {
   constructor(
     @InjectModel(Project)
     private readonly projectModel: typeof Project,
 
+    @InjectModel(TeamMember)
+    private readonly teamMemberModel: typeof TeamMember,
+
     private readonly activityLogForProjectService: ActivityLogForProjectService,
+
     private readonly notificationForProjectService: NotificationForProjectService,
 
     private readonly clientsService: ClientsService,
   ) {}
-
   private slugify(name: string): string {
     return name
       .trim()
@@ -196,10 +203,10 @@ export class ProjectsService {
               fn(
                 'SUM',
                 literal(`CASE
-                  WHEN quotations.status = 'approved'
-                  THEN quotations.total_amount
-                  ELSE 0
-                END`),
+                WHEN quotations.status = 'approved'
+                THEN quotations.total_amount
+                ELSE 0
+              END`),
               ),
               0,
             ),
@@ -236,13 +243,21 @@ export class ProjectsService {
                 'status',
                 'notes',
               ],
+
               include: [
-                { association: 'vendorCategory', attributes: ['id', 'name'] },
-                { association: 'businessType', attributes: ['id', 'name'] },
+                {
+                  association: 'vendorCategory',
+                  attributes: ['id', 'name'],
+                },
+                {
+                  association: 'businessType',
+                  attributes: ['id', 'name'],
+                },
               ],
             },
           ],
         },
+
         {
           association: 'client',
           attributes: [
@@ -256,21 +271,25 @@ export class ProjectsService {
           ],
           required: false,
         },
+
         {
           association: 'project_type',
           attributes: ['id', 'name', 'slug', 'description'],
           required: false,
         },
+
         {
           association: 'creator',
           attributes: ['id', 'name', 'email'],
           required: false,
         },
+
         {
           association: 'updater',
           attributes: ['id', 'name', 'email'],
           required: false,
         },
+
         {
           association: 'archiver',
           attributes: ['id', 'name', 'email'],
@@ -288,12 +307,56 @@ export class ProjectsService {
         'updater.id',
         'archiver.id',
       ],
+
       paranoid: !includeDeleted,
     });
 
     if (!project) {
       throw new NotFoundException(`Project ${id} not found`);
     }
+
+    // ============================================
+    // LOAD PROJECT TEAM
+    // ============================================
+
+    const teamMembers = await this.teamMemberModel.findAll({
+      where: {
+        owner_type: TeamMemberOwnerType.PROJECT,
+        owner_id: project.id,
+      },
+
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: [
+            'id',
+            'name',
+            'email',
+            'phone',
+            'job_title',
+            'avatar_url',
+            'role_id',
+          ],
+
+          include: [
+            {
+              model: Role,
+              as: 'role',
+              attributes: ['id', 'name', 'description'],
+            },
+          ],
+        },
+      ],
+
+      order: [
+        ['sort_order', 'ASC'],
+        ['created_at', 'ASC'],
+      ],
+    });
+
+    // Attach team to project response
+    project.setDataValue('team_members', teamMembers);
 
     return project;
   }
@@ -404,5 +467,200 @@ export class ProjectsService {
       projectName,
       user?.id,
     );
+  }
+
+  // =========================
+  // GET PROJECT TEAM
+  // =========================
+  async getTeam(projectId: string): Promise<TeamMember[]> {
+    const project = await this.projectModel.findByPk(projectId);
+
+    if (!project) {
+      throw new NotFoundException(`Project ${projectId} not found`);
+    }
+
+    return this.teamMemberModel.findAll({
+      where: {
+        owner_type: TeamMemberOwnerType.PROJECT,
+        owner_id: projectId,
+      },
+
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: [
+            'id',
+            'name',
+            'email',
+            'phone',
+            'job_title',
+            'avatar_url',
+            'role_id',
+          ],
+
+          include: [
+            {
+              model: Role,
+              as: 'role',
+              attributes: ['id', 'name', 'description'],
+            },
+          ],
+        },
+      ],
+
+      order: [
+        ['sort_order', 'ASC'],
+        ['created_at', 'ASC'],
+      ],
+    });
+  }
+
+  // =========================
+  // ADD PROJECT TEAM MEMBER
+  // =========================
+  async addTeamMember(
+    projectId: string,
+    dto: {
+      user_id: string;
+      role_label: string;
+      is_primary?: boolean;
+      sort_order?: number;
+    },
+    currentUser?: User,
+  ): Promise<TeamMember> {
+    const project = await this.projectModel.findByPk(projectId);
+
+    if (!project) {
+      throw new NotFoundException(`Project ${projectId} not found`);
+    }
+
+    const targetUser = await User.findByPk(dto.user_id);
+
+    if (!targetUser) {
+      throw new NotFoundException(`User ${dto.user_id} not found`);
+    }
+
+    // Check existing membership
+    const existing = await this.teamMemberModel.findOne({
+      where: {
+        owner_type: TeamMemberOwnerType.PROJECT,
+        owner_id: projectId,
+        user_id: dto.user_id,
+        role_label: dto.role_label,
+      },
+    });
+
+    if (existing) {
+      throw new Error(
+        `${targetUser.name} is already assigned to this project with the role "${dto.role_label}"`,
+      );
+    }
+
+    // If this member is primary, remove primary
+    // status from other members with the same label.
+    if (dto.is_primary) {
+      await this.teamMemberModel.update(
+        {
+          is_primary: false,
+        },
+        {
+          where: {
+            owner_type: TeamMemberOwnerType.PROJECT,
+            owner_id: projectId,
+            role_label: dto.role_label,
+            is_primary: true,
+          },
+        },
+      );
+    }
+
+    return this.teamMemberModel.create({
+      owner_type: TeamMemberOwnerType.PROJECT,
+      owner_id: projectId,
+      user_id: dto.user_id,
+      role_label: dto.role_label,
+      is_primary: dto.is_primary ?? false,
+      sort_order: dto.sort_order ?? 0,
+      created_by: currentUser?.id ?? null,
+    });
+  }
+
+  // =========================
+  // UPDATE PROJECT TEAM MEMBER
+  // =========================
+  async updateTeamMember(
+    projectId: string,
+    teamMemberId: string,
+    dto: {
+      role_label?: string;
+      is_primary?: boolean;
+      sort_order?: number;
+    },
+  ): Promise<TeamMember> {
+    const member = await this.teamMemberModel.findOne({
+      where: {
+        id: teamMemberId,
+        owner_type: TeamMemberOwnerType.PROJECT,
+        owner_id: projectId,
+      },
+    });
+
+    if (!member) {
+      throw new NotFoundException(
+        `Project team member ${teamMemberId} not found`,
+      );
+    }
+
+    const newRoleLabel = dto.role_label ?? member.role_label;
+
+    if (dto.is_primary === true) {
+      await this.teamMemberModel.update(
+        {
+          is_primary: false,
+        },
+        {
+          where: {
+            owner_type: TeamMemberOwnerType.PROJECT,
+            owner_id: projectId,
+            role_label: newRoleLabel,
+            is_primary: true,
+            id: {
+              [Op.ne]: teamMemberId,
+            },
+          },
+        },
+      );
+    }
+
+    await member.update({
+      ...dto,
+    });
+
+    return member;
+  }
+
+  // =========================
+  // REMOVE PROJECT TEAM MEMBER
+  // =========================
+  async removeTeamMember(
+    projectId: string,
+    teamMemberId: string,
+  ): Promise<void> {
+    const member = await this.teamMemberModel.findOne({
+      where: {
+        id: teamMemberId,
+        owner_type: TeamMemberOwnerType.PROJECT,
+        owner_id: projectId,
+      },
+    });
+
+    if (!member) {
+      throw new NotFoundException(
+        `Project team member ${teamMemberId} not found`,
+      );
+    }
+
+    await member.destroy();
   }
 }

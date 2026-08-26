@@ -17,13 +17,7 @@ import {
   useGetSiteRecceQuery,
   useDeleteSiteRecceMutation,
 } from "../../api/site-recce.api";
-
-// npm i html2canvas jspdf
-
-// ---------------------------------------------------------------------------
-// Brand tokens — same palette used across the Rippotai document templates
-// (deep forest green wordmark, gold rule/accent, warm hairline dividers).
-// ---------------------------------------------------------------------------
+import logo from "../../assets/rippotai_logo.png";
 const BRAND = {
   green: "#1B4332",
   greenSoft: "#3C6E58",
@@ -35,8 +29,11 @@ const BRAND = {
   paper: "#FFFFFF",
 };
 
+const PAGE_WIDTH = 794; // px, A4 width @ 96dpi
+const PAGE_HEIGHT = 1123; // px, A4 height @ 96dpi
+
 // Swap this for the real asset once it's available.
-const LOGO_SRC = "/assets/branding/rippotai-mark.png";
+const LOGO_SRC = logo;
 
 const SITE_TYPES = ["FLAT", "FLOOR", "KOTHI", "RAW"];
 
@@ -86,14 +83,6 @@ const fmtDate = (d) => {
   }
 };
 
-/* ---------------------------------------------------------------- */
-/* pagination helpers — chunk dynamic content the way the printed    */
-/* template physically breaks across pages, not just by section      */
-/* ---------------------------------------------------------------- */
-
-// Page 3 (Utilities + Existing Condition + table header) has little room
-// left for table rows; continuation pages are just the table, so they
-// hold far more rows each.
 const ROOM_TABLE_FIRST_PAGE_ROWS = 4;
 const ROOM_TABLE_CONT_PAGE_ROWS = 14;
 
@@ -111,8 +100,6 @@ function chunkRows(items, firstSize, restSize) {
   return chunks;
 }
 
-// Living/dining runs bigger in the template (3 shots per page across two
-// pages); every other room type takes 4 shots per page.
 const LARGE_ROOM_MATCH = ["LIVING", "DINING", "HALL"];
 const BEDROOM_MATCH = ["BEDROOM"];
 
@@ -237,7 +224,7 @@ function PlaceholderBox({ icon: Icon, label, className = "" }) {
 function PageHeader() {
   return (
     <div
-      className="px-10 pt-6 pb-2 text-right text-[10px] uppercase tracking-[0.14em]"
+      className="px-10 pt-6 pb-2 text-right text-[10px] uppercase tracking-[0.14em] shrink-0"
       style={{ color: BRAND.muted }}
     >
       Site Recce Format
@@ -248,11 +235,36 @@ function PageHeader() {
 function PageFooter({ address }) {
   return (
     <div
-      className="px-10 py-4 flex justify-between text-[10px] uppercase tracking-[0.12em]"
+      className="px-10 py-4 flex justify-between text-[10px] uppercase tracking-[0.12em] shrink-0"
       style={{ color: BRAND.muted, borderTop: `1px solid ${BRAND.line}` }}
     >
       <span>Site Recce Format</span>
       <span>{address}</span>
+    </div>
+  );
+}
+
+function Page({
+  children,
+  footer = true,
+  address,
+  contentClassName = "px-10 pb-8",
+}) {
+  return (
+    <div
+      className="recce-page shadow-sm print:shadow-none flex flex-col"
+      style={{
+        backgroundColor: BRAND.paper,
+        border: `1px solid ${BRAND.line}`,
+        width: PAGE_WIDTH,
+        minHeight: PAGE_HEIGHT,
+      }}
+    >
+      <PageHeader />
+      <div className={`flex-1 flex flex-col ${contentClassName}`}>
+        {children}
+      </div>
+      {footer && <PageFooter address={address} />}
     </div>
   );
 }
@@ -469,7 +481,11 @@ export function SiteRekiView() {
         });
         const imgData = canvas.toDataURL("image/jpeg", 0.92);
 
-        // Fit the captured page inside the A4 canvas, centered.
+        // Fit the captured page inside the A4 canvas, centered. Since every
+        // .recce-page now renders at a real A4 footprint (794×1123px, same
+        // ratio as the jsPDF "a4" page), this is normally an exact fit with
+        // no letterboxing — it still degrades gracefully for the rare page
+        // that grew taller than one sheet.
         const ratio = Math.min(
           pageWidth / canvas.width,
           pageHeight / canvas.height,
@@ -591,7 +607,11 @@ export function SiteRekiView() {
       `}</style>
 
       {/* ✅ ref attached here — this was the missing piece */}
-      <div ref={contentRef} className="max-w-4xl mx-auto space-y-6">
+      <div
+        ref={contentRef}
+        className="mx-auto space-y-6"
+        style={{ width: PAGE_WIDTH }}
+      >
         {/* ============================================================ */}
         {/* PAGE 1 — Cover                                                */}
         {/* ============================================================ */}
@@ -600,12 +620,14 @@ export function SiteRekiView() {
           style={{
             backgroundColor: BRAND.paper,
             border: `1px solid ${BRAND.line}`,
+            width: PAGE_WIDTH,
+            minHeight: PAGE_HEIGHT,
           }}
         >
           <img
             src={LOGO_SRC}
             alt="Rippotai"
-            className="w-24 h-24 object-contain mb-6"
+            className="w-40 h-40 object-contain mb-6"
             onError={(e) => {
               e.currentTarget.style.display = "none";
               e.currentTarget.nextSibling.style.display = "flex";
@@ -631,7 +653,7 @@ export function SiteRekiView() {
             SITE RECCE FORMAT
           </div>
 
-          <div className="h-24" />
+          <div className="flex-1" />
 
           <div className="w-full text-left mt-auto">
             <div
@@ -679,15 +701,7 @@ export function SiteRekiView() {
         {/* ============================================================ */}
         {/* PAGE 2 — 01 Project & Site Details + Access for Material     */}
         {/* ============================================================ */}
-        <div
-          className="recce-page shadow-sm print:shadow-none"
-          style={{
-            backgroundColor: BRAND.paper,
-            border: `1px solid ${BRAND.line}`,
-          }}
-        >
-          <PageHeader />
-
+        <Page address={addressLine} contentClassName="px-0 pb-0">
           <div
             className="px-10 pb-8"
             style={{ borderBottom: `1px solid ${BRAND.line}` }}
@@ -781,22 +795,12 @@ export function SiteRekiView() {
               />
             </div>
           </div>
-
-          <PageFooter address={addressLine} />
-        </div>
+        </Page>
 
         {/* ============================================================ */}
         {/* PAGE 3 — Utilities + Existing Condition + 02 Room Table       */}
         {/* ============================================================ */}
-        <div
-          className="recce-page shadow-sm print:shadow-none"
-          style={{
-            backgroundColor: BRAND.paper,
-            border: `1px solid ${BRAND.line}`,
-          }}
-        >
-          <PageHeader />
-
+        <Page address={addressLine} contentClassName="px-0 pb-0">
           <div
             className="px-10 pb-8"
             style={{ borderBottom: `1px solid ${BRAND.line}` }}
@@ -851,7 +855,7 @@ export function SiteRekiView() {
             </div>
           </div>
 
-          <div className="px-10 py-8">
+          <div className="px-10 py-8 flex-1 flex flex-col">
             <SectionHeader number="02" title="Room-Wise Measurements" />
             {rooms.length === 0 ? (
               <p className="text-sm" style={{ color: BRAND.muted }}>
@@ -861,38 +865,21 @@ export function SiteRekiView() {
               <RoomMeasurementsTable rows={roomTableChunks[0]} />
             )}
           </div>
-
-          <PageFooter address={addressLine} />
-        </div>
+        </Page>
 
         {/* ============================================================ */}
         {/* PAGE 3B, 3C, ... — table continuation pages                  */}
         {/* ============================================================ */}
         {roomTableChunks.slice(1).map((chunk, i) => (
-          <div
-            key={`room-table-cont-${i}`}
-            className="recce-page shadow-sm print:shadow-none px-10 py-8"
-            style={{
-              backgroundColor: BRAND.paper,
-              border: `1px solid ${BRAND.line}`,
-            }}
-          >
-            <PageHeader />
+          <Page key={`room-table-cont-${i}`} address={addressLine}>
             <RoomMeasurementsTable rows={chunk} />
-            <PageFooter address={addressLine} />
-          </div>
+          </Page>
         ))}
 
         {/* ============================================================ */}
         {/* PAGE 4 — 03 How to Document the Layout & Photos               */}
         {/* ============================================================ */}
-        <div
-          className="recce-page shadow-sm print:shadow-none px-10 py-8"
-          style={{
-            backgroundColor: BRAND.paper,
-            border: `1px solid ${BRAND.line}`,
-          }}
-        >
+        <Page address={addressLine}>
           <SectionHeader
             number="03"
             title="How to Document the Layout & Photos"
@@ -1012,20 +999,12 @@ export function SiteRekiView() {
               </li>
             </ol>
           </div>
-
-          <PageFooter address={addressLine} />
-        </div>
+        </Page>
 
         {/* ============================================================ */}
         {/* PAGE 5 — 03.1 What to Capture, Room by Room (static guide)    */}
         {/* ============================================================ */}
-        <div
-          className="recce-page shadow-sm print:shadow-none px-10 py-8"
-          style={{
-            backgroundColor: BRAND.paper,
-            border: `1px solid ${BRAND.line}`,
-          }}
-        >
+        <Page address={addressLine}>
           <SectionHeader
             number="03.1"
             title="What to Make Sure You Capture, Room by Room"
@@ -1074,8 +1053,7 @@ export function SiteRekiView() {
             — mark where you stood and which way you pointed the camera, exactly
             like any other shot.
           </p>
-          <PageFooter address={addressLine} />
-        </div>
+        </Page>
 
         {/* ============================================================ */}
         {/* PAGE 6+ — 04 Layout & Photo Sheets (one page-group per room)  */}
@@ -1090,15 +1068,7 @@ export function SiteRekiView() {
             const isLastChunk = chunkIdx === chunks.length - 1;
 
             return (
-              <div
-                key={`${room.id}-${chunkIdx}`}
-                className="recce-page shadow-sm print:shadow-none px-10 py-8"
-                style={{
-                  backgroundColor: BRAND.paper,
-                  border: `1px solid ${BRAND.line}`,
-                }}
-              >
-                <PageHeader />
+              <Page key={`${room.id}-${chunkIdx}`} address={addressLine}>
                 {roomIdx === 0 && isFirstChunk && (
                   <SectionHeader number="04" title="Layout & Photo Sheets" />
                 )}
@@ -1156,20 +1126,10 @@ export function SiteRekiView() {
                     fewer? Leave the rest blank.
                   </p>
                 )}
-
-                <PageFooter address={addressLine} />
-              </div>
+              </Page>
             );
           });
         })}
-
-        {/* Footer */}
-        <div
-          className="no-print text-xs text-center pb-6"
-          style={{ color: BRAND.muted }}
-        >
-          Site Recce ID: {recce.id}
-        </div>
       </div>
     </Shell>
   );

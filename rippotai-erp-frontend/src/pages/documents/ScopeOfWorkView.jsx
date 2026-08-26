@@ -406,29 +406,6 @@ function ProjectDetailsPage({
             ))}
           </div>
         </div>
-
-        <div
-          className="mt-14 p-5 rounded-lg"
-          style={{
-            backgroundColor: "#F8F6F0",
-            border: `1px solid ${BRAND.line}`,
-          }}
-        >
-          <div
-            className="text-[10px] uppercase tracking-[0.14em] mb-2 font-semibold"
-            style={{
-              color: BRAND.green,
-            }}
-          >
-            Document Information
-          </div>
-
-          <div className="grid grid-cols-2 gap-5">
-            <Field label="Document" value="Scope of Work" />
-
-            <Field label="Revision" value={`Version ${sow.version || 1}`} />
-          </div>
-        </div>
       </div>
 
       <PageFooter address={addressLine} />
@@ -953,35 +930,6 @@ function AcceptancePage({ sow, addressLine, pageNumber, totalPages }) {
               {formatDate(sow.clientSignatureDate || sow.acceptedAt) || "—"}
             </div>
           </div>
-        </div>
-
-        <div
-          className="mt-20 p-5 rounded-lg"
-          style={{
-            backgroundColor: "#F5F2E9",
-            border: `1px solid ${BRAND.goldSoft}`,
-          }}
-        >
-          <div
-            className="text-[10px] uppercase tracking-[0.14em] font-semibold mb-2"
-            style={{
-              color: BRAND.green,
-            }}
-          >
-            Acceptance Statement
-          </div>
-
-          <p
-            className="text-xs leading-relaxed"
-            style={{
-              color: BRAND.ink,
-            }}
-          >
-            By signing above, the parties acknowledge that the scope of work
-            described in this document represents the agreed scope for the
-            project, subject to any approved variations or subsequent written
-            amendments.
-          </p>
         </div>
       </div>
 

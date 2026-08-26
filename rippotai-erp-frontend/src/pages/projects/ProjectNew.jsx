@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, X } from "lucide-react";
+import { ArrowLeft, Plus, X, UserRound, Star } from "lucide-react";
 import {
   useCreateProjectMutation,
   useGetProjectByIdQuery,
   useUpdateProjectMutation,
+  useGetProjectTeamQuery,
+  useAddProjectTeamMemberMutation,
+  useRemoveProjectTeamMemberMutation,
 } from "../../api/project.api"; // adjust import path
 import {
   useGetProjectTypesQuery,
@@ -15,6 +18,7 @@ import {
   useGetClientsQuery,
   useCreateClientMutation,
 } from "../../api/client.api"; // adjust import path
+import { useGetUsersQuery } from "../../api/user.api"; // adjust import path
 
 // UI shows friendly labels; CreateProjectDto/UpdateProjectDto's `priority`
 // is validated against the ProjectPriority enum, which is uppercase.
@@ -33,6 +37,8 @@ const toDateInputValue = (value) => {
   if (Number.isNaN(d.getTime())) return "";
   return d.toISOString().slice(0, 10);
 };
+
+const emptyMemberDraft = { user_id: "", role_label: "", is_primary: false };
 
 export default function ProjectNew() {
   const nav = useNavigate();
@@ -55,6 +61,13 @@ export default function ProjectNew() {
   const [showAddClient, setShowAddClient] = useState(false);
   const [newClientName, setNewClientName] = useState("");
 
+  // Team members staged locally while creating a project (CreateProjectDto
+  // accepts `team_members`; UpdateProjectDto does not, so in edit mode new
+  // members are added immediately via the dedicated team endpoint instead).
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [memberDraft, setMemberDraft] = useState(emptyMemberDraft);
+
   const {
     data: project,
     isFetching: projectLoading,
@@ -73,6 +86,15 @@ export default function ProjectNew() {
     isError: clientsError,
   } = useGetClientsQuery();
 
+  const {
+    data: users = [],
+    isFetching: usersLoading,
+    isError: usersError,
+  } = useGetUsersQuery({ is_active: true });
+
+  const { data: existingTeam = [], isFetching: existingTeamLoading } =
+    useGetProjectTeamQuery(projectId, { skip: !isEdit });
+
   const [createProjectType, { isLoading: creatingType }] =
     useCreateProjectTypeMutation();
   const [createClient, { isLoading: creatingClient }] =
@@ -81,6 +103,10 @@ export default function ProjectNew() {
     useCreateProjectMutation();
   const [updateProject, { isLoading: updatingProject }] =
     useUpdateProjectMutation();
+  const [addProjectTeamMember, { isLoading: addingMember }] =
+    useAddProjectTeamMemberMutation();
+  const [removeProjectTeamMember, { isLoading: removingMember }] =
+    useRemoveProjectTeamMemberMutation();
 
   const busy = isEdit ? updatingProject : creatingProject;
 
@@ -94,6 +120,9 @@ export default function ProjectNew() {
   useEffect(() => {
     if (clientsError) toast.error("Failed to load clients");
   }, [clientsError]);
+  useEffect(() => {
+    if (usersError) toast.error("Failed to load users");
+  }, [usersError]);
 
   // Edit mode: hydrate the form once the project has loaded. Guarded by
   // `hydrated` so a refetch afterwards doesn't clobber what's being typed.
@@ -163,10 +192,87 @@ export default function ProjectNew() {
     }
   };
 
+  // Users already assigned, whether staged locally (create) or already
+  // saved on the project (edit) — used to stop the same person being added
+  // twice.
+  const assignedUserIds = new Set([
+    ...teamMembers.map((m) => m.user_id),
+    ...(isEdit ? existingTeam.map((m) => m.user_id) : []),
+  ]);
+
+  const availableUsers = users.filter((u) => !assignedUserIds.has(u.id));
+
+  const resetMemberDraft = () => {
+    setShowAddMember(false);
+    setMemberDraft(emptyMemberDraft);
+  };
+
+  const saveTeamMember = async () => {
+    if (!memberDraft.user_id) {
+      toast.error("Select a user");
+      return;
+    }
+    if (!memberDraft.role_label.trim()) {
+      toast.error("Role required");
+      return;
+    }
+
+    const user = users.find((u) => u.id === memberDraft.user_id);
+
+    if (isEdit) {
+      // Project already exists — assign the member right away.
+      try {
+        await addProjectTeamMember({
+          projectId,
+          user_id: memberDraft.user_id,
+          role_label: memberDraft.role_label.trim(),
+          is_primary: memberDraft.is_primary,
+          sort_order: existingTeam.length,
+        }).unwrap();
+        toast.success(
+          `${user?.name || user?.full_name || "Member"} added to team`,
+        );
+        resetMemberDraft();
+      } catch (e) {
+        const messages = e?.data?.message;
+        toast.error(
+          Array.isArray(messages)
+            ? messages[0]
+            : messages || e?.data?.detail || "Failed to add team member",
+        );
+      }
+    } else {
+      // Project doesn't exist yet — stage locally, sent with the create payload.
+      setTeamMembers((prev) => [
+        ...prev,
+        {
+          tempId: `${Date.now()}-${Math.random()}`,
+          user_id: memberDraft.user_id,
+          user_name: user?.name || user?.full_name || "Unknown user",
+          role_label: memberDraft.role_label.trim(),
+          is_primary: memberDraft.is_primary,
+        },
+      ]);
+      resetMemberDraft();
+    }
+  };
+
+  const removeStagedMember = (tempId) => {
+    setTeamMembers((prev) => prev.filter((m) => m.tempId !== tempId));
+  };
+
+  const removeSavedMember = async (teamMemberId) => {
+    try {
+      await removeProjectTeamMember({ projectId, teamMemberId }).unwrap();
+      toast.success("Team member removed");
+    } catch (e) {
+      toast.error(e?.data?.message || "Failed to remove team member");
+    }
+  };
+
   const submit = async () => {
     if (!form.name.trim()) return toast.error("Name required");
-    if (!form.site_location.trim())
-      return toast.error("Location required");
+    if (!form.site_location.trim()) return toast.error("Location required");
 
     // Send only what CreateProjectDto/UpdateProjectDto accepts, with the
     // exact field names/types it validates. Optional fields are omitted
@@ -183,11 +289,26 @@ export default function ProjectNew() {
       ...(form.expected_completion_date
         ? { expected_completion_date: form.expected_completion_date }
         : {}),
+      // team_members is only accepted by CreateProjectDto — UpdateProjectDto
+      // omits it, so edits never send this key.
+      ...(!isEdit && teamMembers.length
+        ? {
+            team_members: teamMembers.map((m, idx) => ({
+              user_id: m.user_id,
+              role_label: m.role_label,
+              is_primary: m.is_primary,
+              sort_order: idx,
+            })),
+          }
+        : {}),
     };
 
     try {
       if (isEdit) {
-        const data = await updateProject({ id: projectId, ...payload }).unwrap();
+        const data = await updateProject({
+          id: projectId,
+          ...payload,
+        }).unwrap();
         toast.success("Project updated");
         nav(`/projects/${data?.id || projectId}`);
       } else {
@@ -197,9 +318,7 @@ export default function ProjectNew() {
       }
     } catch (e) {
       const messages = e?.data?.message;
-      toast.error(
-        Array.isArray(messages) ? messages[0] : messages || "Failed",
-      );
+      toast.error(Array.isArray(messages) ? messages[0] : messages || "Failed");
     }
   };
 
@@ -212,6 +331,26 @@ export default function ProjectNew() {
   }
 
   const backTarget = isEdit ? `/projects/${projectId}` : "/projects";
+
+  // Unified list for rendering: saved members (edit mode) + staged members
+  // (create mode, or additions made this session before hitting Save on edit).
+  const teamRows = isEdit
+    ? existingTeam.map((m) => ({
+        key: m.id,
+        saved: true,
+        id: m.id,
+        user_name: m.user?.name || m.user?.full_name || m.user_id,
+        role_label: m.role_label,
+        is_primary: m.is_primary,
+      }))
+    : teamMembers.map((m) => ({
+        key: m.tempId,
+        saved: false,
+        tempId: m.tempId,
+        user_name: m.user_name,
+        role_label: m.role_label,
+        is_primary: m.is_primary,
+      }));
 
   return (
     <div className="max-w-[900px] mx-auto p-6">
@@ -355,6 +494,88 @@ export default function ProjectNew() {
         </div>
       </div>
 
+      {/* ===================== Team Members ===================== */}
+      <div className="bg-white border border-[#B5C4B6] rounded-xl p-6 mt-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[15px] font-semibold text-[#333333]">
+              Team Members
+            </div>
+            <p className="text-[12.5px] text-[#6B7B7C] mt-0.5">
+              {isEdit
+                ? "Assign people to this project. Changes here take effect immediately."
+                : "Assign people to this project. They'll be attached as soon as the project is created."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAddMember(true)}
+            className="h-9 px-3 rounded-lg border border-[#1F453B] text-[#333333] text-[13px] font-semibold flex items-center gap-1 hover:bg-[#EAEEF0]"
+            data-testid="add-team-member-btn"
+          >
+            <Plus size={15} /> Add Member
+          </button>
+        </div>
+
+        {isEdit && existingTeamLoading && (
+          <div className="text-[13px] text-[#6B7B7C] mt-4">Loading team…</div>
+        )}
+
+        {(!isEdit || !existingTeamLoading) && teamRows.length === 0 && (
+          <div className="text-[13px] text-[#6B7B7C] mt-4">
+            No team members assigned yet.
+          </div>
+        )}
+
+        {teamRows.length > 0 && (
+          <div className="mt-4 divide-y divide-[#EAEEF0]">
+            {teamRows.map((row) => (
+              <div
+                key={row.key}
+                className="flex items-center justify-between py-2.5"
+                data-testid="team-member-row"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#EAEEF0] text-[#1F453B] flex items-center justify-center">
+                    <UserRound size={16} />
+                  </div>
+                  <div>
+                    <div className="text-[13px] font-semibold text-[#333333] flex items-center gap-1.5">
+                      {row.user_name}
+                      {row.is_primary && (
+                        <span
+                          title="Primary contact"
+                          className="text-[#C08B1F]"
+                        >
+                          <Star size={13} fill="currentColor" />
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[12px] text-[#6B7B7C]">
+                      {row.role_label}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    row.saved
+                      ? removeSavedMember(row.id)
+                      : removeStagedMember(row.tempId)
+                  }
+                  disabled={row.saved && removingMember}
+                  className="text-[#6B7B7C] hover:text-[#B3261E] p-1"
+                  title="Remove"
+                  data-testid="remove-team-member-btn"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="flex justify-end gap-2 mt-4">
         <button
           onClick={() => nav(backTarget)}
@@ -470,6 +691,107 @@ export default function ProjectNew() {
                 data-testid="new-client-save"
               >
                 Add Client
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddMember && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={resetMemberDraft}
+        >
+          <div
+            className="bg-white rounded-2xl w-[420px] p-6 relative"
+            onClick={(e) => e.stopPropagation()}
+            data-testid="add-team-member-modal"
+          >
+            <button
+              className="absolute top-4 right-4 text-[#6B7B7C]"
+              onClick={resetMemberDraft}
+            >
+              <X size={18} />
+            </button>
+            <div className="text-[18px] font-semibold text-[#333333] mb-1">
+              Assign Team Member
+            </div>
+            <div className="text-[12.5px] text-[#6B7B7C] mb-4">
+              Pick a user and describe their role on this project.
+            </div>
+
+            <label className="text-[12px] font-semibold text-[#6B7B7C]">
+              User *
+            </label>
+            <select
+              autoFocus
+              value={memberDraft.user_id}
+              onChange={(e) =>
+                setMemberDraft({ ...memberDraft, user_id: e.target.value })
+              }
+              disabled={usersLoading}
+              className="w-full h-10 px-3 mt-1 rounded-lg border border-[#B5C4B6] bg-[#EAEEF0] text-[13.5px]"
+              data-testid="team-member-user-select"
+            >
+              <option value="">
+                {usersLoading ? "Loading…" : "Select a user"}
+              </option>
+              {!usersLoading &&
+                availableUsers.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name || u.full_name || u.email}
+                  </option>
+                ))}
+            </select>
+            {!usersLoading && availableUsers.length === 0 && (
+              <div className="text-[12px] text-[#6B7B7C] mt-1">
+                Every active user is already assigned.
+              </div>
+            )}
+
+            <label className="text-[12px] font-semibold text-[#6B7B7C] mt-3 block">
+              Role *
+            </label>
+            <input
+              value={memberDraft.role_label}
+              onChange={(e) =>
+                setMemberDraft({ ...memberDraft, role_label: e.target.value })
+              }
+              placeholder="e.g. Site Engineer"
+              className="w-full h-10 px-3 mt-1 rounded-lg border border-[#B5C4B6] bg-[#EAEEF0] text-[13.5px]"
+              data-testid="team-member-role-label"
+              onKeyDown={(e) => e.key === "Enter" && saveTeamMember()}
+            />
+
+            <label className="flex items-center gap-2 mt-3 text-[13px] text-[#333333]">
+              <input
+                type="checkbox"
+                checked={memberDraft.is_primary}
+                onChange={(e) =>
+                  setMemberDraft({
+                    ...memberDraft,
+                    is_primary: e.target.checked,
+                  })
+                }
+                data-testid="team-member-is-primary"
+              />
+              Primary contact for this project
+            </label>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={resetMemberDraft}
+                className="h-10 px-4 rounded-lg border border-[#B5C4B6] text-[13px] font-semibold text-[#333333]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveTeamMember}
+                disabled={addingMember}
+                className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold"
+                data-testid="team-member-save"
+              >
+                {isEdit ? "Add to Team" : "Add"}
               </button>
             </div>
           </div>

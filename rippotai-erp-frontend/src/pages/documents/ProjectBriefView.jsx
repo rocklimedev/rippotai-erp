@@ -2,10 +2,10 @@ import React, { useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, Edit3, Trash2, Download, Loader2 } from "lucide-react";
-import html2pdf from "html2pdf.js";
-
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { Shell, Card } from "../../hooks/shared";
-
+import logo from "../../assets/rippotai_logo.png";
 import {
   useGetProjectBriefQuery,
   useDeleteProjectBriefMutation,
@@ -26,7 +26,7 @@ const BRAND = {
   paper: "#FFFFFF",
 };
 
-const LOGO_SRC = "/assets/branding/rippotai-mark.png";
+const LOGO_SRC = logo;
 
 // ---------------------------------------------------------------------------
 // OPTIONS
@@ -516,13 +516,38 @@ export function ProjectBriefView() {
 
     try {
       setDownloading(true);
+      toast.loading("Preparing Client Brief PDF...", { id: "brief-pdf" });
 
-      toast.loading("Preparing Client Brief PDF...", {
-        id: "brief-pdf",
+      // Let the browser finish rendering (fonts, images).
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      const pageEls = Array.from(pdfRef.current.querySelectorAll(".pdf-page"));
+
+      const pdf = new jsPDF({
+        unit: "mm",
+        format: "a4",
+        orientation: "portrait",
+        compress: true,
       });
 
-      // Give browser a moment to finish rendering.
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      for (let i = 0; i < pageEls.length; i++) {
+        const canvas = await html2canvas(pageEls[i], {
+          scale: 2,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: "#ffffff",
+          logging: false,
+          scrollX: 0,
+          scrollY: 0,
+        });
+
+        const imgData = canvas.toDataURL("image/jpeg", 0.98);
+
+        if (i > 0) pdf.addPage();
+
+        // Each canvas is exactly one A4 page — fill it edge to edge.
+        pdf.addImage(imgData, "JPEG", 0, 0, 210, 297);
+      }
 
       const filenameProject =
         project?.name
@@ -530,59 +555,16 @@ export function ProjectBriefView() {
           .replace(/^-|-$/g, "")
           .toLowerCase() || "project";
 
-      const filename = `client-brief-${filenameProject}-v${
-        brief?.version || 1
-      }.pdf`;
+      const filename = `client-brief-${filenameProject}-v${brief?.version || 1}.pdf`;
 
-      const options = {
-        margin: 0,
-
-        filename,
-
-        image: {
-          type: "jpeg",
-          quality: 0.98,
-        },
-
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          allowTaint: false,
-          backgroundColor: "#ffffff",
-
-          logging: false,
-
-          // Important for large documents.
-          scrollX: 0,
-          scrollY: 0,
-
-          windowWidth: 794,
-          windowHeight: 1123,
-        },
-
-        jsPDF: {
-          unit: "mm",
-          format: "a4",
-          orientation: "portrait",
-          compress: true,
-        },
-
-        pagebreak: {
-          mode: ["css", "legacy"],
-        },
-      };
-
-      await html2pdf().set(options).from(pdfRef.current).save();
+      pdf.save(filename);
 
       toast.success("Client Brief downloaded successfully", {
         id: "brief-pdf",
       });
     } catch (error) {
       console.error("Client brief PDF generation failed:", error);
-
-      toast.error("Failed to generate Client Brief PDF", {
-        id: "brief-pdf",
-      });
+      toast.error("Failed to generate Client Brief PDF", { id: "brief-pdf" });
     } finally {
       setDownloading(false);
     }
@@ -637,9 +619,17 @@ export function ProjectBriefView() {
 
   // -------------------------------------------------------------------------
   // DATA
+  //
+  // `project` comes back from the API as a nested object that carries its
+  // own `client` and `project_type` relations (see brief.project.client /
+  // brief.project.project_type). There is no `client_name`, `type`,
+  // `principal_architect` or `project_lead` field directly on `project` —
+  // those must be read from the nested relations below.
   // -------------------------------------------------------------------------
 
   const project = brief.project || {};
+  const client = project.client || {};
+  const projectType = project.project_type || {};
 
   const addressLine = [project.name, project.site_location || brief.siteAddress]
     .filter(Boolean)
@@ -826,7 +816,10 @@ export function ProjectBriefView() {
                   value={project.site_location || brief.siteAddress}
                 />
 
-                <CoverField label="Client" value={project.client_name} />
+                {/* Client name lives on project.client.name, not
+                    project.client_name — the API returns the client as a
+                    nested relation. */}
+                <CoverField label="Client" value={client.name} />
               </div>
 
               <div
@@ -838,12 +831,16 @@ export function ProjectBriefView() {
                   borderBottom: `2px solid ${BRAND.gold}`,
                 }}
               >
+                {/* project.principal_architect / project.project_lead do
+                    not exist on the API payload. The nested client relation
+                    does carry a contact person and phone, which is real,
+                    tied data — use that instead of undefined fields. */}
                 <CoverField
-                  label="Principal Architect"
-                  value={project.principal_architect}
+                  label="Client Contact"
+                  value={client.contact_person}
                 />
 
-                <CoverField label="Project Lead" value={project.project_lead} />
+                <CoverField label="Client Phone" value={client.phone} />
               </div>
             </div>
           </div>
@@ -860,13 +857,16 @@ export function ProjectBriefView() {
         >
           <Section number="01" title="Client & contact">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-x-10 gap-y-6 mb-10">
-              <Field label="Client Name" value={project.client_name} />
+              <Field label="Client Name" value={client.name} />
 
-              <Field label="Contact Person" value={brief.contactPerson} />
+              {/* These three were previously read off brief.contactPerson /
+                  brief.mobile / brief.email, none of which exist on the
+                  brief payload — the real values live on project.client. */}
+              <Field label="Contact Person" value={client.contact_person} />
 
-              <Field label="Mobile" value={brief.mobile} />
+              <Field label="Mobile" value={client.phone} />
 
-              <Field label="Email" value={brief.email} />
+              <Field label="Email" value={client.email} />
 
               <Field label="Project Name" value={project.name} />
 
@@ -884,16 +884,34 @@ export function ProjectBriefView() {
                 label="Date Of Brief"
                 value={formatDate(brief.briefDate)}
               />
+
+              <Field label="Client Address" value={client.address} />
             </div>
 
+            {/*
+              project.type does not exist on the API payload — the fixed
+              tick-box list here maps to brief.projectType (the enum stored
+              against the brief itself). project.project_type is a separate,
+              free-text project category relation, shown alongside it below
+              rather than force-matched into the tick-box options.
+            */}
             <CheckGroup
               label="Project Type — tick one"
               options={PROJECT_TYPE_OPTIONS}
-              activeSet={
-                new Set([brief.projectType || project.type].filter(Boolean))
-              }
+              activeSet={new Set([brief.projectType].filter(Boolean))}
               otherValue={brief.projectTypeOther}
             />
+
+            {projectType.name && (
+              <p
+                className="text-xs mt-3"
+                style={{
+                  color: BRAND.muted,
+                }}
+              >
+                System project category: {projectType.name}
+              </p>
+            )}
           </Section>
         </PdfPage>
 
@@ -1523,7 +1541,7 @@ export function ProjectBriefView() {
                     color: BRAND.ink,
                   }}
                 >
-                  Name · {brief.briefTakenBy || "—"}
+                  {brief.briefTaker?.name || "—"}
                 </div>
 
                 <div
@@ -1532,7 +1550,7 @@ export function ProjectBriefView() {
                     color: BRAND.ink,
                   }}
                 >
-                  Date · {formatDate(brief.briefTakenDate) || "—"}
+                  {formatDate(brief.briefTakenDate) || "—"}
                 </div>
               </div>
 
@@ -1560,7 +1578,7 @@ export function ProjectBriefView() {
                     color: BRAND.ink,
                   }}
                 >
-                  Name · {brief.confirmedByUserId || "—"}
+                  {brief.confirmedByUserId || client.name || "—"}
                 </div>
 
                 <div
@@ -1569,7 +1587,7 @@ export function ProjectBriefView() {
                     color: BRAND.ink,
                   }}
                 >
-                  Date · {formatDate(brief.confirmedDate) || "—"}
+                  {formatDate(brief.confirmedDate) || "—"}
                 </div>
               </div>
             </div>
