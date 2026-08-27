@@ -137,7 +137,7 @@ export default function ScopeOfWorkList() {
   // ============================================================
 
   const handleEdit = (id) => {
-    nav(`/crm/scope-of-work/${id}/edit`);
+    nav(`/crm/forms/scope-of-work/${id}/edit`);
   };
 
   // ============================================================

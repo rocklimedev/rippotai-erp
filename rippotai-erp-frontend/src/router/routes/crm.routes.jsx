@@ -144,6 +144,14 @@ export const crmRoutes = [
         path: "forms/scope-of-work",
         element: <ScopeOfWorkForm />,
       },
+      {
+        path: "forms/scope-of-work/:id/edit",
+        element: <ScopeOfWorkForm />,
+      },
+      {
+        path: "forms/plan-of-action/:id/edit",
+        element: <PlanOfActionForm />,
+      },
 
       // ============================================================
       // SETTINGS

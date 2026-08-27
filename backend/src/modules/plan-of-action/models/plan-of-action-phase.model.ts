@@ -11,7 +11,7 @@ import {
 } from 'sequelize-typescript';
 
 import { PlanOfAction } from './plan-of-action.model';
-import { ProjectPhase } from './project-phase.model';
+import { ProjectPhase } from '../../projects/models/project-phase.model';
 
 @Table({
   tableName: 'plan_of_action_phases',

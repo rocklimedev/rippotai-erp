@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
-
+import { Includeable } from 'sequelize';
 import { ScopeCategory } from './models/scope-category.model';
 import { ProjectSpace } from './models/project-space.model';
 import { ProjectScopeCategory } from './models/project-scope-category.model';
@@ -51,7 +51,90 @@ export class ScopeOfWorkService {
 
     private readonly sequelize: Sequelize,
   ) {}
+  // ============================================================
+  // COMMON SCOPE OF WORK INCLUDE
+  // ============================================================
 
+  private getScopeOfWorkInclude(): Includeable[] {
+    return [
+      // ========================================================
+      // PROJECT
+      // ========================================================
+      {
+        model: Project,
+        as: 'project',
+        include: [
+          // ======================================================
+          // CLIENT
+          // ======================================================
+          {
+            model: Client,
+            as: 'client',
+          },
+
+          // ======================================================
+          // PROJECT TEAM MEMBERS
+          // ======================================================
+          {
+            model: TeamMember,
+            as: 'team_members',
+            include: [
+              {
+                model: User,
+                as: 'user',
+
+                // IMPORTANT:
+                // Never return password_hash in API response
+                attributes: {
+                  exclude: ['password_hash'],
+                },
+              },
+            ],
+          },
+        ],
+      },
+
+      // ========================================================
+      // SCOPE ITEMS
+      // ========================================================
+      {
+        model: ScopeItem,
+        as: 'items',
+        include: [
+          {
+            model: ProjectSpace,
+          },
+          {
+            model: ScopeCategory,
+          },
+        ],
+      },
+
+      // ========================================================
+      // PREPARED BY
+      // ========================================================
+      {
+        model: User,
+        as: 'preparedByUser',
+      },
+
+      // ========================================================
+      // REVIEWED BY
+      // ========================================================
+      {
+        model: User,
+        as: 'reviewedByUser',
+      },
+
+      // ========================================================
+      // ACCEPTED BY
+      // ========================================================
+      {
+        model: User,
+        as: 'acceptedByUser',
+      },
+    ];
+  }
   // ============================================================
   // SCOPE CATEGORIES
   // ============================================================
@@ -457,293 +540,222 @@ export class ScopeOfWorkService {
     projectId: string,
     dto: CreateCompleteScopeOfWorkDto,
   ) {
-    return this.sequelize.transaction(async (transaction) => {
-      // ======================================================
-      // 1. CREATE PARENT SCOPE OF WORK
-      // ======================================================
+    const scopeOfWorkId = await this.sequelize.transaction(
+      async (transaction) => {
+        // ======================================================
+        // 1. CREATE PARENT SCOPE OF WORK
+        // ======================================================
 
-      const scopeOfWork = await this.scopeOfWorkModel.create(
-        {
-          projectId,
-
-          scopeSummary: dto.scopeSummary?.trim() || undefined,
-
-          specificExclusions: dto.specificExclusions?.trim() || undefined,
-
-          notes: dto.notes?.trim() || undefined,
-
-          projectMode: dto.projectMode?.trim() || undefined,
-
-          version: dto.version ?? 1,
-
-          status: dto.status?.trim() || 'DRAFT',
-        } as any,
-        {
-          transaction,
-        },
-      );
-
-      // ======================================================
-      // 2. CREATE PROJECT SPACES
-      // ======================================================
-
-      /**
-       * Frontend sends:
-       *
-       * {
-       *   clientId: "space-1",
-       *   name: "Living Room"
-       * }
-       *
-       * Backend creates:
-       *
-       * {
-       *   id: "real-uuid"
-       * }
-       *
-       * Then:
-       *
-       * spaceIdMap:
-       * "space-1" -> "real-uuid"
-       */
-
-      const spaceIdMap = new Map<string, string>();
-
-      const createdSpaces: ProjectSpace[] = [];
-
-      for (let index = 0; index < dto.spaces.length; index++) {
-        const space = dto.spaces[index];
-
-        if (!space.name?.trim()) {
-          throw new BadRequestException(`Space ${index + 1} is missing a name`);
-        }
-
-        if (!space.clientId?.trim()) {
-          throw new BadRequestException(
-            `Space ${index + 1} is missing clientId`,
-          );
-        }
-
-        const slug =
-          space.slug?.trim() ||
-          space.name
-            .trim()
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/(^-|-$)/g, '');
-
-        const createdSpace = await this.projectSpaceModel.create(
+        const scopeOfWork = await this.scopeOfWorkModel.create(
           {
             projectId,
 
-            name: space.name.trim(),
+            scopeSummary: dto.scopeSummary?.trim() || undefined,
 
-            slug,
+            specificExclusions: dto.specificExclusions?.trim() || undefined,
 
-            description: space.description?.trim() || undefined,
+            notes: dto.notes?.trim() || undefined,
 
-            sortOrder: space.sortOrder ?? index + 1,
+            projectMode: dto.projectMode?.trim() || undefined,
 
-            isActive: true,
+            version: dto.version ?? 1,
+
+            status: dto.status?.trim() || 'DRAFT',
           } as any,
           {
             transaction,
           },
         );
 
-        createdSpaces.push(createdSpace);
+        // ======================================================
+        // 2. CREATE PROJECT SPACES
+        // ======================================================
 
-        spaceIdMap.set(space.clientId, createdSpace.id);
-      }
+        const spaceIdMap = new Map<string, string>();
 
-      // ======================================================
-      // 3. CREATE SCOPE ITEMS
-      // ======================================================
+        for (let index = 0; index < dto.spaces.length; index++) {
+          const space = dto.spaces[index];
 
-      const createdItems: ScopeItem[] = [];
-
-      for (let index = 0; index < dto.items.length; index++) {
-        const item = dto.items[index];
-
-        // ----------------------------------------------------
-        // Validate scope text
-        // ----------------------------------------------------
-
-        if (!item.scopeOfWork?.trim()) {
-          throw new BadRequestException(
-            `Scope item ${index + 1} is missing scopeOfWork`,
-          );
-        }
-
-        // ----------------------------------------------------
-        // Validate category
-        // ----------------------------------------------------
-
-        if (!item.scopeCategoryId) {
-          throw new BadRequestException(
-            `Scope item ${index + 1} is missing scopeCategoryId`,
-          );
-        }
-
-        const category = await this.scopeCategoryModel.findByPk(
-          item.scopeCategoryId,
-          {
-            transaction,
-          },
-        );
-
-        if (!category) {
-          throw new NotFoundException(
-            `Scope category not found: ${item.scopeCategoryId}`,
-          );
-        }
-
-        // ----------------------------------------------------
-        // Resolve project space
-        // ----------------------------------------------------
-
-        let projectSpaceId: string | undefined;
-
-        if (item.projectSpaceId) {
-          // First assume it is a real UUID
-          projectSpaceId = item.projectSpaceId;
-
-          // Then check if it is a frontend clientId
-          const mappedId = spaceIdMap.get(item.projectSpaceId);
-
-          if (mappedId) {
-            projectSpaceId = mappedId;
+          if (!space.name?.trim()) {
+            throw new BadRequestException(
+              `Space ${index + 1} is missing a name`,
+            );
           }
-        }
 
-        // ----------------------------------------------------
-        // If no projectSpaceId was supplied, try clientId
-        // ----------------------------------------------------
+          if (!space.clientId?.trim()) {
+            throw new BadRequestException(
+              `Space ${index + 1} is missing clientId`,
+            );
+          }
 
-        if (!projectSpaceId) {
-          throw new BadRequestException(
-            `Scope item ${index + 1} is missing projectSpaceId`,
-          );
-        }
+          const slug =
+            space.slug?.trim() ||
+            space.name
+              .trim()
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/(^-|-$)/g, '');
 
-        // ----------------------------------------------------
-        // Validate project space
-        // ----------------------------------------------------
-
-        const projectSpace = await this.projectSpaceModel.findOne({
-          where: {
-            id: projectSpaceId,
-            projectId,
-          },
-          transaction,
-        });
-
-        if (!projectSpace) {
-          throw new NotFoundException(
-            `Project space ${projectSpaceId} does not belong to project ${projectId}`,
-          );
-        }
-
-        // ----------------------------------------------------
-        // INCLUDED / EXCLUDED
-        // ----------------------------------------------------
-
-        const isIncluded = item.isIncluded !== false;
-
-        const isExcluded = item.isExcluded === true;
-
-        // ----------------------------------------------------
-        // Prevent contradictory state
-        // ----------------------------------------------------
-
-        if (isIncluded && isExcluded) {
-          throw new BadRequestException(
-            `Scope item ${index + 1} cannot be both included and excluded`,
-          );
-        }
-
-        // ----------------------------------------------------
-        // CREATE ITEM
-        // ----------------------------------------------------
-
-        const createdItem = await this.scopeItemModel.create(
-          {
-            projectId,
-
-            // Parent Scope Of Work
-            scopeOfWorkId: scopeOfWork.id,
-
-            // Actual item text
-            scopeOfWork: item.scopeOfWork.trim(),
-
-            projectSpaceId,
-
-            scopeCategoryId: item.scopeCategoryId,
-
-            isIncluded,
-
-            isExcluded,
-
-            notes: item.notes?.trim() || undefined,
-
-            sortOrder: item.sortOrder ?? index + 1,
-          } as any,
-          {
-            transaction,
-          },
-        );
-
-        createdItems.push(createdItem);
-      }
-
-      // ======================================================
-      // 4. LOAD COMPLETE DOCUMENT
-      // ======================================================
-
-      const completeScopeOfWork = await this.scopeOfWorkModel.findByPk(
-        scopeOfWork.id,
-        {
-          include: [
+          const createdSpace = await this.projectSpaceModel.create(
             {
-              model: ScopeItem,
-              include: [
-                {
-                  model: ScopeOfWork,
-                  as: 'scopeOfWorkDocument',
-                },
-                {
-                  model: ProjectSpace,
-                },
-                {
-                  model: ScopeCategory,
-                },
-              ],
+              projectId,
+
+              name: space.name.trim(),
+
+              slug,
+
+              description: space.description?.trim() || undefined,
+
+              sortOrder: space.sortOrder ?? index + 1,
+
+              isActive: true,
+            } as any,
+            {
+              transaction,
             },
-          ],
-          transaction,
-        },
-      );
+          );
 
-      // ======================================================
-      // 5. RETURN
-      // ======================================================
+          // Map frontend clientId -> real DB UUID
+          spaceIdMap.set(space.clientId, createdSpace.id);
+        }
 
-      return {
-        scopeOfWork: completeScopeOfWork,
+        // ======================================================
+        // 3. CREATE SCOPE ITEMS
+        // ======================================================
 
-        spaces: createdSpaces,
+        for (let index = 0; index < dto.items.length; index++) {
+          const item = dto.items[index];
 
-        items: createdItems,
+          // ----------------------------------------------------
+          // Validate scope text
+          // ----------------------------------------------------
 
-        counts: {
-          spaces: createdSpaces.length,
+          if (!item.scopeOfWork?.trim()) {
+            throw new BadRequestException(
+              `Scope item ${index + 1} is missing scopeOfWork`,
+            );
+          }
 
-          items: createdItems.length,
-        },
-      };
-    });
+          // ----------------------------------------------------
+          // Validate category
+          // ----------------------------------------------------
+
+          if (!item.scopeCategoryId) {
+            throw new BadRequestException(
+              `Scope item ${index + 1} is missing scopeCategoryId`,
+            );
+          }
+
+          const category = await this.scopeCategoryModel.findByPk(
+            item.scopeCategoryId,
+            {
+              transaction,
+            },
+          );
+
+          if (!category) {
+            throw new NotFoundException(
+              `Scope category not found: ${item.scopeCategoryId}`,
+            );
+          }
+
+          // ----------------------------------------------------
+          // Resolve Project Space
+          // ----------------------------------------------------
+
+          let projectSpaceId: string | undefined;
+
+          if (item.projectSpaceId) {
+            projectSpaceId = item.projectSpaceId;
+
+            const mappedId = spaceIdMap.get(item.projectSpaceId);
+
+            if (mappedId) {
+              projectSpaceId = mappedId;
+            }
+          }
+
+          if (!projectSpaceId) {
+            throw new BadRequestException(
+              `Scope item ${index + 1} is missing projectSpaceId`,
+            );
+          }
+
+          // ----------------------------------------------------
+          // Validate Project Space
+          // ----------------------------------------------------
+
+          const projectSpace = await this.projectSpaceModel.findOne({
+            where: {
+              id: projectSpaceId,
+              projectId,
+            },
+            transaction,
+          });
+
+          if (!projectSpace) {
+            throw new NotFoundException(
+              `Project space ${projectSpaceId} does not belong to project ${projectId}`,
+            );
+          }
+
+          // ----------------------------------------------------
+          // INCLUDED / EXCLUDED
+          // ----------------------------------------------------
+
+          const isIncluded = item.isIncluded !== false;
+
+          const isExcluded = item.isExcluded === true;
+
+          if (isIncluded && isExcluded) {
+            throw new BadRequestException(
+              `Scope item ${index + 1} cannot be both included and excluded`,
+            );
+          }
+
+          // ----------------------------------------------------
+          // CREATE ITEM
+          // ----------------------------------------------------
+
+          await this.scopeItemModel.create(
+            {
+              projectId,
+
+              scopeOfWorkId: scopeOfWork.id,
+
+              scopeOfWork: item.scopeOfWork.trim(),
+
+              projectSpaceId,
+
+              scopeCategoryId: item.scopeCategoryId,
+
+              isIncluded,
+
+              isExcluded,
+
+              notes: item.notes?.trim() || undefined,
+
+              sortOrder: item.sortOrder ?? index + 1,
+            } as any,
+            {
+              transaction,
+            },
+          );
+        }
+
+        // Return only the ID from the transaction.
+        // We load the complete object AFTER the transaction commits.
+        return scopeOfWork.id;
+      },
+    );
+
+    // ==========================================================
+    // IMPORTANT:
+    // Return the SAME structure used by GET BY ID.
+    // ==========================================================
+
+    return this.getScopeOfWorkById(scopeOfWorkId);
   }
-
   // ============================================================
   // GET ALL SCOPE OF WORK
   // ============================================================
@@ -769,84 +781,41 @@ export class ScopeOfWorkService {
       ],
     });
   }
+  // ============================================================
+  // GET SCOPE OF WORK BY PROJECT
+  // ============================================================
 
+  async getScopeOfWorkByProject(projectId: string) {
+    const scope = await this.scopeOfWorkModel.findOne({
+      where: {
+        projectId,
+      },
+
+      include: this.getScopeOfWorkInclude(),
+
+      order: [
+        ['version', 'DESC'],
+        ['createdAt', 'DESC'],
+      ],
+    });
+
+    if (!scope) {
+      throw new NotFoundException(
+        `Scope of work not found for project ${projectId}`,
+      );
+    }
+
+    return scope;
+  }
   // ============================================================
   // GET SCOPE OF WORK BY ID
   // ============================================================
 
   async getScopeOfWorkById(id: string) {
     const scope = await this.scopeOfWorkModel.findByPk(id, {
-      include: [
-        // ========================================================
-        // PROJECT
-        // ========================================================
-        {
-          model: Project,
-          as: 'project',
-          include: [
-            // ======================================================
-            // CLIENT
-            // ======================================================
-            {
-              model: Client,
-              as: 'client',
-            },
+      include: this.getScopeOfWorkInclude(),
 
-            // ======================================================
-            // PROJECT TEAM MEMBERS
-            // ======================================================
-            {
-              model: TeamMember,
-              as: 'team_members',
-              include: [
-                {
-                  model: User,
-                  as: 'user',
-                },
-              ],
-            },
-          ],
-        },
-
-        // ========================================================
-        // SCOPE ITEMS
-        // ========================================================
-        {
-          model: ScopeItem,
-          include: [
-            {
-              model: ProjectSpace,
-            },
-            {
-              model: ScopeCategory,
-            },
-          ],
-        },
-
-        // ========================================================
-        // PREPARED BY
-        // ========================================================
-        {
-          model: User,
-          as: 'preparedByUser',
-        },
-
-        // ========================================================
-        // REVIEWED BY
-        // ========================================================
-        {
-          model: User,
-          as: 'reviewedByUser',
-        },
-
-        // ========================================================
-        // ACCEPTED BY
-        // ========================================================
-        {
-          model: User,
-          as: 'acceptedByUser',
-        },
-      ],
+      order: [[{ model: ScopeItem, as: 'items' }, 'sortOrder', 'ASC']],
     });
 
     if (!scope) {
@@ -855,19 +824,21 @@ export class ScopeOfWorkService {
 
     return scope;
   }
-
   // ============================================================
   // UPDATE SCOPE OF WORK
   // ============================================================
 
   async updateScopeOfWork(id: string, dto: UpdateScopeOfWorkDto) {
-    const scope = await this.getScopeOfWorkById(id);
+    const scope = await this.scopeOfWorkModel.findByPk(id);
+
+    if (!scope) {
+      throw new NotFoundException('Scope of work not found');
+    }
 
     await scope.update(dto as any);
 
     return this.getScopeOfWorkById(id);
   }
-
   // ============================================================
   // DELETE SCOPE OF WORK
   // ============================================================

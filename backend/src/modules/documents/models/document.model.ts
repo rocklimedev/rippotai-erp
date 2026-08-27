@@ -3,136 +3,203 @@ import {
   Column,
   Model,
   DataType,
+  PrimaryKey,
+  Default,
   ForeignKey,
   BelongsTo,
   HasMany,
-  Default,
-  AllowNull,
 } from 'sequelize-typescript';
-import { Project } from '@/modules/projects/models/projects.model';
+
+import { DocumentType } from './document-type.model';
+import { DocumentRequirement } from './document-requirement.model';
+import { DocumentVersion } from './document-version.model';
 import { DocumentAttachment } from './document-attachment.model';
 
-export type DocumentCategory =
-  | 'Agreements'
-  | 'Pitch'
-  | 'Scope of Work'
-  | 'Time and Cost'
-  | 'Project Brief'
-  | 'Site Reki'
-  | 'BOQs'
-  | 'Quotations'
-  | 'Drawings'
-  | 'GFC Drawings'
-  | '3D Views'
-  | 'Approvals'
-  | 'Other'
-  | 'Handover Documents';
+export type DocumentStatus =
+  | 'draft'
+  | 'submitted'
+  | 'under_review'
+  | 'approved'
+  | 'rejected'
+  | 'archived';
 
-export type DocumentVisibility = 'internal' | 'client';
-export type DocumentStatus = 'draft' | 'in_review' | 'approved' | 'archived';
-export type DocumentType = 'upload' | 'project_brief' | 'site_reki';
+export type DocumentVisibility = 'internal' | 'external' | 'public';
 
-@Table({ tableName: 'documents', timestamps: true, underscored: true })
+export type DocumentSourceType = 'upload' | 'generated' | 'system';
+
+@Table({
+  tableName: 'documents',
+  underscored: true,
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+})
 export class Document extends Model<Document> {
-  @Column({
-    type: DataType.UUID,
-    defaultValue: DataType.UUIDV4,
-    primaryKey: true,
-  })
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column(DataType.UUID)
   declare id: string;
 
-  @ForeignKey(() => Project)
-  @AllowNull(true)
-  @Column({ type: DataType.UUID, field: 'project_id' })
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
   declare projectId: string | null;
 
-  @BelongsTo(() => Project)
-  declare project: Project;
+  @ForeignKey(() => DocumentType)
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  declare documentTypeId: string | null;
 
-  @AllowNull(false)
-  @Column(DataType.STRING)
-  declare category: DocumentCategory;
+  @ForeignKey(() => DocumentRequirement)
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  declare requirementId: string | null;
 
-  @AllowNull(false)
-  @Column(DataType.STRING)
+  @Column({
+    type: DataType.STRING(100),
+    allowNull: true,
+  })
+  declare category: string | null;
+
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: false,
+  })
   declare title: string;
 
-  @AllowNull(true)
-  @Column(DataType.STRING)
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: true,
+  })
   declare filename: string | null;
 
-  @AllowNull(true)
-  @Column({ type: DataType.STRING, field: 'storage_filename' })
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: true,
+  })
   declare storageFilename: string | null;
 
-  @AllowNull(true)
-  @Column(DataType.STRING)
+  @Column({
+    type: DataType.STRING(1000),
+    allowNull: true,
+  })
   declare url: string | null;
 
-  @AllowNull(true)
-  @Column(DataType.STRING)
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: true,
+  })
   declare mime: string | null;
 
-  @AllowNull(true)
-  @Column(DataType.BIGINT)
+  @Column({
+    type: DataType.BIGINT,
+    allowNull: true,
+  })
   declare size: number | null;
 
   @Default('V1')
-  @Column(DataType.STRING)
-  declare version: string;
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: true,
+  })
+  declare version: string | null;
 
   @Default('draft')
-  @Column(DataType.STRING)
-  declare status: DocumentStatus;
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: true,
+  })
+  declare status: DocumentStatus | null;
 
   @Default('internal')
-  @Column(DataType.STRING)
-  declare visibility: DocumentVisibility;
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: true,
+  })
+  declare visibility: DocumentVisibility | null;
 
-  @AllowNull(true)
-  @Column(DataType.TEXT)
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
   declare remarks: string | null;
 
   @Default(false)
-  @Column({ type: DataType.BOOLEAN, field: 'is_locked' })
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+  })
   declare isLocked: boolean;
 
-  @AllowNull(true)
-  @Column({ type: DataType.STRING, field: 'locked_by' })
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
   declare lockedBy: string | null;
 
-  @AllowNull(true)
-  @Column({ type: DataType.DATE, field: 'locked_at' })
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+  })
   declare lockedAt: Date | null;
 
-  @AllowNull(true)
-  @Column({ type: DataType.UUID, field: 'uploaded_by' })
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
   declare uploadedBy: string | null;
 
-  @AllowNull(true)
-  @Column({ type: DataType.STRING, field: 'uploaded_by_name' })
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: true,
+  })
   declare uploadedByName: string | null;
 
-  @AllowNull(true)
-  @Column({ type: DataType.DATEONLY, field: 'document_date' })
+  @Column({
+    type: DataType.DATEONLY,
+    allowNull: true,
+  })
   declare documentDate: string | null;
 
   @Default('upload')
-  @Column({ type: DataType.STRING, field: 'doc_type' })
-  declare docType: DocumentType;
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: true,
+  })
+  declare docType: DocumentSourceType | null;
 
-  @AllowNull(true)
-  @Column({ type: DataType.STRING, field: 'doc_no' })
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: true,
+  })
   declare docNo: string | null;
 
-  @AllowNull(true)
-  @Column(DataType.JSON)
-  declare sections: Record<string, Record<string, string>> | null;
+  @Column({
+    type: DataType.JSON,
+    allowNull: true,
+  })
+  declare sections: Record<string, unknown> | null;
 
-  @AllowNull(true)
-  @Column({ type: DataType.STRING, field: 'source_app' })
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: true,
+  })
   declare sourceApp: string | null;
 
-  @HasMany(() => DocumentAttachment, { onDelete: 'CASCADE' })
+  @BelongsTo(() => DocumentType)
+  declare documentType: DocumentType;
+
+  @BelongsTo(() => DocumentRequirement)
+  declare requirement: DocumentRequirement;
+
+  @HasMany(() => DocumentVersion)
+  declare versions: DocumentVersion[];
+
+  @HasMany(() => DocumentAttachment)
   declare attachments: DocumentAttachment[];
 }

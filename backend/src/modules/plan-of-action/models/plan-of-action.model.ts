@@ -11,11 +11,11 @@ import {
   IsUUID,
 } from 'sequelize-typescript';
 
-import { Project } from './projects.model';
+import { Project } from '../../projects/models/projects.model';
 import { User } from '@/modules/users/models/user.model';
 import { TermsTemplate } from '@/modules/metas/models/terms-templates.model';
 import { TermsTemplateVersion } from '@/modules/metas/models/terms-template-version.model';
-import { ProjectPhase } from './project-phase.model';
+import { ProjectPhase } from '../../projects/models/project-phase.model';
 import { PlanOfActionPhase } from './plan-of-action-phase.model';
 import { PlanOfActionStatus } from '@/common/enums/plan-of-action.enums';
 

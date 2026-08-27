@@ -105,6 +105,12 @@ export default function ProposalReadinessCheck({
 
   /* ============================================================
      HANDLE PROJECT CHANGE
+
+     If the parent forgot to wire `onProjectChange`, selecting a
+     project here would silently do nothing — the <select> would
+     appear to "not respond" because its `value` is controlled by
+     the `projectId` prop, which never changes. Warn loudly in that
+     case instead of failing silently.
   ============================================================ */
 
   const handleProjectChange = (event) => {
@@ -112,7 +118,15 @@ export default function ProposalReadinessCheck({
 
     if (!nextProjectId) return;
 
-    onProjectChange?.(nextProjectId);
+    if (typeof onProjectChange !== "function") {
+      console.warn(
+        "ProposalReadinessCheck: onProjectChange was not provided, so selecting a project has no effect. " +
+          "Make projectId stateful in the parent and pass a setter as onProjectChange.",
+      );
+      return;
+    }
+
+    onProjectChange(nextProjectId);
   };
 
   /* ============================================================

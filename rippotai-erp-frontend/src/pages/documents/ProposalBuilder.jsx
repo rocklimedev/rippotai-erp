@@ -23,7 +23,39 @@ import NextStepsSection from "../../components/business-proposal/NextStepsSectio
 import DocumentPreview from "../../components/business-proposal/DocumentPreview";
 import ProposalReadinessCheck from "../../components/business-proposal/ProposalReadinessCheck";
 
-import { fetchFullProposal } from "../../lib/mockApi";
+import {
+  useGetProjectByIdQuery,
+  useUpdateProjectMutation,
+} from "../../api/project.api";
+import {
+  useGetScopeOfWorkByProjectQuery,
+  useUpdateScopeOfWorkMutation,
+} from "../../api/scope-of-work.api";
+import {
+  useFindPlanOfActionsByProjectQuery,
+  useReplacePlanOfActionPhasesMutation,
+  useUpdatePlanOfActionMutation,
+} from "../../api/plan-of-actions.api";
+import {
+  useGetPaymentSchedulesQuery,
+  useUpdatePaymentScheduleMutation,
+} from "../../api/payment-schedules.api";
+
+import {
+  mapProjectToProjectDetail,
+  mapProjectDetailToUpdatePayload,
+  mapScopeOfWorkFromApi,
+  mapScopeOfWorkToUpdatePayload,
+  mapPlanOfActionFromApi,
+  mapPlanOfActionToPhasesPayload,
+  mapPlanOfActionToUpdatePayload,
+  mapPaymentScheduleFromApi,
+  mapPaymentScheduleToUpdatePayload,
+} from "../../lib/proposalMappers";
+
+// Budget Estimate has no real endpoint yet — intentionally kept mocked.
+import { fetchBudgetEstimate, fetchNextSteps } from "../../lib/mockApi";
+
 import { exportProposalToPdf } from "../../lib/pdf";
 
 /* ============================================================
@@ -222,6 +254,7 @@ function StepFooter({
   nextLabel = "Continue",
   nextDisabled = false,
   backDisabled = false,
+  saving = false,
 }) {
   return (
     <div className="mt-8 flex items-center justify-between border-t border-[var(--stroke)] pt-6">
@@ -230,9 +263,13 @@ function StepFooter({
         Back
       </Button>
 
-      <Button onClick={onNext} disabled={nextDisabled}>
-        {nextLabel}
-        <ArrowRight className="h-4 w-4" />
+      <Button
+        onClick={onNext}
+        disabled={nextDisabled || saving}
+        loading={saving}
+      >
+        {saving ? "Saving…" : nextLabel}
+        {!saving && <ArrowRight className="h-4 w-4" />}
       </Button>
     </div>
   );
@@ -242,62 +279,126 @@ function StepFooter({
    MAIN COMPONENT
 ============================================================ */
 
-export default function ProposalBuilder({ projectId = "demo-project" }) {
+export default function ProposalBuilder({
+  projectId: initialProjectId = "demo-project",
+}) {
+  // `projectId` has to be state, not a plain prop passthrough — the
+  // readiness check's project selector calls `onProjectChange(id)`,
+  // and without local state there was nothing for that call to update,
+  // so picking a project from the dropdown appeared to do nothing.
+  const [projectId, setProjectId] = useState(initialProjectId);
+
+  // If the page is mounted under a route like
+  // /projects/:projectId/proposal-builder and the route param itself
+  // changes, keep internal state in sync with it. This does NOT run
+  // when the in-page selector calls setProjectId directly — only when
+  // the prop coming from the parent/router actually changes.
+  useEffect(() => {
+    setProjectId(initialProjectId);
+  }, [initialProjectId]);
+
   const [step, setStep] = useState(0);
   const [view, setView] = useState("edit");
 
-  const [loading, setLoading] = useState(true);
-  const [checking, setChecking] = useState(true);
+  const [savingStep, setSavingStep] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   const [proposal, setProposal] = useState(EMPTY_PROPOSAL);
 
+  // Sections that still don't come from a real endpoint.
+  const [mockLoading, setMockLoading] = useState(true);
+
   const documentRef = useRef(null);
 
   /* ============================================================
-     LOAD PROPOSAL
+     REAL DATA — READS
+  ============================================================ */
+
+  const {
+    data: projectData,
+    isFetching: projectFetching,
+    isLoading: projectLoading,
+  } = useGetProjectByIdQuery(projectId, { skip: !projectId });
+
+  const {
+    data: scopeOfWorkData,
+    isFetching: scopeFetching,
+    isLoading: scopeLoading,
+  } = useGetScopeOfWorkByProjectQuery(projectId, { skip: !projectId });
+
+  const {
+    data: planOfActionList,
+    isFetching: planFetching,
+    isLoading: planLoading,
+  } = useFindPlanOfActionsByProjectQuery(projectId, { skip: !projectId });
+
+  const {
+    data: paymentScheduleList,
+    isFetching: paymentFetching,
+    isLoading: paymentLoading,
+  } = useGetPaymentSchedulesQuery(
+    { project_id: projectId },
+    { skip: !projectId },
+  );
+
+  // Assumes a single active Plan of Action / Payment Schedule per
+  // project. If a project can have more than one (e.g. drafts and a
+  // published version side by side), filter by status here instead
+  // of taking the first entry.
+  const planOfActionDoc = planOfActionList?.[0];
+  const paymentScheduleDoc = paymentScheduleList?.[0];
+
+  /* ============================================================
+     REAL DATA — WRITES
+  ============================================================ */
+
+  const [updateProject] = useUpdateProjectMutation();
+  const [updateScopeOfWork] = useUpdateScopeOfWorkMutation();
+  const [replacePlanOfActionPhases] = useReplacePlanOfActionPhasesMutation();
+  const [updatePlanOfAction] = useUpdatePlanOfActionMutation();
+  const [updatePaymentSchedule] = useUpdatePaymentScheduleMutation();
+
+  /* ============================================================
+     LOAD MOCKED SECTIONS (Budget Estimate, Next Steps)
   ============================================================ */
 
   useEffect(() => {
     let cancelled = false;
 
-    const loadProposal = async () => {
+    const loadMockedSections = async () => {
       try {
-        setLoading(true);
-        setChecking(true);
+        setMockLoading(true);
 
-        const data = await fetchFullProposal(projectId);
+        const [budgetEstimate, nextSteps] = await Promise.all([
+          fetchBudgetEstimate(projectId),
+          fetchNextSteps(projectId),
+        ]);
 
         if (cancelled) return;
 
-        setProposal({
-          ...EMPTY_PROPOSAL,
-          ...data,
-        });
-
-        /*
-         * Always start from the readiness check
-         * when switching to another project.
-         */
-        setStep(0);
-        setView("edit");
+        setProposal((previous) => ({
+          ...previous,
+          budgetEstimate,
+          nextSteps,
+        }));
       } catch (error) {
-        console.error("Failed to load proposal:", error);
+        console.error("Failed to load mocked proposal sections:", error);
 
         if (!cancelled) {
-          setProposal(EMPTY_PROPOSAL);
-          setStep(0);
-          setView("edit");
+          setProposal((previous) => ({
+            ...previous,
+            budgetEstimate: previous.budgetEstimate || null,
+            nextSteps: previous.nextSteps || null,
+          }));
         }
       } finally {
         if (!cancelled) {
-          setLoading(false);
-          setChecking(false);
+          setMockLoading(false);
         }
       }
     };
 
-    loadProposal();
+    loadMockedSections();
 
     return () => {
       cancelled = true;
@@ -305,7 +406,57 @@ export default function ProposalBuilder({ projectId = "demo-project" }) {
   }, [projectId]);
 
   /* ============================================================
-     PATCH SECTION
+     MERGE REAL DATA INTO PROPOSAL AS IT ARRIVES
+  ============================================================ */
+
+  useEffect(() => {
+    if (!projectData) return;
+
+    setProposal((previous) => ({
+      ...previous,
+      projectDetail: mapProjectToProjectDetail(projectData),
+    }));
+  }, [projectData]);
+
+  useEffect(() => {
+    if (!scopeOfWorkData) return;
+
+    setProposal((previous) => ({
+      ...previous,
+      scopeOfWork: mapScopeOfWorkFromApi(scopeOfWorkData),
+    }));
+  }, [scopeOfWorkData]);
+
+  useEffect(() => {
+    if (!planOfActionDoc) return;
+
+    setProposal((previous) => ({
+      ...previous,
+      planOfAction: mapPlanOfActionFromApi(planOfActionDoc),
+    }));
+  }, [planOfActionDoc]);
+
+  useEffect(() => {
+    if (!paymentScheduleDoc) return;
+
+    setProposal((previous) => ({
+      ...previous,
+      paymentSchedule: mapPaymentScheduleFromApi(paymentScheduleDoc),
+    }));
+  }, [paymentScheduleDoc]);
+
+  /* ============================================================
+     RESET TO READINESS WHEN SWITCHING PROJECT
+  ============================================================ */
+
+  useEffect(() => {
+    setProposal(EMPTY_PROPOSAL);
+    setStep(0);
+    setView("edit");
+  }, [projectId]);
+
+  /* ============================================================
+     PATCH SECTION (local edits before saving)
   ============================================================ */
 
   const patch = (key) => (value) => {
@@ -313,6 +464,83 @@ export default function ProposalBuilder({ projectId = "demo-project" }) {
       ...previous,
       [key]: value,
     }));
+  };
+
+  /* ============================================================
+     SAVE HANDLERS — ONE PER REAL SECTION
+  ============================================================ */
+
+  const saveProjectDetail = async () => {
+    if (!projectId || !proposal.projectDetail) return;
+
+    try {
+      setSavingStep(true);
+
+      await updateProject({
+        id: projectId,
+        ...mapProjectDetailToUpdatePayload(proposal.projectDetail),
+      }).unwrap();
+    } catch (error) {
+      console.error("Failed to save project detail:", error);
+    } finally {
+      setSavingStep(false);
+    }
+  };
+
+  const saveScopeOfWork = async () => {
+    if (!scopeOfWorkData?.id || !proposal.scopeOfWork) return;
+
+    try {
+      setSavingStep(true);
+
+      await updateScopeOfWork({
+        id: scopeOfWorkData.id,
+        body: mapScopeOfWorkToUpdatePayload(proposal.scopeOfWork),
+      }).unwrap();
+    } catch (error) {
+      console.error("Failed to save scope of work:", error);
+    } finally {
+      setSavingStep(false);
+    }
+  };
+
+  const savePlanOfAction = async () => {
+    if (!planOfActionDoc?.id || !proposal.planOfAction) return;
+
+    try {
+      setSavingStep(true);
+
+      await replacePlanOfActionPhases({
+        id: planOfActionDoc.id,
+        phases: mapPlanOfActionToPhasesPayload(proposal.planOfAction),
+      }).unwrap();
+
+      await updatePlanOfAction({
+        id: planOfActionDoc.id,
+        ...mapPlanOfActionToUpdatePayload(proposal.planOfAction),
+      }).unwrap();
+    } catch (error) {
+      console.error("Failed to save plan of action:", error);
+    } finally {
+      setSavingStep(false);
+    }
+  };
+
+  const savePaymentSchedule = async () => {
+    if (!paymentScheduleDoc?.id || !proposal.paymentSchedule) return;
+
+    try {
+      setSavingStep(true);
+
+      await updatePaymentSchedule({
+        id: paymentScheduleDoc.id,
+        ...mapPaymentScheduleToUpdatePayload(proposal.paymentSchedule),
+      }).unwrap();
+    } catch (error) {
+      console.error("Failed to save payment schedule:", error);
+    } finally {
+      setSavingStep(false);
+    }
   };
 
   /* ============================================================
@@ -404,6 +632,19 @@ export default function ProposalBuilder({ projectId = "demo-project" }) {
      LOADING
   ============================================================ */
 
+  const checking =
+    projectLoading ||
+    projectFetching ||
+    scopeLoading ||
+    scopeFetching ||
+    planLoading ||
+    planFetching ||
+    paymentLoading ||
+    paymentFetching ||
+    mockLoading;
+
+  const loading = checking && step === 0 && !proposal.projectDetail;
+
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center gap-2 text-[var(--muted)]">
@@ -457,6 +698,7 @@ export default function ProposalBuilder({ projectId = "demo-project" }) {
           projectId={projectId}
           proposal={proposal}
           checking={checking}
+          onProjectChange={setProjectId}
           onContinue={() => {
             if (!isReady) return;
 
@@ -557,7 +799,14 @@ export default function ProposalBuilder({ projectId = "demo-project" }) {
                 onChange={patch("projectDetail")}
               />
 
-              <StepFooter onBack={() => setStep(0)} onNext={() => setStep(2)} />
+              <StepFooter
+                onBack={() => setStep(0)}
+                onNext={async () => {
+                  await saveProjectDetail();
+                  setStep(2);
+                }}
+                saving={savingStep}
+              />
             </>
           )}
 
@@ -578,7 +827,14 @@ export default function ProposalBuilder({ projectId = "demo-project" }) {
                 onChange={patch("scopeOfWork")}
               />
 
-              <StepFooter onBack={() => setStep(1)} onNext={() => setStep(3)} />
+              <StepFooter
+                onBack={() => setStep(1)}
+                onNext={async () => {
+                  await saveScopeOfWork();
+                  setStep(3);
+                }}
+                saving={savingStep}
+              />
             </>
           )}
 
@@ -599,12 +855,19 @@ export default function ProposalBuilder({ projectId = "demo-project" }) {
                 onChange={patch("planOfAction")}
               />
 
-              <StepFooter onBack={() => setStep(2)} onNext={() => setStep(4)} />
+              <StepFooter
+                onBack={() => setStep(2)}
+                onNext={async () => {
+                  await savePlanOfAction();
+                  setStep(4);
+                }}
+                saving={savingStep}
+              />
             </>
           )}
 
           {/* ====================================================
-              STEP 4 - BUDGET ESTIMATE
+              STEP 4 - BUDGET ESTIMATE (mocked — no real endpoint yet)
           ==================================================== */}
 
           {step === 4 && (
@@ -641,12 +904,19 @@ export default function ProposalBuilder({ projectId = "demo-project" }) {
                 onChange={patch("paymentSchedule")}
               />
 
-              <StepFooter onBack={() => setStep(4)} onNext={() => setStep(6)} />
+              <StepFooter
+                onBack={() => setStep(4)}
+                onNext={async () => {
+                  await savePaymentSchedule();
+                  setStep(6);
+                }}
+                saving={savingStep}
+              />
             </>
           )}
 
           {/* ====================================================
-              STEP 6 - NEXT STEPS
+              STEP 6 - NEXT STEPS (mocked — no real endpoint yet)
           ==================================================== */}
 
           {step === 6 && (

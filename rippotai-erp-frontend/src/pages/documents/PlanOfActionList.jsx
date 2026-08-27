@@ -268,7 +268,9 @@ export default function PlanOfActionList() {
                         </button>
 
                         <button
-                          onClick={() => nav(`/plan-of-actions/${r.id}/edit`)}
+                          onClick={() =>
+                            nav(`/crm/forms/plan-of-action/${r.id}/edit`)
+                          }
                           className="p-1.5 rounded hover:bg-[#EAEEF0] text-[#333333]"
                           title="Edit"
                           data-testid={`plan-of-action-edit-${r.id}`}

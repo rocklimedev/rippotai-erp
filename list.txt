@@ -1,227 +1,1379 @@
-INOS
-│── BOQ
-│   │
-│   ├── Dashboard
-│   │
-│   ├── BOQ LIST
-│   ├── ADD BOQ
-│   ├── RATE AND ITEM Library
-│   ├── BOQ TEMPLATES
-│   └── Settings
-│
-├── CRM
-│   │
-│   ├── Dashboard
-│   │
-│   ├── Pipeline
-│   ├── Leads
-│   ├── Lead Sources
-│   │
-│   └── Settings
-│
-├── PROJECTS
-│   │
-│   ├── Dashboard
-│   │
-│   ├── Projects List
-│   ├── Create Project
-│   │
-│   └── Settings
-│
-├── ESTIMATION
-│   │
-│   ├── Dashboard
-│   │
-│   ├── Estimates
-│   │   ├── Estimates List
-│   │   └── Create Estimate
-│   │
-│   └── Settings
-│
-├── DOCUMENTS
-│   │
-│   ├── Dashboard
-│   │
-│   ├── All Documents
-│   ├── Upload Documents
-│   │
-│   ├── Forms
-│   │   ├── Project Brief
-│   │   │   ├── List
-│   │   │   └── Add
-│   │   │
-│   │   ├── Site Brief
-│   │   │   ├── List
-│   │   │   └── Add
-│   │   │
-│   │   ├── Site Recce
-│   │   │   ├── List
-│   │   │   └── Add
-│   │   │
-│   │   ├── Plan of Action
-│   │   │   ├── List
-│   │   │   └── Add
-│   │   │
-│   │   └── Payment Schedules
-│   │
-│   ├── Drawings
-│   │   ├── List
-│   │   └── Upload
-│   │
-│   └── Settings
-│
-├── PROCUREMENT
-│   │
-│   ├── Dashboard
-│   │
-│   ├── Material Requirements
-│   ├── Vendor Quotations
-│   ├── Purchase Orders
-│   ├── Delivery Challans
-│   │
-│   └── Settings
-│
-├── MATERIALS
-│   │
-│   ├── Dashboard
-│   │
-│   ├── Material Library
-│   ├── Sample Boards
-│   ├── Material Rate Sheets
-│   ├── Site Inventory
-│   │
-│   └── Settings
-│
-├── VENDORS
-│   │
-│   ├── Dashboard
-│   │
-│   ├── Vendors List
-│   ├── Add Vendor
-│   ├── Vendor Categories
-│   ├── Vendor Performance
-│   │
-│   └── Settings
-│
-├── TASKS
-│   │
-│   ├── Dashboard
-│   │
-│   ├── Tasks List
-│   ├── My Tasks
-│   ├── Team Tasks
-│   │
-│   └── Settings
-│
-├── CALENDAR
-│   │
-│   ├── Dashboard
-│   │
-│   ├── Calendar Main
-│   ├── My Calendar
-│   ├── Team Calendar
-│   │
-│   └── Settings
-│
-├── REPORTS
-│   │
-│   ├── Dashboard
-│   │
-│   ├── Sales Reports
-│   ├── Project Reports
-│   ├── Estimation Reports
-│   ├── Procurement Reports
-│   ├── Material Reports
-│   ├── Vendor Reports
-│   └── Task Reports
-│
-└── ADMIN
-    │
-    ├── Dashboard
-    │
-    ├── Users
-    ├── Roles & Permissions
-    │
-    ├── Estimate Signature
-    ├── Terms & Conditions
-    │
-    ├── Company Settings
-    ├── Master Data
-    ├── Approval Workflows
-    │
-    └── Super Admin
-        └── Activity Logs
+03 PRE-DESIGN
 
-        ├── REPORTS
-        │
-└── ACCOUNT
-│   │
-│   ├── Edit Profile
-│   ├── Security
-│   ├── DEV CONSOLE(DEV ROLE ONLY)
+3.1 Existing Layout — as-built
+
+3.2 Proposed Layout
+
+3.3 Reference Presentation and Moodboard
+
+3.4 Pitch / Proposal + Business Proposal
+
+3.5 Concept Design 01 — 3D
+
+05 DESIGN
+
+5.1 Concept Design 02 — 3D with material + furniture layout
+
+5.3 Design Development 01
+
+5.4 Design Development 02 — with material
+
+06 TENDER DRAWINGS
+
+1 Building layout — floor layout + demolition layoutif needed  
+2 Building section & elevation  
+3 Civil layout  
+4 Electrical layout 
+5 Plumbing layout 
+6 AC / HVAC layout  
+7 Typical details if needed
+
+8 Landscaping drawing
+
+
+07 WORKING DRAWINGS
+
+1 Demolition detailing
+
+2 Civil detailing + structure layout
+
+3 Door window schedule & stone jambs
+
+4 Floor layout & flooring details & bathroom details
+
+5 Ceiling layout & detailing
+
+6 Wall elevations
+
+
+ M O D U L A R
+7.1 Kitchen
+
+7.2 TV unit
+
+
+7.3 Wardrobe / storage / crockery / bar unit
 
 
 
+7.4 Bed back
 
-Client-facing: 
-CLIENT BRIEF 
-Client Brief
-Business Proposal
-Scope of Work
-Budget Estimate
-Payment Schedule
-How We Work
-Plan of Action
-Client Presentation Shell
+7.5 Any other wall panelling
 
-Design & drawings: 
-Design Brief
-Concept Deck
-Drawing Register
-Drawing Issue Sheet
-Revision Log
-Material & Finish Schedule
-Design Approval Sheet
 
-Planning & BOQ: 
-BOQ Sheet
-Rate Analysis
-Cost Sheet
-Project Schedule
-Gate Checklist
-Variation Order
+-- ============================================================================
+-- RIPPOTAI MASTER DOCUMENT MANAGEMENT SQL
+-- Based on: RIPPOTAI · PROCESS · TEAM · DOCUMENT
+--
+-- MODEL
+--   document_types        = master catalogue of possible project outputs
+--   document_requirements = project-specific expected outputs / readiness
+--   documents              = uploaded non-drawing documents
+--   document_versions      = version history for documents
+--   document_attachments   = additional files
+--   drawings               = logical technical drawings
+--   drawing_revisions      = drawing revision/file history
+--
+-- IMPORTANT
+--   The master process contains both DOCUMENT and DRAWING outputs.
+--   Technical drawing sets are therefore kept separate from generic documents.
+-- ============================================================================
 
-Site operations: 
-Site Recce Form
-Daily Site Progress Report
-Site Visit Report
-Civil Quality Checklist
-Measurement Sheet
-Snag List
-Handover Checklist
+SET FOREIGN_KEY_CHECKS = 0;
 
-Procurement & vendors: 
-Vendor Onboarding Form
-Vendor Rating Sheet
-RFQ
-Comparative Statement
-Purchase Order
-Material Inward / GRN
-Vendor Site Visit Schedule
+DROP TABLE IF EXISTS `drawing_revisions`;
+DROP TABLE IF EXISTS `drawings`;
+DROP TABLE IF EXISTS `document_attachments`;
+DROP TABLE IF EXISTS `document_versions`;
+DROP TABLE IF EXISTS `documents`;
+DROP TABLE IF EXISTS `document_requirements`;
+DROP TABLE IF EXISTS `document_types`;
 
-Accounts & finance: 
-Client Invoice
-Running Bill
-Vendor Payment Request
-Expense Voucher
-Project P&L Tracker
-Collection Follow-up Sheet
+SET FOREIGN_KEY_CHECKS = 1;
 
-Legal & admin: 
-Client Agreement
-Vendor Work Order
-NDA
-Employee Role Card
-Onboarding Pack
-Attendance & Manpower Sheet
-Asset Register
+-- ============================================================================
+-- 1. DOCUMENT TYPES / MASTER DELIVERABLE CATALOGUE
+-- ============================================================================
+
+CREATE TABLE `document_types` (
+    `id` CHAR(36) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `code` VARCHAR(100) NOT NULL COLLATE 'utf8_unicode_ci',
+    `name` VARCHAR(255) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `phase_code` VARCHAR(50) NOT NULL COLLATE 'utf8_unicode_ci',
+    `phase_name` VARCHAR(255) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `section_code` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+    `section_name` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `sequence` INT NOT NULL DEFAULT 0,
+
+    -- DOCUMENT = documents table
+    -- DRAWING  = drawings table
+    `target_type` VARCHAR(30) NOT NULL DEFAULT 'DOCUMENT' COLLATE 'utf8_unicode_ci',
+
+    -- REQUIRED / OPTIONAL / CONDITIONAL
+    `requirement_type` VARCHAR(30) NOT NULL DEFAULT 'REQUIRED' COLLATE 'utf8_unicode_ci',
+
+    `allows_multiple` TINYINT(1) NOT NULL DEFAULT 0,
+    `requires_revision` TINYINT(1) NOT NULL DEFAULT 0,
+    `requires_approval` TINYINT(1) NOT NULL DEFAULT 0,
+
+    `description` TEXT NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+
+    `created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`) USING BTREE,
+
+    UNIQUE KEY `uq_document_types_code` (`code`) USING BTREE,
+
+    INDEX `idx_document_types_phase`
+        (`phase_code`) USING BTREE,
+
+    INDEX `idx_document_types_section`
+        (`section_code`) USING BTREE,
+
+    INDEX `idx_document_types_order`
+        (`phase_code`, `sequence`) USING BTREE
+)
+COLLATE='utf8_unicode_ci'
+ENGINE=InnoDB;
+
+
+-- ============================================================================
+-- 2. PROJECT DOCUMENT REQUIREMENTS
+-- ============================================================================
+-- Creates the actual checklist for a project.
+--
+-- Example:
+--   PRE_DESIGN / Existing Layout       -> required
+--   TENDER / Demolition                -> conditional
+--   WORKING / Kitchen                  -> conditional
+--   EXECUTION / QC Checklist           -> required
+-- ============================================================================
+
+CREATE TABLE `document_requirements` (
+    `id` CHAR(36) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `project_id` CHAR(36) NOT NULL COLLATE 'utf8_unicode_ci',
+    `document_type_id` CHAR(36) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `requirement_type` VARCHAR(30) NOT NULL DEFAULT 'REQUIRED'
+        COLLATE 'utf8_unicode_ci',
+
+    `is_enabled` TINYINT(1) NOT NULL DEFAULT 1,
+    `is_completed` TINYINT(1) NOT NULL DEFAULT 0,
+
+    `completed_at` DATETIME NULL DEFAULT NULL,
+
+    `remarks` TEXT NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`) USING BTREE,
+
+    UNIQUE KEY `uq_project_document_requirement`
+        (`project_id`, `document_type_id`) USING BTREE,
+
+    INDEX `idx_document_requirements_project`
+        (`project_id`) USING BTREE,
+
+    INDEX `idx_document_requirements_type`
+        (`document_type_id`) USING BTREE,
+
+    CONSTRAINT `fk_document_requirements_project`
+        FOREIGN KEY (`project_id`)
+        REFERENCES `projects` (`id`)
+        ON UPDATE RESTRICT
+        ON DELETE CASCADE,
+
+    CONSTRAINT `fk_document_requirements_type`
+        FOREIGN KEY (`document_type_id`)
+        REFERENCES `document_types` (`id`)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT
+)
+COLLATE='utf8_unicode_ci'
+ENGINE=InnoDB;
+
+
+-- ============================================================================
+-- 3. DOCUMENTS
+-- ============================================================================
+-- Generic project documents:
+--   Briefs
+--   Scope of Work
+--   Site Recce
+--   Site Analysis
+--   Proposals
+--   Contracts / Agreements
+--   Payment documents
+--   Plans
+--   Estimates
+--   Quotations
+--   BOQ
+--   Material documents
+--   QC documents
+--   Handover packs
+-- etc.
+-- ============================================================================
+
+CREATE TABLE `documents` (
+    `id` CHAR(36) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `project_id` CHAR(36) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `document_type_id` CHAR(36) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `requirement_id` CHAR(36) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `category` VARCHAR(100) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `title` VARCHAR(255) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `filename` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+    `storage_filename` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `url` VARCHAR(1000) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+    `mime` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+    `size` BIGINT NULL DEFAULT NULL,
+
+    `version` VARCHAR(50) NULL DEFAULT 'V1' COLLATE 'utf8_unicode_ci',
+
+    `status` VARCHAR(50) NULL DEFAULT 'draft' COLLATE 'utf8_unicode_ci',
+
+    `visibility` VARCHAR(50) NULL DEFAULT 'internal'
+        COLLATE 'utf8_unicode_ci',
+
+    `remarks` TEXT NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `is_locked` TINYINT(1) NOT NULL DEFAULT 0,
+
+    `locked_by` CHAR(36) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+    `locked_at` DATETIME NULL DEFAULT NULL,
+
+    `uploaded_by` CHAR(36) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+    `uploaded_by_name` VARCHAR(255) NULL DEFAULT NULL
+        COLLATE 'utf8_unicode_ci',
+
+    `document_date` DATE NULL DEFAULT NULL,
+
+    `doc_type` VARCHAR(50) NULL DEFAULT 'upload'
+        COLLATE 'utf8_unicode_ci',
+
+    `doc_no` VARCHAR(255) NULL DEFAULT NULL
+        COLLATE 'utf8_unicode_ci',
+
+    `sections` JSON NULL DEFAULT NULL,
+
+    `source_app` VARCHAR(255) NULL DEFAULT NULL
+        COLLATE 'utf8_unicode_ci',
+
+    `created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+
+    `updated_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`) USING BTREE,
+
+    INDEX `idx_documents_project`
+        (`project_id`) USING BTREE,
+
+    INDEX `idx_documents_type`
+        (`document_type_id`) USING BTREE,
+
+    INDEX `idx_documents_requirement`
+        (`requirement_id`) USING BTREE,
+
+    INDEX `idx_documents_status`
+        (`status`) USING BTREE,
+
+    CONSTRAINT `fk_documents_project`
+        FOREIGN KEY (`project_id`)
+        REFERENCES `projects` (`id`)
+        ON UPDATE RESTRICT
+        ON DELETE SET NULL,
+
+    CONSTRAINT `fk_documents_type`
+        FOREIGN KEY (`document_type_id`)
+        REFERENCES `document_types` (`id`)
+        ON UPDATE RESTRICT
+        ON DELETE SET NULL,
+
+    CONSTRAINT `fk_documents_requirement`
+        FOREIGN KEY (`requirement_id`)
+        REFERENCES `document_requirements` (`id`)
+        ON UPDATE RESTRICT
+        ON DELETE SET NULL
+)
+COLLATE='utf8_unicode_ci'
+ENGINE=InnoDB;
+
+
+-- ============================================================================
+-- 4. DOCUMENT VERSIONS
+-- ============================================================================
+
+CREATE TABLE `document_versions` (
+    `id` CHAR(36) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `document_id` CHAR(36) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `version` VARCHAR(50) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `filename` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+    `storage_filename` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `url` VARCHAR(1000) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `mime` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+    `size` BIGINT NULL DEFAULT NULL,
+
+    `status` VARCHAR(50) NULL DEFAULT 'draft'
+        COLLATE 'utf8_unicode_ci',
+
+    `remarks` TEXT NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `uploaded_by` CHAR(36) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+    `uploaded_by_name` VARCHAR(255) NULL DEFAULT NULL
+        COLLATE 'utf8_unicode_ci',
+
+    `created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+
+    `updated_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`) USING BTREE,
+
+    UNIQUE KEY `uq_document_version`
+        (`document_id`, `version`) USING BTREE,
+
+    INDEX `idx_document_versions_document`
+        (`document_id`) USING BTREE,
+
+    CONSTRAINT `fk_document_versions_document`
+        FOREIGN KEY (`document_id`)
+        REFERENCES `documents` (`id`)
+        ON UPDATE RESTRICT
+        ON DELETE CASCADE
+)
+COLLATE='utf8_unicode_ci'
+ENGINE=InnoDB;
+
+
+-- ============================================================================
+-- 5. DOCUMENT ATTACHMENTS
+-- ============================================================================
+
+CREATE TABLE `document_attachments` (
+    `id` CHAR(36) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `document_id` CHAR(36) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `filename` VARCHAR(255) NOT NULL COLLATE 'utf8_unicode_ci',
+    `storage_filename` VARCHAR(255) NULL DEFAULT NULL
+        COLLATE 'utf8_unicode_ci',
+
+    `url` VARCHAR(1000) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `mime` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+    `size` BIGINT NULL DEFAULT NULL,
+
+    `remark` TEXT NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+
+    `updated_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`) USING BTREE,
+
+    INDEX `idx_document_attachments_document`
+        (`document_id`) USING BTREE,
+
+    CONSTRAINT `fk_document_attachments_document`
+        FOREIGN KEY (`document_id`)
+        REFERENCES `documents` (`id`)
+        ON UPDATE RESTRICT
+        ON DELETE CASCADE
+)
+COLLATE='utf8_unicode_ci'
+ENGINE=InnoDB;
+
+
+-- ============================================================================
+-- 6. DRAWINGS
+-- ============================================================================
+
+CREATE TABLE `drawings` (
+    `id` CHAR(36) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `project_id` CHAR(36) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `document_type_id` CHAR(36) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `requirement_id` CHAR(36) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `title` VARCHAR(255) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `drawing_number` VARCHAR(255) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `phase_code` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `discipline` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `sheet_number` VARCHAR(100) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `scale` VARCHAR(100) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `issue_purpose` VARCHAR(255) NULL DEFAULT NULL
+        COLLATE 'utf8_unicode_ci',
+
+    `status` VARCHAR(50) NULL DEFAULT 'Draft'
+        COLLATE 'utf8_unicode_ci',
+
+    `remarks` TEXT NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `sequence` INT NULL DEFAULT NULL,
+
+    `drawn_by` CHAR(36) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+    `checked_by` CHAR(36) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+    `approved_by` CHAR(36) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+
+    `updated_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`) USING BTREE,
+
+    UNIQUE KEY `uq_project_drawing_number`
+        (`project_id`, `drawing_number`) USING BTREE,
+
+    INDEX `idx_drawings_project`
+        (`project_id`) USING BTREE,
+
+    INDEX `idx_drawings_type`
+        (`document_type_id`) USING BTREE,
+
+    INDEX `idx_drawings_requirement`
+        (`requirement_id`) USING BTREE,
+
+    INDEX `idx_drawings_phase`
+        (`phase_code`) USING BTREE,
+
+    INDEX `idx_drawings_discipline`
+        (`discipline`) USING BTREE,
+
+    INDEX `idx_drawings_status`
+        (`status`) USING BTREE,
+
+    CONSTRAINT `fk_drawings_project`
+        FOREIGN KEY (`project_id`)
+        REFERENCES `projects` (`id`)
+        ON UPDATE RESTRICT
+        ON DELETE CASCADE,
+
+    CONSTRAINT `fk_drawings_type`
+        FOREIGN KEY (`document_type_id`)
+        REFERENCES `document_types` (`id`)
+        ON UPDATE RESTRICT
+        ON DELETE SET NULL,
+
+    CONSTRAINT `fk_drawings_requirement`
+        FOREIGN KEY (`requirement_id`)
+        REFERENCES `document_requirements` (`id`)
+        ON UPDATE RESTRICT
+        ON DELETE SET NULL
+)
+COLLATE='utf8_unicode_ci'
+ENGINE=InnoDB;
+
+
+-- ============================================================================
+-- 7. DRAWING REVISIONS
+-- ============================================================================
+
+CREATE TABLE `drawing_revisions` (
+    `id` CHAR(36) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `drawing_id` CHAR(36) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `revision` VARCHAR(50) NOT NULL COLLATE 'utf8_unicode_ci',
+
+    `issue_date` DATE NULL DEFAULT NULL,
+
+    `issue_purpose` VARCHAR(255) NULL DEFAULT NULL
+        COLLATE 'utf8_unicode_ci',
+
+    `status` VARCHAR(50) NULL DEFAULT 'Draft'
+        COLLATE 'utf8_unicode_ci',
+
+    `filename` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `storage_filename` VARCHAR(255) NULL DEFAULT NULL
+        COLLATE 'utf8_unicode_ci',
+
+    `url` VARCHAR(1000) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `mime` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `size` BIGINT NULL DEFAULT NULL,
+
+    `remarks` TEXT NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `uploaded_by` CHAR(36) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+
+    `uploaded_by_name` VARCHAR(255) NULL DEFAULT NULL
+        COLLATE 'utf8_unicode_ci',
+
+    `created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+
+    `updated_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`) USING BTREE,
+
+    UNIQUE KEY `uq_drawing_revision`
+        (`drawing_id`, `revision`) USING BTREE,
+
+    INDEX `idx_drawing_revisions_drawing`
+        (`drawing_id`) USING BTREE,
+
+    INDEX `idx_drawing_revisions_status`
+        (`status`) USING BTREE,
+
+    CONSTRAINT `fk_drawing_revisions_drawing`
+        FOREIGN KEY (`drawing_id`)
+        REFERENCES `drawings` (`id`)
+        ON UPDATE RESTRICT
+        ON DELETE CASCADE
+)
+COLLATE='utf8_unicode_ci'
+ENGINE=InnoDB;
+
+
+-- ============================================================================
+-- MASTER DELIVERABLES
+-- ============================================================================
+-- Source terminology follows the uploaded RIPPOTAI master process.
+-- Drawing outputs are marked DRAWING; other outputs are DOCUMENT.
+-- ============================================================================
+
+INSERT INTO `document_types`
+(
+    `id`,
+    `code`,
+    `name`,
+    `phase_code`,
+    `phase_name`,
+    `section_code`,
+    `section_name`,
+    `sequence`,
+    `target_type`,
+    `requirement_type`,
+    `allows_multiple`,
+    `requires_revision`,
+    `requires_approval`,
+    `description`
+)
+VALUES
+
+-- ============================================================================
+-- 01 BRIEF
+-- ============================================================================
+
+(UUID(), 'BRIEF_CLIENT_BRIEF',
+ 'Client Brief',
+ '01_BRIEF', 'BRIEF',
+ '1.1', 'BRIEF', 1,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 0,
+ 'Requirements, scope, budget and expectations captured in one document.'),
+
+(UUID(), 'BRIEF_SCOPE_OF_WORK',
+ 'Scope of Work',
+ '01_BRIEF', 'BRIEF',
+ '1.4', 'BRIEF', 2,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 1,
+ 'Written from the project scope and escalated into Scope of Approval after the recce.'),
+
+
+-- ============================================================================
+-- 02 SITE SURVEY / RECCE
+-- ============================================================================
+
+(UUID(), 'RECCE_SITE_RECCE',
+ 'Site Recce',
+ '02_RECCE', 'SITE SURVEY / RECCE',
+ '2.1', 'SITE SURVEY / RECCE', 1,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 0,
+ 'Measurements, photographs and existing conditions recorded during joint site visit.'),
+
+(UUID(), 'RECCE_SITE_ANALYSIS',
+ 'Site Analysis',
+ '02_RECCE', 'SITE SURVEY / RECCE',
+ '2.2', 'SITE SURVEY / RECCE', 2,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 0,
+ 'Orientation, services, access, structure and constraints read from the survey.'),
+
+(UUID(), 'RECCE_SITE_BRIEF',
+ 'Site Brief',
+ '02_RECCE', 'SITE SURVEY / RECCE',
+ '2.3', 'SITE SURVEY / RECCE', 3,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 0,
+ 'Detailed recce converted into the brief used by the delivery team.'),
+
+(UUID(), 'RECCE_SCOPE_OF_APPROVAL',
+ 'Scope of Approval',
+ '02_RECCE', 'SITE SURVEY / RECCE',
+ '2.4', 'SITE SURVEY / RECCE', 4,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 1,
+ 'Finalised scope identifying client or statutory approvals and applicable gates.'),
+
+
+-- ============================================================================
+-- 03 PRE-DESIGN
+-- ============================================================================
+
+(UUID(), 'PRE_EXISTING_LAYOUT',
+ 'Existing Layout — As-Built',
+ '03_PRE_DESIGN', 'PRE-DESIGN',
+ '3.1', 'PRE-DESIGN', 1,
+ 'DRAWING', 'REQUIRED', 1, 1, 0,
+ 'As-is layout drawn from survey measurements.'),
+
+(UUID(), 'PRE_PROPOSED_LAYOUT',
+ 'Proposed Layout',
+ '03_PRE_DESIGN', 'PRE-DESIGN',
+ '3.2', 'PRE-DESIGN', 2,
+ 'DRAWING', 'REQUIRED', 1, 1, 0,
+ 'New layout developed from the client brief.'),
+
+(UUID(), 'PRE_REFERENCE_MOODBOARD',
+ 'Reference Presentation and Moodboard',
+ '03_PRE_DESIGN', 'PRE-DESIGN',
+ '3.3', 'PRE-DESIGN', 3,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 0,
+ 'Direction and material story developed alongside the proposed layout.'),
+
+(UUID(), 'PRE_PITCH_PROPOSAL',
+ 'Pitch / Proposal + Business Proposal',
+ '03_PRE_DESIGN', 'PRE-DESIGN',
+ '3.4', 'PRE-DESIGN', 4,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 1,
+ 'Design pitch and commercial proposal presented together to win the project.'),
+
+(UUID(), 'PRE_CONCEPT_DESIGN_01',
+ 'Concept Design 01 — 3D',
+ '03_PRE_DESIGN', 'PRE-DESIGN',
+ '3.5', 'PRE-DESIGN', 5,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 1,
+ 'First client-facing 3D concept presented with the pitch.'),
+
+
+-- ============================================================================
+-- 04 PLANNING PHASE
+-- ============================================================================
+
+(UUID(), 'PLAN_PAYMENT_RECEIPT',
+ 'Payment Receipt',
+ '04_PLANNING', 'PLANNING PHASE',
+ '4.1', 'PLANNING PHASE', 1,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 0,
+ 'Receipt for token amount.'),
+
+(UUID(), 'PLAN_PAYMENT_SCHEDULE',
+ 'Payment Schedule',
+ '04_PLANNING', 'PLANNING PHASE',
+ '4.2', 'PLANNING PHASE', 2,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 1,
+ 'Milestones and terms against the deliverable list.'),
+
+(UUID(), 'PLAN_SIGNED_CONTRACT',
+ 'Signed Contract',
+ '04_PLANNING', 'PLANNING PHASE',
+ '4.3', 'PLANNING PHASE', 3,
+ 'DOCUMENT', 'CONDITIONAL', 1, 1, 1,
+ 'Executed contract for projects where RIPPOTAI is delivering execution.'),
+
+(UUID(), 'PLAN_SIGNED_AGREEMENT',
+ 'Signed Agreement',
+ '04_PLANNING', 'PLANNING PHASE',
+ '4.4', 'PLANNING PHASE', 4,
+ 'DOCUMENT', 'CONDITIONAL', 1, 1, 1,
+ 'Executed consultancy agreement where the scope is design consultancy.'),
+
+(UUID(), 'PLAN_DRAWINGS_PLAN',
+ 'Drawings Plan',
+ '04_PLANNING', 'PLANNING PHASE',
+ '4.5', 'PLANNING PHASE', 5,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 0,
+ 'Plan against which drawing production is scheduled.'),
+
+(UUID(), 'PLAN_EXECUTION_PLAN',
+ 'Execution Plan',
+ '04_PLANNING', 'PLANNING PHASE',
+ '4.5', 'PLANNING PHASE', 6,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 0,
+ 'Execution plan for downstream delivery.'),
+
+(UUID(), 'PLAN_PROJECT_TIMELINE',
+ 'Project Timeline',
+ '04_PLANNING', 'PLANNING PHASE',
+ '4.5', 'PLANNING PHASE', 7,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 0,
+ 'Programme against which downstream work is scheduled.'),
+
+(UUID(), 'PLAN_INITIAL_ESTIMATE',
+ 'Initial Estimate',
+ '04_PLANNING', 'PLANNING PHASE',
+ '4.5', 'PLANNING PHASE', 8,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 0,
+ 'Opening project estimate.'),
+
+(UUID(), 'PLAN_STANDARD_BOQ',
+ 'Standard BOQ',
+ '04_PLANNING', 'PLANNING PHASE',
+ '4.5', 'PLANNING PHASE', 9,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 0,
+ 'Standard BOQ prepared as part of the opening planning package.'),
+
+
+-- ============================================================================
+-- 05 DESIGN
+-- ============================================================================
+
+(UUID(), 'DES_CONCEPT_DESIGN_02',
+ 'Concept Design 02 — 3D with Material + Furniture Layout',
+ '05_DESIGN', 'DESIGN',
+ '5.1', 'DESIGN', 1,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 1,
+ 'Concept 02 incorporating materials and furniture layout.'),
+
+-- Master file intentionally jumps from 5.1 to 5.3 / 5.4.
+(UUID(), 'DES_DESIGN_DEVELOPMENT_01',
+ 'Design Development 01',
+ '05_DESIGN', 'DESIGN',
+ '5.3', 'DESIGN', 2,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 1,
+ 'Concept resolved into a workable design.'),
+
+(UUID(), 'DES_DESIGN_DEVELOPMENT_02',
+ 'Design Development 02 — With Material',
+ '05_DESIGN', 'DESIGN',
+ '5.4', 'DESIGN', 3,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 1,
+ 'Final materials pinned against the developed design.'),
+
+
+-- ============================================================================
+-- A. VENDOR & TRADES
+-- ============================================================================
+
+(UUID(), 'VENDOR_SHORTLIST',
+ 'Vendor Shortlist',
+ 'A_VENDOR_TRADES', 'VENDOR & TRADES',
+ 'A.1', 'VENDOR & TRADES', 1,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 0,
+ 'Shortlist covering the contractor teams and trades.'),
+
+(UUID(), 'VENDOR_SITE_VISIT_SCHEDULE',
+ 'Site Visit Schedule',
+ 'A_VENDOR_TRADES', 'VENDOR & TRADES',
+ 'A.2', 'VENDOR & TRADES', 2,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 0,
+ 'Vendor and contractor site visit schedule assigned and aligned by Admin.'),
+
+(UUID(), 'VENDOR_SITE_MEASUREMENT_SHEET',
+ 'Vendor Site Measurement Sheet',
+ 'A_VENDOR_TRADES', 'VENDOR & TRADES',
+ 'A.2', 'VENDOR & TRADES', 3,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 0,
+ 'Site measurements collected from shortlisted vendors.'),
+
+(UUID(), 'VENDOR_ESTIMATE',
+ 'Estimate',
+ 'A_VENDOR_TRADES', 'VENDOR & TRADES',
+ 'A.5', 'VENDOR & TRADES', 4,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 1,
+ 'RIPPOTAI estimate; rates and quotes remain estimates until approved.'),
+
+(UUID(), 'VENDOR_QUOTATION',
+ 'Quotation',
+ 'A_VENDOR_TRADES', 'VENDOR & TRADES',
+ 'A.6', 'VENDOR & TRADES', 5,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 1,
+ 'Approved, priced, contractual document per trade.'),
+
+(UUID(), 'VENDOR_BOQ',
+ 'BOQ',
+ 'A_VENDOR_TRADES', 'VENDOR & TRADES',
+ 'A.7', 'VENDOR & TRADES', 6,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 1,
+ 'BOQ created once tender drawings are final and quotations are approved.'),
+
+(UUID(), 'VENDOR_CONTRACTOR_LINEUP',
+ 'Contractor Lineup',
+ 'A_VENDOR_TRADES', 'VENDOR & TRADES',
+ 'A.8', 'VENDOR & TRADES', 7,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 1,
+ 'Confirmed contractor teams against the trades they own on site.'),
+
+
+-- ============================================================================
+-- B. MATERIAL & PROCUREMENT
+-- ============================================================================
+
+(UUID(), 'MAT_MATERIAL_REQUIREMENT',
+ 'Material Requirement',
+ 'B_MATERIAL', 'MATERIAL & PROCUREMENT',
+ 'B.1', 'MATERIAL & PROCUREMENT', 1,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 0,
+ 'Material selections, budget, style and requirements from the design team.'),
+
+(UUID(), 'MAT_MATERIAL_RATES_SHEET',
+ 'Material Rates Sheet',
+ 'B_MATERIAL', 'MATERIAL & PROCUREMENT',
+ 'B.2', 'MATERIAL & PROCUREMENT', 2,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 0,
+ 'Samples, rates and availability feeding material selection.'),
+
+(UUID(), 'MAT_MATERIAL_LAYOUT_SPECIFICATION',
+ 'Material Layouts and Specification',
+ 'B_MATERIAL', 'MATERIAL & PROCUREMENT',
+ 'B.3', 'MATERIAL & PROCUREMENT', 3,
+ 'DRAWING', 'REQUIRED', 1, 1, 1,
+ 'Selected materials pinned to drawings for quantification and quotation.'),
+
+(UUID(), 'MAT_MATERIAL_ESTIMATE',
+ 'Material Estimate',
+ 'B_MATERIAL', 'MATERIAL & PROCUREMENT',
+ 'B.4', 'MATERIAL & PROCUREMENT', 4,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 1,
+ 'Material estimate before quotation approval.'),
+
+(UUID(), 'MAT_MATERIAL_QUOTATION',
+ 'Material Quotation',
+ 'B_MATERIAL', 'MATERIAL & PROCUREMENT',
+ 'B.4', 'MATERIAL & PROCUREMENT', 5,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 1,
+ 'Approved material quotation.'),
+
+(UUID(), 'MAT_PURCHASE_ORDERS',
+ 'Purchase Orders',
+ 'B_MATERIAL', 'MATERIAL & PROCUREMENT',
+ 'B.5', 'MATERIAL & PROCUREMENT', 6,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 1,
+ 'Approved materials purchased and scheduled against site stages.'),
+
+(UUID(), 'MAT_DELIVERY_CHALLANS',
+ 'Delivery Challans',
+ 'B_MATERIAL', 'MATERIAL & PROCUREMENT',
+ 'B.6', 'MATERIAL & PROCUREMENT', 7,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 0,
+ 'Stage-wise material delivery records.'),
+
+(UUID(), 'MAT_SITE_INVENTORY_REGISTER',
+ 'Site Inventory Register',
+ 'B_MATERIAL', 'MATERIAL & PROCUREMENT',
+ 'B.7', 'MATERIAL & PROCUREMENT', 8,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 0,
+ 'Site material inventory register reconciled against purchase orders.'),
+
+
+-- ============================================================================
+-- 06 TENDER DRAWINGS
+-- ============================================================================
+
+(UUID(), 'TENDER_BUILDING_LAYOUT',
+ 'Tender — Building Layout',
+ '06_TENDER', 'TENDER DRAWINGS',
+ '6.1', 'TENDER DRAWINGS', 1,
+ 'DRAWING', 'REQUIRED', 1, 1, 1,
+ 'Floor layout; demolition layout is included where needed.'),
+
+(UUID(), 'TENDER_DEMOLITION_LAYOUT',
+ 'Tender — Demolition Layout',
+ '06_TENDER', 'TENDER DRAWINGS',
+ '6.1', 'TENDER DRAWINGS', 2,
+ 'DRAWING', 'CONDITIONAL', 1, 1, 1,
+ 'Demolition layout where demolition scope exists.'),
+
+(UUID(), 'TENDER_SECTION_ELEVATION',
+ 'Tender — Section & Elevation',
+ '06_TENDER', 'TENDER DRAWINGS',
+ '6.2', 'TENDER DRAWINGS', 3,
+ 'DRAWING', 'REQUIRED', 1, 1, 1,
+ 'Building sections and elevations for vendor pricing.'),
+
+(UUID(), 'TENDER_CIVIL_LAYOUT',
+ 'Tender — Civil Layout',
+ '06_TENDER', 'TENDER DRAWINGS',
+ '6.3', 'TENDER DRAWINGS', 4,
+ 'DRAWING', 'REQUIRED', 1, 1, 1,
+ 'Civil layout for tender pricing.'),
+
+(UUID(), 'TENDER_ELECTRICAL_LAYOUT',
+ 'Tender — Electrical',
+ '06_TENDER', 'TENDER DRAWINGS',
+ '6.4', 'TENDER DRAWINGS', 5,
+ 'DRAWING', 'REQUIRED', 1, 1, 1,
+ 'Electrical layout for tender pricing.'),
+
+(UUID(), 'TENDER_PLUMBING_LAYOUT',
+ 'Tender — Plumbing',
+ '06_TENDER', 'TENDER DRAWINGS',
+ '6.5', 'TENDER DRAWINGS', 6,
+ 'DRAWING', 'REQUIRED', 1, 1, 1,
+ 'Plumbing layout for tender pricing.'),
+
+(UUID(), 'TENDER_HVAC_LAYOUT',
+ 'Tender — HVAC',
+ '06_TENDER', 'TENDER DRAWINGS',
+ '6.6', 'TENDER DRAWINGS', 7,
+ 'DRAWING', 'REQUIRED', 1, 1, 1,
+ 'AC / HVAC layout for tender pricing.'),
+
+(UUID(), 'TENDER_TYPICAL_DETAILS',
+ 'Tender — Typical Details',
+ '06_TENDER', 'TENDER DRAWINGS',
+ '6.7', 'TENDER DRAWINGS', 8,
+ 'DRAWING', 'CONDITIONAL', 1, 1, 1,
+ 'Metal structure or interior elements that need pricing.'),
+
+(UUID(), 'TENDER_LANDSCAPING',
+ 'Tender — Landscaping',
+ '06_TENDER', 'TENDER DRAWINGS',
+ '6.8', 'TENDER DRAWINGS', 9,
+ 'DRAWING', 'CONDITIONAL', 1, 1, 1,
+ 'Landscape drawing where the project has external scope.'),
+
+
+-- ============================================================================
+-- 07 WORKING DRAWINGS
+-- ============================================================================
+
+(UUID(), 'WORK_DEMOLITION_DETAILS',
+ 'Demolition Details',
+ '07_WORKING', 'WORKING DRAWINGS',
+ '7.1', 'WORKING DRAWINGS', 1,
+ 'DRAWING', 'CONDITIONAL', 1, 1, 1,
+ 'Construction detailing for demolition work.'),
+
+(UUID(), 'WORK_CIVIL_DETAILS',
+ 'Civil Details',
+ '07_WORKING', 'WORKING DRAWINGS',
+ '7.2', 'WORKING DRAWINGS', 2,
+ 'DRAWING', 'REQUIRED', 1, 1, 1,
+ 'Civil detailing for execution.'),
+
+(UUID(), 'WORK_STRUCTURE_LAYOUT',
+ 'Structure Layout',
+ '07_WORKING', 'WORKING DRAWINGS',
+ '7.2', 'WORKING DRAWINGS', 3,
+ 'DRAWING', 'REQUIRED', 1, 1, 1,
+ 'Structure layout for execution.'),
+
+(UUID(), 'WORK_DOOR_WINDOW_SCHEDULE',
+ 'Door & Window Schedule',
+ '07_WORKING', 'WORKING DRAWINGS',
+ '7.3', 'WORKING DRAWINGS', 4,
+ 'DRAWING', 'REQUIRED', 1, 1, 1,
+ 'Door and window schedule for Glass & Window.'),
+
+(UUID(), 'WORK_STONE_JAMB_DETAILS',
+ 'Stone Jamb Details',
+ '07_WORKING', 'WORKING DRAWINGS',
+ '7.3', 'WORKING DRAWINGS', 5,
+ 'DRAWING', 'CONDITIONAL', 1, 1, 1,
+ 'Stone jamb details where applicable.'),
+
+(UUID(), 'WORK_FLOORING_LAYOUT',
+ 'Flooring Layout',
+ '07_WORKING', 'WORKING DRAWINGS',
+ '7.4', 'WORKING DRAWINGS', 6,
+ 'DRAWING', 'REQUIRED', 1, 1, 1,
+ 'Floor layout for execution.'),
+
+(UUID(), 'WORK_FLOORING_DETAILS',
+ 'Flooring Details',
+ '07_WORKING', 'WORKING DRAWINGS',
+ '7.4', 'WORKING DRAWINGS', 7,
+ 'DRAWING', 'REQUIRED', 1, 1, 1,
+ 'Flooring construction details.'),
+
+(UUID(), 'WORK_BATHROOM_DETAILS',
+ 'Bathroom Details',
+ '07_WORKING', 'WORKING DRAWINGS',
+ '7.4', 'WORKING DRAWINGS', 8,
+ 'DRAWING', 'REQUIRED', 1, 1, 1,
+ 'Bathroom construction details.'),
+
+(UUID(), 'WORK_CEILING_LAYOUT',
+ 'Ceiling Layout',
+ '07_WORKING', 'WORKING DRAWINGS',
+ '7.5', 'WORKING DRAWINGS', 9,
+ 'DRAWING', 'REQUIRED', 1, 1, 1,
+ 'Ceiling layout for False Ceiling / POP.'),
+
+(UUID(), 'WORK_CEILING_DETAILS',
+ 'Ceiling Details',
+ '07_WORKING', 'WORKING DRAWINGS',
+ '7.5', 'WORKING DRAWINGS', 10,
+ 'DRAWING', 'REQUIRED', 1, 1, 1,
+ 'Ceiling detailing.'),
+
+(UUID(), 'WORK_WALL_ELEVATIONS',
+ 'Wall Elevations',
+ '07_WORKING', 'WORKING DRAWINGS',
+ '7.6', 'WORKING DRAWINGS', 11,
+ 'DRAWING', 'REQUIRED', 1, 1, 1,
+ 'Wall elevations for Mill Work and Painting.'),
+
+-- Fixed furniture / modular
+(UUID(), 'MOD_KITCHEN_DETAILS',
+ 'Kitchen Details',
+ '07_WORKING', 'WORKING DRAWINGS',
+ '7.7', 'MODULAR', 12,
+ 'DRAWING', 'CONDITIONAL', 1, 1, 1,
+ 'Kitchen details where kitchen is included in project scope.'),
+
+(UUID(), 'MOD_TV_UNIT_DETAILS',
+ 'TV Unit Details',
+ '07_WORKING', 'WORKING DRAWINGS',
+ '7.8', 'MODULAR', 13,
+ 'DRAWING', 'CONDITIONAL', 1, 1, 1,
+ 'TV unit details where included in scope.'),
+
+(UUID(), 'MOD_WARDROBE_STORAGE_DETAILS',
+ 'Wardrobe & Storage Details',
+ '07_WORKING', 'WORKING DRAWINGS',
+ '7.9', 'MODULAR', 14,
+ 'DRAWING', 'CONDITIONAL', 1, 1, 1,
+ 'Wardrobe, storage, crockery and bar unit details as required by scope.'),
+
+(UUID(), 'MOD_BED_BACK_DETAILS',
+ 'Bed Back Details',
+ '07_WORKING', 'WORKING DRAWINGS',
+ '7.10', 'MODULAR', 15,
+ 'DRAWING', 'CONDITIONAL', 1, 1, 1,
+ 'Bed back details where included in scope.'),
+
+(UUID(), 'MOD_WALL_PANELING_DETAILS',
+ 'Wall Panelling Details',
+ '07_WORKING', 'WORKING DRAWINGS',
+ '7.11', 'MODULAR', 16,
+ 'DRAWING', 'CONDITIONAL', 1, 1, 1,
+ 'Additional wall panelling details where included in scope.'),
+
+(UUID(), 'WORK_LANDSCAPE_DETAILS',
+ 'Landscape Details',
+ '07_WORKING', 'WORKING DRAWINGS',
+ '7.12', 'WORKING DRAWINGS', 17,
+ 'DRAWING', 'CONDITIONAL', 1, 1, 1,
+ 'Detailed landscaping where the project carries external scope.'),
+
+
+-- ============================================================================
+-- 08 EXECUTION
+-- ============================================================================
+
+(UUID(), 'EXEC_FINAL_BOQ',
+ 'Final BOQ',
+ '08_EXECUTION', 'EXECUTION',
+ '8.0', 'EXECUTION', 1,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 1,
+ 'Final BOQ owned by Accounts & Finance and created with the quotations.'),
+
+(UUID(), 'EXEC_QC_CHECKLIST_TEMPLATE',
+ 'QC Checklist Template',
+ '08_EXECUTION', 'EXECUTION', 'QC', 'QUALITY CHECK', 2,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 0,
+ 'Standard checklist template used throughout execution.'),
+
+(UUID(), 'EXEC_PHASE_QC_SIGNOFF',
+ 'Phase QC Sign-off',
+ '08_EXECUTION', 'EXECUTION', 'QC', 'QUALITY CHECK', 3,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 1,
+ 'Phase-level quality sign-off before the next trade starts.'),
+
+(UUID(), 'EXEC_WATERPROOFING_WARRANTY',
+ 'Waterproofing Warranty',
+ '08_EXECUTION', 'EXECUTION', '5.7', 'CIVIL WORK', 4,
+ 'DOCUMENT', 'CONDITIONAL', 1, 0, 1,
+ 'Waterproofing warranty and sign-off.'),
+
+(UUID(), 'EXEC_TERMITE_TREATMENT_CERTIFICATE',
+ 'Termite Treatment Certificate',
+ '08_EXECUTION', 'EXECUTION', '5.8', 'CIVIL WORK', 5,
+ 'DOCUMENT', 'CONDITIONAL', 1, 0, 1,
+ 'Certificate for termite treatment.'),
+
+(UUID(), 'EXEC_ARCHITECT_SITE_VISIT_SCHEDULE',
+ 'Architect Site Visit Schedule',
+ '08_EXECUTION', 'EXECUTION', '8.1', 'CONTINUOUS', 6,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 0,
+ 'Fixed architect site visit schedule generated at execution start.'),
+
+(UUID(), 'EXEC_SITE_VISIT_LOG',
+ 'Site Visit Log',
+ '08_EXECUTION', 'EXECUTION', '8.1', 'CONTINUOUS', 7,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 0,
+ 'Site visit records for Supervisor and Architect.'),
+
+(UUID(), 'EXEC_DAILY_PROGRESS_REPORT',
+ 'Daily Progress Report',
+ '08_EXECUTION', 'EXECUTION', '8.2', 'CONTINUOUS', 8,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 0,
+ 'Daily site report issued to the whole team.'),
+
+(UUID(), 'EXEC_SITE_MOCKUP_PROCESS_GUIDE',
+ 'Site Mockup Process Guide',
+ '08_EXECUTION', 'EXECUTION', '8.3', 'CONTINUOUS', 9,
+ 'DOCUMENT', 'CONDITIONAL', 1, 0, 0,
+ 'Process guide for finishes and details proven at full size before volume production.'),
+
+(UUID(), 'EXEC_DESIGN_CLARIFICATION',
+ 'Design Clarification',
+ '08_EXECUTION', 'EXECUTION', '8.4', 'CONTINUOUS', 10,
+ 'DOCUMENT', 'CONDITIONAL', 1, 1, 1,
+ 'Design decisions and site clarifications recorded during execution.'),
+
+
+-- ============================================================================
+-- EXECUTION QC / CERTIFICATES
+-- ============================================================================
+
+(UUID(), 'EXEC_CIVIL_QUALITY_CHECKLIST',
+ 'Civil Quality Checklist',
+ '08_EXECUTION', 'EXECUTION', '5', 'CIVIL WORK', 11,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 1,
+ 'Quality checklist covering civil work.'),
+
+(UUID(), 'EXEC_FINISHING_QUALITY_CHECKLIST',
+ 'Finishing Quality Checklist',
+ '08_EXECUTION', 'EXECUTION', '14', 'FINISHING', 12,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 1,
+ 'Quality checklist covering finishing work.'),
+
+(UUID(), 'EXEC_ELECTRICAL_COMPLETION_CERTIFICATE',
+ 'Electrical Completion Certificate',
+ '08_EXECUTION', 'EXECUTION', '14.6', 'FINISHING', 13,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 1,
+ 'Electrical completion certificate.'),
+
+
+-- ============================================================================
+-- 09 SNAG & HANDOVER
+-- ============================================================================
+
+(UUID(), 'HANDOVER_SNAG_LIST',
+ 'Snag List',
+ '09_HANDOVER', 'SNAG & HANDOVER',
+ '9.1', 'SNAG & HANDOVER', 1,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 1,
+ 'Trade-by-trade snag list and rectification record.'),
+
+(UUID(), 'HANDOVER_COMPLETION_CERTIFICATE',
+ 'Completion Certificate',
+ '09_HANDOVER', 'SNAG & HANDOVER',
+ '9.3', 'SNAG & HANDOVER', 2,
+ 'DOCUMENT', 'REQUIRED', 1, 1, 1,
+ 'Final client walkthrough and completion sign-off.'),
+
+(UUID(), 'HANDOVER_WARRANTY_PACK',
+ 'Warranty Pack',
+ '09_HANDOVER', 'SNAG & HANDOVER',
+ '9.4', 'SNAG & HANDOVER', 3,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 0,
+ 'Consolidated warranties handed over to the client.'),
+
+(UUID(), 'HANDOVER_AS_BUILT_DRAWING_SET',
+ 'As-Built Drawing Set',
+ '09_HANDOVER', 'SNAG & HANDOVER',
+ '9.4', 'SNAG & HANDOVER', 4,
+ 'DRAWING', 'REQUIRED', 1, 1, 1,
+ 'Final as-built drawing set.'),
+
+(UUID(), 'HANDOVER_CARE_MAINTENANCE_NOTES',
+ 'Care & Maintenance Notes',
+ '09_HANDOVER', 'SNAG & HANDOVER', 
+ '9.4', 'SNAG & HANDOVER', 5,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 0,
+ 'Care and maintenance notes handed over to the client.'),
+
+(UUID(), 'HANDOVER_CONSOLIDATED_BILLS',
+ 'Consolidated Bills',
+ '09_HANDOVER', 'SNAG & HANDOVER',
+ '9.4', 'SNAG & HANDOVER', 6,
+ 'DOCUMENT', 'REQUIRED', 1, 0, 1,
+ 'Commercial close-out document consolidating project bills.');
+
+
+-- ============================================================================
+-- OPTIONAL PROJECT INITIALISATION
+-- ============================================================================
+-- Run this after creating a project to generate its deliverable checklist.
+--
+-- INSERT INTO document_requirements
+-- (
+--     id,
+--     project_id,
+--     document_type_id,
+--     requirement_type
+-- )
+-- SELECT
+--     UUID(),
+--     'PROJECT-UUID',
+--     dt.id,
+--     dt.requirement_type
+-- FROM document_types dt
+-- WHERE dt.is_active = 1;
+
+
+-- ============================================================================
+-- READINESS QUERY
+-- ============================================================================
+-- Returns the project document/drawing readiness.
+--
+-- A requirement is considered uploaded when:
+--   DOCUMENT -> at least one matching document exists
+--   DRAWING  -> at least one matching drawing exists
+--
+-- Conditional items can be disabled in document_requirements when they are
+-- not applicable to the project.
+--
+-- SELECT
+--     dr.id AS requirement_id,
+--     dt.phase_code,
+--     dt.phase_name,
+--     dt.section_code,
+--     dt.section_name,
+--     dt.code,
+--     dt.name,
+--     dt.target_type,
+--     dr.requirement_type,
+--     dr.is_enabled,
+--     CASE
+--         WHEN dt.target_type = 'DOCUMENT'
+--              AND EXISTS (
+--                  SELECT 1
+--                  FROM documents d
+--                  WHERE d.requirement_id = dr.id
+--                    AND d.project_id = dr.project_id
+--              )
+--         THEN 1
+--
+--         WHEN dt.target_type = 'DRAWING'
+--              AND EXISTS (
+--                  SELECT 1
+--                  FROM drawings d
+--                  WHERE d.requirement_id = dr.id
+--                    AND d.project_id = dr.project_id
+--              )
+--         THEN 1
+--
+--         ELSE 0
+--     END AS is_uploaded
+-- FROM document_requirements dr
+-- INNER JOIN document_types dt
+--     ON dt.id = dr.document_type_id
+-- WHERE dr.project_id = 'PROJECT-UUID'
+--   AND dr.is_enabled = 1
+-- ORDER BY
+--     FIELD(
+--         dt.phase_code,
+--         '01_BRIEF',
+--         '02_RECCE',
+--         '03_PRE_DESIGN',
+--         '04_PLANNING',
+--         '05_DESIGN',
+--         'A_VENDOR_TRADES',
+--         'B_MATERIAL',
+--         '06_TENDER',
+--         '07_WORKING',
+--         '08_EXECUTION',
+--         '09_HANDOVER'
+--     ),
+--     dt.sequence;
+
+
+-- ============================================================================
+-- PHASE SUMMARY QUERY
+-- ============================================================================
+-- Useful for the Project Readiness Check UI.
+--
+-- SELECT
+--     dt.phase_code,
+--     dt.phase_name,
+--     COUNT(*) AS total_requirements,
+--
+--     SUM(
+--         CASE
+--             WHEN dt.target_type = 'DOCUMENT'
+--                  AND EXISTS (
+--                      SELECT 1
+--                      FROM documents d
+--                      WHERE d.requirement_id = dr.id
+--                        AND d.project_id = dr.project_id
+--                  )
+--             THEN 1
+--
+--             WHEN dt.target_type = 'DRAWING'
+--                  AND EXISTS (
+--                      SELECT 1
+--                      FROM drawings d
+--                      WHERE d.requirement_id = dr.id
+--                        AND d.project_id = dr.project_id
+--                  )
+--             THEN 1
+--
+--             ELSE 0
+--         END
+--     ) AS completed,
+--
+--     SUM(
+--         CASE
+--             WHEN dt.requirement_type = 'REQUIRED'
+--              AND (
+--                  (dt.target_type = 'DOCUMENT' AND NOT EXISTS (
+--                      SELECT 1
+--                      FROM documents d
+--                      WHERE d.requirement_id = dr.id
+--                        AND d.project_id = dr.project_id
+--                  ))
+--                  OR
+--                  (dt.target_type = 'DRAWING' AND NOT EXISTS (
+--                      SELECT 1
+--                      FROM drawings d
+--                      WHERE d.requirement_id = dr.id
+--                        AND d.project_id = dr.project_id
+--                  ))
+--              )
+--             THEN 1
+--             ELSE 0
+--         END
+--     ) AS missing_required
+--
+-- FROM document_requirements dr
+-- INNER JOIN document_types dt
+--     ON dt.id = dr.document_type_id
+-- WHERE dr.project_id = 'PROJECT-UUID'
+--   AND dr.is_enabled = 1
+-- GROUP BY
+--     dt.phase_code,
+--     dt.phase_name
+-- ORDER BY
+--     MIN(dt.sequence);
+
+
+-- ============================================================================
+-- END
+-- ============================================================================

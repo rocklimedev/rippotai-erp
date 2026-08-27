@@ -21,18 +21,19 @@ import { ApplyTermsDto } from '../metas/dto/apply-terms.dto';
 @Controller('plan-of-actions')
 export class PlanOfActionsController {
   constructor(private readonly planOfActionsService: PlanOfActionsService) {}
+
   @Get()
-  findAll() {
+  findAll(@Query('project_id') projectId?: string) {
+    if (projectId) {
+      return this.planOfActionsService.findByProject(projectId);
+    }
+
     return this.planOfActionsService.findAll();
   }
+
   @Post()
   create(@Body() dto: CreatePlanOfActionDto) {
     return this.planOfActionsService.create(dto);
-  }
-
-  @Get()
-  findByProject(@Query('project_id', ParseUUIDPipe) projectId: string) {
-    return this.planOfActionsService.findByProject(projectId);
   }
 
   @Get(':id')

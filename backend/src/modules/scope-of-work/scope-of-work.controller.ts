@@ -163,6 +163,10 @@ export class ScopeOfWorkController {
   ) {
     return this.scopeOfWorkService.createScopeOfWork(projectId, dto);
   }
+  @Get('projects/:projectId')
+  getScopeOfWorkByProject(@Param('projectId') projectId: string) {
+    return this.scopeOfWorkService.getScopeOfWorkByProject(projectId);
+  }
   @Post('projects/:projectId/complete')
   createComplete(
     @Param('projectId') projectId: string,

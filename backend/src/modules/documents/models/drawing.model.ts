@@ -3,85 +3,148 @@ import {
   Column,
   Model,
   DataType,
+  PrimaryKey,
+  Default,
   ForeignKey,
   BelongsTo,
-  Default,
-  AllowNull,
+  HasMany,
 } from 'sequelize-typescript';
-import { Project } from '@/modules/projects/models/projects.model';
 
-export type DrawingStatus = 'Draft' | 'Issued' | 'superseded';
+import { DocumentType } from '../../documents/models/document-type.model';
+import { DocumentRequirement } from '../../documents/models/document-requirement.model';
+import { DrawingRevision } from './drawing-revision.model';
 
-@Table({ tableName: 'drawings', timestamps: true, underscored: true })
+export type DrawingStatus =
+  | 'Draft'
+  | 'For Review'
+  | 'Approved'
+  | 'Rejected'
+  | 'Superseded';
+
+@Table({
+  tableName: 'drawings',
+  underscored: true,
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  indexes: [
+    {
+      unique: true,
+      fields: ['project_id', 'drawing_number'],
+    },
+  ],
+})
 export class Drawing extends Model<Drawing> {
-  @Column({
-    type: DataType.UUID,
-    defaultValue: DataType.UUIDV4,
-    primaryKey: true,
-  })
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column(DataType.UUID)
   declare id: string;
 
-  @ForeignKey(() => Project)
-  @AllowNull(false)
-  @Column({ type: DataType.UUID, field: 'project_id' })
+  @Column({
+    type: DataType.UUID,
+    allowNull: false,
+  })
   declare projectId: string;
 
-  @BelongsTo(() => Project)
-  declare project: Project;
+  @ForeignKey(() => DocumentType)
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  declare documentTypeId: string | null;
 
-  @AllowNull(false)
-  @Column(DataType.STRING)
+  @ForeignKey(() => DocumentRequirement)
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  declare requirementId: string | null;
+
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: false,
+  })
   declare title: string;
 
-  @AllowNull(false)
-  @Column({ type: DataType.STRING, field: 'drawing_number' })
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: false,
+  })
   declare drawingNumber: string;
 
-  @AllowNull(true)
-  @Column(DataType.STRING)
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: true,
+  })
+  declare phaseCode: string | null;
+
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: true,
+  })
   declare discipline: string | null;
 
-  @Default('R1')
-  @Column(DataType.STRING)
-  declare revision: string;
+  @Column({
+    type: DataType.STRING(100),
+    allowNull: true,
+  })
+  declare sheetNumber: string | null;
 
-  @AllowNull(true)
-  @Column({ type: DataType.DATEONLY, field: 'issue_date' })
-  declare issueDate: string | null;
+  @Column({
+    type: DataType.STRING(100),
+    allowNull: true,
+  })
+  declare scale: string | null;
 
-  @AllowNull(true)
-  @Column({ type: DataType.STRING, field: 'issue_purpose' })
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: true,
+  })
   declare issuePurpose: string | null;
 
   @Default('Draft')
-  @Column(DataType.STRING)
-  declare status: DrawingStatus;
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: true,
+  })
+  declare status: DrawingStatus | null;
 
-  @AllowNull(true)
-  @Column(DataType.TEXT)
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
   declare remarks: string | null;
 
-  @AllowNull(true)
-  @Column(DataType.STRING)
-  declare filename: string | null;
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+  })
+  declare sequence: number | null;
 
-  @AllowNull(true)
-  @Column({ type: DataType.STRING, field: 'storage_filename' })
-  declare storageFilename: string | null;
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  declare drawnBy: string | null;
 
-  @AllowNull(true)
-  @Column(DataType.STRING)
-  declare url: string | null;
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  declare checkedBy: string | null;
 
-  @AllowNull(true)
-  @Column(DataType.STRING)
-  declare mime: string | null;
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  declare approvedBy: string | null;
 
-  @AllowNull(true)
-  @Column(DataType.BIGINT)
-  declare size: number | null;
+  @BelongsTo(() => DocumentType)
+  declare documentType: DocumentType;
 
-  @AllowNull(true)
-  @Column({ type: DataType.UUID, field: 'uploaded_by' })
-  declare uploadedBy: string | null;
+  @BelongsTo(() => DocumentRequirement)
+  declare requirement: DocumentRequirement;
+
+  @HasMany(() => DrawingRevision)
+  declare revisions: DrawingRevision[];
 }

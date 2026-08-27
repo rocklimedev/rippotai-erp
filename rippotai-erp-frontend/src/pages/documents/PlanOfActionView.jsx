@@ -249,7 +249,7 @@ export function PlanOfActionView() {
     try {
       await deletePlanOfAction(id).unwrap();
       toast.success("Plan of Action deleted");
-      nav("/documents/all");
+      nav("/crm/plan-of-action/all");
     } catch (e) {
       toast.error(e?.data?.detail || "Failed to delete");
     }
@@ -388,13 +388,13 @@ export function PlanOfActionView() {
       action={
         <div className="flex items-center gap-2">
           <button
-            onClick={() => nav("/documents/all")}
+            onClick={() => nav("/crm/plan-of-action/all")}
             className="h-10 px-4 rounded-lg border border-[#DDD8CE] text-[13px] font-semibold text-[#333333] inline-flex items-center gap-1.5"
           >
             <ArrowLeft size={14} /> Back
           </button>
           <button
-            onClick={() => nav(`/documents/plan-of-action/${id}/edit`)}
+            onClick={() => nav(`/crm/forms/plan-of-action/${id}/edit`)}
             className="h-10 px-4 rounded-lg border border-[#B5C4B6] text-[13px] font-semibold text-[#333333] inline-flex items-center gap-1.5"
           >
             <Edit3 size={14} /> Edit

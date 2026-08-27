@@ -193,6 +193,7 @@ export const scopeOfWorkApi = baseApi.injectEndpoints({
       }),
       providesTags: ["ScopeOfWork"],
     }),
+
     /**
      * Get Scope of Work by its own ID
      *
@@ -205,6 +206,26 @@ export const scopeOfWorkApi = baseApi.injectEndpoints({
       }),
       providesTags: ["ScopeOfWork"],
     }),
+
+    /**
+     * Get the Scope of Work document for a project.
+     *
+     * This is the shape the Proposal Builder actually consumes:
+     * the document plus its nested `items[]`, each carrying its
+     * `projectSpace` and `scopeCategory`.
+     *
+     * NOTE: mirrors the POST path (`/scope-of-work/projects/:projectId`)
+     * as a GET. Confirm this matches your controller — it's the one
+     * line to change if the real route differs.
+     *
+     * GET
+     * /scope-of-work/projects/:projectId
+     */
+    getScopeOfWorkByProject: builder.query({
+      query: (projectId) => `/scope-of-work/projects/${projectId}`,
+      providesTags: ["ScopeOfWork"],
+    }),
+
     // in scope-of-work.api.ts
     createCompleteScopeOfWork: builder.mutation({
       query: ({ projectId, body }) => ({
@@ -214,6 +235,7 @@ export const scopeOfWorkApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["ScopeOfWork", "ProjectSpaces", "ScopeItems"],
     }),
+
     /**
      * Update Scope of Work by its own ID
      *
@@ -293,6 +315,7 @@ export const {
   useUpdateScopeItemMutation,
   useDeleteScopeItemMutation,
   useCreateCompleteScopeOfWorkMutation,
+
   // =========================================================
   // SCOPE OF WORK DOCUMENT
   // =========================================================
@@ -302,6 +325,8 @@ export const {
   useLazyGetScopeOfWorkQuery,
   useGetScopeOfWorkByIdQuery,
   useLazyGetScopeOfWorkByIdQuery,
+  useGetScopeOfWorkByProjectQuery,
+  useLazyGetScopeOfWorkByProjectQuery,
   useUpdateScopeOfWorkMutation,
   useDeleteScopeOfWorkMutation,
 } = scopeOfWorkApi;

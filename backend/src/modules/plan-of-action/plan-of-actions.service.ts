@@ -4,7 +4,7 @@ import { Sequelize } from 'sequelize-typescript';
 import { Transaction } from 'sequelize';
 
 import { PlanOfAction } from './models/plan-of-action.model';
-import { ProjectPhase } from './models/project-phase.model';
+import { ProjectPhase } from '../projects/models/project-phase.model';
 import { PlanOfActionPhase } from './models/plan-of-action-phase.model';
 
 import { TermsTemplate } from '../metas/models/terms-templates.model';
@@ -237,25 +237,93 @@ export class PlanOfActionsService {
       throw new NotFoundException('Plan of Action not found');
     }
 
-    await plan.update({
-      title: dto.title ?? plan.title,
+    await this.sequelize.transaction(async (transaction) => {
+      // --------------------------------------------------------
+      // Update main Plan of Action
+      // --------------------------------------------------------
 
-      execution_description:
-        dto.execution_description ?? plan.execution_description,
+      await plan.update(
+        {
+          title: dto.title ?? plan.title,
 
-      total_duration_min_days:
-        dto.total_duration_min_days ?? plan.total_duration_min_days,
+          execution_description:
+            dto.execution_description ?? plan.execution_description,
 
-      total_duration_max_days:
-        dto.total_duration_max_days ?? plan.total_duration_max_days,
+          total_duration_min_days:
+            dto.total_duration_min_days ?? plan.total_duration_min_days,
 
-      total_duration_label:
-        dto.total_duration_label ?? plan.total_duration_label,
+          total_duration_max_days:
+            dto.total_duration_max_days ?? plan.total_duration_max_days,
+
+          total_duration_label:
+            dto.total_duration_label ?? plan.total_duration_label,
+        },
+        {
+          transaction,
+        },
+      );
+
+      // --------------------------------------------------------
+      // Update Phases
+      // --------------------------------------------------------
+
+      if (dto.phases !== undefined) {
+        // Remove old POA -> ProjectPhase relationships.
+        //
+        // IMPORTANT:
+        // We do NOT delete ProjectPhase records themselves.
+        await this.planPhaseModel.destroy({
+          where: {
+            plan_of_action_id: id,
+          },
+          transaction,
+        });
+
+        if (dto.phases.length > 0) {
+          await this.createPhasesForPlan(id, dto.phases, transaction);
+        }
+
+        await plan.update(
+          {
+            total_phases: dto.phases.length,
+          },
+          {
+            transaction,
+          },
+        );
+      }
+
+      // --------------------------------------------------------
+      // Update Terms
+      // --------------------------------------------------------
+
+      if (dto.terms_template_id !== undefined) {
+        await this.applyTermsInternal(
+          plan,
+          {
+            terms_template_id: dto.terms_template_id,
+          },
+          transaction,
+        );
+      }
+
+      // --------------------------------------------------------
+      // Update Team Members
+      // --------------------------------------------------------
+
+      if (dto.team_members !== undefined) {
+        await this.teamService.replaceAll(
+          TeamMemberOwnerType.PLAN_OF_ACTION,
+          id,
+          dto.team_members,
+          undefined,
+          transaction,
+        );
+      }
     });
 
     return this.findOne(id);
   }
-
   // ============================================================
   // Remove
   // ============================================================
