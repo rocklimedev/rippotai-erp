@@ -1,14 +1,20 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Eye, Edit3, CreditCard } from "lucide-react";
+import { Plus, Eye, Edit3, CreditCard, Trash2, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 
 import { Shell, Card, Input } from "../../hooks/shared";
 
-import { useGetPaymentSchedulesQuery } from "../../api/payment-schedules.api";
+import {
+  useGetPaymentSchedulesQuery,
+  useUpdatePaymentScheduleMutation,
+  useDeletePaymentScheduleMutation,
+} from "../../api/payment-schedules.api";
 
 export default function PaymentScheduleList() {
   const nav = useNavigate();
   const [q, setQ] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
 
   // ------------------------------------------------------------
   // Project filter
@@ -28,6 +34,15 @@ export default function PaymentScheduleList() {
   } = useGetPaymentSchedulesQuery(
     projectFilter ? { project_id: projectFilter } : undefined,
   );
+
+  // ------------------------------------------------------------
+  // Mutations
+  // ------------------------------------------------------------
+
+  const [updatePaymentSchedule, { isLoading: isUpdating }] =
+    useUpdatePaymentScheduleMutation();
+
+  const [deletePaymentSchedule] = useDeletePaymentScheduleMutation();
 
   // ------------------------------------------------------------
   // Client-side search
@@ -80,6 +95,79 @@ export default function PaymentScheduleList() {
       nav(`/ledger/forms/payment-schedule?project_id=${projectFilter}`);
     } else {
       nav("/ledger/forms/payment-schedule");
+    }
+  };
+
+  // ------------------------------------------------------------
+  // View
+  // ------------------------------------------------------------
+
+  const handleView = (id) => {
+    nav(`/ledger/payment-schedule/${id}`);
+  };
+
+  // ------------------------------------------------------------
+  // Edit
+  // ------------------------------------------------------------
+
+  const handleEdit = (id) => {
+    nav(`/ledger/payment-schedules/${id}/edit`);
+  };
+
+  // ------------------------------------------------------------
+  // Update status
+  // ------------------------------------------------------------
+
+  const handleStatusChange = async (id, status) => {
+    try {
+      await updatePaymentSchedule({
+        id,
+        status,
+      }).unwrap();
+
+      toast.success(`Payment schedule marked as ${status}.`);
+    } catch (error) {
+      console.error("Failed to update payment schedule status:", error);
+
+      toast.error(
+        error?.data?.message ||
+          error?.error ||
+          "Failed to update payment schedule status.",
+      );
+    }
+  };
+
+  // ------------------------------------------------------------
+  // Delete
+  // ------------------------------------------------------------
+
+  const handleDelete = async (id, title) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${
+        title || "this payment schedule"
+      }"?\n\nThis action cannot be undone.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingId(id);
+
+      await deletePaymentSchedule(id).unwrap();
+
+      toast.success("Payment schedule deleted successfully.");
+    } catch (error) {
+      console.error("Failed to delete payment schedule:", error);
+
+      toast.error(
+        error?.data?.message ||
+          error?.error ||
+          "Failed to delete payment schedule.",
+      );
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -162,7 +250,7 @@ export default function PaymentScheduleList() {
         {projectFilter && (
           <button
             onClick={clearProjectFilter}
-            className="text-[13px] text-[#333333] font-semibold"
+            className="text-[13px] text-[#333333] font-semibold hover:text-[#1F453B]"
           >
             Clear project filter ×
           </button>
@@ -209,7 +297,7 @@ export default function PaymentScheduleList() {
                   Updated
                 </th>
 
-                <th className="text-right px-3 py-3 text-[13px] uppercase tracking-[0.14em] text-[#6B7B7C] w-[110px]">
+                <th className="text-right px-3 py-3 text-[13px] uppercase tracking-[0.14em] text-[#6B7B7C] w-[150px]">
                   Actions
                 </th>
               </tr>
@@ -245,10 +333,12 @@ export default function PaymentScheduleList() {
                     r.createdAt ||
                     "";
 
+                  const isDeleting = deletingId === r.id;
+
                   return (
                     <tr
                       key={r.id}
-                      onClick={() => nav(`/ledger/payment-schedule/${r.id}`)}
+                      onClick={() => handleView(r.id)}
                       className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F4F6F7] cursor-pointer"
                       data-testid={`payment-schedule-row-${r.id}`}
                     >
@@ -293,14 +383,26 @@ export default function PaymentScheduleList() {
 
                       {/* Status */}
 
-                      <td className="px-3 py-2.5">
-                        <span
-                          className={`inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold tracking-wide ${getStatusClass(
+                      <td
+                        className="px-3 py-2.5"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <select
+                          value={status}
+                          disabled={isUpdating}
+                          onChange={(e) =>
+                            handleStatusChange(r.id, e.target.value)
+                          }
+                          className={`px-2 py-1 rounded-md text-[11px] font-semibold tracking-wide border-0 outline-none cursor-pointer ${getStatusClass(
                             status,
                           )}`}
+                          data-testid={`payment-schedule-status-${r.id}`}
                         >
-                          {status}
-                        </span>
+                          <option value="DRAFT">DRAFT</option>
+                          <option value="ACTIVE">ACTIVE</option>
+                          <option value="COMPLETED">COMPLETED</option>
+                          <option value="CANCELLED">CANCELLED</option>
+                        </select>
                       </td>
 
                       {/* Updated */}
@@ -316,10 +418,10 @@ export default function PaymentScheduleList() {
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="inline-flex items-center gap-0.5">
+                          {/* View */}
+
                           <button
-                            onClick={() =>
-                              nav(`/ledger/payment-schedule/${r.id}`)
-                            }
+                            onClick={() => handleView(r.id)}
                             className="p-1.5 rounded hover:bg-[#EAEEF0] text-[#333333]"
                             title="View"
                             data-testid={`payment-schedule-view-${r.id}`}
@@ -327,15 +429,33 @@ export default function PaymentScheduleList() {
                             <Eye size={15} />
                           </button>
 
+                          {/* Edit */}
+
                           <button
-                            onClick={() =>
-                              nav(`/ledger/payment-schedules/${r.id}/edit`)
-                            }
+                            onClick={() => handleEdit(r.id)}
                             className="p-1.5 rounded hover:bg-[#EAEEF0] text-[#333333]"
                             title="Edit"
                             data-testid={`payment-schedule-edit-${r.id}`}
                           >
                             <Edit3 size={15} />
+                          </button>
+
+                          {/* Delete */}
+
+                          <button
+                            onClick={() =>
+                              handleDelete(r.id, r.title || "Payment Schedule")
+                            }
+                            disabled={isDeleting}
+                            className="p-1.5 rounded hover:bg-[#FBEAEA] text-[#9B3D3D] disabled:opacity-50"
+                            title="Delete"
+                            data-testid={`payment-schedule-delete-${r.id}`}
+                          >
+                            {isDeleting ? (
+                              <RefreshCw size={15} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={15} />
+                            )}
                           </button>
                         </div>
                       </td>

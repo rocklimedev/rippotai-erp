@@ -15,14 +15,14 @@ That's the difference this document is optimizing for everywhere below.
 
 ## 1. System at a glance
 
-| Metric | Count |
-|---|---|
-| Sequential phases | 9 (Brief → Snag & Handover) |
-| Parallel tracks | 2 (Vendor & Trades · Material & Procurement) |
-| Teams | 19 (7 core + 12 contractor trades) |
-| Hard gates (blocking sign-offs) | 12 |
-| Steps | ~90 |
-| Document types produced | ~70 |
+| Metric                          | Count                                        |
+| ------------------------------- | -------------------------------------------- |
+| Sequential phases               | 9 (Brief → Snag & Handover)                  |
+| Parallel tracks                 | 2 (Vendor & Trades · Material & Procurement) |
+| Teams                           | 19 (7 core + 12 contractor trades)           |
+| Hard gates (blocking sign-offs) | 12                                           |
+| Steps                           | ~90                                          |
+| Document types produced         | ~70                                          |
 
 The horizontal position of anything in the source chart is **order of work, not a date** — that's true of your reference chart and it must stay true in the database. Don't store the chart's `a`/`b` numbers as literal dates anywhere. They're a sequencing hint for the UI, not a scheduling primitive — see §5.3.
 
@@ -30,24 +30,24 @@ The horizontal position of anything in the source chart is **order of work, not 
 
 ## 2. Domain model — the entities you're actually building
 
-| Entity | What it is | Source concept |
-|---|---|---|
-| `Organization` | A firm using the system (Rippotai is tenant #1) | — |
-| `WorkflowTemplate` | The reusable phase/step/gate graph, versioned, owned by an org | The whole Master Process Brain |
-| `Project` | One client engagement, instantiated from a template | — |
-| `Phase` | A named stage (`BRIEF`, `DESIGN`, `EXECUTION`...) | `GROUPS[n]` |
-| `Track` | A parallel phase group not on the main spine | `GROUPS['A']`, `GROUPS['B']` (parallel: true) |
-| `Step` | One unit of work inside a phase, owned by 1+ teams | `rows[]` |
-| `Gate` | A blocking checkpoint — nothing downstream starts until signed off | `rows[].gate === true` |
-| `Team` | A role or trade — core (7) or contractor (12) | `TEAMS{}` |
-| `Document` | A file/record produced by a step | `rows[].d[]` |
-| `Estimate` | A priced draft — trade or material — pre-approval | Path A/B, §8 |
-| `Quotation` | An estimate after approval — immutable, contractual | "the one rule" |
-| `BOQ` | Bill of quantities, consolidated from approved quotations + GFC drawings | `A.7` |
-| `PurchaseOrder` | A material buy against an approved material quotation | `B.5` |
-| `QCChecklist` | Site Supervisor's per-phase sign-off before the next trade starts | `08` continuous rows |
-| `SiteVisit` | Scheduled or ad-hoc visit, any team | `8.1` |
-| `PaymentMilestone` | Token, Payment Phase 01, final — tied to specific gates | `04`, `5.5` |
+| Entity             | What it is                                                               | Source concept                                |
+| ------------------ | ------------------------------------------------------------------------ | --------------------------------------------- |
+| `Organization`     | A firm using the system (Rippotai is tenant #1)                          | —                                             |
+| `WorkflowTemplate` | The reusable phase/step/gate graph, versioned, owned by an org           | The whole Master Process Brain                |
+| `Project`          | One client engagement, instantiated from a template                      | —                                             |
+| `Phase`            | A named stage (`BRIEF`, `DESIGN`, `EXECUTION`...)                        | `GROUPS[n]`                                   |
+| `Track`            | A parallel phase group not on the main spine                             | `GROUPS['A']`, `GROUPS['B']` (parallel: true) |
+| `Step`             | One unit of work inside a phase, owned by 1+ teams                       | `rows[]`                                      |
+| `Gate`             | A blocking checkpoint — nothing downstream starts until signed off       | `rows[].gate === true`                        |
+| `Team`             | A role or trade — core (7) or contractor (12)                            | `TEAMS{}`                                     |
+| `Document`         | A file/record produced by a step                                         | `rows[].d[]`                                  |
+| `Estimate`         | A priced draft — trade or material — pre-approval                        | Path A/B, §8                                  |
+| `Quotation`        | An estimate after approval — immutable, contractual                      | "the one rule"                                |
+| `BOQ`              | Bill of quantities, consolidated from approved quotations + GFC drawings | `A.7`                                         |
+| `PurchaseOrder`    | A material buy against an approved material quotation                    | `B.5`                                         |
+| `QCChecklist`      | Site Supervisor's per-phase sign-off before the next trade starts        | `08` continuous rows                          |
+| `SiteVisit`        | Scheduled or ad-hoc visit, any team                                      | `8.1`                                         |
+| `PaymentMilestone` | Token, Payment Phase 01, final — tied to specific gates                  | `04`, `5.5`                                   |
 
 ---
 
@@ -175,15 +175,15 @@ erDiagram
 
 Seven functional modules, mapped straight off the phase groups. Each one is a bounded chunk of API + UI you can build and ship independently.
 
-| Module | Covers | Owning team(s) | Core objects |
-|---|---|---|---|
-| **M1 — Brief & Design** | Brief, Survey, Pre-Design, Design | ARC | Phase, Step, Document |
-| **M2 — Commercial** | Payment, Estimate → Quotation, BOQ | ACC, ADM | Estimate, Quotation, BOQ, Payment |
-| **M3 — Vendor & Trades** | Vendor search → tender → lineup (Track A) | ADM | Contractor, Estimate(trade) |
-| **M4 — Material & Procurement** | Requirement → sourcing → delivery (Track B) | PRC | PurchaseOrder, Delivery, Inventory |
-| **M5 — Drawings** | Tender drawings, Working drawings / GFC | ARC | Document (drawing sets) |
-| **M6 — Execution & QC** | Site steps, checklists, daily reports | SUP | Step, QCChecklist, SiteVisit |
-| **M7 — Handover & Documents** | Doc register, snag list, warranty pack | ADM, ACC | Document, Gate (final sign-off) |
+| Module                          | Covers                                      | Owning team(s) | Core objects                       |
+| ------------------------------- | ------------------------------------------- | -------------- | ---------------------------------- |
+| **M1 — Brief & Design**         | Brief, Survey, Pre-Design, Design           | ARC            | Phase, Step, Document              |
+| **M2 — Commercial**             | Payment, Estimate → Quotation, BOQ          | ACC, ADM       | Estimate, Quotation, BOQ, Payment  |
+| **M3 — Vendor & Trades**        | Vendor search → tender → lineup (Track A)   | ADM            | Contractor, Estimate(trade)        |
+| **M4 — Material & Procurement** | Requirement → sourcing → delivery (Track B) | PRC            | PurchaseOrder, Delivery, Inventory |
+| **M5 — Drawings**               | Tender drawings, Working drawings / GFC     | ARC            | Document (drawing sets)            |
+| **M6 — Execution & QC**         | Site steps, checklists, daily reports       | SUP            | Step, QCChecklist, SiteVisit       |
+| **M7 — Handover & Documents**   | Doc register, snag list, warranty pack      | ADM, ACC       | Document, Gate (final sign-off)    |
 
 Build order recommendation is in §11 — it isn't this list top to bottom.
 
@@ -193,7 +193,7 @@ Build order recommendation is in §11 — it isn't this list top to bottom.
 
 ### 5.1 Phase and Gate as state, not screens
 
-Every `Phase` has a status (`not_started` → `active` → `complete`). Every `Gate` has a status (`pending` → `signed_off`). The rule that makes this an *engine* rather than a form wizard:
+Every `Phase` has a status (`not_started` → `active` → `complete`). Every `Gate` has a status (`pending` → `signed_off`). The rule that makes this an _engine_ rather than a form wizard:
 
 > **A phase cannot go `complete` while any of its Gates are `pending`. A downstream phase cannot go `active` while its trigger Gate is `pending`.**
 
@@ -212,9 +212,16 @@ That single constraint, enforced in one place (not scattered across UI), is what
   },
   "phases": [
     {
-      "code": "03", "title": "PRE-DESIGN", "lead": ["ARC"],
+      "code": "03",
+      "title": "PRE-DESIGN",
+      "lead": ["ARC"],
       "steps": [
-        { "no": "3.1", "title": "Existing Layout — as-built", "teams": ["ARC"], "docs": ["Existing Layout"] }
+        {
+          "no": "3.1",
+          "title": "Existing Layout — as-built",
+          "teams": ["ARC"],
+          "docs": ["Existing Layout"]
+        }
       ],
       "gates": [
         {
@@ -229,7 +236,11 @@ That single constraint, enforced in one place (not scattered across UI), is what
   ],
   "tracks": [
     { "code": "VENDOR_TRADES", "opensOn": "LAYOUT_FINALISED", "lead": "ADM" },
-    { "code": "MATERIAL_PROCUREMENT", "opensOn": "CONCEPT_02_FINALISED", "lead": "PRC" }
+    {
+      "code": "MATERIAL_PROCUREMENT",
+      "opensOn": "CONCEPT_02_FINALISED",
+      "lead": "PRC"
+    }
   ]
 }
 ```
@@ -238,7 +249,7 @@ When a project is created, the engine **materializes** this config into real `ph
 
 ### 5.3 Ordering vs. scheduling — don't conflate them
 
-The source chart's `a`/`b` values are a *relative* ordering used to draw bars — not calendar time. In the system:
+The source chart's `a`/`b` values are a _relative_ ordering used to draw bars — not calendar time. In the system:
 
 - `sort_order` on steps gives you the same left-to-right ordering for a Gantt-style view.
 - Real dates live separately, on a `project_schedule` table keyed to Gates (`gate_id`, `target_date`, `actual_date`) — because the source document explicitly says to "hang real dates off the gates, not off the bars."
@@ -264,20 +275,20 @@ This is the same pattern for all cross-track dependencies — e.g. `TENDER_DRAWI
 
 ## 6. Gates — the full table (build this as seed data, not hardcoded copy)
 
-| # | Gate | Trigger | Between |
-|---|---|---|---|
-| 01 | Layout Finalised | Proposed layout + reference presentation complete | Architect → Admin (vendor search opens) |
-| 02 | Client Sign-off — Pitch + Concept 01 | Pitch deck, business proposal, Concept 3D 01 presented | Architect + Accounts → Client |
-| 03 | Token Received | Client has seen layout, moodboard, 3D 01 | Client → Accounts & Finance |
-| 04 | Project Mobilised | Documents signed + plan of action issued | Accounts + Planning → all teams |
-| 05 | Concept 02 Finalised | 3D with material + furniture layout approved | Architect → Procurement (material track opens) |
-| 06 | Design Closed | Design Development 02 with material approved | Architect → Client |
-| 07 | Payment Phase 01 | Design close | Client → Accounts & Finance |
-| 08 | Tender Drawings Finalised | Tender set issued to vendors | Architect → Vendors — hard constraint on all pricing |
-| 09 | Estimate Approved | Estimate reviewed and accepted | Accounts & Finance → becomes Quotation |
-| 10 | Contractor Lineup Handoff | All 12 trade teams confirmed | Admin Coordinator → Site |
-| 11 | Working Drawings Issued — GFC | Full construction set finalised | Architect → Site |
-| 12 | Final Client Sign-off | Snag closed, all phase QC signed off | RIPPOTAI → Client (handover) |
+| #   | Gate                                 | Trigger                                                | Between                                              |
+| --- | ------------------------------------ | ------------------------------------------------------ | ---------------------------------------------------- |
+| 01  | Layout Finalised                     | Proposed layout + reference presentation complete      | Architect → Admin (vendor search opens)              |
+| 02  | Client Sign-off — Pitch + Concept 01 | Pitch deck, business proposal, Concept 3D 01 presented | Architect + Accounts → Client                        |
+| 03  | Token Received                       | Client has seen layout, moodboard, 3D 01               | Client → Accounts & Finance                          |
+| 04  | Project Mobilised                    | Documents signed + plan of action issued               | Accounts + Planning → all teams                      |
+| 05  | Concept 02 Finalised                 | 3D with material + furniture layout approved           | Architect → Procurement (material track opens)       |
+| 06  | Design Closed                        | Design Development 02 with material approved           | Architect → Client                                   |
+| 07  | Payment Phase 01                     | Design close                                           | Client → Accounts & Finance                          |
+| 08  | Tender Drawings Finalised            | Tender set issued to vendors                           | Architect → Vendors — hard constraint on all pricing |
+| 09  | Estimate Approved                    | Estimate reviewed and accepted                         | Accounts & Finance → becomes Quotation               |
+| 10  | Contractor Lineup Handoff            | All 12 trade teams confirmed                           | Admin Coordinator → Site                             |
+| 11  | Working Drawings Issued — GFC        | Full construction set finalised                        | Architect → Site                                     |
+| 12  | Final Client Sign-off                | Snag closed, all phase QC signed off                   | RIPPOTAI → Client (handover)                         |
 
 Each row is one `gate` template entry. Gate 08 is the one worth flagging in code review: it's a **cross-track blocker** — no `estimates` row for `track='trade'` should be allowed to move past `draft` unless this specific gate is `signed_off` on that project. Enforce it as a check in the estimate-submit endpoint, not just a UI disable.
 
@@ -287,16 +298,16 @@ Each row is one `gate` template entry. Gate 08 is the one worth flagging in code
 
 19 teams, 7 with end-to-end project involvement, 12 trade-scoped.
 
-| Code | Team | Active span | Scope in the system |
-|---|---|---|---|
-| ARC | Architect / Interior Designer | Brief → Handover | Owner: design, all drawings, RFIs |
-| SUP | Site Supervisor | Survey → Handover | Owner: QC checklists, site visits, daily reports, inventory (site side) |
-| ADM | Admin Coordinator | Layout Finalised → Handover | Owner: vendor search/lineup, all visit scheduling. **No finance access.** |
-| ACC | Accounts & Finance | Budget → Handover | Owner: every document, payment, estimate, quotation, BOQ, budget |
-| PLN | Planning | Scope → Work Packages | Owner: scope, plan of action, programme, work-package schedule |
-| PRC | Procurement | Concept 02 → Handover | Owner: material sourcing, purchase, delivery, inventory (procurement side) |
-| CLI | Client | Present at 5 gates | Read access to their project; sign-off action on their gates only |
-| 12× contractor codes | CIV, ELE, PLM, MEC, MET, TIL, FCL, MIL, PNT, GLZ, SPC, LND | Trade-scoped windows | Access limited to their own contractor_lineup record + relevant step/QC status. No cross-trade visibility by default. |
+| Code                 | Team                                                       | Active span                 | Scope in the system                                                                                                   |
+| -------------------- | ---------------------------------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| ARC                  | Architect / Interior Designer                              | Brief → Handover            | Owner: design, all drawings, RFIs                                                                                     |
+| SUP                  | Site Supervisor                                            | Survey → Handover           | Owner: QC checklists, site visits, daily reports, inventory (site side)                                               |
+| ADM                  | Admin Coordinator                                          | Layout Finalised → Handover | Owner: vendor search/lineup, all visit scheduling. **No finance access.**                                             |
+| ACC                  | Accounts & Finance                                         | Budget → Handover           | Owner: every document, payment, estimate, quotation, BOQ, budget                                                      |
+| PLN                  | Planning                                                   | Scope → Work Packages       | Owner: scope, plan of action, programme, work-package schedule                                                        |
+| PRC                  | Procurement                                                | Concept 02 → Handover       | Owner: material sourcing, purchase, delivery, inventory (procurement side)                                            |
+| CLI                  | Client                                                     | Present at 5 gates          | Read access to their project; sign-off action on their gates only                                                     |
+| 12× contractor codes | CIV, ELE, PLM, MEC, MET, TIL, FCL, MIL, PNT, GLZ, SPC, LND | Trade-scoped windows        | Access limited to their own contractor_lineup record + relevant step/QC status. No cross-trade visibility by default. |
 
 Permission model: `role` (per user) × `module` (§4) → `owner` / `contributor` / `viewer` / `none`. Seed the default matrix straight from this table; let each org override it per-user later — don't hardcode ADM's "no finance" rule as a special case, express it as `ADM: none` on Module M2 in the seed data so it's just config.
 
@@ -314,6 +325,7 @@ DRAFT ESTIMATE  →  SUBMITTED  →  APPROVED  →  (system creates) QUOTATION
 ```
 
 Rules to enforce at the API layer, not just the UI:
+
 1. `quotations` rows are **never inserted directly** — only created by an `estimates.approve()` call. This guarantees every quotation traces to an approved estimate.
 2. Trades support two paths into the same estimate shape: `rates_only` (rate × Architect's quantities) or `vendor_quote` (reworked into template). Materials only ever go through sourcing → selection, no path split — model `path` as nullable, required only when `track='trade'`.
 3. `boq_items` can only be created once (a) the estimate's track has an approved quotation, **and** (b) the project's `TENDER_DRAWINGS_FINALISED`/`WORKING_DRAWINGS_ISSUED` gates are signed off as applicable. BOQ = approved quotations + GFC drawings, nothing else.
@@ -355,7 +367,7 @@ Auth: JWT with `org_id`, `user_id`, `team_id`, `role` claims. Every write handle
 
 ## 10. Notifications & audit
 
-Every gate sign-off, QC sign-off, and estimate approval writes to `audit_log` and fires a notification to the *next* team in the `between` chain (e.g. signing `LAYOUT_FINALISED` notifies ADM, not the whole team roster). Two channels are enough at MVP: in-app + WhatsApp (given your existing Hinglish/WhatsApp-first client workflow) or email as fallback — keep this behind a single `NotificationService` interface so the channel is swappable without touching workflow code.
+Every gate sign-off, QC sign-off, and estimate approval writes to `audit_log` and fires a notification to the _next_ team in the `between` chain (e.g. signing `LAYOUT_FINALISED` notifies ADM, not the whole team roster). Two channels are enough at MVP: in-app + WhatsApp (given your existing Hinglish/WhatsApp-first client workflow) or email as fallback — keep this behind a single `NotificationService` interface so the channel is swappable without touching workflow code.
 
 ---
 
@@ -363,14 +375,14 @@ Every gate sign-off, QC sign-off, and estimate approval writes to `audit_log` an
 
 Matches what you already decided when scoping INOS — BOQ as hero module, preset item library as the foundational data asset — sequenced to get a usable internal tool fastest:
 
-| Phase | Ships | Why this order |
-|---|---|---|
-| 1 | Org/team/user setup + workflow template engine (§5) with Rippotai's process as seed data. Read-only project timeline. | Nothing else works without the graph existing. |
-| 2 | Gate sign-off + document register (§6, §9 doc endpoints) | Makes the timeline actionable, not just a viewer. |
-| 3 | Estimate → Quotation → BOQ (§8) + preset item library | The hero module — this is what a firm actually feels day to day. |
-| 4 | Vendor & Trades + Material & Procurement tracks (§5.4) | Needs §3's contractor/PO tables; depends on Gate 08/05 events from phase 2-3. |
-| 5 | Execution & QC — checklists, daily reports, site visits | Site-facing, mobile-first; needs the rest of the spine live first. |
-| 6 | Client portal (read-only status + their 5 gates + payment history) | Lowest risk to ship last — external users, so UI/permissions need to be solid first. |
+| Phase | Ships                                                                                                                 | Why this order                                                                       |
+| ----- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 1     | Org/team/user setup + workflow template engine (§5) with Rippotai's process as seed data. Read-only project timeline. | Nothing else works without the graph existing.                                       |
+| 2     | Gate sign-off + document register (§6, §9 doc endpoints)                                                              | Makes the timeline actionable, not just a viewer.                                    |
+| 3     | Estimate → Quotation → BOQ (§8) + preset item library                                                                 | The hero module — this is what a firm actually feels day to day.                     |
+| 4     | Vendor & Trades + Material & Procurement tracks (§5.4)                                                                | Needs §3's contractor/PO tables; depends on Gate 08/05 events from phase 2-3.        |
+| 5     | Execution & QC — checklists, daily reports, site visits                                                               | Site-facing, mobile-first; needs the rest of the spine live first.                   |
+| 6     | Client portal (read-only status + their 5 gates + payment history)                                                    | Lowest risk to ship last — external users, so UI/permissions need to be solid first. |
 
 ---
 

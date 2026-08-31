@@ -1,14 +1,30 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Eye, Edit3, FileText } from "lucide-react";
+import { toast } from "sonner";
+import {
+  Plus,
+  Eye,
+  Edit3,
+  FileText,
+  Trash2,
+  RefreshCw,
+  ChevronDown,
+} from "lucide-react";
 
 import { Shell, Card, Input } from "../../hooks/shared";
 
-import { useGetScopeOfWorkQuery } from "../../api/scope-of-work.api";
+import {
+  useGetScopeOfWorkQuery,
+  useUpdateScopeOfWorkMutation,
+  useDeleteScopeOfWorkMutation,
+} from "../../api/scope-of-work.api";
 
 export default function ScopeOfWorkList() {
   const nav = useNavigate();
   const [q, setQ] = useState("");
+
+  const [deletingId, setDeletingId] = useState(null);
+  const [updatingStatusId, setUpdatingStatusId] = useState(null);
 
   // ============================================================
   // OPTIONAL PROJECT FILTER
@@ -19,14 +35,18 @@ export default function ScopeOfWorkList() {
 
   // ============================================================
   // GET ALL SCOPE OF WORK
-  //
-  // GET /scope-of-work
-  //
-  // No projectId is required.
   // ============================================================
 
   const { data, isFetching, isLoading, isError, error } =
     useGetScopeOfWorkQuery();
+
+  // ============================================================
+  // MUTATIONS
+  // ============================================================
+
+  const [updateScopeOfWork] = useUpdateScopeOfWorkMutation();
+
+  const [deleteScopeOfWork] = useDeleteScopeOfWorkMutation();
 
   // ============================================================
   // NORMALIZE RESPONSE
@@ -60,7 +80,7 @@ export default function ScopeOfWorkList() {
     let result = rows;
 
     // ----------------------------------------------------------
-    // Filter by project if project_id exists in URL
+    // Project filter
     // ----------------------------------------------------------
 
     if (projectFilter) {
@@ -104,6 +124,68 @@ export default function ScopeOfWorkList() {
   }, [rows, q, projectFilter]);
 
   // ============================================================
+  // STATUS
+  // ============================================================
+
+  const getStatusClass = (status) => {
+    switch (status) {
+      case "APPROVED":
+      case "ACCEPTED":
+        return "bg-[#E8F3EE] text-[#1F453B]";
+
+      case "REVIEW":
+      case "UNDER_REVIEW":
+      case "IN_REVIEW":
+        return "bg-[#EAF1F8] text-[#315A7D]";
+
+      case "SUBMITTED":
+        return "bg-[#FFF4DC] text-[#8A6500]";
+
+      case "REJECTED":
+      case "CANCELLED":
+        return "bg-[#FBEAEA] text-[#9B3D3D]";
+
+      case "DRAFT":
+      default:
+        return "bg-[#F4F6F7] text-[#6B7B7C]";
+    }
+  };
+
+  const formatStatus = (status) => {
+    return (status || "DRAFT")
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  const STATUS_OPTIONS = [
+    {
+      value: "DRAFT",
+      label: "Draft",
+    },
+    {
+      value: "IN_REVIEW",
+      label: "In Review",
+    },
+    {
+      value: "SUBMITTED",
+      label: "Submitted",
+    },
+    {
+      value: "APPROVED",
+      label: "Approved",
+    },
+    {
+      value: "REJECTED",
+      label: "Rejected",
+    },
+    {
+      value: "CANCELLED",
+      label: "Cancelled",
+    },
+  ];
+
+  // ============================================================
   // CLEAR PROJECT FILTER
   // ============================================================
 
@@ -141,26 +223,81 @@ export default function ScopeOfWorkList() {
   };
 
   // ============================================================
-  // STATUS
+  // UPDATE STATUS
   // ============================================================
 
-  const getStatusClass = (status) => {
-    switch (status) {
-      case "APPROVED":
-      case "ACCEPTED":
-        return "bg-[#E8F3EE] text-[#1F453B]";
+  const handleStatusChange = async (row, status) => {
+    if (!row?.id) {
+      return;
+    }
 
-      case "REVIEW":
-      case "UNDER_REVIEW":
-        return "bg-[#EAF1F8] text-[#315A7D]";
+    const currentStatus = row.status || "DRAFT";
 
-      case "REJECTED":
-      case "CANCELLED":
-        return "bg-[#FBEAEA] text-[#9B3D3D]";
+    if (currentStatus === status) {
+      return;
+    }
 
-      case "DRAFT":
-      default:
-        return "bg-[#F4F6F7] text-[#6B7B7C]";
+    try {
+      setUpdatingStatusId(row.id);
+
+      await updateScopeOfWork({
+        id: row.id,
+        body: {
+          status,
+        },
+      }).unwrap();
+
+      toast.success(`Scope of Work status updated to ${formatStatus(status)}`);
+    } catch (err) {
+      console.error("Failed to update Scope of Work status:", err);
+
+      toast.error(
+        err?.data?.message ||
+          err?.message ||
+          "Failed to update Scope of Work status",
+      );
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
+
+  // ============================================================
+  // DELETE
+  // ============================================================
+
+  const handleDelete = async (row) => {
+    if (!row?.id) {
+      return;
+    }
+
+    const projectName =
+      row.project_name ||
+      row.projectName ||
+      row.project?.name ||
+      "this Scope of Work";
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete the Scope of Work for "${projectName}"?\n\nThis action cannot be undone.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingId(row.id);
+
+      await deleteScopeOfWork(row.id).unwrap();
+
+      toast.success("Scope of Work deleted successfully");
+    } catch (err) {
+      console.error("Failed to delete Scope of Work:", err);
+
+      toast.error(
+        err?.data?.message || err?.message || "Failed to delete Scope of Work",
+      );
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -181,7 +318,7 @@ export default function ScopeOfWorkList() {
       action={
         <button
           onClick={handleCreate}
-          className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-1.5"
+          className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-1.5 hover:bg-[#17382F] transition-colors"
           data-testid="scope-of-work-new-btn"
         >
           <Plus size={14} />
@@ -191,7 +328,7 @@ export default function ScopeOfWorkList() {
     >
       {/* ========================================================
           FILTERS
-      ========================================================= */}
+      ======================================================== */}
 
       <div className="flex gap-3 flex-wrap items-center">
         <Input
@@ -204,7 +341,7 @@ export default function ScopeOfWorkList() {
         {projectFilter && (
           <button
             onClick={clearProjectFilter}
-            className="text-[13px] text-[#333333] font-semibold"
+            className="text-[13px] text-[#333333] font-semibold hover:text-[#1F453B]"
           >
             Clear project filter ×
           </button>
@@ -213,7 +350,7 @@ export default function ScopeOfWorkList() {
 
       {/* ========================================================
           ERROR
-      ========================================================= */}
+      ======================================================== */}
 
       {isError && (
         <Card>
@@ -233,7 +370,7 @@ export default function ScopeOfWorkList() {
 
       {/* ========================================================
           TABLE
-      ========================================================= */}
+      ======================================================== */}
 
       {!isError && (
         <Card>
@@ -244,31 +381,31 @@ export default function ScopeOfWorkList() {
             >
               <thead className="bg-[#F4F6F7]">
                 <tr>
-                  <th className="text-left px-3 py-3 text-[13px] uppercase tracking-[0.14em] text-[#6B7B7C]">
+                  <th className="text-left px-3 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#6B7B7C]">
                     Scope of Work
                   </th>
 
-                  <th className="text-left px-3 py-3 text-[13px] uppercase tracking-[0.14em] text-[#6B7B7C]">
+                  <th className="text-left px-3 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#6B7B7C]">
                     Project
                   </th>
 
-                  <th className="text-left px-3 py-3 text-[13px] uppercase tracking-[0.14em] text-[#6B7B7C]">
+                  <th className="text-left px-3 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#6B7B7C]">
                     Mode
                   </th>
 
-                  <th className="text-left px-3 py-3 text-[13px] uppercase tracking-[0.14em] text-[#6B7B7C]">
+                  <th className="text-left px-3 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#6B7B7C]">
                     Version
                   </th>
 
-                  <th className="text-left px-3 py-3 text-[13px] uppercase tracking-[0.14em] text-[#6B7B7C]">
+                  <th className="text-left px-3 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#6B7B7C]">
                     Status
                   </th>
 
-                  <th className="text-left px-3 py-3 text-[13px] uppercase tracking-[0.14em] text-[#6B7B7C]">
+                  <th className="text-left px-3 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#6B7B7C]">
                     Updated
                   </th>
 
-                  <th className="text-right px-3 py-3 text-[13px] uppercase tracking-[0.14em] text-[#6B7B7C] w-[110px]">
+                  <th className="text-right px-3 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#6B7B7C] w-[145px]">
                     Actions
                   </th>
                 </tr>
@@ -282,7 +419,10 @@ export default function ScopeOfWorkList() {
                 {isLoading && (
                   <tr>
                     <td colSpan={7} className="text-center text-[#B5C4B6] py-8">
-                      Loading scope of work...
+                      <div className="inline-flex items-center gap-2">
+                        <RefreshCw size={15} className="animate-spin" />
+                        Loading scope of work...
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -313,11 +453,15 @@ export default function ScopeOfWorkList() {
                     const scopeSummary =
                       r.scope_summary || r.scopeSummary || "Scope of Work";
 
+                    const isUpdating = updatingStatusId === r.id;
+
+                    const isDeleting = deletingId === r.id;
+
                     return (
                       <tr
                         key={r.id}
                         onClick={() => handleView(r.id)}
-                        className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F4F6F7] cursor-pointer"
+                        className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F4F6F7] cursor-pointer transition-colors"
                         data-testid={`scope-of-work-row-${r.id}`}
                       >
                         {/* Scope of Work */}
@@ -353,14 +497,55 @@ export default function ScopeOfWorkList() {
 
                         {/* Status */}
 
-                        <td className="px-3 py-2.5">
-                          <span
-                            className={`inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold tracking-wide ${getStatusClass(
-                              status,
-                            )}`}
-                          >
-                            {status}
-                          </span>
+                        <td
+                          className="px-3 py-2.5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="relative inline-flex">
+                            <select
+                              value={status}
+                              disabled={isUpdating}
+                              onChange={(e) =>
+                                handleStatusChange(r, e.target.value)
+                              }
+                              className={`
+                                appearance-none
+                                pl-3
+                                pr-8
+                                py-1.5
+                                rounded-full
+                                text-[11px]
+                                font-bold
+                                tracking-wide
+                                border-0
+                                outline-none
+                                cursor-pointer
+                                disabled:opacity-60
+                                disabled:cursor-not-allowed
+                                ${getStatusClass(status)}
+                              `}
+                              data-testid={`scope-of-work-status-${r.id}`}
+                              title="Update status"
+                            >
+                              {STATUS_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+
+                            {isUpdating ? (
+                              <RefreshCw
+                                size={12}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin pointer-events-none"
+                              />
+                            ) : (
+                              <ChevronDown
+                                size={12}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60"
+                              />
+                            )}
+                          </div>
                         </td>
 
                         {/* Updated */}
@@ -376,22 +561,42 @@ export default function ScopeOfWorkList() {
                           onClick={(e) => e.stopPropagation()}
                         >
                           <div className="inline-flex items-center gap-0.5">
+                            {/* View */}
+
                             <button
                               onClick={() => handleView(r.id)}
-                              className="p-1.5 rounded hover:bg-[#EAEEF0] text-[#333333]"
+                              className="p-1.5 rounded hover:bg-[#EAEEF0] text-[#333333] transition-colors"
                               title="View"
                               data-testid={`scope-of-work-view-${r.id}`}
                             >
                               <Eye size={15} />
                             </button>
 
+                            {/* Edit */}
+
                             <button
                               onClick={() => handleEdit(r.id)}
-                              className="p-1.5 rounded hover:bg-[#EAEEF0] text-[#333333]"
+                              className="p-1.5 rounded hover:bg-[#EAEEF0] text-[#333333] transition-colors"
                               title="Edit"
                               data-testid={`scope-of-work-edit-${r.id}`}
                             >
                               <Edit3 size={15} />
+                            </button>
+
+                            {/* Delete */}
+
+                            <button
+                              onClick={() => handleDelete(r)}
+                              disabled={isDeleting || isUpdating}
+                              className="p-1.5 rounded hover:bg-[#FBEAEA] text-[#9B3D3D] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Delete"
+                              data-testid={`scope-of-work-delete-${r.id}`}
+                            >
+                              {isDeleting ? (
+                                <RefreshCw size={15} className="animate-spin" />
+                              ) : (
+                                <Trash2 size={15} />
+                              )}
                             </button>
                           </div>
                         </td>
@@ -406,7 +611,10 @@ export default function ScopeOfWorkList() {
                 {isFetching && !isLoading && (
                   <tr>
                     <td colSpan={7} className="text-center text-[#B5C4B6] py-8">
-                      Loading scope of work...
+                      <div className="inline-flex items-center gap-2">
+                        <RefreshCw size={15} className="animate-spin" />
+                        Refreshing scope of work...
+                      </div>
                     </td>
                   </tr>
                 )}

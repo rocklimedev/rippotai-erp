@@ -8,7 +8,7 @@ import QCHandoffStatus from "../../pages/site-ops/QcHandoffStatus";
 import RFIs from "../../pages/site-ops/RfisPage";
 import Mockups from "../../pages/site-ops/MockupsPage";
 
-import SiteOperationsDashboard from "../../pages/site-ops/SiteOperationsDashboard";
+import SiteOperationsDashboard from "../../pages/dashboard/SiteOperationsDashboard";
 export const siteOperationsRoutes = [
   {
     type: "layout",
@@ -29,12 +29,9 @@ export const siteOperationsRoutes = [
 
       {
         index: true,
-        element: <AppDashboard appKey="site-operations" />,
-      },
-      {
-        path: "dashboard",
         element: <SiteOperationsDashboard />,
       },
+
       // =========================================================
       // DAILY SITE REPORTS
       // =========================================================

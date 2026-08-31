@@ -25,7 +25,7 @@ import { PlanOfActionView } from "../../pages/plan-of-action/PlanOfActionView";
 import { ScopeOfWorkView } from "../../pages/scope-of-work/ScopeOfWorkView";
 import { BusinessProposalAll } from "../../pages/documents/BusinessProposal";
 import ProposalBuilder from "../../pages/documents/ProposalBuilder";
-
+import CRMDashboard from "../../pages/dashboard/CRMDashboard";
 export const crmRoutes = [
   {
     type: "layout",
@@ -58,7 +58,7 @@ export const crmRoutes = [
 
       {
         index: true,
-        element: <AppDashboard appKey="crm" />,
+        element: <CRMDashboard />,
       },
 
       // ============================================================
