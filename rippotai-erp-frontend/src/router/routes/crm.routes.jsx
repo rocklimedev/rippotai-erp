@@ -98,12 +98,20 @@ export const crmRoutes = [
         element: <SiteRekiView />,
       },
       {
+        path: "recce/:id/edit",
+        element: <SiteRekiForm />,
+      },
+      {
         path: "brief/all",
         element: <ProjectBriefList />,
       },
       {
         path: "brief/:id",
         element: <ProjectBriefView />,
+      },
+      {
+        path: "brief/:id/edit",
+        element: <BriefForm />,
       },
       {
         path: "plan-of-action/all",
