@@ -5,15 +5,18 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+
 import { Document } from './models/document.model';
 import { DocumentType } from './models/document-type.model';
 import { DocumentRequirement } from './models/document-requirement.model';
 import { DocumentVersion } from './models/document-version.model';
 import { DocumentAttachment } from './models/document-attachment.model';
+
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { CreateDocumentVersionDto } from './dto/create-document-version.dto';
 import { CreateDocumentAttachmentDto } from './dto/create-document-attachment.dto';
+
 import { CdnService } from '../cdn/cdn.service';
 
 const DOCUMENT_INCLUDES = [
@@ -28,29 +31,71 @@ export class DocumentsService {
   constructor(
     @InjectModel(Document)
     private readonly documentModel: typeof Document,
+
     @InjectModel(DocumentVersion)
     private readonly versionModel: typeof DocumentVersion,
+
     @InjectModel(DocumentAttachment)
     private readonly attachmentModel: typeof DocumentAttachment,
+
     private readonly cdnService: CdnService,
   ) {}
 
-  async findAllForProject(
-    projectId: string,
-    filters: { status?: string; category?: string; documentTypeId?: string },
-  ): Promise<Document[]> {
-    const where: Record<string, unknown> = { projectId };
+  // ============================================================
+  // FIND DOCUMENTS
+  // ============================================================
 
-    if (filters.status) where.status = filters.status;
-    if (filters.category) where.category = filters.category;
-    if (filters.documentTypeId) where.documentTypeId = filters.documentTypeId;
+  /**
+   * Get documents.
+   *
+   * Supports:
+   *
+   * findAll({})
+   *
+   * findAll({
+   *   projectId: 'uuid'
+   * })
+   *
+   * findAll({
+   *   projectId: 'uuid',
+   *   status: 'draft'
+   * })
+   */
+  async findAll(filters: {
+    projectId?: string;
+    status?: string;
+    category?: string;
+    documentTypeId?: string;
+  }): Promise<Document[]> {
+    const where: Record<string, unknown> = {};
+
+    // Only filter by project when supplied.
+    if (filters.projectId) {
+      where.projectId = filters.projectId;
+    }
+
+    if (filters.status) {
+      where.status = filters.status;
+    }
+
+    if (filters.category) {
+      where.category = filters.category;
+    }
+
+    if (filters.documentTypeId) {
+      where.documentTypeId = filters.documentTypeId;
+    }
 
     return this.documentModel.findAll({
       where,
       include: DOCUMENT_INCLUDES,
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
     });
   }
+
+  // ============================================================
+  // FIND ONE
+  // ============================================================
 
   async findOne(id: string): Promise<Document> {
     const document = await this.documentModel.findByPk(id, {
@@ -63,6 +108,10 @@ export class DocumentsService {
 
     return document;
   }
+
+  // ============================================================
+  // CREATE
+  // ============================================================
 
   async create(
     dto: CreateDocumentDto,
@@ -88,17 +137,37 @@ export class DocumentsService {
     } as any);
   }
 
+  // ============================================================
+  // UPDATE
+  // ============================================================
+
   async update(id: string, dto: UpdateDocumentDto): Promise<Document> {
     const document = await this.findOne(id);
+
     this.assertNotLocked(document);
-    return document.update({ ...dto } as any);
+
+    await document.update({
+      ...dto,
+    } as any);
+
+    return this.findOne(id);
   }
 
+  // ============================================================
+  // REPLACE FILE
+  // ============================================================
+
   async replaceFile(id: string, file: Express.Multer.File): Promise<Document> {
+    if (!file) {
+      throw new BadRequestException('A file is required');
+    }
+
     const document = await this.findOne(id);
+
     this.assertNotLocked(document);
 
     const previousStorageFilename = document.storageFilename;
+
     const { filename, url } = await this.cdnService.uploadFile(file);
 
     const updated = await document.update({
@@ -116,6 +185,10 @@ export class DocumentsService {
     return updated;
   }
 
+  // ============================================================
+  // LOCK
+  // ============================================================
+
   async lock(id: string, userId: string): Promise<Document> {
     const document = await this.findOne(id);
 
@@ -132,6 +205,10 @@ export class DocumentsService {
     });
   }
 
+  // ============================================================
+  // UNLOCK
+  // ============================================================
+
   async unlock(id: string, userId: string): Promise<Document> {
     const document = await this.findOne(id);
 
@@ -146,14 +223,21 @@ export class DocumentsService {
     } as any);
   }
 
+  // ============================================================
+  // DELETE
+  // ============================================================
+
   async remove(id: string): Promise<void> {
     const document = await this.findOne(id);
+
     this.assertNotLocked(document);
 
     const storageFilenames = [
       document.storageFilename,
-      ...document.versions.map((v) => v.storageFilename),
-      ...document.attachments.map((a) => a.storageFilename),
+
+      ...document.versions.map((version) => version.storageFilename),
+
+      ...document.attachments.map((attachment) => attachment.storageFilename),
     ].filter((name): name is string => Boolean(name));
 
     await document.destroy();
@@ -163,7 +247,9 @@ export class DocumentsService {
     );
   }
 
-  // ---- Versions ----
+  // ============================================================
+  // VERSIONS
+  // ============================================================
 
   async addVersion(
     documentId: string,
@@ -175,6 +261,7 @@ export class DocumentsService {
     }
 
     const document = await this.findOne(documentId);
+
     this.assertNotLocked(document);
 
     const { filename, url } = await this.cdnService.uploadFile(file);
@@ -196,7 +283,6 @@ export class DocumentsService {
       uploadedByName: dto.uploadedByName,
     } as any);
 
-    // Promote the document's "current" pointer to this version.
     await document.update({
       version: nextVersionLabel,
       filename: file.originalname,
@@ -215,13 +301,16 @@ export class DocumentsService {
 
     return this.versionModel.findAll({
       where: { documentId },
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
     });
   }
 
   async removeVersion(documentId: string, versionId: string): Promise<void> {
     const version = await this.versionModel.findOne({
-      where: { id: versionId, documentId },
+      where: {
+        id: versionId,
+        documentId,
+      },
     });
 
     if (!version) {
@@ -231,6 +320,7 @@ export class DocumentsService {
     }
 
     const storageFilename = version.storageFilename;
+
     await version.destroy();
 
     if (storageFilename) {
@@ -238,7 +328,9 @@ export class DocumentsService {
     }
   }
 
-  // ---- Attachments ----
+  // ============================================================
+  // ATTACHMENTS
+  // ============================================================
 
   async addAttachment(
     documentId: string,
@@ -269,7 +361,7 @@ export class DocumentsService {
 
     return this.attachmentModel.findAll({
       where: { documentId },
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
     });
   }
 
@@ -278,7 +370,10 @@ export class DocumentsService {
     attachmentId: string,
   ): Promise<void> {
     const attachment = await this.attachmentModel.findOne({
-      where: { id: attachmentId, documentId },
+      where: {
+        id: attachmentId,
+        documentId,
+      },
     });
 
     if (!attachment) {
@@ -288,6 +383,7 @@ export class DocumentsService {
     }
 
     const storageFilename = attachment.storageFilename;
+
     await attachment.destroy();
 
     if (storageFilename) {
@@ -295,11 +391,17 @@ export class DocumentsService {
     }
   }
 
+  // ============================================================
+  // DOWNLOAD
+  // ============================================================
+
   async downloadFile(storageFilename: string): Promise<Buffer> {
     return this.cdnService.downloadFile(storageFilename);
   }
 
-  // ---- Helpers ----
+  // ============================================================
+  // HELPERS
+  // ============================================================
 
   private assertNotLocked(document: Document): void {
     if (document.isLocked) {
@@ -309,6 +411,7 @@ export class DocumentsService {
 
   private computeNextVersionLabel(document: Document): string {
     const current = document.version ?? 'V0';
+
     const match = /^V(\d+)$/i.exec(current);
 
     if (!match) {
@@ -316,6 +419,7 @@ export class DocumentsService {
     }
 
     const next = parseInt(match[1], 10) + 1;
+
     return `V${next}`;
   }
 }

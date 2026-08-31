@@ -2,14 +2,13 @@ import {
   Controller,
   Get,
   Post,
-  Put,
+  Patch,
   Delete,
   Param,
   Body,
   Query,
-  NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
+
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
 import { User } from '@/modules/users/models/user.model';
 
@@ -19,7 +18,7 @@ import { UpdateLeadDto } from './dto/update-lead.dto';
 import { MoveStageDto } from './dto/move-stage.dto';
 import { AddNoteDto } from './dto/add-note.dto';
 import { ProposalDto } from './dto/proposal.dto';
-import { QueryLeadsDto, ContactSort } from './dto/query-leads.dto';
+import { QueryLeadsDto } from './dto/query-leads.dto';
 import { UpdateDocDto } from './dto/update-doc.dto';
 
 @Controller('leads')
@@ -29,6 +28,7 @@ export class LeadsController {
   // =========================
   // CREATE LEAD
   // =========================
+
   @Post()
   async create(@Body() dto: CreateLeadDto, @CurrentUser() user: User) {
     return this.leadsService.create(dto, user);
@@ -37,6 +37,7 @@ export class LeadsController {
   // =========================
   // GET ALL / FILTERED
   // =========================
+
   @Get()
   async findAll(@Query() query: QueryLeadsDto) {
     return this.leadsService.findAll(query);
@@ -45,14 +46,26 @@ export class LeadsController {
   // =========================
   // KANBAN BOARD
   // =========================
+
   @Get('board')
   async board() {
     return this.leadsService.board();
   }
 
   // =========================
+  // REVIEW
+  // IMPORTANT: keep this BEFORE :id
+  // =========================
+
+  @Get('review')
+  async review(@Query('stuckDays') stuckDays?: string) {
+    return this.leadsService.review(stuckDays ? Number(stuckDays) : undefined);
+  }
+
+  // =========================
   // GET ONE
   // =========================
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.leadsService.findOne(id);
@@ -61,7 +74,8 @@ export class LeadsController {
   // =========================
   // UPDATE LEAD
   // =========================
-  @Put(':id')
+
+  @Patch(':id')
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateLeadDto,
@@ -73,7 +87,8 @@ export class LeadsController {
   // =========================
   // MOVE STAGE
   // =========================
-  @Put(':id/stage')
+
+  @Patch(':id/stage')
   async moveStage(
     @Param('id') id: string,
     @Body() dto: MoveStageDto,
@@ -85,12 +100,13 @@ export class LeadsController {
   // =========================
   // QUICK STAGE ACTIONS
   // =========================
-  @Put(':id/nurture')
+
+  @Patch(':id/nurture')
   async markNurture(@Param('id') id: string, @CurrentUser() user: User) {
     return this.leadsService.markNurture(id, user);
   }
 
-  @Put(':id/lost')
+  @Patch(':id/lost')
   async markLost(@Param('id') id: string, @CurrentUser() user: User) {
     return this.leadsService.markLost(id, user);
   }
@@ -98,6 +114,7 @@ export class LeadsController {
   // =========================
   // ADD NOTE
   // =========================
+
   @Post(':id/notes')
   async addNote(
     @Param('id') id: string,
@@ -110,7 +127,8 @@ export class LeadsController {
   // =========================
   // SET PROPOSAL
   // =========================
-  @Put(':id/proposal')
+
+  @Patch(':id/proposal')
   async setProposal(
     @Param('id') id: string,
     @Body() dto: ProposalDto,
@@ -122,7 +140,8 @@ export class LeadsController {
   // =========================
   // UPDATE DOCUMENT STATUS
   // =========================
-  @Put(':id/docs/:docType')
+
+  @Patch(':id/docs/:docType')
   async updateDoc(
     @Param('id') id: string,
     @Param('docType') docType: string,
@@ -134,7 +153,8 @@ export class LeadsController {
   // =========================
   // UPDATE COLOR
   // =========================
-  @Put(':id/color')
+
+  @Patch(':id/color')
   async updateColor(
     @Param('id') id: string,
     @Body('color') color: string | null,
@@ -145,7 +165,8 @@ export class LeadsController {
   // =========================
   // UPDATE FOLLOW-UP
   // =========================
-  @Put(':id/follow-up')
+
+  @Patch(':id/follow-up')
   async updateFollowUp(
     @Param('id') id: string,
     @Body('followUp') followUp: string | null,
@@ -156,16 +177,9 @@ export class LeadsController {
   // =========================
   // DELETE LEAD
   // =========================
+
   @Delete(':id')
   async remove(@Param('id') id: string, @CurrentUser() user: User) {
     return this.leadsService.remove(id, user);
-  }
-
-  // =========================
-  // DASHBOARD / REVIEW
-  // =========================
-  @Get('review')
-  async review(@Query('stuckDays') stuckDays?: number) {
-    return this.leadsService.review(stuckDays ? Number(stuckDays) : undefined);
   }
 }

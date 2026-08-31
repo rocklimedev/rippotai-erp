@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { useResetPasswordMutation } from "../api/auth.api"; // Adjust path if needed
+import { useResetPasswordMutation } from "../../api/auth.api"; // Adjust path if needed
 
 const GREEN = "#1F453B";
 const TEXT = "#333333";

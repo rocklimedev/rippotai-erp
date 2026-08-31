@@ -1,11 +1,11 @@
 import AppLayout from "@/layouts/AppLayout";
-import PaymentSchedulePage from "../../pages/documents/paymentSchedulePage";
+import PaymentSchedulePage from "../../pages/payment-schedule/paymentSchedulePage";
 import AppDashboard from "@/components/dashboard/AppDashboard";
-import PaymentScheduleList from "@/pages/documents/PaymentScheduleList";
-import { PaymentScheduleForm } from "@/pages/documents/PaymentScheduleForm";
-import BudgetEstimateList from "../../pages/documents/BudgetEstimateList";
-import BudgetEstimateForm from "../../pages/documents/BudgetEstimateForm";
-import BudgetEstimateView from "../../pages/documents/BudgetEstimatesView";
+import PaymentScheduleList from "@/pages/payment-schedule/PaymentScheduleList";
+import { PaymentScheduleForm } from "@/pages/payment-schedule/PaymentScheduleForm";
+import BudgetEstimateList from "../../pages/budget-estimate/BudgetEstimateList";
+import BudgetEstimateForm from "../../pages/budget-estimate/BudgetEstimateForm";
+import BudgetEstimateView from "../../pages/budget-estimate/BudgetEstimatesView";
 
 export const ledgerRoutes = [
   {

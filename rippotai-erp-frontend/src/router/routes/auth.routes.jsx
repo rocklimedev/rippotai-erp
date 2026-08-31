@@ -1,10 +1,10 @@
-import Login from "@/pages/Login";
-import Register from "@/pages/Register";
-import SignUp from "@/pages/SignUp";
-import ForgotPassword from "../../pages/ForgotPassword";
-import ResetPassword from "../../pages/ResetPassword";
-import NoAccess from "../../pages/NoAccess";
-import RequirePortalAccess from "../../pages/RequirePortalAccess";
+import Login from "@/pages/auth/Login";
+import Register from "@/pages/auth/Register";
+import SignUp from "@/pages/auth/SignUp";
+import ForgotPassword from "../../pages/auth/ForgotPassword";
+import ResetPassword from "../../pages/auth/ResetPassword";
+import NoAccess from "../../pages/auth/NoAccess";
+import RequirePortalAccess from "../../pages/auth/RequirePortalAccess";
 
 export const authRoutes = [
   { type: "public", path: "/login", element: <Login /> },
