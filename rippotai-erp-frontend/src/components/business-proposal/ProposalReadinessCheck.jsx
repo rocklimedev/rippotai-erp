@@ -235,31 +235,6 @@ export default function ProposalReadinessCheck({
           <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
         </div>
 
-        {/* SELECTED PROJECT */}
-
-        {selectedProject && (
-          <div className="mt-3 flex items-center justify-between gap-3 rounded-lg bg-[var(--mist-soft)] px-3 py-2.5">
-            <div className="min-w-0">
-              <p className="truncate text-xs font-medium">
-                {selectedProject.name ||
-                  selectedProject.projectName ||
-                  selectedProject.title ||
-                  "Selected project"}
-              </p>
-
-              {selectedProject.client?.name && (
-                <p className="mt-0.5 truncate text-[11px] text-[var(--muted)]">
-                  Client: {selectedProject.client.name}
-                </p>
-              )}
-            </div>
-
-            {projectsFetching && (
-              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--muted)]" />
-            )}
-          </div>
-        )}
-
         {/* API ERROR */}
 
         {projectsError && (

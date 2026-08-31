@@ -1,4 +1,5 @@
 import React from "react";
+
 import { BRAND, COVER, CONTENTS, CONTACT } from "../../data/staticContent";
 
 // ============================================================
@@ -10,9 +11,12 @@ const fmt = (n, currency = "₹") =>
 
 const arr = (value) => {
   if (Array.isArray(value)) return value;
-  if (!value) return [];
+  if (value === null || value === undefined || value === "") return [];
   return [value];
 };
+
+const first = (...values) =>
+  values.find((value) => value !== undefined && value !== null && value !== "");
 
 const normalizeItems = (items) =>
   arr(items)
@@ -30,6 +34,21 @@ const normalizeItems = (items) =>
     })
     .filter(Boolean);
 
+const itemLabel = (item) => {
+  if (typeof item === "string") return item;
+
+  return (
+    first(
+      item?.label,
+      item?.name,
+      item?.title,
+      item?.description,
+      item?.item,
+      item?.scope,
+    ) || ""
+  );
+};
+
 const selected = (value, option) => {
   if (!value) return false;
 
@@ -39,8 +58,278 @@ const selected = (value, option) => {
   return a === b || a.includes(b) || b.includes(a);
 };
 
+const num = (value) => Number(value || 0);
+
+const getProjectField = (pd, ...keys) =>
+  first(...keys.map((key) => pd?.[key])) || "";
+
+const getBudgetItemAmount = (item) => {
+  if (item?.amount !== undefined && item?.amount !== null) {
+    return num(item.amount);
+  }
+
+  return num(item?.quantity) * num(item?.rate);
+};
+
+const getBudgetCategories = (budget) => {
+  const categories = first(
+    budget?.categories,
+    budget?.estimate?.categories,
+    budget?.data?.categories,
+  );
+
+  return arr(categories).filter(Boolean);
+};
+
+const getCategoryItems = (category) =>
+  arr(
+    first(category?.items, category?.estimateItems, category?.lineItems),
+  ).filter(Boolean);
+
+const getBudgetSubtotal = (budget) => {
+  const backendSubtotal = first(
+    budget?.subtotal,
+    budget?.estimate?.subtotal,
+    budget?.totals?.subtotal,
+    budget?.summary?.subtotal,
+  );
+
+  if (backendSubtotal !== undefined) {
+    return num(backendSubtotal);
+  }
+
+  return getBudgetCategories(budget).reduce(
+    (categoryTotal, category) =>
+      categoryTotal +
+      getCategoryItems(category).reduce(
+        (sum, item) => sum + getBudgetItemAmount(item),
+        0,
+      ),
+    0,
+  );
+};
+
+const getBudgetGST = (budget, subtotal) => {
+  const backendGST = first(
+    budget?.gstAmount,
+    budget?.gst_amount,
+    budget?.estimate?.gstAmount,
+    budget?.estimate?.gst_amount,
+    budget?.totals?.gstAmount,
+    budget?.summary?.gstAmount,
+  );
+
+  if (backendGST !== undefined) {
+    return num(backendGST);
+  }
+
+  const gstRate = num(
+    first(
+      budget?.gstRate,
+      budget?.gst_rate,
+      budget?.estimate?.gstRate,
+      budget?.estimate?.gst_rate,
+    ),
+  );
+
+  return Math.round((subtotal * gstRate) / 100);
+};
+
+const getBudgetTotal = (budget, subtotal, gstAmount) => {
+  const backendTotal = first(
+    budget?.totalAmount,
+    budget?.total_amount,
+    budget?.grandTotal,
+    budget?.grand_total,
+    budget?.estimate?.totalAmount,
+    budget?.estimate?.total_amount,
+    budget?.totals?.totalAmount,
+    budget?.summary?.totalAmount,
+  );
+
+  if (backendTotal !== undefined) {
+    return num(backendTotal);
+  }
+
+  return subtotal + gstAmount;
+};
+
+const getBudgetCurrency = (budget) =>
+  first(
+    budget?.currency,
+    budget?.estimate?.currency,
+    budget?.totals?.currency,
+    "₹",
+  );
+
+const normalizePhase = (phase, index) => ({
+  code:
+    first(
+      phase?.code,
+      phase?.phaseCode,
+      phase?.phase_code,
+      phase?.sequence ? String(phase.sequence).padStart(2, "0") : undefined,
+    ) || String(index + 1).padStart(2, "0"),
+
+  name:
+    first(phase?.name, phase?.title, phase?.phaseName, phase?.phase_name) ||
+    `Phase ${index + 1}`,
+
+  detail:
+    first(
+      phase?.detail,
+      phase?.description,
+      phase?.executionDescription,
+      phase?.execution_description,
+      phase?.scope,
+      phase?.notes,
+    ) || "",
+
+  duration:
+    first(
+      phase?.duration,
+      phase?.durationLabel,
+      phase?.duration_label,
+      phase?.estimatedDuration,
+      phase?.estimated_duration,
+    ) || "",
+
+  parallel:
+    first(phase?.parallel, phase?.parallelWith, phase?.parallel_with) || "",
+});
+
+const getPOAPhases = (poa) =>
+  arr(
+    first(
+      poa?.phases,
+      poa?.executionPhases,
+      poa?.execution_phases,
+      poa?.stages,
+    ),
+  )
+    .filter(Boolean)
+    .map(normalizePhase);
+
+const normalizeDiscipline = (discipline, index) => ({
+  name:
+    first(
+      discipline?.name,
+      discipline?.title,
+      discipline?.discipline,
+      discipline?.label,
+    ) || `Discipline ${index + 1}`,
+
+  items: normalizeItems(
+    first(
+      discipline?.items,
+      discipline?.scopeItems,
+      discipline?.scope_items,
+      discipline?.activities,
+      discipline?.workItems,
+      discipline?.work_items,
+    ),
+  ),
+});
+
+const getDisciplines = (sow) => {
+  const source = first(
+    sow?.disciplines,
+    sow?.scopeByDiscipline,
+    sow?.scope_by_discipline,
+    sow?.disciplineScopes,
+    sow?.discipline_scopes,
+  );
+
+  if (!source) return [];
+
+  if (Array.isArray(source)) {
+    return source.map(normalizeDiscipline);
+  }
+
+  if (typeof source === "object") {
+    return Object.entries(source).map(([name, items], index) =>
+      normalizeDiscipline(
+        {
+          name,
+          items,
+        },
+        index,
+      ),
+    );
+  }
+
+  return [];
+};
+
+const DEFAULT_DISCIPLINES = [
+  {
+    name: "Civil & demolition",
+    items: [
+      "Removal, cutting and debris disposal",
+      "Masonry, plaster and levelling",
+      "Door and window openings",
+    ],
+  },
+  {
+    name: "Mill work & joinery",
+    items: [
+      "Modular kitchen and wardrobes",
+      "Vanities and storage units",
+      "Site-fabricated joinery",
+    ],
+  },
+  {
+    name: "MEP & waterproofing",
+    items: [
+      "Concealed wiring and conduits",
+      "AC piping, drainage and plumbing",
+      "Wet area and terrace treatment",
+    ],
+  },
+  {
+    name: "Paint & polish",
+    items: [
+      "Primer, putty and two coats",
+      "Wood polish and veneer finish",
+      "Touch-ups at snagging",
+    ],
+  },
+  {
+    name: "Flooring & tiling",
+    items: [
+      "Floor and wall tiling",
+      "Counters, skirting and dado",
+      "Grouting and edge finishing",
+    ],
+  },
+  {
+    name: "Fixtures & fittings",
+    items: [
+      "Light fixtures and switches",
+      "CP fittings and sanitaryware",
+      "Hardware and accessories",
+    ],
+  },
+  {
+    name: "Ceiling & POP",
+    items: [
+      "Framework and boarding",
+      "Cove and profile detailing",
+      "Punning and surface preparation",
+    ],
+  },
+  {
+    name: "Loose furniture",
+    items: [
+      "Sourcing and coordination",
+      "Delivery and placement",
+      "Optional — if selected",
+    ],
+  },
+];
+
 // ============================================================
-// Global PDF page
+// Global PDF Page
 // ============================================================
 
 function Page({ children, dark = false, footer = true, className = "" }) {
@@ -90,10 +379,10 @@ function Footer({ dark = false, siteAddress = "" }) {
 }
 
 // ============================================================
-// Section divider
+// Section Divider
 // ============================================================
 
-function SectionDivider({ number, title, siteAddress }) {
+function SectionDivider({ number, title }) {
   return (
     <Page dark footer={false} className="relative">
       <div className="absolute inset-x-0 bottom-0 h-[220px]">
@@ -109,25 +398,19 @@ function SectionDivider({ number, title, siteAddress }) {
       </div>
 
       <div className="absolute bottom-5 left-0 right-0 h-px bg-white/20" />
-
-      <div className="absolute bottom-2 left-0 right-0 hidden">
-        <Footer dark siteAddress={siteAddress} />
-      </div>
     </Page>
   );
 }
 
 // ============================================================
-// Simple building illustration
+// Building Illustration
 // ============================================================
 
 function BuildingIllustration() {
   return (
     <div className="relative h-full w-full opacity-70">
-      {/* Ground */}
       <div className="absolute bottom-0 left-0 right-0 border-t border-white/30" />
 
-      {/* Main building */}
       <div className="absolute bottom-0 left-[11%] h-[135px] w-[58%] border border-white/40">
         <div className="grid grid-cols-3 gap-x-7 gap-y-4 p-5">
           {Array.from({ length: 9 }).map((_, i) => (
@@ -138,7 +421,6 @@ function BuildingIllustration() {
         <div className="absolute bottom-0 left-[42%] h-12 w-8 border border-white/40" />
       </div>
 
-      {/* Side building */}
       <div className="absolute bottom-0 left-[69%] h-[82px] w-[17%] border border-white/30">
         <div className="grid grid-cols-2 gap-2 p-3">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -147,7 +429,6 @@ function BuildingIllustration() {
         </div>
       </div>
 
-      {/* Tree */}
       <div className="absolute bottom-0 left-[5%] h-[72px] w-[42px]">
         <div className="absolute bottom-0 left-1/2 h-9 w-px -translate-x-1/2 bg-white/40" />
 
@@ -159,7 +440,7 @@ function BuildingIllustration() {
 }
 
 // ============================================================
-// Standard heading
+// Standard Heading
 // ============================================================
 
 function SectionHeading({ number, title }) {
@@ -228,19 +509,22 @@ function Checkbox({ label, checked = false }) {
 }
 
 // ============================================================
-// List
+// Bullet List
 // ============================================================
 
 function BulletList({ items = [], className = "" }) {
+  const normalized = normalizeItems(items);
+
   return (
     <div className={`space-y-2 ${className}`}>
-      {normalizeItems(items).map((item, index) => (
+      {normalized.map((item, index) => (
         <div
-          key={`${item}-${index}`}
+          key={`${itemLabel(item)}-${index}`}
           className="flex gap-2 text-[9px] leading-relaxed"
         >
           <span className="mt-[5px] h-[3px] w-[3px] shrink-0 rounded-full bg-[var(--ink-green)]" />
-          <span>{typeof item === "string" ? item : item?.label || ""}</span>
+
+          <span>{itemLabel(item)}</span>
         </div>
       ))}
     </div>
@@ -248,7 +532,7 @@ function BulletList({ items = [], className = "" }) {
 }
 
 // ============================================================
-// Two-column info block
+// Info Block
 // ============================================================
 
 function InfoBlock({ title, items = [] }) {
@@ -264,7 +548,7 @@ function InfoBlock({ title, items = [] }) {
 }
 
 // ============================================================
-// Discipline block
+// Discipline Block
 // ============================================================
 
 function DisciplineBlock({ name, items }) {
@@ -274,12 +558,88 @@ function DisciplineBlock({ name, items }) {
 
       <div className="space-y-1.5 text-[9px] leading-relaxed text-[var(--ink-green)]">
         {normalizeItems(items).map((item, index) => (
-          <p key={`${name}-${index}`}>
-            {typeof item === "string" ? item : item?.label || ""}
-          </p>
+          <p key={`${name}-${index}`}>{itemLabel(item)}</p>
         ))}
       </div>
     </div>
+  );
+}
+
+// ============================================================
+// Budget Category
+// ============================================================
+
+function BudgetCategory({ category, currency }) {
+  const items = getCategoryItems(category);
+
+  const categoryName =
+    first(
+      category?.name,
+      category?.title,
+      category?.categoryName,
+      category?.category_name,
+    ) || "Category";
+
+  const categoryTotal = items.reduce(
+    (sum, item) => sum + getBudgetItemAmount(item),
+    0,
+  );
+
+  return (
+    <React.Fragment>
+      <tr className="border-b border-[var(--stroke)]">
+        <td
+          colSpan={4}
+          className="bg-[var(--mist-soft)] py-2 text-[9px] font-semibold"
+        >
+          {categoryName}
+        </td>
+      </tr>
+
+      {items.map((item, index) => {
+        const amount = getBudgetItemAmount(item);
+
+        return (
+          <tr
+            key={`${categoryName}-${index}`}
+            className="border-b border-[var(--stroke)]"
+          >
+            <td className="py-2.5 pr-2">
+              {first(
+                item?.name,
+                item?.title,
+                item?.description,
+                item?.item,
+                item?.label,
+              ) || ""}
+            </td>
+
+            <td className="py-2.5 text-right">{item?.quantity ?? ""}</td>
+
+            <td className="py-2.5 text-right">
+              {item?.rate !== undefined ? fmt(item.rate, currency) : ""}
+            </td>
+
+            <td className="py-2.5 text-right font-medium">
+              {fmt(amount, currency)}
+            </td>
+          </tr>
+        );
+      })}
+
+      <tr className="border-b border-[var(--stroke)]">
+        <td
+          colSpan={3}
+          className="py-2 text-right text-[8px] text-[var(--muted)]"
+        >
+          {categoryName} subtotal
+        </td>
+
+        <td className="py-2 text-right text-[9px] font-medium">
+          {fmt(categoryTotal, currency)}
+        </td>
+      </tr>
+    </React.Fragment>
   );
 }
 
@@ -297,48 +657,141 @@ export default function DocumentPreview({ proposal }) {
     nextSteps: ns,
   } = proposal || {};
 
+  if (!proposal) return null;
+
   if (!pd || !sow || !poa || !be || !ps || !ns) {
     return null;
   }
 
-  const siteAddress = pd.siteAddress || "49 PINK APPARTMENT, PASCHIM VIHAR";
+  const siteAddress =
+    getProjectField(pd, "siteAddress", "site_address", "address") ||
+    "49 PINK APPARTMENT, PASCHIM VIHAR";
 
-  // ----------------------------------------------------------
+  // ==========================================================
+  // Project
+  // ==========================================================
+
+  const projectName = getProjectField(
+    pd,
+    "projectName",
+    "project_name",
+    "name",
+  );
+
+  const clientName = getProjectField(pd, "clientName", "client_name");
+
+  const projectType = getProjectField(
+    pd,
+    "projectType",
+    "project_type",
+    "type",
+  );
+
+  const workType = getProjectField(pd, "workType", "work_type");
+
+  // ==========================================================
+  // Scope
+  // ==========================================================
+
+  const included = normalizeItems(
+    first(sow?.included, sow?.includedItems, sow?.included_items),
+  );
+
+  const notIncluded = normalizeItems(
+    first(
+      sow?.notIncluded,
+      sow?.not_included,
+      sow?.excluded,
+      sow?.excludedItems,
+      sow?.excluded_items,
+    ),
+  );
+
+  const optional = normalizeItems(
+    first(sow?.optional, sow?.optionalItems, sow?.optional_items),
+  );
+
+  const scopeDisciplines =
+    getDisciplines(sow).length > 0 ? getDisciplines(sow) : DEFAULT_DISCIPLINES;
+
+  // ==========================================================
+  // Plan of Action
+  // ==========================================================
+
+  const phases = getPOAPhases(poa);
+
+  const overallProgramme =
+    first(
+      poa?.overallProgramme,
+      poa?.overall_programme,
+      poa?.programme,
+      poa?.duration,
+      poa?.overallDuration,
+      poa?.overall_duration,
+    ) || "4–5 months";
+
+  // ==========================================================
   // Budget
-  // ----------------------------------------------------------
+  // ==========================================================
 
-  const lineItems = arr(be.lineItems);
+  const categories = getBudgetCategories(be);
 
-  const subtotal = lineItems.reduce(
-    (sum, item) => sum + Number(item?.amount || 0),
+  const currency = getBudgetCurrency(be);
+
+  const subtotal = getBudgetSubtotal(be);
+
+  const gstAmount = getBudgetGST(be, subtotal);
+
+  const gstRate = num(
+    first(
+      be?.gstRate,
+      be?.gst_rate,
+      be?.estimate?.gstRate,
+      be?.estimate?.gst_rate,
+    ),
+  );
+
+  const grandTotal = getBudgetTotal(be, subtotal, gstAmount);
+
+  const assumptions = normalizeItems(
+    first(
+      be?.assumes,
+      be?.assumptions,
+      be?.estimate?.assumes,
+      be?.estimate?.assumptions,
+    ),
+  );
+
+  const exclusions = normalizeItems(
+    first(
+      be?.excludes,
+      be?.exclusions,
+      be?.estimate?.excludes,
+      be?.estimate?.exclusions,
+    ),
+  );
+
+  // ==========================================================
+  // Payments
+  // ==========================================================
+
+  const milestones = arr(
+    first(ps?.milestones, ps?.paymentMilestones, ps?.payment_milestones),
+  );
+
+  const paymentTotal = milestones.reduce(
+    (sum, milestone) =>
+      sum +
+      num(first(milestone?.share, milestone?.percentage, milestone?.percent)),
     0,
   );
 
-  const contingency = Math.round(
-    (subtotal * Number(be.contingencyPct || 0)) / 100,
-  );
+  // ==========================================================
+  // Next Steps
+  // ==========================================================
 
-  const total = subtotal + contingency;
-
-  // ----------------------------------------------------------
-  // Project types
-  // ----------------------------------------------------------
-
-  const projectType = pd.projectType || "";
-
-  // ----------------------------------------------------------
-  // Work type
-  // ----------------------------------------------------------
-
-  const workType = pd.workType || "";
-
-  // ----------------------------------------------------------
-  // Payment total
-  // ----------------------------------------------------------
-
-  const paymentTotal = arr(ps.milestones).reduce(
-    (sum, milestone) => sum + Number(milestone?.share || 0),
-    0,
+  const nextStepItems = normalizeItems(
+    first(ns?.items, ns?.steps, ns?.nextSteps, ns?.next_steps),
   );
 
   return (
@@ -350,11 +803,13 @@ export default function DocumentPreview({ proposal }) {
       <Page dark footer={false} className="items-center text-center">
         <div className="flex h-full flex-col items-center">
           <div className="mt-[100px]">
-            {/* Logo */}
             <div className="relative mx-auto mb-5 h-[65px] w-[80px]">
               <div className="absolute left-[14px] top-[15px] h-[35px] w-[25px] rotate-[30deg] border-l-[10px] border-b-[10px] border-white" />
+
               <div className="absolute right-[14px] top-[15px] h-[35px] w-[25px] -rotate-[30deg] border-r-[10px] border-b-[10px] border-white" />
+
               <div className="absolute left-[32px] top-0 h-[14px] w-[20px] rotate-[30deg] border-t border-white/60" />
+
               <div className="absolute left-[35px] top-[10px] h-[8px] w-[16px] rounded-full bg-[var(--gold,#d9af61)]" />
             </div>
 
@@ -373,11 +828,11 @@ export default function DocumentPreview({ proposal }) {
             </p>
 
             <p className="mt-1 text-[7px] uppercase tracking-widest text-white/50">
-              {pd.projectName || "PINK APPARTMENT"} · {siteAddress}
+              {projectName || "PROJECT"} · {siteAddress}
             </p>
 
             <p className="mt-12 text-[7px] uppercase tracking-widest text-white/40">
-              PREPARED FOR · {pd.clientName || "______________________"}
+              PREPARED FOR · {clientName || "______________________"}
             </p>
           </div>
 
@@ -422,17 +877,13 @@ export default function DocumentPreview({ proposal }) {
       </Page>
 
       {/* ======================================================
-          PAGE 3 — SECTION DIVIDER
+          PAGE 3
       ====================================================== */}
 
-      <SectionDivider
-        number="01"
-        title="Welcome note"
-        siteAddress={siteAddress}
-      />
+      <SectionDivider number="01" title="Welcome note" />
 
       {/* ======================================================
-          PAGE 4 — WELCOME NOTE
+          PAGE 4
       ====================================================== */}
 
       <Page>
@@ -441,30 +892,27 @@ export default function DocumentPreview({ proposal }) {
         <div className="mt-10 space-y-5 text-[9px] leading-[1.65]">
           <p>
             Thank you for inviting {BRAND?.name || "Rippotai"} to work on your
-            home at {pd.siteAddress}.
+            home at {siteAddress}.
           </p>
 
           <p>
             This proposal sets out everything you need to make a decision — what
             we will build, how we will run the site, how long it takes, what it
-            costs, and when each payment falls due. Nothing is held back for
-            later.
+            costs, and when each payment falls due.
           </p>
 
           <p>
             We work as a single accountable team. One Project Lead owns your
             project end to end, one BOQ prices every item line by line, and one
-            schedule ties payment to visible stages of work rather than to
-            calendar dates. You will never be asked to release money for
-            something you cannot see.
+            schedule ties payment to visible stages of work rather than calendar
+            dates.
           </p>
 
           <p>
             Rippotai is the architecture and turnkey arm of SP Syndicate,
             working across Delhi NCR on residential and commercial interiors. We
-            design it, we cost it honestly, and we build it ourselves — which
-            means no gap between the drawing you approve and the room you walk
-            into.
+            design it, cost it and coordinate its execution through a single
+            accountable process.
           </p>
         </div>
 
@@ -502,52 +950,69 @@ export default function DocumentPreview({ proposal }) {
           </p>
 
           <p className="mt-1 text-[8px] text-[var(--muted)]">
-            {CONTACT?.principal?.role || "Principle Architect · Rippotai"}
+            {CONTACT?.principal?.role || "Principal Architect · Rippotai"}
           </p>
         </div>
       </Page>
 
       {/* ======================================================
-          PAGE 5 — SECTION DIVIDER
+          PAGE 5
       ====================================================== */}
 
-      <SectionDivider
-        number="02"
-        title="Project Detail"
-        siteAddress={siteAddress}
-      />
+      <SectionDivider number="02" title="Project Detail" />
 
       {/* ======================================================
-          PAGE 6 — PROJECT DETAIL
+          PAGE 6
       ====================================================== */}
 
       <Page>
         <SectionHeading number="02" title="Project detail" />
 
         <div className="mt-9 grid grid-cols-2 gap-x-10 gap-y-5">
-          <Field label="Project name" value={pd.projectName} />
+          <Field
+            label="Project name"
+            value={getProjectField(pd, "projectName", "project_name", "name")}
+          />
 
-          <Field label="Client name" value={pd.clientName} />
+          <Field
+            label="Client name"
+            value={getProjectField(pd, "clientName", "client_name")}
+          />
 
-          <Field label="Site address" value={pd.siteAddress} />
+          <Field label="Site address" value={siteAddress} />
 
-          <Field label="Total area (sq ft)" value={pd.totalArea} />
+          <Field
+            label="Total area (sq ft)"
+            value={getProjectField(pd, "totalArea", "total_area")}
+          />
 
-          <Field label="Unit type" value={pd.unitType} />
+          <Field
+            label="Unit type"
+            value={getProjectField(pd, "unitType", "unit_type")}
+          />
 
-          <Field label="Built-up area (sq ft)" value={pd.builtUpArea} />
+          <Field
+            label="Built-up area (sq ft)"
+            value={getProjectField(pd, "builtUpArea", "built_up_area")}
+          />
 
-          <Field label="Carpet area (sq ft)" value={pd.carpetArea} />
+          <Field
+            label="Carpet area (sq ft)"
+            value={getProjectField(pd, "carpetArea", "carpet_area")}
+          />
 
           <Field label="Bathrooms" value={pd.bathrooms} />
 
           <Field label="Bedrooms" value={pd.bedrooms} />
 
-          <Field label="Date of issue" value={pd.dateOfIssue} />
+          <Field
+            label="Date of issue"
+            value={getProjectField(pd, "dateOfIssue", "date_of_issue")}
+          />
 
-          <Field label="Prepared by" value={pd.preparedBy} />
+          <Field label="Prepared by" value={pd.preparedBy || pd.prepared_by} />
 
-          <Field label="Reviewed by" value={pd.reviewedBy} />
+          <Field label="Reviewed by" value={pd.reviewedBy || pd.reviewed_by} />
         </div>
 
         <div className="mt-10">
@@ -574,7 +1039,7 @@ export default function DocumentPreview({ proposal }) {
       </Page>
 
       {/* ======================================================
-          PAGE 7 — WORK TYPE
+          PAGE 7
       ====================================================== */}
 
       <Page>
@@ -583,7 +1048,6 @@ export default function DocumentPreview({ proposal }) {
         </div>
 
         <div className="grid grid-cols-2 gap-12">
-          {/* Consultancy */}
           <div>
             <Checkbox
               label="Consultancy"
@@ -602,7 +1066,6 @@ export default function DocumentPreview({ proposal }) {
             </div>
           </div>
 
-          {/* Turnkey */}
           <div>
             <Checkbox
               label="Turnkey execution"
@@ -628,10 +1091,8 @@ export default function DocumentPreview({ proposal }) {
         <div className="mt-12">
           <Eyebrow>The brief in one paragraph</Eyebrow>
 
-          <div className="space-y-4">
-            <div className="border-b border-[var(--stroke)] pb-5 text-[9px] leading-relaxed">
-              {pd.brief || ""}
-            </div>
+          <div className="border-b border-[var(--stroke)] pb-5 text-[9px] leading-relaxed">
+            {getProjectField(pd, "brief", "projectBrief", "project_brief")}
           </div>
         </div>
 
@@ -639,23 +1100,24 @@ export default function DocumentPreview({ proposal }) {
           <Eyebrow>Constraints and site conditions noted</Eyebrow>
 
           <div className="border-b border-[var(--stroke)] pb-5 text-[9px] leading-relaxed">
-            {pd.constraints || ""}
+            {getProjectField(
+              pd,
+              "constraints",
+              "siteConstraints",
+              "site_constraints",
+            )}
           </div>
         </div>
       </Page>
 
       {/* ======================================================
-          PAGE 8 — SECTION DIVIDER
+          PAGE 8
       ====================================================== */}
 
-      <SectionDivider
-        number="03"
-        title="Scope of Work"
-        siteAddress={siteAddress}
-      />
+      <SectionDivider number="03" title="Scope of Work" />
 
       {/* ======================================================
-          PAGE 9 — SCOPE
+          PAGE 9
       ====================================================== */}
 
       <Page>
@@ -665,8 +1127,8 @@ export default function DocumentPreview({ proposal }) {
           <InfoBlock
             title="INCLUDED"
             items={
-              sow.included?.length
-                ? sow.included
+              included.length
+                ? included
                 : [
                     "Site supervision and skilled labour",
                     "Material procurement and delivery",
@@ -681,8 +1143,8 @@ export default function DocumentPreview({ proposal }) {
           <InfoBlock
             title="NOT INCLUDED"
             items={
-              sow.notIncluded?.length
-                ? sow.notIncluded
+              notIncluded.length
+                ? notIncluded
                 : [
                     "Society and authority approvals",
                     "Structural changes to the building",
@@ -697,8 +1159,8 @@ export default function DocumentPreview({ proposal }) {
           <InfoBlock
             title="OPTIONAL — QUOTED SEPARATELY"
             items={
-              sow.optional?.length
-                ? sow.optional
+              optional.length
+                ? optional
                 : [
                     "Loose furniture sourcing",
                     "Curtains, blinds and sheers",
@@ -715,7 +1177,7 @@ export default function DocumentPreview({ proposal }) {
       </Page>
 
       {/* ======================================================
-          PAGE 10 — SCOPE BY DISCIPLINE
+          PAGE 10
       ====================================================== */}
 
       <Page>
@@ -723,73 +1185,11 @@ export default function DocumentPreview({ proposal }) {
 
         <div className="border-t border-[var(--gold,#d9af61)] pt-7">
           <div className="grid grid-cols-2 gap-x-10 gap-y-7">
-            {[
-              {
-                name: "Civil & demolition",
-                items: [
-                  "Removal, cutting and debris disposal",
-                  "Masonry, plaster and levelling",
-                  "Door and window openings",
-                ],
-              },
-              {
-                name: "Mill work & joinery",
-                items: [
-                  "Modular kitchen and wardrobes",
-                  "Vanities and storage units",
-                  "Site-fabricated joinery",
-                ],
-              },
-              {
-                name: "MEP & waterproofing",
-                items: [
-                  "Concealed wiring and conduits",
-                  "AC piping, drainage and plumbing",
-                  "Wet area and terrace treatment",
-                ],
-              },
-              {
-                name: "Paint & polish",
-                items: [
-                  "Primer, putty and two coats",
-                  "Wood polish and veneer finish",
-                  "Touch-ups at snagging",
-                ],
-              },
-              {
-                name: "Flooring & tiling",
-                items: [
-                  "Floor and wall tiling",
-                  "Counters, skirting and dado",
-                  "Grouting and edge finishing",
-                ],
-              },
-              {
-                name: "Fixtures & fittings",
-                items: [
-                  "Light fixtures and switches",
-                  "CP fittings and sanitaryware",
-                  "Hardware and accessories",
-                ],
-              },
-              {
-                name: "Ceiling & POP",
-                items: [
-                  "Framework and boarding",
-                  "Cove and profile detailing",
-                  "Punning and surface preparation",
-                ],
-              },
-              {
-                name: "Loose furniture",
-                items: [
-                  "Sourcing and coordination",
-                  "Delivery and placement",
-                  "Optional — if selected",
-                ],
-              },
-            ].map((discipline) => (
-              <DisciplineBlock key={discipline.name} {...discipline} />
+            {scopeDisciplines.map((discipline, index) => (
+              <DisciplineBlock
+                key={`${discipline.name}-${index}`}
+                {...discipline}
+              />
             ))}
           </div>
         </div>
@@ -801,17 +1201,13 @@ export default function DocumentPreview({ proposal }) {
       </Page>
 
       {/* ======================================================
-          PAGE 11 — SECTION DIVIDER
+          PAGE 11
       ====================================================== */}
 
-      <SectionDivider
-        number="04"
-        title="How we Work"
-        siteAddress={siteAddress}
-      />
+      <SectionDivider number="04" title="How we Work" />
 
       {/* ======================================================
-          PAGE 12 — HOW WE WORK
+          PAGE 12
       ====================================================== */}
 
       <Page>
@@ -830,7 +1226,7 @@ export default function DocumentPreview({ proposal }) {
             title="Nothing hidden in the BOQ"
             items={[
               "Every item priced line by line",
-              "No lump sums, no allowances",
+              "No lump sums, no unexplained allowances",
             ]}
           />
 
@@ -856,10 +1252,12 @@ export default function DocumentPreview({ proposal }) {
 
           <div className="grid grid-cols-2 gap-x-12 gap-y-7">
             <div>
-              <p className="text-[11px] font-medium">Principle Architect</p>
+              <p className="text-[11px] font-medium">Principal Architect</p>
+
               <p className="mt-1 text-[10px]">
                 {CONTACT?.principal?.name || "Sagar Chhabra"}
               </p>
+
               <p className="mt-1 text-[8px] text-[var(--muted)]">
                 Design direction and final approvals
               </p>
@@ -867,9 +1265,11 @@ export default function DocumentPreview({ proposal }) {
 
             <div>
               <p className="text-[11px] font-medium">Site Supervisor</p>
+
               <p className="mt-1 text-[8px] text-[var(--muted)]">
                 On site every working day
               </p>
+
               <p className="mt-1 text-[8px] text-[var(--muted)]">
                 Labour control and quality checks
               </p>
@@ -877,7 +1277,11 @@ export default function DocumentPreview({ proposal }) {
 
             <div>
               <p className="text-[11px] font-medium">Project Lead</p>
-              <p className="mt-1 text-[10px]">Sarthi Jangra</p>
+
+              <p className="mt-1 text-[10px]">
+                {CONTACT?.projectLead?.name || "Sarthi Jangra"}
+              </p>
+
               <p className="mt-1 text-[8px] text-[var(--muted)]">
                 Your single point of contact
               </p>
@@ -885,9 +1289,11 @@ export default function DocumentPreview({ proposal }) {
 
             <div>
               <p className="text-[11px] font-medium">Admin Coordinator</p>
+
               <p className="mt-1 text-[8px] text-[var(--muted)]">
                 Billing, documents and scheduling
               </p>
+
               <p className="mt-1 text-[8px] text-[var(--muted)]">
                 Material tracking and warranties
               </p>
@@ -897,7 +1303,7 @@ export default function DocumentPreview({ proposal }) {
       </Page>
 
       {/* ======================================================
-          PAGE 13 — GATES / CADENCE
+          PAGE 13
       ====================================================== */}
 
       <Page>
@@ -909,13 +1315,14 @@ export default function DocumentPreview({ proposal }) {
               ["G1", "Concept", "Layout, look and material direction"],
               ["G2", "BOQ", "Cost, scope and quantities frozen"],
               ["G3", "GFC", "Working drawings and material samples"],
-              ["G4", "Stage", "Each of the seven execution phases"],
+              ["G4", "Stage", "Each execution phase"],
               ["G5", "Handover", "Snag list closed and signed"],
             ].map(([code, title, desc]) => (
               <div key={code} className="border-b border-[var(--stroke)] pb-5">
                 <p className="text-[10px] font-medium">
                   {code} {title}
                 </p>
+
                 <p className="mt-1 text-[8px] leading-relaxed text-[var(--muted)]">
                   {desc}
                 </p>
@@ -932,7 +1339,7 @@ export default function DocumentPreview({ proposal }) {
               <div>
                 <p className="text-[10px] font-medium">Daily</p>
                 <p className="mt-1 text-[8px] text-[var(--muted)]">
-                  Site photo report on WhatsApp
+                  Site photo report
                 </p>
               </div>
 
@@ -962,26 +1369,25 @@ export default function DocumentPreview({ proposal }) {
       </Page>
 
       {/* ======================================================
-          PAGE 14 — SECTION DIVIDER
+          PAGE 14
       ====================================================== */}
 
-      <SectionDivider
-        number="05"
-        title="Plan of Action"
-        siteAddress={siteAddress}
-      />
+      <SectionDivider number="05" title="Plan of Action" />
 
       {/* ======================================================
-          PAGE 15 — PLAN OF ACTION
+          PAGE 15
       ====================================================== */}
 
       <Page>
         <SectionHeading number="05" title="Plan of action" />
 
         <p className="mt-8 text-[9px] leading-relaxed text-[var(--muted)]">
-          Seven phases, sequenced at site. Phases overlap where the trade
-          allows, which is how four to five months of work compresses into the
-          stated programme.
+          {first(
+            poa?.executionDescription,
+            poa?.execution_description,
+            poa?.description,
+          ) ||
+            "The execution programme below is based on the approved project scope and the current site sequence."}
         </p>
 
         <div className="mt-8">
@@ -991,128 +1397,152 @@ export default function DocumentPreview({ proposal }) {
             <span className="text-right">Duration</span>
           </div>
 
-          <div className="space-y-0">
-            {arr(poa.phases).map((phase, index) => (
-              <div
-                key={phase?.code || index}
-                className="grid grid-cols-[38px_1fr_75px] gap-4 border-b border-[var(--stroke)] py-4"
-              >
-                <span className="text-[9px] font-semibold text-[var(--sage)]">
-                  {phase?.code || String(index + 1).padStart(2, "0")}
-                </span>
+          <div>
+            {phases.length > 0 ? (
+              phases.map((phase, index) => (
+                <div
+                  key={`${phase.code}-${index}`}
+                  className="grid grid-cols-[38px_1fr_75px] gap-4 border-b border-[var(--stroke)] py-4"
+                >
+                  <span className="text-[9px] font-semibold text-[var(--sage)]">
+                    {phase.code}
+                  </span>
 
-                <div>
-                  <p className="text-[10px] font-medium">{phase?.name}</p>
+                  <div>
+                    <p className="text-[10px] font-medium">{phase.name}</p>
 
-                  <p className="mt-1 text-[8px] leading-relaxed text-[var(--muted)]">
-                    {phase?.detail}
-                  </p>
-
-                  {phase?.parallel && (
-                    <p className="mt-2 text-[7px] uppercase tracking-wide text-[var(--gold,#b8860b)]">
-                      {phase.parallel}
+                    <p className="mt-1 text-[8px] leading-relaxed text-[var(--muted)]">
+                      {phase.detail}
                     </p>
-                  )}
-                </div>
 
-                <span className="text-right text-[9px] font-medium">
-                  {phase?.duration}
-                </span>
+                    {phase.parallel && (
+                      <p className="mt-2 text-[7px] uppercase tracking-wide text-[var(--gold,#b8860b)]">
+                        {phase.parallel}
+                      </p>
+                    )}
+                  </div>
+
+                  <span className="text-right text-[9px] font-medium">
+                    {phase.duration}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="py-8 text-[9px] text-[var(--muted)]">
+                No execution phases have been added yet.
               </div>
-            ))}
+            )}
           </div>
         </div>
 
         <p className="mt-7 text-[10px] font-medium">
-          Overall programme: {poa.overallProgramme || "4–5 months"}
+          Overall programme: {overallProgramme}
         </p>
 
         <p className="mt-2 text-[8px] leading-relaxed text-[var(--muted)]">
-          {poa.note ||
-            "Durations run from mobilisation of that phase and assume decisions within forty-eight hours and payments released on time. Statutory construction restrictions and material lead times extend the programme proportionately."}
+          {first(poa?.note, poa?.notes) ||
+            "Durations assume timely decisions, approvals, payments, material availability and uninterrupted site access. Statutory restrictions and material lead times may extend the programme proportionately."}
         </p>
       </Page>
 
       {/* ======================================================
-          PAGE 16 — SECTION DIVIDER
+          PAGE 16
       ====================================================== */}
 
-      <SectionDivider
-        number="06"
-        title="Budget Estimate"
-        siteAddress={siteAddress}
-      />
+      <SectionDivider number="06" title="Budget Estimate" />
 
       {/* ======================================================
-          PAGE 17 — BUDGET
+          PAGE 17
       ====================================================== */}
 
       <Page>
         <SectionHeading number="06" title="Budget estimate" />
 
         <p className="mt-8 text-[9px] leading-relaxed text-[var(--muted)]">
-          An indicative range at proposal stage, built from the areas and the
-          finish level discussed. It becomes a firm number when the BOQ is
-          priced line by line and frozen at Gate 02.
+          {first(
+            be?.description,
+            be?.estimateDescription,
+            be?.estimate_description,
+          ) ||
+            "The estimate below is based on the current project scope. The detailed BOQ remains the source of truth once quantities, specifications and rates are frozen."}
         </p>
 
-        <table className="mt-8 w-full border-collapse text-[9px]">
-          <thead>
-            <tr className="border-b border-[var(--stroke)] text-left text-[8px] uppercase tracking-wide text-[var(--muted)]">
-              <th className="py-3">Head of cost</th>
-              <th className="py-3 text-right">Amount (₹)</th>
-            </tr>
-          </thead>
+        {categories.length > 0 ? (
+          <table className="mt-8 w-full border-collapse text-[8px]">
+            <thead>
+              <tr className="border-b border-[var(--stroke)] text-left text-[7px] uppercase tracking-wide text-[var(--muted)]">
+                <th className="py-3">Item</th>
 
-          <tbody>
-            {lineItems.map((item, index) => (
-              <tr
-                key={`${item?.head || "item"}-${index}`}
-                className="border-b border-[var(--stroke)]"
-              >
-                <td className="py-3">
-                  <p className="font-medium">{item?.head}</p>
+                <th className="py-3 text-right">Qty</th>
 
-                  <p className="mt-1 text-[8px] text-[var(--muted)]">
-                    {item?.description}
-                  </p>
+                <th className="py-3 text-right">Rate</th>
+
+                <th className="py-3 text-right">Amount</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {categories.map((category, index) => (
+                <BudgetCategory
+                  key={category?.id || category?.categoryId || index}
+                  category={category}
+                  currency={currency}
+                />
+              ))}
+
+              <tr className="border-b border-[var(--stroke)]">
+                <td
+                  colSpan={3}
+                  className="py-3 text-right text-[9px] text-[var(--muted)]"
+                >
+                  Subtotal
                 </td>
 
                 <td className="py-3 text-right font-medium">
-                  {fmt(item?.amount, be.currency)}
+                  {fmt(subtotal, currency)}
                 </td>
               </tr>
-            ))}
 
-            <tr className="border-b border-[var(--stroke)]">
-              <td className="py-3 text-[var(--muted)]">Subtotal</td>
+              {gstRate > 0 && (
+                <tr className="border-b border-[var(--stroke)]">
+                  <td
+                    colSpan={3}
+                    className="py-3 text-right text-[9px] text-[var(--muted)]"
+                  >
+                    GST {gstRate}%
+                  </td>
 
-              <td className="py-3 text-right">{fmt(subtotal, be.currency)}</td>
-            </tr>
+                  <td className="py-3 text-right font-medium">
+                    {fmt(gstAmount, currency)}
+                  </td>
+                </tr>
+              )}
 
-            <tr className="border-b border-[var(--stroke)]">
-              <td className="py-3 text-[var(--muted)]">Contingency</td>
+              <tr>
+                <td colSpan={3} className="py-4 text-[12px] font-medium">
+                  Total estimate
+                </td>
 
-              <td className="py-3 text-right">
-                {fmt(contingency, be.currency)}
-              </td>
-            </tr>
+                <td className="py-4 text-right text-[12px] font-medium">
+                  {fmt(grandTotal, currency)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        ) : (
+          <div className="mt-8 border-t border-[var(--stroke)] py-8 text-[9px] text-[var(--muted)]">
+            No budget categories have been added yet.
+          </div>
+        )}
 
-            <tr>
-              <td className="py-4 text-[12px] font-medium">
-                Estimate, exclusive of GST
-              </td>
-
-              <td className="py-4 text-right text-[12px] font-medium">
-                {fmt(total, be.currency)}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <p className="mt-6 text-[8px] leading-relaxed text-[var(--muted)]">
+          {first(be?.totalLabel, be?.estimateTotalLabel) ||
+            "Budget remains subject to the final BOQ, approved specifications and applicable taxes."}
+        </p>
       </Page>
 
       {/* ======================================================
-          PAGE 18 — BUDGET ASSUMPTIONS
+          PAGE 18
       ====================================================== */}
 
       <Page>
@@ -1123,8 +1553,8 @@ export default function DocumentPreview({ proposal }) {
             <div className="border-t border-[var(--gold,#d9af61)] pt-6">
               <BulletList
                 items={
-                  be.assumes?.length
-                    ? be.assumes
+                  assumptions.length
+                    ? assumptions
                     : [
                         "Finish level as discussed at the site visit",
                         "Standard ceiling height, no structural change",
@@ -1143,12 +1573,12 @@ export default function DocumentPreview({ proposal }) {
             <div className="border-t border-[var(--gold,#d9af61)] pt-6">
               <BulletList
                 items={
-                  be.excludes?.length
-                    ? be.excludes
+                  exclusions.length
+                    ? exclusions
                     : [
                         "GST and statutory levies",
                         "Society charges, permissions and deposits",
-                        "Appliances and loose furniture unless ticked",
+                        "Appliances and loose furniture unless selected",
                         "Client-supplied material and its handling",
                         "Variations raised after the BOQ is frozen",
                       ]
@@ -1164,7 +1594,7 @@ export default function DocumentPreview({ proposal }) {
           <div className="border-t border-[var(--gold,#d9af61)] pt-6">
             <div className="grid grid-cols-2 gap-x-12 gap-y-8">
               {[
-                ["01", "Estimate", "This document — a range, not a quote"],
+                ["01", "Estimate", "This document — proposal-stage estimate"],
                 [
                   "02",
                   "Detailed BOQ",
@@ -1202,17 +1632,13 @@ export default function DocumentPreview({ proposal }) {
       </Page>
 
       {/* ======================================================
-          PAGE 19 — SECTION DIVIDER
+          PAGE 19
       ====================================================== */}
 
-      <SectionDivider
-        number="07"
-        title="Payment Schedule"
-        siteAddress={siteAddress}
-      />
+      <SectionDivider number="07" title="Payment Schedule" />
 
       {/* ======================================================
-          PAGE 20 — PAYMENT SCHEDULE
+          PAGE 20
       ====================================================== */}
 
       <Page>
@@ -1236,21 +1662,43 @@ export default function DocumentPreview({ proposal }) {
           </thead>
 
           <tbody>
-            {arr(ps.milestones).map((milestone, index) => (
+            {milestones.map((milestone, index) => (
               <tr
-                key={milestone?.code || index}
+                key={milestone?.id || milestone?.code || index}
                 className="border-b border-[var(--stroke)]"
               >
                 <td className="py-3 font-medium">
-                  {milestone?.code} — {milestone?.name}
+                  {first(
+                    milestone?.code,
+                    milestone?.sequence
+                      ? String(milestone.sequence).padStart(2, "0")
+                      : "",
+                  )}
+                  {" — "}
+                  {first(
+                    milestone?.name,
+                    milestone?.title,
+                    milestone?.milestone,
+                  )}
                 </td>
 
                 <td className="py-3 text-[var(--muted)]">
-                  {milestone?.trigger}
+                  {first(
+                    milestone?.trigger,
+                    milestone?.releaseTrigger,
+                    milestone?.release_trigger,
+                    milestone?.description,
+                  )}
                 </td>
 
                 <td className="py-3 text-right font-medium">
-                  {milestone?.share}%
+                  {first(
+                    milestone?.share,
+                    milestone?.percentage,
+                    milestone?.percent,
+                    0,
+                  )}
+                  %
                 </td>
               </tr>
             ))}
@@ -1269,7 +1717,7 @@ export default function DocumentPreview({ proposal }) {
       </Page>
 
       {/* ======================================================
-          PAGE 21 — PAYMENT TERMS
+          PAGE 21
       ====================================================== */}
 
       <Page>
@@ -1291,7 +1739,7 @@ export default function DocumentPreview({ proposal }) {
                 "Delay in release",
                 "Beyond seven days, work may pause. Timeline extends day for day",
               ],
-              ["Variations", "Quoted in writing, billed 100% in advance"],
+              ["Variations", "Quoted in writing before execution"],
               ["Retention", "Final 5% held until the snag list is signed"],
               [
                 "Title of materials",
@@ -1320,23 +1768,19 @@ export default function DocumentPreview({ proposal }) {
         </div>
 
         <p className="mt-10 text-[8px] leading-relaxed text-[var(--muted)]">
-          The full sixteen-clause Payment Schedule is issued as a separate
-          document and forms part of the Agreement.
+          The full Payment Schedule is issued as a separate document and forms
+          part of the Agreement.
         </p>
       </Page>
 
       {/* ======================================================
-          PAGE 22 — SECTION DIVIDER
+          PAGE 22
       ====================================================== */}
 
-      <SectionDivider
-        number="08"
-        title="Next Steps"
-        siteAddress={siteAddress}
-      />
+      <SectionDivider number="08" title="Next Steps" />
 
       {/* ======================================================
-          PAGE 23 — NEXT STEPS
+          PAGE 23
       ====================================================== */}
 
       <Page>
@@ -1348,55 +1792,79 @@ export default function DocumentPreview({ proposal }) {
         </p>
 
         <div className="mt-8 space-y-6">
-          {[
-            [
-              "01",
-              "Review this proposal",
-              "Take a week. Mark anything unclear",
-              "We will walk it through with you",
-            ],
-            [
-              "02",
-              "Confirm the scope",
-              "Tick the engagement and optional items",
-              "We revise the BOQ against your ticks",
-            ],
-            [
-              "03",
-              "Freeze cost at Gate 02",
-              "BOQ priced line by line and signed",
-              "The estimate becomes a firm number",
-            ],
-            [
-              "04",
-              "Sign the Agreement",
-              "Scope of Work, Payment Schedule, Plan of Action",
-              "Issued together for signature",
-            ],
-            [
-              "05",
-              "Release M1 and mobilise",
-              "15% booking and mobilisation",
-              "Site team on the ground within five days",
-            ],
-          ].map(([code, title, line1, line2]) => (
-            <div
-              key={code}
-              className="grid grid-cols-[35px_1fr] gap-4 border-b border-[var(--stroke)] pb-5"
-            >
-              <span className="text-[10px] font-semibold text-[var(--sage)]">
-                {code}
-              </span>
+          {(nextStepItems.length
+            ? nextStepItems
+            : [
+                {
+                  code: "01",
+                  title: "Review this proposal",
+                  line1: "Take a week. Mark anything unclear",
+                  line2: "We will walk it through with you",
+                },
+                {
+                  code: "02",
+                  title: "Confirm the scope",
+                  line1: "Confirm engagement and optional items",
+                  line2: "We revise the BOQ against your decisions",
+                },
+                {
+                  code: "03",
+                  title: "Freeze cost at Gate 02",
+                  line1: "BOQ priced line by line and signed",
+                  line2: "The estimate becomes a firm number",
+                },
+                {
+                  code: "04",
+                  title: "Sign the Agreement",
+                  line1: "Scope, Payment Schedule and Plan of Action",
+                  line2: "Issued together for signature",
+                },
+                {
+                  code: "05",
+                  title: "Release M1 and mobilise",
+                  line1: "Booking and mobilisation payment",
+                  line2: "Site team mobilises after formal clearance",
+                },
+              ]
+          ).map((step, index) => {
+            const code =
+              first(
+                step?.code,
+                step?.sequence
+                  ? String(step.sequence).padStart(2, "0")
+                  : undefined,
+              ) || String(index + 1).padStart(2, "0");
 
-              <div>
-                <p className="text-[11px] font-medium">{title}</p>
+            const title = first(step?.title, step?.name) || "";
 
-                <p className="mt-1 text-[8px] text-[var(--muted)]">{line1}</p>
+            const line1 =
+              first(step?.line1, step?.description, step?.detail) || "";
 
-                <p className="mt-1 text-[8px] text-[var(--muted)]">{line2}</p>
+            const line2 = first(step?.line2, step?.action, step?.note) || "";
+
+            return (
+              <div
+                key={`${code}-${index}`}
+                className="grid grid-cols-[35px_1fr] gap-4 border-b border-[var(--stroke)] pb-5"
+              >
+                <span className="text-[10px] font-semibold text-[var(--sage)]">
+                  {code}
+                </span>
+
+                <div>
+                  <p className="text-[11px] font-medium">{title}</p>
+
+                  <p className="mt-1 text-[8px] text-[var(--muted)]">{line1}</p>
+
+                  {line2 && (
+                    <p className="mt-1 text-[8px] text-[var(--muted)]">
+                      {line2}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="mt-10">
@@ -1421,7 +1889,7 @@ export default function DocumentPreview({ proposal }) {
       </Page>
 
       {/* ======================================================
-          PAGE 24 — TALK TO US / ACCEPTANCE
+          PAGE 24
       ====================================================== */}
 
       <Page>
@@ -1430,10 +1898,12 @@ export default function DocumentPreview({ proposal }) {
         <div className="border-t border-[var(--gold,#d9af61)] pt-8">
           <div className="grid grid-cols-2 gap-12">
             <div>
-              <p className="text-[11px] font-medium">Sagar Chhabra</p>
+              <p className="text-[11px] font-medium">
+                {CONTACT?.principal?.name || "Sagar Chhabra"}
+              </p>
 
               <p className="mt-1 text-[8px] text-[var(--muted)]">
-                Principle Architect
+                Principal Architect
               </p>
 
               <p className="mt-3 text-[8px] text-[var(--muted)]">
@@ -1442,7 +1912,9 @@ export default function DocumentPreview({ proposal }) {
             </div>
 
             <div>
-              <p className="text-[11px] font-medium">Sarthi Jangra</p>
+              <p className="text-[11px] font-medium">
+                {CONTACT?.projectLead?.name || "Sarthi Jangra"}
+              </p>
 
               <p className="mt-1 text-[8px] text-[var(--muted)]">
                 Project Lead
@@ -1455,7 +1927,9 @@ export default function DocumentPreview({ proposal }) {
           </div>
 
           <div className="mt-10 border-t border-[var(--stroke)] pt-7">
-            <p className="text-[11px] font-medium">Rippotai</p>
+            <p className="text-[11px] font-medium">
+              {BRAND?.name || "Rippotai"}
+            </p>
 
             <p className="mt-1 text-[8px] text-[var(--muted)]">
               Architecture · Interiors · Turnkey
@@ -1468,7 +1942,10 @@ export default function DocumentPreview({ proposal }) {
         <div className="mt-12 border-t border-[var(--stroke)] pt-7">
           <Eyebrow>Proposal validity</Eyebrow>
 
-          <p className="text-[9px]">Thirty days from date of issue</p>
+          <p className="text-[9px]">
+            {getProjectField(pd, "validity", "proposalValidity") ||
+              "Thirty days from date of issue"}
+          </p>
 
           <p className="mt-1 text-[8px] text-[var(--muted)]">
             Rates held for the stated period
@@ -1489,7 +1966,9 @@ export default function DocumentPreview({ proposal }) {
 
             <p className="text-[10px] font-medium">Authorised Signatory</p>
 
-            <p className="mt-2 text-[8px]">Name · Sagar Chhabra</p>
+            <p className="mt-2 text-[8px]">
+              Name · {CONTACT?.principal?.name || "Sagar Chhabra"}
+            </p>
 
             <p className="mt-8 text-[8px] text-[var(--muted)]">
               Date · __________________
