@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   Plus,
   Eye,
@@ -8,14 +9,24 @@ import {
   MapPin,
   CalendarDays,
   RefreshCw,
+  Trash2,
+  Check,
+  ChevronDown,
 } from "lucide-react";
 
 import { Shell, Card, Input } from "../../hooks/shared";
-import { useGetProjectBriefsQuery } from "../../api/brief.api";
+import {
+  useGetProjectBriefsQuery,
+  useUpdateProjectBriefStatusMutation,
+  useDeleteProjectBriefMutation,
+} from "../../api/brief.api";
 
 export default function ProjectBriefList() {
   const nav = useNavigate();
+
   const [q, setQ] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
+  const [updatingStatusId, setUpdatingStatusId] = useState(null);
 
   // =========================================================
   // PROJECT FILTER
@@ -26,11 +37,19 @@ export default function ProjectBriefList() {
     new URLSearchParams(window.location.search).get("project_id") ||
     "";
 
+  // =========================================================
+  // API
+  // =========================================================
+
   const {
     data: rows = [],
     isFetching,
     isLoading,
   } = useGetProjectBriefsQuery(projectFilter || undefined);
+
+  const [updateProjectBriefStatus] = useUpdateProjectBriefStatusMutation();
+
+  const [deleteProjectBrief] = useDeleteProjectBriefMutation();
 
   // =========================================================
   // SEARCH
@@ -113,9 +132,123 @@ export default function ProjectBriefList() {
       case "IN_REVIEW":
         return "bg-[#FFF4DC] text-[#8A6500]";
 
+      case "REJECTED":
+        return "bg-[#FDECEC] text-[#B42318]";
+
       case "DRAFT":
       default:
         return "bg-[#F1F3F4] text-[#5F6B6D]";
+    }
+  };
+
+  const formatStatus = (status) => {
+    return (status || "DRAFT")
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  // =========================================================
+  // STATUS OPTIONS
+  // =========================================================
+
+  const STATUS_OPTIONS = [
+    {
+      value: "DRAFT",
+      label: "Draft",
+    },
+    {
+      value: "IN_REVIEW",
+      label: "In Review",
+    },
+    {
+      value: "SUBMITTED",
+      label: "Submitted",
+    },
+    {
+      value: "APPROVED",
+      label: "Approved",
+    },
+    {
+      value: "SIGNED_OFF",
+      label: "Signed Off",
+    },
+    {
+      value: "REJECTED",
+      label: "Rejected",
+    },
+  ];
+
+  // =========================================================
+  // UPDATE STATUS
+  // =========================================================
+
+  const handleStatusChange = async (brief, status) => {
+    if (!brief?.id) {
+      return;
+    }
+
+    if ((brief.status || "DRAFT") === status) {
+      return;
+    }
+
+    try {
+      setUpdatingStatusId(brief.id);
+
+      await updateProjectBriefStatus({
+        id: brief.id,
+        status,
+      }).unwrap();
+
+      toast.success(`Project brief status updated to ${formatStatus(status)}`);
+    } catch (error) {
+      console.error("Failed to update project brief status:", error);
+
+      toast.error(
+        error?.data?.message ||
+          error?.message ||
+          "Failed to update project brief status",
+      );
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
+
+  // =========================================================
+  // DELETE
+  // =========================================================
+
+  const handleDelete = async (brief) => {
+    if (!brief?.id) {
+      return;
+    }
+
+    const projectName = getProjectName(brief);
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${projectName}"?\n\nThis action cannot be undone.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingId(brief.id);
+
+      await deleteProjectBrief(brief.id).unwrap();
+
+      toast.success("Project brief deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete project brief:", error);
+
+      toast.error(
+        error?.data?.message ||
+          error?.message ||
+          "Failed to delete project brief",
+      );
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -194,13 +327,17 @@ export default function ProjectBriefList() {
                   Brief Date
                 </th>
 
-                <th className="text-right px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#6B7B7C] w-[120px]">
+                <th className="text-right px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#6B7B7C] w-[160px]">
                   Actions
                 </th>
               </tr>
             </thead>
 
             <tbody>
+              {/* =================================================
+                  LOADING
+                  ================================================= */}
+
               {isFetching && !rows.length ? (
                 <tr>
                   <td colSpan={6} className="text-center py-12 text-[#8A9697]">
@@ -211,108 +348,196 @@ export default function ProjectBriefList() {
                   </td>
                 </tr>
               ) : (
-                filteredRows.map((brief) => (
-                  <tr
-                    key={brief.id}
-                    onClick={() => nav(`/crm/brief/${brief.id}`)}
-                    className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F8FAF9] cursor-pointer transition-colors"
-                    data-testid={`project-brief-row-${brief.id}`}
-                  >
-                    {/* PROJECT */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-start gap-2.5 min-w-[220px]">
-                        <div className="w-8 h-8 rounded-lg bg-[#EEF3F0] flex items-center justify-center shrink-0">
-                          <FileText size={15} className="text-[#1F453B]" />
-                        </div>
+                filteredRows.map((brief) => {
+                  const currentStatus = brief.status || "DRAFT";
+                  const isUpdating = updatingStatusId === brief.id;
+                  const isDeleting = deletingId === brief.id;
 
-                        <div className="min-w-0">
-                          <div className="font-semibold text-[#333333] truncate max-w-[280px]">
-                            {getProjectName(brief)}
-                          </div>
-
-                          <div className="text-[12px] text-[#8A9697] mt-0.5">
-                            {brief.propertyType ||
-                              brief.siteType ||
-                              "Project Brief"}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* VERSION */}
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-[#F1F3F4] text-[#4E5A5C] text-[12px] font-semibold">
-                        v{brief.version ?? 1}
-                      </span>
-                    </td>
-
-                    {/* STATUS */}
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide ${getStatusClass(
-                          brief.status,
-                        )}`}
-                      >
-                        {(brief.status || "DRAFT")
-                          .replace(/_/g, " ")
-                          .toLowerCase()
-                          .replace(/\b\w/g, (char) => char.toUpperCase())}
-                      </span>
-                    </td>
-
-                    {/* SITE */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-start gap-1.5 max-w-[280px]">
-                        <MapPin
-                          size={14}
-                          className="text-[#9AA7A8] mt-0.5 shrink-0"
-                        />
-
-                        <span className="text-[#667375] truncate">
-                          {brief.siteAddress || "No site address"}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* DATE */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5 text-[#667375] whitespace-nowrap">
-                        <CalendarDays size={14} className="text-[#9AA7A8]" />
-
-                        {formatDate(
-                          brief.briefDate || brief.updatedAt || brief.createdAt,
-                        )}
-                      </div>
-                    </td>
-
-                    {/* ACTIONS */}
-                    <td
-                      className="px-4 py-3 text-right"
-                      onClick={(e) => e.stopPropagation()}
+                  return (
+                    <tr
+                      key={brief.id}
+                      onClick={() => nav(`/crm/brief/${brief.id}`)}
+                      className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F8FAF9] cursor-pointer transition-colors"
+                      data-testid={`project-brief-row-${brief.id}`}
                     >
-                      <div className="inline-flex items-center gap-1">
-                        <button
-                          onClick={() => nav(`/crm/brief/${brief.id}`)}
-                          className="p-1.5 rounded-md hover:bg-[#EAEEF0] text-[#333333] transition-colors"
-                          title="View"
-                          data-testid={`project-brief-view-${brief.id}`}
-                        >
-                          <Eye size={15} />
-                        </button>
+                      {/* =================================================
+                          PROJECT
+                          ================================================= */}
 
-                        <button
-                          onClick={() => nav(`/crm/brief/${brief.id}/edit`)}
-                          className="p-1.5 rounded-md hover:bg-[#EAEEF0] text-[#333333] transition-colors"
-                          title="Edit"
-                          data-testid={`project-brief-edit-${brief.id}`}
-                        >
-                          <Edit3 size={15} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      <td className="px-4 py-3">
+                        <div className="flex items-start gap-2.5 min-w-[220px]">
+                          <div className="w-8 h-8 rounded-lg bg-[#EEF3F0] flex items-center justify-center shrink-0">
+                            <FileText size={15} className="text-[#1F453B]" />
+                          </div>
+
+                          <div className="min-w-0">
+                            <div className="font-semibold text-[#333333] truncate max-w-[280px]">
+                              {getProjectName(brief)}
+                            </div>
+
+                            <div className="text-[12px] text-[#8A9697] mt-0.5">
+                              {brief.propertyType ||
+                                brief.siteType ||
+                                "Project Brief"}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* =================================================
+                          VERSION
+                          ================================================= */}
+
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-[#F1F3F4] text-[#4E5A5C] text-[12px] font-semibold">
+                          v{brief.version ?? 1}
+                        </span>
+                      </td>
+
+                      {/* =================================================
+                          STATUS
+                          ================================================= */}
+
+                      <td
+                        className="px-4 py-3"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="relative inline-flex">
+                          <select
+                            value={currentStatus}
+                            disabled={isUpdating}
+                            onChange={(e) =>
+                              handleStatusChange(brief, e.target.value)
+                            }
+                            className={`
+                              appearance-none
+                              pl-3
+                              pr-8
+                              py-1.5
+                              rounded-full
+                              text-[11px]
+                              font-bold
+                              tracking-wide
+                              border-0
+                              outline-none
+                              cursor-pointer
+                              disabled:opacity-60
+                              disabled:cursor-not-allowed
+                              ${getStatusClass(currentStatus)}
+                            `}
+                            data-testid={`project-brief-status-${brief.id}`}
+                            title="Update status"
+                          >
+                            {STATUS_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+
+                          {isUpdating ? (
+                            <RefreshCw
+                              size={12}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin pointer-events-none"
+                            />
+                          ) : (
+                            <ChevronDown
+                              size={12}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60"
+                            />
+                          )}
+                        </div>
+                      </td>
+
+                      {/* =================================================
+                          SITE
+                          ================================================= */}
+
+                      <td className="px-4 py-3">
+                        <div className="flex items-start gap-1.5 max-w-[280px]">
+                          <MapPin
+                            size={14}
+                            className="text-[#9AA7A8] mt-0.5 shrink-0"
+                          />
+
+                          <span className="text-[#667375] truncate">
+                            {brief.siteAddress || "No site address"}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* =================================================
+                          DATE
+                          ================================================= */}
+
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5 text-[#667375] whitespace-nowrap">
+                          <CalendarDays size={14} className="text-[#9AA7A8]" />
+
+                          {formatDate(
+                            brief.briefDate ||
+                              brief.updatedAt ||
+                              brief.createdAt,
+                          )}
+                        </div>
+                      </td>
+
+                      {/* =================================================
+                          ACTIONS
+                          ================================================= */}
+
+                      <td
+                        className="px-4 py-3 text-right"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="inline-flex items-center gap-1">
+                          {/* VIEW */}
+
+                          <button
+                            onClick={() => nav(`/crm/brief/${brief.id}`)}
+                            className="p-1.5 rounded-md hover:bg-[#EAEEF0] text-[#333333] transition-colors"
+                            title="View"
+                            data-testid={`project-brief-view-${brief.id}`}
+                          >
+                            <Eye size={15} />
+                          </button>
+
+                          {/* EDIT */}
+
+                          <button
+                            onClick={() => nav(`/crm/brief/${brief.id}/edit`)}
+                            className="p-1.5 rounded-md hover:bg-[#EAEEF0] text-[#333333] transition-colors"
+                            title="Edit"
+                            data-testid={`project-brief-edit-${brief.id}`}
+                          >
+                            <Edit3 size={15} />
+                          </button>
+
+                          {/* DELETE */}
+
+                          <button
+                            onClick={() => handleDelete(brief)}
+                            disabled={isDeleting}
+                            className="p-1.5 rounded-md hover:bg-[#FDECEC] text-[#B42318] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Delete"
+                            data-testid={`project-brief-delete-${brief.id}`}
+                          >
+                            {isDeleting ? (
+                              <RefreshCw size={15} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={15} />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
+
+              {/* =================================================
+                  EMPTY STATE
+                  ================================================= */}
 
               {!isFetching && !filteredRows.length && (
                 <tr>

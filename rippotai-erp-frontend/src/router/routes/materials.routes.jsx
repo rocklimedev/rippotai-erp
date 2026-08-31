@@ -8,6 +8,7 @@ import PurchaseOrderList from "@/pages/materials/PurchaseOrderList";
 import DeliveryChallanList from "@/pages/materials/DeliveryChallanList";
 import SiteInventoryList from "@/pages/materials/SiteInventoryList";
 import { MaterialRequirementForm } from "../../pages/materials/MaterialRequirementForm";
+import MaterialsDashboard from "../../pages/dashboard/MaterialDashboard";
 
 export const materialsRoutes = [
   {
@@ -43,7 +44,10 @@ export const materialsRoutes = [
       // ------------------------------------------------------------
       // Material Requirements
       // ------------------------------------------------------------
-
+      {
+        index: true,
+        element: <MaterialsDashboard />,
+      },
       {
         path: "requirements",
         element: <MaterialRequirementList />,

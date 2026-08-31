@@ -3,6 +3,7 @@ import AppDashboard from "@/components/dashboard/AppDashboard";
 import { DrawingUpload, DrawingsAll } from "@/pages/documents/DocumentsRoutes";
 
 import DrawingsView from "@/pages/documents/DrawingsView";
+import DesignStudioDashboard from "../../pages/dashboard/DesignStudioDashboard";
 
 export const designStudioRoutes = [
   {
@@ -24,7 +25,7 @@ export const designStudioRoutes = [
 
       {
         index: true,
-        element: <AppDashboard appKey="design-studio" />,
+        element: <DesignStudioDashboard />,
       },
 
       // =========================================================

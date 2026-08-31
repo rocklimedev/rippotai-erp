@@ -4,6 +4,7 @@ import SuperAdmin from "@/pages/settings/SuperAdmin";
 import TermsSettings from "@/pages/settings/TermsSettings";
 import EstimateSignature from "@/pages/settings/EstimateSignature";
 import AppLayout from "@/layouts/AppLayout";
+import AdminDashboard from "../../pages/dashboard/AdminDashboard";
 export const adminConsoleRoutes = [
   {
     type: "layout",
@@ -18,7 +19,7 @@ export const adminConsoleRoutes = [
       // =========================================================
       // WORKSPACE
       // =========================================================
-
+      { index: true, element: <AdminDashboard /> },
       {
         path: "users",
         element: <UsersSettings />,

@@ -6,7 +6,7 @@ import { PaymentScheduleForm } from "@/pages/payment-schedule/PaymentScheduleFor
 import BudgetEstimateList from "../../pages/budget-estimate/BudgetEstimateList";
 import BudgetEstimateForm from "../../pages/budget-estimate/BudgetEstimateForm";
 import BudgetEstimateView from "../../pages/budget-estimate/BudgetEstimatesView";
-
+import LedgerDashboard from "../../pages/dashboard/LedgerDashboard";
 export const ledgerRoutes = [
   {
     type: "layout",
@@ -36,7 +36,7 @@ export const ledgerRoutes = [
 
       {
         index: true,
-        element: <AppDashboard appKey="crm" />,
+        element: <LedgerDashboard />,
       },
 
       // ============================================================
