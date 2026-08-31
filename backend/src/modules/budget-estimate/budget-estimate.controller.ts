@@ -43,7 +43,7 @@ export class BudgetEstimateController {
   // ============================================================
   // GET ALL
   // GET /budget-estimates
-  // GET /budget-estimates?projectId=xxx
+  // GET /budget-estimates?projectId=UUID
   // ============================================================
 
   @Get()
@@ -53,6 +53,7 @@ export class BudgetEstimateController {
 
   // ============================================================
   // GET ONE
+  // GET /budget-estimates/:id
   // ============================================================
 
   @Get(':id')
@@ -62,6 +63,7 @@ export class BudgetEstimateController {
 
   // ============================================================
   // UPDATE
+  // PATCH /budget-estimates/:id
   // ============================================================
 
   @Patch(':id')
@@ -75,6 +77,7 @@ export class BudgetEstimateController {
 
   // ============================================================
   // RECALCULATE
+  // POST /budget-estimates/:id/recalculate
   // ============================================================
 
   @Post(':id/recalculate')
@@ -84,6 +87,7 @@ export class BudgetEstimateController {
 
   // ============================================================
   // LOCK
+  // POST /budget-estimates/:id/lock
   // ============================================================
 
   @Post(':id/lock')
@@ -93,6 +97,7 @@ export class BudgetEstimateController {
 
   // ============================================================
   // UNLOCK
+  // POST /budget-estimates/:id/unlock
   // ============================================================
 
   @Post(':id/unlock')
@@ -102,6 +107,7 @@ export class BudgetEstimateController {
 
   // ============================================================
   // DELETE
+  // DELETE /budget-estimates/:id
   // ============================================================
 
   @Delete(':id')

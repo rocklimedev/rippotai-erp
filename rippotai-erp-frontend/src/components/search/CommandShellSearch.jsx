@@ -11,25 +11,41 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+
 import { APP_META, APP_MENUS } from "@/config/appNav";
 import { useGlobalSearchQuery } from "@/api/search.api";
 
+// ============================================================
 // Resolve a slug against the app's base route.
-// Slugs that already start with "/" are used as-is.
+// ============================================================
+
 function resolvePath(base, slug) {
   if (!slug) return base;
+
   return slug.startsWith("/") ? slug : `${base}/${slug}`;
 }
 
+// ============================================================
 // Pick an icon based on menu label.
+// ============================================================
+
 function iconFor(label = "", slug = "") {
   const text = `${label} ${slug}`.toLowerCase();
 
-  if (/(create|new|add|upload)/.test(text)) return Plus;
-  if (/(setting|role|permission)/.test(text)) return SettingsIcon;
+  if (/(create|new|add|upload)/.test(text)) {
+    return Plus;
+  }
+
+  if (/(setting|role|permission)/.test(text)) {
+    return SettingsIcon;
+  }
 
   return FileText;
 }
+
+// ============================================================
+// Command Shell Search
+// ============================================================
 
 export default function CommandShellSearch({ currentApp }) {
   const [open, setOpen] = useState(false);
@@ -42,9 +58,9 @@ export default function CommandShellSearch({ currentApp }) {
   const meta = APP_META[currentApp] || {};
   const base = meta.base || "/";
 
-  // =====================================================
-  // GLOBAL SEARCH (RTK QUERY)
-  // =====================================================
+  // ============================================================
+  // GLOBAL SEARCH
+  // ============================================================
 
   const { data: searchData, isFetching } = useGlobalSearchQuery(query, {
     skip: query.trim().length < 2,
@@ -68,14 +84,15 @@ export default function CommandShellSearch({ currentApp }) {
     ];
   }, [searchData]);
 
-  // =====================================================
-  // CMD + K
-  // =====================================================
+  // ============================================================
+  // OPEN WITH CMD / CTRL + K
+  // ============================================================
 
   useEffect(() => {
     const handleGlobalKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
+
         setOpen(true);
         setQuery("");
         setSelectedIndex(0);
@@ -89,9 +106,23 @@ export default function CommandShellSearch({ currentApp }) {
     };
   }, []);
 
-  // =====================================================
+  // ============================================================
+  // FOCUS INPUT WHEN MODAL OPENS
+  // ============================================================
+
+  useEffect(() => {
+    if (!open) return;
+
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [open]);
+
+  // ============================================================
   // COMMANDS
-  // =====================================================
+  // ============================================================
 
   const groupedCommands = useMemo(() => {
     const common = [
@@ -118,6 +149,7 @@ export default function CommandShellSearch({ currentApp }) {
     menuGroups.forEach((group) => {
       const items = [];
 
+      // Standalone menu item
       if (group.slug) {
         items.push({
           id: `${currentApp}-${group.label}-${group.slug}`,
@@ -127,6 +159,7 @@ export default function CommandShellSearch({ currentApp }) {
         });
       }
 
+      // Dropdown items
       if (Array.isArray(group.items)) {
         group.items.forEach((item) => {
           items.push({
@@ -146,6 +179,10 @@ export default function CommandShellSearch({ currentApp }) {
     return groups;
   }, [currentApp, base, nav]);
 
+  // ============================================================
+  // FILTER COMMANDS
+  // ============================================================
+
   const allResults = useMemo(() => {
     const out = [];
 
@@ -163,13 +200,25 @@ export default function CommandShellSearch({ currentApp }) {
     return out;
   }, [groupedCommands, query]);
 
+  // ============================================================
+  // COMBINE COMMAND + LIVE RESULTS
+  // ============================================================
+
   const allItems = useMemo(() => {
     return [...allResults, ...searchResults];
   }, [allResults, searchResults]);
 
+  // ============================================================
+  // RESET SELECTION
+  // ============================================================
+
   useEffect(() => {
     setSelectedIndex(0);
   }, [query, allItems.length]);
+
+  // ============================================================
+  // EXECUTE
+  // ============================================================
 
   const executeCommand = (item) => {
     if (item.action) {
@@ -182,6 +231,10 @@ export default function CommandShellSearch({ currentApp }) {
     setQuery("");
     setSelectedIndex(0);
   };
+
+  // ============================================================
+  // KEYBOARD NAVIGATION
+  // ============================================================
 
   const handleKeyDown = (e) => {
     if (e.key === "ArrowDown") {
@@ -205,45 +258,96 @@ export default function CommandShellSearch({ currentApp }) {
         executeCommand(allItems[selectedIndex]);
       }
     }
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setOpen(false);
+    }
   };
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      {/* Trigger */}
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        setOpen(value);
+
+        if (!value) {
+          setQuery("");
+          setSelectedIndex(0);
+        }
+      }}
+    >
+      {/* ====================================================== */}
+      {/* HEADER SEARCH ICON */}
+      {/* ====================================================== */}
+
       <DialogTrigger asChild>
-        <div className="relative flex-1 max-w-[380px] cursor-text">
+        <button
+          type="button"
+          data-testid="topbar-search"
+          aria-label="Search"
+          title={`Search ${meta.name || ""}`}
+          className="
+            w-10
+            h-10
+            shrink-0
+            rounded-full
+            flex
+            items-center
+            justify-center
+            hover:bg-[#F4F6F7]
+            transition-colors
+            focus:outline-none
+            focus:ring-2
+            focus:ring-[#1F453B]/20
+          "
+        >
           <Search
-            size={16}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none"
+            size={20}
+            strokeWidth={2}
+            style={{
+              color: "#1F453B",
+            }}
           />
-
-          <input
-            type="text"
-            value={query}
-            onFocus={() => setOpen(true)}
-            placeholder={meta.searchPh || "Search or jump to..."}
-            className="bc-input pl-10 w-full cursor-text"
-            readOnly
-          />
-
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[var(--muted)] hidden sm:block">
-            ⌘K
-          </div>
-        </div>
+        </button>
       </DialogTrigger>
 
+      {/* ====================================================== */}
+      {/* SEARCH MODAL */}
+      {/* ====================================================== */}
+
       <DialogContent
-        className="bc-card max-w-[520px] p-0 overflow-hidden"
-        style={{ maxHeight: "85vh" }}
+        className="
+          bc-card
+          w-[calc(100vw-24px)]
+          sm:w-full
+          max-w-[520px]
+          p-0
+          overflow-hidden
+        "
+        style={{
+          maxHeight: "85vh",
+        }}
       >
-        {/* ====================================================== */}
-        {/* HEADER */}
-        {/* ====================================================== */}
+        {/* ==================================================== */}
+        {/* MODAL HEADER */}
+        {/* ==================================================== */}
 
         <div className="p-4 border-b border-border relative">
           <div className="relative">
             <Search
               size={20}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)]"
+              className="
+                absolute
+                left-4
+                top-1/2
+                -translate-y-1/2
+                text-[var(--muted)]
+              "
             />
 
             <input
@@ -252,26 +356,45 @@ export default function CommandShellSearch({ currentApp }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type a command or search..."
-              className="w-full pl-12 pr-10 py-4 bg-transparent text-[16px] text-[var(--ink-green)] focus:outline-none"
+              placeholder={meta.searchPh || "Type a command or search..."}
+              className="
+                w-full
+                pl-12
+                pr-10
+                py-4
+                bg-transparent
+                text-[16px]
+                text-[var(--ink-green)]
+                focus:outline-none
+              "
             />
           </div>
 
           <button
+            type="button"
             onClick={() => setOpen(false)}
-            className="absolute top-4 right-4 text-[var(--muted)] hover:text-[var(--ink-green)]"
+            className="
+              absolute
+              top-4
+              right-4
+              text-[var(--muted)]
+              hover:text-[var(--ink-green)]
+            "
+            aria-label="Close search"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* ====================================================== */}
+        {/* ==================================================== */}
         {/* RESULTS */}
-        {/* ====================================================== */}
+        {/* ==================================================== */}
 
         <div
           className="overflow-auto"
-          style={{ maxHeight: "calc(85vh - 120px)" }}
+          style={{
+            maxHeight: "calc(85vh - 120px)",
+          }}
         >
           {/* Loading */}
 
@@ -289,9 +412,9 @@ export default function CommandShellSearch({ currentApp }) {
             </div>
           )}
 
-          {/* ====================================================== */}
+          {/* ================================================== */}
           {/* QUICK COMMANDS */}
-          {/* ====================================================== */}
+          {/* ================================================== */}
 
           {Object.entries(groupedCommands).map(([groupName, items]) => {
             const filtered = items.filter(
@@ -300,7 +423,9 @@ export default function CommandShellSearch({ currentApp }) {
                 item.label.toLowerCase().includes(query.toLowerCase()),
             );
 
-            if (!filtered.length) return null;
+            if (!filtered.length) {
+              return null;
+            }
 
             return (
               <div key={groupName} className="py-3">
@@ -318,12 +443,23 @@ export default function CommandShellSearch({ currentApp }) {
                   return (
                     <button
                       key={item.id}
+                      type="button"
                       onClick={() => executeCommand(item)}
-                      className={`w-full px-5 py-3.5 flex items-center gap-4 text-left transition-colors ${
-                        isSelected
-                          ? "bg-[var(--ink-green)] text-white"
-                          : "hover:bg-[var(--mist-soft)] text-[var(--ink-green)]"
-                      }`}
+                      className={`
+                          w-full
+                          px-5
+                          py-3.5
+                          flex
+                          items-center
+                          gap-4
+                          text-left
+                          transition-colors
+                          ${
+                            isSelected
+                              ? "bg-[var(--ink-green)] text-white"
+                              : "hover:bg-[var(--mist-soft)] text-[var(--ink-green)]"
+                          }
+                        `}
                     >
                       <Icon
                         size={18}
@@ -348,9 +484,10 @@ export default function CommandShellSearch({ currentApp }) {
               </div>
             );
           })}
-          {/* ====================================================== */}
-          {/* LIVE ELASTICSEARCH RESULTS */}
-          {/* ====================================================== */}
+
+          {/* ================================================== */}
+          {/* LIVE SEARCH RESULTS */}
+          {/* ================================================== */}
 
           {searchResults.length > 0 && (
             <div className="py-3">
@@ -367,12 +504,23 @@ export default function CommandShellSearch({ currentApp }) {
                 return (
                   <button
                     key={item.id || `${item.type}-${idx}`}
+                    type="button"
                     onClick={() => executeCommand(item)}
-                    className={`w-full px-5 py-3.5 flex items-center gap-4 text-left transition-colors ${
-                      isSelected
-                        ? "bg-[var(--ink-green)] text-white"
-                        : "hover:bg-[var(--mist-soft)] text-[var(--ink-green)]"
-                    }`}
+                    className={`
+                        w-full
+                        px-5
+                        py-3.5
+                        flex
+                        items-center
+                        gap-4
+                        text-left
+                        transition-colors
+                        ${
+                          isSelected
+                            ? "bg-[var(--ink-green)] text-white"
+                            : "hover:bg-[var(--mist-soft)] text-[var(--ink-green)]"
+                        }
+                      `}
                   >
                     <Search
                       size={18}
@@ -388,9 +536,15 @@ export default function CommandShellSearch({ currentApp }) {
 
                       {item.type && (
                         <div
-                          className={`text-xs mt-1 ${
-                            isSelected ? "text-white/70" : "text-[var(--muted)]"
-                          }`}
+                          className={`
+                              text-xs
+                              mt-1
+                              ${
+                                isSelected
+                                  ? "text-white/70"
+                                  : "text-[var(--muted)]"
+                              }
+                            `}
                         >
                           {item.type}
                         </div>
@@ -410,14 +564,16 @@ export default function CommandShellSearch({ currentApp }) {
           )}
         </div>
 
-        {/* ====================================================== */}
+        {/* ==================================================== */}
         {/* FOOTER */}
-        {/* ====================================================== */}
+        {/* ==================================================== */}
 
         <div
           className="
-            border-t border-border
-            px-5 py-3
+            border-t
+            border-border
+            px-5
+            py-3
             text-xs
             text-[var(--muted)]
             flex

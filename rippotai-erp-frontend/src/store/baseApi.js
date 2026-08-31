@@ -133,6 +133,7 @@ export const baseApi = createApi({
     "SampleBoard",
     "MaterialRateSheet",
     "MaterialEstimate",
+    "BudgetEstimates",
     "MaterialQuotation",
     "PurchaseOrder",
     "DeliveryChallan",

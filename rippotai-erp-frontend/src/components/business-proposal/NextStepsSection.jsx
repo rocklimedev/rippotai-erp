@@ -1,14 +1,28 @@
-import React, { useState } from "react";
-import { ListChecks, Save, CheckCircle2, GripVertical } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { ListChecks, Save, CheckCircle2 } from "lucide-react";
 
-import { Card, CardHeader } from "../ui/card";
-import { Checkbox, Input, Textarea } from "../ui/Field";
-import { Button } from "../ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+import { Input } from "@/components/ui/input";
+
+import { Textarea } from "@/components/ui/textarea";
+
+import { Checkbox } from "@/components/ui/checkbox";
+
+import { Button } from "@/components/ui/button";
+
+import { Label } from "@/components/ui/label";
+
 import { saveNextSteps } from "../../lib/mockApi";
 
 /* ============================================================
    ACTUAL PROPOSAL CONTENT
-   Based on BUSINESS PROPOSAL_removed.pdf
 ============================================================ */
 
 const DEFAULT_STEPS = [
@@ -83,18 +97,16 @@ const DEFAULT_CHECKLIST = [
 ];
 
 /* ============================================================
-   NORMALIZE DATA
+   NORMALIZE STEPS
 ============================================================ */
 
 function normalizeSteps(steps) {
   if (!Array.isArray(steps) || steps.length === 0) {
-    return DEFAULT_STEPS.map((step) => ({ ...step }));
+    return DEFAULT_STEPS.map((step) => ({
+      ...step,
+    }));
   }
 
-  /*
-   * Keep the proposal's five canonical steps.
-   * Preserve the saved `done` state from the API.
-   */
   return DEFAULT_STEPS.map((defaultStep) => {
     const existing = steps.find((step) => step.id === defaultStep.id);
 
@@ -110,15 +122,17 @@ function normalizeSteps(steps) {
   });
 }
 
+/* ============================================================
+   NORMALIZE CHECKLIST
+============================================================ */
+
 function normalizeChecklist(checklist) {
   if (!Array.isArray(checklist) || checklist.length === 0) {
-    return DEFAULT_CHECKLIST.map((item) => ({ ...item }));
+    return DEFAULT_CHECKLIST.map((item) => ({
+      ...item,
+    }));
   }
 
-  /*
-   * Keep the six canonical checklist items.
-   * Preserve saved completion state.
-   */
   return DEFAULT_CHECKLIST.map((defaultItem) => {
     const existing = checklist.find((item) => item.id === defaultItem.id);
 
@@ -143,16 +157,27 @@ export default function NextStepsSection({ data, onChange, projectId }) {
   const [savedAt, setSavedAt] = useState(null);
   const [saveError, setSaveError] = useState(null);
 
-  if (!data) return null;
+  /* ============================================================
+     SAFE DATA
+  ============================================================ */
 
-  const steps = normalizeSteps(data.steps);
-  const checklist = normalizeChecklist(data.checklist);
+  const normalizedData = useMemo(() => {
+    if (!data) return null;
 
-  const normalizedData = {
-    ...data,
-    steps,
-    checklist,
-  };
+    return {
+      ...data,
+      steps: normalizeSteps(data.steps),
+      checklist: normalizeChecklist(data.checklist),
+    };
+  }, [data]);
+
+  if (!normalizedData) return null;
+
+  const { steps, checklist } = normalizedData;
+
+  /* ============================================================
+     UPDATE DATA
+  ============================================================ */
 
   const updateData = (patch) => {
     onChange({
@@ -160,10 +185,6 @@ export default function NextStepsSection({ data, onChange, projectId }) {
       ...patch,
     });
 
-    /*
-     * Once the user changes something, remove the
-     * previous success indicator.
-     */
     setSavedAt(null);
     setSaveError(null);
   };
@@ -257,181 +278,288 @@ export default function NextStepsSection({ data, onChange, projectId }) {
       ? Math.round((completedProgressItems / totalProgressItems) * 100)
       : 0;
 
+  /* ============================================================
+     RENDER
+  ============================================================ */
+
   return (
-    <Card>
+    <Card className="w-full">
       {/* ========================================================
           HEADER
       ======================================================== */}
 
-      <CardHeader
-        icon={ListChecks}
-        title="Next steps"
-        subtitle="Five things stand between this proposal and a live site. Most clients clear them inside a fortnight."
-        action={
-          <Button
-            type="button"
-            onClick={handleSave}
-            loading={saving}
-            className="!min-h-[36px] !px-3 !text-[13px]"
-          >
-            <Save className="h-3.5 w-3.5" />
-            Save progress
-          </Button>
-        }
-      />
+      <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--mist-soft)] text-[var(--ink-green)]">
+            <ListChecks className="h-5 w-5" />
+          </div>
 
-      {/* ========================================================
-          SAVE STATUS
-      ======================================================== */}
+          <div>
+            <CardTitle className="text-base sm:text-lg">Next steps</CardTitle>
 
-      {savedAt && (
-        <div className="mb-4 flex items-center gap-1.5 rounded-lg border border-[var(--stroke)] bg-[var(--mist-soft)] px-3 py-2 text-xs font-medium text-[var(--ink-green)]">
-          <CheckCircle2 className="h-3.5 w-3.5" />
-          Saved at {new Date(savedAt).toLocaleTimeString()}
-        </div>
-      )}
-
-      {saveError && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
-          {saveError}
-        </div>
-      )}
-
-      {/* ========================================================
-          PROGRESS
-      ======================================================== */}
-
-      <div className="mb-6">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)]">
-            Progress
-          </span>
-
-          <span className="text-xs font-semibold text-[var(--ink-green)]">
-            {completedProgressItems}/{totalProgressItems}
-          </span>
+            <CardDescription className="mt-1 max-w-2xl text-xs sm:text-sm">
+              Five things stand between this proposal and a live site. Most
+              clients clear them inside a fortnight.
+            </CardDescription>
+          </div>
         </div>
 
-        <div className="h-1.5 overflow-hidden rounded-full bg-[var(--mist-soft)]">
+        <Button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          size="sm"
+          className="w-full shrink-0 sm:w-auto"
+        >
+          <Save className="h-4 w-4" />
+
+          {saving ? "Saving..." : "Save progress"}
+        </Button>
+      </CardHeader>
+
+      <CardContent className="space-y-8">
+        {/* ======================================================
+            SAVE STATUS
+        ====================================================== */}
+
+        {savedAt && (
+          <div className="flex items-center gap-2 rounded-lg border border-[var(--stroke)] bg-[var(--mist-soft)] px-3 py-2 text-xs font-medium text-[var(--ink-green)]">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+
+            <span>Saved at {new Date(savedAt).toLocaleTimeString()}</span>
+          </div>
+        )}
+
+        {saveError && (
           <div
-            className="h-full rounded-full bg-[var(--ink-green)] transition-all duration-300"
-            style={{
-              width: `${progress}%`,
-            }}
-          />
-        </div>
-      </div>
+            role="alert"
+            className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600"
+          >
+            {saveError}
+          </div>
+        )}
 
-      {/* ========================================================
-          FIVE NEXT STEPS
-      ======================================================== */}
+        {/* ======================================================
+            PROGRESS
+        ====================================================== */}
 
-      <div>
-        <p className="eyebrow mb-3">Next steps</p>
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)]">
+              Progress
+            </span>
 
-        <div className="space-y-3">
-          {steps.map((step, index) => (
+            <span className="text-xs font-semibold text-[var(--ink-green)]">
+              {completedProgressItems}/{totalProgressItems}
+            </span>
+          </div>
+
+          <div
+            className="h-2 w-full overflow-hidden rounded-full bg-[var(--mist-soft)]"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progress}
+          >
             <div
-              key={step.id}
-              className={`rounded-lg border p-4 transition ${
-                step.done
-                  ? "border-[var(--ink-green)]/20 bg-[var(--mist-soft)]"
-                  : "border-[var(--stroke)]"
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                {/* NUMBER */}
+              className="h-full rounded-full bg-[var(--ink-green)] transition-all duration-300"
+              style={{
+                width: `${progress}%`,
+              }}
+            />
+          </div>
+
+          <p className="mt-1.5 text-right text-[11px] text-[var(--muted)]">
+            {progress}% complete
+          </p>
+        </div>
+
+        {/* ======================================================
+            FIVE NEXT STEPS
+        ====================================================== */}
+
+        <section>
+          <div className="mb-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)]">
+              Next steps
+            </p>
+
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              Complete each step as the proposal moves toward mobilisation.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {steps.map((step, index) => {
+              const titleId = `${step.id}-title`;
+              const detailId = `${step.id}-detail`;
+
+              return (
                 <div
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold ${
+                  key={step.id}
+                  className={[
+                    "rounded-xl border p-4 transition-colors",
                     step.done
-                      ? "border-[var(--ink-green)] bg-[var(--ink-green)] text-white"
-                      : "border-[var(--stroke)] text-[var(--sage)]"
-                  }`}
+                      ? "border-[var(--ink-green)]/20 bg-[var(--mist-soft)]"
+                      : "border-[var(--stroke)]",
+                  ].join(" ")}
                 >
-                  {String(index + 1).padStart(2, "0")}
-                </div>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                    {/* NUMBER */}
 
-                {/* CHECKBOX */}
-                <div className="pt-1">
+                    <div
+                      className={[
+                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
+                        step.done
+                          ? "border-[var(--ink-green)] bg-[var(--ink-green)] text-white"
+                          : "border-[var(--stroke)] text-[var(--sage)]",
+                      ].join(" ")}
+                    >
+                      {String(index + 1).padStart(2, "0")}
+                    </div>
+
+                    {/* CONTENT */}
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start gap-3">
+                        {/* CHECKBOX */}
+
+                        <div className="pt-2">
+                          <Checkbox
+                            id={`${step.id}-checkbox`}
+                            checked={step.done}
+                            onCheckedChange={() => toggleStep(step.id)}
+                            aria-label={`Mark "${step.title}" as ${
+                              step.done ? "incomplete" : "complete"
+                            }`}
+                          />
+                        </div>
+
+                        {/* FIELDS */}
+
+                        <div className="min-w-0 flex-1 space-y-3">
+                          <div className="space-y-1.5">
+                            <Label htmlFor={titleId} className="sr-only">
+                              Step title
+                            </Label>
+
+                            <Input
+                              id={titleId}
+                              value={step.title}
+                              onChange={(event) =>
+                                updateStepField(
+                                  step.id,
+                                  "title",
+                                  event.target.value,
+                                )
+                              }
+                              className={[
+                                "font-semibold",
+                                step.done ? "line-through opacity-60" : "",
+                              ].join(" ")}
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <Label htmlFor={detailId} className="sr-only">
+                              Step details
+                            </Label>
+
+                            <Textarea
+                              id={detailId}
+                              rows={2}
+                              value={step.detail}
+                              onChange={(event) =>
+                                updateStepField(
+                                  step.id,
+                                  "detail",
+                                  event.target.value,
+                                )
+                              }
+                              className={step.done ? "opacity-60" : ""}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ======================================================
+            WHAT WE NEED FROM YOU TO START
+        ====================================================== */}
+
+        <section className="border-t border-[var(--stroke)] pt-6">
+          <div className="mb-4">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)]">
+              What we need from you to start
+            </p>
+
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              Complete these items before mobilisation.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+            {checklist.map((item) => {
+              const checkboxId = `checklist-${item.id}`;
+
+              return (
+                <label
+                  key={item.id}
+                  htmlFor={checkboxId}
+                  className={[
+                    "flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors",
+                    item.done
+                      ? "border-[var(--ink-green)]/20 bg-[var(--mist-soft)]"
+                      : "border-[var(--stroke)] hover:bg-[var(--mist-soft)]",
+                  ].join(" ")}
+                >
                   <Checkbox
-                    checked={step.done}
-                    onChange={() => toggleStep(step.id)}
-                  />
-                </div>
-
-                {/* CONTENT */}
-                <div className="min-w-0 flex-1 space-y-2">
-                  <Input
-                    value={step.title}
-                    onChange={(e) =>
-                      updateStepField(step.id, "title", e.target.value)
-                    }
-                    className={`!min-h-[36px] font-semibold ${
-                      step.done ? "line-through opacity-60" : ""
-                    }`}
+                    id={checkboxId}
+                    checked={item.done}
+                    onCheckedChange={() => toggleChecklist(item.id)}
+                    className="mt-0.5"
                   />
 
-                  <Textarea
-                    rows={2}
-                    value={step.detail}
-                    onChange={(e) =>
-                      updateStepField(step.id, "detail", e.target.value)
-                    }
-                    className={step.done ? "opacity-60" : ""}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
+                  <span
+                    className={[
+                      "text-sm leading-5",
+                      item.done
+                        ? "text-[var(--muted)] line-through"
+                        : "text-foreground",
+                    ].join(" ")}
+                  >
+                    {item.label}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ======================================================
+            M1 MOBILISATION NOTE
+        ====================================================== */}
+
+        <div className="rounded-xl border border-[var(--stroke)] bg-[var(--mist-soft)] p-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)]">
+            Release M1 and mobilise
+          </p>
+
+          <p className="mt-1 text-sm font-semibold">
+            15% booking and mobilisation
+          </p>
+
+          <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
+            Site team on the ground within five days.
+          </p>
         </div>
-      </div>
-
-      {/* ========================================================
-          WHAT WE NEED FROM YOU TO START
-      ======================================================== */}
-
-      <div className="mt-8 border-t border-[var(--stroke)] pt-6">
-        <p className="eyebrow mb-1">What we need from you to start</p>
-
-        <p className="mb-4 text-xs text-[var(--muted)]">
-          Complete these items before mobilisation.
-        </p>
-
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-          {checklist.map((item) => (
-            <div
-              key={item.id}
-              className={`rounded-lg border p-3 transition ${
-                item.done
-                  ? "border-[var(--ink-green)]/20 bg-[var(--mist-soft)]"
-                  : "border-[var(--stroke)]"
-              }`}
-            >
-              <Checkbox
-                checked={item.done}
-                onChange={() => toggleChecklist(item.id)}
-                label={item.label}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ========================================================
-          M1 MOBILISATION NOTE
-      ======================================================== */}
-
-      <div className="mt-6 rounded-lg border border-[var(--stroke)] p-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)]">
-          Release M1 and mobilise
-        </p>
-
-        <p className="mt-1 text-sm font-medium">15% booking and mobilisation</p>
-
-        <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-          Site team on the ground within five days.
-        </p>
-      </div>
+      </CardContent>
     </Card>
   );
 }

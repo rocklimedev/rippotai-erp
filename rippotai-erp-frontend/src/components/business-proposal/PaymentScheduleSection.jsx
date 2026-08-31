@@ -7,8 +7,17 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-import { Card, CardHeader } from "../ui/card";
-import { Input } from "../ui/Field";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 /* ============================================================
    ACTUAL PAYMENT SCHEDULE FROM PROPOSAL
@@ -118,14 +127,6 @@ function normalizeMilestones(milestones) {
     }));
   }
 
-  /*
-   * Keep the canonical seven milestones from the proposal.
-   *
-   * This prevents the form from accidentally drifting into
-   * M1/M2/M3-only or generic payment terminology.
-   *
-   * Existing saved share/name/trigger values are preserved.
-   */
   return DEFAULT_MILESTONES.map((defaultMilestone) => {
     const existing = milestones.find(
       (milestone) => milestone.code === defaultMilestone.code,
@@ -178,7 +179,6 @@ export default function PaymentScheduleSection({ data, onChange }) {
   if (!data) return null;
 
   const milestones = normalizeMilestones(data.milestones);
-
   const keyTerms = normalizeKeyTerms(data.keyTerms);
 
   const normalizedData = {
@@ -203,7 +203,7 @@ export default function PaymentScheduleSection({ data, onChange }) {
   const isComplete = totalShare === 100;
 
   /* ============================================================
-     UPDATE
+     UPDATE DATA
   ============================================================ */
 
   const updateData = (patch) => {
@@ -231,10 +231,8 @@ export default function PaymentScheduleSection({ data, onChange }) {
   };
 
   const removeMilestone = (index) => {
-    const next = milestones.filter((_, idx) => idx !== index);
-
     updateData({
-      milestones: next,
+      milestones: milestones.filter((_, idx) => idx !== index),
     });
   };
 
@@ -277,189 +275,297 @@ export default function PaymentScheduleSection({ data, onChange }) {
 
   return (
     <Card>
-      <CardHeader
-        icon={CircleDollarSign}
-        title="Payment schedule"
-        subtitle="Seven milestones against stages of work — edit before generating"
-      />
+      {/* ======================================================
+          HEADER
+      ====================================================== */}
 
-      {/* ========================================================
-          INTRODUCTION
-      ======================================================== */}
+      <CardHeader className="space-y-1">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+            <CircleDollarSign className="h-5 w-5 text-primary" />
+          </div>
 
-      <div className="mb-5 rounded-lg border border-[var(--stroke)] bg-[var(--mist-soft)] p-4">
-        <p className="text-sm leading-relaxed text-[var(--muted)]">
-          Each milestone falls due before the corresponding phase is mobilised,
-          so material can be ordered and labour deployed without a break between
-          phases.
-        </p>
-      </div>
+          <div>
+            <CardTitle>Payment schedule</CardTitle>
 
-      {/* ========================================================
-          MILESTONES
-      ======================================================== */}
+            <CardDescription className="mt-1">
+              Seven milestones against stages of work — edit before generating
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
 
-      <div className="table-container">
-        <table className="bc-table">
-          <thead>
-            <tr className="border-b border-[var(--stroke)]">
-              <th className="boq-cell w-16 py-2.5">Code</th>
+      <CardContent className="space-y-6">
+        {/* ====================================================
+            INTRODUCTION
+        ==================================================== */}
 
-              <th className="boq-cell py-2.5">Milestone</th>
+        <div className="rounded-lg border bg-muted/40 p-4">
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Each milestone falls due before the corresponding phase is
+            mobilised, so material can be ordered and labour deployed without a
+            break between phases.
+          </p>
+        </div>
 
-              <th className="boq-cell py-2.5">Release trigger</th>
+        {/* ====================================================
+            MILESTONES
+        ==================================================== */}
 
-              <th className="boq-cell num w-28 py-2.5">Share %</th>
+        <div className="space-y-3">
+          {/* DESKTOP TABLE */}
 
-              <th className="boq-cell actions py-2.5" />
-            </tr>
-          </thead>
+          <div className="hidden overflow-x-auto rounded-lg border md:block">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr className="border-b">
+                  <th className="w-20 px-4 py-3 text-left font-medium text-muted-foreground">
+                    Code
+                  </th>
 
-          <tbody>
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                    Milestone
+                  </th>
+
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                    Release trigger
+                  </th>
+
+                  <th className="w-28 px-4 py-3 text-right font-medium text-muted-foreground">
+                    Share %
+                  </th>
+
+                  <th className="w-16 px-4 py-3" />
+                </tr>
+              </thead>
+
+              <tbody>
+                {milestones.map((milestone, index) => (
+                  <tr
+                    key={milestone.id || milestone.code || index}
+                    className="border-b last:border-0"
+                  >
+                    <td className="p-3">
+                      <Input
+                        value={milestone.code}
+                        onChange={(event) =>
+                          updateMilestone(index, "code", event.target.value)
+                        }
+                      />
+                    </td>
+
+                    <td className="p-3">
+                      <Input
+                        value={milestone.name}
+                        placeholder="Milestone"
+                        onChange={(event) =>
+                          updateMilestone(index, "name", event.target.value)
+                        }
+                      />
+                    </td>
+
+                    <td className="p-3">
+                      <Input
+                        value={milestone.trigger}
+                        placeholder="Release trigger"
+                        onChange={(event) =>
+                          updateMilestone(index, "trigger", event.target.value)
+                        }
+                      />
+                    </td>
+
+                    <td className="p-3">
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={milestone.share}
+                        onChange={(event) =>
+                          updateMilestone(index, "share", event.target.value)
+                        }
+                        className="text-right"
+                      />
+                    </td>
+
+                    <td className="p-3 text-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeMilestone(index)}
+                        title="Remove milestone"
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* MOBILE CARDS */}
+
+          <div className="space-y-3 md:hidden">
             {milestones.map((milestone, index) => (
-              <tr
+              <div
                 key={milestone.id || milestone.code || index}
-                className="border-b border-[var(--stroke)] last:border-0"
+                className="rounded-lg border p-4"
               >
-                {/* CODE */}
-                <td className="boq-cell">
-                  <Input
-                    value={milestone.code}
-                    onChange={(event) =>
-                      updateMilestone(index, "code", event.target.value)
-                    }
-                  />
-                </td>
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="text-sm font-semibold">
+                    Milestone {index + 1}
+                  </span>
 
-                {/* NAME */}
-                <td className="boq-cell">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeMilestone(index)}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Code</Label>
+
+                    <Input
+                      value={milestone.code}
+                      onChange={(event) =>
+                        updateMilestone(index, "code", event.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Share %</Label>
+
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={milestone.share}
+                      onChange={(event) =>
+                        updateMilestone(index, "share", event.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-3 space-y-2">
+                  <Label>Milestone</Label>
+
                   <Input
                     value={milestone.name}
+                    placeholder="Milestone"
                     onChange={(event) =>
                       updateMilestone(index, "name", event.target.value)
                     }
                   />
-                </td>
+                </div>
 
-                {/* TRIGGER */}
-                <td className="boq-cell">
+                <div className="mt-3 space-y-2">
+                  <Label>Release trigger</Label>
+
                   <Input
                     value={milestone.trigger}
+                    placeholder="Release trigger"
                     onChange={(event) =>
                       updateMilestone(index, "trigger", event.target.value)
                     }
                   />
-                </td>
-
-                {/* SHARE */}
-                <td className="boq-cell num">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={milestone.share}
-                    onChange={(event) =>
-                      updateMilestone(index, "share", event.target.value)
-                    }
-                    className="text-right"
-                  />
-                </td>
-
-                {/* DELETE */}
-                <td className="boq-cell actions">
-                  <button
-                    type="button"
-                    onClick={() => removeMilestone(index)}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--mist-soft)] hover:text-red-600"
-                    title="Remove milestone"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </td>
-              </tr>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* ========================================================
-          MILESTONE FOOTER
-      ======================================================== */}
-
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={addMilestone}
-          className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-[var(--ink-green)] hover:bg-[var(--mist-soft)]"
-        >
-          <Plus className="h-4 w-4" />
-          Add milestone
-        </button>
-
-        <div
-          className={`flex items-center gap-1.5 text-sm font-semibold ${
-            isComplete ? "text-[var(--ink-green)]" : "text-amber-600"
-          }`}
-        >
-          {isComplete ? (
-            <CheckCircle2 className="h-4 w-4" />
-          ) : (
-            <AlertTriangle className="h-4 w-4" />
-          )}
-          Total: {totalShare}%
+          </div>
         </div>
-      </div>
 
-      {!isComplete && (
-        <p className="mt-2 text-right text-xs text-amber-600">
-          Payment milestones must total 100%.
-        </p>
-      )}
+        {/* ====================================================
+            MILESTONE FOOTER
+        ==================================================== */}
 
-      {/* ========================================================
-          KEY TERMS
-      ======================================================== */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={addMilestone}
+            className="gap-2 text-primary"
+          >
+            <Plus className="h-4 w-4" />
+            Add milestone
+          </Button>
 
-      <div className="mt-8 border-t border-[var(--stroke)] pt-6">
-        <span className="eyebrow mb-1 block">Key terms</span>
-
-        <p className="mb-4 text-xs text-[var(--muted)]">
-          These terms form part of the proposal payment schedule.
-        </p>
-
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {keyTerms.map((term, index) => (
-            <div
-              key={term.id || term.label || index}
-              className="rounded-lg border border-[var(--stroke)] p-3"
-            >
-              <p className="mb-1.5 text-sm font-semibold text-[var(--ink-green)]">
-                {term.label}
-              </p>
-
-              <Input
-                value={term.value}
-                onChange={(event) => updateTerm(index, event.target.value)}
-              />
-            </div>
-          ))}
+          <div
+            className={`flex items-center gap-2 text-sm font-semibold ${
+              isComplete ? "text-primary" : "text-amber-600 dark:text-amber-500"
+            }`}
+          >
+            {isComplete ? (
+              <CheckCircle2 className="h-4 w-4" />
+            ) : (
+              <AlertTriangle className="h-4 w-4" />
+            )}
+            Total: {totalShare}%
+          </div>
         </div>
-      </div>
 
-      {/* ========================================================
-          SEPARATE PAYMENT SCHEDULE NOTE
-      ======================================================== */}
+        {!isComplete && (
+          <p className="text-right text-xs text-amber-600 dark:text-amber-500">
+            Payment milestones must total 100%.
+          </p>
+        )}
 
-      <div className="mt-6 rounded-lg border border-[var(--stroke)] p-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)]">
-          Agreement note
-        </p>
+        {/* ====================================================
+            KEY TERMS
+        ==================================================== */}
 
-        <p className="mt-1 text-sm leading-relaxed text-[var(--muted)]">
-          The full sixteen-clause Payment Schedule is issued as a separate
-          document and forms part of the Agreement.
-        </p>
-      </div>
+        <div className="border-t pt-6">
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold">Key terms</h3>
+
+            <p className="mt-1 text-xs text-muted-foreground">
+              These terms form part of the proposal payment schedule.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {keyTerms.map((term, index) => (
+              <div
+                key={term.id || term.label || index}
+                className="rounded-lg border p-4"
+              >
+                <Label className="mb-2 block text-sm font-semibold">
+                  {term.label}
+                </Label>
+
+                <Input
+                  value={term.value}
+                  onChange={(event) => updateTerm(index, event.target.value)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ====================================================
+            AGREEMENT NOTE
+        ==================================================== */}
+
+        <div className="rounded-lg border p-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Agreement note
+          </p>
+
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+            The full sixteen-clause Payment Schedule is issued as a separate
+            document and forms part of the Agreement.
+          </p>
+        </div>
+      </CardContent>
     </Card>
   );
 }

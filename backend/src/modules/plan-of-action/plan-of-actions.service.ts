@@ -217,15 +217,72 @@ export class PlanOfActionsService {
   // Find By Project
   // ============================================================
 
-  findByProject(projectId: string) {
+  // ============================================================
+  // Find By Project
+  // ============================================================
+
+  async findByProject(projectId: string) {
     return this.planOfActionModel.findAll({
       where: {
         project_id: projectId,
       },
+
+      include: [
+        // --------------------------------------------------------
+        // Project
+        // --------------------------------------------------------
+        {
+          association: 'project',
+          attributes: ['id', 'name'],
+        },
+
+        // --------------------------------------------------------
+        // Phases
+        // --------------------------------------------------------
+        {
+          association: 'phases',
+
+          through: {
+            attributes: [
+              'id',
+              'plan_of_action_id',
+              'project_phase_id',
+
+              // Duration
+              'duration_min_days',
+              'duration_max_days',
+
+              // Notes
+              'parallel_work_note',
+              'inclusion_note',
+
+              // Gantt
+              'gantt_start_offset_days',
+              'gantt_duration_days',
+
+              // Ordering
+              'sort_order',
+
+              // Timestamps
+              'created_at',
+              'updated_at',
+              'deleted_at',
+            ],
+          },
+        },
+
+        // --------------------------------------------------------
+        // Terms Template
+        // --------------------------------------------------------
+        {
+          association: 'terms_template',
+          attributes: ['id', 'name'],
+        },
+      ],
+
       order: [['created_at', 'DESC']],
     });
   }
-
   // ============================================================
   // Update
   // ============================================================

@@ -3,6 +3,9 @@ import PaymentSchedulePage from "../../pages/documents/paymentSchedulePage";
 import AppDashboard from "@/components/dashboard/AppDashboard";
 import PaymentScheduleList from "@/pages/documents/PaymentScheduleList";
 import { PaymentScheduleForm } from "@/pages/documents/PaymentScheduleForm";
+import BudgetEstimateList from "../../pages/documents/BudgetEstimateList";
+import BudgetEstimateForm from "../../pages/documents/BudgetEstimateForm";
+import BudgetEstimateView from "../../pages/documents/BudgetEstimatesView";
 
 export const ledgerRoutes = [
   {
@@ -51,6 +54,18 @@ export const ledgerRoutes = [
       {
         path: "forms/payment-schedule",
         element: <PaymentScheduleForm />,
+      },
+      {
+        path: "budget-estimates/all",
+        element: <BudgetEstimateList />,
+      },
+      {
+        path: "forms/budget-estimate",
+        element: <BudgetEstimateForm />,
+      },
+      {
+        path: "budget-estimate/:id",
+        element: <BudgetEstimateView />,
       },
       {
         path: "aggrements/all",

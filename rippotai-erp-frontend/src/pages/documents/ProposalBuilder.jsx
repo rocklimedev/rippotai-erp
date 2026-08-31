@@ -22,7 +22,10 @@ import PaymentScheduleSection from "../../components/business-proposal/PaymentSc
 import NextStepsSection from "../../components/business-proposal/NextStepsSection";
 import DocumentPreview from "../../components/business-proposal/DocumentPreview";
 import ProposalReadinessCheck from "../../components/business-proposal/ProposalReadinessCheck";
-
+import {
+  useGetBudgetEstimatesQuery,
+  useUpdateBudgetEstimateMutation,
+} from "../../api/budget-estimates.api";
 import {
   useGetProjectByIdQuery,
   useUpdateProjectMutation,
@@ -51,10 +54,10 @@ import {
   mapPlanOfActionToUpdatePayload,
   mapPaymentScheduleFromApi,
   mapPaymentScheduleToUpdatePayload,
+  mapBudgetEstimateFromApi,
 } from "../../lib/proposalMappers";
-
 // Budget Estimate has no real endpoint yet — intentionally kept mocked.
-import { fetchBudgetEstimate, fetchNextSteps } from "../../lib/mockApi";
+import { fetchNextSteps } from "../../lib/mockApi";
 
 import { exportProposalToPdf } from "../../lib/pdf";
 
@@ -340,14 +343,22 @@ export default function ProposalBuilder({
     { project_id: projectId },
     { skip: !projectId },
   );
-
+  const {
+    data: budgetEstimateList,
+    isFetching: budgetFetching,
+    isLoading: budgetLoading,
+  } = useGetBudgetEstimatesQuery(projectId, {
+    skip: !projectId,
+  });
   // Assumes a single active Plan of Action / Payment Schedule per
   // project. If a project can have more than one (e.g. drafts and a
   // published version side by side), filter by status here instead
   // of taking the first entry.
   const planOfActionDoc = planOfActionList?.[0];
   const paymentScheduleDoc = paymentScheduleList?.[0];
-
+  const budgetEstimateDoc = Array.isArray(budgetEstimateList)
+    ? budgetEstimateList[0]
+    : null;
   /* ============================================================
      REAL DATA — WRITES
   ============================================================ */
@@ -357,7 +368,7 @@ export default function ProposalBuilder({
   const [replacePlanOfActionPhases] = useReplacePlanOfActionPhasesMutation();
   const [updatePlanOfAction] = useUpdatePlanOfActionMutation();
   const [updatePaymentSchedule] = useUpdatePaymentScheduleMutation();
-
+  const [updateBudgetEstimate] = useUpdateBudgetEstimateMutation();
   /* ============================================================
      LOAD MOCKED SECTIONS (Budget Estimate, Next Steps)
   ============================================================ */
@@ -365,46 +376,36 @@ export default function ProposalBuilder({
   useEffect(() => {
     let cancelled = false;
 
-    const loadMockedSections = async () => {
+    const loadNextSteps = async () => {
       try {
-        setMockLoading(true);
-
-        const [budgetEstimate, nextSteps] = await Promise.all([
-          fetchBudgetEstimate(projectId),
-          fetchNextSteps(projectId),
-        ]);
+        const nextSteps = await fetchNextSteps(projectId);
 
         if (cancelled) return;
 
         setProposal((previous) => ({
           ...previous,
-          budgetEstimate,
           nextSteps,
         }));
       } catch (error) {
-        console.error("Failed to load mocked proposal sections:", error);
+        console.error("Failed to load next steps:", error);
 
         if (!cancelled) {
           setProposal((previous) => ({
             ...previous,
-            budgetEstimate: previous.budgetEstimate || null,
             nextSteps: previous.nextSteps || null,
           }));
-        }
-      } finally {
-        if (!cancelled) {
-          setMockLoading(false);
         }
       }
     };
 
-    loadMockedSections();
+    if (projectId) {
+      loadNextSteps();
+    }
 
     return () => {
       cancelled = true;
     };
   }, [projectId]);
-
   /* ============================================================
      MERGE REAL DATA INTO PROPOSAL AS IT ARRIVES
   ============================================================ */
@@ -444,7 +445,14 @@ export default function ProposalBuilder({
       paymentSchedule: mapPaymentScheduleFromApi(paymentScheduleDoc),
     }));
   }, [paymentScheduleDoc]);
+  useEffect(() => {
+    if (!budgetEstimateDoc) return;
 
+    setProposal((previous) => ({
+      ...previous,
+      budgetEstimate: mapBudgetEstimateFromApi(budgetEstimateDoc),
+    }));
+  }, [budgetEstimateDoc]);
   /* ============================================================
      RESET TO READINESS WHEN SWITCHING PROJECT
   ============================================================ */
@@ -542,7 +550,28 @@ export default function ProposalBuilder({
       setSavingStep(false);
     }
   };
+  const saveBudgetEstimate = async () => {
+    if (!budgetEstimateDoc?.id || !proposal.budgetEstimate) return;
 
+    try {
+      setSavingStep(true);
+
+      const budget = proposal.budgetEstimate;
+
+      await updateBudgetEstimate({
+        id: budgetEstimateDoc.id,
+        body: {
+          title: budget.title,
+          client_name: budget.clientName,
+          location: budget.location,
+        },
+      }).unwrap();
+    } catch (error) {
+      console.error("Failed to save budget estimate:", error);
+    } finally {
+      setSavingStep(false);
+    }
+  };
   /* ============================================================
      READINESS
   ============================================================ */
@@ -641,8 +670,8 @@ export default function ProposalBuilder({
     planFetching ||
     paymentLoading ||
     paymentFetching ||
-    mockLoading;
-
+    budgetLoading ||
+    budgetFetching;
   const loading = checking && step === 0 && !proposal.projectDetail;
 
   if (loading) {
@@ -883,7 +912,14 @@ export default function ProposalBuilder({
                 onChange={patch("budgetEstimate")}
               />
 
-              <StepFooter onBack={() => setStep(3)} onNext={() => setStep(5)} />
+              <StepFooter
+                onBack={() => setStep(3)}
+                onNext={async () => {
+                  await saveBudgetEstimate();
+                  setStep(5);
+                }}
+                saving={savingStep}
+              />
             </>
           )}
 

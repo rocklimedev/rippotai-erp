@@ -20,13 +20,149 @@ import { BudgetEstimateCategory } from './budget-estimate-category.model';
 import { BudgetEstimateMiscellaneous } from './budget-estimate-miscellaneous.model';
 import { BudgetEstimateVersion } from './budget-estimate-version.model';
 
+/**
+ * ============================================================
+ * BUDGET ESTIMATE CREATION ATTRIBUTES
+ * ============================================================
+ *
+ * This is intentionally separate from BudgetEstimate.
+ *
+ * Sequelize's Model<T> typing treats the complete model instance
+ * as the creation object, which causes errors involving internal
+ * Sequelize properties such as:
+ *
+ * _attributes
+ * where
+ * sequelize
+ * destroy
+ * save
+ * etc.
+ *
+ * The second generic parameter tells Sequelize what is actually
+ * allowed/required when calling .create().
+ */
+export interface BudgetEstimateCreationAttributes {
+  // ============================================================
+  // PRIMARY KEY
+  // ============================================================
+
+  id?: string;
+
+  // ============================================================
+  // SOURCE
+  // ============================================================
+
+  project_id: string;
+
+  boq_id?: string | null;
+
+  source_template_id?: string | null;
+
+  // ============================================================
+  // BASIC INFORMATION
+  // ============================================================
+
+  estimate_number: string;
+
+  title: string;
+
+  status?:
+    | 'draft'
+    | 'in_progress'
+    | 'submitted'
+    | 'approved'
+    | 'rejected'
+    | 'revised'
+    | 'cancelled';
+
+  // ============================================================
+  // TOTALS
+  // ============================================================
+
+  subtotal?: number;
+
+  misc_percentage?: number;
+
+  misc_amount?: number;
+
+  design_amount?: number;
+
+  execution_amount?: number;
+
+  supervisor_amount?: number;
+
+  additional_amount?: number;
+
+  tax_percentage?: number;
+
+  tax_amount?: number;
+
+  discount_amount?: number;
+
+  total_amount?: number;
+
+  // ============================================================
+  // SNAPSHOT
+  // ============================================================
+
+  client_name?: string | null;
+
+  location?: string | null;
+
+  prepared_by?: string | null;
+
+  estimate_date?: string | null;
+
+  // ============================================================
+  // TERMS
+  // ============================================================
+
+  terms_html?: string | null;
+
+  terms_template_id?: string | null;
+
+  terms_template_version?: number | null;
+
+  // ============================================================
+  // VERSION / LOCK
+  // ============================================================
+
+  version?: number;
+
+  locked?: boolean;
+
+  // ============================================================
+  // APPROVAL / AUDIT
+  // ============================================================
+
+  approved_at?: Date | null;
+
+  approved_by?: string | null;
+
+  created_by?: string | null;
+
+  updated_by?: string | null;
+}
+
+/**
+ * ============================================================
+ * BUDGET ESTIMATE MODEL
+ * ============================================================
+ */
 @Table({
   tableName: 'budget_estimates',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
 })
-export class BudgetEstimate extends Model<BudgetEstimate> {
+export class BudgetEstimate extends Model<
+  BudgetEstimate,
+  BudgetEstimateCreationAttributes
+> {
+  // ============================================================
+  // PRIMARY KEY
+  // ============================================================
+
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column({
@@ -242,7 +378,9 @@ export class BudgetEstimate extends Model<BudgetEstimate> {
   declare version: number;
 
   @Default(false)
-  @Column(DataType.BOOLEAN)
+  @Column({
+    type: DataType.BOOLEAN,
+  })
   declare locked: boolean;
 
   // ============================================================

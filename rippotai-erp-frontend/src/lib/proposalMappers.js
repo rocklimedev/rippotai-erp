@@ -181,144 +181,262 @@ export function mapProjectDetailToUpdatePayload(pd) {
    SCOPE OF WORK
 ============================================================ */
 
+function normalizeText(value) {
+  if (value == null) return "";
+
+  return String(value).replace(/\s+/g, " ").trim();
+}
+
+function getProjectSpace(item) {
+  return item?.projectSpace || item?.project_space || null;
+}
+
+function getScopeCategory(item) {
+  return item?.scopeCategory || item?.scope_category || null;
+}
+
+function mapScopeItem(item, index, doc) {
+  if (!item) return null;
+
+  const projectSpace = getProjectSpace(item);
+  const scopeCategory = getScopeCategory(item);
+
+  const projectId =
+    item.projectId ??
+    item.project_id ??
+    doc?.projectId ??
+    doc?.project_id ??
+    doc?.project?.id ??
+    null;
+
+  const scopeOfWorkId =
+    item.scopeOfWorkId ?? item.scope_of_work_id ?? doc?.id ?? null;
+
+  const projectSpaceId =
+    item.projectSpaceId ?? item.project_space_id ?? projectSpace?.id ?? null;
+
+  const scopeCategoryId =
+    item.scopeCategoryId ?? item.scope_category_id ?? scopeCategory?.id ?? null;
+
+  const scopeOfWork = normalizeText(item.scopeOfWork ?? item.scope_of_work);
+
+  const notes = normalizeText(item.notes);
+
+  const isIncluded = booleanValue(item.isIncluded ?? item.is_included);
+
+  const isExcluded = booleanValue(item.isExcluded ?? item.is_excluded);
+
+  const sortOrder = item.sortOrder ?? item.sort_order ?? index + 1;
+
+  return {
+    /* -----------------------------------------
+       Identity
+    ----------------------------------------- */
+
+    id: item.id || null,
+
+    projectId,
+
+    scopeOfWorkId,
+
+    /* -----------------------------------------
+       Actual scope content
+    ----------------------------------------- */
+
+    scopeOfWork,
+
+    text: scopeOfWork,
+
+    notes,
+
+    /* -----------------------------------------
+       Project Space
+    ----------------------------------------- */
+
+    projectSpaceId,
+
+    projectSpace,
+
+    projectSpaceName: normalizeText(projectSpace?.name),
+
+    projectSpaceSlug: projectSpace?.slug || "",
+
+    projectSpaceDescription: normalizeText(projectSpace?.description),
+
+    /* -----------------------------------------
+       Scope Category
+    ----------------------------------------- */
+
+    scopeCategoryId,
+
+    scopeCategory,
+
+    scopeCategoryName: normalizeText(scopeCategory?.name),
+
+    scopeCategorySlug: scopeCategory?.slug || "",
+
+    scopeCategoryDescription: normalizeText(scopeCategory?.description),
+
+    /* -----------------------------------------
+       Inclusion state
+    ----------------------------------------- */
+
+    isIncluded,
+
+    isExcluded,
+
+    /* -----------------------------------------
+       Ordering
+    ----------------------------------------- */
+
+    sortOrder,
+  };
+}
+
 export function mapScopeOfWorkFromApi(doc) {
   if (!doc) return null;
 
   const rawItems = Array.isArray(doc.items) ? doc.items : [];
 
-  /* -----------------------------------------
-     Normalize child items
-  ----------------------------------------- */
+  /* ==========================================================
+     NORMALIZE ALL ITEMS
+  ========================================================== */
 
-  const items = rawItems.map((item, index) => {
-    const projectSpace = item.projectSpace || item.project_space || null;
+  const items = rawItems
+    .map((item, index) => mapScopeItem(item, index, doc))
+    .filter(Boolean);
 
-    const scopeCategory = item.scopeCategory || item.scope_category || null;
-
-    return {
-      id: item.id || null,
-
-      projectId:
-        item.projectId ||
-        item.project_id ||
-        doc.projectId ||
-        doc.project_id ||
-        doc.id ||
-        null,
-
-      scopeOfWorkId:
-        item.scopeOfWorkId || item.scope_of_work_id || doc.id || null,
-
-      scopeOfWork: valueOrEmpty(item.scopeOfWork ?? item.scope_of_work),
-
-      notes: valueOrEmpty(item.notes),
-
-      projectSpaceId:
-        item.projectSpaceId ??
-        item.project_space_id ??
-        projectSpace?.id ??
-        null,
-
-      scopeCategoryId:
-        item.scopeCategoryId ??
-        item.scope_category_id ??
-        scopeCategory?.id ??
-        null,
-
-      isIncluded: booleanValue(item.isIncluded ?? item.is_included),
-
-      isExcluded: booleanValue(item.isExcluded ?? item.is_excluded),
-
-      sortOrder: item.sortOrder ?? item.sort_order ?? index + 1,
-
-      projectSpace,
-
-      scopeCategory,
-    };
-  });
-
-  /* -----------------------------------------
-     Included
-  ----------------------------------------- */
+  /* ==========================================================
+     INCLUDED
+  ========================================================== */
 
   const included = items
     .filter((item) => item.isIncluded && !item.isExcluded)
-    .filter((item) => item.scopeOfWork.trim() !== "")
     .map((item) => ({
       id: item.id,
 
       text: item.scopeOfWork,
 
+      scopeOfWork: item.scopeOfWork,
+
       notes: item.notes,
+
+      projectId: item.projectId,
+
+      scopeOfWorkId: item.scopeOfWorkId,
 
       projectSpaceId: item.projectSpaceId,
 
+      projectSpaceName: item.projectSpaceName,
+
+      projectSpace: item.projectSpace,
+
       scopeCategoryId: item.scopeCategoryId,
+
+      scopeCategoryName: item.scopeCategoryName,
+
+      scopeCategory: item.scopeCategory,
+
+      isIncluded: true,
+
+      isExcluded: false,
 
       sortOrder: item.sortOrder,
     }));
 
-  /* -----------------------------------------
-     Excluded
-  ----------------------------------------- */
+  /* ==========================================================
+     EXCLUDED
+  ========================================================== */
 
   const notIncluded = items
     .filter((item) => item.isExcluded)
-    .filter((item) => item.scopeOfWork.trim() !== "")
     .map((item) => ({
       id: item.id,
 
       text: item.scopeOfWork,
 
+      scopeOfWork: item.scopeOfWork,
+
       notes: item.notes,
+
+      projectId: item.projectId,
+
+      scopeOfWorkId: item.scopeOfWorkId,
 
       projectSpaceId: item.projectSpaceId,
 
+      projectSpaceName: item.projectSpaceName,
+
+      projectSpace: item.projectSpace,
+
       scopeCategoryId: item.scopeCategoryId,
+
+      scopeCategoryName: item.scopeCategoryName,
+
+      scopeCategory: item.scopeCategory,
+
+      isIncluded: false,
+
+      isExcluded: true,
 
       sortOrder: item.sortOrder,
     }));
 
-  /* -----------------------------------------
-     Optional
+  /* ==========================================================
+     OPTIONAL
 
-     Backend currently does not provide
-     optional scope items.
-  ----------------------------------------- */
+     Backend does not currently return optional items.
+  ========================================================== */
 
   const optional = Array.isArray(doc.optional) ? doc.optional : [];
 
-  /* -----------------------------------------
-     Group by Scope Category
-  ----------------------------------------- */
+  /* ==========================================================
+     GROUP BY CATEGORY
+  ========================================================== */
 
-  const categoryMap = {};
+  const categoryMap = new Map();
 
   items.forEach((item) => {
     const categoryId = item.scopeCategoryId || "general";
 
-    const categoryName = item.scopeCategory?.name || "General";
+    const categoryName = item.scopeCategoryName || "General";
 
-    if (!categoryMap[categoryId]) {
-      categoryMap[categoryId] = {
+    if (!categoryMap.has(categoryId)) {
+      categoryMap.set(categoryId, {
         id: categoryId,
 
         name: categoryName,
 
+        description: item.scopeCategoryDescription || "",
+
         items: [],
-      };
+      });
     }
 
-    categoryMap[categoryId].items.push({
+    categoryMap.get(categoryId).items.push({
       id: item.id,
 
       text: item.scopeOfWork,
 
+      scopeOfWork: item.scopeOfWork,
+
       notes: item.notes,
+
+      projectId: item.projectId,
+
+      scopeOfWorkId: item.scopeOfWorkId,
 
       projectSpaceId: item.projectSpaceId,
 
+      projectSpaceName: item.projectSpaceName,
+
+      projectSpace: item.projectSpace,
+
       scopeCategoryId: item.scopeCategoryId,
+
+      scopeCategoryName: item.scopeCategoryName,
+
+      scopeCategory: item.scopeCategory,
 
       isIncluded: item.isIncluded,
 
@@ -328,32 +446,81 @@ export function mapScopeOfWorkFromApi(doc) {
     });
   });
 
-  const disciplines = Object.values(categoryMap).map((category) => ({
-    id: category.id,
+  /* ==========================================================
+     DISCIPLINES
+  ========================================================== */
 
-    name: category.name,
+  const disciplines = Array.from(categoryMap.values())
+    .map((category) => ({
+      id: category.id,
 
-    items: category.items.sort(
-      (a, b) => (a.sortOrder || 0) - (b.sortOrder || 0),
-    ),
-  }));
+      name: category.name,
 
-  /* -----------------------------------------
-     Return normalized SOW
-  ----------------------------------------- */
+      description: category.description,
+
+      items: category.items.sort(
+        (a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0),
+      ),
+    }))
+    .sort((a, b) => {
+      const aOrder = a.items?.[0]?.sortOrder || 0;
+
+      const bOrder = b.items?.[0]?.sortOrder || 0;
+
+      return aOrder - bOrder;
+    });
+
+  /* ==========================================================
+     PROJECT SPACES
+     
+     This gives the UI a clean list of actual project
+     spaces without having to dig through every item.
+  ========================================================== */
+
+  const spaceMap = new Map();
+
+  items.forEach((item) => {
+    if (!item.projectSpaceId) return;
+
+    if (!spaceMap.has(item.projectSpaceId)) {
+      spaceMap.set(item.projectSpaceId, {
+        id: item.projectSpaceId,
+
+        name: item.projectSpaceName,
+
+        slug: item.projectSpaceSlug,
+
+        description: item.projectSpaceDescription,
+
+        projectId: item.projectId,
+      });
+    }
+  });
+
+  const projectSpaces = Array.from(spaceMap.values());
+
+  /* ==========================================================
+     RETURN NORMALIZED DOCUMENT
+  ========================================================== */
 
   return {
-    /* ---------------------------------------
+    /* -----------------------------------------
        Document identity
-    --------------------------------------- */
+    ----------------------------------------- */
 
     id: doc.id || null,
 
-    projectId: doc.projectId || doc.project_id || doc.project?.id || null,
+    projectId: doc.projectId ?? doc.project_id ?? doc.project?.id ?? null,
 
-    /* ---------------------------------------
-       Scope document
-    --------------------------------------- */
+    /* -----------------------------------------
+       Project
+    ----------------------------------------- */
+
+    project: doc.project || null,
+
+    /* -----------------------------------------
+       Main scope document
+    ----------------------------------------- */
 
     scopeSummary: valueOrEmpty(doc.scopeSummary ?? doc.scope_summary),
 
@@ -369,9 +536,9 @@ export function mapScopeOfWorkFromApi(doc) {
 
     status: doc.status || "DRAFT",
 
-    /* ---------------------------------------
+    /* -----------------------------------------
        Approval
-    --------------------------------------- */
+    ----------------------------------------- */
 
     preparedBy: doc.preparedBy ?? doc.prepared_by ?? null,
 
@@ -388,9 +555,11 @@ export function mapScopeOfWorkFromApi(doc) {
     clientSignatureDate:
       doc.clientSignatureDate ?? doc.client_signature_date ?? null,
 
-    /* ---------------------------------------
-       Builder data
-    --------------------------------------- */
+    /* -----------------------------------------
+       Builder collections
+    ----------------------------------------- */
+
+    items,
 
     included,
 
@@ -400,20 +569,27 @@ export function mapScopeOfWorkFromApi(doc) {
 
     disciplines,
 
-    /* ---------------------------------------
-       Original normalized items
-    --------------------------------------- */
+    projectSpaces,
 
-    items,
+    /* -----------------------------------------
+       Useful counts
+    ----------------------------------------- */
 
-    /* ---------------------------------------
+    includedCount: included.length,
+
+    excludedCount: notIncluded.length,
+
+    totalItems: items.length,
+
+    /* -----------------------------------------
        Internal metadata
-    --------------------------------------- */
+    ----------------------------------------- */
 
     _id: doc.id || null,
+
+    _projectId: doc.projectId ?? doc.project_id ?? doc.project?.id ?? null,
   };
 }
-
 /* ============================================================
    SCOPE OF WORK → UPDATE PAYLOAD
 ============================================================ */
@@ -913,4 +1089,56 @@ export function selectProposalPaymentSchedule(schedules) {
   ----------------------------------------- */
 
   return schedules[0];
+}
+/* ============================================================
+   BUDGET ESTIMATE
+============================================================ */
+
+export function mapBudgetEstimateFromApi(doc) {
+  if (!doc) return null;
+
+  const categories = Array.isArray(doc.categories)
+    ? doc.categories
+    : Array.isArray(doc.sections)
+      ? doc.sections
+      : [];
+
+  return {
+    id: doc.id || null,
+
+    projectId: doc.projectId || doc.project_id || doc.project?.id || null,
+
+    boqId: doc.boqId || doc.boq_id || doc.boq?.id || null,
+
+    sourceTemplateId: doc.sourceTemplateId || doc.source_template_id || null,
+
+    estimateNumber: valueOrEmpty(doc.estimateNumber ?? doc.estimate_number),
+
+    title: valueOrEmpty(doc.title),
+
+    status: doc.status || "draft",
+
+    clientName: valueOrEmpty(doc.clientName ?? doc.client_name),
+
+    location: valueOrEmpty(doc.location),
+
+    subtotal: numberOrZero(doc.subtotal),
+
+    gstRate: numberOrZero(doc.gstRate ?? doc.gst_rate),
+
+    gstAmount: numberOrZero(doc.gstAmount ?? doc.gst_amount),
+
+    totalAmount: numberOrZero(
+      doc.totalAmount ??
+        doc.total_amount ??
+        doc.grandTotal ??
+        doc.grand_total ??
+        doc.total,
+    ),
+
+    categories,
+
+    /* Preserve complete backend response */
+    _raw: doc,
+  };
 }

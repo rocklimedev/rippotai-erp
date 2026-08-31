@@ -357,6 +357,8 @@ export const APP_MENUS = {
       items: [
         I("Payment Schedules", "payment-schedule/all"),
         I("Create Payment Schedule", "forms/payment-schedule"),
+        I("Budget Estimates", "budget-estimates/all"),
+        I("Create Budget Estimates", "forms/budget-estimate"),
         I("Aggrements", "aggrements/all"),
       ],
     },

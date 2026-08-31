@@ -11,21 +11,80 @@ import {
 
 import { BudgetEstimate } from './budget-estimate.model';
 import { BudgetEstimateCategory } from './budget-estimate-category.model';
+
 import { LibraryItem } from '@/modules/boqs/models/library-item.model';
 import { BoqItem } from '@/modules/boqs/models/boq-item.model';
 import { Unit } from '@/modules/metas/models/unit.model';
 
+/**
+ * ============================================================
+ * CREATION ATTRIBUTES
+ * ============================================================
+ */
+export interface BudgetEstimateItemCreationAttributes {
+  id?: string;
+
+  estimate_id: string;
+
+  estimate_category_id: string;
+
+  library_item_id?: string | null;
+
+  boq_item_id?: string | null;
+
+  // Snapshot
+  name: string;
+
+  unit_id?: string | null;
+
+  unit?: string | null;
+
+  quantity?: number;
+
+  rate?: number;
+
+  amount?: number;
+
+  calc_type?: 'M' | 'L';
+
+  location?: string | null;
+
+  detail?: Record<string, unknown> | null;
+
+  notes?: string | null;
+
+  hidden?: boolean;
+
+  sort_order?: number;
+}
+
+/**
+ * ============================================================
+ * MODEL
+ * ============================================================
+ */
 @Table({
   tableName: 'budget_estimate_items',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
 })
-export class BudgetEstimateItem extends Model<BudgetEstimateItem> {
+export class BudgetEstimateItem extends Model<
+  BudgetEstimateItem,
+  BudgetEstimateItemCreationAttributes
+> {
+  // ============================================================
+  // PRIMARY KEY
+  // ============================================================
+
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column(DataType.CHAR(36))
   declare id: string;
+
+  // ============================================================
+  // ESTIMATE
+  // ============================================================
 
   @ForeignKey(() => BudgetEstimate)
   @Column({
@@ -34,6 +93,10 @@ export class BudgetEstimateItem extends Model<BudgetEstimateItem> {
   })
   declare estimate_id: string;
 
+  // ============================================================
+  // ESTIMATE CATEGORY
+  // ============================================================
+
   @ForeignKey(() => BudgetEstimateCategory)
   @Column({
     type: DataType.CHAR(36),
@@ -41,12 +104,20 @@ export class BudgetEstimateItem extends Model<BudgetEstimateItem> {
   })
   declare estimate_category_id: string;
 
+  // ============================================================
+  // LIBRARY ITEM
+  // ============================================================
+
   @ForeignKey(() => LibraryItem)
   @Column({
     type: DataType.CHAR(36),
     allowNull: true,
   })
   declare library_item_id: string | null;
+
+  // ============================================================
+  // BOQ ITEM
+  // ============================================================
 
   @ForeignKey(() => BoqItem)
   @Column({
@@ -65,6 +136,10 @@ export class BudgetEstimateItem extends Model<BudgetEstimateItem> {
   })
   declare name: string;
 
+  // ============================================================
+  // UNIT
+  // ============================================================
+
   @ForeignKey(() => Unit)
   @Column({
     type: DataType.CHAR(36),
@@ -77,6 +152,10 @@ export class BudgetEstimateItem extends Model<BudgetEstimateItem> {
     allowNull: true,
   })
   declare unit: string | null;
+
+  // ============================================================
+  // CALCULATION
+  // ============================================================
 
   @Column({
     type: DataType.DECIMAL(15, 2),
@@ -105,6 +184,10 @@ export class BudgetEstimateItem extends Model<BudgetEstimateItem> {
     defaultValue: 'M',
   })
   declare calc_type: 'M' | 'L';
+
+  // ============================================================
+  // ADDITIONAL INFORMATION
+  // ============================================================
 
   @Column({
     type: DataType.STRING(255),

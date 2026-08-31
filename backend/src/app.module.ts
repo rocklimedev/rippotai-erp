@@ -58,6 +58,7 @@ import { ProcessWorkflowModule } from './modules/process-workflow/process-workfl
 import { SiteOperationsModule } from './modules/site-operations/site-operations.module';
 import { MaterialProcurementModule } from './modules/material-procurement/material-procurement.module';
 import { ScopeOfWorkModule } from './modules/scope-of-work/scope-of-work.module';
+import { BudgetEstimateModule } from './modules/budget-estimate/budget-estimate.module';
 
 @Module({
   imports: [
@@ -132,7 +133,7 @@ import { ScopeOfWorkModule } from './modules/scope-of-work/scope-of-work.module'
     CalendarModule,
     DashboardsModule,
     LeadsModule,
-
+    BudgetEstimateModule,
     // ============================================================
     // Infrastructure
     // ============================================================
