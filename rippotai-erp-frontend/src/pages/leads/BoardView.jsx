@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useGetBoardQuery, useMoveStageMutation } from "../../api/leads.api";
-import LeadCard from "./LeadCard";
+
+import LeadCard from "../../components/leads/LeadCard";
+import LeadActionModal from "../../components/leads/LeadActionModal";
 
 const STAGE_ACCENTS = {
   new: "#3f6d8a",
@@ -32,17 +34,32 @@ const formatCurrency = (value) => {
   return String(value);
 };
 
-export default function BoardView({
-  onOpenLead,
-  onEditLead,
-  onRemark,
-  onProposed,
-}) {
+export default function BoardView({ onOpenLead, onEditLead }) {
   const { data, isLoading, isError } = useGetBoardQuery();
   const [moveStage] = useMoveStageMutation();
 
   const [dragId, setDragId] = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
+
+  const [modal, setModal] = useState(null);
+
+  const openRemark = (lead) => {
+    setModal({
+      kind: "remark",
+      lead,
+    });
+  };
+
+  const openProposed = (lead) => {
+    setModal({
+      kind: "proposed",
+      lead,
+    });
+  };
+
+  const closeModal = () => {
+    setModal(null);
+  };
 
   if (isLoading) {
     return (
@@ -95,7 +112,7 @@ export default function BoardView({
       </div>
 
       {/* -------------------------------------------------------------- */}
-      {/* BOARD                                                            */}
+      {/* BOARD                                                           */}
       {/* -------------------------------------------------------------- */}
 
       <div className="flex-1 min-w-0 overflow-x-auto px-7 pb-8">
@@ -111,7 +128,9 @@ export default function BoardView({
                 lead.value ??
                 lead.budget;
 
-              if (typeof raw === "number") return sum + raw;
+              if (typeof raw === "number") {
+                return sum + raw;
+              }
 
               const parsed = Number(String(raw || "").replace(/[₹,\s]/g, ""));
 
@@ -221,8 +240,8 @@ export default function BoardView({
                         dragging={dragId === lead.id}
                         onClick={onOpenLead}
                         onEdit={onEditLead}
-                        onRemark={onRemark}
-                        onProposed={onProposed}
+                        onRemark={openRemark}
+                        onProposed={openProposed}
                         onDragStart={setDragId}
                         onDragEnd={() => {
                           setDragId(null);
@@ -237,6 +256,12 @@ export default function BoardView({
           })}
         </div>
       </div>
+
+      {/* -------------------------------------------------------------- */}
+      {/* LEAD ACTION MODAL                                               */}
+      {/* -------------------------------------------------------------- */}
+
+      <LeadActionModal modal={modal} onClose={closeModal} />
     </div>
   );
 }

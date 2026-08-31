@@ -6,6 +6,14 @@ export const documentApi = baseApi.injectEndpoints({
     // DOCUMENTS
     // ============================================================
 
+    /**
+     * GET /documents?projectId=<uuid>
+     *
+     * Get all documents for a project.
+     *
+     * Backend:
+     * DocumentsController.findAllForProject()
+     */
     getDocuments: builder.query({
       query: ({
         projectId,
@@ -13,62 +21,76 @@ export const documentApi = baseApi.injectEndpoints({
         status,
         category,
         documentTypeId,
-        q,
       } = {}) => {
-        const params = new URLSearchParams();
-
         const finalProjectId = projectId || project_id;
 
-        if (finalProjectId) {
-          params.append("projectId", finalProjectId);
+        /*
+         * Backend requires:
+         *
+         * @Query('projectId', ParseUUIDPipe)
+         *
+         * Therefore do not call GET /documents without a projectId.
+         */
+        if (!finalProjectId) {
+          return {
+            url: "/documents",
+            method: "GET",
+            params: {},
+          };
         }
 
+        const params = new URLSearchParams();
+
+        params.append("projectId", String(finalProjectId));
+
         if (status) {
-          params.append("status", status);
+          params.append("status", String(status));
         }
 
         if (category) {
-          params.append("category", category);
+          params.append("category", String(category));
         }
 
         if (documentTypeId) {
-          params.append("documentTypeId", documentTypeId);
+          params.append("documentTypeId", String(documentTypeId));
         }
 
-        /*
-         * q is currently not supported by the NestJS controller.
-         *
-         * Keep it here only if you later add:
-         * @Query('q') q?: string
-         *
-         * For now it is intentionally NOT sent.
-         */
-
-        const queryString = params.toString();
-
-        return `/documents${queryString ? `?${queryString}` : ""}`;
+        return `/documents?${params.toString()}`;
       },
 
       providesTags: (result) => [
         "Document",
-        ...(result || []).map((doc) => ({
-          type: "Document",
-          id: doc.id,
-        })),
+        ...(Array.isArray(result)
+          ? result.map((doc) => ({
+              type: "Document",
+              id: doc.id,
+            }))
+          : []),
       ],
     }),
 
+    /**
+     * GET /documents/:id
+     */
     getDocument: builder.query({
       query: (id) => `/documents/${id}`,
 
       providesTags: (result, error, id) => [
-        { type: "Document", id },
         "Document",
+        {
+          type: "Document",
+          id,
+        },
       ],
     }),
 
+    /**
+     * POST /documents
+     *
+     * Create document with optional file.
+     */
     createDocument: builder.mutation({
-      query: ({ data = {}, file }) => {
+      query: ({ data = {}, file } = {}) => {
         const formData = new FormData();
 
         Object.entries(data).forEach(([key, value]) => {
@@ -91,6 +113,9 @@ export const documentApi = baseApi.injectEndpoints({
       invalidatesTags: ["Document"],
     }),
 
+    /**
+     * PATCH /documents/:id
+     */
     updateDocument: builder.mutation({
       query: ({ id, data }) => ({
         url: `/documents/${id}`,
@@ -100,10 +125,18 @@ export const documentApi = baseApi.injectEndpoints({
 
       invalidatesTags: (result, error, { id }) => [
         "Document",
-        { type: "Document", id },
+        {
+          type: "Document",
+          id,
+        },
       ],
     }),
 
+    /**
+     * POST /documents/:id/file
+     *
+     * Replace main document file.
+     */
     replaceDocumentFile: builder.mutation({
       query: ({ id, file }) => {
         const formData = new FormData();
@@ -111,8 +144,6 @@ export const documentApi = baseApi.injectEndpoints({
         formData.append("file", file);
 
         return {
-          // IMPORTANT:
-          // NestJS controller is POST /documents/:id/file
           url: `/documents/${id}/file`,
           method: "POST",
           body: formData,
@@ -121,10 +152,16 @@ export const documentApi = baseApi.injectEndpoints({
 
       invalidatesTags: (result, error, { id }) => [
         "Document",
-        { type: "Document", id },
+        {
+          type: "Document",
+          id,
+        },
       ],
     }),
 
+    /**
+     * DELETE /documents/:id
+     */
     deleteDocument: builder.mutation({
       query: (id) => ({
         url: `/documents/${id}`,
@@ -135,9 +172,12 @@ export const documentApi = baseApi.injectEndpoints({
     }),
 
     // ============================================================
-    // LOCK / UNLOCK
+    // DOCUMENT LOCKING
     // ============================================================
 
+    /**
+     * PATCH /documents/:id/lock
+     */
     lockDocument: builder.mutation({
       query: ({ id, userId }) => ({
         url: `/documents/${id}/lock`,
@@ -149,10 +189,16 @@ export const documentApi = baseApi.injectEndpoints({
 
       invalidatesTags: (result, error, { id }) => [
         "Document",
-        { type: "Document", id },
+        {
+          type: "Document",
+          id,
+        },
       ],
     }),
 
+    /**
+     * PATCH /documents/:id/unlock
+     */
     unlockDocument: builder.mutation({
       query: ({ id, userId }) => ({
         url: `/documents/${id}/unlock`,
@@ -164,39 +210,42 @@ export const documentApi = baseApi.injectEndpoints({
 
       invalidatesTags: (result, error, { id }) => [
         "Document",
-        { type: "Document", id },
+        {
+          type: "Document",
+          id,
+        },
       ],
     }),
 
     // ============================================================
-    // DOWNLOAD
+    // DOCUMENT DOWNLOAD
     // ============================================================
 
+    /**
+     * GET /documents/:id/download
+     */
     downloadDocument: builder.query({
       query: (id) => ({
         url: `/documents/${id}/download`,
-        responseHandler: async (response) => await response.blob(),
+        responseHandler: async (response) => {
+          if (!response.ok) {
+            throw new Error(`Download failed: ${response.status}`);
+          }
+
+          return response.blob();
+        },
       }),
 
       keepUnusedDataFor: 0,
     }),
 
     // ============================================================
-    // VERSIONS
+    // DOCUMENT VERSIONS
     // ============================================================
 
-    getDocumentVersions: builder.query({
-      query: (documentId) => `/documents/${documentId}/versions`,
-
-      providesTags: (result, error, documentId) => [
-        "DocumentVersion",
-        {
-          type: "DocumentVersion",
-          id: documentId,
-        },
-      ],
-    }),
-
+    /**
+     * POST /documents/:id/versions
+     */
     addDocumentVersion: builder.mutation({
       query: ({ documentId, data = {}, file }) => {
         const formData = new FormData();
@@ -232,6 +281,30 @@ export const documentApi = baseApi.injectEndpoints({
       ],
     }),
 
+    /**
+     * GET /documents/:id/versions
+     */
+    getDocumentVersions: builder.query({
+      query: (documentId) => `/documents/${documentId}/versions`,
+
+      providesTags: (result, error, documentId) => [
+        "DocumentVersion",
+        {
+          type: "DocumentVersion",
+          id: documentId,
+        },
+        ...(Array.isArray(result)
+          ? result.map((version) => ({
+              type: "DocumentVersion",
+              id: version.id,
+            }))
+          : []),
+      ],
+    }),
+
+    /**
+     * DELETE /documents/:id/versions/:versionId
+     */
     deleteDocumentVersion: builder.mutation({
       query: ({ documentId, versionId }) => ({
         url: `/documents/${documentId}/versions/${versionId}`,
@@ -253,21 +326,12 @@ export const documentApi = baseApi.injectEndpoints({
     }),
 
     // ============================================================
-    // ATTACHMENTS
+    // DOCUMENT ATTACHMENTS
     // ============================================================
 
-    getDocumentAttachments: builder.query({
-      query: (documentId) => `/documents/${documentId}/attachments`,
-
-      providesTags: (result, error, documentId) => [
-        "DocumentAttachment",
-        {
-          type: "DocumentAttachment",
-          id: documentId,
-        },
-      ],
-    }),
-
+    /**
+     * POST /documents/:id/attachments
+     */
     addDocumentAttachment: builder.mutation({
       query: ({ documentId, data = {}, file }) => {
         const formData = new FormData();
@@ -290,19 +354,43 @@ export const documentApi = baseApi.injectEndpoints({
       },
 
       invalidatesTags: (result, error, { documentId }) => [
-        "DocumentAttachment",
-        {
-          type: "DocumentAttachment",
-          id: documentId,
-        },
         "Document",
         {
           type: "Document",
           id: documentId,
         },
+        "DocumentAttachment",
+        {
+          type: "DocumentAttachment",
+          id: documentId,
+        },
       ],
     }),
 
+    /**
+     * GET /documents/:id/attachments
+     */
+    getDocumentAttachments: builder.query({
+      query: (documentId) => `/documents/${documentId}/attachments`,
+
+      providesTags: (result, error, documentId) => [
+        "DocumentAttachment",
+        {
+          type: "DocumentAttachment",
+          id: documentId,
+        },
+        ...(Array.isArray(result)
+          ? result.map((attachment) => ({
+              type: "DocumentAttachment",
+              id: attachment.id,
+            }))
+          : []),
+      ],
+    }),
+
+    /**
+     * DELETE /documents/:id/attachments/:attachmentId
+     */
     deleteDocumentAttachment: builder.mutation({
       query: ({ documentId, attachmentId }) => ({
         url: `/documents/${documentId}/attachments/${attachmentId}`,
@@ -310,14 +398,14 @@ export const documentApi = baseApi.injectEndpoints({
       }),
 
       invalidatesTags: (result, error, { documentId }) => [
-        "DocumentAttachment",
-        {
-          type: "DocumentAttachment",
-          id: documentId,
-        },
         "Document",
         {
           type: "Document",
+          id: documentId,
+        },
+        "DocumentAttachment",
+        {
+          type: "DocumentAttachment",
           id: documentId,
         },
       ],
@@ -327,34 +415,54 @@ export const documentApi = baseApi.injectEndpoints({
     // DOCUMENT TYPES
     // ============================================================
 
+    /**
+     * GET /document-types
+     *
+     * Backend:
+     * DocumentTypesController.findAll()
+     *
+     * Supported query params:
+     * - phaseCode
+     * - targetType
+     * - isActive
+     */
     getDocumentTypes: builder.query({
-      query: ({ phaseCode, sectionCode, activeOnly = true } = {}) => {
+      query: ({ phaseCode, targetType, isActive } = {}) => {
         const params = new URLSearchParams();
 
         if (phaseCode) {
           params.append("phaseCode", phaseCode);
         }
 
-        if (sectionCode) {
-          params.append("sectionCode", sectionCode);
+        if (targetType) {
+          params.append("targetType", targetType);
         }
 
-        params.append("activeOnly", activeOnly ? "true" : "false");
+        if (isActive !== undefined && isActive !== null) {
+          params.append("isActive", isActive ? "true" : "false");
+        }
 
-        return `/documents/types?${params.toString()}`;
+        const queryString = params.toString();
+
+        return `/document-types${queryString ? `?${queryString}` : ""}`;
       },
 
       providesTags: (result) => [
         "DocumentType",
-        ...(result || []).map((item) => ({
-          type: "DocumentType",
-          id: item.id,
-        })),
+        ...(Array.isArray(result)
+          ? result.map((item) => ({
+              type: "DocumentType",
+              id: item.id,
+            }))
+          : []),
       ],
     }),
 
+    /**
+     * GET /document-types/:id
+     */
     getDocumentType: builder.query({
-      query: (id) => `/documents/types/${id}`,
+      query: (id) => `/document-types/${id}`,
 
       providesTags: (result, error, id) => [
         "DocumentType",
@@ -365,9 +473,12 @@ export const documentApi = baseApi.injectEndpoints({
       ],
     }),
 
+    /**
+     * POST /document-types
+     */
     createDocumentType: builder.mutation({
       query: (data) => ({
-        url: "/documents/types",
+        url: "/document-types",
         method: "POST",
         body: data,
       }),
@@ -375,9 +486,12 @@ export const documentApi = baseApi.injectEndpoints({
       invalidatesTags: ["DocumentType"],
     }),
 
+    /**
+     * PATCH /document-types/:id
+     */
     updateDocumentType: builder.mutation({
       query: ({ id, data }) => ({
-        url: `/documents/types/${id}`,
+        url: `/document-types/${id}`,
         method: "PATCH",
         body: data,
       }),
@@ -391,9 +505,12 @@ export const documentApi = baseApi.injectEndpoints({
       ],
     }),
 
+    /**
+     * DELETE /document-types/:id
+     */
     deleteDocumentType: builder.mutation({
       query: (id) => ({
-        url: `/documents/types/${id}`,
+        url: `/document-types/${id}`,
         method: "DELETE",
       }),
 
@@ -401,8 +518,258 @@ export const documentApi = baseApi.injectEndpoints({
     }),
 
     // ============================================================
+    // DOCUMENT REQUIREMENTS
+    // ============================================================
+
+    /**
+     * GET /document-requirements?projectId=<uuid>
+     *
+     * Get all document requirements for a project.
+     */
+    getDocumentRequirements: builder.query({
+      query: (projectId) => {
+        const params = new URLSearchParams();
+
+        params.append("projectId", projectId);
+
+        return `/document-requirements?${params.toString()}`;
+      },
+
+      providesTags: (result) => [
+        "DocumentRequirement",
+        ...(Array.isArray(result)
+          ? result.map((item) => ({
+              type: "DocumentRequirement",
+              id: item.id,
+            }))
+          : []),
+      ],
+    }),
+
+    /**
+     * GET /document-requirements/:id
+     */
+    getDocumentRequirement: builder.query({
+      query: (id) => `/document-requirements/${id}`,
+
+      providesTags: (result, error, id) => [
+        "DocumentRequirement",
+        {
+          type: "DocumentRequirement",
+          id,
+        },
+      ],
+    }),
+
+    /**
+     * POST /document-requirements
+     */
+    createDocumentRequirement: builder.mutation({
+      query: (data) => ({
+        url: "/document-requirements",
+        method: "POST",
+        body: data,
+      }),
+
+      invalidatesTags: ["DocumentRequirement"],
+    }),
+
+    /**
+     * PATCH /document-requirements/:id
+     */
+    updateDocumentRequirement: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `/document-requirements/${id}`,
+        method: "PATCH",
+        body: data,
+      }),
+
+      invalidatesTags: (result, error, { id }) => [
+        "DocumentRequirement",
+        {
+          type: "DocumentRequirement",
+          id,
+        },
+      ],
+    }),
+
+    /**
+     * PATCH /document-requirements/:id/completed
+     */
+    markDocumentRequirementCompleted: builder.mutation({
+      query: ({ id, isCompleted }) => ({
+        url: `/document-requirements/${id}/completed`,
+        method: "PATCH",
+        body: {
+          isCompleted,
+        },
+      }),
+
+      invalidatesTags: (result, error, { id }) => [
+        "DocumentRequirement",
+        {
+          type: "DocumentRequirement",
+          id,
+        },
+      ],
+    }),
+
+    /**
+     * DELETE /document-requirements/:id
+     */
+    deleteDocumentRequirement: builder.mutation({
+      query: (id) => ({
+        url: `/document-requirements/${id}`,
+        method: "DELETE",
+      }),
+
+      invalidatesTags: ["DocumentRequirement"],
+    }),
+
+    // ============================================================
+    // DOCUMENT REGISTER
+    // ============================================================
+
+    /**
+     * POST /documents/deliverable-records
+     *
+     * Record a deliverable.
+     *
+     * Backend:
+     * DocumentRegisterController.recordDeliverable()
+     */
+    recordDeliverable: builder.mutation({
+      query: (data) => ({
+        url: "/documents/deliverable-records",
+        method: "POST",
+        body: data,
+      }),
+
+      invalidatesTags: ["DocumentRegister", "Document"],
+    }),
+
+    /**
+     * GET /documents/:projectId/document-register
+     *
+     * IMPORTANT:
+     * Backend uses ParseIntPipe here.
+     *
+     * Therefore projectId MUST be an integer.
+     */
+    getDocumentRegister: builder.query({
+      query: (projectId) => `/documents/${projectId}/document-register`,
+
+      providesTags: (result, error, projectId) => [
+        "DocumentRegister",
+        {
+          type: "DocumentRegister",
+          id: projectId,
+        },
+      ],
+    }),
+
+    // ============================================================
+    // DOCUMENT DASHBOARD
+    // ============================================================
+
+    /**
+     * GET /documents/dashboard/stats
+     */
+    getDocumentDashboardStats: builder.query({
+      query: () => "/documents/dashboard/stats",
+
+      providesTags: ["DocumentDashboard"],
+    }),
+
+    /**
+     * GET /documents/dashboard/recent
+     *
+     * ?limit=10
+     */
+    getRecentDocuments: builder.query({
+      query: (limit = 6) => {
+        const params = new URLSearchParams();
+
+        params.append("limit", String(limit));
+
+        return `/documents/dashboard/recent?${params.toString()}`;
+      },
+
+      providesTags: ["DocumentDashboard"],
+    }),
+
+    /**
+     * GET /documents/dashboard/pending
+     */
+    getPendingDocuments: builder.query({
+      query: () => "/documents/dashboard/pending",
+
+      providesTags: ["DocumentDashboard"],
+    }),
+
+    /**
+     * GET /documents/dashboard/expiring-quotations
+     *
+     * ?withinDays=7
+     */
+    getExpiringQuotations: builder.query({
+      query: (withinDays = 7) => {
+        const params = new URLSearchParams();
+
+        params.append("withinDays", String(withinDays));
+
+        return `/documents/dashboard/expiring-quotations?${params.toString()}`;
+      },
+
+      providesTags: ["DocumentDashboard"],
+    }),
+
+    /**
+     * GET /documents/dashboard/boq-variance
+     */
+    getDocumentBoqVariance: builder.query({
+      query: () => "/documents/dashboard/boq-variance",
+
+      providesTags: ["DocumentDashboard"],
+    }),
+
+    /**
+     * GET /documents/dashboard/draft-estimates
+     */
+    getDraftEstimates: builder.query({
+      query: () => "/documents/dashboard/draft-estimates",
+
+      providesTags: ["DocumentDashboard"],
+    }),
+
+    /**
+     * GET /documents/dashboard/project-wise
+     *
+     * ?limit=5
+     */
+    getProjectWiseDocuments: builder.query({
+      query: (limit = 5) => {
+        const params = new URLSearchParams();
+
+        params.append("limit", String(limit));
+
+        return `/documents/dashboard/project-wise?${params.toString()}`;
+      },
+
+      providesTags: ["DocumentDashboard"],
+    }),
+
+    // ============================================================
     // WORKSPACE / REKI
     // ============================================================
+
+    /**
+     * NOTE:
+     * These routes were present in your previous frontend API,
+     * but they are NOT present in the controllers you posted.
+     *
+     * Keep them only if these endpoints exist in another controller.
+     */
 
     getDocumentReki: builder.query({
       query: (id) => `/documents/${id}/reki`,
@@ -416,8 +783,15 @@ export const documentApi = baseApi.injectEndpoints({
   overrideExisting: false,
 });
 
+// ================================================================
+// EXPORT HOOKS
+// ================================================================
+
 export const {
+  // ------------------------------------------------------------
   // Documents
+  // ------------------------------------------------------------
+
   useGetDocumentsQuery,
   useGetDocumentQuery,
   useCreateDocumentMutation,
@@ -425,31 +799,79 @@ export const {
   useReplaceDocumentFileMutation,
   useDeleteDocumentMutation,
 
-  // Lock
+  // ------------------------------------------------------------
+  // Lock / Unlock
+  // ------------------------------------------------------------
+
   useLockDocumentMutation,
   useUnlockDocumentMutation,
 
+  // ------------------------------------------------------------
   // Download
+  // ------------------------------------------------------------
+
   useLazyDownloadDocumentQuery,
 
+  // ------------------------------------------------------------
   // Versions
+  // ------------------------------------------------------------
+
   useGetDocumentVersionsQuery,
   useAddDocumentVersionMutation,
   useDeleteDocumentVersionMutation,
 
+  // ------------------------------------------------------------
   // Attachments
+  // ------------------------------------------------------------
+
   useGetDocumentAttachmentsQuery,
   useAddDocumentAttachmentMutation,
   useDeleteDocumentAttachmentMutation,
 
+  // ------------------------------------------------------------
   // Document Types
+  // ------------------------------------------------------------
+
   useGetDocumentTypesQuery,
   useGetDocumentTypeQuery,
   useCreateDocumentTypeMutation,
   useUpdateDocumentTypeMutation,
   useDeleteDocumentTypeMutation,
 
-  // Other
+  // ------------------------------------------------------------
+  // Document Requirements
+  // ------------------------------------------------------------
+
+  useGetDocumentRequirementsQuery,
+  useGetDocumentRequirementQuery,
+  useCreateDocumentRequirementMutation,
+  useUpdateDocumentRequirementMutation,
+  useMarkDocumentRequirementCompletedMutation,
+  useDeleteDocumentRequirementMutation,
+
+  // ------------------------------------------------------------
+  // Document Register
+  // ------------------------------------------------------------
+
+  useRecordDeliverableMutation,
+  useGetDocumentRegisterQuery,
+
+  // ------------------------------------------------------------
+  // Dashboard
+  // ------------------------------------------------------------
+
+  useGetDocumentDashboardStatsQuery,
+  useGetRecentDocumentsQuery,
+  useGetPendingDocumentsQuery,
+  useGetExpiringQuotationsQuery,
+  useGetDocumentBoqVarianceQuery,
+  useGetDraftEstimatesQuery,
+  useGetProjectWiseDocumentsQuery,
+
+  // ------------------------------------------------------------
+  // Workspace / REKI
+  // ------------------------------------------------------------
+
   useGetDocumentRekiQuery,
   useGetDocumentsWorkspaceQuery,
 } = documentApi;

@@ -1,11 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Upload, FileText } from "lucide-react";
 
-import { Shell, Card, Input, TextArea, CATEGORIES } from "../../hooks/shared";
+import { Shell, Card, Input, TextArea } from "../../hooks/shared";
 
-import { useCreateDocumentMutation } from "../../api/document.api";
+import {
+  useCreateDocumentMutation,
+  useGetDocumentTypesQuery,
+} from "../../api/document.api";
 
 import { useGetProjectsQuery } from "../../api/project.api";
 
@@ -17,13 +20,7 @@ export function DocumentUpload() {
   const nav = useNavigate();
 
   /* ------------------------------------------------------------
-     Project from query string
-
-     Supports both:
-       ?projectId=uuid
-       ?project_id=uuid
-
-     New standard is projectId.
+     Query string
      ------------------------------------------------------------ */
 
   const searchParams = new URLSearchParams(window.location.search);
@@ -31,13 +28,18 @@ export function DocumentUpload() {
   const initialProjectId =
     searchParams.get("projectId") || searchParams.get("project_id") || "";
 
+  const initialDocumentTypeId =
+    searchParams.get("documentTypeId") ||
+    searchParams.get("document_type_id") ||
+    "";
+
   /* ------------------------------------------------------------
      Form
      ------------------------------------------------------------ */
 
   const [form, setForm] = useState({
     projectId: initialProjectId,
-    category: "Agreements",
+    documentTypeId: initialDocumentTypeId,
     title: "",
     visibility: "internal",
     remarks: "",
@@ -55,23 +57,140 @@ export function DocumentUpload() {
   const { data: projectsResponse, isLoading: projectsLoading } =
     useGetProjectsQuery({});
 
-  /*
-   * Depending on your projectsApi response this may be:
-   *
-   *   [...]
-   *
-   * or:
-   *
-   *   { data: [...] }
-   *
-   * or:
-   *
-   *   { items: [...] }
-   */
+  const {
+    data: documentTypesResponse,
+    isLoading: documentTypesLoading,
+    isFetching: documentTypesFetching,
+  } = useGetDocumentTypesQuery({
+    isActive: true,
+  });
 
-  const projects = Array.isArray(projectsResponse)
-    ? projectsResponse
-    : projectsResponse?.items || projectsResponse?.data || [];
+  /* ------------------------------------------------------------
+     Normalize projects
+     ------------------------------------------------------------ */
+
+  const projects = useMemo(() => {
+    if (Array.isArray(projectsResponse)) {
+      return projectsResponse;
+    }
+
+    if (Array.isArray(projectsResponse?.items)) {
+      return projectsResponse.items;
+    }
+
+    if (Array.isArray(projectsResponse?.data)) {
+      return projectsResponse.data;
+    }
+
+    if (Array.isArray(projectsResponse?.results)) {
+      return projectsResponse.results;
+    }
+
+    return [];
+  }, [projectsResponse]);
+
+  /* ------------------------------------------------------------
+     Normalize document types
+     ------------------------------------------------------------ */
+
+  const documentTypes = useMemo(() => {
+    if (Array.isArray(documentTypesResponse)) {
+      return documentTypesResponse;
+    }
+
+    if (Array.isArray(documentTypesResponse?.items)) {
+      return documentTypesResponse.items;
+    }
+
+    if (Array.isArray(documentTypesResponse?.data)) {
+      return documentTypesResponse.data;
+    }
+
+    if (Array.isArray(documentTypesResponse?.results)) {
+      return documentTypesResponse.results;
+    }
+
+    return [];
+  }, [documentTypesResponse]);
+
+  /* ------------------------------------------------------------
+     Selected document type
+     ------------------------------------------------------------ */
+
+  const selectedDocumentType = useMemo(() => {
+    if (!form.documentTypeId) {
+      return null;
+    }
+
+    return (
+      documentTypes.find(
+        (type) => String(type.id) === String(form.documentTypeId),
+      ) || null
+    );
+  }, [documentTypes, form.documentTypeId]);
+
+  /* ------------------------------------------------------------
+     Categories derived from document types
+     
+     This allows the UI to group document types by category
+     without maintaining a hard-coded CATEGORIES array.
+     ------------------------------------------------------------ */
+
+  const documentTypeCategories = useMemo(() => {
+    const categories = new Map();
+
+    documentTypes.forEach((type) => {
+      const category =
+        type.category || type.documentCategory || type.group || "Other";
+
+      if (!categories.has(category)) {
+        categories.set(category, []);
+      }
+
+      categories.get(category).push(type);
+    });
+
+    return Array.from(categories.entries()).map(([category, types]) => ({
+      category,
+      types,
+    }));
+  }, [documentTypes]);
+
+  /* ------------------------------------------------------------
+     Keep selected document type valid
+     ------------------------------------------------------------ */
+
+  useEffect(() => {
+    if (!documentTypes.length) {
+      return;
+    }
+
+    /*
+     * If a document type came from the URL and exists,
+     * keep it.
+     */
+
+    if (
+      form.documentTypeId &&
+      documentTypes.some(
+        (type) => String(type.id) === String(form.documentTypeId),
+      )
+    ) {
+      return;
+    }
+
+    /*
+     * Otherwise automatically select the first active
+     * document type.
+     */
+
+    if (!form.documentTypeId) {
+      setForm((current) => ({
+        ...current,
+        documentTypeId: documentTypes[0].id,
+      }));
+    }
+  }, [documentTypes, form.documentTypeId]);
 
   /* ------------------------------------------------------------
      Field helper
@@ -81,6 +200,19 @@ export function DocumentUpload() {
     setForm((current) => ({
       ...current,
       [field]: value,
+    }));
+  };
+
+  /* ------------------------------------------------------------
+     Document type change
+     ------------------------------------------------------------ */
+
+  const handleDocumentTypeChange = (event) => {
+    const documentTypeId = event.target.value;
+
+    setForm((current) => ({
+      ...current,
+      documentTypeId,
     }));
   };
 
@@ -97,10 +229,11 @@ export function DocumentUpload() {
     }
 
     /*
-     * Backend controller currently allows 500 MB.
+     * Backend:
      *
-     * Keep the UI validation consistent with the actual backend
-     * limit rather than the old "25 MB" text.
+     * limits: {
+     *   fileSize: 500 * 1024 * 1024
+     * }
      */
 
     const maxSize = 500 * 1024 * 1024;
@@ -129,6 +262,11 @@ export function DocumentUpload() {
       return;
     }
 
+    if (!form.documentTypeId) {
+      toast.error("Please select a document type");
+      return;
+    }
+
     if (!form.title.trim()) {
       toast.error("Please enter a document title");
       return;
@@ -140,14 +278,50 @@ export function DocumentUpload() {
     }
 
     try {
+      /*
+       * Category comes from the selected DocumentType.
+       *
+       * This means the frontend no longer depends on:
+       *
+       * CATEGORIES = [...]
+       */
+
+      const category =
+        selectedDocumentType?.category ||
+        selectedDocumentType?.documentCategory ||
+        selectedDocumentType?.group ||
+        "";
+
       await createDocument({
         data: {
           projectId: form.projectId,
-          category: form.category,
+
+          /*
+           * IMPORTANT
+           * This is the new DocumentType relation.
+           */
+          documentTypeId: form.documentTypeId,
+
+          /*
+           * Keep category if your CreateDocumentDto
+           * still supports it.
+           *
+           * If category has been completely removed from
+           * CreateDocumentDto, simply remove this field.
+           */
+          ...(category
+            ? {
+                category,
+              }
+            : {}),
+
           title: form.title.trim(),
+
           visibility: form.visibility,
+
           remarks: form.remarks.trim(),
         },
+
         file,
       }).unwrap();
 
@@ -167,13 +341,19 @@ export function DocumentUpload() {
   };
 
   /* ------------------------------------------------------------
+     Loading state
+     ------------------------------------------------------------ */
+
+  const loadingDocumentTypes = documentTypesLoading || documentTypesFetching;
+
+  /* ------------------------------------------------------------
      Render
      ------------------------------------------------------------ */
 
   return (
     <Shell
       title="Upload Document"
-      subtitle="Attach a file to a project — PDF · Excel · Image · Other files (max 500 MB)"
+      subtitle="Attach a document to a project — PDF · Excel · Image · Other files (max 500 MB)"
     >
       <Card>
         <form onSubmit={submit} className="grid gap-4 max-w-xl">
@@ -199,31 +379,50 @@ export function DocumentUpload() {
 
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
-                  {project.name}
+                  {project.name ||
+                    project.projectName ||
+                    `Project ${project.id}`}
                 </option>
               ))}
             </select>
           </div>
 
           {/* ====================================================
-              Category
+              Document Type
               ==================================================== */}
 
           <div>
             <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Category
+              Document Type
             </label>
 
             <select
-              disabled={uploading}
+              required
+              disabled={loadingDocumentTypes || uploading}
               className="bc-input h-10 w-full disabled:opacity-60"
-              value={form.category}
-              onChange={(event) => updateField("category", event.target.value)}
+              value={form.documentTypeId}
+              onChange={handleDocumentTypeChange}
             >
-              {CATEGORIES.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
+              <option value="">
+                {loadingDocumentTypes
+                  ? "Loading document types…"
+                  : documentTypes.length === 0
+                    ? "No document types available"
+                    : "Select document type…"}
+              </option>
+
+              {documentTypeCategories.map(({ category, types }) => (
+                <optgroup key={category} label={category}>
+                  {types.map((type) => (
+                    <option key={type.id} value={type.id}>
+                      {type.name ||
+                        type.title ||
+                        type.label ||
+                        type.code ||
+                        "Untitled document type"}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </div>
@@ -241,7 +440,11 @@ export function DocumentUpload() {
               required
               disabled={uploading}
               value={form.title}
-              placeholder="Enter document title"
+              placeholder={
+                selectedDocumentType
+                  ? `e.g. ${selectedDocumentType.name || "Document"}`
+                  : "Enter document title"
+              }
               onChange={(event) => updateField("title", event.target.value)}
             />
           </div>
@@ -337,7 +540,12 @@ export function DocumentUpload() {
             <button
               type="submit"
               disabled={
-                uploading || projectsLoading || !form.projectId || !file
+                uploading ||
+                projectsLoading ||
+                loadingDocumentTypes ||
+                !form.projectId ||
+                !form.documentTypeId ||
+                !file
               }
               className="h-11 px-5 rounded-lg bg-[#1F453B] text-white font-semibold inline-flex items-center gap-2 disabled:opacity-60"
             >

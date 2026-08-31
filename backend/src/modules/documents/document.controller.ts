@@ -42,22 +42,11 @@ export class DocumentsController {
   // DOCUMENT DASHBOARD
   // ============================================================
 
-  /**
-   * GET /documents/dashboard/stats
-   *
-   * Overall dashboard statistics
-   */
   @Get('dashboard/stats')
   getDashboardStats() {
     return this.documentsDashboardService.getDashboardStats();
   }
 
-  /**
-   * GET /documents/dashboard/recent
-   * GET /documents/dashboard/recent?limit=10
-   *
-   * Recent documents, drawings, project briefs and site recce
-   */
   @Get('dashboard/recent')
   getRecentDocuments(@Query('limit') limit?: string) {
     const parsedLimit = limit ? Number(limit) : 6;
@@ -67,22 +56,11 @@ export class DocumentsController {
     );
   }
 
-  /**
-   * GET /documents/dashboard/pending
-   *
-   * Pending documents, drawings and site recce
-   */
   @Get('dashboard/pending')
   getPendingDocuments() {
     return this.documentsDashboardService.getPendingDocuments();
   }
 
-  /**
-   * GET /documents/dashboard/expiring-quotations
-   * GET /documents/dashboard/expiring-quotations?withinDays=14
-   *
-   * Quotations expiring within the specified number of days
-   */
   @Get('dashboard/expiring-quotations')
   getExpiringQuotations(@Query('withinDays') withinDays?: string) {
     const parsedDays = withinDays ? Number(withinDays) : 7;
@@ -92,32 +70,16 @@ export class DocumentsController {
     );
   }
 
-  /**
-   * GET /documents/dashboard/boq-variance
-   *
-   * BOQ vs quotation variance
-   */
   @Get('dashboard/boq-variance')
   getBoqVariance() {
     return this.documentsDashboardService.getBoqVariance();
   }
 
-  /**
-   * GET /documents/dashboard/draft-estimates
-   *
-   * Draft and submitted quotation/estimate counts
-   */
   @Get('dashboard/draft-estimates')
   getDraftEstimates() {
     return this.documentsDashboardService.getDraftEstimates();
   }
 
-  /**
-   * GET /documents/dashboard/project-wise
-   * GET /documents/dashboard/project-wise?limit=10
-   *
-   * Project-wise document, drawing and quotation summary
-   */
   @Get('dashboard/project-wise')
   getProjectWiseDocuments(@Query('limit') limit?: string) {
     const parsedLimit = limit ? Number(limit) : 5;
@@ -134,7 +96,7 @@ export class DocumentsController {
   /**
    * POST /documents
    *
-   * Create a document with optional file upload
+   * Create a document with optional file upload.
    */
   @Post()
   @UseInterceptors(FileInterceptor('file', FILE_UPLOAD_OPTIONS))
@@ -146,18 +108,31 @@ export class DocumentsController {
   }
 
   /**
-   * GET /documents?projectId=<uuid>
+   * GET /documents
    *
-   * Get all documents for a project
+   * Get all documents.
+   *
+   * Optional:
+   * ?projectId=<uuid>
+   * ?status=<status>
+   * ?category=<category>
+   * ?documentTypeId=<uuid>
+   *
+   * Examples:
+   *
+   * GET /documents
+   * GET /documents?projectId=<uuid>
+   * GET /documents?documentTypeId=<uuid>
    */
   @Get()
-  findAllForProject(
-    @Query('projectId', ParseUUIDPipe) projectId: string,
+  findAll(
+    @Query('projectId') projectId?: string,
     @Query('status') status?: string,
     @Query('category') category?: string,
     @Query('documentTypeId') documentTypeId?: string,
   ) {
-    return this.documentsService.findAllForProject(projectId, {
+    return this.documentsService.findAll({
+      projectId,
       status,
       category,
       documentTypeId,
@@ -166,8 +141,6 @@ export class DocumentsController {
 
   /**
    * GET /documents/:id
-   *
-   * Get a single document
    */
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
@@ -176,8 +149,6 @@ export class DocumentsController {
 
   /**
    * PATCH /documents/:id
-   *
-   * Update document details
    */
   @Patch(':id')
   update(
@@ -189,8 +160,6 @@ export class DocumentsController {
 
   /**
    * POST /documents/:id/file
-   *
-   * Replace the document's main file
    */
   @Post(':id/file')
   @UseInterceptors(FileInterceptor('file', FILE_UPLOAD_OPTIONS))
@@ -203,8 +172,6 @@ export class DocumentsController {
 
   /**
    * GET /documents/:id/download
-   *
-   * Download document file
    */
   @Get(':id/download')
   async download(@Param('id', ParseUUIDPipe) id: string, @Res() res: Response) {
@@ -234,11 +201,6 @@ export class DocumentsController {
   // DOCUMENT LOCKING
   // ============================================================
 
-  /**
-   * PATCH /documents/:id/lock
-   *
-   * Lock document for a user
-   */
   @Patch(':id/lock')
   lock(
     @Param('id', ParseUUIDPipe) id: string,
@@ -247,11 +209,6 @@ export class DocumentsController {
     return this.documentsService.lock(id, userId);
   }
 
-  /**
-   * PATCH /documents/:id/unlock
-   *
-   * Unlock document
-   */
   @Patch(':id/unlock')
   unlock(
     @Param('id', ParseUUIDPipe) id: string,
@@ -264,11 +221,6 @@ export class DocumentsController {
   // DELETE DOCUMENT
   // ============================================================
 
-  /**
-   * DELETE /documents/:id
-   *
-   * Delete document
-   */
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.documentsService.remove(id);
@@ -278,11 +230,6 @@ export class DocumentsController {
   // DOCUMENT VERSIONS
   // ============================================================
 
-  /**
-   * POST /documents/:id/versions
-   *
-   * Add a new document version
-   */
   @Post(':id/versions')
   @UseInterceptors(FileInterceptor('file', FILE_UPLOAD_OPTIONS))
   addVersion(
@@ -293,21 +240,11 @@ export class DocumentsController {
     return this.documentsService.addVersion(id, dto, file);
   }
 
-  /**
-   * GET /documents/:id/versions
-   *
-   * List document versions
-   */
   @Get(':id/versions')
   listVersions(@Param('id', ParseUUIDPipe) id: string) {
     return this.documentsService.listVersions(id);
   }
 
-  /**
-   * DELETE /documents/:id/versions/:versionId
-   *
-   * Delete a document version
-   */
   @Delete(':id/versions/:versionId')
   removeVersion(
     @Param('id', ParseUUIDPipe) id: string,
@@ -320,11 +257,6 @@ export class DocumentsController {
   // DOCUMENT ATTACHMENTS
   // ============================================================
 
-  /**
-   * POST /documents/:id/attachments
-   *
-   * Add attachment to document
-   */
   @Post(':id/attachments')
   @UseInterceptors(FileInterceptor('file', FILE_UPLOAD_OPTIONS))
   addAttachment(
@@ -335,21 +267,11 @@ export class DocumentsController {
     return this.documentsService.addAttachment(id, dto, file);
   }
 
-  /**
-   * GET /documents/:id/attachments
-   *
-   * List document attachments
-   */
   @Get(':id/attachments')
   listAttachments(@Param('id', ParseUUIDPipe) id: string) {
     return this.documentsService.listAttachments(id);
   }
 
-  /**
-   * DELETE /documents/:id/attachments/:attachmentId
-   *
-   * Delete document attachment
-   */
   @Delete(':id/attachments/:attachmentId')
   removeAttachment(
     @Param('id', ParseUUIDPipe) id: string,

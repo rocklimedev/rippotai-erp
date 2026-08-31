@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { useForgotPasswordMutation } from "../api/auth.api"; // adjust path
+import { useForgotPasswordMutation } from "../../api/auth.api"; // adjust path
 
 const GREEN = "#1F453B";
 const TEXT = "#333333";

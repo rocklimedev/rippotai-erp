@@ -107,6 +107,7 @@ export const baseApi = createApi({
     "CalendarStats",
     // dashboard
     "Dashboard",
+    "DocumentType",
     // leads
     "Leads",
     "Board",

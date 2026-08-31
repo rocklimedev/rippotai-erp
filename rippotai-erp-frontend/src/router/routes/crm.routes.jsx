@@ -1,28 +1,28 @@
 import AppLayout from "@/layouts/AppLayout";
 
 import AppDashboard from "@/components/dashboard/AppDashboard";
-import BoardView from "@/components/leads/BoardView";
+import BoardView from "@/pages/leads/BoardView";
 
-import ContactsView from "@/components/leads/ContactsView";
-import SiteRecceList from "@/pages/documents/SiteRecceList";
-import ProjectBriefList from "@/pages/documents/ProjectBriefList";
-import PlanOfActionList from "@/pages/documents/PlanOfActionList";
+import ContactsView from "@/pages/leads/ContactsView";
+import SiteRecceList from "@/pages/site-recce/SiteRecceList";
+import ProjectBriefList from "@/pages/brief/ProjectBriefList";
+import PlanOfActionList from "@/pages/plan-of-action/PlanOfActionList";
 
-import ScopeOfWorkList from "@/pages/documents/ScopeOfWorkList";
-import NewLeadPage from "@/components/leads/NewLeadPage";
+import ScopeOfWorkList from "@/pages/scope-of-work/ScopeOfWorkList";
+import NewLeadPage from "@/pages/leads/NewLeadPage";
 
-import { BriefForm } from "@/pages/documents/BriefForm";
-import { SiteRekiForm } from "@/pages/documents/SiteRekiForm";
-import { PlanOfActionForm } from "@/pages/documents/PlanOfActionForm";
+import { BriefForm } from "@/pages/brief/BriefForm";
+import { SiteRekiForm } from "@/pages/site-recce/SiteRekiForm";
+import { PlanOfActionForm } from "@/pages/plan-of-action/PlanOfActionForm";
 
-import { ScopeOfWorkForm } from "@/pages/documents/ScopeOfWorkForm";
+import { ScopeOfWorkForm } from "@/pages/scope-of-work/ScopeOfWorkForm";
 
 import DocumentActivity from "@/pages/documents/DocumentActivity";
-import { SiteRekiView } from "../../pages/documents/SiteRekiView";
-import { ProjectBriefView } from "../../pages/documents/ProjectBriefView";
-import { PlanOfActionView } from "../../pages/documents/PlanOfActionView";
+import { SiteRekiView } from "../../pages/site-recce/SiteRekiView";
+import { ProjectBriefView } from "../../pages/brief/ProjectBriefView";
+import { PlanOfActionView } from "../../pages/plan-of-action/PlanOfActionView";
 
-import { ScopeOfWorkView } from "../../pages/documents/ScopeOfWorkView";
+import { ScopeOfWorkView } from "../../pages/scope-of-work/ScopeOfWorkView";
 import { BusinessProposalAll } from "../../pages/documents/BusinessProposal";
 import ProposalBuilder from "../../pages/documents/ProposalBuilder";
 
