@@ -264,6 +264,7 @@ export const APP_MENUS = {
       label: "Workspace",
       items: [
         I("Users", "users"),
+        I("Client", "clients"),
         I("Roles & Permissions", "roles-permissions"),
         I("Estimate Signature", "estimate-signature"),
       ],
@@ -315,16 +316,10 @@ export const APP_MENUS = {
   ],
   siteOperations: [
     {
-      label: "Overview",
-      items: [I("Dashboard", "dashboard"), I("Activity", "activity")],
-    },
-
-    {
       label: "Site Operations",
       items: [
         I("Daily Reports", "daily-reports"),
         I("Visit Assignments", "visit-assignments"),
-        I("Projects", "/projects/all"),
       ],
     },
 
@@ -342,6 +337,8 @@ export const APP_MENUS = {
     {
       label: "Administration",
       items: [
+        I("Activity", "activity"),
+        I("Projects", "/projects/all"),
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles & Permissions", "roles"),
       ],
