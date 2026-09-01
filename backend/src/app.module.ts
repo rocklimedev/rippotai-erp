@@ -59,6 +59,7 @@ import { SiteOperationsModule } from './modules/site-operations/site-operations.
 import { MaterialProcurementModule } from './modules/material-procurement/material-procurement.module';
 import { ScopeOfWorkModule } from './modules/scope-of-work/scope-of-work.module';
 import { BudgetEstimateModule } from './modules/budget-estimate/budget-estimate.module';
+import { GatesModule } from './modules/gates/gates.module';
 
 @Module({
   imports: [
@@ -103,7 +104,7 @@ import { BudgetEstimateModule } from './modules/budget-estimate/budget-estimate.
     // ============================================================
     ActivityLogsModule,
     NotificationsModule,
-
+    GatesModule,
     // ============================================================
     // Quotations / BOQ
     // ============================================================
