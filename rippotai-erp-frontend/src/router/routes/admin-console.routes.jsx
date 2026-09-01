@@ -5,6 +5,7 @@ import TermsSettings from "@/pages/settings/TermsSettings";
 import EstimateSignature from "@/pages/settings/EstimateSignature";
 import AppLayout from "@/layouts/AppLayout";
 import AdminDashboard from "../../pages/dashboard/AdminDashboard";
+import ClientSettings from "../../pages/settings/ClientSettings";
 export const adminConsoleRoutes = [
   {
     type: "layout",
@@ -24,7 +25,10 @@ export const adminConsoleRoutes = [
         path: "users",
         element: <UsersSettings />,
       },
-
+      {
+        path: "clients",
+        element: <ClientSettings />,
+      },
       {
         path: "roles-permissions",
         element: <RolesPermissions />,

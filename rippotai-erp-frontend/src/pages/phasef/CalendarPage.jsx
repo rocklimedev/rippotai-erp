@@ -1027,36 +1027,6 @@ export default function CalendarPage() {
         )}
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Stats                                                               */}
-      {/* ------------------------------------------------------------------ */}
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        <StatCard
-          icon={<CalendarDays size={17} />}
-          value={monthStats.total}
-          label="Events this month"
-        />
-
-        <StatCard
-          icon={<Clock3 size={17} />}
-          value={monthStats.meetings}
-          label="Meetings"
-        />
-
-        <StatCard
-          icon={<MapPin size={17} />}
-          value={monthStats.siteVisits}
-          label="Site visits"
-        />
-
-        <StatCard
-          icon={<Check size={17} />}
-          value={monthStats.deadlines}
-          label="Deadlines"
-        />
-      </div>
-
       {/* Loading */}
       {isFetching && (
         <div className="flex items-center gap-2 text-[12px] text-[#7A8586] mb-3">

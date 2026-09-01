@@ -46,7 +46,9 @@ export function DocumentUpload() {
   });
 
   const [file, setFile] = useState(null);
-
+  const [documentTypeSearch, setDocumentTypeSearch] = useState("");
+  const [showDocumentTypeDropdown, setShowDocumentTypeDropdown] =
+    useState(false);
   /* ------------------------------------------------------------
      API
      ------------------------------------------------------------ */
@@ -161,15 +163,6 @@ export function DocumentUpload() {
      ------------------------------------------------------------ */
 
   useEffect(() => {
-    if (!documentTypes.length) {
-      return;
-    }
-
-    /*
-     * If a document type came from the URL and exists,
-     * keep it.
-     */
-
     if (
       form.documentTypeId &&
       documentTypes.some(
@@ -179,19 +172,8 @@ export function DocumentUpload() {
       return;
     }
 
-    /*
-     * Otherwise automatically select the first active
-     * document type.
-     */
-
-    if (!form.documentTypeId) {
-      setForm((current) => ({
-        ...current,
-        documentTypeId: documentTypes[0].id,
-      }));
-    }
-  }, [documentTypes, form.documentTypeId]);
-
+    // Do nothing
+  }, [documentTypes]);
   /* ------------------------------------------------------------
      Field helper
      ------------------------------------------------------------ */
@@ -388,45 +370,117 @@ export function DocumentUpload() {
           </div>
 
           {/* ====================================================
-              Document Type
-              ==================================================== */}
+    Document Type - Searchable Dropdown
+    ==================================================== */}
 
-          <div>
+          <div className="relative">
             <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
               Document Type
             </label>
 
-            <select
-              required
-              disabled={loadingDocumentTypes || uploading}
-              className="bc-input h-10 w-full disabled:opacity-60"
-              value={form.documentTypeId}
-              onChange={handleDocumentTypeChange}
-            >
-              <option value="">
-                {loadingDocumentTypes
-                  ? "Loading document types…"
-                  : documentTypes.length === 0
-                    ? "No document types available"
-                    : "Select document type…"}
-              </option>
+            <div className="relative">
+              <Input
+                required
+                disabled={loadingDocumentTypes || uploading}
+                value={selectedDocumentType?.name || documentTypeSearch}
+                placeholder={
+                  loadingDocumentTypes
+                    ? "Loading document types…"
+                    : "Type to search document type..."
+                }
+                onChange={(event) => {
+                  const value = event.target.value;
 
-              {documentTypeCategories.map(({ category, types }) => (
-                <optgroup key={category} label={category}>
-                  {types.map((type) => (
-                    <option key={type.id} value={type.id}>
-                      {type.name ||
-                        type.title ||
-                        type.label ||
-                        type.code ||
-                        "Untitled document type"}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+                  setDocumentTypeSearch(value);
+
+                  // Clear selected document type when user starts typing
+                  if (
+                    selectedDocumentType &&
+                    value !== selectedDocumentType.name
+                  ) {
+                    setForm((current) => ({
+                      ...current,
+                      documentTypeId: "",
+                    }));
+                  }
+
+                  setShowDocumentTypeDropdown(true);
+                }}
+                onFocus={() => {
+                  setShowDocumentTypeDropdown(true);
+                }}
+                onBlur={() => {
+                  // Small delay so option click can fire
+                  setTimeout(() => {
+                    setShowDocumentTypeDropdown(false);
+                  }, 150);
+                }}
+              />
+
+              {showDocumentTypeDropdown && documentTypes.length > 0 && (
+                <div className="absolute z-50 mt-1 w-full bg-white border border-[#DDD8CE] rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {documentTypes
+                    .filter((type) => {
+                      const search = documentTypeSearch.toLowerCase().trim();
+
+                      if (!search) return true;
+
+                      return (
+                        type.name?.toLowerCase().includes(search) ||
+                        type.code?.toLowerCase().includes(search) ||
+                        type.phaseName?.toLowerCase().includes(search) ||
+                        type.sectionName?.toLowerCase().includes(search)
+                      );
+                    })
+                    .map((type) => (
+                      <button
+                        key={type.id}
+                        type="button"
+                        className="w-full text-left px-3 py-2.5 hover:bg-[#F5F3EF] border-b border-[#EEEAE3] last:border-b-0"
+                        onMouseDown={(event) => {
+                          event.preventDefault();
+
+                          setForm((current) => ({
+                            ...current,
+                            documentTypeId: type.id,
+                          }));
+
+                          setDocumentTypeSearch(type.name || type.code || "");
+                          setShowDocumentTypeDropdown(false);
+                        }}
+                      >
+                        <div className="text-[14px] font-medium text-[#333333]">
+                          {type.name || type.code}
+                        </div>
+
+                        {type.code && (
+                          <div className="text-[11px] text-[#7A8586] mt-0.5">
+                            {type.code}
+                          </div>
+                        )}
+                      </button>
+                    ))}
+
+                  {documentTypes.filter((type) => {
+                    const search = documentTypeSearch.toLowerCase().trim();
+
+                    if (!search) return true;
+
+                    return (
+                      type.name?.toLowerCase().includes(search) ||
+                      type.code?.toLowerCase().includes(search) ||
+                      type.phaseName?.toLowerCase().includes(search) ||
+                      type.sectionName?.toLowerCase().includes(search)
+                    );
+                  }).length === 0 && (
+                    <div className="px-3 py-3 text-[13px] text-[#7A8586]">
+                      No document types found
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-
           {/* ====================================================
               Title
               ==================================================== */}
