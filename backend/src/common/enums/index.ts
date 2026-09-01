@@ -224,6 +224,14 @@ export enum ActivityAction {
   PROJECT_STATUS_CHANGED = 'project_status_changed',
 
   // =====================
+  // GATES
+  // =====================
+  GATE_CLEARED = 'gate_cleared',
+  GATE_OVERRIDDEN = 'gate_overridden',
+  GATE_REOPENED = 'gate_reopened',
+  GATE_MANUAL_CONDITION_TICKED = 'gate_manual_condition_ticked',
+
+  // =====================
   // CLIENTS
   // =====================
   CLIENT_CREATED = 'client_created',
