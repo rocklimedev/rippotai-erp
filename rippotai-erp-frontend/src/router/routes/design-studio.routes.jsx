@@ -4,7 +4,7 @@ import { DrawingUpload, DrawingsAll } from "@/pages/documents/DocumentsRoutes";
 
 import DrawingsView from "@/pages/documents/DrawingsView";
 import DesignStudioDashboard from "../../pages/dashboard/DesignStudioDashboard";
-
+import ZohoWorkDriveTestPanel from "../../pages/UploadPanel";
 export const designStudioRoutes = [
   {
     type: "layout",
@@ -41,7 +41,10 @@ export const designStudioRoutes = [
         path: "new",
         element: <DrawingUpload />,
       },
-
+      {
+        path: "upload",
+        element: <ZohoWorkDriveTestPanel />,
+      },
       // =========================================================
       // DRAWING DETAIL / EDIT
       // =========================================================
