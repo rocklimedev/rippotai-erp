@@ -14,6 +14,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Server,
   Settings2,
   Trash2,
   Users,
@@ -46,7 +47,22 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-const API_BASE_URL = "http://localhost:5000/api/v1";
+// -- environments --------------------------------------------------------
+const ENVIRONMENTS = [
+  {
+    id: "local",
+    label: "Local",
+    apiBase: "http://localhost:5000/api/v1",
+    callbackUrl: "http://localhost:5000/api/v1/zoho/oauth/callback",
+  },
+  {
+    id: "prod",
+    label: "Prod",
+    apiBase: "https://erp-api.rippotaiarchitecture.com/api/v1",
+    callbackUrl:
+      "https://erp-api.rippotaiarchitecture.com/api/v1/auth/zoho/callback",
+  },
+];
 
 // Bigin's module set differs from CRM: no Leads, "Companies" instead of
 // Accounts, "Pipelines" instead of Deals, and no Quotes/Sales_Orders/
@@ -141,6 +157,10 @@ function StatusBadge({ status }) {
 }
 
 export default function ZohoBiginTestConsole() {
+  const [envId, setEnvId] = useState(ENVIRONMENTS[0].id);
+  const env = ENVIRONMENTS.find((e) => e.id === envId) ?? ENVIRONMENTS[0];
+  const apiBaseUrl = env.apiBase;
+
   const [ownerKey, setOwnerKey] = useState("");
 
   const [module, setModule] = useState("Contacts");
@@ -188,6 +208,11 @@ export default function ZohoBiginTestConsole() {
     setCreateBody(prettyJson(defaultData));
   }
 
+  function changeEnv(value) {
+    setEnvId(value);
+    resetResponse();
+  }
+
   async function request(path, options = {}) {
     if (!ownerKey.trim()) {
       throw new Error("Enter the Zoho ownerKey first.");
@@ -201,7 +226,7 @@ export default function ZohoBiginTestConsole() {
     const startedAt = performance.now();
 
     try {
-      const res = await fetch(`${API_BASE_URL}${path}`, {
+      const res = await fetch(`${apiBaseUrl}${path}`, {
         ...options,
         headers: {
           "Content-Type": "application/json",
@@ -457,7 +482,7 @@ export default function ZohoBiginTestConsole() {
           </CardHeader>
 
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-[1fr_auto]">
+            <div className="grid gap-4 md:grid-cols-[1fr_1fr]">
               <div className="space-y-2">
                 <Label>Owner Key</Label>
 
@@ -468,11 +493,32 @@ export default function ZohoBiginTestConsole() {
                 />
               </div>
 
-              <div className="flex items-end">
-                <Badge variant="outline" className="h-10 px-4 font-mono">
-                  API: {API_BASE_URL}
-                </Badge>
+              <div className="space-y-2">
+                <Label>Environment</Label>
+
+                <Select value={envId} onValueChange={changeEnv}>
+                  <SelectTrigger>
+                    <div className="flex items-center gap-2 truncate">
+                      <Server className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <SelectValue />
+                    </div>
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    {ENVIRONMENTS.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+            </div>
+
+            <div className="mt-3">
+              <Badge variant="outline" className="h-8 px-3 font-mono text-xs">
+                API: {apiBaseUrl}
+              </Badge>
             </div>
           </CardContent>
         </Card>

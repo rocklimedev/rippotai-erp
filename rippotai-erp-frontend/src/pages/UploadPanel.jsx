@@ -10,6 +10,7 @@ import {
   FileUp,
   Terminal,
   Trash2,
+  Server,
 } from "lucide-react";
 import {
   Card,
@@ -24,6 +25,30 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+
+// -- environments --------------------------------------------------------
+const ENVIRONMENTS = [
+  {
+    id: "local",
+    label: "Local",
+    apiBase: "http://localhost:5000/api/v1",
+    callbackUrl: "http://localhost:5000/api/v1/zoho/oauth/callback",
+  },
+  {
+    id: "prod",
+    label: "Prod",
+    apiBase: "https://erp-api.rippotaiarchitecture.com/api/v1",
+    callbackUrl:
+      "https://erp-api.rippotaiarchitecture.com/api/v1/auth/zoho/callback",
+  },
+];
 
 // -- connection status -------------------------------------------------
 const STATUS = {
@@ -110,7 +135,10 @@ function LogPanel({ entries, onClear }) {
 }
 
 export default function ZohoWorkDriveTestPanel() {
-  const [apiBase, setApiBase] = useState("http://localhost:5000/api/v1");
+  const [envId, setEnvId] = useState(ENVIRONMENTS[0].id);
+  const env = ENVIRONMENTS.find((e) => e.id === envId) ?? ENVIRONMENTS[0];
+  const apiBase = env.apiBase;
+
   const [ownerKey, setOwnerKey] = useState("test-user-1");
   const [parentId, setParentId] = useState("");
   const [file, setFile] = useState(null);
@@ -133,6 +161,11 @@ export default function ZohoWorkDriveTestPanel() {
 
   const updateLog = useCallback((id, patch) => {
     setLog((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+  }, []);
+
+  const handleEnvChange = useCallback((nextId) => {
+    setEnvId(nextId);
+    setStatus(STATUS.UNKNOWN);
   }, []);
 
   const checkStatus = useCallback(async () => {
@@ -240,18 +273,30 @@ export default function ZohoWorkDriveTestPanel() {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {/* API base + owner key */}
+          {/* environment + owner key */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="apiBase" className="text-xs text-zinc-500">
-                API base URL
+              <Label htmlFor="envSelect" className="text-xs text-zinc-500">
+                Environment
               </Label>
-              <Input
-                id="apiBase"
-                value={apiBase}
-                onChange={(e) => setApiBase(e.target.value)}
-                className="font-mono text-sm"
-              />
+              <Select value={envId} onValueChange={handleEnvChange}>
+                <SelectTrigger id="envSelect" className="text-sm">
+                  <div className="flex items-center gap-2 truncate">
+                    <Server className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+                    <SelectValue />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {ENVIRONMENTS.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-zinc-400 font-mono truncate">
+                {apiBase}
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ownerKey" className="text-xs text-zinc-500">
