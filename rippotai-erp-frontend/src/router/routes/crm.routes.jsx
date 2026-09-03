@@ -26,6 +26,7 @@ import { ScopeOfWorkView } from "../../pages/scope-of-work/ScopeOfWorkView";
 import { BusinessProposalAll } from "../../pages/documents/BusinessProposal";
 import ProposalBuilder from "../../pages/documents/ProposalBuilder";
 import CRMDashboard from "../../pages/dashboard/CRMDashboard";
+import ZohoCrmTestConsole from "../../pages/ZohoCrmTester";
 export const crmRoutes = [
   {
     type: "layout",
@@ -79,7 +80,10 @@ export const crmRoutes = [
         path: "leads/sources",
         element: <ContactsView />,
       },
-
+      {
+        path: "leads/crm",
+        element: <ZohoCrmTestConsole />,
+      },
       // ============================================================
       // DOCUMENTS
       // ============================================================

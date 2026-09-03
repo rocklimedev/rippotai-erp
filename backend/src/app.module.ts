@@ -60,7 +60,7 @@ import { MaterialProcurementModule } from './modules/material-procurement/materi
 import { ScopeOfWorkModule } from './modules/scope-of-work/scope-of-work.module';
 import { BudgetEstimateModule } from './modules/budget-estimate/budget-estimate.module';
 import { GatesModule } from './modules/gates/gates.module';
-
+import { ZohoModule } from './modules/zoho/zoho.module';
 @Module({
   imports: [
     // ============================================================
@@ -147,6 +147,7 @@ import { GatesModule } from './modules/gates/gates.module';
     // Reports
     // ============================================================
     ReportsModule,
+    ZohoModule,
   ],
 
   controllers: [AppController],
