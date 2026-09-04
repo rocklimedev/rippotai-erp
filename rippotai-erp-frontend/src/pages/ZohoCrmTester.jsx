@@ -67,15 +67,7 @@ const ENVIRONMENTS = [
 // Bigin's module set differs from CRM: no Leads, "Companies" instead of
 // Accounts, "Pipelines" instead of Deals, and no Quotes/Sales_Orders/
 // Purchase_Orders/Invoices/Vendors/Campaigns.
-const MODULES = [
-  "Contacts",
-  "Companies",
-  "Pipelines",
-  "Tasks",
-  "Events",
-  "Calls",
-  "Products",
-];
+const MODULES = ["Contacts", "Pipelines", "Tasks", "Events"];
 
 const DEFAULT_CREATE_DATA = {
   Contacts: {
@@ -92,6 +84,7 @@ const DEFAULT_CREATE_DATA = {
 
   Pipelines: {
     Deal_Name: "Test Bigin Pipeline",
+    Sub_Pipeline: "Sales Pipeline Standard",
     Stage: "Qualification",
     Amount: 10000,
   },
@@ -103,6 +96,8 @@ const DEFAULT_CREATE_DATA = {
 
   Events: {
     Event_Title: "Intro call",
+    Start_DateTime: "2026-09-05T10:00:00+05:30",
+    End_DateTime: "2026-09-05T11:00:00+05:30",
     Venue: "Zoom",
   },
 };
