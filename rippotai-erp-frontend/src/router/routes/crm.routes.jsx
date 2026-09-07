@@ -17,7 +17,6 @@ import { PlanOfActionForm } from "@/pages/plan-of-action/PlanOfActionForm";
 
 import { ScopeOfWorkForm } from "@/pages/scope-of-work/ScopeOfWorkForm";
 
-import DocumentActivity from "@/pages/documents/DocumentActivity";
 import { SiteRekiView } from "../../pages/site-recce/SiteRekiView";
 import { ProjectBriefView } from "../../pages/brief/ProjectBriefView";
 import { PlanOfActionView } from "../../pages/plan-of-action/PlanOfActionView";
@@ -163,15 +162,6 @@ export const crmRoutes = [
       {
         path: "forms/plan-of-action/:id/edit",
         element: <PlanOfActionForm />,
-      },
-
-      // ============================================================
-      // SETTINGS
-      // ============================================================
-
-      {
-        path: "activity",
-        element: <DocumentActivity />,
       },
     ],
   },

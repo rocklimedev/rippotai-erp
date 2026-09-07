@@ -1,108 +1,258 @@
+// src/api/leads.api.js
+
 import { baseApi } from "../store/baseApi";
+
+// Change this to however you currently identify the connected Bigin account.
+// Ideally this comes from your authenticated user's/company integration settings.
+const OWNER_KEY = "default";
+
+const PIPELINE_STAGES = [
+  {
+    id: "new",
+    label: "New",
+  },
+  {
+    id: "contacted",
+    label: "Contacted",
+  },
+  {
+    id: "qualified",
+    label: "Qualified",
+  },
+  {
+    id: "proposed",
+    label: "Proposed",
+  },
+  {
+    id: "won",
+    label: "Won",
+  },
+  {
+    id: "lost",
+    label: "Lost",
+  },
+];
+
+// ------------------------------------------------------------
+// Helpers
+// ------------------------------------------------------------
+
+const getValue = (record, ...keys) => {
+  for (const key of keys) {
+    if (
+      record?.[key] !== undefined &&
+      record?.[key] !== null &&
+      record?.[key] !== ""
+    ) {
+      return record[key];
+    }
+  }
+
+  return null;
+};
+
+const normalizeLead = (record) => {
+  const stage = getValue(
+    record,
+    "Stage",
+    "stage",
+    "Lead_Status",
+    "lead_status",
+    "Status",
+    "status",
+  );
+
+  const budget = getValue(
+    record,
+    "Budget",
+    "budget",
+    "Budget_Value",
+    "budgetValue",
+    "Amount",
+    "amount",
+    "Value",
+    "value",
+  );
+
+  return {
+    ...record,
+
+    id: record.id ?? record.Id,
+
+    name:
+      getValue(record, "Lead_Name", "Lead Name", "Name", "name", "Full_Name") ||
+      "Unnamed Lead",
+
+    email: getValue(record, "Email", "email"),
+
+    phone: getValue(record, "Phone", "phone", "Mobile"),
+
+    company: getValue(record, "Company", "company"),
+
+    stage: stage || "new",
+
+    budgetValue: budget,
+
+    owner: getValue(record, "Owner", "owner", "Lead_Owner"),
+
+    createdAt: getValue(record, "Created_Time", "createdAt", "created_at"),
+
+    updatedAt: getValue(record, "Modified_Time", "updatedAt", "updated_at"),
+  };
+};
+
+const normalizeStage = (value) => {
+  const input = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  if (!input) return "new";
+
+  if (input.includes("contact")) return "contacted";
+  if (input.includes("qualif")) return "qualified";
+  if (input.includes("propos")) return "proposed";
+  if (input.includes("won") || input.includes("closed won")) return "won";
+  if (input.includes("lost") || input.includes("closed lost")) return "lost";
+
+  return "new";
+};
+
+// ------------------------------------------------------------
+// Board normalizer
+// ------------------------------------------------------------
+
+const buildBoard = (records = []) => {
+  const leads = records.map(normalizeLead);
+
+  const columns = PIPELINE_STAGES.map((stage) => ({
+    ...stage,
+    leads: leads.filter((lead) => normalizeStage(lead.stage) === stage.id),
+  }));
+
+  const activeCount = leads.filter((lead) => {
+    const stage = normalizeStage(lead.stage);
+
+    return stage !== "won" && stage !== "lost";
+  }).length;
+
+  return {
+    activeCount,
+    totalCount: leads.length,
+    columns,
+    leads,
+  };
+};
+
+// ============================================================
+// API
+// ============================================================
 
 export const leadsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // ==========================================
-    // LEADS
-    // ==========================================
+    // ----------------------------------------------------------
+    // PIPELINE BOARD
+    // ----------------------------------------------------------
 
     getBoard: builder.query({
-      query: () => "/leads/board",
+      async queryFn(_arg, _queryApi, _extraOptions, fetchWithBQ) {
+        const result = await fetchWithBQ({
+          url: `/zoho/bigin/${OWNER_KEY}/modules/Leads`,
+          method: "GET",
+          params: {
+            fields:
+              "id,Lead_Name,Name,First_Name,Last_Name,Email,Phone,Company,Stage,Budget,Amount,Owner,Created_Time,Modified_Time",
+          },
+        });
+
+        if (result.error) {
+          return {
+            error: result.error,
+          };
+        }
+
+        const records =
+          result.data?.data ?? result.data?.records ?? result.data ?? [];
+
+        return {
+          data: buildBoard(records),
+        };
+      },
+
       providesTags: ["Leads"],
     }),
+
+    // ----------------------------------------------------------
+    // GET LEADS
+    // ----------------------------------------------------------
 
     getLeads: builder.query({
-      query: (params) => ({
-        url: "/leads",
-        params,
+      query: ({ ownerKey = OWNER_KEY, ...query } = {}) => ({
+        url: `/zoho/bigin/${ownerKey}/modules/Leads`,
+        method: "GET",
+        params: {
+          fields:
+            "id,Lead_Name,Name,First_Name,Last_Name,Email,Phone,Company,Stage,Budget,Amount,Owner,Created_Time,Modified_Time",
+          ...query,
+        },
       }),
+
+      transformResponse: (response) => {
+        const records = response?.data ?? response?.records ?? response ?? [];
+
+        return records.map(normalizeLead);
+      },
 
       providesTags: ["Leads"],
     }),
+
+    // ----------------------------------------------------------
+    // GET ONE LEAD
+    // ----------------------------------------------------------
 
     getLead: builder.query({
-      query: (id) => `/leads/${id}`,
+      query: ({ id, ownerKey = OWNER_KEY, ...query }) => ({
+        url: `/zoho/bigin/${ownerKey}/modules/Leads/${id}`,
+        method: "GET",
+        params: query,
+      }),
 
-      providesTags: (result, error, id) => [
-        {
-          type: "Leads",
-          id,
-        },
-      ],
+      transformResponse: (response) => {
+        const record =
+          response?.data?.[0] ?? response?.data ?? response?.record ?? response;
+
+        return normalizeLead(record);
+      },
+
+      providesTags: (result, error, { id }) => [{ type: "Leads", id }],
     }),
 
-    getReview: builder.query({
-      query: (stuckDays) => ({
-        url: "/leads/review",
-        params: stuckDays ? { stuckDays } : {},
+    // ----------------------------------------------------------
+    // SEARCH LEADS
+    // ----------------------------------------------------------
+
+    searchLeads: builder.query({
+      query: ({ ownerKey = OWNER_KEY, ...query }) => ({
+        url: `/zoho/bigin/${ownerKey}/modules/Leads/search`,
+        method: "GET",
+        params: query,
       }),
+
+      transformResponse: (response) => {
+        const records = response?.data ?? response?.records ?? response ?? [];
+
+        return records.map(normalizeLead);
+      },
 
       providesTags: ["Leads"],
     }),
 
-    // ==========================================
-    // LEAD ACTIVITY
-    // ==========================================
-
-    /**
-     * GET ALL ACTIVITIES
-     *
-     * GET /leads/activity
-     *
-     * query params:
-     *
-     * {
-     *   leadId,
-     *   date_from,
-     *   date_to
-     * }
-     */
-    getLeadActivities: builder.query({
-      query: (params) => ({
-        url: "/leads/activity",
-        params,
-      }),
-
-      providesTags: ["Leads"],
-    }),
-
-    /**
-     * GET ACTIVITIES BY LEAD
-     *
-     * GET /leads/activity/lead/:leadId
-     */
-    getLeadActivityByLead: builder.query({
-      query: (leadId) => `/leads/activity/lead/${leadId}`,
-
-      providesTags: (result, error, leadId) => [
-        {
-          type: "Leads",
-          id: leadId,
-        },
-      ],
-    }),
-
-    /**
-     * DELETE ACTIVITY
-     *
-     * DELETE /leads/activity/:id
-     */
-    deleteLeadActivity: builder.mutation({
-      query: (id) => ({
-        url: `/leads/activity/${id}`,
-        method: "DELETE",
-      }),
-
-      invalidatesTags: ["Leads"],
-    }),
-
-    // ==========================================
-    // CREATE / UPDATE LEADS
-    // ==========================================
+    // ----------------------------------------------------------
+    // CREATE
+    // ----------------------------------------------------------
 
     createLead: builder.mutation({
-      query: (body) => ({
-        url: "/leads",
+      query: ({ ownerKey = OWNER_KEY, ...body }) => ({
+        url: `/zoho/bigin/${ownerKey}/modules/Leads`,
         method: "POST",
         body,
       }),
@@ -110,241 +260,157 @@ export const leadsApi = baseApi.injectEndpoints({
       invalidatesTags: ["Leads"],
     }),
 
+    // ----------------------------------------------------------
+    // UPDATE
+    // ----------------------------------------------------------
+
     updateLead: builder.mutation({
-      query: ({ id, ...body }) => ({
-        url: `/leads/${id}`,
-        method: "PATCH",
+      query: ({ id, ownerKey = OWNER_KEY, ...body }) => ({
+        url: `/zoho/bigin/${ownerKey}/modules/Leads/${id}`,
+        method: "PUT",
         body,
       }),
 
       invalidatesTags: (result, error, { id }) => [
-        {
-          type: "Leads",
-          id,
-        },
+        "Leads",
+        { type: "Leads", id },
+      ],
+    }),
 
+    // ----------------------------------------------------------
+    // MOVE STAGE
+    // ----------------------------------------------------------
+
+    moveStage: builder.mutation({
+      query: ({ id, stage, ownerKey = OWNER_KEY }) => ({
+        url: `/zoho/bigin/${ownerKey}/modules/Leads/${id}`,
+        method: "PUT",
+        body: {
+          Stage: stage,
+        },
+      }),
+
+      invalidatesTags: (result, error, { id }) => [
+        "Leads",
+        { type: "Leads", id },
+      ],
+    }),
+
+    // ============================================================
+    // ADD NOTE TO LEAD
+    // ============================================================
+
+    addNote: builder.mutation({
+      async queryFn({ id, text }, _api, _extraOptions, baseQuery) {
+        try {
+          // Bigin Notes are created as a separate record.
+          const result = await baseQuery({
+            url: `/zoho/bigin/${OWNER_KEY}/modules/Notes`,
+            method: "POST",
+            body: {
+              Note_Title: "Lead Remark",
+              Note_Content: text,
+
+              // Relate the note to the Lead.
+              Parent_Id: id,
+              Parent_Module: "Leads",
+            },
+          });
+
+          if (result.error) {
+            return { error: result.error };
+          }
+
+          return { data: result.data };
+        } catch (error) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: error?.message || "Failed to add note",
+            },
+          };
+        }
+      },
+
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Leads", id },
         "Leads",
       ],
     }),
 
+    // ============================================================
+    // SET / UPDATE PROPOSAL
+    // ============================================================
+
+    setProposal: builder.mutation({
+      async queryFn(
+        { id, amount, timeline, remarks },
+        _api,
+        _extraOptions,
+        baseQuery,
+      ) {
+        try {
+          const result = await baseQuery({
+            url: `/zoho/bigin/${OWNER_KEY}/modules/Leads/${id}`,
+            method: "PUT",
+            body: {
+              // IMPORTANT:
+              // These field API names must match your Bigin Leads fields.
+              Stage: "Proposed",
+
+              Quoted_Amount: amount,
+              Proposal_Timeline: timeline,
+              Proposal_Remarks: remarks || "",
+            },
+          });
+
+          if (result.error) {
+            return { error: result.error };
+          }
+
+          return { data: result.data };
+        } catch (error) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: error?.message || "Failed to save proposal",
+            },
+          };
+        }
+      },
+
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Leads", id },
+        "Leads",
+      ],
+    }),
+
+    // ----------------------------------------------------------
+    // DELETE
+    // ----------------------------------------------------------
+
     deleteLead: builder.mutation({
-      query: (id) => ({
-        url: `/leads/${id}`,
+      query: ({ id, ownerKey = OWNER_KEY }) => ({
+        url: `/zoho/bigin/${ownerKey}/modules/Leads/${id}`,
         method: "DELETE",
       }),
 
       invalidatesTags: ["Leads"],
     }),
-
-    // ==========================================
-    // STAGE / STATUS
-    // ==========================================
-
-    moveStage: builder.mutation({
-      query: ({ id, stage, via }) => ({
-        url: `/leads/${id}/stage`,
-        method: "PATCH",
-
-        body: {
-          stage,
-          via,
-        },
-      }),
-
-      invalidatesTags: (result, error, { id }) => [
-        {
-          type: "Leads",
-          id,
-        },
-
-        "Leads",
-      ],
-    }),
-
-    markNurture: builder.mutation({
-      query: (id) => ({
-        url: `/leads/${id}/nurture`,
-        method: "PATCH",
-      }),
-
-      invalidatesTags: (result, error, id) => [
-        {
-          type: "Leads",
-          id,
-        },
-
-        "Leads",
-      ],
-    }),
-
-    markLost: builder.mutation({
-      query: (id) => ({
-        url: `/leads/${id}/lost`,
-        method: "PATCH",
-      }),
-
-      invalidatesTags: (result, error, id) => [
-        {
-          type: "Leads",
-          id,
-        },
-
-        "Leads",
-      ],
-    }),
-
-    // ==========================================
-    // NOTES
-    // ==========================================
-
-    addNote: builder.mutation({
-      query: ({ id, text, author }) => ({
-        url: `/leads/${id}/notes`,
-
-        method: "POST",
-
-        body: {
-          text,
-          author,
-        },
-      }),
-
-      invalidatesTags: (result, error, { id }) => [
-        {
-          type: "Leads",
-          id,
-        },
-
-        "Leads",
-      ],
-    }),
-
-    // ==========================================
-    // PROPOSAL
-    // ==========================================
-
-    setProposal: builder.mutation({
-      query: ({ id, ...body }) => ({
-        url: `/leads/${id}/proposal`,
-
-        method: "POST",
-
-        body,
-      }),
-
-      invalidatesTags: (result, error, { id }) => [
-        {
-          type: "Leads",
-          id,
-        },
-
-        "Leads",
-      ],
-    }),
-
-    // ==========================================
-    // DOCUMENTS
-    // ==========================================
-
-    updateDoc: builder.mutation({
-      query: ({ id, docType, status }) => ({
-        url: `/leads/${id}/docs/${docType}`,
-
-        method: "PATCH",
-
-        body:
-          status === undefined
-            ? {}
-            : {
-                status,
-              },
-      }),
-
-      invalidatesTags: (result, error, { id }) => [
-        {
-          type: "Leads",
-          id,
-        },
-      ],
-    }),
-
-    // ==========================================
-    // COLOR
-    // ==========================================
-
-    updateColor: builder.mutation({
-      query: ({ id, color }) => ({
-        url: `/leads/${id}/color`,
-
-        method: "PATCH",
-
-        body: {
-          color,
-        },
-      }),
-
-      invalidatesTags: (result, error, { id }) => [
-        {
-          type: "Leads",
-          id,
-        },
-
-        "Leads",
-      ],
-    }),
-
-    // ==========================================
-    // FOLLOW UP
-    // ==========================================
-
-    updateFollowUp: builder.mutation({
-      query: ({ id, followUp }) => ({
-        url: `/leads/${id}/follow-up`,
-
-        method: "PATCH",
-
-        body: {
-          followUp,
-        },
-      }),
-
-      invalidatesTags: (result, error, { id }) => [
-        {
-          type: "Leads",
-          id,
-        },
-      ],
-    }),
   }),
-  overrideExisting: false,
+
+  overrideExisting: true,
 });
 
-// ==========================================
-// HOOK EXPORTS
-// ==========================================
-
 export const {
-  // Leads
   useGetBoardQuery,
   useGetLeadsQuery,
   useGetLeadQuery,
-  useGetReviewQuery,
-
-  // Activity
-  useGetLeadActivitiesQuery,
-  useGetLeadActivityByLeadQuery,
-  useDeleteLeadActivityMutation,
-
-  // Mutations
+  useSearchLeadsQuery,
   useCreateLeadMutation,
   useUpdateLeadMutation,
-  useDeleteLeadMutation,
   useMoveStageMutation,
-  useMarkNurtureMutation,
-  useMarkLostMutation,
+  useDeleteLeadMutation,
   useAddNoteMutation,
   useSetProposalMutation,
-  useUpdateDocMutation,
-  useUpdateColorMutation,
-  useUpdateFollowUpMutation,
 } = leadsApi;

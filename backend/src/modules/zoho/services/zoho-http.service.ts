@@ -1,9 +1,9 @@
+// zoho/services/zoho-http.service.ts
 import { BadRequestException, Injectable } from '@nestjs/common';
 
 import axios, { AxiosRequestConfig, Method } from 'axios';
 
-import { ZohoAuthService } from './zoho-auth.service';
-
+import { ZohoAuthService } from '@/modules/auth/zoho-auth.service';
 /**
  * Thin, service-agnostic wrapper around axios that:
  *
@@ -19,12 +19,12 @@ export class ZohoHttpService {
   constructor(private readonly zohoAuthService: ZohoAuthService) {}
 
   async request<T = any>(
-    ownerKey: string,
+    userId: string,
     method: Method,
     path: string,
     options: AxiosRequestConfig = {},
   ): Promise<T> {
-    const token = await this.zohoAuthService.getValidToken(ownerKey);
+    const accessToken = await this.zohoAuthService.getValidAccessToken(userId);
 
     /**
      * Priority:
@@ -32,7 +32,8 @@ export class ZohoHttpService {
      * 1. Explicit baseURL supplied by the caller
      * 2. apiDomain returned by Zoho during OAuth
      */
-    const baseURL = options.baseURL ?? token.apiDomain;
+    const baseURL =
+      options.baseURL ?? (await this.zohoAuthService.getApiDomain(userId));
 
     /**
      * apiDomain is nullable in the database, so make sure
@@ -40,7 +41,7 @@ export class ZohoHttpService {
      */
     if (!baseURL) {
       throw new BadRequestException(
-        `Zoho API domain is missing for "${ownerKey}". ` +
+        `Zoho API domain is missing for this user. ` +
           'Please reconnect the Zoho account.',
       );
     }
@@ -52,30 +53,26 @@ export class ZohoHttpService {
       baseURL,
       headers: {
         ...options.headers,
-        Authorization: `Zoho-oauthtoken ${token.accessToken}`,
+        Authorization: `Zoho-oauthtoken ${accessToken}`,
       },
     });
 
     return response.data;
   }
 
-  get<T = any>(ownerKey: string, path: string, options?: AxiosRequestConfig) {
-    return this.request<T>(ownerKey, 'GET', path, options);
+  get<T = any>(userId: string, path: string, options?: AxiosRequestConfig) {
+    return this.request<T>(userId, 'GET', path, options);
   }
 
-  post<T = any>(ownerKey: string, path: string, options?: AxiosRequestConfig) {
-    return this.request<T>(ownerKey, 'POST', path, options);
+  post<T = any>(userId: string, path: string, options?: AxiosRequestConfig) {
+    return this.request<T>(userId, 'POST', path, options);
   }
 
-  put<T = any>(ownerKey: string, path: string, options?: AxiosRequestConfig) {
-    return this.request<T>(ownerKey, 'PUT', path, options);
+  put<T = any>(userId: string, path: string, options?: AxiosRequestConfig) {
+    return this.request<T>(userId, 'PUT', path, options);
   }
 
-  delete<T = any>(
-    ownerKey: string,
-    path: string,
-    options?: AxiosRequestConfig,
-  ) {
-    return this.request<T>(ownerKey, 'DELETE', path, options);
+  delete<T = any>(userId: string, path: string, options?: AxiosRequestConfig) {
+    return this.request<T>(userId, 'DELETE', path, options);
   }
 }

@@ -1,13 +1,14 @@
+// zoho/services/zoho-auth.service.ts
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/sequelize';
 import axios from 'axios';
-
-import { ZohoToken } from '../models/zoho-token.model';
-import { ZohoTokenResponse } from '../../../common/interfaces/zoho-token-response.interface';
+import { ZohoToken } from '../zoho/models/zoho-token.model';
+import { ZohoTokenResponse } from '@/common/interfaces/zoho-token-response.interface';
+import type { RefreshableOAuthProviderService } from './oauth/oauth-provider.interface';
 
 @Injectable()
-export class ZohoAuthService {
+export class ZohoAuthService implements RefreshableOAuthProviderService {
   private readonly logger = new Logger(ZohoAuthService.name);
 
   constructor(
@@ -47,13 +48,13 @@ export class ZohoAuthService {
   /**
    * Builds the URL to send the user's browser to for consent.
    *
-   * ownerKey is round-tripped through the state parameter so the
-   * callback knows which app-side user/org this connection belongs to.
+   * `state` is a signed token (from OAuthStateService) that round-trips
+   * the userId + provider through Zoho's redirect — never a raw userId.
    *
    * Extra scopes can be supplied when a new Zoho service needs
    * permissions beyond the configured defaults.
    */
-  buildAuthorizationUrl(ownerKey: string, scopes?: string[]): string {
+  buildAuthorizationUrl(state: string, scopes?: string[]): string {
     const selectedScopes = scopes?.length ? scopes : this.defaultScopes;
 
     if (!selectedScopes.length) {
@@ -71,7 +72,7 @@ export class ZohoAuthService {
       access_type: 'offline',
       redirect_uri: this.redirectUri,
       prompt: 'consent',
-      state: ownerKey,
+      state,
     });
 
     return `${this.accountsBaseUrl}/oauth/v2/auth?${params.toString()}`;
@@ -82,12 +83,11 @@ export class ZohoAuthService {
   // ============================================================
 
   /**
-   * Exchanges an authorization code for tokens and persists them.
+   * Exchanges an authorization code for tokens and persists them
+   * against the given userId (already resolved + verified from state
+   * by the controller before this is called).
    */
-  async handleOAuthCallback(
-    code: string,
-    ownerKey: string,
-  ): Promise<ZohoToken> {
+  async handleOAuthCallback(code: string, userId: string): Promise<ZohoToken> {
     const { data } = await axios.post<ZohoTokenResponse>(
       `${this.accountsBaseUrl}/oauth/v2/token`,
       null,
@@ -111,12 +111,12 @@ export class ZohoAuthService {
     const expiresAt = new Date(Date.now() + data.expires_in * 1000);
 
     let token = await this.zohoTokenModel.findOne({
-      where: { ownerKey },
+      where: { userId },
     });
 
     if (!token) {
       token = await this.zohoTokenModel.create({
-        ownerKey,
+        userId,
         accessToken: data.access_token,
         refreshToken: data.refresh_token ?? null,
         apiDomain: data.api_domain ?? null,
@@ -151,8 +151,8 @@ export class ZohoAuthService {
   private async refreshAccessToken(token: ZohoToken): Promise<ZohoToken> {
     if (!token.refreshToken) {
       throw new BadRequestException(
-        `No refresh token stored for "${token.ownerKey}". ` +
-          'Re-authorize via /zoho/oauth/authorize.',
+        `No refresh token stored for user "${token.userId}". ` +
+          'Re-authorize via /auth/zoho/authorize.',
       );
     }
 
@@ -191,20 +191,22 @@ export class ZohoAuthService {
   // ============================================================
 
   /**
-   * Returns a token guaranteed to be valid for the next minute.
+   * Returns an access token guaranteed to be valid for the next minute,
+   * automatically refreshing it first if expired or near-expiry.
    *
-   * Automatically refreshes the token if it is expired or
-   * within one minute of expiry.
+   * Named getValidAccessToken (not getValidToken) and returns a plain
+   * string to match RefreshableOAuthProviderService, same shape as
+   * GoogleAuthService/MicrosoftAuthService.
    */
-  async getValidToken(ownerKey: string): Promise<ZohoToken> {
+  async getValidAccessToken(userId: string): Promise<string> {
     const token = await this.zohoTokenModel.findOne({
-      where: { ownerKey },
+      where: { userId },
     });
 
     if (!token) {
       throw new BadRequestException(
-        `No Zoho connection found for "${ownerKey}". ` +
-          'Authorize first via /zoho/oauth/authorize.',
+        `No Zoho connection found for this user. ` +
+          'Authorize first via /auth/zoho/authorize.',
       );
     }
 
@@ -212,24 +214,35 @@ export class ZohoAuthService {
 
     if (token.expiresAt.getTime() - oneMinuteMs <= Date.now()) {
       this.logger.debug(
-        `Access token for "${ownerKey}" ` +
-          'expired/near-expiry, refreshing...',
+        `Access token for user "${userId}" expired/near-expiry, refreshing...`,
       );
 
-      return this.refreshAccessToken(token);
+      const refreshed = await this.refreshAccessToken(token);
+      return refreshed.accessToken;
     }
 
-    return token;
+    return token.accessToken;
   }
-
+  /**
+   * Returns the Zoho-assigned api_domain for this user (varies by
+   * data center, e.g. www.zohoapis.com vs www.zohoapis.eu). Used by
+   * ZohoHttpService to default the axios baseURL.
+   */
+  async getApiDomain(userId: string): Promise<string | null> {
+    const token = await this.zohoTokenModel.findOne({
+      where: { userId },
+      attributes: ['apiDomain'],
+    });
+    return token?.apiDomain ?? null;
+  }
   // ============================================================
   // CONNECTION STATUS
   // ============================================================
 
-  async isConnected(ownerKey: string): Promise<boolean> {
+  async isConnected(userId: string): Promise<boolean> {
     return (
       (await this.zohoTokenModel.count({
-        where: { ownerKey },
+        where: { userId },
       })) > 0
     );
   }
@@ -238,9 +251,9 @@ export class ZohoAuthService {
   // DISCONNECT
   // ============================================================
 
-  async disconnect(ownerKey: string): Promise<void> {
+  async disconnect(userId: string): Promise<void> {
     await this.zohoTokenModel.destroy({
-      where: { ownerKey },
+      where: { userId },
     });
   }
 }

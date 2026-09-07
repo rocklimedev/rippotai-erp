@@ -33,6 +33,7 @@ export const baseApi = createApi({
     "AuthUser",
     "AuthTokens",
     "VerificationTokens",
+    "AuthConnectors",
     // rbac
     "Rbac",
     "Roles",
@@ -140,6 +141,13 @@ export const baseApi = createApi({
     "DeliveryChallan",
     "SiteInventory",
     "InventoryTransaction",
+    // Zoho Bigin
+    "ZohoBiginModules",
+    "ZohoBiginFields",
+    "ZohoBiginUsers",
+    "ZohoBiginOrg",
+    "ZohoBiginRecords",
+    "ZohoBiginSearch",
   ],
   endpoints: () => ({}), // each feature file injects its own endpoints
 });

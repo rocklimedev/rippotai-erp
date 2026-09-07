@@ -1,10 +1,6 @@
 import { useState } from "react";
 import { pill, TAG_COLORS, LEAD_COLORS } from "../../hooks/stages";
-import {
-  useMarkNurtureMutation,
-  useMarkLostMutation,
-  useUpdateColorMutation,
-} from "../../api/leads.api";
+import { useUpdateLeadMutation } from "../../api/leads.api";
 
 const COLOR_DOTS = [
   ["None", "#ffffff"],
@@ -38,9 +34,15 @@ export default function LeadCard({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const [markNurture] = useMarkNurtureMutation();
-  const [markLost] = useMarkLostMutation();
-  const [updateColor] = useUpdateColorMutation();
+  // ============================================================
+  // BIGIN LEAD UPDATE
+  // ============================================================
+
+  const [updateLead, { isLoading: isUpdating }] = useUpdateLeadMutation();
+
+  // ============================================================
+  // LEAD DISPLAY
+  // ============================================================
 
   const cc = lead.color && LEAD_COLORS[lead.color];
 
@@ -55,6 +57,10 @@ export default function LeadCard({
 
   const whatsappNumber = lead.whatsapp || lead.phone;
 
+  // ============================================================
+  // WHATSAPP
+  // ============================================================
+
   const openWhatsApp = (e) => {
     e.stopPropagation();
 
@@ -62,11 +68,76 @@ export default function LeadCard({
 
     const number = String(whatsappNumber).replace(/[^0-9]/g, "");
 
-    window.open(`https://wa.me/${number}`, "_blank");
+    window.open(`https://wa.me/${number}`, "_blank", "noopener,noreferrer");
   };
+
+  // ============================================================
+  // STOP CARD CLICK
+  // ============================================================
 
   const stopCardClick = (e) => {
     e.stopPropagation();
+  };
+
+  // ============================================================
+  // UPDATE BIGIN LEAD
+  // ============================================================
+
+  const updateBiginLead = async (body) => {
+    if (!lead?.id) return;
+
+    try {
+      await updateLead({
+        id: lead.id,
+        ...body,
+      }).unwrap();
+
+      setMenuOpen(false);
+    } catch (error) {
+      console.error("Failed to update Bigin lead:", error);
+    }
+  };
+
+  // ============================================================
+  // MARK AS NURTURE
+  // ============================================================
+
+  const handleNurture = async () => {
+    await updateBiginLead({
+      Stage: "Nurture",
+    });
+  };
+
+  // ============================================================
+  // MARK AS LOST
+  // ============================================================
+
+  const handleLost = async () => {
+    await updateBiginLead({
+      Stage: "Closed Lost",
+    });
+  };
+
+  // ============================================================
+  // MARK AS PROPOSED
+  // ============================================================
+
+  const handleProposed = () => {
+    setMenuOpen(false);
+
+    if (onProposed) {
+      onProposed(lead);
+    }
+  };
+
+  // ============================================================
+  // COLOR
+  // ============================================================
+
+  const handleColorChange = async (name) => {
+    await updateBiginLead({
+      Card_Color: name === "None" ? null : name,
+    });
   };
 
   return (
@@ -96,9 +167,9 @@ export default function LeadCard({
       }}
     >
       <div className="p-3.5">
-        {/* ============================================================ */}
-        {/* TOP ROW                                                      */}
-        {/* ============================================================ */}
+        {/* ====================================================== */}
+        {/* TOP ROW                                                */}
+        {/* ====================================================== */}
 
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -125,11 +196,14 @@ export default function LeadCard({
             </div>
           </div>
 
-          {/* MENU */}
+          {/* ================================================== */}
+          {/* MENU                                                */}
+          {/* ================================================== */}
 
           <div className="relative shrink-0">
             <button
               type="button"
+              disabled={isUpdating}
               onClick={(e) => {
                 stopCardClick(e);
                 setMenuOpen((v) => !v);
@@ -140,6 +214,7 @@ export default function LeadCard({
                 "hover:bg-[var(--mist-soft)]",
                 "hover:text-[var(--ink-green)]",
                 "transition-colors",
+                isUpdating ? "opacity-50 cursor-wait" : "",
               ].join(" ")}
               aria-label="Lead actions"
             >
@@ -160,6 +235,8 @@ export default function LeadCard({
                 onClick={stopCardClick}
                 className="absolute right-0 top-8 z-50 w-[190px] rounded-xl border border-[var(--stroke)] bg-paper p-1.5 shadow-[0_12px_30px_rgba(15,31,26,0.16)]"
               >
+                {/* EDIT */}
+
                 <MenuItem
                   label="Edit lead"
                   onClick={() => {
@@ -167,6 +244,8 @@ export default function LeadCard({
                     onEdit(lead);
                   }}
                 />
+
+                {/* REMARK */}
 
                 <MenuItem
                   label="Add remark"
@@ -176,33 +255,31 @@ export default function LeadCard({
                   }}
                 />
 
-                <MenuItem
-                  label="Mark as proposed"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onProposed(lead);
-                  }}
-                />
+                {/* PROPOSED */}
+
+                <MenuItem label="Mark as proposed" onClick={handleProposed} />
 
                 <div className="my-1 border-t border-[var(--stroke)]" />
+
+                {/* NURTURE */}
 
                 <MenuItem
                   label="Move to nurture"
                   tone="warning"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    markNurture(lead.id);
-                  }}
+                  onClick={handleNurture}
                 />
+
+                {/* LOST */}
 
                 <MenuItem
                   label="Mark closed-lost"
                   tone="danger"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    markLost(lead.id);
-                  }}
+                  onClick={handleLost}
                 />
+
+                {/* ================================================= */}
+                {/* CARD COLOR                                         */}
+                {/* ================================================= */}
 
                 <div className="mt-1 border-t border-[var(--stroke)] px-2.5 pt-2.5 pb-1">
                   <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--muted)]">
@@ -218,16 +295,16 @@ export default function LeadCard({
                           key={name}
                           type="button"
                           title={name}
+                          disabled={isUpdating}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setMenuOpen(false);
-
-                            updateColor({
-                              id: lead.id,
-                              color: name === "None" ? null : name,
-                            });
+                            handleColorChange(name);
                           }}
-                          className="h-4 w-4 rounded-full transition-transform hover:scale-110"
+                          className={[
+                            "h-4 w-4 rounded-full transition-transform",
+                            "hover:scale-110",
+                            isUpdating ? "opacity-50" : "",
+                          ].join(" ")}
                           style={{
                             background: color,
                             border:
@@ -249,13 +326,16 @@ export default function LeadCard({
           </div>
         </div>
 
-        {/* ============================================================ */}
-        {/* COMMERCIAL VALUE                                             */}
-        {/* ============================================================ */}
+        {/* ====================================================== */}
+        {/* COMMERCIAL VALUE                                       */}
+        {/* ====================================================== */}
 
         <div className="mt-3">
           <div className="text-[14px] font-semibold tracking-[-0.01em] text-[var(--ink-green)]">
-            {lead.budget || "Budget not specified"}
+            {lead.budget ||
+              (lead.budgetValue != null
+                ? `₹${formatBudget(lead.budgetValue)}`
+                : "Budget not specified")}
           </div>
 
           {lead.proposal && (
@@ -279,9 +359,9 @@ export default function LeadCard({
           )}
         </div>
 
-        {/* ============================================================ */}
-        {/* BOTTOM ROW                                                   */}
-        {/* ============================================================ */}
+        {/* ====================================================== */}
+        {/* BOTTOM ROW                                             */}
+        {/* ====================================================== */}
 
         <div className="mt-3.5 flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-1.5">
@@ -327,14 +407,15 @@ export default function LeadCard({
 
           <div className="flex shrink-0 items-center gap-1.5 text-[10px] text-[var(--muted)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--sage)]" />
+
             {daysLabel}
           </div>
         </div>
       </div>
 
-      {/* ============================================================ */}
-      {/* DRAG HANDLE                                                   */}
-      {/* ============================================================ */}
+      {/* ======================================================== */}
+      {/* DRAG HANDLE                                               */}
+      {/* ======================================================== */}
 
       <div
         className={[
@@ -347,6 +428,10 @@ export default function LeadCard({
     </article>
   );
 }
+
+// ============================================================
+// MENU ITEM
+// ============================================================
 
 function MenuItem({ label, onClick, tone = "default" }) {
   const toneClass =
