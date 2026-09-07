@@ -399,7 +399,11 @@ export const APP_MENUS = {
   settings: [
     {
       label: "Account",
-      items: [I("Edit Profile", "/settings"), I("Security", "security")],
+      items: [
+        I("Edit Profile", "/settings"),
+        I("Security", "security"),
+        I("Connectors", "connectors"),
+      ],
     },
   ],
 };

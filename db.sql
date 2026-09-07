@@ -1928,6 +1928,23 @@ CREATE TABLE IF NOT EXISTS `verification_tokens` (
 
 -- Data exporting was unselected.
 
+-- Dumping structure for table spsyn8lm_rippotai_erp.zoho_tokens
+CREATE TABLE IF NOT EXISTS `zoho_tokens` (
+  `id` char(36) COLLATE utf8_unicode_ci NOT NULL,
+  `ownerKey` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `accessToken` text COLLATE utf8_unicode_ci NOT NULL,
+  `refreshToken` text COLLATE utf8_unicode_ci,
+  `scope` text COLLATE utf8_unicode_ci,
+  `apiDomain` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `expiresAt` datetime NOT NULL,
+  `createdAt` datetime NOT NULL,
+  `updatedAt` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `zoho_tokens_ownerKey_unique` (`ownerKey`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- Data exporting was unselected.
+
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
 /*!40014 SET FOREIGN_KEY_CHECKS=IFNULL(@OLD_FOREIGN_KEY_CHECKS, 1) */;

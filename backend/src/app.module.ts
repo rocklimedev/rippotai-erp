@@ -61,6 +61,9 @@ import { ScopeOfWorkModule } from './modules/scope-of-work/scope-of-work.module'
 import { BudgetEstimateModule } from './modules/budget-estimate/budget-estimate.module';
 import { GatesModule } from './modules/gates/gates.module';
 import { ZohoModule } from './modules/zoho/zoho.module';
+import { MicrosoftModule } from './modules/microsoft/microsoft.module';
+import { GoogleModule } from './modules/google/google.module';
+
 @Module({
   imports: [
     // ============================================================
@@ -148,6 +151,8 @@ import { ZohoModule } from './modules/zoho/zoho.module';
     // ============================================================
     ReportsModule,
     ZohoModule,
+    MicrosoftModule,
+    GoogleModule,
   ],
 
   controllers: [AppController],

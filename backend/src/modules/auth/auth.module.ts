@@ -1,14 +1,19 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { PassportModule } from '@nestjs/passport';
+import { JwtModule } from '@nestjs/jwt';
 
 import { AuthController } from './auth.controller';
 import { AuthTokensController } from './auth-tokens.controller';
 import { VerificationTokensController } from './verification-tokens.controller';
+import { ZohoOAuthController } from './oauth/zoho-oauth.controller';
+import { GoogleOAuthController } from './oauth/google-oauth.controller';
+import { MicrosoftOAuthController } from './oauth/microsoft-oauth.controller';
 
 import { AuthService } from './auth.service';
 import { AuthTokensService } from './auth-tokens.service';
 import { VerificationTokensService } from './verification-tokens.service';
+import { OAuthStateService } from './oauth/oauth-state.service';
 import { JwtStrategy } from '@/common/strategies/jwt.strategy';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import { User } from '@/modules/users/models/user.model';
@@ -17,6 +22,10 @@ import { VerificationToken } from './models/verification-token.model';
 import { ForgotPasswordService } from './forgot-password.service';
 import { PasswordResetToken } from './models/password-reset-token.model';
 import { MailService } from '@/common/mail/mail.service';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ZohoModule } from '@/modules/zoho/zoho.module';
+import { GoogleModule } from '../google/google.module';
+import { MicrosoftModule } from '../microsoft/microsoft.module';
 
 @Module({
   imports: [
@@ -27,11 +36,29 @@ import { MailService } from '@/common/mail/mail.service';
       PasswordResetToken,
     ]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
+    // Signs/verifies the OAuth `state` param. Separate secret from your
+    // session JWTs is safer — add OAUTH_STATE_SECRET to your env.
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.getOrThrow<string>('OAUTH_STATE_SECRET'),
+        signOptions: {
+          expiresIn: '10m',
+        },
+      }),
+    }),
+    ZohoModule,
+    GoogleModule,
+    MicrosoftModule,
   ],
   controllers: [
     AuthController,
     AuthTokensController,
     VerificationTokensController,
+    ZohoOAuthController,
+    GoogleOAuthController,
+    MicrosoftOAuthController,
   ],
   providers: [
     AuthService,
@@ -41,6 +68,7 @@ import { MailService } from '@/common/mail/mail.service';
     MailService,
     JwtStrategy,
     JwtAuthGuard,
+    OAuthStateService,
   ],
   exports: [
     AuthService,

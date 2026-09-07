@@ -1,7 +1,6 @@
 import AppLayout from "@/layouts/AppLayout";
 import CalendarPage from "@/pages/phasef/CalendarPage";
 import { CalendarMine, CalendarTeam } from "@/pages/phasef/Calendar";
-import CalendarActivity from "@/pages/phasef/CalendarActivity";
 
 export const calendarRoutes = [
   {
@@ -13,7 +12,7 @@ export const calendarRoutes = [
     children: [
       { index: true, element: <CalendarPage /> },
       { path: "mine", element: <CalendarMine /> },
-      { path: "activity", element: <CalendarActivity /> },
+
       { path: "team", element: <CalendarTeam /> },
     ],
   },
