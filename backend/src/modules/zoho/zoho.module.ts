@@ -18,6 +18,9 @@ import { WorkDriveController } from './workdrive/workdrive.controller';
 import { ZohoCrmService } from './crm/zoho-crm.service';
 import { ZohoCrmController } from './crm/zoho-crm.controller';
 
+import { ZohoCliqService } from './cliq/zoho-cliq.service';
+import { ZohoCliqController } from './cliq/zoho-cliq.controller';
+
 @Module({
   imports: [
     ConfigModule.forFeature(zohoConfig),
@@ -29,7 +32,12 @@ import { ZohoCrmController } from './crm/zoho-crm.controller';
     }),
   ],
 
-  controllers: [ZohoOAuthController, WorkDriveController, ZohoCrmController],
+  controllers: [
+    ZohoOAuthController,
+    WorkDriveController,
+    ZohoCrmController,
+    ZohoCliqController,
+  ],
 
   providers: [
     ZohoAuthService,
@@ -37,6 +45,7 @@ import { ZohoCrmController } from './crm/zoho-crm.controller';
     OAuthStateService,
     WorkDriveService,
     ZohoCrmService,
+    ZohoCliqService,
   ],
 
   exports: [
@@ -45,6 +54,7 @@ import { ZohoCrmController } from './crm/zoho-crm.controller';
     OAuthStateService,
     WorkDriveService,
     ZohoCrmService,
+    ZohoCliqService,
   ],
 })
 export class ZohoModule {}

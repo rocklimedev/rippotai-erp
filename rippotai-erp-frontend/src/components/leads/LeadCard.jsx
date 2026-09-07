@@ -22,6 +22,19 @@ const formatBudget = (value) => {
   return String(value);
 };
 
+// Bigin gives us Created_Time, not a precomputed "days" field —
+// derive an "N days" label from it instead of reading lead.days
+// (which never exists on Pipelines records).
+const daysSinceCreated = (createdAt) => {
+  if (!createdAt) return null;
+
+  const created = new Date(createdAt);
+
+  if (Number.isNaN(created.getTime())) return null;
+
+  return Math.max(0, Math.floor((Date.now() - created.getTime()) / 86400000));
+};
+
 export default function LeadCard({
   lead,
   onClick,
@@ -52,10 +65,22 @@ export default function LeadCard({
     ? pill(TAG_COLORS[lead.tag]?.fg, TAG_COLORS[lead.tag]?.bg)
     : null;
 
+  const daysAgo = daysSinceCreated(lead.createdAt);
+
   const daysLabel =
-    lead.days === 0 ? "Today" : lead.days === 1 ? "1 day" : `${lead.days} days`;
+    daysAgo == null
+      ? null
+      : daysAgo === 0
+        ? "Today"
+        : daysAgo === 1
+          ? "1 day"
+          : `${daysAgo} days`;
 
   const whatsappNumber = lead.whatsapp || lead.phone;
+
+  // Subtitle: prefer account/contact (Pipelines module) over
+  // type/location, which don't exist on Pipelines records.
+  const subtitle = [lead.company, lead.contact].filter(Boolean).join(" · ");
 
   // ============================================================
   // WHATSAPP
@@ -192,7 +217,7 @@ export default function LeadCard({
             </div>
 
             <div className="mt-0.5 text-[11px] text-[var(--muted)] truncate">
-              {[lead.type, lead.location].filter(Boolean).join(" · ")}
+              {subtitle || "No account linked"}
             </div>
           </div>
 
@@ -406,9 +431,18 @@ export default function LeadCard({
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5 text-[10px] text-[var(--muted)]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--sage)]" />
+            {lead.owner && (
+              <span className="rounded-md bg-[var(--mist-soft)] px-1.5 py-0.5 font-medium text-[var(--ink-green)]">
+                {lead.owner}
+              </span>
+            )}
 
-            {daysLabel}
+            {daysLabel && (
+              <>
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--sage)]" />
+                {daysLabel}
+              </>
+            )}
           </div>
         </div>
       </div>

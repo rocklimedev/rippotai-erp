@@ -63,7 +63,7 @@ import { GatesModule } from './modules/gates/gates.module';
 import { ZohoModule } from './modules/zoho/zoho.module';
 import { MicrosoftModule } from './modules/microsoft/microsoft.module';
 import { GoogleModule } from './modules/google/google.module';
-import zohoConfig from './modules/zoho/zoho.config';
+
 @Module({
   imports: [
     // ============================================================
@@ -72,7 +72,7 @@ import zohoConfig from './modules/zoho/zoho.config';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
-      load: [databaseConfig, zohoConfig],
+      load: [databaseConfig],
     }),
 
     // ============================================================

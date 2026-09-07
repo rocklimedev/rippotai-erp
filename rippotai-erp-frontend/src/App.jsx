@@ -5,19 +5,22 @@ import { UpgradeModalHost } from "@/lib/planGuards";
 import { RootRedirect } from "@/lib/route.helpers";
 import { generateRoutes } from "@/router/generate-routes";
 import masterRoutes from "@/router";
+import { CliqChatProvider } from "@/components/CliqChatWidget";
 
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Toaster position="top-right" richColors closeButton />
-        <UpgradeModalHost />
-        <Routes>
-          <Route path="/" element={<RootRedirect />} />
-          {generateRoutes(masterRoutes)}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <CliqChatProvider>
+        <BrowserRouter>
+          <Toaster position="top-right" richColors closeButton />
+          <UpgradeModalHost />
+          <Routes>
+            <Route path="/" element={<RootRedirect />} />
+            {generateRoutes(masterRoutes)}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </CliqChatProvider>
     </AuthProvider>
   );
 }

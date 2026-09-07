@@ -7,12 +7,15 @@ import AppSwitcher from "./AppSwitcher";
 import MenuDropdown from "./MenuDropdown";
 import NotificationsBell from "./NotificationsBell";
 import UserMenu from "../users/UserMenu";
+import CliqIcon from "../icons/ChatIcon";
+import { useCliqChat } from "../CliqChatWidget";
 
 export default function TopHeader({ app }) {
   const nav = useNavigate();
   const Icon = MODULE_ICONS[app];
   const meta = APP_META[app];
   const menus = APP_MENUS[app] || [];
+  const { open, cliqConnected, toggleChat } = useCliqChat();
   return (
     <header
       data-testid={`topheader-${app}`}
@@ -59,6 +62,21 @@ export default function TopHeader({ app }) {
       </nav>
       <div className="flex-1" />
       <CommandShellSearch currentApp={app} />
+      <button
+        type="button"
+        onClick={toggleChat}
+        aria-label="Toggle Cliq chat"
+        aria-pressed={open}
+        title={cliqConnected ? "Cliq" : "Cliq (not connected)"}
+        className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg hover:bg-[#F4F6F7] transition-colors"
+        style={{ color: open ? "#1F453B" : "#5B6B66" }}
+      >
+        <CliqIcon size={19} />
+        <span
+          className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full ring-2 ring-white"
+          style={{ background: cliqConnected ? "#3f6d5f" : "#a54536" }}
+        />
+      </button>
       <NotificationsBell />
       <UserMenu />
     </header>

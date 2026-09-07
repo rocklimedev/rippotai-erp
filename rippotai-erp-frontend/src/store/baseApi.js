@@ -148,6 +148,10 @@ export const baseApi = createApi({
     "ZohoBiginOrg",
     "ZohoBiginRecords",
     "ZohoBiginSearch",
+    "CliqStatus",
+    "CliqChannels",
+    "CliqMessages",
+    "CliqChats",
   ],
   endpoints: () => ({}), // each feature file injects its own endpoints
 });

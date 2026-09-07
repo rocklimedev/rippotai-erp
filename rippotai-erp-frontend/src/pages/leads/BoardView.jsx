@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useGetBoardQuery, useMoveStageMutation } from "../../api/leads.api";
+import { useZohoStatusQuery } from "../../api/authConnectors.api";
 
 import LeadCard from "../../components/leads/LeadCard";
 import LeadActionModal from "../../components/leads/LeadActionModal";
@@ -35,13 +36,62 @@ const formatCurrency = (value) => {
 };
 
 export default function BoardView({ onOpenLead, onEditLead }) {
-  const { data, isLoading, isError } = useGetBoardQuery();
+  // ------------------------------------------------------------
+  // ZOHO CONNECTION STATUS
+  // ------------------------------------------------------------
+
+  const {
+    data: zohoStatus,
+    isLoading: isZohoStatusLoading,
+    isFetching: isZohoStatusFetching,
+  } = useZohoStatusQuery(undefined, {
+    pollingInterval: 5000,
+  });
+
+  /*
+   * Keep this flexible because your backend response may be:
+   *
+   * { connected: true }
+   * { isConnected: true }
+   * { connected: false }
+   *
+   * Adjust this once you know the exact backend response.
+   */
+  const zohoConnected =
+    zohoStatus?.connected === true ||
+    zohoStatus?.isConnected === true ||
+    zohoStatus?.status === "connected";
+
+  // ------------------------------------------------------------
+  // LEADS BOARD
+  // ------------------------------------------------------------
+
+  const { data, isLoading, isFetching, isError, refetch } = useGetBoardQuery(
+    undefined,
+    {
+      skip: !zohoConnected,
+    },
+  );
+
   const [moveStage] = useMoveStageMutation();
 
   const [dragId, setDragId] = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
-
   const [modal, setModal] = useState(null);
+
+  // ------------------------------------------------------------
+  // WHEN ZOHO CONNECTS
+  // ------------------------------------------------------------
+
+  useEffect(() => {
+    if (zohoConnected) {
+      refetch();
+    }
+  }, [zohoConnected, refetch]);
+
+  // ------------------------------------------------------------
+  // MODALS
+  // ------------------------------------------------------------
 
   const openRemark = (lead) => {
     setModal({
@@ -60,6 +110,52 @@ export default function BoardView({ onOpenLead, onEditLead }) {
   const closeModal = () => {
     setModal(null);
   };
+
+  // ------------------------------------------------------------
+  // ZOHO STATUS LOADING
+  // ------------------------------------------------------------
+
+  if (isZohoStatusLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[420px] text-sm text-[var(--muted)]">
+        Checking Zoho connection...
+      </div>
+    );
+  }
+
+  // ------------------------------------------------------------
+  // ZOHO NOT CONNECTED
+  // ------------------------------------------------------------
+
+  if (!zohoConnected) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[420px] px-6 text-center">
+        <div className="w-full max-w-md rounded-2xl border border-[var(--stroke)] bg-paper p-7">
+          <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-[var(--mist)]">
+            <span className="h-2.5 w-2.5 rounded-full bg-[#a54536]" />
+          </div>
+
+          <h2 className="text-[16px] font-semibold text-[var(--ink-green)]">
+            Zoho Bigin is not connected
+          </h2>
+
+          <p className="mt-2 text-[12.5px] leading-5 text-[var(--muted)]">
+            Connect your Zoho Bigin account to load and manage leads from the
+            pipeline.
+          </p>
+
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-[var(--mist)] px-3 py-1.5 text-[11px] font-semibold text-[var(--muted)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#a54536]" />
+            Disconnected
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ------------------------------------------------------------
+  // BOARD LOADING
+  // ------------------------------------------------------------
 
   if (isLoading) {
     return (
@@ -81,9 +177,9 @@ export default function BoardView({ onOpenLead, onEditLead }) {
 
   return (
     <div className="flex flex-col min-w-0 h-full">
-      {/* -------------------------------------------------------------- */}
-      {/* BOARD HEADER                                                    */}
-      {/* -------------------------------------------------------------- */}
+      {/* ---------------------------------------------------------- */}
+      {/* BOARD HEADER                                                */}
+      {/* ---------------------------------------------------------- */}
 
       <div className="px-7 pt-6 pb-5">
         <div className="flex items-end justify-between gap-6">
@@ -95,6 +191,12 @@ export default function BoardView({ onOpenLead, onEditLead }) {
 
               <span className="inline-flex items-center rounded-full bg-[var(--mist)] px-2.5 py-1 text-[11px] font-semibold text-[var(--muted)]">
                 {totalLeads} active
+              </span>
+
+              {/* ZOHO CONNECTION INDICATOR */}
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#eef7f1] px-2.5 py-1 text-[10px] font-semibold text-[#3f6d5f]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#3f6d5f]" />
+                Zoho connected
               </span>
             </div>
 
@@ -111,14 +213,15 @@ export default function BoardView({ onOpenLead, onEditLead }) {
         </div>
       </div>
 
-      {/* -------------------------------------------------------------- */}
-      {/* BOARD                                                           */}
-      {/* -------------------------------------------------------------- */}
+      {/* ---------------------------------------------------------- */}
+      {/* BOARD                                                       */}
+      {/* ---------------------------------------------------------- */}
 
       <div className="flex-1 min-w-0 overflow-x-auto px-7 pb-8">
         <div className="flex items-start gap-4 min-w-max">
           {data.columns.map((col) => {
             const isOver = dragOverCol === col.id && dragId != null;
+
             const accent = getStageAccent(col.id);
 
             const stageValue = col.leads.reduce((sum, lead) => {
@@ -177,9 +280,7 @@ export default function BoardView({ onOpenLead, onEditLead }) {
                   setDragOverCol(null);
                 }}
               >
-                {/* ---------------------------------------------------- */}
-                {/* STAGE HEADER                                          */}
-                {/* ---------------------------------------------------- */}
+                {/* STAGE HEADER */}
 
                 <div className="px-3.5 pt-3.5 pb-3">
                   <div className="flex items-center justify-between">
@@ -214,9 +315,7 @@ export default function BoardView({ onOpenLead, onEditLead }) {
                   </div>
                 </div>
 
-                {/* ---------------------------------------------------- */}
-                {/* CARDS                                                  */}
-                {/* ---------------------------------------------------- */}
+                {/* CARDS */}
 
                 <div className="flex flex-col gap-2 px-2 pb-2">
                   {col.leads.length === 0 ? (
@@ -256,10 +355,6 @@ export default function BoardView({ onOpenLead, onEditLead }) {
           })}
         </div>
       </div>
-
-      {/* -------------------------------------------------------------- */}
-      {/* LEAD ACTION MODAL                                               */}
-      {/* -------------------------------------------------------------- */}
 
       <LeadActionModal modal={modal} onClose={closeModal} />
     </div>
