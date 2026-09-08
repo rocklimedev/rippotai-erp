@@ -22,9 +22,9 @@ import {
   useLazyDownloadDocumentQuery,
   useUpdateDocumentMutation,
   useReplaceDocumentFileMutation,
-} from "../../api/document.api";
+} from "../../api/documents/document.api";
 
-import { useGetProjectsQuery } from "../../api/project.api";
+import { useGetProjectsQuery } from "../../api/projects/project.api";
 
 /* ============================================================
    HELPERS

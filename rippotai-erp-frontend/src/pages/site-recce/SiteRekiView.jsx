@@ -16,7 +16,7 @@ import { Shell, Card } from "../../hooks/shared";
 import {
   useGetSiteRecceQuery,
   useDeleteSiteRecceMutation,
-} from "../../api/site-recce.api";
+} from "../../api/documents/site-recce.api";
 import logo from "../../assets/rippotai_logo.png";
 const BRAND = {
   green: "#1B4332",

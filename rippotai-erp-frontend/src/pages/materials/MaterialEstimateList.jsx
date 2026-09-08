@@ -4,7 +4,7 @@ import { Plus, Eye, Edit3, Calculator } from "lucide-react";
 
 import { Shell, Card, Input } from "../../hooks/shared";
 
-import { useGetMaterialEstimatesForRequirementQuery } from "../../api/procurent.api";
+import { useGetMaterialEstimatesForRequirementQuery } from "../../api/procuerment/procurent.api";
 
 export default function MaterialEstimateList() {
   const nav = useNavigate();

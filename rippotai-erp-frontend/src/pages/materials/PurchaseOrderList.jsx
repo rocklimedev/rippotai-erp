@@ -4,7 +4,7 @@ import { Plus, Eye, Edit3, ShoppingCart } from "lucide-react";
 
 import { Shell, Card, Input } from "../../hooks/shared";
 
-import { useGetPurchaseOrdersQuery } from "../../api/procurent.api";
+import { useGetPurchaseOrdersQuery } from "../../api/procuerment/procurent.api";
 
 export default function PurchaseOrderList() {
   const nav = useNavigate();

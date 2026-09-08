@@ -26,7 +26,7 @@ import {
   useGetDashboardLibraryQuery,
   useSaveDashboardMutation,
   useResetDashboardMutation,
-} from "../../api/dashboard.api";
+} from "../../api/reports/dashboard.api";
 
 const RGL = WidthProvider(Responsive);
 

@@ -9,7 +9,7 @@ import {
   useGetPlanOfActionQuery,
   useDeletePlanOfActionMutation,
   usePublishPlanOfActionMutation,
-} from "../../api/plan-of-actions.api";
+} from "../../api/documents/plan-of-actions.api";
 import logo from "../../assets/rippotai_logo.png";
 // ---- Brand tokens (matched to the Rippotai Plan of Action document) ----
 const GREEN = "#16352A";

@@ -69,7 +69,7 @@ import {
   useRerouteRfiMutation,
   useRespondToRfiMutation,
   useCloseRfiMutation,
-} from "@/api/site-ops.api";
+} from "@/api/procuerment/site-ops.api";
 
 /* =========================================================
    STATUS CONFIG

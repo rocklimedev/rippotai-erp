@@ -18,7 +18,7 @@ import {
   useGetUserNotificationsQuery,
   useMarkAsReadMutation,
   useMarkAllAsReadMutation,
-} from "../api/notification.api"; // <-- adjust this path to wherever the file above lives
+} from "../api/engagement/notification.api"; // <-- adjust this path to wherever the file above lives
 import {
   DropdownMenu,
   DropdownMenuContent,

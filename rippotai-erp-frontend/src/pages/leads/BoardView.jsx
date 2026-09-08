@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
-import { useGetBoardQuery, useMoveStageMutation } from "../../api/leads.api";
-import { useZohoStatusQuery } from "../../api/authConnectors.api";
+import {
+  useGetBoardQuery,
+  useMoveStageMutation,
+} from "../../api/connectors/leads.api";
+import { useZohoStatusQuery } from "../../api/auth/authConnectors.api";
 
 import LeadCard from "../../components/leads/LeadCard";
 import LeadActionModal from "../../components/leads/LeadActionModal";

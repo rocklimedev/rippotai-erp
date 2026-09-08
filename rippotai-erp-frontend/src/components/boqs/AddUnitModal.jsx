@@ -8,7 +8,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { useCreateUnitMutation } from "../../api/unit.api";
+import { useCreateUnitMutation } from "../../api/meta/unit.api";
 
 export function AddUnitModal({ open, onClose, onCreated }) {
   const [name, setName] = useState("");

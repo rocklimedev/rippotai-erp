@@ -21,7 +21,7 @@ import {
   useGetBoqMonthlyVolumeQuery,
   useGetBoqStatusMixQuery,
   useGetBoqRecentlyEditedQuery,
-} from "../../api/boq.api";
+} from "../../api/boq/boq.api";
 
 /* ====================== STAT WIDGETS ====================== */
 

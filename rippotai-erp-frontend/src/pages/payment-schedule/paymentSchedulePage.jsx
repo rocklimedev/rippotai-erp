@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import PaymentScheduleView from "../../components/payments/PaymentScheduleView";
-import { useGetPaymentScheduleQuery } from "../../api/payment-schedules.api";
+import { useGetPaymentScheduleQuery } from "../../api/documents/payment-schedules.api";
 
 function PaymentSchedulePage() {
   const { scheduleId } = useParams();

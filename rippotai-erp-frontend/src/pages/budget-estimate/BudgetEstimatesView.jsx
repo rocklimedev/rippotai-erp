@@ -12,7 +12,7 @@ import {
   useDeleteBudgetEstimateMutation,
   useLockBudgetEstimateMutation,
   useUnlockBudgetEstimateMutation,
-} from "../../api/budget-estimates.api";
+} from "../../api/documents/budget-estimates.api";
 
 import logo from "../../assets/rippotai_logo.png";
 

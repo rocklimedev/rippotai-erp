@@ -11,7 +11,7 @@ import { Shell, Card } from "../../hooks/shared";
 import {
   useGetScopeOfWorkByIdQuery,
   useDeleteScopeOfWorkMutation,
-} from "../../api/scope-of-work.api";
+} from "../../api/documents/scope-of-work.api";
 
 // ---------------------------------------------------------------------------
 // BRAND

@@ -18,7 +18,7 @@ import {
   useMarkAllAsReadMutation,
   useDeleteNotificationMutation,
   useDeleteUserNotificationsMutation,
-} from "../../api/notification.api";
+} from "../../api/engagement/notification.api";
 
 export default function NotificationsBell() {
   const navigate = useNavigate();

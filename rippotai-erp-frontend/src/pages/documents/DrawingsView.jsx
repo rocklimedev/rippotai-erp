@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, FileText, ImageOff } from "lucide-react";
 
 import { Shell, Card } from "../../hooks/shared"; // adjust to wherever these live
-import { useGetDrawingByIdQuery } from "../../api/drawing.api"; // adjust to wherever drawingApi is defined
+import { useGetDrawingByIdQuery } from "../../api/documents/drawing.api"; // adjust to wherever drawingApi is defined
 
 const statusBadgeClass = (status) =>
   status === "superseded"

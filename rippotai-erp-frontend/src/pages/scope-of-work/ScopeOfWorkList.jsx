@@ -17,7 +17,7 @@ import {
   useGetScopeOfWorkQuery,
   useUpdateScopeOfWorkMutation,
   useDeleteScopeOfWorkMutation,
-} from "../../api/scope-of-work.api";
+} from "../../api/documents/scope-of-work.api";
 
 export default function ScopeOfWorkList() {
   const nav = useNavigate();

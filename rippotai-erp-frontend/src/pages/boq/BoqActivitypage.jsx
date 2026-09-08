@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useGetActivityQuery } from "../../api/boq.api";
+import { useGetActivityQuery } from "../../api/boq/boq.api";
 
 /* ============ BOQ Activity ============ */
 

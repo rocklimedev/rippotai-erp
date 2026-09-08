@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useGetLeadActivitiesQuery } from "../../api/leads.api";
+import { useGetLeadActivitiesQuery } from "../../api/connectors/leads.api";
 
 /* ============ Leads Activity ============ */
 

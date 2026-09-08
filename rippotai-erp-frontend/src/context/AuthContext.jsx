@@ -10,8 +10,8 @@ import {
   useSignupMutation,
   useLogoutMutation,
   useLazyMeQuery,
-} from "../api/auth.api";
-import { useUpdateUserMutation } from "../api/user.api";
+} from "../api/auth/auth.api";
+import { useUpdateUserMutation } from "../api/users/user.api";
 
 const AuthContext = createContext(null);
 

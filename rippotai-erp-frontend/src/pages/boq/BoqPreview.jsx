@@ -2,7 +2,7 @@ import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Printer } from "lucide-react";
 
-import { useGetBoqByIdQuery } from "@/api/boq.api";
+import { useGetBoqByIdQuery } from "@/api/boq/boq.api";
 import { formatINR, formatDate } from "@/lib/format";
 
 export default function BoqPreview() {

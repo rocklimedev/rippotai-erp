@@ -1,5 +1,5 @@
 import { labelStyle } from "../../hooks/stages";
-import { useGetReviewQuery } from "../../api/leads.api";
+import { useGetReviewQuery } from "../../api/connectors/leads.api";
 
 export default function ReviewView({ onOpenLead }) {
   const { data, isLoading } = useGetReviewQuery(7);

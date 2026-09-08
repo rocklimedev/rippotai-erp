@@ -4,9 +4,9 @@ import { toast } from "sonner";
 
 import { PaymentSectionForm } from "../../components/payments/PaymentSectionForm";
 import { useAutoSave } from "../../hooks/use-autosave";
-import { useGetProjectsQuery } from "../../api/project.api";
-import { useCreatePaymentScheduleMutation } from "../../api/payment-schedules.api";
-import { useGetTermsTemplatesQuery } from "../../api/terms.api";
+import { useGetProjectsQuery } from "../../api/projects/project.api";
+import { useCreatePaymentScheduleMutation } from "../../api/documents/payment-schedules.api";
+import { useGetTermsTemplatesQuery } from "../../api/meta/terms.api";
 import {
   PAYMENT_SCHEDULE_SECTIONS,
   STANDARD_MILESTONE_TEMPLATE,

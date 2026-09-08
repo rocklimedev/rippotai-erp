@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { RefreshCw, Plus, FolderOpen, FileText, Layers3 } from "lucide-react";
 
-import { useGetDocumentsQuery } from "../../api/document.api";
-import { useGetDrawingsQuery } from "../../api/drawing.api";
-import { useGetProjectsQuery } from "../../api/project.api";
+import { useGetDocumentsQuery } from "../../api/documents/document.api";
+import { useGetDrawingsQuery } from "../../api/documents/drawing.api";
+import { useGetProjectsQuery } from "../../api/projects/project.api";
 
 /* ============================================================
    HELPERS

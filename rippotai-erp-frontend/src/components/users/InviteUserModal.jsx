@@ -5,9 +5,9 @@ import { X } from "lucide-react";
 import {
   useCreateUserMutation,
   useUpdateUserMutation,
-} from "../../api/user.api";
+} from "../../api/users/user.api";
 
-import { useGetRolesQuery } from "../../api/rbac.api";
+import { useGetRolesQuery } from "../../api/users/rbac.api";
 
 export default function InviteUserModal({ onClose, user }) {
   const isEdit = Boolean(user);

@@ -11,7 +11,7 @@ import {
   useBulkAssignPermissionsMutation,
   useGetRolePermissionsQuery,
   useRevokeRolePermissionMutation,
-} from "@/api/rbac.api";
+} from "@/api/users/rbac.api";
 /* Small helper components */
 const PageShell = ({ title, subtitle, action, children }) => (
   <div

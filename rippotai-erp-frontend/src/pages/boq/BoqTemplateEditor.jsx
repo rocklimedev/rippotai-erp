@@ -34,7 +34,7 @@ import {
   useUpdateTemplateItemMutation,
   useDeleteTemplateItemMutation,
   useReorderTemplateItemsMutation,
-} from "../../api/boq.api";
+} from "../../api/boq/boq.api";
 import { SaveChip } from "../../components/boqs/StatusIndicators";
 import { AddItemPicker } from "../../components/boqs/AddItemPicker";
 import { AddCategoryPanel } from "../../components/boqs/AddCategoryPanel";

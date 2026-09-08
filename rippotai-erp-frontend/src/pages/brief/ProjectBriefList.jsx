@@ -19,7 +19,7 @@ import {
   useGetProjectBriefsQuery,
   useUpdateProjectBriefStatusMutation,
   useDeleteProjectBriefMutation,
-} from "../../api/brief.api";
+} from "../../api/documents/brief.api";
 
 export default function ProjectBriefList() {
   const nav = useNavigate();

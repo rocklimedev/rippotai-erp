@@ -4,7 +4,7 @@ import { Plus, Eye, PackageOpen, ArrowRightLeft } from "lucide-react";
 
 import { Shell, Card, Input } from "../../hooks/shared";
 
-import { useGetSiteInventoryQuery } from "../../api/procurent.api";
+import { useGetSiteInventoryQuery } from "../../api/procuerment/procurent.api";
 
 export default function SiteInventoryList() {
   const nav = useNavigate();

@@ -10,10 +10,10 @@ import {
   useSubmitQuotationMutation,
   useGetQuotationByIdQuery,
   useGetQuotationItemsQuery,
-} from "../../api/quotation.api";
-import { useGetVendorsQuery } from "../../api/vendor.api";
-import { useGetProjectsQuery } from "../../api/project.api"; // adjust import path to wherever projectsApi.js lives
-import { useGetUnitsQuery } from "../../api/unit.api"; // adjust import path to wherever unitApi.js lives
+} from "../../api/procuerment/quotation.api";
+import { useGetVendorsQuery } from "../../api/vendors/vendor.api";
+import { useGetProjectsQuery } from "../../api/projects/project.api"; // adjust import path to wherever projectsApi.js lives
+import { useGetUnitsQuery } from "../../api/meta/unit.api"; // adjust import path to wherever unitApi.js lives
 import NewVendorModal from "../../components/vendors/AddVendorModal";
 import NewProjectModal from "../../components/projects/CreateNewProject"; // adjust import path
 import { AddUnitModal } from "../../components/boqs/AddUnitModal"; // adjust import path

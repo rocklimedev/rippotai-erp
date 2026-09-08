@@ -8,10 +8,10 @@ import {
   useGetDrawingsQuery,
   useCreateDrawingMutation,
   useAddDrawingRevisionMutation,
-} from "../../api/drawing.api";
+} from "../../api/documents/drawing.api";
 
-import { useGetDocumentTypesQuery } from "../../api/document.api";
-import { useGetProjectsQuery } from "../../api/project.api";
+import { useGetDocumentTypesQuery } from "../../api/documents/document.api";
+import { useGetProjectsQuery } from "../../api/projects/project.api";
 
 /* =========================================================
    Drawings

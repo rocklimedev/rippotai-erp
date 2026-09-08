@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { labelStyle, stageOf } from "../../hooks/stages";
-import { useGetLeadsQuery, useDeleteLeadMutation } from "../../api/leads.api";
+import {
+  useGetLeadsQuery,
+  useDeleteLeadMutation,
+} from "../../api/connectors/leads.api";
 
 const COLS =
   "minmax(220px, 1.6fr) minmax(150px, 1fr) minmax(220px, 1.5fr) minmax(130px, .9fr) minmax(110px, .8fr) minmax(130px, 1fr) minmax(130px, .9fr) 86px";

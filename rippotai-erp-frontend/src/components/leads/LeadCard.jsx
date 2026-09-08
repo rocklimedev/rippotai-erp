@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { pill, TAG_COLORS, LEAD_COLORS } from "../../hooks/stages";
-import { useUpdateLeadMutation } from "../../api/leads.api";
+import { useUpdateLeadMutation } from "../../api/connectors/leads.api";
 
 const COLOR_DOTS = [
   ["None", "#ffffff"],

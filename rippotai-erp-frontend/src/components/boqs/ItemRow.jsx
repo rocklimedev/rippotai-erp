@@ -22,7 +22,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 import { formatINR } from "@/lib/format";
 import { UNITS } from "../../hooks/constants";
-import { useGetUnitsQuery } from "../../api/unit.api";
+import { useGetUnitsQuery } from "../../api/meta/unit.api";
 import { EditableCell } from "./EditableCell";
 import { AddUnitModal } from "./AddUnitModal";
 

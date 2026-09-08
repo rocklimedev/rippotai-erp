@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { RefreshCw, FileText, PenLine, Plus, X, Pencil } from "lucide-react";
 import { formatINR } from "@/lib/format";
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
-import { useGetTermsTemplatesQuery } from "../../api/terms.api";
+import { useGetTermsTemplatesQuery } from "../../api/meta/terms.api";
 
 function htmlToPlainText(html) {
   return (html || "")

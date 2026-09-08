@@ -41,7 +41,7 @@ import {
   useGetProjectRfisQuery,
   useGetProjectQcHistoryQuery,
   useGetProjectQcHandoffStatusQuery,
-} from "@/api/site-ops.api";
+} from "@/api/procuerment/site-ops.api";
 
 const P = "#1F453B";
 

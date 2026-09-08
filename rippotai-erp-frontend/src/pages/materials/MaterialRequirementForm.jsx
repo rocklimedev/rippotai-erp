@@ -13,10 +13,10 @@ import {
 
 import { useAutoSave } from "../../hooks/use-autosave";
 
-import { useCreateMaterialRequirementMutation } from "../../api/procurent.api";
+import { useCreateMaterialRequirementMutation } from "../../api/procuerment/procurent.api";
 
-import { useGetProjectsQuery } from "../../api/project.api";
-import { useGetUsersQuery } from "../../api/user.api";
+import { useGetProjectsQuery } from "../../api/projects/project.api";
+import { useGetUsersQuery } from "../../api/users/user.api";
 
 const SAVE_KEY = "bc.material-requirement";
 

@@ -9,7 +9,7 @@ import {
   useGetPaymentSchedulesQuery,
   useUpdatePaymentScheduleMutation,
   useDeletePaymentScheduleMutation,
-} from "../../api/payment-schedules.api";
+} from "../../api/documents/payment-schedules.api";
 
 export default function PaymentScheduleList() {
   const nav = useNavigate();

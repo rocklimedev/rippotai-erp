@@ -3,7 +3,7 @@ import { labelStyle, stageOf } from "../../hooks/stages";
 import {
   useAddNoteMutation,
   useSetProposalMutation,
-} from "../../api/leads.api";
+} from "../../api/connectors/leads.api";
 
 // modal = null | { kind: "remark" | "proposed", lead }
 export default function LeadActionModal({ modal, onClose }) {

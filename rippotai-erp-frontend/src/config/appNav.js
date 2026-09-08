@@ -82,7 +82,11 @@ export const APP_META = {
     base: "/calendar",
     searchPh: "Search events",
   },
-
+  commandCenter: {
+    name: "Command Center",
+    base: "/command-center",
+    searchPh: "Search anything",
+  },
   settings: {
     name: "Settings",
     base: "/settings",
@@ -106,6 +110,7 @@ export const LANDING_ORDER = [
   "materials",
   "tasks",
   "calendar",
+  "commandCenter",
   "adminConsole",
 ];
 
@@ -394,6 +399,12 @@ export const APP_MENUS = {
         I("Roles and Permissions", "roles"),
         I("Activity", "activity"),
       ],
+    },
+  ],
+  commandCenter: [
+    {
+      label: "Center",
+      items: [I("Pipeline", "pipeline")],
     },
   ],
   settings: [

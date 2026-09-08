@@ -26,7 +26,7 @@ import {
   useArchiveProjectMutation,
   useRestoreProjectMutation,
   useDeleteProjectMutation,
-} from "../../api/project.api";
+} from "../../api/projects/project.api";
 
 // -----------------------------------------------------------------------------
 // STATUS

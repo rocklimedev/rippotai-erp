@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
-import { useCreateVendorMutation } from "../../api/vendor.api"; // adjust import path to wherever vendorsApi.js lives
+import { useCreateVendorMutation } from "../../api/vendors/vendor.api"; // adjust import path to wherever vendorsApi.js lives
 
 const VENDOR_CATEGORIES = [
   "General",

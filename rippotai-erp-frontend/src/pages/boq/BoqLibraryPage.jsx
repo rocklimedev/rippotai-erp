@@ -10,7 +10,7 @@ import {
   useGetLibraryCategoriesQuery,
   useDeleteLibraryItemMutation,
   useUpdateLibraryItemMutation,
-} from "../../api/boq.api";
+} from "../../api/boq/boq.api";
 
 /* ============ Rate & Item Library ============ */
 

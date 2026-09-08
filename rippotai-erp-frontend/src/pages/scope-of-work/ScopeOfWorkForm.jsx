@@ -5,7 +5,7 @@ import { Plus, Trash2, Folder, ListChecks } from "lucide-react";
 
 import { PaymentSectionForm } from "../../components/payments/PaymentSectionForm";
 import { useAutoSave } from "../../hooks/use-autosave";
-import { useGetProjectsQuery } from "../../api/project.api";
+import { useGetProjectsQuery } from "../../api/projects/project.api";
 
 import {
   useCreateScopeOfWorkMutation,
@@ -19,7 +19,7 @@ import {
   useAddCategoryToProjectMutation,
   useGetProjectCategoriesQuery,
   useGetScopeCategoriesQuery,
-} from "../../api/scope-of-work.api";
+} from "../../api/documents/scope-of-work.api";
 
 const SAVE_KEY = "bc.scope-of-work";
 

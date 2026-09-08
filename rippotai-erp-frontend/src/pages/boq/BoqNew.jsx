@@ -3,8 +3,11 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, FileSpreadsheet } from "lucide-react";
 
-import { useCreateBoqMutation, useGetTemplatesQuery } from "../../api/boq.api";
-import { useGetProjectsQuery } from "../../api/project.api";
+import {
+  useCreateBoqMutation,
+  useGetTemplatesQuery,
+} from "../../api/boq/boq.api";
+import { useGetProjectsQuery } from "../../api/projects/project.api";
 import NewProjectModal from "../../components/projects/CreateNewProject";
 const CREATE_NEW_PROJECT = "__create_new_project__";
 

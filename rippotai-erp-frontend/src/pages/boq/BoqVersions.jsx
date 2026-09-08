@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   useGetBoqVersionHistoryQuery,
   useLazyCompareBoqVersionsQuery,
-} from "../../api/boq.api"; // ← adjust import path
+} from "../../api/boq/boq.api"; // ← adjust import path
 import { formatINR, formatDate, relativeTime } from "@/lib/format";
 import { ArrowLeft, GitBranch, ArrowLeftRight, Lock } from "lucide-react";
 

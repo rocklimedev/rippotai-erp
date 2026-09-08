@@ -14,7 +14,7 @@ import {
   useMoveStageMutation,
   useMarkNurtureMutation,
   useMarkLostMutation,
-} from "../../api/leads.api";
+} from "../../api/connectors/leads.api";
 
 export default function DetailView({ leadId, onBack, onEditLead }) {
   const {

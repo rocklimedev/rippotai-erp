@@ -4,7 +4,7 @@ import { Plus, Eye, Edit3, Calculator } from "lucide-react";
 
 import { Shell, Card, Input } from "../../hooks/shared";
 
-import { useGetMaterialRateSheetsForRequirementQuery } from "../../api/procurent.api";
+import { useGetMaterialRateSheetsForRequirementQuery } from "../../api/procuerment/procurent.api";
 
 export default function MaterialRateSheetList() {
   const nav = useNavigate();

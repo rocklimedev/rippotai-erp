@@ -12,8 +12,8 @@ import {
   useRevokeRolePermissionMutation,
   useGetRoleAppsQuery,
   useSetRoleAppsMutation,
-} from "../../api/rbac.api";
-import { useGetAppsQuery } from "../../api/app.api";
+} from "../../api/users/rbac.api";
+import { useGetAppsQuery } from "../../api/meta/app.api";
 export default function RolesPermissions() {
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";

@@ -27,7 +27,7 @@ import {
   useGetMyCalendarEventsQuery,
   useGetCalendarEventsQuery,
   useCreateCalendarEventMutation,
-} from "../../api/calendar.api";
+} from "../../api/connectors/calendar.api";
 
 /* -------------------------------------------------------------------------- */
 /* Helpers                                                                    */

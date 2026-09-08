@@ -9,16 +9,16 @@ import {
   useGetProjectTeamQuery,
   useAddProjectTeamMemberMutation,
   useRemoveProjectTeamMemberMutation,
-} from "../../api/project.api"; // adjust import path
+} from "../../api/projects/project.api"; // adjust import path
 import {
   useGetProjectTypesQuery,
   useCreateProjectTypeMutation,
-} from "../../api/project-type.api"; // adjust import path
+} from "../../api/projects/project-type.api"; // adjust import path
 import {
   useGetClientsQuery,
   useCreateClientMutation,
-} from "../../api/client.api"; // adjust import path
-import { useGetUsersQuery } from "../../api/user.api"; // adjust import path
+} from "../../api/projects/client.api"; // adjust import path
+import { useGetUsersQuery } from "../../api/users/user.api"; // adjust import path
 
 // UI shows friendly labels; CreateProjectDto/UpdateProjectDto's `priority`
 // is validated against the ProjectPriority enum, which is uppercase.

@@ -19,7 +19,7 @@ import {
   useUpdatePlanOfActionMutation,
   useDeletePlanOfActionMutation,
   usePublishPlanOfActionMutation,
-} from "../../api/plan-of-actions.api";
+} from "../../api/documents/plan-of-actions.api";
 
 export default function PlanOfActionList() {
   const nav = useNavigate();

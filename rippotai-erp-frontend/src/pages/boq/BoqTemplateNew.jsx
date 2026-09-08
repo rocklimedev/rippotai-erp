@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowRight, ArrowLeft, LayoutTemplate } from "lucide-react";
-import { useCreateTemplateMutation } from "../../api/boq.api";
+import { useCreateTemplateMutation } from "../../api/boq/boq.api";
 
 const TIERS = [
   { value: "essential", label: "Essential" },

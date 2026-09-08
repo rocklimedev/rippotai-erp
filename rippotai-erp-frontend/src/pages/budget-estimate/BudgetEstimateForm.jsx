@@ -4,8 +4,8 @@ import { toast } from "sonner";
 import { Input } from "../../hooks/shared";
 import BudgetSectionForm from "../../components/budget-estimates/BudgetSectionForm";
 import { useAutoSave } from "../../hooks/use-autosave";
-import { useGetProjectsQuery } from "../../api/project.api";
-import { useCreateBudgetEstimateMutation } from "../../api/budget-estimates.api";
+import { useGetProjectsQuery } from "../../api/projects/project.api";
+import { useCreateBudgetEstimateMutation } from "../../api/documents/budget-estimates.api";
 
 const SAVE_KEY = "bc.budget-estimate.draft";
 

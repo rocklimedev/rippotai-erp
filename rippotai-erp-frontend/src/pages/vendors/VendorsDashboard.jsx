@@ -44,8 +44,8 @@ import {
   useCreateVendorShortlistMutation,
   useAddVendorToShortlistMutation,
   useDeleteVendorMutation,
-} from "../../api/vendor.api";
-import { useSearchVendorsQuery } from "../../api/search.api";
+} from "../../api/vendors/vendor.api";
+import { useSearchVendorsQuery } from "../../api/meta/search.api";
 
 const STATUS_OPTIONS = ["active", "inactive", "blocked"];
 

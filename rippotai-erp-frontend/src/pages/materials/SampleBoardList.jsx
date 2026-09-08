@@ -4,7 +4,7 @@ import { Plus, Eye, Edit3, Images } from "lucide-react";
 
 import { Shell, Card, Input } from "../../hooks/shared";
 
-import { useGetSampleBoardsForRequirementQuery } from "../../api/procurent.api";
+import { useGetSampleBoardsForRequirementQuery } from "../../api/procuerment/procurent.api";
 export default function SampleBoardList() {
   const nav = useNavigate();
   const [q, setQ] = useState("");

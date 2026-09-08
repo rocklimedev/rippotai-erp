@@ -8,7 +8,7 @@ import {
   useGetClientsQuery,
   useDeleteClientMutation,
   useRestoreClientMutation,
-} from "../../api/client.api";
+} from "../../api/projects/client.api";
 
 import ClientModal from "../../components/clients/ClientModal";
 import ClientActionsMenu from "../../components/clients/ClientActionsMenu";
