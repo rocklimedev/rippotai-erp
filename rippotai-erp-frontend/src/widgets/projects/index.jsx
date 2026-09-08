@@ -20,7 +20,7 @@ import {
   useGetProjectsProgressTrendQuery,
   useGetProjectsPhaseMixQuery,
   useGetProjectsVarianceByProjectQuery,
-} from "../../api/project.api";
+} from "../../api/projects/project.api";
 
 /* -------- Projects stat / list widgets -------- */
 

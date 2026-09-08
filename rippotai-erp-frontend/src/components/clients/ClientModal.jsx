@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import {
   useCreateClientMutation,
   useUpdateClientMutation,
-} from "../../api/client.api";
+} from "../../api/projects/client.api";
 
 export default function ClientModal({ client, onClose }) {
   const isEdit = !!client;

@@ -6,7 +6,7 @@ import {
   useGetUsersQuery,
   useUpdateUserMutation,
   useDeleteUserMutation,
-} from "../../api/user.api";
+} from "../../api/users/user.api";
 import { ROLE_LABEL, fmtDate } from "../../lib/settings.utils";
 import InviteUserModal from "../../components/users/InviteUserModal";
 import UserActionsMenu from "../../components/users/UserActionsMenu";

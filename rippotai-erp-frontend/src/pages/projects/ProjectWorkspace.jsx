@@ -4,13 +4,13 @@ import api from "@/lib/api";
 import { toast } from "sonner";
 import { fmtINR, relativeTime } from "@/lib/format";
 import { ArrowLeft, Share2, Copy } from "lucide-react";
-import { useGetProjectByIdQuery } from "../../api/project.api";
-import { useGetBoqsQuery } from "../../api/boq.api";
-import { useGetQuotationsQuery } from "../../api/quotation.api"; // adjust import path as needed
+import { useGetProjectByIdQuery } from "../../api/projects/project.api";
+import { useGetBoqsQuery } from "../../api/boq/boq.api";
+import { useGetQuotationsQuery } from "../../api/procuerment/quotation.api"; // adjust import path as needed
 import {
   useGetDocumentsQuery,
   useUpdateDocumentMutation,
-} from "../../api/document.api"; // adjust import path as needed
+} from "../../api/documents/document.api"; // adjust import path as needed
 
 const TABS = ["Overview", "BOQ", "Estimates", "Activity"];
 

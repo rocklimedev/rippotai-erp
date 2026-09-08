@@ -13,7 +13,7 @@ import {
   useGetCliqChatsQuery,
   useGetCliqMessagesQuery,
   useSendCliqMessageMutation,
-} from "../api/cliq.api";
+} from "../api/connectors/cliq.api";
 
 // ============================================================
 // CONTEXT
@@ -74,8 +74,10 @@ export function CliqChatProvider({ children }) {
 function CliqChatPanel({ onClose }) {
   const [chatId, setChatId] = useState(null);
   const [draft, setDraft] = useState("");
+  const [switcherOpen, setSwitcherOpen] = useState(false);
 
   const listRef = useRef(null);
+  const switcherRef = useRef(null);
 
   // ----------------------------------------------------------
   // CONNECTION STATUS
@@ -191,6 +193,36 @@ function CliqChatPanel({ onClose }) {
   }, [messages]);
 
   // ----------------------------------------------------------
+  // CLOSE CHAT SWITCHER ON OUTSIDE CLICK / ESCAPE
+  // ----------------------------------------------------------
+
+  useEffect(() => {
+    if (!switcherOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event) => {
+      if (switcherRef.current && !switcherRef.current.contains(event.target)) {
+        setSwitcherOpen(false);
+      }
+    };
+
+    const handleKey = (event) => {
+      if (event.key === "Escape") {
+        setSwitcherOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKey);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [switcherOpen]);
+
+  // ----------------------------------------------------------
   // SEND
   // ----------------------------------------------------------
 
@@ -228,6 +260,8 @@ function CliqChatPanel({ onClose }) {
     }
   };
 
+  const canSend = draft.trim().length > 0 && !isSending;
+
   // ==========================================================
   // RENDER
   // ==========================================================
@@ -249,48 +283,105 @@ function CliqChatPanel({ onClose }) {
 
       <div
         className={[
-          "flex items-center justify-between gap-2",
+          "flex items-center gap-2.5",
           "border-b border-[var(--stroke)]",
           "bg-[var(--mist-soft)] px-3.5 py-3",
         ].join(" ")}
       >
+        {/* MONOGRAM */}
+
+        <div
+          className={[
+            "relative flex h-8 w-8 shrink-0",
+            "items-center justify-center",
+            "rounded-full bg-[var(--ink-green)]",
+          ].join(" ")}
+        >
+          <span className="text-[13px] font-semibold text-paper">C</span>
+
+          <span
+            aria-hidden="true"
+            className={[
+              "absolute -bottom-0.5 -right-0.5",
+              "h-2.5 w-2.5 rounded-full border-2 border-[var(--mist-soft)]",
+
+              cliqConnected ? "bg-[#3f6d5f]" : "bg-[#a54536]",
+            ].join(" ")}
+          />
+        </div>
+
         <div className="min-w-0 flex-1">
-          {/* STATUS */}
-
-          <div className="flex items-center gap-1.5">
-            <span
-              className={[
-                "h-1.5 w-1.5 rounded-full",
-
-                cliqConnected ? "bg-[#3f6d5f]" : "bg-[#a54536]",
-              ].join(" ")}
-            />
-
-            <span className="text-[12.5px] font-semibold text-[var(--ink-green)]">
-              Cliq
-            </span>
+          <div className="text-[13px] font-semibold leading-tight text-[var(--ink-green)]">
+            Cliq
           </div>
 
-          {/* CHAT SELECTOR */}
+          {/* CHAT SWITCHER */}
 
           {cliqConnected && chats && chats.length > 0 ? (
-            <select
-              value={chatId ?? ""}
-              onChange={(event) => setChatId(event.target.value)}
-              className={[
-                "mt-1 w-full truncate",
-                "bg-transparent",
-                "text-[11.5px]",
-                "text-[var(--muted)]",
-                "outline-none",
-              ].join(" ")}
-            >
-              {chats.map((chat) => (
-                <option key={chat.id} value={chat.id}>
-                  {chat.name}
-                </option>
-              ))}
-            </select>
+            <div ref={switcherRef} className="relative mt-0.5">
+              <button
+                type="button"
+                onClick={() => setSwitcherOpen((value) => !value)}
+                aria-haspopup="listbox"
+                aria-expanded={switcherOpen}
+                className={[
+                  "flex w-full items-center gap-1",
+                  "text-[11.5px] text-[var(--muted)]",
+                  "hover:text-[var(--ink-green)]",
+                  "transition-colors",
+                ].join(" ")}
+              >
+                <span className="truncate">
+                  {activeChat ? activeChat.name : "Choose a chat"}
+                </span>
+
+                <ChevronIcon open={switcherOpen} />
+              </button>
+
+              {switcherOpen && (
+                <div
+                  role="listbox"
+                  className={[
+                    "absolute left-0 top-[calc(100%+6px)] z-10",
+                    "max-h-56 w-[240px] overflow-y-auto",
+                    "rounded-xl border border-[var(--stroke)] bg-paper",
+                    "p-1 shadow-[0_12px_28px_rgba(15,31,26,0.16)]",
+                  ].join(" ")}
+                >
+                  {chats.map((chat) => {
+                    const active = chat.id === chatId;
+
+                    return (
+                      <button
+                        key={chat.id}
+                        type="button"
+                        role="option"
+                        aria-selected={active}
+                        onClick={() => {
+                          setChatId(chat.id);
+                          setSwitcherOpen(false);
+                        }}
+                        className={[
+                          "flex w-full items-center justify-between gap-2",
+                          "rounded-lg px-2.5 py-1.5 text-left",
+                          "text-[12.5px]",
+
+                          active
+                            ? "bg-[var(--ink-green)] text-paper"
+                            : "text-[var(--ink-green)] hover:bg-[var(--mist-soft)]",
+                        ].join(" ")}
+                      >
+                        <span className="truncate">{chat.name}</span>
+
+                        {active && (
+                          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           ) : (
             <div className="mt-0.5 text-[11px] text-[var(--muted)]">
               {cliqConnected ? "No chats found" : "Not connected"}
@@ -323,20 +414,23 @@ function CliqChatPanel({ onClose }) {
       {/* ================================================== */}
 
       {isStatusLoading ? (
-        <CenterState text="Checking Cliq connection…" />
+        <CenterState text="Checking your Cliq connection…" />
       ) : !cliqConnected ? (
         <CenterState
-          title="Cliq is not connected"
+          title="Cliq isn't connected"
           text="Connect your Zoho Cliq account to chat from here."
         />
       ) : isChatsLoading ? (
-        <CenterState text="Loading chats…" />
+        <CenterState text="Loading your chats…" />
       ) : isChatsError ? (
-        <CenterState title="Couldn't load chats" text="Try again shortly." />
+        <CenterState
+          title="Couldn't load chats"
+          text="Try again in a moment."
+        />
       ) : !chatId ? (
         <CenterState
-          title="No chats available"
-          text="No Cliq conversations were found for this account."
+          title="No chats yet"
+          text="Start a conversation in Cliq and it'll show up here."
         />
       ) : (
         <>
@@ -357,11 +451,11 @@ function CliqChatPanel({ onClose }) {
             ) : isMessagesError ? (
               <CenterState
                 title="Couldn't load messages"
-                text="Try again shortly."
+                text="Try again in a moment."
                 fill
               />
             ) : !messages || messages.length === 0 ? (
-              <CenterState text="No messages yet — say hello." fill />
+              <CenterState text="No messages yet. Say hello." fill />
             ) : (
               messages.map((message) => (
                 <MessageBubble key={message.id} message={message} />
@@ -390,17 +484,17 @@ function CliqChatPanel({ onClose }) {
               <button
                 type="button"
                 onClick={handleSend}
-                disabled={!draft.trim() || isSending}
+                disabled={!canSend}
                 aria-label="Send message"
                 className={[
                   "flex h-9 w-9 shrink-0",
                   "items-center justify-center",
-                  "rounded-lg",
-                  "bg-[var(--ink-green)]",
-                  "text-paper",
-                  "disabled:opacity-40",
-                  "disabled:cursor-not-allowed",
-                  "transition-opacity",
+                  "rounded-full",
+                  "transition-colors",
+
+                  canSend
+                    ? "bg-gold text-[var(--ink-green)]"
+                    : "bg-[var(--mist-soft)] text-[var(--muted)] cursor-not-allowed",
                 ].join(" ")}
               >
                 <SendIcon />
@@ -500,7 +594,9 @@ function MessageBubble({ message }) {
       </div>
 
       {time && (
-        <span className="px-1 text-[9.5px] text-[var(--muted)]">{time}</span>
+        <span className="px-1 text-[9.5px] tabular-nums text-[var(--muted)]">
+          {time}
+        </span>
       )}
     </div>
   );
@@ -554,8 +650,29 @@ function CloseIcon() {
 
 function SendIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
       <path d="M1.5 1.5l13 6.5-13 6.5 2.5-6.5-2.5-6.5z" />
+    </svg>
+  );
+}
+
+function ChevronIcon({ open }) {
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 12 12"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={[
+        "shrink-0 transition-transform",
+        open ? "rotate-180" : "rotate-0",
+      ].join(" ")}
+    >
+      <path d="M2.5 4.5l3.5 3 3.5-3" />
     </svg>
   );
 }

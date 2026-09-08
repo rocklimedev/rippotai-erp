@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import {
   useGetLibraryItemsQuery,
   useCreateLibraryItemMutation,
-} from "../../api/boq.api";
+} from "../../api/boq/boq.api";
 
 const CREATE_NEW = "__new__";
 

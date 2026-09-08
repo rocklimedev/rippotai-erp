@@ -5,12 +5,12 @@ import { toast } from "sonner";
 import { BriefSectionForm } from "../../components/BriefSectionForm";
 import { useAutoSave } from "../../hooks/use-autosave";
 
-import { useGetProjectsQuery } from "../../api/project.api";
+import { useGetProjectsQuery } from "../../api/projects/project.api";
 import {
   useCreateProjectBriefMutation,
   useGetProjectBriefQuery,
   useUpdateProjectBriefMutation,
-} from "../../api/brief.api";
+} from "../../api/documents/brief.api";
 
 import { BRIEF_SECTIONS } from "../../hooks/brief-sections";
 

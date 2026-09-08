@@ -21,7 +21,7 @@ import {
   useGetQuotationsValueTrendQuery,
   useGetQuotationsStatusMixQuery,
   useGetQuotationsVariationByProjectQuery,
-} from "../../api/quotation.api";
+} from "../../api/procuerment/quotation.api";
 
 /* -------- Quotations stat / list widgets -------- */
 

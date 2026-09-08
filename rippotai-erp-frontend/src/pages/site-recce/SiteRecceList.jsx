@@ -20,7 +20,7 @@ import { Shell, Card, Input } from "../../hooks/shared";
 import {
   useGetSiteReccesQuery,
   useDeleteSiteRecceMutation,
-} from "../../api/site-recce.api";
+} from "../../api/documents/site-recce.api";
 
 // ============================================================
 // HELPERS

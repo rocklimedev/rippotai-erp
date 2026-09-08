@@ -18,7 +18,7 @@ import {
 import {
   useGetQcProjectHistoryQuery,
   useGetQcHandoffStatusQuery,
-} from "@/api/site-ops.api";
+} from "@/api/procuerment/site-ops.api";
 
 const STATUS_META = {
   PASS: {

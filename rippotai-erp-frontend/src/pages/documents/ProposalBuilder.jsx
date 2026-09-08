@@ -25,24 +25,24 @@ import ProposalReadinessCheck from "../../components/business-proposal/ProposalR
 import {
   useGetBudgetEstimatesQuery,
   useUpdateBudgetEstimateMutation,
-} from "../../api/budget-estimates.api";
+} from "../../api/documents/budget-estimates.api";
 import {
   useGetProjectByIdQuery,
   useUpdateProjectMutation,
-} from "../../api/project.api";
+} from "../../api/projects/project.api";
 import {
   useGetScopeOfWorkByProjectQuery,
   useUpdateScopeOfWorkMutation,
-} from "../../api/scope-of-work.api";
+} from "../../api/documents/scope-of-work.api";
 import {
   useFindPlanOfActionsByProjectQuery,
   useReplacePlanOfActionPhasesMutation,
   useUpdatePlanOfActionMutation,
-} from "../../api/plan-of-actions.api";
+} from "../../api/documents/plan-of-actions.api";
 import {
   useGetPaymentSchedulesQuery,
   useUpdatePaymentScheduleMutation,
-} from "../../api/payment-schedules.api";
+} from "../../api/documents/payment-schedules.api";
 
 import {
   mapProjectToProjectDetail,

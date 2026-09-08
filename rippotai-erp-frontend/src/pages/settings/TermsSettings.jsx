@@ -34,7 +34,7 @@ import {
   useUpdateTermsTemplateMutation,
   useUpdateTermsTemplateContentMutation,
   useDeleteTermsTemplateMutation,
-} from "../../api/terms.api";
+} from "../../api/meta/terms.api";
 
 import {
   TermsPreview,

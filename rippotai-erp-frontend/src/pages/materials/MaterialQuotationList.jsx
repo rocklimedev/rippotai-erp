@@ -4,7 +4,7 @@ import { Plus, Eye, Edit3, FileText } from "lucide-react";
 
 import { Shell, Card, Input } from "../../hooks/shared";
 
-import { useGetMaterialQuotationsQuery } from "../../api/procurent.api";
+import { useGetMaterialQuotationsQuery } from "../../api/procuerment/procurent.api";
 
 export default function MaterialQuotationList() {
   const nav = useNavigate();

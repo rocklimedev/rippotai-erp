@@ -11,7 +11,7 @@ import {
   useGetLibraryCategoriesQuery,
   useAddBoqCategoryMutation,
   useAddTemplateCategoryMutation,
-} from "../../api/boq.api";
+} from "../../api/boq/boq.api";
 
 export function AddCategoryPanel({
   open,

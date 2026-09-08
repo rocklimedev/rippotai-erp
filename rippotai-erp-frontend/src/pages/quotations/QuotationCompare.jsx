@@ -7,7 +7,7 @@ import {
   useCompareQuotationsQuery,
   useMarkQuotationSelectedMutation,
   useSaveQuotationComparisonMutation,
-} from "../../api/quotation.api"; // Adjust path as per your setup
+} from "../../api/procuerment/quotation.api"; // Adjust path as per your setup
 
 const ATTRIBUTES = [
   { k: "quotation_number", l: "Estimate #" },

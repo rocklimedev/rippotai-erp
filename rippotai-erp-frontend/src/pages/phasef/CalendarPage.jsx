@@ -21,9 +21,9 @@ import {
   useCreateCalendarEventMutation,
   useUpdateCalendarEventMutation,
   useDeleteCalendarEventMutation,
-} from "../../api/calendar.api";
+} from "../../api/connectors/calendar.api";
 
-import { useGetProjectsQuery } from "../../api/project.api";
+import { useGetProjectsQuery } from "../../api/projects/project.api";
 
 /* -------------------------------------------------------------------------- */
 /* Constants                                                                  */

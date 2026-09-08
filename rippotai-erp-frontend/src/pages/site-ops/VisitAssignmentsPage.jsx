@@ -19,7 +19,7 @@ import {
   useCreateVisitAssignmentMutation,
   useGetVisitAssignmentsQuery,
   useDeactivateVisitAssignmentMutation,
-} from "@/api/site-ops.api";
+} from "@/api/procuerment/site-ops.api";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 

@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import { toast } from "sonner";
 import { X, Plus } from "lucide-react";
 
-import { useCreateProjectMutation } from "../../api/project.api";
-import { useGetProjectTypesQuery } from "../../api/project-type.api";
+import { useCreateProjectMutation } from "../../api/projects/project.api";
+import { useGetProjectTypesQuery } from "../../api/projects/project-type.api";
 import {
   useGetClientsQuery,
   useCreateClientMutation,
-} from "../../api/client.api";
+} from "../../api/projects/client.api";
 
 export default function NewProjectModal({ open, onClose, onCreated }) {
   const [name, setName] = useState("");

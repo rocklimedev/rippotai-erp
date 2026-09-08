@@ -55,7 +55,7 @@ import {
   useExportBoqExcelMutation,
   useExportBoqPdfMutation,
   useApplyBoqTermsMutation,
-} from "../../api/boq.api";
+} from "../../api/boq/boq.api";
 import { isBoqDisabled } from "../../hooks/constants";
 import { SaveChip } from "../../components/boqs/StatusIndicators";
 import { LockedEditModal } from "../../components/boqs/LockedEditModal";

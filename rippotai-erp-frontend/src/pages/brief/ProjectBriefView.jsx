@@ -9,7 +9,7 @@ import logo from "../../assets/rippotai_logo.png";
 import {
   useGetProjectBriefQuery,
   useDeleteProjectBriefMutation,
-} from "../../api/brief.api";
+} from "../../api/documents/brief.api";
 
 // ---------------------------------------------------------------------------
 // BRAND

@@ -8,7 +8,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { useGetBoqPdfThumbnailQuery } from "../../api/boq.api";
+import { useGetBoqPdfThumbnailQuery } from "../../api/boq/boq.api";
 
 function PdfThumbPreview({ boqId, variant }) {
   const {

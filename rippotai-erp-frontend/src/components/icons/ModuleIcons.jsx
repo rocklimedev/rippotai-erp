@@ -426,6 +426,64 @@ export const IconDashboard = () =>
       <rect x="44" y="44" width="18" height="18" rx="4" fill={W} />
     </>,
   );
+
+export const IconCommandCenter = () =>
+  wrap(
+    <>
+      {/* Command Center / central operations hub */}
+
+      {/* Connected module nodes */}
+      <rect x="10" y="12" width="20" height="20" rx="6" fill={S} />
+      <rect x="50" y="12" width="20" height="20" rx="6" fill={S} />
+
+      <rect x="10" y="48" width="20" height="20" rx="6" fill={S} />
+      <rect x="50" y="48" width="20" height="20" rx="6" fill={S} />
+
+      {/* Connection lines */}
+      <path d="M30 22 H34" stroke={P} strokeWidth="3" strokeLinecap="round" />
+
+      <path d="M46 22 H50" stroke={P} strokeWidth="3" strokeLinecap="round" />
+
+      <path d="M30 58 H34" stroke={P} strokeWidth="3" strokeLinecap="round" />
+
+      <path d="M46 58 H50" stroke={P} strokeWidth="3" strokeLinecap="round" />
+
+      {/* Vertical connections */}
+      <path d="M20 32 V40" stroke={P} strokeWidth="3" strokeLinecap="round" />
+
+      <path d="M60 32 V40" stroke={P} strokeWidth="3" strokeLinecap="round" />
+
+      {/* Central command panel */}
+      <rect x="25" y="25" width="30" height="30" rx="9" fill={P} />
+
+      {/* Central command / control indicator */}
+      <circle cx="40" cy="40" r="8" fill={SS} />
+
+      {/* Command pulse */}
+      <circle cx="40" cy="40" r="3.5" fill={P} />
+
+      {/* Control / signal lines */}
+      <path d="M40 29 V32" stroke={W} strokeWidth="2.5" strokeLinecap="round" />
+
+      <path d="M40 48 V51" stroke={W} strokeWidth="2.5" strokeLinecap="round" />
+
+      <path d="M29 40 H32" stroke={W} strokeWidth="2.5" strokeLinecap="round" />
+
+      <path d="M48 40 H51" stroke={W} strokeWidth="2.5" strokeLinecap="round" />
+
+      {/* Active command indicator */}
+      <circle cx="63" cy="63" r="9" fill={P} />
+
+      <path
+        d="M59 63 L62 66 L67 60"
+        stroke={W}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </>,
+  );
 export const MODULE_ICONS = {
   dashboard: IconDashboard,
   boq: IconBoq,
@@ -437,6 +495,7 @@ export const MODULE_ICONS = {
   crm: IconCRM,
 
   ledger: IconLedger,
+  commandCenter: IconCommandCenter,
 
   documents: IconDocuments,
   designStudio: IconDesignStudio,

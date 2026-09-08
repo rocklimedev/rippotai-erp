@@ -4,7 +4,7 @@ import { Plus, Eye, Edit3, Truck } from "lucide-react";
 
 import { Shell, Card, Input } from "../../hooks/shared";
 
-import { useGetDeliveryChallansForPurchaseOrderQuery } from "../../api/procurent.api";
+import { useGetDeliveryChallansForPurchaseOrderQuery } from "../../api/procuerment/procurent.api";
 
 export default function DeliveryChallanList() {
   const nav = useNavigate();

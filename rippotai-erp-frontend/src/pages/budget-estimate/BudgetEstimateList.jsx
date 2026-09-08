@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom";
 import {
   useGetBudgetEstimatesQuery,
   useDeleteBudgetEstimateMutation,
-} from "../../api/budget-estimates.api";
+} from "../../api/documents/budget-estimates.api";
 
 // ============================================================
 // STATUS

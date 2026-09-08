@@ -1,10 +1,7 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  useGetVendorByIdQuery,
-
-} from "../../api/vendor.api"; // Adjust path based on your RTK Query exports
-import { useGetQuotationsByVendorQuery } from "../../api/vendor.api";
+import { useGetVendorByIdQuery } from "../../api/vendors/vendor.api"; // Adjust path based on your RTK Query exports
+import { useGetQuotationsByVendorQuery } from "../../api/vendors/vendor.api";
 import { formatINR, relativeTime, formatDate } from "@/lib/format";
 import { toast } from "sonner";
 import {
@@ -58,7 +55,12 @@ export default function VendorProfile() {
   const nav = useNavigate();
 
   // RTK Query Hooks
-  const { data: vendorResponse, isLoading, error, refetch } = useGetVendorByIdQuery(id, {
+  const {
+    data: vendorResponse,
+    isLoading,
+    error,
+    refetch,
+  } = useGetVendorByIdQuery(id, {
     skip: !id,
   });
 
@@ -89,7 +91,10 @@ export default function VendorProfile() {
     );
   }
 
-  const quotations = quotationsResponse?.data || quotationsResponse?.success ? quotationsResponse.data : [];
+  const quotations =
+    quotationsResponse?.data || quotationsResponse?.success
+      ? quotationsResponse.data
+      : [];
 
   const load = () => refetch();
 
@@ -165,7 +170,9 @@ export default function VendorProfile() {
               <h1 className="text-[34px] font-bold text-[#333333] tracking-tight">
                 {v.name}
               </h1>
-              {v.verified && <ShieldCheck size={16} className="text-[#333333]" />}
+              {v.verified && (
+                <ShieldCheck size={16} className="text-[#333333]" />
+              )}
               {v.preferred && (
                 <span className="text-[10.5px] uppercase tracking-widest bg-[#EAEEF0] text-[#333333] px-2 py-0.5 rounded-full font-semibold">
                   Preferred
@@ -176,7 +183,8 @@ export default function VendorProfile() {
               </span>
             </div>
             <div className="text-[14px] text-[#6B7B7C] mt-1">
-              {v.company || v.company_name} · {v.vendor_type || v.vendorCategory?.name}
+              {v.company || v.company_name} ·{" "}
+              {v.vendor_type || v.vendorCategory?.name}
             </div>
             <div className="text-[12.5px] text-[#6B7B7C] mt-1 flex items-center gap-3">
               <span className="flex items-center gap-1">

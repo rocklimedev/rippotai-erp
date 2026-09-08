@@ -15,7 +15,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-import { useGetQcHistoryQuery } from "@/api/site-ops.api";
+import { useGetQcHistoryQuery } from "@/api/procuerment/site-ops.api";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 

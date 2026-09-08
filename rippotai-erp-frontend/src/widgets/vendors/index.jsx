@@ -32,7 +32,7 @@ import {
   useGetVendorsOnboardingTrendQuery,
   useGetVendorsAvailabilityMixQuery,
   useGetVendorsRecentlyAddedQuery,
-} from "../../api/vendor.api"; // ← adjust import path
+} from "../../api/vendors/vendor.api"; // ← adjust import path
 
 /* -------- Vendors Widgets (RTK Query) -------- */
 

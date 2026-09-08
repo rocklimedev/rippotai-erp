@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useGetActivityLogByEntityLabelQuery } from "../../api/activity-logs.api";
+import { useGetActivityLogByEntityLabelQuery } from "../../api/engagement/activity-logs.api";
 /* ============ Leads Activity ============ */
 
 export function QuotationsActivity() {

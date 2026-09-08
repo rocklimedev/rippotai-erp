@@ -12,7 +12,7 @@ import {
   useGetVendorCategoriesQuery,
   useGetBusinessTypesQuery,
   useCreateBusinessTypeMutation,
-} from "../../api/vendor.api"; // adjust this import path to wherever vendorsApi is actually exported from
+} from "../../api/vendors/vendor.api"; // adjust this import path to wherever vendorsApi is actually exported from
 
 // Only fields that exist on the Vendor model are collected here.
 const initialForm = {

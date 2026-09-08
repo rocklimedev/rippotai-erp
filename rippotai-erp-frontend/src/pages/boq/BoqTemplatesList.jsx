@@ -6,7 +6,7 @@ import { Plus } from "lucide-react";
 import {
   useGetTemplatesQuery,
   useDeleteTemplateMutation,
-} from "../../api/boq.api"; // adjust path to wherever boqApi is exported from
+} from "../../api/boq/boq.api"; // adjust path to wherever boqApi is exported from
 
 const TIER_META = {
   essential: { label: "Essential", bg: "#EAEEF0", fg: "#1F453B" },

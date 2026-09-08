@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { ShieldCheck, Activity } from "lucide-react";
-import { useGetActivityLogsQuery } from "../../api/activity-logs.api";
+import { useGetActivityLogsQuery } from "../../api/engagement/activity-logs.api";
 import { fmtDateTime } from "../../lib/settings.utils";
 
 export default function SuperAdmin() {

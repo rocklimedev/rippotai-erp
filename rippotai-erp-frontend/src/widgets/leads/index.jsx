@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { formatINR } from "@/lib/format";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { WidgetShell, Stat, RowList, BarChartWidget } from "../common/hooks";
-import { useGetReviewQuery } from "../../api/leads.api";
+import { useGetReviewQuery } from "../../api/connectors/leads.api";
 
 /* Every widget below shares this one call — RTK Query dedupes it, so
  * dropping all 5 Leads widgets on a dashboard still only fires 1 request. */

@@ -21,7 +21,7 @@ import {
   useCreateDailySiteReportMutation,
   useUpdateDailySiteReportMutation,
   useShareDailySiteReportMutation,
-} from "@/api/site-ops.api";
+} from "@/api/procuerment/site-ops.api";
 
 const DailySiteReportsPage = () => {
   const [selectedProjectId, setSelectedProjectId] = useState("");

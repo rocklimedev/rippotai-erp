@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { labelStyle } from "../../hooks/stages";
-import { useCreateLeadMutation } from "../../api/leads.api";
+import { useCreateLeadMutation } from "../../api/connectors/leads.api";
 
 const EMPTY_FORM = {
   name: "",

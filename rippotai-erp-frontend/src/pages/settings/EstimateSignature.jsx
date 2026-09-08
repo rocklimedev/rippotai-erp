@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
 import { ShieldAlert, Upload } from "lucide-react";
-import { useLazyMeQuery } from "../../api/auth.api";
+import { useLazyMeQuery } from "../../api/auth/auth.api";
 
 export default function EstimateSignature() {
   const { user } = useAuth();

@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
-import { useChangePasswordMutation } from "../../api/auth.api"; // adjust path to match your project
+import { useChangePasswordMutation } from "../../api/auth/auth.api"; // adjust path to match your project
 
 const initialPasswords = {
   currentPassword: "",

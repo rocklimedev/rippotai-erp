@@ -43,7 +43,7 @@ import {
   useGetVisitLogQuery,
   useDeactivateVisitAssignmentMutation,
   useCheckInSiteVisitMutation,
-} from "@/api/site-ops.api";
+} from "@/api/procuerment/site-ops.api";
 
 const STATUS_STYLES = {
   SCHEDULED: "bg-slate-100 text-slate-700 border-slate-200",

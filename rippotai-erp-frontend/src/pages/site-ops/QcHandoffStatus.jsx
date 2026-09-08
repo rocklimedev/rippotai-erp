@@ -52,7 +52,7 @@ import {
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-import { useGetQcHandoffStatusQuery } from "@/api/site-ops.api";
+import { useGetQcHandoffStatusQuery } from "@/api/procuerment/site-ops.api";
 
 /**
  * PAGE 7 — QC HANDOFF STATUS

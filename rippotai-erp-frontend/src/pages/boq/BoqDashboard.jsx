@@ -9,11 +9,11 @@ import {
   useCombineBoqsMutation,
   useDeleteBoqMutation,
   useExportBoqPdfMutation,
-} from "../../api/boq.api";
+} from "../../api/boq/boq.api";
 
-import { useCreateBudgetEstimateFromBoqMutation } from "../../api/budget-estimates.api";
+import { useCreateBudgetEstimateFromBoqMutation } from "../../api/documents/budget-estimates.api";
 
-import { useGetProjectsQuery } from "../../api/project.api";
+import { useGetProjectsQuery } from "../../api/projects/project.api";
 
 import { formatINR, relativeTime } from "@/lib/format";
 import { toast } from "sonner";

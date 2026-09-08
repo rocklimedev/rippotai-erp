@@ -4,7 +4,7 @@ import { Plus, Eye, Edit3, Package } from "lucide-react";
 
 import { Shell, Card, Input } from "../../hooks/shared";
 
-import { useGetMaterialRequirementsQuery } from "../../api/procurent.api";
+import { useGetMaterialRequirementsQuery } from "../../api/procuerment/procurent.api";
 
 export default function MaterialRequirementList() {
   const nav = useNavigate();

@@ -69,7 +69,7 @@ import {
   useGetMockupsByProjectQuery,
   useProposeMockupMutation,
   useReviewMockupMutation,
-} from "@/api/site-ops.api";
+} from "@/api/procuerment/site-ops.api";
 
 const STATUS_CONFIG = {
   PROPOSED: {

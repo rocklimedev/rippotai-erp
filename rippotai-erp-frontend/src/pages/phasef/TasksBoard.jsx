@@ -22,9 +22,9 @@ import {
   useCreateTaskMutation,
   useToggleTaskStatusMutation,
   useUpdateTaskMutation,
-} from "../../api/task.api";
+} from "../../api/connectors/task.api";
 
-import { useGetProjectsQuery } from "../../api/project.api";
+import { useGetProjectsQuery } from "../../api/projects/project.api";
 
 const BUCKETS = [
   { key: "today", label: "TODAY" },

@@ -5,7 +5,7 @@ import { Camera, Save, Loader2, ShieldCheck } from "lucide-react";
 import {
   useUpdateProfileMutation,
   useUploadAvatarMutation,
-} from "../../api/user.api";
+} from "../../api/users/user.api";
 
 export default function ProfileSettings() {
   const { user, updateUser } = useAuth();

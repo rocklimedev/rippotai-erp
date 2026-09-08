@@ -18,7 +18,7 @@ import {
   useGetMyTasksQuery,
   useCreateTaskMutation,
   useUpdateTaskMutation,
-} from "../../api/task.api";
+} from "../../api/connectors/task.api";
 
 const TaskCard = ({ t, onStatus }) => (
   <Card>

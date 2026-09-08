@@ -26,7 +26,7 @@ import {
   useLazyDownloadDocumentQuery,
   useUpdateDocumentMutation,
   useReplaceDocumentFileMutation,
-} from "../../api/document.api"; // adjust to wherever documentApi is defined
+} from "../../api/documents/document.api"; // adjust to wherever documentApi is defined
 
 /* ---------- All Documents ---------- */
 export function BusinessProposalAll() {

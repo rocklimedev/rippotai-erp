@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 import { APP_META, APP_MENUS } from "@/config/appNav";
-import { useGlobalSearchQuery } from "@/api/search.api";
+import { useGlobalSearchQuery } from "@/api/meta/search.api";
 
 // ============================================================
 // Resolve a slug against the app's base route.

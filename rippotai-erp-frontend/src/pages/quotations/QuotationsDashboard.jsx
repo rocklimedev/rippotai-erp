@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { fmtINR, relativeTime, StatusChip } from "@/lib/format";
-import { useGetQuotationsQuery } from "../../api/quotation.api";
+import { useGetQuotationsQuery } from "../../api/procuerment/quotation.api";
 import {
   useSoftDeleteQuotationMutation,
   useRestoreQuotationMutation,
   useDeleteQuotationPermanentMutation,
-} from "../../api/quotation.api";
+} from "../../api/procuerment/quotation.api";
 import {
   DropdownMenu,
   DropdownMenuContent,

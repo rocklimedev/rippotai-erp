@@ -8,20 +8,20 @@ import { useAutoSave } from "../../hooks/use-autosave";
 import {
   useGetProjectsQuery,
   useGetProjectPhasesQuery,
-} from "../../api/project.api";
+} from "../../api/projects/project.api";
 
 import {
   useCreatePlanOfActionMutation,
   useGetPlanOfActionQuery,
   useUpdatePlanOfActionMutation,
-} from "../../api/plan-of-actions.api";
+} from "../../api/documents/plan-of-actions.api";
 
 import { POA_SECTIONS } from "../../hooks/plan-of-action-sections";
 
 import { Search, Plus, Trash2, CheckCircle2 } from "lucide-react";
 
-import { useGetUsersQuery } from "../../api/user.api";
-import { useGetTermsTemplatesQuery } from "../../api/terms.api";
+import { useGetUsersQuery } from "../../api/users/user.api";
+import { useGetTermsTemplatesQuery } from "../../api/meta/terms.api";
 
 /* ============================================================
    ROLE SUGGESTIONS

@@ -6,15 +6,15 @@ import { Plus, Trash2, Upload, X } from "lucide-react";
 import { SiteRecceSectionForm } from "../../components/SiteRecceSectionForm";
 import { useAutoSave } from "../../hooks/use-autosave";
 
-import { useGetProjectsQuery } from "../../api/project.api";
-import { useGetUsersByRoleNameQuery } from "../../api/user.api";
+import { useGetProjectsQuery } from "../../api/projects/project.api";
+import { useGetUsersByRoleNameQuery } from "../../api/users/user.api";
 
 import {
   useCreateSiteRecceMutation,
   useGetSiteRecceQuery,
   useUpdateSiteRecceMutation,
   useUploadSiteRecceImageMutation,
-} from "../../api/site-recce.api";
+} from "../../api/documents/site-recce.api";
 
 import { REKI_SECTIONS } from "../../hooks/reki-sections";
 

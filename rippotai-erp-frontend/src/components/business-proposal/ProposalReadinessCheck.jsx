@@ -16,7 +16,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-import { useGetProjectsQuery } from "../../api/project.api";
+import { useGetProjectsQuery } from "../../api/projects/project.api";
 
 const CHECKS = [
   {

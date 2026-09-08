@@ -8,9 +8,9 @@ import { Shell, Card, Input, TextArea } from "../../hooks/shared";
 import {
   useCreateDocumentMutation,
   useGetDocumentTypesQuery,
-} from "../../api/document.api";
+} from "../../api/documents/document.api";
 
-import { useGetProjectsQuery } from "../../api/project.api";
+import { useGetProjectsQuery } from "../../api/projects/project.api";
 
 /* ============================================================
    Upload Document
