@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Delete,
   Param,
   Query,
@@ -31,58 +32,65 @@ export class MicrosoftOneDriveController {
   constructor(private readonly oneDriveService: MicrosoftOneDriveService) {}
 
   // ============================================================
-  // GET DRIVE
+  // CENTRAL DRIVE
   // ============================================================
 
-  /**
-   * Get the currently connected user's OneDrive information.
-   *
-   * GET /onedrive
-   */
   @Get()
   async getDrive(@Req() req: RequestWithUser) {
     return this.oneDriveService.getDrive(req.user.id);
   }
 
   // ============================================================
+  // ROOT
+  // ============================================================
+
+  @Get('root')
+  async getRoot(@Req() req: RequestWithUser) {
+    return this.oneDriveService.getRoot(req.user.id);
+  }
+
+  // ============================================================
   // LIST FILES
   // ============================================================
 
-  /**
-   * List files/folders.
-   *
-   * GET /onedrive/files
-   *
-   * Root:
-   * GET /onedrive/files
-   *
-   * Folder:
-   * GET /onedrive/files?folderPath=Documents
-   *
-   * Nested folder:
-   * GET /onedrive/files?folderPath=Documents/Projects
-   */
   @Get('files')
   async listFiles(
     @Req() req: RequestWithUser,
-    @Query('folderPath') folderPath?: string,
+
+    @Query('folderPath')
+    folderPath?: string,
   ) {
     return this.oneDriveService.listFiles(req.user.id, folderPath || 'root');
+  }
+
+  // ============================================================
+  // SEARCH
+  // ============================================================
+
+  @Get('search')
+  async search(
+    @Req() req: RequestWithUser,
+
+    @Query('q')
+    query?: string,
+  ) {
+    if (!query?.trim()) {
+      throw new BadRequestException('Search query is required');
+    }
+
+    return this.oneDriveService.search(req.user.id, query);
   }
 
   // ============================================================
   // FILE METADATA
   // ============================================================
 
-  /**
-   * Get file/folder metadata.
-   *
-   * GET /onedrive/files/:itemId
-   */
   @Get('files/:itemId')
   async getFileMetadata(
     @Req() req: RequestWithUser,
-    @Param('itemId') itemId: string,
+
+    @Param('itemId')
+    itemId: string,
   ) {
     if (!itemId) {
       throw new BadRequestException('File ID is required');
@@ -92,19 +100,18 @@ export class MicrosoftOneDriveController {
   }
 
   // ============================================================
-  // DOWNLOAD FILE
+  // DOWNLOAD
   // ============================================================
 
-  /**
-   * Download a file from OneDrive.
-   *
-   * GET /onedrive/files/:itemId/download
-   */
   @Get('files/:itemId/download')
   async downloadFile(
     @Req() req: RequestWithUser,
-    @Param('itemId') itemId: string,
-    @Res() res: Response,
+
+    @Param('itemId')
+    itemId: string,
+
+    @Res()
+    res: Response,
   ) {
     if (!itemId) {
       throw new BadRequestException('File ID is required');
@@ -137,25 +144,19 @@ export class MicrosoftOneDriveController {
   }
 
   // ============================================================
-  // UPLOAD SMALL FILE
+  // UPLOAD SMALL
   // ============================================================
 
-  /**
-   * Upload a file to OneDrive.
-   *
-   * POST /onedrive/upload
-   *
-   * multipart/form-data:
-   *
-   * file       -> actual file
-   * folderPath -> optional folder path
-   */
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
     @Req() req: RequestWithUser,
-    @UploadedFile() file: Express.Multer.File,
-    @Query('folderPath') folderPath?: string,
+
+    @UploadedFile()
+    file: Express.Multer.File,
+
+    @Query('folderPath')
+    folderPath?: string,
   ) {
     if (!file) {
       throw new BadRequestException('File is required');
@@ -165,12 +166,6 @@ export class MicrosoftOneDriveController {
       throw new BadRequestException('Cannot upload an empty file');
     }
 
-    /**
-     * Small-file upload.
-     *
-     * Keep this endpoint for files that are
-     * within the simple upload limit.
-     */
     const result = await this.oneDriveService.uploadFile(
       req.user.id,
 
@@ -185,31 +180,24 @@ export class MicrosoftOneDriveController {
 
     return {
       success: true,
-
       file: result,
     };
   }
 
   // ============================================================
-  // UPLOAD LARGE FILE
+  // UPLOAD LARGE
   // ============================================================
 
-  /**
-   * Upload a large file using resumable upload.
-   *
-   * POST /onedrive/upload-large
-   *
-   * multipart/form-data:
-   *
-   * file       -> actual file
-   * folderPath -> optional folder path
-   */
   @Post('upload-large')
   @UseInterceptors(FileInterceptor('file'))
   async uploadLargeFile(
     @Req() req: RequestWithUser,
-    @UploadedFile() file: Express.Multer.File,
-    @Query('folderPath') folderPath?: string,
+
+    @UploadedFile()
+    file: Express.Multer.File,
+
+    @Query('folderPath')
+    folderPath?: string,
   ) {
     if (!file) {
       throw new BadRequestException('File is required');
@@ -233,7 +221,6 @@ export class MicrosoftOneDriveController {
 
     return {
       success: true,
-
       file: result,
     };
   }
@@ -242,22 +229,6 @@ export class MicrosoftOneDriveController {
   // CREATE FOLDER
   // ============================================================
 
-  /**
-   * Create a folder.
-   *
-   * POST /onedrive/folders
-   *
-   * Query:
-   *
-   * parentPath=root
-   * folderName=INOS
-   *
-   * Example:
-   *
-   * POST /onedrive/folders
-   *   ?parentPath=root
-   *   &folderName=INOS
-   */
   @Post('folders')
   async createFolder(
     @Req() req: RequestWithUser,
@@ -268,7 +239,7 @@ export class MicrosoftOneDriveController {
     @Query('folderName')
     folderName?: string,
   ) {
-    if (!folderName) {
+    if (!folderName?.trim()) {
       throw new BadRequestException('Folder name is required');
     }
 
@@ -277,23 +248,70 @@ export class MicrosoftOneDriveController {
 
       parentPath || 'root',
 
-      folderName,
+      folderName.trim(),
     );
   }
 
   // ============================================================
-  // DELETE FILE
+  // RENAME
   // ============================================================
 
-  /**
-   * Delete a file/folder.
-   *
-   * DELETE /onedrive/files/:itemId
-   */
+  @Patch('files/:itemId')
+  async renameFile(
+    @Req() req: RequestWithUser,
+
+    @Param('itemId')
+    itemId: string,
+
+    @Query('name')
+    name?: string,
+  ) {
+    if (!itemId) {
+      throw new BadRequestException('File ID is required');
+    }
+
+    if (!name?.trim()) {
+      throw new BadRequestException('Name is required');
+    }
+
+    return this.oneDriveService.renameFile(req.user.id, itemId, name.trim());
+  }
+
+  // ============================================================
+  // MOVE
+  // ============================================================
+
+  @Patch('files/:itemId/move')
+  async moveFile(
+    @Req() req: RequestWithUser,
+
+    @Param('itemId')
+    itemId: string,
+
+    @Query('parentId')
+    parentId?: string,
+  ) {
+    if (!itemId) {
+      throw new BadRequestException('File ID is required');
+    }
+
+    if (!parentId) {
+      throw new BadRequestException('Destination folder ID is required');
+    }
+
+    return this.oneDriveService.moveFile(req.user.id, itemId, parentId);
+  }
+
+  // ============================================================
+  // DELETE
+  // ============================================================
+
   @Delete('files/:itemId')
   async deleteFile(
     @Req() req: RequestWithUser,
-    @Param('itemId') itemId: string,
+
+    @Param('itemId')
+    itemId: string,
   ) {
     if (!itemId) {
       throw new BadRequestException('File ID is required');
@@ -303,9 +321,7 @@ export class MicrosoftOneDriveController {
 
     return {
       success: true,
-
       deleted: true,
-
       itemId,
     };
   }
@@ -314,10 +330,6 @@ export class MicrosoftOneDriveController {
   // HELPER
   // ============================================================
 
-  /**
-   * Prevent invalid characters from being
-   * placed inside Content-Disposition.
-   */
   private sanitizeFileName(fileName: string): string {
     return fileName.replace(/[\r\n"]/g, '').replace(/[\\/:*?<>|]/g, '_');
   }

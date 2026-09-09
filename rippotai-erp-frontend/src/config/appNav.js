@@ -352,7 +352,7 @@ export const APP_MENUS = {
   ledger: [
     {
       label: "Ledger",
-      items: [I("My Ledger", "Ledger")],
+      items: [I("Ledger", "all")],
     },
     {
       label: "Documents",
@@ -405,6 +405,10 @@ export const APP_MENUS = {
     {
       label: "Center",
       items: [I("Pipeline", "pipeline")],
+    },
+    {
+      label: "File Manager",
+      slug: "file-manager",
     },
   ],
   settings: [

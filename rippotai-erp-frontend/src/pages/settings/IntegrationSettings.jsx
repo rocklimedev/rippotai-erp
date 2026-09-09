@@ -299,12 +299,20 @@ export default function IntegrationSettings() {
         throw new Error("Authorization URL was not returned by the server");
       }
 
-      window.location.assign(result.authorizationUrl);
+      // Create a temporary anchor and trigger it as a user navigation.
+      const link = document.createElement("a");
+
+      link.href = result.authorizationUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (error) {
       console.error(`Failed to connect ${provider}:`, error);
     }
   };
-
   /* ------------------------------------------------------------------ */
   /* Providers                                                           */
   /* ------------------------------------------------------------------ */
