@@ -7,6 +7,7 @@ import BudgetEstimateList from "../../pages/budget-estimate/BudgetEstimateList";
 import BudgetEstimateForm from "../../pages/budget-estimate/BudgetEstimateForm";
 import BudgetEstimateView from "../../pages/budget-estimate/BudgetEstimatesView";
 import LedgerDashboard from "../../pages/dashboard/LedgerDashboard";
+import LedgerList from "../../pages/LedgerList";
 export const ledgerRoutes = [
   {
     type: "layout",
@@ -38,7 +39,10 @@ export const ledgerRoutes = [
         index: true,
         element: <LedgerDashboard />,
       },
-
+      {
+        path: "/ledger/all",
+        element: <LedgerList />,
+      },
       // ============================================================
       // DOCUMENTS
       // ============================================================

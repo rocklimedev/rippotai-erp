@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -99,7 +99,7 @@ const normalizeProjectBrief = (brief) => {
 
     numberOfFloors: brief.numberOfFloors ?? "",
 
-    liftAvailable: brief.liftAvailable ?? "",
+    liftAvailable: brief.liftAvailable === true ? "Yes" : brief.liftAvailable === false ? "No" : brief.liftAvailable ?? "",
 
     siteType: brief.siteType ?? "",
 
@@ -169,7 +169,7 @@ const normalizeProjectBrief = (brief) => {
 
     deadlineReason: brief.deadlineReason ?? "",
 
-    phasingRequired: brief.phasingRequired ?? "",
+    phasingRequired: brief.phasingRequired === true ? "Yes" : brief.phasingRequired === false ? "No" : brief.phasingRequired ?? "",
 
     // ========================================================
     // SITE RESTRICTIONS
@@ -214,20 +214,17 @@ const normalizeProjectBrief = (brief) => {
     // ProjectBriefWorkType.workType
     workTypes: (brief.workTypes ?? [])
       .map((item) => item?.workType)
-      .filter(Boolean)
-      .join("\n"),
+      .filter(Boolean),
 
     // ProjectBriefService.serviceType
     services: (brief.services ?? [])
       .map((item) => item?.serviceType)
-      .filter(Boolean)
-      .join("\n"),
+      .filter(Boolean),
 
     // ProjectBriefProcurementCategory.category
     procurementCategories: (brief.procurementCategories ?? [])
       .map((item) => item?.category)
-      .filter(Boolean)
-      .join("\n"),
+      .filter(Boolean),
 
     // ProjectBriefSpaceRequirement.spaceName
     spaceRequirements: [...(brief.spaceRequirements ?? [])]
@@ -239,8 +236,7 @@ const normalizeProjectBrief = (brief) => {
     // ProjectBriefStyleDirection.styleDirection
     styleDirections: (brief.styleDirections ?? [])
       .map((item) => item?.styleDirection)
-      .filter(Boolean)
-      .join("\n"),
+      .filter(Boolean),
 
     // ProjectBriefReference.description
     references: [...(brief.references ?? [])]
@@ -677,6 +673,10 @@ export function BriefForm() {
   // TITLE
   // ==========================================================
 
+  if (isEditMode && briefError && !initialized) {
+    return <div role="alert" className="p-8 text-sm text-destructive">Unable to load this brief. Reload the page to try again.</div>;
+  }
+
   const title = isEditMode ? "Edit Project Brief" : "Project Brief";
 
   const subtitle = isEditMode
@@ -695,6 +695,7 @@ export function BriefForm() {
       values={values}
       onFieldChange={handleFieldChange}
       projects={projects}
+      projectsLoading={projectsLoading}
       projectId={projectId}
       onProjectChange={setProjectId}
       onSubmit={handleSubmit}

@@ -152,6 +152,8 @@ export const baseApi = createApi({
     "CliqChannels",
     "CliqMessages",
     "CliqChats",
+    "OneDrive",
+    "OneDriveFiles",
   ],
   endpoints: () => ({}), // each feature file injects its own endpoints
 });

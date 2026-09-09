@@ -1,34 +1,93 @@
 // google/services/google-tasks.service.ts
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+
+import {
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
+
 import { GoogleAuthService } from '../auth/google-auth.service';
+
 const TASKS_API = 'https://tasks.googleapis.com/tasks/v1';
 
 export interface TaskInput {
   title: string;
   notes?: string;
-  due?: string; // RFC 3339 timestamp, time portion ignored by Google
+  due?: string;
   status?: 'needsAction' | 'completed';
+
+  // Google Tasks supports a parent task
+  parent?: string;
+
+  // Optional positioning
+  previous?: string;
 }
 
 @Injectable()
 export class GoogleTasksService {
   constructor(private readonly googleAuth: GoogleAuthService) {}
 
+  /**
+   * Get all task lists belonging to THIS user's
+   * connected personal Google account.
+   */
   async listTaskLists(userId: string) {
     const accessToken = await this.googleAuth.getValidAccessToken(userId);
-    return this.request(accessToken, `/users/@me/lists`);
+
+    return this.request(accessToken, '/users/@me/lists');
   }
 
-  async listTasks(userId: string, taskListId = '@default') {
+  /**
+   * Get tasks from a specific task list.
+   *
+   * @defaultTaskList = @default
+   */
+  async listTasks(
+    userId: string,
+    taskListId = '@default',
+    opts: {
+      showCompleted?: boolean;
+      showHidden?: boolean;
+      maxResults?: number;
+      pageToken?: string;
+    } = {},
+  ) {
     const accessToken = await this.googleAuth.getValidAccessToken(userId);
+
+    const params = new URLSearchParams();
+
+    if (opts.showCompleted !== undefined) {
+      params.set('showCompleted', String(opts.showCompleted));
+    }
+
+    if (opts.showHidden !== undefined) {
+      params.set('showHidden', String(opts.showHidden));
+    }
+
+    if (opts.maxResults) {
+      params.set('maxResults', String(opts.maxResults));
+    }
+
+    if (opts.pageToken) {
+      params.set('pageToken', opts.pageToken);
+    }
+
+    const query = params.toString();
+
     return this.request(
       accessToken,
-      `/lists/${encodeURIComponent(taskListId)}/tasks`,
+      `/lists/${encodeURIComponent(taskListId)}/tasks${
+        query ? `?${query}` : ''
+      }`,
     );
   }
 
+  /**
+   * Create a task in THIS user's Google Tasks.
+   */
   async createTask(userId: string, task: TaskInput, taskListId = '@default') {
     const accessToken = await this.googleAuth.getValidAccessToken(userId);
+
     return this.request(
       accessToken,
       `/lists/${encodeURIComponent(taskListId)}/tasks`,
@@ -39,6 +98,10 @@ export class GoogleTasksService {
     );
   }
 
+  /**
+   * Update a task belonging to THIS user's
+   * Google account.
+   */
   async updateTask(
     userId: string,
     taskId: string,
@@ -46,9 +109,10 @@ export class GoogleTasksService {
     taskListId = '@default',
   ) {
     const accessToken = await this.googleAuth.getValidAccessToken(userId);
+
     return this.request(
       accessToken,
-      `/lists/${encodeURIComponent(taskListId)}/tasks/${taskId}`,
+      `/lists/${encodeURIComponent(taskListId)}/tasks/${encodeURIComponent(taskId)}`,
       {
         method: 'PATCH',
         body: JSON.stringify(task),
@@ -56,16 +120,32 @@ export class GoogleTasksService {
     );
   }
 
+  /**
+   * Mark task completed.
+   */
   async completeTask(userId: string, taskId: string, taskListId = '@default') {
-    return this.updateTask(userId, taskId, { status: 'completed' }, taskListId);
+    return this.updateTask(
+      userId,
+      taskId,
+      {
+        status: 'completed',
+      },
+      taskListId,
+    );
   }
 
+  /**
+   * Delete task.
+   */
   async deleteTask(userId: string, taskId: string, taskListId = '@default') {
     const accessToken = await this.googleAuth.getValidAccessToken(userId);
+
     await this.request(
       accessToken,
-      `/lists/${encodeURIComponent(taskListId)}/tasks/${taskId}`,
-      { method: 'DELETE' },
+      `/lists/${encodeURIComponent(taskListId)}/tasks/${encodeURIComponent(taskId)}`,
+      {
+        method: 'DELETE',
+      },
       true,
     );
   }
@@ -84,11 +164,25 @@ export class GoogleTasksService {
         ...init.headers,
       },
     });
+
     if (!res.ok) {
+      const errorText = await res.text();
+
+      if (res.status === 401) {
+        throw new UnauthorizedException(
+          'Google Tasks authorization has expired or is invalid.',
+        );
+      }
+
       throw new InternalServerErrorException(
-        `Google Tasks API error: ${await res.text()}`,
+        `Google Tasks API error: ${errorText}`,
       );
     }
-    return noContent ? undefined : res.json();
+
+    if (noContent) {
+      return undefined;
+    }
+
+    return res.json();
   }
 }

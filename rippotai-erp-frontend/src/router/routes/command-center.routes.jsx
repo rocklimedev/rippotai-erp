@@ -1,5 +1,6 @@
 import AppLayout from "@/layouts/AppLayout";
 import CommandCenter from "../../pages/CommandCenter";
+import OneDriveFileManager from "../../pages/documents/FileManager";
 
 export const commandCenterRoutes = [
   {
@@ -34,6 +35,10 @@ export const commandCenterRoutes = [
       {
         index: true,
         element: <CommandCenter />,
+      },
+      {
+        path: "file-manager",
+        element: <OneDriveFileManager />,
       },
     ],
   },
