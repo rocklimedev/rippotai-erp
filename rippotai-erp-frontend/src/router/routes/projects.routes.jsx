@@ -5,6 +5,10 @@ import ProjectNew from "@/pages/projects/ProjectNew";
 import ProjectWorkspace from "@/pages/projects/ProjectWorkspace";
 import ProjectHandover from "@/pages/projects/ProjectHandover";
 import ProjectActivity from "@/pages/projects/ProjectActivity";
+import ProjectPlannerList from "../../pages/projects/ProjectPlannerList";
+import ProjectPlannerForm from "../../pages/projects/ProjectPlannerForm";
+import ProjectPlannerView from "../../pages/projects/ProjectPlannerView";
+import ProjectPlannerWorkspace from "../../pages/projects/ProjectPlannerWorkspace";
 
 export const projectsRoutes = [
   {
@@ -21,6 +25,9 @@ export const projectsRoutes = [
       { path: "new", element: <ProjectNew /> },
       { path: ":id/handover", element: <ProjectHandover /> },
       { path: ":id/edit", element: <ProjectNew /> },
+      { path: "planner/list", element: <ProjectPlannerList /> },
+      { path: "planner/create", element: <ProjectPlannerWorkspace /> },
+      { path: "planner/:id", element: <ProjectPlannerView /> },
       { path: ":id", element: <ProjectWorkspace /> },
     ],
   },

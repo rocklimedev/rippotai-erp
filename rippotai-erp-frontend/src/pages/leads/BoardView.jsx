@@ -4,27 +4,10 @@ import {
   useMoveStageMutation,
 } from "../../api/connectors/leads.api";
 import { useZohoStatusQuery } from "../../api/auth/authConnectors.api";
+import { STAGES, getStageAccent, stageOf } from "../../hooks/stages";
 
 import LeadCard from "../../components/leads/LeadCard";
 import LeadActionModal from "../../components/leads/LeadActionModal";
-
-const STAGE_ACCENTS = {
-  new: "#3f6d8a",
-  contacted: "#6b7f68",
-  qualified: "#8a6b3f",
-  proposed: "#6c5b7c",
-  won: "#3f6d5f",
-  lost: "#a54536",
-};
-
-const getStageAccent = (id) => {
-  const key = String(id || "").toLowerCase();
-
-  return (
-    Object.entries(STAGE_ACCENTS).find(([name]) => key.includes(name))?.[1] ||
-    "var(--ink-green)"
-  );
-};
 
 const formatCurrency = (value) => {
   if (value == null || value === "") return null;
@@ -178,6 +161,35 @@ export default function BoardView({ onOpenLead, onEditLead }) {
 
   const totalLeads = data.activeCount ?? 0;
 
+  // Reconcile whatever the API sent back with the canonical Bigin
+  // stage list, in the fixed pipeline order shown in Zoho — Bigin
+  // itself always renders every stage as a column even when it's
+  // empty (see "Needs Analysis · 0 Deal" in the screenshot), so we
+  // do the same instead of only drawing columns that have leads.
+  const columnsById = new Map((data.columns || []).map((c) => [c.id, c]));
+
+  const knownColumns = STAGES.map((stage) => {
+    const existing = columnsById.get(stage.id);
+
+    return (
+      existing || {
+        id: stage.id,
+        label: stage.label,
+        leads: [],
+      }
+    );
+  });
+
+  // Any stage the backend returns that isn't in our known list (e.g.
+  // a stage added in Bigin after STAGES was last updated) still gets
+  // shown, appended after the canonical columns, so nothing silently
+  // disappears from the board.
+  const extraColumns = (data.columns || []).filter(
+    (c) => !STAGES.some((s) => s.id === c.id),
+  );
+
+  const columns = [...knownColumns, ...extraColumns];
+
   return (
     <div className="flex flex-col min-w-0 h-full">
       {/* ---------------------------------------------------------- */}
@@ -222,10 +234,11 @@ export default function BoardView({ onOpenLead, onEditLead }) {
 
       <div className="flex-1 min-w-0 overflow-x-auto px-7 pb-8">
         <div className="flex items-start gap-4 min-w-max">
-          {data.columns.map((col) => {
+          {columns.map((col) => {
             const isOver = dragOverCol === col.id && dragId != null;
 
             const accent = getStageAccent(col.id);
+            const label = col.label || stageOf(col.id).label;
 
             const stageValue = col.leads.reduce((sum, lead) => {
               const raw =
@@ -285,7 +298,10 @@ export default function BoardView({ onOpenLead, onEditLead }) {
               >
                 {/* STAGE HEADER */}
 
-                <div className="px-3.5 pt-3.5 pb-3">
+                <div
+                  className="px-3.5 pt-3.5 pb-3 rounded-t-2xl border-t-2"
+                  style={{ borderTopColor: accent }}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span
@@ -294,7 +310,7 @@ export default function BoardView({ onOpenLead, onEditLead }) {
                       />
 
                       <h2 className="text-[12px] font-bold uppercase tracking-[0.08em] text-[var(--ink-green)] truncate">
-                        {col.label}
+                        {label}
                       </h2>
 
                       <span className="inline-flex min-w-[22px] h-[20px] items-center justify-center rounded-full bg-paper border border-[var(--stroke)] px-1.5 text-[10px] font-bold text-[var(--muted)]">
@@ -306,15 +322,16 @@ export default function BoardView({ onOpenLead, onEditLead }) {
                   <div className="mt-2 flex items-center justify-between">
                     <span className="text-[10.5px] text-[var(--muted)]">
                       {col.leads.length === 1
-                        ? "1 opportunity"
-                        : `${col.leads.length} opportunities`}
+                        ? "1 Deal"
+                        : `${col.leads.length} Deal`}
                     </span>
 
-                    {stageValue > 0 && (
-                      <span className="text-[10.5px] font-semibold text-[var(--ink-green)]">
-                        ₹{formatCurrency(stageValue)}
-                      </span>
-                    )}
+                    <span
+                      className="text-[10.5px] font-semibold"
+                      style={{ color: accent }}
+                    >
+                      ₹{formatCurrency(stageValue) || "0"}
+                    </span>
                   </div>
                 </div>
 
@@ -331,7 +348,7 @@ export default function BoardView({ onOpenLead, onEditLead }) {
                       ].join(" ")}
                     >
                       <span className="text-[11px] text-[var(--muted)]">
-                        Drop a lead here
+                        This stage is empty
                       </span>
                     </div>
                   ) : (
