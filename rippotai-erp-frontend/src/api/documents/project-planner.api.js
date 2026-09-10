@@ -2,435 +2,498 @@ import { baseApi } from "../../store/baseApi";
 
 export const projectPlannerApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // ============================================================
-    // PLANNER TASK TEMPLATES
-    // ============================================================
+    // =========================================================
+    // PROJECT PLANNERS
+    // =========================================================
 
-    listPlannerTemplates: builder.query({
-      query: (module) => ({
-        url: "/planner/templates",
-        params: module ? { module } : undefined,
-      }),
-      providesTags: (result) =>
-        result
-          ? [
-              ...result.map((template) => ({
-                type: "PlannerTemplate",
-                id: template.id,
-              })),
-              { type: "PlannerTemplate", id: "LIST" },
-            ]
-          : [{ type: "PlannerTemplate", id: "LIST" }],
-    }),
-
-    createPlannerTemplate: builder.mutation({
-      query: (body) => ({
-        url: "/planner/templates",
+    // Initialize all standard planners for a project
+    // POST /projects/:projectId/planners/initialize
+    initializeProjectPlanners: builder.mutation({
+      query: ({ projectId, data }) => ({
+        url: `/projects/${projectId}/planners/initialize`,
         method: "POST",
-        body,
+        body: data,
       }),
-      invalidatesTags: [{ type: "PlannerTemplate", id: "LIST" }],
-    }),
-
-    updatePlannerTemplate: builder.mutation({
-      query: ({ templateId, ...body }) => ({
-        url: `/planner/templates/${templateId}`,
-        method: "PATCH",
-        body,
-      }),
-      invalidatesTags: (result, error, { templateId }) => [
-        { type: "PlannerTemplate", id: templateId },
-        { type: "PlannerTemplate", id: "LIST" },
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: "ProjectPlanner", id: `PROJECT-${projectId}` },
+        { type: "ProjectPlanner", id: "LIST" },
       ],
     }),
 
-    deletePlannerTemplate: builder.mutation({
-      query: (templateId) => ({
-        url: `/planner/templates/${templateId}`,
+    // Create one planner
+    // POST /projects/:projectId/planners
+    createPlanner: builder.mutation({
+      query: ({ projectId, data }) => ({
+        url: `/projects/${projectId}/planners`,
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: "ProjectPlanner", id: `PROJECT-${projectId}` },
+        { type: "ProjectPlanner", id: "LIST" },
+      ],
+    }),
+
+    // Get all planners for a project
+    // GET /projects/:projectId/planners
+    getProjectPlanners: builder.query({
+      query: (projectId) => `/projects/${projectId}/planners`,
+      providesTags: (result, error, projectId) => {
+        const planners = Array.isArray(result) ? result : result?.data || [];
+
+        return [
+          ...planners.map(({ id }) => ({
+            type: "ProjectPlanner",
+            id,
+          })),
+          {
+            type: "ProjectPlanner",
+            id: `PROJECT-${projectId}`,
+          },
+          {
+            type: "ProjectPlanner",
+            id: "LIST",
+          },
+        ];
+      },
+    }),
+
+    // Main planner dashboard overview
+    // GET /projects/:projectId/planners/overview
+    getProjectPlannerOverview: builder.query({
+      query: (projectId) => `/projects/${projectId}/planners/overview`,
+      providesTags: (result, error, projectId) => [
+        {
+          type: "ProjectPlannerOverview",
+          id: projectId,
+        },
+        {
+          type: "ProjectPlanner",
+          id: `PROJECT-${projectId}`,
+        },
+      ],
+    }),
+
+    // Get single planner
+    // GET /planners/:plannerId
+    getPlannerById: builder.query({
+      query: (plannerId) => `/planners/${plannerId}`,
+      providesTags: (result, error, plannerId) => [
+        {
+          type: "ProjectPlanner",
+          id: plannerId,
+        },
+      ],
+    }),
+
+    // Update planner
+    // PATCH /planners/:plannerId
+    updatePlanner: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `/planners/${id}`,
+        method: "PATCH",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        {
+          type: "ProjectPlanner",
+          id,
+        },
+        {
+          type: "ProjectPlanner",
+          id: "LIST",
+        },
+      ],
+    }),
+
+    // Delete planner
+    // DELETE /planners/:plannerId
+    deletePlanner: builder.mutation({
+      query: (id) => ({
+        url: `/planners/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, templateId) => [
-        { type: "PlannerTemplate", id: templateId },
-        { type: "PlannerTemplate", id: "LIST" },
+      invalidatesTags: (result, error, id) => [
+        {
+          type: "ProjectPlanner",
+          id,
+        },
+        {
+          type: "ProjectPlanner",
+          id: "LIST",
+        },
       ],
     }),
 
-    // ============================================================
-    // PROCUREMENT CATEGORIES
-    // ============================================================
+    // =========================================================
+    // PLANNER TEMPLATE
+    // =========================================================
 
-    listProcurementCategories: builder.query({
-      query: () => "/planner/procurement-categories",
-      providesTags: (result) =>
-        result
-          ? [
-              ...result.map((category) => ({
-                type: "ProcurementCategory",
-                id: category.id,
-              })),
-              { type: "ProcurementCategory", id: "LIST" },
-            ]
-          : [{ type: "ProcurementCategory", id: "LIST" }],
-    }),
-
-    createProcurementCategory: builder.mutation({
-      query: (body) => ({
-        url: "/planner/procurement-categories",
+    // Generate planner from master template
+    // POST /planners/:plannerId/generate-template
+    generatePlannerFromTemplate: builder.mutation({
+      query: ({ plannerId, data }) => ({
+        url: `/planners/${plannerId}/generate-template`,
         method: "POST",
-        body,
+        body: data,
       }),
-      invalidatesTags: [{ type: "ProcurementCategory", id: "LIST" }],
-    }),
-
-    updateProcurementCategory: builder.mutation({
-      query: ({ categoryId, ...body }) => ({
-        url: `/planner/procurement-categories/${categoryId}`,
-        method: "PATCH",
-        body,
-      }),
-      invalidatesTags: (result, error, { categoryId }) => [
-        { type: "ProcurementCategory", id: categoryId },
-        { type: "ProcurementCategory", id: "LIST" },
+      invalidatesTags: (result, error, { plannerId }) => [
+        {
+          type: "ProjectPlanner",
+          id: plannerId,
+        },
+        {
+          type: "PlannerItem",
+          id: `PLANNER-${plannerId}`,
+        },
       ],
     }),
 
-    deleteProcurementCategory: builder.mutation({
-      query: (categoryId) => ({
-        url: `/planner/procurement-categories/${categoryId}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: (result, error, categoryId) => [
-        { type: "ProcurementCategory", id: categoryId },
-        { type: "ProcurementCategory", id: "LIST" },
-      ],
-    }),
+    // =========================================================
+    // PROJECT LOCATIONS
+    // =========================================================
 
-    // ============================================================
-    // PROJECT FLOORS
-    // ============================================================
-
-    listProjectFloors: builder.query({
-      query: (projectId) => `/projects/${projectId}/planner/floors`,
-      providesTags: (result, error, projectId) =>
-        result
-          ? [
-              ...result.map((floor) => ({
-                type: "ProjectFloor",
-                id: floor.id,
-              })),
-              {
-                type: "ProjectFloor",
-                id: `PROJECT-${projectId}`,
-              },
-            ]
-          : [
-              {
-                type: "ProjectFloor",
-                id: `PROJECT-${projectId}`,
-              },
-            ],
-    }),
-
-    createProjectFloor: builder.mutation({
-      query: ({ projectId, ...body }) => ({
-        url: `/projects/${projectId}/planner/floors`,
+    // Create location
+    // POST /projects/:projectId/locations
+    createLocation: builder.mutation({
+      query: ({ projectId, data }) => ({
+        url: `/projects/${projectId}/locations`,
         method: "POST",
-        body,
+        body: data,
       }),
       invalidatesTags: (result, error, { projectId }) => [
         {
-          type: "ProjectFloor",
+          type: "ProjectLocation",
           id: `PROJECT-${projectId}`,
         },
-      ],
-    }),
-
-    updateProjectFloor: builder.mutation({
-      query: ({ projectId, floorId, ...body }) => ({
-        url: `/projects/${projectId}/planner/floors/${floorId}`,
-        method: "PATCH",
-        body,
-      }),
-      invalidatesTags: (result, error, { projectId, floorId }) => [
-        { type: "ProjectFloor", id: floorId },
         {
-          type: "ProjectFloor",
-          id: `PROJECT-${projectId}`,
+          type: "ProjectLocation",
+          id: "LIST",
         },
       ],
     }),
 
-    deleteProjectFloor: builder.mutation({
-      query: ({ projectId, floorId }) => ({
-        url: `/projects/${projectId}/planner/floors/${floorId}`,
+    // Get project location tree
+    // GET /projects/:projectId/locations
+    getProjectLocations: builder.query({
+      query: (projectId) => `/projects/${projectId}/locations`,
+      providesTags: (result, error, projectId) => {
+        const locations = Array.isArray(result) ? result : result?.data || [];
+
+        return [
+          ...locations.map(({ id }) => ({
+            type: "ProjectLocation",
+            id,
+          })),
+          {
+            type: "ProjectLocation",
+            id: `PROJECT-${projectId}`,
+          },
+          {
+            type: "ProjectLocation",
+            id: "LIST",
+          },
+        ];
+      },
+    }),
+
+    // Update location
+    // PATCH /locations/:locationId
+    updateLocation: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `/locations/${id}`,
+        method: "PATCH",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        {
+          type: "ProjectLocation",
+          id,
+        },
+        {
+          type: "ProjectLocation",
+          id: "LIST",
+        },
+      ],
+    }),
+
+    // =========================================================
+    // PLANNER ITEMS
+    // =========================================================
+
+    // Create planner item
+    // POST /planners/:plannerId/items
+    createPlannerItem: builder.mutation({
+      query: ({ plannerId, data }) => ({
+        url: `/planners/${plannerId}/items`,
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { plannerId }) => [
+        {
+          type: "PlannerItem",
+          id: `PLANNER-${plannerId}`,
+        },
+        {
+          type: "PlannerItem",
+          id: "LIST",
+        },
+        {
+          type: "ProjectPlanner",
+          id: plannerId,
+        },
+      ],
+    }),
+
+    // Get planner items
+    // GET /planners/:plannerId/items
+    getPlannerItems: builder.query({
+      query: ({ plannerId, phaseId }) => ({
+        url: `/planners/${plannerId}/items`,
+        params: {
+          ...(phaseId ? { phaseId } : {}),
+        },
+      }),
+      providesTags: (result, error, { plannerId }) => {
+        const items = Array.isArray(result) ? result : result?.data || [];
+
+        return [
+          ...items.map(({ id }) => ({
+            type: "PlannerItem",
+            id,
+          })),
+          {
+            type: "PlannerItem",
+            id: `PLANNER-${plannerId}`,
+          },
+          {
+            type: "PlannerItem",
+            id: "LIST",
+          },
+        ];
+      },
+    }),
+
+    // Get single planner item
+    // GET /planner-items/:itemId
+    getPlannerItemById: builder.query({
+      query: (itemId) => `/planner-items/${itemId}`,
+      providesTags: (result, error, itemId) => [
+        {
+          type: "PlannerItem",
+          id: itemId,
+        },
+      ],
+    }),
+
+    // Update planner item
+    // PATCH /planner-items/:itemId
+    updatePlannerItem: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `/planner-items/${id}`,
+        method: "PATCH",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        {
+          type: "PlannerItem",
+          id,
+        },
+        {
+          type: "PlannerItem",
+          id: "LIST",
+        },
+      ],
+    }),
+
+    // Delete planner item
+    // DELETE /planner-items/:itemId
+    deletePlannerItem: builder.mutation({
+      query: (id) => ({
+        url: `/planner-items/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, { projectId, floorId }) => [
-        { type: "ProjectFloor", id: floorId },
+      invalidatesTags: (result, error, id) => [
         {
-          type: "ProjectFloor",
-          id: `PROJECT-${projectId}`,
+          type: "PlannerItem",
+          id,
         },
         {
-          type: "PlannerTask",
-          id: `PROJECT-${projectId}`,
+          type: "PlannerItem",
+          id: "LIST",
         },
       ],
     }),
 
-    // ============================================================
-    // PROJECT PLANNER TASKS
-    // ============================================================
+    // =========================================================
+    // PLANNER ITEM ↔ LOCATIONS
+    // =========================================================
 
-    clonePlannerTemplates: builder.mutation({
-      query: ({ projectId, ...body }) => ({
-        url: `/projects/${projectId}/planner/tasks/clone-from-templates`,
+    // Attach planner item to locations
+    // POST /planner-items/:itemId/locations
+    attachPlannerLocations: builder.mutation({
+      query: ({ itemId, location_ids }) => ({
+        url: `/planner-items/${itemId}/locations`,
         method: "POST",
-        body,
+        body: {
+          location_ids,
+        },
       }),
-      invalidatesTags: (result, error, { projectId }) => [
+      invalidatesTags: (result, error, { itemId }) => [
         {
-          type: "PlannerTask",
-          id: `PROJECT-${projectId}`,
+          type: "PlannerItem",
+          id: itemId,
         },
         {
-          type: "PlannerExportView",
-          id: `PROJECT-${projectId}`,
+          type: "PlannerItemLocation",
+          id: `ITEM-${itemId}`,
         },
       ],
     }),
 
-    getPlannerTaskTree: builder.query({
-      query: ({ projectId, module }) => ({
-        url: `/projects/${projectId}/planner/tasks`,
-        params: module ? { module } : undefined,
-      }),
-      providesTags: (result, error, { projectId }) =>
-        result
-          ? [
-              ...result
-                .filter((task) => task?.id)
-                .map((task) => ({
-                  type: "PlannerTask",
-                  id: task.id,
-                })),
-              {
-                type: "PlannerTask",
-                id: `PROJECT-${projectId}`,
-              },
-            ]
-          : [
-              {
-                type: "PlannerTask",
-                id: `PROJECT-${projectId}`,
-              },
-            ],
-    }),
-
-    createPlannerTask: builder.mutation({
-      query: ({ projectId, ...body }) => ({
-        url: `/projects/${projectId}/planner/tasks`,
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: (result, error, { projectId }) => [
-        {
-          type: "PlannerTask",
-          id: `PROJECT-${projectId}`,
-        },
-        {
-          type: "PlannerExportView",
-          id: `PROJECT-${projectId}`,
-        },
-      ],
-    }),
-
-    updatePlannerTask: builder.mutation({
-      query: ({ projectId, taskId, ...body }) => ({
-        url: `/projects/${projectId}/planner/tasks/${taskId}`,
-        method: "PATCH",
-        body,
-      }),
-      invalidatesTags: (result, error, { projectId, taskId }) => [
-        { type: "PlannerTask", id: taskId },
-        {
-          type: "PlannerTask",
-          id: `PROJECT-${projectId}`,
-        },
-        {
-          type: "PlannerExportView",
-          id: `PROJECT-${projectId}`,
-        },
-      ],
-    }),
-
-    deletePlannerTask: builder.mutation({
-      query: ({ projectId, taskId }) => ({
-        url: `/projects/${projectId}/planner/tasks/${taskId}`,
+    // Remove planner item from location
+    // DELETE /planner-items/:itemId/locations/:locationId
+    removeLocationFromItem: builder.mutation({
+      query: ({ itemId, locationId }) => ({
+        url: `/planner-items/${itemId}/locations/${locationId}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, { projectId, taskId }) => [
-        { type: "PlannerTask", id: taskId },
+      invalidatesTags: (result, error, { itemId, locationId }) => [
         {
-          type: "PlannerTask",
-          id: `PROJECT-${projectId}`,
+          type: "PlannerItem",
+          id: itemId,
         },
         {
-          type: "PlannerExportView",
-          id: `PROJECT-${projectId}`,
+          type: "PlannerItemLocation",
+          id: locationId,
+        },
+        {
+          type: "PlannerItemLocation",
+          id: `ITEM-${itemId}`,
         },
       ],
     }),
 
-    // ============================================================
-    // FLOOR PROGRESS
-    // ============================================================
+    // =========================================================
+    // PLANNER ITEM LOCATION PROGRESS
+    // =========================================================
 
-    recordFloorProgress: builder.mutation({
-      query: ({ projectId, taskId, ...body }) => ({
-        url: `/projects/${projectId}/planner/tasks/${taskId}/floor-progress`,
+    // Update individual item-location progress
+    // PATCH /planner-item-locations/:itemLocationId
+    updateItemLocation: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `/planner-item-locations/${id}`,
         method: "PATCH",
-        body,
+        body: data,
       }),
-      invalidatesTags: (result, error, { projectId, taskId }) => [
-        { type: "PlannerTask", id: taskId },
+      invalidatesTags: (result, error, { id }) => [
         {
-          type: "PlannerTask",
-          id: `PROJECT-${projectId}`,
+          type: "PlannerItemLocation",
+          id,
         },
         {
-          type: "PlannerExportView",
-          id: `PROJECT-${projectId}`,
+          type: "PlannerItem",
+          id: result?.planner_item_id,
+        },
+        {
+          type: "PlannerItem",
+          id: "LIST",
         },
       ],
     }),
 
-    // ============================================================
-    // PLANNER EXPORT VIEW
-    // ============================================================
+    // =========================================================
+    // VENDOR & PROCUREMENT
+    // =========================================================
 
-    getPlannerExportView: builder.query({
-      query: ({ projectId, module }) => ({
-        url: `/projects/${projectId}/planner/export-view`,
-        params: module ? { module } : undefined,
-      }),
-      providesTags: (result, error, { projectId }) => [
-        {
-          type: "PlannerExportView",
-          id: `PROJECT-${projectId}`,
-        },
-      ],
-    }),
-
-    // ============================================================
-    // PLANNER EXPORT HISTORY
-    // ============================================================
-
-    listPlannerExports: builder.query({
-      query: (projectId) => `/projects/${projectId}/planner/exports`,
-      providesTags: (result, error, projectId) =>
-        result
-          ? [
-              ...result
-                .filter((item) => item?.id)
-                .map((item) => ({
-                  type: "PlannerExport",
-                  id: item.id,
-                })),
-              {
-                type: "PlannerExport",
-                id: `PROJECT-${projectId}`,
-              },
-            ]
-          : [
-              {
-                type: "PlannerExport",
-                id: `PROJECT-${projectId}`,
-              },
-            ],
-    }),
-
-    recordPlannerExport: builder.mutation({
-      query: ({ projectId, ...body }) => ({
-        url: `/projects/${projectId}/planner/exports`,
+    // Create procurement item
+    // POST /planners/:plannerId/procurement
+    createProcurementItem: builder.mutation({
+      query: ({ plannerId, data }) => ({
+        url: `/planners/${plannerId}/procurement`,
         method: "POST",
-        body,
+        body: data,
       }),
-      invalidatesTags: (result, error, { projectId }) => [
+      invalidatesTags: (result, error, { plannerId }) => [
         {
-          type: "PlannerExport",
-          id: `PROJECT-${projectId}`,
+          type: "ProcurementItem",
+          id: `PLANNER-${plannerId}`,
+        },
+        {
+          type: "ProcurementItem",
+          id: "LIST",
+        },
+        {
+          type: "ProjectPlanner",
+          id: plannerId,
         },
       ],
     }),
 
-    // ============================================================
-    // VENDOR PROCUREMENT
-    // ============================================================
-
-    listVendorProcurements: builder.query({
-      query: (projectId) => `/projects/${projectId}/planner/vendor-procurement`,
-      providesTags: (result, error, projectId) =>
-        result
-          ? [
-              ...result
-                .filter((item) => item?.id)
-                .map((item) => ({
-                  type: "VendorProcurement",
-                  id: item.id,
-                })),
-              {
-                type: "VendorProcurement",
-                id: `PROJECT-${projectId}`,
-              },
-            ]
-          : [
-              {
-                type: "VendorProcurement",
-                id: `PROJECT-${projectId}`,
-              },
-            ],
-    }),
-
-    createVendorProcurement: builder.mutation({
-      query: ({ projectId, ...body }) => ({
-        url: `/projects/${projectId}/planner/vendor-procurement`,
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: (result, error, { projectId }) => [
-        {
-          type: "VendorProcurement",
-          id: `PROJECT-${projectId}`,
+    // Get procurement items
+    // GET /planners/:plannerId/procurement
+    getProcurementItems: builder.query({
+      query: ({ plannerId, itemType }) => ({
+        url: `/planners/${plannerId}/procurement`,
+        params: {
+          ...(itemType ? { itemType } : {}),
         },
-      ],
+      }),
+      providesTags: (result, error, { plannerId }) => {
+        const items = Array.isArray(result) ? result : result?.data || [];
+
+        return [
+          ...items.map(({ id }) => ({
+            type: "ProcurementItem",
+            id,
+          })),
+          {
+            type: "ProcurementItem",
+            id: `PLANNER-${plannerId}`,
+          },
+          {
+            type: "ProcurementItem",
+            id: "LIST",
+          },
+        ];
+      },
     }),
 
-    updateVendorProcurement: builder.mutation({
-      query: ({ projectId, rowId, ...body }) => ({
-        url: `/projects/${projectId}/planner/vendor-procurement/${rowId}`,
+    // Update procurement item
+    // PATCH /procurement-items/:itemId
+    updateProcurementItem: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `/procurement-items/${id}`,
         method: "PATCH",
-        body,
+        body: data,
       }),
-      invalidatesTags: (result, error, { projectId, rowId }) => [
-        { type: "VendorProcurement", id: rowId },
+      invalidatesTags: (result, error, { id }) => [
         {
-          type: "VendorProcurement",
-          id: `PROJECT-${projectId}`,
+          type: "ProcurementItem",
+          id,
+        },
+        {
+          type: "ProcurementItem",
+          id: "LIST",
         },
       ],
     }),
 
-    deleteVendorProcurement: builder.mutation({
-      query: ({ projectId, rowId }) => ({
-        url: `/projects/${projectId}/planner/vendor-procurement/${rowId}`,
+    // Delete procurement item
+    // DELETE /procurement-items/:itemId
+    deleteProcurementItem: builder.mutation({
+      query: (id) => ({
+        url: `/procurement-items/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, { projectId, rowId }) => [
-        { type: "VendorProcurement", id: rowId },
+      invalidatesTags: (result, error, id) => [
         {
-          type: "VendorProcurement",
-          id: `PROJECT-${projectId}`,
+          type: "ProcurementItem",
+          id,
+        },
+        {
+          type: "ProcurementItem",
+          id: "LIST",
         },
       ],
     }),
@@ -439,49 +502,41 @@ export const projectPlannerApi = baseApi.injectEndpoints({
   overrideExisting: false,
 });
 
-// ============================================================
-// HOOKS
-// ============================================================
-
 export const {
-  // Templates
-  useListPlannerTemplatesQuery,
-  useCreatePlannerTemplateMutation,
-  useUpdatePlannerTemplateMutation,
-  useDeletePlannerTemplateMutation,
+  // Project planners
+  useInitializeProjectPlannersMutation,
+  useCreatePlannerMutation,
+  useGetProjectPlannersQuery,
+  useGetProjectPlannerOverviewQuery,
+  useGetPlannerByIdQuery,
+  useUpdatePlannerMutation,
+  useDeletePlannerMutation,
 
-  // Procurement Categories
-  useListProcurementCategoriesQuery,
-  useCreateProcurementCategoryMutation,
-  useUpdateProcurementCategoryMutation,
-  useDeleteProcurementCategoryMutation,
+  // Template
+  useGeneratePlannerFromTemplateMutation,
 
-  // Floors
-  useListProjectFloorsQuery,
-  useCreateProjectFloorMutation,
-  useUpdateProjectFloorMutation,
-  useDeleteProjectFloorMutation,
+  // Locations
+  useCreateLocationMutation,
+  useGetProjectLocationsQuery,
+  useUpdateLocationMutation,
 
-  // Planner Tasks
-  useClonePlannerTemplatesMutation,
-  useGetPlannerTaskTreeQuery,
-  useCreatePlannerTaskMutation,
-  useUpdatePlannerTaskMutation,
-  useDeletePlannerTaskMutation,
+  // Planner items
+  useCreatePlannerItemMutation,
+  useGetPlannerItemsQuery,
+  useGetPlannerItemByIdQuery,
+  useUpdatePlannerItemMutation,
+  useDeletePlannerItemMutation,
 
-  // Floor Progress
-  useRecordFloorProgressMutation,
+  // Planner item ↔ locations
+  useAttachPlannerLocationsMutation,
+  useRemoveLocationFromItemMutation,
 
-  // Export View
-  useGetPlannerExportViewQuery,
+  // Item location progress
+  useUpdateItemLocationMutation,
 
-  // Exports
-  useListPlannerExportsQuery,
-  useRecordPlannerExportMutation,
-
-  // Vendor Procurement
-  useListVendorProcurementsQuery,
-  useCreateVendorProcurementMutation,
-  useUpdateVendorProcurementMutation,
-  useDeleteVendorProcurementMutation,
+  // Procurement
+  useCreateProcurementItemMutation,
+  useGetProcurementItemsQuery,
+  useUpdateProcurementItemMutation,
+  useDeleteProcurementItemMutation,
 } = projectPlannerApi;

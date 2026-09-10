@@ -1,35 +1,54 @@
+// src/modules/project-planner/project-planner.module.ts
+
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
+
+// ===================== Existing Models =====================
+
+import { Project } from '@/modules/projects/models/projects.model';
+import { User } from '@/modules/users/models/user.model';
+import { Vendor } from '../vendors/models/vendors.model';
+import { DocumentType } from '@/modules/documents/models/document-type.model';
+
+// ===================== Planner Models =====================
+
 import { ProjectPhase } from './models/project-phase.model';
+import { ProjectPlanner } from './models/project_planners.model';
+import { ProjectPlannerItem } from './models/project_planner_items.model';
+import { ProjectLocation } from './models/project_locations.model';
+import { ProjectPlannerItemLocation } from './models/project_planner_item_locations.model';
+import { ProjectProcurementItem } from './models/project_procurement_items.model';
 import { PlannerTaskTemplate } from './models/planner-task-template.model';
-import { ProjectPlannerTask } from './models/project-planner-task.model';
-import { ProjectFloor } from './models/project-floor.model';
-import { ProjectRoom } from './models/project-room.model';
-import { PlannerTaskFloorProgress } from './models/planner-task-floor-progress.model';
-import { ProcurementCategory } from './models/procurement-category.model';
-import { ProjectVendorProcurement } from './models/project-vendor-procurement.model';
-import { ProjectPlannerExport } from './models/project-planner-export.model';
-import { ProjectPlannerService } from './project-planner.service';
+
+// ===================== Controller / Service =====================
+
 import { ProjectPlannerController } from './project-planner.controller';
-import { VendorProcurementService } from './vendor-procurement.service';
-import { VendorProcurementController } from './vendor-procurement.controller';
+import { ProjectPlannerService } from './project-planner.service';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([
+      // Existing
+      Project,
+      User,
+      Vendor,
+      DocumentType,
+
+      // Planner
       ProjectPhase,
+      ProjectPlanner,
+      ProjectPlannerItem,
+      ProjectLocation,
+      ProjectPlannerItemLocation,
+      ProjectProcurementItem,
       PlannerTaskTemplate,
-      ProjectPlannerTask,
-      ProjectFloor,
-      ProjectRoom,
-      PlannerTaskFloorProgress,
-      ProcurementCategory,
-      ProjectVendorProcurement,
-      ProjectPlannerExport,
     ]),
   ],
-  controllers: [ProjectPlannerController, VendorProcurementController],
-  providers: [ProjectPlannerService, VendorProcurementService],
-  exports: [ProjectPlannerService, VendorProcurementService],
+
+  controllers: [ProjectPlannerController],
+
+  providers: [ProjectPlannerService],
+
+  exports: [ProjectPlannerService, SequelizeModule],
 })
 export class ProjectPlannerModule {}

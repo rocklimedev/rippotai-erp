@@ -9,8 +9,6 @@ import {
   HasMany,
 } from 'sequelize-typescript';
 import { ProjectPhaseModule } from '@/common/enums/project-planner.enum';
-import { ProjectPlannerTask } from './project-planner-task.model';
-import { PlannerTaskTemplate } from './planner-task-template.model';
 
 @Table({
   tableName: 'project_phases',
@@ -72,12 +70,4 @@ export class ProjectPhase extends Model<ProjectPhase> {
 
   @Column({ type: DataType.DATE, allowNull: true })
   declare deleted_at: Date | null;
-
-  // ===================== Associations =====================
-
-  @HasMany(() => ProjectPlannerTask, { foreignKey: 'phase_id' })
-  declare tasks: ProjectPlannerTask[];
-
-  @HasMany(() => PlannerTaskTemplate, { foreignKey: 'phase_id' })
-  declare templates: PlannerTaskTemplate[];
 }
