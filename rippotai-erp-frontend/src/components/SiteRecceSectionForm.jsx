@@ -675,6 +675,11 @@ function PhotoEditor({
 // ============================================================
 // MAIN COMPONENT
 // ============================================================
+//
+// Previously this rendered one section at a time behind a
+// sidebar + Prev/Next pager. It now renders every section
+// stacked vertically as a single long form.
+// ============================================================
 
 export function SiteRecceSectionForm({
   title,
@@ -699,13 +704,9 @@ export function SiteRecceSectionForm({
   // const url = await onFileUpload(file, "layout");
   onFileUpload,
 }) {
-  const [active, setActive] = useState(0);
-
   const [editingRoom, setEditingRoom] = useState(null);
 
   const [editingPhoto, setEditingPhoto] = useState(null);
-
-  const currentSection = sections?.[active];
 
   // ============================================================
   // CHILD COLLECTIONS
@@ -1250,149 +1251,139 @@ export function SiteRecceSectionForm({
   };
 
   // ============================================================
-  // CUSTOM SECTION
+  // GENERIC FIELD SECTION
+  //
+  // Renders the plain field grid for a given section. Takes the
+  // section as a parameter (instead of reading a single "active"
+  // section) so it can be called once per section in the list.
   // ============================================================
 
-  const renderCurrentSection = () => {
-    if (!currentSection) {
-      return null;
-    }
+  const renderFields = (section) => (
+    <div className="grid md:grid-cols-2 gap-4">
+      {(section.fields || []).map((field) => {
+        const fieldValue = values?.[field.key] ?? "";
 
-    if (currentSection.type === "rooms") {
+        return (
+          <div
+            key={field.key}
+            className={field.type === "textarea" ? "md:col-span-2" : ""}
+          >
+            <label className="field-label">
+              {field.label}
+
+              {field.required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+
+            {field.type === "textarea" ? (
+              <TextArea
+                rows={field.rows || 4}
+                value={fieldValue}
+                placeholder={field.placeholder || ""}
+                onChange={(e) =>
+                  handleFieldChange(section.title, field.key, e.target.value)
+                }
+              />
+            ) : field.type === "date" ? (
+              <Input
+                type="date"
+                value={fieldValue}
+                onChange={(e) =>
+                  handleFieldChange(section.title, field.key, e.target.value)
+                }
+              />
+            ) : field.type === "time" ? (
+              <Input
+                type="time"
+                value={fieldValue}
+                onChange={(e) =>
+                  handleFieldChange(section.title, field.key, e.target.value)
+                }
+              />
+            ) : field.type === "select" ? (
+              <select
+                className="bc-input h-10 w-full"
+                value={
+                  fieldValue === null || fieldValue === undefined
+                    ? ""
+                    : String(fieldValue)
+                }
+                onChange={(e) => {
+                  const rawValue = e.target.value;
+
+                  const selectedOption = (field.options || []).find(
+                    (option) => {
+                      if (typeof option === "object" && option !== null) {
+                        return String(option.value) === rawValue;
+                      }
+
+                      return String(option) === rawValue;
+                    },
+                  );
+
+                  const value =
+                    typeof selectedOption === "object" &&
+                    selectedOption !== null
+                      ? selectedOption.value
+                      : rawValue;
+
+                  handleFieldChange(section.title, field.key, value);
+                }}
+              >
+                <option value="">Select...</option>
+
+                {(field.options || []).map((option, index) => {
+                  if (typeof option === "object" && option !== null) {
+                    return (
+                      <option
+                        key={`${option.value}-${index}`}
+                        value={String(option.value)}
+                      >
+                        {option.label}
+                      </option>
+                    );
+                  }
+
+                  return (
+                    <option key={`${option}-${index}`} value={option}>
+                      {option}
+                    </option>
+                  );
+                })}
+              </select>
+            ) : (
+              <Input
+                type={field.type || "text"}
+                value={fieldValue}
+                placeholder={field.placeholder || ""}
+                onChange={(e) =>
+                  handleFieldChange(section.title, field.key, e.target.value)
+                }
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // ============================================================
+  // SECTION BODY DISPATCH
+  // ============================================================
+
+  const renderSectionBody = (section) => {
+    if (section.type === "rooms") {
       return renderRooms();
     }
 
-    if (currentSection.type === "roomPhotos") {
+    if (section.type === "roomPhotos") {
       return renderPhotos();
     }
 
-    if (renderSection && currentSection.type) {
-      return renderSection(currentSection);
+    if (renderSection && section.type) {
+      return renderSection(section);
     }
 
-    return (
-      <div className="grid md:grid-cols-2 gap-4">
-        {(currentSection.fields || []).map((field) => {
-          const fieldValue = values?.[field.key] ?? "";
-
-          return (
-            <div
-              key={field.key}
-              className={field.type === "textarea" ? "md:col-span-2" : ""}
-            >
-              <label className="field-label">
-                {field.label}
-
-                {field.required && <span className="text-red-500 ml-1">*</span>}
-              </label>
-
-              {field.type === "textarea" ? (
-                <TextArea
-                  rows={field.rows || 4}
-                  value={fieldValue}
-                  placeholder={field.placeholder || ""}
-                  onChange={(e) =>
-                    handleFieldChange(
-                      currentSection.title,
-                      field.key,
-                      e.target.value,
-                    )
-                  }
-                />
-              ) : field.type === "date" ? (
-                <Input
-                  type="date"
-                  value={fieldValue}
-                  onChange={(e) =>
-                    handleFieldChange(
-                      currentSection.title,
-                      field.key,
-                      e.target.value,
-                    )
-                  }
-                />
-              ) : field.type === "time" ? (
-                <Input
-                  type="time"
-                  value={fieldValue}
-                  onChange={(e) =>
-                    handleFieldChange(
-                      currentSection.title,
-                      field.key,
-                      e.target.value,
-                    )
-                  }
-                />
-              ) : field.type === "select" ? (
-                <select
-                  className="bc-input h-10 w-full"
-                  value={
-                    fieldValue === null || fieldValue === undefined
-                      ? ""
-                      : String(fieldValue)
-                  }
-                  onChange={(e) => {
-                    const rawValue = e.target.value;
-
-                    const selectedOption = (field.options || []).find(
-                      (option) => {
-                        if (typeof option === "object" && option !== null) {
-                          return String(option.value) === rawValue;
-                        }
-
-                        return String(option) === rawValue;
-                      },
-                    );
-
-                    const value =
-                      typeof selectedOption === "object" &&
-                      selectedOption !== null
-                        ? selectedOption.value
-                        : rawValue;
-
-                    handleFieldChange(currentSection.title, field.key, value);
-                  }}
-                >
-                  <option value="">Select...</option>
-
-                  {(field.options || []).map((option, index) => {
-                    if (typeof option === "object" && option !== null) {
-                      return (
-                        <option
-                          key={`${option.value}-${index}`}
-                          value={String(option.value)}
-                        >
-                          {option.label}
-                        </option>
-                      );
-                    }
-
-                    return (
-                      <option key={`${option}-${index}`} value={option}>
-                        {option}
-                      </option>
-                    );
-                  })}
-                </select>
-              ) : (
-                <Input
-                  type={field.type || "text"}
-                  value={fieldValue}
-                  placeholder={field.placeholder || ""}
-                  onChange={(e) =>
-                    handleFieldChange(
-                      currentSection.title,
-                      field.key,
-                      e.target.value,
-                    )
-                  }
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
+    return renderFields(section);
   };
 
   // ============================================================
@@ -1443,111 +1434,52 @@ export function SiteRecceSectionForm({
       </Card>
 
       {/* ========================================================
-          SECTIONS
+          ALL SECTIONS, STACKED — NO TABS / NO PAGER
       ======================================================== */}
 
-      <div className="grid md:grid-cols-[240px_1fr] gap-5">
-        {/* SIDEBAR */}
+      <div className="space-y-5">
+        {sections.map((section, index) => {
+          let count = 0;
 
-        <Card>
-          <div className="text-xs uppercase tracking-widest text-[#6B7B7C] mb-3">
-            Sections
-          </div>
+          if (section.type === "rooms") {
+            count = rooms.length;
+          }
 
-          <div className="flex flex-col gap-1">
-            {sections.map((section, index) => {
-              const isActive = active === index;
+          if (section.type === "roomPhotos") {
+            count = photos.length;
+          }
 
-              let count = 0;
-
-              if (section.type === "rooms") {
-                count = rooms.length;
-              }
-
-              if (section.type === "roomPhotos") {
-                count = photos.length;
-              }
-
-              return (
-                <button
-                  key={section.title}
-                  type="button"
-                  onClick={() => setActive(index)}
-                  className={`text-left rounded-lg px-3 py-2 text-sm transition flex items-center justify-between gap-2 ${
-                    isActive
-                      ? "bg-[#1F453B] text-white"
-                      : "hover:bg-[#F4F6F7] text-[#333]"
-                  }`}
-                >
-                  <span>
+          return (
+            <Card key={section.title}>
+              <div className="mb-5 flex items-center justify-between">
+                <div>
+                  <div className="text-lg font-semibold text-[#333333]">
                     {index + 1}. {section.title}
-                  </span>
+                  </div>
 
-                  {count > 0 && (
-                    <span
-                      className={`text-[11px] px-1.5 py-0.5 rounded-full ${
-                        isActive
-                          ? "bg-white/20 text-white"
-                          : "bg-[#EEF4F1] text-[#1F453B]"
-                      }`}
-                    >
-                      {count}
-                    </span>
+                  {section.description && (
+                    <div className="text-sm text-[#7B8788] mt-1">
+                      {section.description}
+                    </div>
                   )}
-                </button>
-              );
-            })}
-          </div>
-        </Card>
+                </div>
 
-        {/* MAIN */}
-
-        <Card>
-          <div className="mb-5">
-            <div className="text-lg font-semibold text-[#333333]">
-              {currentSection?.title}
-            </div>
-
-            {currentSection?.description && (
-              <div className="text-sm text-[#7B8788] mt-1">
-                {currentSection.description}
+                {count > 0 && (
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#EEF4F1] text-[#1F453B]">
+                    {count}
+                  </span>
+                )}
               </div>
-            )}
-          </div>
 
-          {renderCurrentSection()}
+              {renderSectionBody(section)}
+            </Card>
+          );
+        })}
+      </div>
 
-          {/* ======================================================
-              NAVIGATION
-          ====================================================== */}
-
-          <div className="flex justify-between mt-6 pt-5 border-t border-[#EDF1F0]">
-            <button
-              type="button"
-              disabled={active === 0}
-              onClick={() => setActive((prev) => Math.max(0, prev - 1))}
-              className="h-9 px-4 rounded-lg border border-[rgba(31,69,59,0.14)] text-sm disabled:opacity-50"
-            >
-              ← Previous
-            </button>
-
-            <button
-              type="button"
-              disabled={active === sections.length - 1}
-              onClick={() =>
-                setActive((prev) => Math.min(sections.length - 1, prev + 1))
-              }
-              className="h-9 px-4 rounded-lg border border-[rgba(31,69,59,0.14)] text-sm disabled:opacity-50"
-            >
-              Next →
-            </button>
-          </div>
-
-          <div className="mt-4 text-xs text-[#94A3A5]">
-            Draft autosaved locally • {filledCount} item
-            {filledCount !== 1 ? "s" : ""} completed
-          </div>
-        </Card>
+      <div className="mt-4 text-xs text-[#94A3A5] text-center">
+        Draft autosaved locally • {filledCount} item
+        {filledCount !== 1 ? "s" : ""} completed
       </div>
 
       {children}

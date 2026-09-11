@@ -1,18 +1,18 @@
-import React, { useState } from "react";
+import React from "react";
 import { Save } from "lucide-react";
 import { Shell, Card, Input, TextArea } from "../../hooks/shared";
 
 /**
- * Generic multi-section wizard shell.
+ * Generic multi-section form shell.
  *
  * This is a direct extraction of PlanOfActionSectionForm — it never
  * referenced anything POA-specific, so it's pulled out here and reused
- * by both the Plan of Action form and the Payment Schedule form (and
- * any future section-based form) instead of being duplicated.
+ * by both the Plan of Action form and the Payment Schedule / Scope of
+ * Work forms (and any future section-based form) instead of being
+ * duplicated.
  *
- * PlanOfActionSectionForm can be turned into a thin re-export of this
- * file once you're ready to update its import sites; nothing here
- * changes its existing behaviour.
+ * Renders every section stacked vertically as one continuous form
+ * rather than behind a sidebar + Prev/Next pager.
  */
 export function PaymentSectionForm({
   title,
@@ -29,9 +29,6 @@ export function PaymentSectionForm({
   submitLabel,
   children,
 }) {
-  const [active, setActive] = useState(0);
-  const currentSection = sections[active];
-
   const filledCount = React.useMemo(() => {
     let count = 0;
     Object.values(values || {}).forEach((val) => {
@@ -51,6 +48,84 @@ export function PaymentSectionForm({
     });
     return count;
   }, [values]);
+
+  // Renders the plain field grid for a given section. Parametrized so
+  // it can run once per section in the stacked list below.
+  const renderFields = (section) => (
+    <div className="grid gap-4">
+      {(section?.fields || []).map((field) => {
+        const sectionData = values?.[section.title] || {};
+        const fieldValue = sectionData?.[field.key] ?? "";
+
+        return (
+          <div key={field.key}>
+            <label className="block text-[13px] font-semibold text-[#333333] mb-1">
+              {field.label}
+            </label>
+
+            {field.type === "textarea" ? (
+              <TextArea
+                rows={field.rows || 4}
+                value={fieldValue}
+                onChange={(e) =>
+                  onFieldChange(section.title, field.key, e.target.value)
+                }
+              />
+            ) : field.type === "date" ? (
+              <Input
+                type="date"
+                value={fieldValue}
+                onChange={(e) =>
+                  onFieldChange(section.title, field.key, e.target.value)
+                }
+              />
+            ) : field.type === "time" ? (
+              <Input
+                type="time"
+                value={fieldValue}
+                onChange={(e) =>
+                  onFieldChange(section.title, field.key, e.target.value)
+                }
+              />
+            ) : field.type === "select" ? (
+              <select
+                className="bc-input h-10 w-full"
+                value={fieldValue}
+                onChange={(e) =>
+                  onFieldChange(section.title, field.key, e.target.value)
+                }
+              >
+                <option value="">Select...</option>
+                {(field.options || []).map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <Input
+                type={field.type || "text"}
+                value={fieldValue}
+                onChange={(e) =>
+                  onFieldChange(section.title, field.key, e.target.value)
+                }
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const renderSectionBody = (section) => {
+    // === CUSTOM RENDERER ===
+    if (section?.type && renderSection) {
+      return renderSection(section);
+    }
+
+    // === SIMPLE FIELDS ===
+    return renderFields(section);
+  };
 
   return (
     <Shell
@@ -88,151 +163,22 @@ export function PaymentSectionForm({
         </Card>
       )}
 
-      <div className="grid md:grid-cols-[240px_1fr] gap-5">
-        {/* Sidebar */}
-        <Card>
-          <div className="text-xs uppercase tracking-widest text-[#6B7B7C] mb-3">
-            Sections
-          </div>
-          <div className="flex flex-col gap-1">
-            {sections.map((section, index) => (
-              <button
-                key={section.title}
-                onClick={() => setActive(index)}
-                className={`text-left rounded-lg px-3 py-2 text-sm transition ${
-                  active === index
-                    ? "bg-[#1F453B] text-white"
-                    : "hover:bg-[#F4F6F7] text-[#333]"
-                }`}
-              >
-                {index + 1}. {section.title}
-              </button>
-            ))}
-          </div>
-        </Card>
-
-        {/* Main Content */}
-        <Card>
-          <div className="text-lg font-semibold text-[#333333] mb-4">
-            {currentSection?.title}
-          </div>
-
-          {/* === CUSTOM RENDERER === */}
-          {currentSection?.type && renderSection ? (
-            renderSection(currentSection)
-          ) : (
-            /* === SIMPLE FIELDS === */
-            <div className="grid gap-4">
-              {(currentSection?.fields || []).map((field) => {
-                const sectionData = values?.[currentSection.title] || {};
-                const fieldValue = sectionData?.[field.key] ?? "";
-
-                return (
-                  <div key={field.key}>
-                    <label className="block text-[13px] font-semibold text-[#333333] mb-1">
-                      {field.label}
-                    </label>
-
-                    {field.type === "textarea" ? (
-                      <TextArea
-                        rows={field.rows || 4}
-                        value={fieldValue}
-                        onChange={(e) =>
-                          onFieldChange(
-                            currentSection.title,
-                            field.key,
-                            e.target.value,
-                          )
-                        }
-                      />
-                    ) : field.type === "date" ? (
-                      <Input
-                        type="date"
-                        value={fieldValue}
-                        onChange={(e) =>
-                          onFieldChange(
-                            currentSection.title,
-                            field.key,
-                            e.target.value,
-                          )
-                        }
-                      />
-                    ) : field.type === "time" ? (
-                      <Input
-                        type="time"
-                        value={fieldValue}
-                        onChange={(e) =>
-                          onFieldChange(
-                            currentSection.title,
-                            field.key,
-                            e.target.value,
-                          )
-                        }
-                      />
-                    ) : field.type === "select" ? (
-                      <select
-                        className="bc-input h-10 w-full"
-                        value={fieldValue}
-                        onChange={(e) =>
-                          onFieldChange(
-                            currentSection.title,
-                            field.key,
-                            e.target.value,
-                          )
-                        }
-                      >
-                        <option value="">Select...</option>
-                        {(field.options || []).map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <Input
-                        type={field.type || "text"}
-                        value={fieldValue}
-                        onChange={(e) =>
-                          onFieldChange(
-                            currentSection.title,
-                            field.key,
-                            e.target.value,
-                          )
-                        }
-                      />
-                    )}
-                  </div>
-                );
-              })}
+      {/* All sections, stacked — no tabs / no pager */}
+      <div className="space-y-5">
+        {sections.map((section, index) => (
+          <Card key={section.title}>
+            <div className="text-lg font-semibold text-[#333333] mb-4">
+              {index + 1}. {section.title}
             </div>
-          )}
 
-          {/* Navigation */}
-          <div className="flex justify-between mt-6">
-            <button
-              type="button"
-              disabled={active === 0}
-              onClick={() => setActive((prev) => prev - 1)}
-              className="h-9 px-4 rounded-lg border border-[rgba(31,69,59,0.14)] text-sm disabled:opacity-50"
-            >
-              ← Previous
-            </button>
+            {renderSectionBody(section)}
+          </Card>
+        ))}
+      </div>
 
-            <button
-              type="button"
-              disabled={active === sections.length - 1}
-              onClick={() => setActive((prev) => prev + 1)}
-              className="h-9 px-4 rounded-lg border border-[rgba(31,69,59,0.14)] text-sm disabled:opacity-50"
-            >
-              Next →
-            </button>
-          </div>
-
-          <div className="mt-4 text-xs text-[#94A3A5]">
-            Draft autosaved locally • {filledCount} field
-            {filledCount !== 1 ? "s" : ""} completed
-          </div>
-        </Card>
+      <div className="mt-4 text-xs text-[#94A3A5] text-center">
+        Draft autosaved locally • {filledCount} field
+        {filledCount !== 1 ? "s" : ""} completed
       </div>
 
       {children}

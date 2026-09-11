@@ -69,6 +69,7 @@ export const baseApi = createApi({
     "Activity",
     // settings
     "Settings",
+    "ProjectBriefs",
     // reports
     "Reports",
     // user signatures

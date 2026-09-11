@@ -122,3 +122,23 @@ export enum ProjectBriefDocumentType {
   NOTHING_AVAILABLE = 'NOTHING_AVAILABLE',
   OTHER = 'OTHER',
 }
+export enum SiteRestrictionType {
+  SOCIETY_RWA_PERMITTED_WORK_TIMINGS = 'societyRwaPermittedWorkTimings',
+  NOC_OR_SECURITY_DEPOSIT_REQUIRED = 'nocOrSecurityDepositRequired',
+  STRUCTURAL_CHANGES_PERMITTED = 'structuralChangesPermitted',
+  MATERIAL_MOVEMENT_RESTRICTIONS = 'materialMovementRestrictions',
+  NEIGHBOUR_SENSITIVITIES = 'neighbourSensitivities',
+  POWER_AND_WATER_AVAILABILITY = 'powerAndWaterAvailability',
+  ACCESS_STORAGE_DEBRIS_DISPOSAL = 'accessStorageDebrisDisposal',
+  ONGOING_WORK_BY_OTHER_AGENCIES = 'ongoingWorkByOtherAgencies',
+}
+
+export enum DrawingsAvailable {
+  ARCHITECTURAL = 'ARCHITECTURAL',
+  STRUCTURAL = 'STRUCTURAL',
+  MEP = 'MEP',
+  WORKING = 'WORKING',
+  AS_BUILT = 'AS_BUILT',
+  NONE = 'NONE',
+  OTHER = 'OTHER',
+}

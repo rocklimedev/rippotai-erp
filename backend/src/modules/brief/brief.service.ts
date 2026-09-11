@@ -7,13 +7,12 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
 import { Transaction } from 'sequelize';
-import { Model, ModelStatic } from 'sequelize-typescript';
 import { randomUUID } from 'crypto';
 
 import { ProjectBrief } from './models/project-brief.model';
 import { ProjectBriefDocument } from './models/project-brief-document.model';
 import { ProjectBriefWorkType } from './models/project-brief-work-type.model';
-import { ProjectBriefService } from './models/project-brief-service.model';
+import { ProjectBriefService as ProjectBriefServiceModel } from './models/project-brief-service.model';
 import { ProjectBriefProcurementCategory } from './models/project-brief-procurement-category.model';
 import { ProjectBriefSpaceRequirement } from './models/project-brief-space-requirement.model';
 import { ProjectBriefStyleDirection } from './models/project-brief-style-direction.model';
@@ -21,12 +20,14 @@ import { ProjectBriefReference } from './models/project-bref-reference.model';
 import { ProjectBriefPhase } from './models/project-bref-phase.model';
 import { ProjectBriefOccupant } from './models/project-brief-occupant.model';
 import { ProjectBriefAttachment } from './models/project-brief-attachment.model';
+import { ProjectBriefSiteRestriction } from './models/project-brief-site-restriction.model';
 import { Project } from '../projects/models/projects.model';
 import { Client } from '../clients/models/client.model';
 import { User } from '../users/models/user.model';
 import { ProjectType } from '../projects/models/project-type.model';
 import { CreateProjectBriefDto } from './dto/create-project-brief.dto';
 import { UpdateProjectBriefDto } from './dto/update-project-brief.dto';
+
 // =========================================================
 // GENERIC CHILD REPLACER
 // =========================================================
@@ -48,8 +49,8 @@ export class ProjectBriefsService {
     @InjectModel(ProjectBriefWorkType)
     private readonly workTypeModel: typeof ProjectBriefWorkType,
 
-    @InjectModel(ProjectBriefService)
-    private readonly serviceModel: typeof ProjectBriefService,
+    @InjectModel(ProjectBriefServiceModel)
+    private readonly serviceModel: typeof ProjectBriefServiceModel,
 
     @InjectModel(ProjectBriefProcurementCategory)
     private readonly procurementCategoryModel: typeof ProjectBriefProcurementCategory,
@@ -71,6 +72,9 @@ export class ProjectBriefsService {
 
     @InjectModel(ProjectBriefAttachment)
     private readonly attachmentModel: typeof ProjectBriefAttachment,
+
+    @InjectModel(ProjectBriefSiteRestriction)
+    private readonly siteRestrictionModel: typeof ProjectBriefSiteRestriction,
 
     private readonly sequelize: Sequelize,
   ) {}
@@ -94,6 +98,7 @@ export class ProjectBriefsService {
         phases,
         occupants,
         attachments,
+        siteRestrictions,
         ...briefData
       } = dto;
 
@@ -133,6 +138,7 @@ export class ProjectBriefsService {
           phases,
           occupants,
           attachments,
+          siteRestrictions,
         },
         transaction,
       );
@@ -171,71 +177,216 @@ export class ProjectBriefsService {
   // =========================================================
 
   async findOne(id: string) {
-    const brief = await this.projectBriefModel.findByPk(id, {
-      include: [
-        // =========================================================
-        // PROJECT
-        // =========================================================
-        {
-          model: Project,
-          as: 'project',
-          include: [
-            {
-              model: Client,
-              as: 'client',
-            },
-            {
-              model: ProjectType,
-              as: 'project_type',
-            },
-            {
-              model: User,
-              as: 'creator',
-            },
-            {
-              model: User,
-              as: 'updater',
-            },
-            {
-              model: User,
-              as: 'archiver',
-            },
-          ],
-        },
+    const startTime = Date.now();
 
-        // =========================================================
-        // PROJECT BRIEF USERS
-        // =========================================================
-        {
-          model: User,
-          as: 'briefTaker',
-        },
-        {
-          model: User,
-          as: 'confirmedBy',
-        },
+    try {
+      const brief = await this.projectBriefModel.findByPk(id, {
+        include: [
+          // =========================================================
+          // PROJECT
+          // =========================================================
 
-        // =========================================================
-        // PROJECT BRIEF CHILDREN
-        // =========================================================
-        ProjectBriefDocument,
-        ProjectBriefWorkType,
-        ProjectBriefService,
-        ProjectBriefProcurementCategory,
-        ProjectBriefSpaceRequirement,
-        ProjectBriefStyleDirection,
-        ProjectBriefReference,
-        ProjectBriefPhase,
-        ProjectBriefOccupant,
-        ProjectBriefAttachment,
-      ],
-    });
+          {
+            model: Project,
+            as: 'project',
 
-    if (!brief) {
-      throw new NotFoundException('Project brief not found');
+            include: [
+              {
+                model: Client,
+                as: 'client',
+              },
+              {
+                model: ProjectType,
+                as: 'project_type',
+              },
+              {
+                model: User,
+                as: 'creator',
+              },
+              {
+                model: User,
+                as: 'updater',
+              },
+              {
+                model: User,
+                as: 'archiver',
+              },
+            ],
+          },
+
+          // =========================================================
+          // DIRECT BELONGS TO ASSOCIATIONS
+          // =========================================================
+
+          {
+            model: ProjectType,
+            as: 'projectType',
+          },
+
+          {
+            model: User,
+            as: 'briefTaker',
+          },
+
+          {
+            model: User,
+            as: 'confirmedBy',
+          },
+
+          // =========================================================
+          // CHILDREN
+          //
+          // IMPORTANT:
+          // separate: true prevents Sequelize from creating one
+          // massive JOIN across all HasMany relationships.
+          // =========================================================
+
+          {
+            model: ProjectBriefDocument,
+            as: 'documents',
+            separate: true,
+          },
+
+          {
+            model: ProjectBriefWorkType,
+            as: 'workTypes',
+            separate: true,
+          },
+
+          {
+            model: ProjectBriefServiceModel,
+            as: 'services',
+            separate: true,
+          },
+
+          {
+            model: ProjectBriefProcurementCategory,
+            as: 'procurementCategories',
+            separate: true,
+          },
+
+          {
+            model: ProjectBriefSpaceRequirement,
+            as: 'spaceRequirements',
+            separate: true,
+          },
+
+          {
+            model: ProjectBriefStyleDirection,
+            as: 'styleDirections',
+            separate: true,
+          },
+
+          {
+            model: ProjectBriefReference,
+            as: 'references',
+            separate: true,
+          },
+
+          {
+            model: ProjectBriefPhase,
+            as: 'phases',
+            separate: true,
+          },
+
+          {
+            model: ProjectBriefOccupant,
+            as: 'occupants',
+            separate: true,
+          },
+
+          {
+            model: ProjectBriefAttachment,
+            as: 'attachments',
+            separate: true,
+          },
+
+          {
+            model: ProjectBriefSiteRestriction,
+            as: 'siteRestrictions',
+            separate: true,
+
+            // Keep restrictions in the same order as sort_order
+            order: [['sortOrder', 'ASC']],
+          },
+        ],
+      });
+
+      // =========================================================
+      // QUERY TIMING
+      // =========================================================
+
+      const queryTime = Date.now() - startTime;
+
+      // =========================================================
+      // NOT FOUND
+      // =========================================================
+
+      if (!brief) {
+        throw new NotFoundException('Project brief not found');
+      }
+
+      const plain = brief.get({
+        plain: true,
+      }) as any;
+
+      // =========================================================
+      // CHILD KEYS
+      // =========================================================
+
+      const childKeys = [
+        'documents',
+        'workTypes',
+        'services',
+        'procurementCategories',
+        'spaceRequirements',
+        'styleDirections',
+        'references',
+        'phases',
+        'occupants',
+        'attachments',
+        'siteRestrictions',
+      ];
+
+      // =========================================================
+      // CHILD RECORD COUNTS
+      // =========================================================
+
+      for (const key of childKeys) {
+        const value = plain[key];
+      }
+
+      // =========================================================
+      // REMOVE CIRCULAR REFERENCES
+
+      for (const key of childKeys) {
+        if (!Array.isArray(plain[key])) {
+          continue;
+        }
+
+        plain[key].forEach((item: any, index: number) => {
+          if (item.projectBrief) {
+            delete item.projectBrief;
+          }
+        });
+      }
+
+      // =========================================================
+      // FINAL RESPONSE
+      // =========================================================
+
+      const totalTime = Date.now() - startTime;
+
+      return plain;
+    } catch (error) {
+      // =========================================================
+      // ERROR HANDLING
+      // =========================================================
+
+      const totalTime = Date.now() - startTime;
+
+      throw error;
     }
-
-    return brief;
   }
 
   // =========================================================
@@ -251,7 +402,7 @@ export class ProjectBriefsService {
       include: [
         ProjectBriefDocument,
         ProjectBriefWorkType,
-        ProjectBriefService,
+        ProjectBriefServiceModel,
         ProjectBriefProcurementCategory,
         ProjectBriefSpaceRequirement,
         ProjectBriefStyleDirection,
@@ -259,6 +410,7 @@ export class ProjectBriefsService {
         ProjectBriefPhase,
         ProjectBriefOccupant,
         ProjectBriefAttachment,
+        ProjectBriefSiteRestriction,
       ],
     });
 
@@ -296,6 +448,7 @@ export class ProjectBriefsService {
         phases,
         occupants,
         attachments,
+        siteRestrictions,
         ...briefData
       } = dto;
 
@@ -316,6 +469,7 @@ export class ProjectBriefsService {
           phases,
           occupants,
           attachments,
+          siteRestrictions,
         },
         transaction,
       );
@@ -382,18 +536,17 @@ export class ProjectBriefsService {
           referredBySource: current.referredBySource,
           briefDate: current.briefDate,
           siteAddress: current.siteAddress,
-          propertyType: current.propertyType,
+          projectTypeId: current.projectTypeId,
           siteArea: current.siteArea,
           siteAreaUnit: current.siteAreaUnit,
-          siteAreaOtherUnit: current.siteAreaOtherUnit,
           facingOrientation: current.facingOrientation,
           parkingProvision: current.parkingProvision,
           ownershipStatus: current.ownershipStatus,
           numberOfFloors: current.numberOfFloors,
           liftAvailable: current.liftAvailable,
           siteType: current.siteType,
-          siteTypeOther: current.siteTypeOther,
           siteCondition: current.siteCondition,
+          drawingsAvailable: current.drawingsAvailable,
           drawingsOther: current.drawingsOther,
 
           workTypeOther: current.workTypeOther,
@@ -412,26 +565,13 @@ export class ProjectBriefsService {
 
           initialClientBudget: current.initialClientBudget,
           budgetCurrency: current.budgetCurrency,
-          budgetGstStatus: current.budgetGstStatus,
-          fundingStage: current.fundingStage,
           budgetFlexibility: current.budgetFlexibility,
 
           desiredStartDate: current.desiredStartDate,
-          startDateStatus: current.startDateStatus,
           siteHandoverDate: current.siteHandoverDate,
           targetCompletionDate: current.targetCompletionDate,
           deadlineReason: current.deadlineReason,
           phasingRequired: current.phasingRequired,
-
-          societyRwaPermittedWorkTimings:
-            current.societyRwaPermittedWorkTimings,
-          nocOrSecurityDepositRequired: current.nocOrSecurityDepositRequired,
-          structuralChangesPermitted: current.structuralChangesPermitted,
-          materialMovementRestrictions: current.materialMovementRestrictions,
-          neighbourSensitivities: current.neighbourSensitivities,
-          powerAndWaterAvailability: current.powerAndWaterAvailability,
-          accessStorageDebrisDisposal: current.accessStorageDebrisDisposal,
-          ongoingWorkByOtherAgencies: current.ongoingWorkByOtherAgencies,
 
           householdNotes: current.householdNotes,
           openPointsToClose: current.openPointsToClose,
@@ -597,7 +737,20 @@ export class ProjectBriefsService {
         { transaction },
       );
     }
+
+    if (children.siteRestrictions?.length) {
+      await this.siteRestrictionModel.bulkCreate(
+        children.siteRestrictions.map((item: any, index: number) => ({
+          id: randomUUID(),
+          projectBriefId,
+          sortOrder: item.sortOrder ?? index,
+          ...item,
+        })),
+        { transaction },
+      );
+    }
   }
+
   // =========================================================
   // REPLACE CHILDREN
   // =========================================================
@@ -674,6 +827,13 @@ export class ProjectBriefsService {
       this.attachmentModel,
       projectBriefId,
       children.attachments,
+      transaction,
+    );
+
+    await this.replaceChildCollection(
+      this.siteRestrictionModel,
+      projectBriefId,
+      children.siteRestrictions,
       transaction,
     );
   }
@@ -788,6 +948,10 @@ export class ProjectBriefsService {
     });
 
     await this.attachmentModel.bulkCreate(clone(source.attachments), {
+      transaction,
+    });
+
+    await this.siteRestrictionModel.bulkCreate(clone(source.siteRestrictions), {
       transaction,
     });
   }

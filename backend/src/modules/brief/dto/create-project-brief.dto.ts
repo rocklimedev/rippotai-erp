@@ -13,14 +13,13 @@ import {
 import { Type } from 'class-transformer';
 
 import {
-  BudgetGstStatus,
-  FundingStage,
+  DrawingsAvailable,
   MaintenanceAppetite,
   ProjectBriefStatus,
   SiteAreaUnit,
   SiteCondition,
+  SiteRestrictionType,
   SiteType,
-  StartDateStatus,
 } from '@/common/types/project-brief.types';
 
 export class ProjectBriefDocumentDto {
@@ -230,6 +229,23 @@ export class ProjectBriefAttachmentDto {
   uploadedBy?: string;
 }
 
+export class ProjectBriefSiteRestrictionDto {
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
+  @IsOptional()
+  @IsNumber()
+  sortOrder?: number;
+
+  @IsEnum(SiteRestrictionType)
+  type: SiteRestrictionType;
+
+  @IsOptional()
+  @IsString()
+  details?: string;
+}
+
 export class CreateProjectBriefDto {
   @IsUUID()
   projectId: string;
@@ -253,8 +269,8 @@ export class CreateProjectBriefDto {
   siteAddress?: string;
 
   @IsOptional()
-  @IsString()
-  propertyType?: string;
+  @IsUUID()
+  projectTypeId?: string;
 
   @IsOptional()
   @IsNumber()
@@ -263,10 +279,6 @@ export class CreateProjectBriefDto {
   @IsOptional()
   @IsEnum(SiteAreaUnit)
   siteAreaUnit?: SiteAreaUnit;
-
-  @IsOptional()
-  @IsString()
-  siteAreaOtherUnit?: string;
 
   @IsOptional()
   @IsString()
@@ -293,12 +305,12 @@ export class CreateProjectBriefDto {
   siteType?: SiteType;
 
   @IsOptional()
-  @IsString()
-  siteTypeOther?: string;
-
-  @IsOptional()
   @IsEnum(SiteCondition)
   siteCondition?: SiteCondition;
+
+  @IsOptional()
+  @IsEnum(DrawingsAvailable)
+  drawingsAvailable?: DrawingsAvailable;
 
   @IsOptional()
   @IsString()
@@ -367,14 +379,6 @@ export class CreateProjectBriefDto {
   budgetCurrency?: string;
 
   @IsOptional()
-  @IsEnum(BudgetGstStatus)
-  budgetGstStatus?: BudgetGstStatus;
-
-  @IsOptional()
-  @IsEnum(FundingStage)
-  fundingStage?: FundingStage;
-
-  @IsOptional()
   @IsString()
   budgetFlexibility?: string;
 
@@ -383,10 +387,6 @@ export class CreateProjectBriefDto {
   @IsOptional()
   @IsDateString()
   desiredStartDate?: string;
-
-  @IsOptional()
-  @IsEnum(StartDateStatus)
-  startDateStatus?: StartDateStatus;
 
   @IsOptional()
   @IsDateString()
@@ -404,39 +404,7 @@ export class CreateProjectBriefDto {
   @IsBoolean()
   phasingRequired?: boolean;
 
-  // Site operations
-
-  @IsOptional()
-  @IsString()
-  societyRwaPermittedWorkTimings?: string;
-
-  @IsOptional()
-  @IsString()
-  nocOrSecurityDepositRequired?: string;
-
-  @IsOptional()
-  @IsString()
-  structuralChangesPermitted?: string;
-
-  @IsOptional()
-  @IsString()
-  materialMovementRestrictions?: string;
-
-  @IsOptional()
-  @IsString()
-  neighbourSensitivities?: string;
-
-  @IsOptional()
-  @IsString()
-  powerAndWaterAvailability?: string;
-
-  @IsOptional()
-  @IsString()
-  accessStorageDebrisDisposal?: string;
-
-  @IsOptional()
-  @IsString()
-  ongoingWorkByOtherAgencies?: string;
+  // Household / notes
 
   @IsOptional()
   @IsString()
@@ -445,6 +413,8 @@ export class CreateProjectBriefDto {
   @IsOptional()
   @IsString()
   openPointsToClose?: string;
+
+  // Admin
 
   @IsOptional()
   @IsUUID()
@@ -531,4 +501,10 @@ export class CreateProjectBriefDto {
   @ValidateNested({ each: true })
   @Type(() => ProjectBriefAttachmentDto)
   attachments?: ProjectBriefAttachmentDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProjectBriefSiteRestrictionDto)
+  siteRestrictions?: ProjectBriefSiteRestrictionDto[];
 }
