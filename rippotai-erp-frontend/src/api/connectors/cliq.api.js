@@ -116,7 +116,9 @@ const getId = (value) => {
       value.user_id ??
       value.userId ??
       value.message_id ??
-      value.messageId;
+      value.messageId ??
+      value.file_id ??
+      value.fileId;
 
     if (id !== undefined && id !== null && id !== "") {
       return String(id);
@@ -482,12 +484,49 @@ const normalizePerson = (record = {}, index = 0) => {
 };
 
 // ============================================================
-// ATTACHMENT NORMALIZATION
+// ATTACHMENT NORMALIZATION (messages)
 // ============================================================
 
 const normalizeAttachment = (record = {}) => {
   if (!record || typeof record !== "object") {
     return null;
+  }
+
+  // Prefer nested content.file (Cliq file messages).
+  const nestedFile =
+    record?.content?.file ?? (isPlainObject(record?.file) ? record.file : null);
+
+  if (nestedFile && typeof nestedFile === "object") {
+    const fileId = getId(nestedFile.id) || getId(nestedFile.file_id);
+    const fileName = toText(
+      nestedFile.name ?? nestedFile.filename ?? nestedFile.file_name,
+      "",
+    );
+    const mime = toText(nestedFile.type ?? nestedFile.mime_type, "");
+    const size =
+      Number(nestedFile?.dimensions?.size ?? nestedFile?.size) || null;
+    const thumbnail = toText(
+      record?.content?.thumbnail?.url ??
+        record?.content?.thumbnail ??
+        nestedFile.thumbnail ??
+        nestedFile.url,
+      "",
+    );
+
+    if (fileId || fileName || thumbnail) {
+      return {
+        fileId: fileId ? String(fileId) : null,
+        file: String(fileName || "file"),
+        mimeType: String(mime),
+        size,
+        thumbnail: String(thumbnail),
+        downloadPath: fileId
+          ? `/zoho/cliq/${encodeURIComponent(getOwnerKey() || "")}/files/${encodeURIComponent(fileId)}`
+          : null,
+        cliqOpenUrl: null,
+        raw: nestedFile,
+      };
+    }
   }
 
   const candidates = [
@@ -503,10 +542,6 @@ const normalizeAttachment = (record = {}) => {
       continue;
     }
 
-    // --------------------------------------------------------
-    // ARRAY
-    // --------------------------------------------------------
-
     if (Array.isArray(candidate)) {
       if (!candidate.length) {
         continue;
@@ -518,6 +553,7 @@ const normalizeAttachment = (record = {}) => {
         continue;
       }
 
+      const fileId = getId(first.id) || getId(first.file_id);
       const file = toText(
         first.file ??
           first.filename ??
@@ -537,10 +573,17 @@ const normalizeAttachment = (record = {}) => {
         "",
       );
 
-      if (file || thumbnail) {
+      if (file || thumbnail || fileId) {
         return {
+          fileId: fileId ? String(fileId) : null,
           file: String(file),
+          mimeType: toText(first.type, ""),
+          size: Number(first.size) || null,
           thumbnail: String(thumbnail),
+          downloadPath: fileId
+            ? `/zoho/cliq/${encodeURIComponent(getOwnerKey() || "")}/files/${encodeURIComponent(fileId)}`
+            : null,
+          cliqOpenUrl: null,
           raw: first,
         };
       }
@@ -548,11 +591,8 @@ const normalizeAttachment = (record = {}) => {
       continue;
     }
 
-    // --------------------------------------------------------
-    // OBJECT
-    // --------------------------------------------------------
-
     if (typeof candidate === "object") {
+      const fileId = getId(candidate.id) || getId(candidate.file_id);
       const file = toText(
         candidate.file ??
           candidate.filename ??
@@ -572,10 +612,17 @@ const normalizeAttachment = (record = {}) => {
         "",
       );
 
-      if (file || thumbnail) {
+      if (file || thumbnail || fileId) {
         return {
+          fileId: fileId ? String(fileId) : null,
           file: String(file),
+          mimeType: toText(candidate.type, ""),
+          size: Number(candidate.size) || null,
           thumbnail: String(thumbnail),
+          downloadPath: fileId
+            ? `/zoho/cliq/${encodeURIComponent(getOwnerKey() || "")}/files/${encodeURIComponent(fileId)}`
+            : null,
+          cliqOpenUrl: null,
           raw: candidate,
         };
       }
@@ -583,6 +630,106 @@ const normalizeAttachment = (record = {}) => {
   }
 
   return null;
+};
+
+// ============================================================
+// FILE LIST ITEM NORMALIZATION (from listFilesForChat)
+// ============================================================
+
+const normalizeFileItem = (record = {}, index = 0) => {
+  if (!record || typeof record !== "object") {
+    return null;
+  }
+
+  // Service returns { message_id, time, sender, comment, chat_id, file: {...}, ... }
+  const fileMeta = isPlainObject(record.file) ? record.file : {};
+
+  const fileId =
+    getId(fileMeta.id) || getId(record.file_id) || getId(record.fileId) || null;
+
+  const messageId =
+    getId(record.message_id) ||
+    getId(record.messageId) ||
+    getId(record.id) ||
+    `file-msg-${index}`;
+
+  const chatId = getId(record.chat_id) || getId(record.chatId) || null;
+
+  const name = toText(
+    fileMeta.name ??
+      record.name ??
+      record.file_name ??
+      record.fileName ??
+      "file",
+    "file",
+  );
+
+  const mimeType = toText(fileMeta.type ?? record.type, "");
+
+  const size =
+    Number(fileMeta.size ?? fileMeta?.dimensions?.size ?? record.size) || null;
+
+  const comment = toText(record.comment, "");
+
+  const sender = record.sender ?? record.from ?? record.user ?? null;
+
+  const senderName =
+    flattenRef(sender) ||
+    toText(getValue(record, "sender_name", "senderName"), "Unknown");
+
+  const senderId = getId(sender) || null;
+
+  const createdAt = getValue(
+    record,
+    "time",
+    "created_time",
+    "createdAt",
+    "timestamp",
+  );
+
+  const ownerKey = getOwnerKey() || "";
+
+  const downloadPath =
+    toText(record.download_path, "") ||
+    (fileId
+      ? `/zoho/cliq/${encodeURIComponent(ownerKey)}/files/${encodeURIComponent(fileId)}`
+      : null);
+
+  const cliqOpenUrl = toText(
+    record.cliq_open_url ?? record.cliqOpenUrl,
+    chatId ? `https://cliq.zoho.in/chats/${encodeURIComponent(chatId)}` : "",
+  );
+
+  const thumbnail = toText(
+    fileMeta.thumbnail ?? record?.file?.thumbnail ?? record.thumbnail,
+    "",
+  );
+
+  return {
+    id: String(messageId),
+    messageId: String(messageId),
+    chatId: chatId ? String(chatId) : null,
+
+    fileId: fileId ? String(fileId) : null,
+    name: String(name),
+    mimeType: String(mimeType),
+    size,
+    comment: String(comment),
+
+    senderId: senderId ? String(senderId) : null,
+    senderName: String(senderName),
+
+    createdAt,
+
+    thumbnail: String(thumbnail),
+
+    downloadPath: downloadPath ? String(downloadPath) : null,
+    cliqOpenUrl: cliqOpenUrl ? String(cliqOpenUrl) : null,
+
+    type: "file",
+
+    raw: record,
+  };
 };
 
 // ============================================================
@@ -657,7 +804,7 @@ const normalizeMessage = (record = {}, index = 0) => {
   let text = toText(rawText, "");
 
   // ----------------------------------------------------------
-  // ATTACHMENT
+  // ATTACHMENT / FILE
   // ----------------------------------------------------------
 
   const attachment = normalizeAttachment(record);
@@ -669,6 +816,11 @@ const normalizeMessage = (record = {}, index = 0) => {
   if (!text && attachment?.thumbnail) {
     text = "Attachment";
   }
+
+  const messageType = toText(
+    getValue(record, "type", "message_type", "messageType"),
+    attachment?.fileId || attachment?.file ? "file" : "text",
+  );
 
   // ----------------------------------------------------------
   // ID
@@ -697,6 +849,8 @@ const normalizeMessage = (record = {}, index = 0) => {
     // ALWAYS a string.
     text: String(text || ""),
 
+    type: String(messageType),
+
     senderId: senderId ? String(senderId) : null,
 
     senderName: String(senderName || "Unknown"),
@@ -706,6 +860,9 @@ const normalizeMessage = (record = {}, index = 0) => {
     isOwn,
 
     attachment,
+
+    // Convenience for UI: true when this is a file message
+    isFile: messageType === "file" || Boolean(attachment?.fileId),
 
     raw: record,
   };
@@ -729,6 +886,7 @@ const extractRecords = (response) => {
     "channels",
     "chats",
     "messages",
+    "files",
     "items",
     "results",
     "records",
@@ -785,6 +943,12 @@ const sortMessages = (messages) => {
   );
 };
 
+const sortFiles = (files) => {
+  return [...files].sort(
+    (a, b) => getTimestamp(b.createdAt) - getTimestamp(a.createdAt),
+  );
+};
+
 // ============================================================
 // API
 // Matches ZohoCliqController:
@@ -796,11 +960,16 @@ const sortMessages = (messages) => {
 // GET  /zoho/cliq/:ownerKey/chats/:chatId/messages?limit&fromtime
 // POST /zoho/cliq/:ownerKey/chats/:chatId/message          { text }
 // GET  /zoho/cliq/:ownerKey/chats/:chatId/threads
+// GET  /zoho/cliq/:ownerKey/chats/:chatId/files?limit&fromtime
+// POST /zoho/cliq/:ownerKey/chats/:chatId/files            multipart file + comment
 // POST /zoho/cliq/:ownerKey/channels/:channelUniqueName/message  { text }
+// POST /zoho/cliq/:ownerKey/channels/:channelUniqueName/files    multipart
 // GET  /zoho/cliq/:ownerKey/pins
 // GET  /zoho/cliq/:ownerKey/threads
 // GET  /zoho/cliq/:ownerKey/people?limit
 // POST /zoho/cliq/:ownerKey/people/:emailId/message        { text }
+// POST /zoho/cliq/:ownerKey/people/:emailId/files          multipart
+// GET  /zoho/cliq/:ownerKey/files/:fileId?filename=
 // ============================================================
 
 export const cliqApi = baseApi.injectEndpoints({
@@ -1039,7 +1208,6 @@ export const cliqApi = baseApi.injectEndpoints({
     // ======================================================
     // SEND CHAT MESSAGE
     // POST :ownerKey/chats/:chatId/message  { text }
-    // (singular /message — not /messages)
     // ======================================================
 
     sendCliqMessage: builder.mutation({
@@ -1104,7 +1272,10 @@ export const cliqApi = baseApi.injectEndpoints({
           type: "CliqMessages",
           id: chatId,
         },
-
+        {
+          type: "CliqFiles",
+          id: chatId,
+        },
         "CliqChats",
       ],
     }),
@@ -1180,6 +1351,350 @@ export const cliqApi = baseApi.injectEndpoints({
     }),
 
     // ======================================================
+    // LIST FILES IN A CHAT
+    // GET :ownerKey/chats/:chatId/files?limit&fromtime
+    // ======================================================
+
+    getCliqChatFiles: builder.query({
+      async queryFn(
+        { chatId, limit = 50, fromtime },
+        _queryApi,
+        _extraOptions,
+        fetchWithBQ,
+      ) {
+        const ownerKey = getOwnerKey();
+
+        if (!ownerKey) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "No authenticated user found. Please log in again.",
+            },
+          };
+        }
+
+        if (!chatId) {
+          return { data: [] };
+        }
+
+        const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 1000);
+
+        const params = { limit: safeLimit };
+
+        if (
+          fromtime !== undefined &&
+          fromtime !== null &&
+          fromtime !== "" &&
+          Number.isFinite(Number(fromtime))
+        ) {
+          params.fromtime = Number(fromtime);
+        }
+
+        const result = await fetchWithBQ({
+          url: `/zoho/cliq/${encodeURIComponent(
+            ownerKey,
+          )}/chats/${encodeURIComponent(chatId)}/files`,
+          method: "GET",
+          params,
+        });
+
+        if (result.error) {
+          return { error: result.error };
+        }
+
+        const records = extractRecords(result.data);
+
+        const files = records
+          .map((record, index) => normalizeFileItem(record, index))
+          .filter(Boolean);
+
+        return {
+          data: sortFiles(files),
+        };
+      },
+
+      providesTags: (result, error, args) => [
+        { type: "CliqFiles", id: args?.chatId },
+      ],
+    }),
+
+    // ======================================================
+    // UPLOAD FILE TO CHAT
+    // POST :ownerKey/chats/:chatId/files  (multipart)
+    // arg: { chatId, file: File, comment?: string }
+    // ======================================================
+
+    uploadCliqChatFile: builder.mutation({
+      async queryFn(
+        { chatId, file, comment },
+        _queryApi,
+        _extraOptions,
+        fetchWithBQ,
+      ) {
+        const ownerKey = getOwnerKey();
+
+        if (!ownerKey) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "No authenticated user found. Please log in again.",
+            },
+          };
+        }
+
+        if (!chatId) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "A chat is required.",
+            },
+          };
+        }
+
+        if (!file) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "A file is required.",
+            },
+          };
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        if (typeof comment === "string" && comment.trim()) {
+          formData.append("comment", comment.trim());
+        }
+
+        const result = await fetchWithBQ({
+          url: `/zoho/cliq/${encodeURIComponent(
+            ownerKey,
+          )}/chats/${encodeURIComponent(chatId)}/files`,
+          method: "POST",
+          body: formData,
+          // Do not set Content-Type — browser/FormData sets multipart boundary.
+        });
+
+        if (result.error) {
+          return { error: result.error };
+        }
+
+        return { data: result.data };
+      },
+
+      invalidatesTags: (result, error, { chatId }) => [
+        { type: "CliqMessages", id: chatId },
+        { type: "CliqFiles", id: chatId },
+        "CliqChats",
+      ],
+    }),
+
+    // ======================================================
+    // UPLOAD FILE TO CHANNEL
+    // POST :ownerKey/channels/:channelUniqueName/files
+    // ======================================================
+
+    uploadCliqChannelFile: builder.mutation({
+      async queryFn(
+        { channelUniqueName, file, comment },
+        _queryApi,
+        _extraOptions,
+        fetchWithBQ,
+      ) {
+        const ownerKey = getOwnerKey();
+
+        if (!ownerKey) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "No authenticated user found. Please log in again.",
+            },
+          };
+        }
+
+        if (!channelUniqueName) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "Channel name is required.",
+            },
+          };
+        }
+
+        if (!file) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "A file is required.",
+            },
+          };
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        if (typeof comment === "string" && comment.trim()) {
+          formData.append("comment", comment.trim());
+        }
+
+        const result = await fetchWithBQ({
+          url: `/zoho/cliq/${encodeURIComponent(
+            ownerKey,
+          )}/channels/${encodeURIComponent(channelUniqueName)}/files`,
+          method: "POST",
+          body: formData,
+        });
+
+        if (result.error) {
+          return { error: result.error };
+        }
+
+        return { data: result.data };
+      },
+
+      invalidatesTags: ["CliqChannels", "CliqChats", "CliqFiles"],
+    }),
+
+    // ======================================================
+    // UPLOAD FILE TO PERSON (BUDDY)
+    // POST :ownerKey/people/:emailId/files
+    // ======================================================
+
+    uploadCliqPersonFile: builder.mutation({
+      async queryFn(
+        { email, file, comment },
+        _queryApi,
+        _extraOptions,
+        fetchWithBQ,
+      ) {
+        const ownerKey = getOwnerKey();
+
+        if (!ownerKey) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "No authenticated user found. Please log in again.",
+            },
+          };
+        }
+
+        if (!email) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "A person's email is required.",
+            },
+          };
+        }
+
+        if (!file) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "A file is required.",
+            },
+          };
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        if (typeof comment === "string" && comment.trim()) {
+          formData.append("comment", comment.trim());
+        }
+
+        const result = await fetchWithBQ({
+          url: `/zoho/cliq/${encodeURIComponent(
+            ownerKey,
+          )}/people/${encodeURIComponent(email)}/files`,
+          method: "POST",
+          body: formData,
+        });
+
+        if (result.error) {
+          return { error: result.error };
+        }
+
+        return { data: result.data };
+      },
+
+      invalidatesTags: ["CliqChats", "CliqFiles"],
+    }),
+
+    // ======================================================
+    // DOWNLOAD FILE (returns blob URL for UI)
+    // GET :ownerKey/files/:fileId?filename=
+    // ======================================================
+
+    downloadCliqFile: builder.mutation({
+      async queryFn(
+        { fileId, filename },
+        _queryApi,
+        _extraOptions,
+        fetchWithBQ,
+      ) {
+        const ownerKey = getOwnerKey();
+
+        if (!ownerKey) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "No authenticated user found. Please log in again.",
+            },
+          };
+        }
+
+        if (!fileId) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "fileId is required.",
+            },
+          };
+        }
+
+        const params = {};
+        if (filename && String(filename).trim()) {
+          params.filename = String(filename).trim();
+        }
+
+        const result = await fetchWithBQ({
+          url: `/zoho/cliq/${encodeURIComponent(
+            ownerKey,
+          )}/files/${encodeURIComponent(fileId)}`,
+          method: "GET",
+          params,
+          responseHandler: async (response) => {
+            if (!response.ok) {
+              const errText = await response.text().catch(() => "");
+              throw new Error(
+                errText || `Download failed (${response.status})`,
+              );
+            }
+            return response.blob();
+          },
+        });
+
+        if (result.error) {
+          return { error: result.error };
+        }
+
+        const blob = result.data;
+        const objectUrl = URL.createObjectURL(blob);
+
+        return {
+          data: {
+            blob,
+            objectUrl,
+            filename: filename || "download",
+            fileId: String(fileId),
+          },
+        };
+      },
+    }),
+
+    // ======================================================
     // MY PINS
     // ======================================================
 
@@ -1227,7 +1742,6 @@ export const cliqApi = baseApi.injectEndpoints({
 
     // ======================================================
     // THREADS IN A SPECIFIC CHAT
-    // GET :ownerKey/chats/:chatId/threads
     // ======================================================
 
     getCliqChatThreads: builder.query({
@@ -1274,7 +1788,6 @@ export const cliqApi = baseApi.injectEndpoints({
 
     // ======================================================
     // MY THREADS (AGGREGATED)
-    // GET :ownerKey/threads
     // ======================================================
 
     getCliqThreads: builder.query({
@@ -1313,7 +1826,6 @@ export const cliqApi = baseApi.injectEndpoints({
 
     // ======================================================
     // PEOPLE
-    // GET :ownerKey/people?limit
     // ======================================================
 
     getCliqPeople: builder.query({
@@ -1355,7 +1867,6 @@ export const cliqApi = baseApi.injectEndpoints({
 
     // ======================================================
     // MESSAGE A PERSON DIRECTLY
-    // POST :ownerKey/people/:emailId/message  { text }
     // ======================================================
 
     sendCliqPersonMessage: builder.mutation({
@@ -1434,6 +1945,11 @@ export const {
   useGetCliqMessagesQuery,
   useSendCliqMessageMutation,
   useSendCliqChannelMessageMutation,
+  useGetCliqChatFilesQuery,
+  useUploadCliqChatFileMutation,
+  useUploadCliqChannelFileMutation,
+  useUploadCliqPersonFileMutation,
+  useDownloadCliqFileMutation,
   useGetCliqPinsQuery,
   useGetCliqChatThreadsQuery,
   useGetCliqThreadsQuery,

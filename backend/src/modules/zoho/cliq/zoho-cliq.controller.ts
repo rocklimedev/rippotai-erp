@@ -1,5 +1,19 @@
 // src/zoho/cliq/zoho-cliq.controller.ts
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Res,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
+
 import { ZohoCliqService } from './zoho-cliq.service';
 
 @Controller('zoho/cliq')
@@ -70,6 +84,54 @@ export class ZohoCliqController {
     return this.cliqService.listThreadsForChat(ownerKey, chatId);
   }
 
+  // ============================================================
+  // FILES IN A CHAT (from message history)
+  // ============================================================
+  //
+  // GET /zoho/cliq/:ownerKey/chats/:chatId/files
+  // ============================================================
+
+  @Get(':ownerKey/chats/:chatId/files')
+  listFilesForChat(
+    @Param('ownerKey') ownerKey: string,
+    @Param('chatId') chatId: string,
+    @Query('limit') limit?: string,
+    @Query('fromtime') fromtime?: string,
+  ) {
+    const parsedFromTime =
+      fromtime !== undefined && fromtime.trim() !== ''
+        ? Number(fromtime)
+        : undefined;
+
+    return this.cliqService.listFilesForChat(
+      ownerKey,
+      chatId,
+      this.parseLimit(limit, 50, 1000),
+      typeof parsedFromTime === 'number' && Number.isFinite(parsedFromTime)
+        ? parsedFromTime
+        : undefined,
+    );
+  }
+
+  // ============================================================
+  // UPLOAD FILE TO CHAT
+  // ============================================================
+  //
+  // POST /zoho/cliq/:ownerKey/chats/:chatId/files
+  // multipart/form-data: field "file", optional "comment"
+  // ============================================================
+
+  @Post(':ownerKey/chats/:chatId/files')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadFileToChat(
+    @Param('ownerKey') ownerKey: string,
+    @Param('chatId') chatId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('comment') comment?: string,
+  ) {
+    return this.cliqService.uploadFileToChat(ownerKey, chatId, file, comment);
+  }
+
   // channelUniqueName is the channel name used by the service, not its object ID.
   @Post(':ownerKey/channels/:channelUniqueName/message')
   sendChannelMessage(
@@ -81,6 +143,29 @@ export class ZohoCliqController {
       ownerKey,
       channelUniqueName,
       text,
+    );
+  }
+
+  // ============================================================
+  // UPLOAD FILE TO CHANNEL
+  // ============================================================
+  //
+  // POST /zoho/cliq/:ownerKey/channels/:channelUniqueName/files
+  // ============================================================
+
+  @Post(':ownerKey/channels/:channelUniqueName/files')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadFileToChannel(
+    @Param('ownerKey') ownerKey: string,
+    @Param('channelUniqueName') channelUniqueName: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('comment') comment?: string,
+  ) {
+    return this.cliqService.uploadFileToChannel(
+      ownerKey,
+      channelUniqueName,
+      file,
+      comment,
     );
   }
 
@@ -113,6 +198,57 @@ export class ZohoCliqController {
     @Body('text') text: string,
   ) {
     return this.cliqService.sendBuddyMessage(ownerKey, emailId, text);
+  }
+
+  // ============================================================
+  // UPLOAD FILE TO PERSON (BUDDY)
+  // ============================================================
+  //
+  // POST /zoho/cliq/:ownerKey/people/:emailId/files
+  // ============================================================
+
+  @Post(':ownerKey/people/:emailId/files')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadFileToPerson(
+    @Param('ownerKey') ownerKey: string,
+    @Param('emailId') emailId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('comment') comment?: string,
+  ) {
+    return this.cliqService.uploadFileToBuddy(ownerKey, emailId, file, comment);
+  }
+
+  // ============================================================
+  // DOWNLOAD FILE BY ID
+  // ============================================================
+  //
+  // GET /zoho/cliq/:ownerKey/files/:fileId
+  // Proxies Cliq GET /api/v2/files/{fileId} as binary.
+  // ============================================================
+
+  @Get(':ownerKey/files/:fileId')
+  async downloadFile(
+    @Param('ownerKey') ownerKey: string,
+    @Param('fileId') fileId: string,
+    @Res() res: Response,
+    @Query('filename') filename?: string,
+  ) {
+    const data = await this.cliqService.getFile(ownerKey, fileId);
+
+    // ZohoHttpService may return ArrayBuffer, Buffer, or axios-style body.
+    const buffer = Buffer.isBuffer(data)
+      ? data
+      : Buffer.from(data as ArrayBuffer);
+
+    const safeName =
+      filename && filename.trim()
+        ? filename.trim().replace(/[^\w.\-()+ ]+/g, '_')
+        : 'download';
+
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
+    res.setHeader('Content-Length', String(buffer.length));
+    res.send(buffer);
   }
 
   private parseLimit(

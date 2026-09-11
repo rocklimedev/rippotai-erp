@@ -9,34 +9,10 @@ export const APP_META = {
     searchPh: "Search applications",
   },
 
-  boq: {
-    name: "BOQ",
-    base: "/boq",
-    searchPh: "Search BOQs, categories, items",
-  },
-
   projects: {
     name: "Projects",
     base: "/projects",
     searchPh: "Search projects, clients, milestones",
-  },
-
-  quotations: {
-    name: "Estimate",
-    base: "/quotations",
-    searchPh: "Search estimates, vendors",
-  },
-
-  vendors: {
-    name: "Vendors",
-    base: "/vendors",
-    searchPh: "Search vendors, categories",
-  },
-
-  documents: {
-    name: "Documents",
-    base: "/documents",
-    searchPh: "Search documents, forms",
   },
 
   designStudio: {
@@ -98,12 +74,9 @@ export const APP_META = {
 // NOTE: "settings" is intentionally excluded — it's not a landing-page app,
 // just a registered entry so TopHeader/AppSwitcher config lookups work.
 export const LANDING_ORDER = [
-  "boq",
   "projects",
   "designStudio",
-  "quotations",
-  "vendors",
-  "documents",
+
   "crm",
   "ledger",
   "siteOperations",
@@ -118,87 +91,29 @@ const I = (label, slug) => ({ label, slug });
 
 export const APP_MENUS = {
   dashboard: [],
-  boq: [
-    { label: "BOQ", items: [I("All BOQs", "all"), I("Create BOQ", "new")] },
-    {
-      label: "Management",
-      items: [
-        I("Rate and Item Library", "rate-and-item-library"),
-        I("BOQ Templates", "templates"),
-        I("Projects", "/projects/all"),
-      ],
-    },
-    {
-      label: "Settings",
-      items: [
-        I("Edit Dashboard", "edit-dashboard"),
-        I("Roles and Permissions", "roles"),
-        I("Activity", "activity"),
-      ],
-    },
-  ],
+
   projects: [
     {
       label: "Projects",
       items: [I("All Projects", "all"), I("Create Project", "new")],
     },
     {
-      label: "Settings",
-      items: [
-        I("Edit Dashboard", "edit-dashboard"),
-        I("Roles and Permissions", "roles"),
-        I("Activity", "activity"),
-      ],
-    },
-  ],
-  quotations: [
-    {
-      label: "Estimates",
-      items: [
-        I("All Estimates", "all"),
-        I("Create Estimate", "new"),
-        I("Projects", "/projects/all"),
-      ],
-    },
-    {
-      label: "Settings",
-      items: [
-        I("Edit Dashboard", "edit-dashboard"),
-        I("Roles and Permissions", "roles"),
-        I("Activity", "activity"),
-      ],
-    },
-  ],
-  vendors: [
-    {
-      label: "Vendors",
-      items: [I("All Vendors", "directory"), I("Add Vendor", "new")],
-    },
-    {
-      label: "Settings",
-      items: [
-        I("Edit Dashboard", "edit-dashboard"),
-        I("Roles and Permissions", "roles"),
-        I("Activity", "activity"),
-      ],
-    },
-  ],
-  documents: [
-    {
       label: "Documents",
-      items: [I("All Documents", "all"), I("Upload Document", "upload")],
-    },
-
-    {
-      label: "Management",
       items: [
-        I("Projects", "/projects/all"),
+        I("All Documents", "documents/all"),
+        I("Upload Document", "documents/upload"),
+      ],
+    },
+    {
+      label: "Settings",
+      items: [
         I("Edit Dashboard", "edit-dashboard"),
-        I("Roles & Permissions", "roles"),
+        I("Roles and Permissions", "roles"),
         I("Activity", "activity"),
       ],
     },
   ],
+
   designStudio: [
     {
       label: "Drawings",
@@ -309,7 +224,21 @@ export const APP_MENUS = {
         I("Site Inventory", "inventory"),
       ],
     },
-
+    {
+      label: "Estimates",
+      items: [
+        I("All Estimates", "estimates/all"),
+        I("Create Estimate", "estimates/new"),
+        I("Projects", "/projects/all"),
+      ],
+    },
+    {
+      label: "Vendors",
+      items: [
+        I("All Vendors", "vendors/directory"),
+        I("Add Vendor", "vendors/new"),
+      ],
+    },
     {
       label: "Management",
       items: [
@@ -353,6 +282,18 @@ export const APP_MENUS = {
     {
       label: "Ledger",
       items: [I("Ledger", "all")],
+    },
+    {
+      label: "BOQ",
+      items: [I("All BOQs", "boq/all"), I("Create BOQ", "boq/new")],
+    },
+    {
+      label: "Management",
+      items: [
+        I("Rate and Item Library", "boq/rate-and-item-library"),
+        I("BOQ Templates", "boq/templates"),
+        I("Projects", "/projects/all"),
+      ],
     },
     {
       label: "Documents",
