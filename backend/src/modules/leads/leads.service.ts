@@ -1,483 +1,478 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
-import { Lead } from './models/lead.model';
-import { LeadNote } from './models/lead-note.model';
-import { LeadActivity } from './models/lead-activity.model';
-import { CreateLeadDto } from './dto/create-lead.dto';
-import { UpdateLeadDto } from './dto/update-lead.dto';
-import { MoveStageDto } from './dto/move-stage.dto';
-import { AddNoteDto } from './dto/add-note.dto';
-import { ProposalDto } from './dto/proposal.dto';
-import { QueryLeadsDto, ContactSort } from './dto/query-leads.dto';
-import { UpdateDocDto } from './dto/update-doc.dto';
-import {
-  ACTIVE_STAGES,
-  STAGE_ORDER,
-  STAGE_LABELS,
-  LeadStage,
-  StuckMode,
-  DocType,
-} from '@/common/enums/leads.enums';
-import { ActivityLogForLeadService } from '../engagement/services/activity-log-lead.service';
-import { NotificationForLeadService } from '../engagement/services/notification-lead.service';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { ZohoCrmService } from '../zoho/crm/zoho-crm.service'; // adjust path to wherever ZohoCrmService actually lives
 
-const DEFAULT_OWNER_POOL = ['A. Mehra', 'S. Kapoor'];
-const STUCK_DAYS_DEFAULT = 7;
-const OVERALL_CONVERSION_DEFAULT = 59;
+// ------------------------------------------------------------------
+// Canonical Bigin Pipeline stages, in board order — matches the
+// pipeline configured in Zoho Bigin (Settings > Pipelines), shown
+// left to right on the actual Bigin board: Qualification, Needs
+// Analysis, Proposal/Price Quote, Negotiation/Review, Closed Won,
+// Closed Lost.
+//
+// If the pipeline is edited in Bigin, update this list — the board
+// always renders every stage as a column (even with 0 deals), same
+// as Bigin itself does.
+// ------------------------------------------------------------------
+const STAGES = [
+  'Qualification',
+  'Needs Analysis',
+  'Proposal/Price Quote',
+  'Negotiation/Review',
+  'Closed Won',
+  'Closed Lost',
+];
+
+const CLOSED_STAGES = new Set(['Closed Won', 'Closed Lost']);
+
+// Fields pulled from Bigin's Pipelines module for the board. Bigin
+// requires an explicit `fields` param on every GET (see
+// ZohoCrmService.withFields) — this overrides that generic default
+// with everything the board/card actually needs in one call.
+//
+// NOTE: Card_Color, Tag, WhatsApp, Quoted_Amount, Quote_Timeline are
+// examples of *custom* fields — rename these to match the real API
+// names configured on your Pipelines module (Settings > Modules and
+// Fields > Pipelines) if they differ.
+const BOARD_FIELDS = [
+  'id',
+  'Deal_Name',
+  'Stage',
+  'Amount',
+  'Closing_Date',
+  'Contact_Name',
+  'Account_Name',
+  'Created_Time',
+  'Owner',
+  'Phone',
+  'WhatsApp',
+  'Card_Color',
+  'Tag',
+  'Quoted_Amount',
+  'Quote_Timeline',
+  'Description',
+].join(',');
+
+// Fields for the flat ContactsView list. Email/Mailing_City/
+// Lead_Source are guessed API names for "email", "location" and
+// "type" — Pipelines records don't have these by default in Bigin,
+// so either add matching custom fields on Pipelines, or fetch them
+// from the linked Contact/Company record instead and merge here.
+const LIST_FIELDS = [
+  'id',
+  'Deal_Name',
+  'Stage',
+  'Amount',
+  'Contact_Name',
+  'Account_Name',
+  'Owner',
+  'Phone',
+  'WhatsApp',
+  'Email',
+  'Mailing_City',
+  'Lead_Source',
+  'Created_Time',
+].join(',');
+
+const STUCK_AFTER_DAYS = 14;
+
+// ------------------------------------------------------------------
+// NewLeadPage's "Budget Range" field is a free-text select like
+// "₹25L–₹75L" or "₹5Cr+", not a number — this turns it into a rough
+// rupee estimate (midpoint of the range, or the single value if
+// there's only one) so new leads still contribute to the pipeline
+// value totals shown on the board. Purely an estimate; the raw string
+// is also stored as-is (see Budget_Range below) so nothing is lost.
+// ------------------------------------------------------------------
+
+function parseINR(token: string): number | null {
+  const match = token.trim().match(/^₹?\s*([\d.]+)\s*(l|cr)?$/i);
+  if (!match) return null;
+
+  const value = parseFloat(match[1]);
+  const unit = (match[2] || '').toUpperCase();
+  const multiplier = unit === 'CR' ? 10000000 : unit === 'L' ? 100000 : 1;
+
+  return value * multiplier;
+}
+
+function parseBudgetRange(range?: string): number | null {
+  if (!range) return null;
+
+  const clean = range.replace(/under\s*/i, '').replace('+', '');
+
+  const nums = clean
+    .split(/[–-]/)
+    .map((part) => parseINR(part))
+    .filter((n): n is number => n != null);
+
+  if (!nums.length) return null;
+
+  return nums.length === 1 ? nums[0] : (nums[0] + nums[1]) / 2;
+}
+
+interface CreateLeadInput {
+  name: string;
+  phone: string;
+  whatsapp?: string;
+  email?: string;
+  type?: string;
+  location?: string;
+  size?: string;
+  budget?: string;
+  timeline?: string;
+  source?: string;
+}
 
 @Injectable()
 export class LeadsService {
-  constructor(
-    @InjectModel(Lead) private leadModel: typeof Lead,
-    @InjectModel(LeadNote) private noteModel: typeof LeadNote,
-    @InjectModel(LeadActivity) private activityModel: typeof LeadActivity,
+  constructor(private readonly zohoCrmService: ZohoCrmService) {}
 
-    private readonly activityLogService: ActivityLogForLeadService,
-    private readonly notificationService: NotificationForLeadService,
-  ) {}
+  // ============================================================
+  // BOARD
+  // ============================================================
 
-  private include() {
-    return [
-      {
-        model: LeadNote,
-        separate: true,
-        order: [['createdAt', 'DESC']] as any,
-      },
-      {
-        model: LeadActivity,
-        separate: true,
-        order: [['createdAt', 'DESC']] as any,
-      },
-    ];
-  }
-
-  private daysInStage(lead: Lead): number {
-    if (!lead.stageEnteredAt) return lead.days ?? 0;
-    const ms = Date.now() - new Date(lead.stageEnteredAt).getTime();
-    return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
-  }
-
-  private isStuck(lead: Lead, stuckDays: number): boolean {
-    if (lead.stuckMode === StuckMode.ALWAYS) return true;
-    if (lead.stuckMode === StuckMode.NEVER) return false;
-    return (
-      ACTIVE_STAGES.includes(lead.stage) && this.daysInStage(lead) > stuckDays
-    );
-  }
-
-  private serialize(lead: Lead, stuckDays = STUCK_DAYS_DEFAULT) {
-    const days = this.daysInStage(lead);
-    return {
-      id: lead.id,
-      name: lead.name,
-      phone: lead.phone,
-      whatsapp: lead.whatsapp || lead.phone,
-      email: lead.email,
-      type: lead.type,
-      location: lead.location,
-      size: lead.size,
-      budget: lead.budget,
-      timeline: lead.timeline,
-      source: lead.source,
-      owner: lead.owner,
-      stage: lead.stage,
-      stageLabel: STAGE_LABELS[lead.stage],
-      days,
-      stuck: this.isStuck(lead, stuckDays),
-      tag: lead.tag,
-      color: lead.color,
-      stuckMode: lead.stuckMode,
-      followUp: lead.followUp,
-      proposal: lead.proposalAmount
-        ? {
-            amount: lead.proposalAmount,
-            timeline: lead.proposalTimeline,
-            remarks: lead.proposalRemarks,
-          }
-        : null,
-      docs: {
-        brief: lead.docBrief,
-        proposal: lead.docProposal,
-        contract: lead.docContract,
-      },
-      notes: (lead.notes || []).map((n) => ({
-        id: n.id,
-        author: n.author,
-        text: n.text,
-        createdAt: n.createdAt,
-      })),
-      activity: (lead.activity || []).map((a) => ({
-        id: a.id,
-        text: a.text,
-        createdAt: a.createdAt,
-      })),
-      createdAt: lead.createdAt,
-      updatedAt: lead.updatedAt,
-    };
-  }
-
-  private async addActivity(leadId: string, text: string) {
-    await this.activityModel.create({ leadId, text } as any);
-  }
-
-  private async findOrThrow(id: string) {
-    const lead = await this.leadModel.findByPk(id, {
-      include: [LeadNote, LeadActivity],
-    });
-    if (!lead) throw new NotFoundException('Lead not found');
-    return lead;
-  }
-
-  // ==================== MAIN CRUD ====================
-
-  async create(dto: CreateLeadDto, user?: any) {
-    const count = await this.leadModel.count();
-    const owner = DEFAULT_OWNER_POOL[count % DEFAULT_OWNER_POOL.length];
-
-    const lead = await this.leadModel.create({
-      ...dto,
-      owner,
-      stage: LeadStage.CAPTURE,
-      stageEnteredAt: new Date(),
-      days: 0,
-    } as any);
-
-    await this.addActivity(
-      lead.id,
-      `Lead captured via ${dto.source || 'Unknown'}`,
-    );
-    await this.addActivity(lead.id, `Auto-assigned to ${owner}`);
-
-    // Activity Log + Notification
-    await this.activityLogService.logLeadCreated(lead, user);
-    await this.notificationService.notifyLeadCreated(lead, user?.id);
-
-    return this.serialize(await this.findOrThrow(lead.id));
-  }
-
-  async findAll(query: QueryLeadsDto) {
-    const where: any = {};
-    if (query.stage) where.stage = query.stage;
-    if (query.q) {
-      const like = { [Op.like]: `%${query.q}%` };
-      where[Op.or] = [
-        { name: like },
-        { location: like },
-        { phone: like },
-        { email: like },
-        { owner: like },
-      ];
-    }
-
-    const leads = await this.leadModel.findAll({
-      where,
-      include: this.include(),
+  async getBoard(ownerKey: string) {
+    const response = await this.zohoCrmService.getPipelines(ownerKey, {
+      fields: BOARD_FIELDS,
+      per_page: 200,
     });
 
-    let serialized = leads.map((l) => this.serialize(l));
-    if (query.sort) serialized = this.sortContacts(serialized, query.sort);
-    return serialized;
-  }
+    const records = response?.data || [];
 
-  private sortContacts(rows: any[], sort: ContactSort) {
-    const stageIdx = (stage: LeadStage) => STAGE_ORDER.indexOf(stage);
-    const cmp: Record<ContactSort, (a: any, b: any) => number> = {
-      [ContactSort.NAME_ASC]: (a, b) => a.name.localeCompare(b.name),
-      [ContactSort.NAME_DESC]: (a, b) => b.name.localeCompare(a.name),
-      [ContactSort.STAGE]: (a, b) =>
-        stageIdx(a.stage) - stageIdx(b.stage) || a.name.localeCompare(b.name),
-      [ContactSort.DAYS]: (a, b) => b.days - a.days,
-      [ContactSort.OWNER]: (a, b) =>
-        (a.owner || '').localeCompare(b.owner || '') ||
-        a.name.localeCompare(b.name),
-      [ContactSort.LOCATION]: (a, b) =>
-        (a.location || '').localeCompare(b.location || '') ||
-        a.name.localeCompare(b.name),
-    };
-    return [...rows].sort(cmp[sort]);
-  }
-
-  async board() {
-    const leads = await this.findAll({} as QueryLeadsDto);
-    const columns = STAGE_ORDER.map((stage) => ({
+    const columns = STAGES.map((stage) => ({
       id: stage,
-      label: STAGE_LABELS[stage],
-      leads: leads.filter((l) => l.stage === stage),
+      label: stage,
+      leads: [] as ReturnType<LeadsService['toLead']>[],
     }));
-    return {
-      columns,
-      activeCount: leads.filter((l) => l.stage !== LeadStage.LOST).length,
-      stuckCount: leads.filter((l) => l.stuck).length,
-    };
-  }
 
-  async findOne(id: string) {
-    return this.serialize(await this.findOrThrow(id));
-  }
+    const columnById = new Map(columns.map((c) => [c.id, c]));
 
-  async update(id: string, dto: UpdateLeadDto, user?: any) {
-    const lead = await this.findOrThrow(id);
-    Object.assign(lead, dto);
-    await lead.save();
-    await this.addActivity(id, 'Lead details updated');
+    let activeCount = 0;
 
-    await this.activityLogService.logLeadUpdated(lead, user);
-    await this.notificationService.notifyLeadUpdated(lead, user?.id);
+    for (const record of records) {
+      const lead = this.toLead(record);
 
-    return this.serialize(await this.findOrThrow(id));
-  }
+      // A Stage value we don't recognise (e.g. a stage added in
+      // Bigin after STAGES was last updated) gets its own column
+      // appended, instead of silently dropping the lead.
+      let column = columnById.get(lead.stage);
 
-  async remove(id: string, user?: any) {
-    const lead = await this.findOrThrow(id);
-    const leadName = lead.name;
-    await lead.destroy();
+      if (!column) {
+        column = { id: lead.stage, label: lead.stage, leads: [] };
+        columnById.set(lead.stage, column);
+        columns.push(column);
+      }
 
-    await this.activityLogService.logLeadDeleted(leadName, id, user);
-    await this.notificationService.notifyLeadDeleted(leadName, user?.id);
+      column.leads.push(lead);
 
-    return { id, deleted: true };
-  }
-
-  async moveStage(id: string, dto: MoveStageDto, user?: any) {
-    const lead = await this.findOrThrow(id);
-    if (lead.stage === dto.stage) return this.serialize(lead);
-
-    const fromStage = lead.stage;
-    const fromLabel = STAGE_LABELS[fromStage];
-
-    lead.stage = dto.stage;
-    lead.stageEnteredAt = new Date();
-    lead.days = 0;
-    await lead.save();
-
-    const suffix = dto.via ? ` (${dto.via})` : '';
-    await this.addActivity(
-      id,
-      `Moved from ${fromLabel} to ${STAGE_LABELS[dto.stage]}${suffix}`,
-    );
-
-    await this.activityLogService.logLeadStageChanged(
-      lead,
-      fromStage,
-      dto.stage,
-      user,
-    );
-    await this.notificationService.notifyLeadStageChanged(
-      lead,
-      fromStage,
-      dto.stage,
-      user?.id,
-    );
-
-    return this.serialize(await this.findOrThrow(id));
-  }
-
-  async markNurture(id: string, user?: any) {
-    return this.moveStage(id, { stage: LeadStage.NURTURE }, user);
-  }
-
-  async markLost(id: string, user?: any) {
-    return this.moveStage(id, { stage: LeadStage.LOST }, user);
-  }
-
-  async addNote(id: string, dto: AddNoteDto, user?: any) {
-    await this.findOrThrow(id);
-    await this.noteModel.create({
-      leadId: id,
-      author: dto.author || 'A. Mehra',
-      text: dto.text,
-    } as any);
-
-    await this.addActivity(id, `Note added by ${dto.author || 'A. Mehra'}`);
-
-    const currentLead = await this.findOrThrow(id);
-
-    await this.activityLogService.logLeadNoteAdded(
-      currentLead,
-      dto.text,
-      dto.author || 'A. Mehra',
-      user,
-    );
-    await this.notificationService.notifyLeadNoteAdded(
-      currentLead.name,
-      dto.author || 'A. Mehra',
-      user?.id,
-    );
-
-    return this.serialize(currentLead);
-  }
-
-  async setProposal(id: string, dto: ProposalDto, user?: any) {
-    const lead = await this.findOrThrow(id);
-    lead.proposalAmount = dto.amount.toString();
-    lead.proposalTimeline = dto.timeline || '1–3 months';
-    lead.proposalRemarks = dto.remarks || null;
-
-    if (lead.docProposal === 0) lead.docProposal = 1;
-
-    const movedStage = lead.stage !== LeadStage.PROP;
-    const fromLabel = STAGE_LABELS[lead.stage];
-
-    if (movedStage) {
-      lead.stage = LeadStage.PROP;
-      lead.stageEnteredAt = new Date();
-      lead.days = 0;
+      if (!CLOSED_STAGES.has(lead.stage)) {
+        activeCount += 1;
+      }
     }
 
-    await lead.save();
+    return { columns, activeCount };
+  }
 
-    if (movedStage) {
-      await this.addActivity(
-        id,
-        `Moved from ${fromLabel} to ${STAGE_LABELS[LeadStage.PROP]}`,
+  // ============================================================
+  // CREATE LEAD (NewLeadPage)
+  // Lands in the first pipeline stage, same as capturing a new deal
+  // manually in Bigin does.
+  // ============================================================
+
+  async createLead(ownerKey: string, body: CreateLeadInput) {
+    if (!body?.name?.trim()) {
+      throw new BadRequestException("Enter the lead's full name.");
+    }
+
+    if (!body?.phone?.trim()) {
+      throw new BadRequestException('A phone number is required.');
+    }
+
+    const amount = parseBudgetRange(body.budget);
+
+    const created = await this.zohoCrmService.createPipeline(ownerKey, {
+      Deal_Name: body.name,
+      Stage: STAGES[0],
+      Phone: body.phone,
+      WhatsApp: body.whatsapp,
+      Email: body.email,
+      Amount: amount ?? undefined,
+      // Custom fields — rename to match the actual API names on your
+      // Pipelines module (Settings > Modules and Fields > Pipelines)
+      // if these differ.
+      Project_Type: body.type,
+      Mailing_City: body.location,
+      Approx_Size: body.size,
+      Budget_Range: body.budget,
+      Expected_Timeline: body.timeline,
+      Lead_Source: body.source,
+    });
+
+    const result = created?.data?.[0];
+
+    if (!result || result.status !== 'success') {
+      throw new BadRequestException(
+        result?.message || 'Failed to create lead in Zoho Bigin.',
       );
     }
-    if (dto.remarks) {
-      await this.noteModel.create({
-        leadId: id,
-        author: dto.author || 'A. Mehra',
-        text: `Proposal: ${dto.remarks}`,
-      } as any);
-    }
-    await this.addActivity(
+
+    const id = result.details?.id;
+
+    // The create response only confirms success + the new id, not
+    // the full record — fetch it back so we can return the assigned
+    // Owner (NewLeadPage shows "assigned to {owner}" from this).
+    const fetched = await this.zohoCrmService.getRecord(
+      ownerKey,
+      'Pipelines',
       id,
-      `Proposal quoted ${dto.amount} · ${lead.proposalTimeline}`,
+      {
+        fields: 'id,Deal_Name,Owner,Stage',
+      },
     );
 
-    await this.activityLogService.logProposalSent(lead, dto.amount, user);
-    await this.notificationService.notifyProposalSent(
-      lead,
-      dto.amount,
-      user?.id,
-    );
+    const record = fetched?.data?.[0];
 
-    return this.serialize(await this.findOrThrow(id));
-  }
-
-  // Other internal methods (no major user action)
-  async updateDoc(id: string, docType: DocType, dto: UpdateDocDto) {
-    const lead = await this.findOrThrow(id);
-    const field =
-      docType === DocType.BRIEF
-        ? 'docBrief'
-        : docType === DocType.PROPOSAL
-          ? 'docProposal'
-          : 'docContract';
-
-    const labels = ['Not started', 'Sent', 'Signed'];
-    const prev = (lead as any)[field] as number;
-    const next = dto.status !== undefined ? dto.status : (prev + 1) % 3;
-
-    (lead as any)[field] = next;
-    await lead.save();
-
-    const docNames = {
-      brief: 'Requirements Brief',
-      proposal: 'Design Proposal',
-      contract: 'Contract',
+    return {
+      id,
+      name: record?.Deal_Name || body.name,
+      owner: record?.Owner?.name || 'Unassigned',
+      stage: record?.Stage || STAGES[0],
     };
-    await this.addActivity(
+  }
+
+  // ============================================================
+  // FLAT LEADS LIST (ContactsView) — searchable, sortable
+  // ============================================================
+
+  async getLeads(ownerKey: string, { q, sort }: { q?: string; sort?: string }) {
+    const response = await this.zohoCrmService.getPipelines(ownerKey, {
+      fields: LIST_FIELDS,
+      per_page: 200,
+    });
+
+    let rows = (response?.data || []).map((r) => this.toContactRow(r));
+
+    if (q) {
+      const needle = q.trim().toLowerCase();
+
+      rows = rows.filter((row) =>
+        [row.name, row.phone, row.email, row.location, row.owner]
+          .filter(Boolean)
+          .some((field) => String(field).toLowerCase().includes(needle)),
+      );
+    }
+
+    rows.sort(this.comparatorFor(sort));
+
+    return rows;
+  }
+
+  // ============================================================
+  // DELETE LEAD
+  // ============================================================
+
+  async deleteLead(ownerKey: string, id: string) {
+    return this.zohoCrmService.deletePipeline(ownerKey, id);
+  }
+
+  // ============================================================
+  // MOVE STAGE (drag & drop)
+  // ============================================================
+
+  async moveStage(ownerKey: string, id: string, stage: string) {
+    return this.zohoCrmService.updatePipeline(ownerKey, id, { Stage: stage });
+  }
+
+  // ============================================================
+  // GENERAL UPDATE (card color, edit modal, quick menu actions)
+  // ============================================================
+
+  async updateLead(ownerKey: string, id: string, body: Record<string, any>) {
+    const data: Record<string, any> = {};
+
+    if (body.Stage) data.Stage = body.Stage;
+    if ('Card_Color' in body) data.Card_Color = body.Card_Color;
+    if (body.Tag) data.Tag = body.Tag;
+    if (body.Deal_Name) data.Deal_Name = body.Deal_Name;
+    if (body.Amount != null) data.Amount = body.Amount;
+
+    return this.zohoCrmService.updatePipeline(ownerKey, id, data);
+  }
+
+  // ============================================================
+  // ADD NOTE / REMARK
+  //
+  // Bigin actually stores notes as a related list on the record
+  // (`POST /Pipelines/{id}/Notes`). This appends onto the Description
+  // field instead so it works with the generic CRUD methods already
+  // on ZohoCrmService — swap for a dedicated Notes call if you add
+  // one to ZohoCrmService later.
+  // ============================================================
+
+  async addNote(ownerKey: string, id: string, text: string) {
+    const record = await this.zohoCrmService.getRecord(
+      ownerKey,
+      'Pipelines',
       id,
-      `${docNames[docType]}: ${labels[prev]} → ${labels[next]}`,
+      {
+        fields: 'Description',
+      },
     );
 
-    return this.serialize(await this.findOrThrow(id));
+    const existing = record?.data?.[0]?.Description || '';
+    const stamp = new Date().toISOString().slice(0, 10);
+    const appended = existing
+      ? `${existing}\n\n[${stamp}] ${text}`
+      : `[${stamp}] ${text}`;
+
+    return this.zohoCrmService.updatePipeline(ownerKey, id, {
+      Description: appended,
+    });
   }
 
-  async updateColor(id: string, color: string | null) {
-    const lead = await this.findOrThrow(id);
-    lead.color = color as any;
-    await lead.save();
-    return this.serialize(lead);
-  }
+  // ============================================================
+  // SET PROPOSAL (quoted amount / timeline / remarks)
+  // Moves the deal into "Proposal/Price Quote" to mirror what
+  // happens when you quote a deal in Bigin itself.
+  // ============================================================
 
-  async updateFollowUp(id: string, followUp: string | null) {
-    const lead = await this.findOrThrow(id);
-    lead.followUp = followUp;
-    await lead.save();
-    if (followUp) {
-      await this.addActivity(id, `Follow-up scheduled for ${followUp}`);
+  async setProposal(
+    ownerKey: string,
+    id: string,
+    {
+      amount,
+      timeline,
+      remarks,
+    }: { amount: string; timeline: string; remarks?: string },
+  ) {
+    await this.zohoCrmService.updatePipeline(ownerKey, id, {
+      Stage: 'Proposal/Price Quote',
+      Quoted_Amount: amount,
+      Quote_Timeline: timeline,
+    });
+
+    if (remarks) {
+      await this.addNote(ownerKey, id, remarks);
     }
-    return this.serialize(await this.findOrThrow(id));
+
+    return { ok: true };
   }
 
-  async review(stuckDays = STUCK_DAYS_DEFAULT) {
-    const leads = await this.leadModel.findAll({ include: this.include() });
-    const serialized = leads.map((l) => this.serialize(l, stuckDays));
+  // ============================================================
+  // MAP A RAW BIGIN "Pipelines" RECORD -> LeadCard SHAPE
+  // ============================================================
 
-    const activeCount = serialized.filter(
-      (l) => l.stage !== LeadStage.LOST,
-    ).length;
-    const stuck = serialized.filter((l) => l.stuck);
+  private toLead(record: Record<string, any>) {
+    const createdAt = record.Created_Time || null;
 
-    const kpis = [
-      {
-        label: 'Total Active Leads',
-        value: activeCount,
-        sub: 'Across all stages excl. Closed-Lost',
-      },
-      {
-        label: 'Overall Conversion Rate',
-        value: `${OVERALL_CONVERSION_DEFAULT}%`,
-        sub: 'Enquiry to signed contract, trailing 90 days',
-      },
-      {
-        label: 'Leads Flagged Stuck',
-        value: stuck.length,
-        sub: `In stage longer than ${stuckDays} days`,
-      },
-    ];
+    const tag =
+      typeof record.Tag === 'object'
+        ? record.Tag?.name || null
+        : record.Tag || null;
 
-    const transitions: [string, LeadStage, LeadStage][] = [
-      ['Capture → Qualification', LeadStage.CAPTURE, LeadStage.QUAL],
-      ['Qualification → Discovery', LeadStage.QUAL, LeadStage.DISC],
-      ['Discovery → Proposal', LeadStage.DISC, LeadStage.PROP],
-      ['Proposal → Negotiation', LeadStage.PROP, LeadStage.NEGO],
-      ['Negotiation → Contract', LeadStage.NEGO, LeadStage.CONTRACT],
-      ['Contract → Handoff', LeadStage.CONTRACT, LeadStage.HANDOFF],
-    ];
+    return {
+      id: record.id,
+      name: record.Deal_Name,
+      stage: record.Stage,
 
-    const atOrPast = (stage: LeadStage) =>
-      serialized.filter(
-        (l) => STAGE_ORDER.indexOf(l.stage) >= STAGE_ORDER.indexOf(stage),
-      ).length;
+      company: record.Account_Name?.name || record.Account_Name || null,
 
-    const convBars = transitions.map(([label, from, to]) => {
-      const denom = atOrPast(from) || 1;
-      const pct = Math.round((atOrPast(to) / denom) * 100);
-      return { label, pct };
-    });
+      contact: record.Contact_Name?.name || record.Contact_Name || null,
 
-    const timeBars = STAGE_ORDER.slice(0, 7).map((stage) => {
-      const list = serialized.filter((l) => l.stage === stage);
-      const avg = list.length
-        ? Math.round(
-            (list.reduce((a, l) => a + l.days, 0) / list.length) * 10,
-          ) / 10
-        : 0;
-      return { label: STAGE_LABELS[stage], avgDays: avg };
-    });
+      budgetValue: typeof record.Amount === 'number' ? record.Amount : null,
 
-    const stuckRows = stuck
-      .slice()
-      .sort((a, b) => b.days - a.days)
-      .map((l) => ({
-        id: l.id,
-        name: l.name,
-        stage: l.stageLabel,
-        days: l.days,
-        owner: l.owner,
-      }));
+      budget: record.Amount != null ? `₹${record.Amount}` : null,
 
-    const wonStages = [LeadStage.CONTRACT, LeadStage.HANDOFF];
-    const sources = ['Website', 'Referral', 'Instagram', 'WhatsApp', 'Walk-in'];
-    const sourceRows = sources.map((s) => {
-      const list = serialized.filter((l) => (l.source || '').startsWith(s));
-      const won = list.filter((l) => wonStages.includes(l.stage)).length;
-      return { label: s, count: list.length, won };
-    });
+      owner: record.Owner?.name || null,
 
-    return { kpis, convBars, timeBars, stuckRows, sourceRows };
+      phone: record.Phone || null,
+
+      whatsapp: record.WhatsApp || record.Phone || null,
+
+      color: record.Card_Color || null,
+
+      tag,
+
+      createdAt,
+
+      stuck: this.isStuck(createdAt),
+
+      proposal: record.Quoted_Amount
+        ? {
+            amount: record.Quoted_Amount,
+            timeline: record.Quote_Timeline || null,
+          }
+        : null,
+    };
+  }
+
+  private isStuck(createdAt: string | null) {
+    if (!createdAt) return false;
+
+    const created = new Date(createdAt).getTime();
+    if (Number.isNaN(created)) return false;
+
+    return (Date.now() - created) / 86400000 > STUCK_AFTER_DAYS;
+  }
+
+  // ============================================================
+  // MAP A RAW BIGIN "Pipelines" RECORD -> ContactsView ROW SHAPE
+  // ============================================================
+
+  private toContactRow(record: Record<string, any>) {
+    return {
+      id: record.id,
+      name: record.Deal_Name,
+      stage: record.Stage,
+      phone: record.Phone || null,
+      whatsapp: record.WhatsApp || record.Phone || null,
+      email: record.Email || null,
+      location: record.Mailing_City || null,
+      type: record.Lead_Source || null,
+      owner: record.Owner?.name || null,
+      createdAt: record.Created_Time || null,
+    };
+  }
+
+  // ============================================================
+  // SORT ORDER for the ContactsView "sort" dropdown
+  // ============================================================
+
+  private comparatorFor(sort?: string) {
+    switch (sort) {
+      case 'name-desc':
+        return (a: any, b: any) => (b.name || '').localeCompare(a.name || '');
+
+      case 'stage':
+        return (a: any, b: any) =>
+          STAGES.indexOf(a.stage) - STAGES.indexOf(b.stage);
+
+      case 'days':
+        // Longest-in-pipeline first. We don't track a separate
+        // "entered this stage" timestamp, so this approximates it
+        // with Created_Time — swap in a real Stage-change field if
+        // you start tracking one in Bigin.
+        return (a: any, b: any) =>
+          this.daysSince(b.createdAt) - this.daysSince(a.createdAt);
+
+      case 'owner':
+        return (a: any, b: any) => (a.owner || '').localeCompare(b.owner || '');
+
+      case 'location':
+        return (a: any, b: any) =>
+          (a.location || '').localeCompare(b.location || '');
+
+      case 'name-asc':
+      default:
+        return (a: any, b: any) => (a.name || '').localeCompare(b.name || '');
+    }
+  }
+
+  private daysSince(createdAt: string | null) {
+    if (!createdAt) return 0;
+
+    const created = new Date(createdAt).getTime();
+    if (Number.isNaN(created)) return 0;
+
+    return (Date.now() - created) / 86400000;
   }
 }

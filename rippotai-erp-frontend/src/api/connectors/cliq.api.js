@@ -1,5 +1,3 @@
-// src/api/cliq.api.js
-
 import { baseApi } from "../../store/baseApi";
 
 // ============================================================
@@ -180,20 +178,26 @@ const flattenRef = (ref) => {
 // ============================================================
 // CHANNEL NORMALIZATION
 // ============================================================
+//
+// IMPORTANT: a Cliq channel has TWO distinct identifiers —
+// CHANNEL_ID (the channel object) and CHAT_ID (the message
+// stream). They are NOT interchangeable. Message history and
+// sending both key off CHAT_ID, so `id` / `chatId` below prefer
+// chat_id over channel_id. `channelId` is kept separately for
+// anything that specifically needs the channel object.
+// `uniqueName` is required for POST /channels/:channelUniqueName/message
+// ============================================================
 
 const normalizeChannel = (record = {}, index = 0) => {
-  const rawId = getValue(
-    record,
-    "channel_id",
-    "channelId",
-    "chat_id",
-    "chatId",
-    "id",
-    "unique_name",
-    "uniqueName",
-  );
+  const chatIdValue = getValue(record, "chat_id", "chatId");
 
-  const id = getId(rawId) || `channel-${index}`;
+  const channelIdValue = getValue(record, "channel_id", "channelId", "id");
+
+  // Prefer chat_id for the message stream identifier.
+  const chatId =
+    getId(chatIdValue) || getId(channelIdValue) || `channel-${index}`;
+
+  const channelId = getId(channelIdValue) || chatId;
 
   const name = toText(
     getValue(
@@ -216,10 +220,16 @@ const normalizeChannel = (record = {}, index = 0) => {
   );
 
   return {
-    id: String(id),
+    // Primary list key + message-stream id used by the widget.
+    id: String(chatId),
+    chatId: String(chatId),
+
+    // Channel object id (for linking, not for /messages).
+    channelId: String(channelId),
 
     name: String(name),
 
+    // Required by sendCliqChannelMessage → POST .../channels/:channelUniqueName/message
     uniqueName: String(uniqueName),
 
     isPrivate: Boolean(getValue(record, "is_private", "private", "isPrivate")),
@@ -229,6 +239,8 @@ const normalizeChannel = (record = {}, index = 0) => {
     participantCount:
       Number(getValue(record, "participants_count", "participantCount")) ||
       null,
+
+    type: "channel",
 
     raw: record,
   };
@@ -242,6 +254,7 @@ const normalizeChat = (record = {}, index = 0) => {
   if (!record || typeof record !== "object") {
     return {
       id: `chat-${index}`,
+      chatId: `chat-${index}`,
       name: `Chat ${index + 1}`,
       type: "chat",
       participantId: null,
@@ -285,7 +298,7 @@ const normalizeChat = (record = {}, index = 0) => {
 
   const rawId = getValue(record, "chat_id", "chatId", "id");
 
-  const id = getId(rawId) || `chat-${index}`;
+  const chatId = getId(rawId) || `chat-${index}`;
 
   const name = toText(
     getValue(
@@ -306,7 +319,9 @@ const normalizeChat = (record = {}, index = 0) => {
   );
 
   return {
-    id: String(id),
+    id: String(chatId),
+    // Explicit chatId so the widget can always read item.chatId
+    chatId: String(chatId),
 
     name: String(name),
 
@@ -323,6 +338,144 @@ const normalizeChat = (record = {}, index = 0) => {
     participantCount:
       Number(getValue(record, "participants_count", "participantCount")) ||
       null,
+
+    raw: record,
+  };
+};
+
+// ============================================================
+// PIN NORMALIZATION
+// ============================================================
+//
+// /pins returns chat folders ("pin categories"), each with a
+// list of pinned chats. We flatten that into one list of pinned
+// chats, tagging each with which folder it came from.
+// ============================================================
+
+const normalizePin = (chatRecord = {}, category = {}, index = 0) => {
+  const rawId = getValue(chatRecord, "chat_id", "chatId", "id");
+
+  const chatId = getId(rawId) || `pin-${index}`;
+
+  const name = toText(
+    getValue(chatRecord, "name", "title", "display_name", "displayName"),
+    `Pinned chat ${index + 1}`,
+  );
+
+  const type = toText(getValue(chatRecord, "chat_type", "type"), "chat");
+
+  return {
+    id: String(chatId),
+    chatId: String(chatId),
+
+    name: String(name),
+
+    type: String(type),
+
+    categoryId: toText(
+      getValue(category, "category_id", "categoryId"),
+      "default",
+    ),
+
+    categoryTitle: toText(getValue(category, "title"), "My Pins"),
+
+    participantCount:
+      Number(getValue(chatRecord, "participant_count", "participantCount")) ||
+      null,
+
+    raw: chatRecord,
+  };
+};
+
+// ============================================================
+// THREAD NORMALIZATION
+// ============================================================
+
+const normalizeThread = (record = {}, index = 0) => {
+  const rawId = getValue(record, "chat_id", "chatId", "id");
+
+  const chatId = getId(rawId) || `thread-${index}`;
+
+  const parentChatId = getId(
+    getValue(record, "parent_chat_id", "parentChatId"),
+  );
+
+  const parentName = toText(
+    getValue(record, "parent_name", "parentName"),
+    "Thread",
+  );
+
+  const parentType = toText(
+    getValue(record, "parent_type", "parentType"),
+    "chat",
+  );
+
+  return {
+    id: String(chatId),
+    // Threads are themselves chats; history/send use this chatId.
+    chatId: String(chatId),
+
+    parentChatId: parentChatId ? String(parentChatId) : null,
+
+    parentName: String(parentName),
+
+    parentType: String(parentType),
+
+    type: "thread",
+
+    name: String(parentName),
+
+    followerCount:
+      Number(getValue(record, "follower_count", "followerCount")) || 0,
+
+    isFollower: Boolean(getValue(record, "is_follower", "isFollower")),
+
+    raw: record,
+  };
+};
+
+// ============================================================
+// PERSON NORMALIZATION
+// ============================================================
+
+const normalizePerson = (record = {}, index = 0) => {
+  const rawId = getValue(record, "id", "zuid");
+
+  const id = getId(rawId) || `person-${index}`;
+
+  const name = toText(
+    getValue(
+      record,
+      "full_name",
+      "fullName",
+      "display_name",
+      "displayName",
+      "name",
+    ),
+    `Person ${index + 1}`,
+  );
+
+  // Controller: POST :ownerKey/people/:emailId/message
+  // Widget passes email into sendCliqPersonMessage.
+  const email = toText(getValue(record, "email_id", "emailId", "email"), "");
+
+  const designation = toText(getValue(record, "designation"), "");
+
+  const status = toText(getValue(record, "status"), "");
+
+  return {
+    id: String(id),
+
+    name: String(name),
+
+    email: String(email),
+
+    designation: String(designation),
+
+    isActive: status === "active",
+
+    // People are not chats until a conversation exists.
+    chatId: null,
 
     raw: record,
   };
@@ -634,6 +787,20 @@ const sortMessages = (messages) => {
 
 // ============================================================
 // API
+// Matches ZohoCliqController:
+//
+// GET  /zoho/cliq/:ownerKey/status
+// GET  /zoho/cliq/:ownerKey/channels
+// GET  /zoho/cliq/:ownerKey/chats
+// GET  /zoho/cliq/:ownerKey/chats/:chatId
+// GET  /zoho/cliq/:ownerKey/chats/:chatId/messages?limit&fromtime
+// POST /zoho/cliq/:ownerKey/chats/:chatId/message          { text }
+// GET  /zoho/cliq/:ownerKey/chats/:chatId/threads
+// POST /zoho/cliq/:ownerKey/channels/:channelUniqueName/message  { text }
+// GET  /zoho/cliq/:ownerKey/pins
+// GET  /zoho/cliq/:ownerKey/threads
+// GET  /zoho/cliq/:ownerKey/people?limit
+// POST /zoho/cliq/:ownerKey/people/:emailId/message        { text }
 // ============================================================
 
 export const cliqApi = baseApi.injectEndpoints({
@@ -794,6 +961,7 @@ export const cliqApi = baseApi.injectEndpoints({
 
     // ======================================================
     // MESSAGE HISTORY
+    // GET :ownerKey/chats/:chatId/messages?limit&fromtime
     // ======================================================
 
     getCliqMessages: builder.query({
@@ -870,6 +1038,8 @@ export const cliqApi = baseApi.injectEndpoints({
 
     // ======================================================
     // SEND CHAT MESSAGE
+    // POST :ownerKey/chats/:chatId/message  { text }
+    // (singular /message — not /messages)
     // ======================================================
 
     sendCliqMessage: builder.mutation({
@@ -906,19 +1076,6 @@ export const cliqApi = baseApi.injectEndpoints({
           };
         }
 
-        /*
-         * IMPORTANT:
-         *
-         * Chat history:
-         * GET /chats/{chatId}/messages
-         *
-         * Sending:
-         * POST /chats/{chatId}/message
-         *
-         * NOT:
-         * POST /chats/{chatId}/messages
-         */
-
         const result = await fetchWithBQ({
           url: `/zoho/cliq/${encodeURIComponent(
             ownerKey,
@@ -954,6 +1111,7 @@ export const cliqApi = baseApi.injectEndpoints({
 
     // ======================================================
     // SEND CHANNEL MESSAGE
+    // POST :ownerKey/channels/:channelUniqueName/message  { text }
     // ======================================================
 
     sendCliqChannelMessage: builder.mutation({
@@ -1018,7 +1176,246 @@ export const cliqApi = baseApi.injectEndpoints({
         };
       },
 
-      invalidatesTags: ["CliqChannels"],
+      invalidatesTags: ["CliqChannels", "CliqChats"],
+    }),
+
+    // ======================================================
+    // MY PINS
+    // ======================================================
+
+    getCliqPins: builder.query({
+      async queryFn(_arg, _queryApi, _extraOptions, fetchWithBQ) {
+        const ownerKey = getOwnerKey();
+
+        if (!ownerKey) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "No authenticated user found. Please log in again.",
+            },
+          };
+        }
+
+        const result = await fetchWithBQ({
+          url: `/zoho/cliq/${encodeURIComponent(ownerKey)}/pins`,
+          method: "GET",
+        });
+
+        if (result.error) {
+          return {
+            error: result.error,
+          };
+        }
+
+        const categories = extractRecords(result.data);
+
+        const pins = categories.flatMap((category) => {
+          const chats = Array.isArray(category?.chats) ? category.chats : [];
+
+          return chats.map((chat, index) =>
+            normalizePin(chat, category, index),
+          );
+        });
+
+        return {
+          data: pins,
+        };
+      },
+
+      providesTags: ["CliqPins"],
+    }),
+
+    // ======================================================
+    // THREADS IN A SPECIFIC CHAT
+    // GET :ownerKey/chats/:chatId/threads
+    // ======================================================
+
+    getCliqChatThreads: builder.query({
+      async queryFn(chatId, _queryApi, _extraOptions, fetchWithBQ) {
+        const ownerKey = getOwnerKey();
+
+        if (!ownerKey) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "No authenticated user found. Please log in again.",
+            },
+          };
+        }
+
+        if (!chatId) {
+          return { data: [] };
+        }
+
+        const result = await fetchWithBQ({
+          url: `/zoho/cliq/${encodeURIComponent(
+            ownerKey,
+          )}/chats/${encodeURIComponent(chatId)}/threads`,
+          method: "GET",
+        });
+
+        if (result.error) {
+          return {
+            error: result.error,
+          };
+        }
+
+        const records = extractRecords(result.data);
+
+        return {
+          data: records.map((record, index) => normalizeThread(record, index)),
+        };
+      },
+
+      providesTags: (result, error, chatId) => [
+        { type: "CliqThreads", id: chatId },
+      ],
+    }),
+
+    // ======================================================
+    // MY THREADS (AGGREGATED)
+    // GET :ownerKey/threads
+    // ======================================================
+
+    getCliqThreads: builder.query({
+      async queryFn(_arg, _queryApi, _extraOptions, fetchWithBQ) {
+        const ownerKey = getOwnerKey();
+
+        if (!ownerKey) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "No authenticated user found. Please log in again.",
+            },
+          };
+        }
+
+        const result = await fetchWithBQ({
+          url: `/zoho/cliq/${encodeURIComponent(ownerKey)}/threads`,
+          method: "GET",
+        });
+
+        if (result.error) {
+          return {
+            error: result.error,
+          };
+        }
+
+        const records = extractRecords(result.data);
+
+        return {
+          data: records.map((record, index) => normalizeThread(record, index)),
+        };
+      },
+
+      providesTags: ["CliqThreads"],
+    }),
+
+    // ======================================================
+    // PEOPLE
+    // GET :ownerKey/people?limit
+    // ======================================================
+
+    getCliqPeople: builder.query({
+      async queryFn(limit = 100, _queryApi, _extraOptions, fetchWithBQ) {
+        const ownerKey = getOwnerKey();
+
+        if (!ownerKey) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "No authenticated user found. Please log in again.",
+            },
+          };
+        }
+
+        const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 200);
+
+        const result = await fetchWithBQ({
+          url: `/zoho/cliq/${encodeURIComponent(ownerKey)}/people`,
+          method: "GET",
+          params: { limit: safeLimit },
+        });
+
+        if (result.error) {
+          return {
+            error: result.error,
+          };
+        }
+
+        const records = extractRecords(result.data);
+
+        return {
+          data: records.map((record, index) => normalizePerson(record, index)),
+        };
+      },
+
+      providesTags: ["CliqPeople"],
+    }),
+
+    // ======================================================
+    // MESSAGE A PERSON DIRECTLY
+    // POST :ownerKey/people/:emailId/message  { text }
+    // ======================================================
+
+    sendCliqPersonMessage: builder.mutation({
+      async queryFn({ email, text }, _queryApi, _extraOptions, fetchWithBQ) {
+        const ownerKey = getOwnerKey();
+
+        if (!ownerKey) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "No authenticated user found. Please log in again.",
+            },
+          };
+        }
+
+        if (!email) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "A person's email is required.",
+            },
+          };
+        }
+
+        const messageText =
+          typeof text === "string" ? text.trim() : String(text ?? "").trim();
+
+        if (!messageText) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "Message text is required.",
+            },
+          };
+        }
+
+        const result = await fetchWithBQ({
+          url: `/zoho/cliq/${encodeURIComponent(
+            ownerKey,
+          )}/people/${encodeURIComponent(email)}/message`,
+
+          method: "POST",
+
+          body: {
+            text: messageText,
+          },
+        });
+
+        if (result.error) {
+          return {
+            error: result.error,
+          };
+        }
+
+        return {
+          data: result.data,
+        };
+      },
+
+      invalidatesTags: ["CliqChats"],
     }),
   }),
 
@@ -1037,4 +1434,9 @@ export const {
   useGetCliqMessagesQuery,
   useSendCliqMessageMutation,
   useSendCliqChannelMessageMutation,
+  useGetCliqPinsQuery,
+  useGetCliqChatThreadsQuery,
+  useGetCliqThreadsQuery,
+  useGetCliqPeopleQuery,
+  useSendCliqPersonMessageMutation,
 } = cliqApi;

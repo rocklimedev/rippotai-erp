@@ -15,6 +15,7 @@ import { ProjectBriefReference } from './models/project-bref-reference.model';
 import { ProjectBriefPhase } from './models/project-bref-phase.model';
 import { ProjectBriefOccupant } from './models/project-brief-occupant.model';
 import { ProjectBriefAttachment } from './models/project-brief-attachment.model';
+import { ProjectBriefSiteRestriction } from './models/project-brief-site-restriction.model';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ProjectBriefAttachment } from './models/project-brief-attachment.model'
       ProjectBriefPhase,
       ProjectBriefOccupant,
       ProjectBriefAttachment,
+      ProjectBriefSiteRestriction,
     ]),
   ],
 

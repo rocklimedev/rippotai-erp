@@ -63,6 +63,7 @@ import { GatesModule } from './modules/gates/gates.module';
 import { ZohoModule } from './modules/zoho/zoho.module';
 import { MicrosoftModule } from './modules/microsoft/microsoft.module';
 import { GoogleModule } from './modules/google/google.module';
+import { ProjectPlannerModule } from './modules/projects/project-planner.module';
 
 @Module({
   imports: [
@@ -99,6 +100,7 @@ import { GoogleModule } from './modules/google/google.module';
     SettingsModule,
     ProjectsModule,
     ClientsModule,
+    ProjectPlannerModule,
     VendorsModule,
     PlanOfActionsModule,
     PaymentSchedulesModule,

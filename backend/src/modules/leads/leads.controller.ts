@@ -1,185 +1,96 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Param,
   Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
   Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 
-import { CurrentUser } from '@/common/decorator/current-user.decorator';
-import { User } from '@/modules/users/models/user.model';
-
 import { LeadsService } from './leads.service';
-import { CreateLeadDto } from './dto/create-lead.dto';
-import { UpdateLeadDto } from './dto/update-lead.dto';
-import { MoveStageDto } from './dto/move-stage.dto';
-import { AddNoteDto } from './dto/add-note.dto';
-import { ProposalDto } from './dto/proposal.dto';
-import { QueryLeadsDto } from './dto/query-leads.dto';
-import { UpdateDocDto } from './dto/update-doc.dto';
+
+import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
+import type { RequestWithUser } from '@/common/interfaces/request-with-user-interfaces';
 
 @Controller('leads')
+@UseGuards(JwtAuthGuard)
 export class LeadsController {
   constructor(private readonly leadsService: LeadsService) {}
 
-  // =========================
-  // CREATE LEAD
-  // =========================
-
-  @Post()
-  async create(@Body() dto: CreateLeadDto, @CurrentUser() user: User) {
-    return this.leadsService.create(dto, user);
-  }
-
-  // =========================
-  // GET ALL / FILTERED
-  // =========================
-
-  @Get()
-  async findAll(@Query() query: QueryLeadsDto) {
-    return this.leadsService.findAll(query);
-  }
-
-  // =========================
-  // KANBAN BOARD
-  // =========================
-
+  // GET /api/v1/leads/board
   @Get('board')
-  async board() {
-    return this.leadsService.board();
+  getBoard(@Req() req: RequestWithUser) {
+    return this.leadsService.getBoard(req.user.id);
   }
 
-  // =========================
-  // REVIEW
-  // IMPORTANT: keep this BEFORE :id
-  // =========================
-
-  @Get('review')
-  async review(@Query('stuckDays') stuckDays?: string) {
-    return this.leadsService.review(stuckDays ? Number(stuckDays) : undefined);
+  // POST /api/v1/leads
+  @Post()
+  createLead(@Req() req: RequestWithUser, @Body() body: Record<string, any>) {
+    return this.leadsService.createLead(req.user.id, body as any);
   }
 
-  // =========================
-  // GET ONE
-  // =========================
-
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.leadsService.findOne(id);
-  }
-
-  // =========================
-  // UPDATE LEAD
-  // =========================
-
-  @Patch(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() dto: UpdateLeadDto,
-    @CurrentUser() user: User,
+  // GET /api/v1/leads?q=&sort=
+  @Get()
+  getLeads(
+    @Req() req: RequestWithUser,
+    @Query('q') q?: string,
+    @Query('sort') sort?: string,
   ) {
-    return this.leadsService.update(id, dto, user);
+    return this.leadsService.getLeads(req.user.id, { q, sort });
   }
 
-  // =========================
-  // MOVE STAGE
-  // =========================
-
-  @Patch(':id/stage')
-  async moveStage(
-    @Param('id') id: string,
-    @Body() dto: MoveStageDto,
-    @CurrentUser() user: User,
-  ) {
-    return this.leadsService.moveStage(id, dto, user);
-  }
-
-  // =========================
-  // QUICK STAGE ACTIONS
-  // =========================
-
-  @Patch(':id/nurture')
-  async markNurture(@Param('id') id: string, @CurrentUser() user: User) {
-    return this.leadsService.markNurture(id, user);
-  }
-
-  @Patch(':id/lost')
-  async markLost(@Param('id') id: string, @CurrentUser() user: User) {
-    return this.leadsService.markLost(id, user);
-  }
-
-  // =========================
-  // ADD NOTE
-  // =========================
-
-  @Post(':id/notes')
-  async addNote(
-    @Param('id') id: string,
-    @Body() dto: AddNoteDto,
-    @CurrentUser() user: User,
-  ) {
-    return this.leadsService.addNote(id, dto, user);
-  }
-
-  // =========================
-  // SET PROPOSAL
-  // =========================
-
-  @Patch(':id/proposal')
-  async setProposal(
-    @Param('id') id: string,
-    @Body() dto: ProposalDto,
-    @CurrentUser() user: User,
-  ) {
-    return this.leadsService.setProposal(id, dto, user);
-  }
-
-  // =========================
-  // UPDATE DOCUMENT STATUS
-  // =========================
-
-  @Patch(':id/docs/:docType')
-  async updateDoc(
-    @Param('id') id: string,
-    @Param('docType') docType: string,
-    @Body() dto: UpdateDocDto,
-  ) {
-    return this.leadsService.updateDoc(id, docType as any, dto);
-  }
-
-  // =========================
-  // UPDATE COLOR
-  // =========================
-
-  @Patch(':id/color')
-  async updateColor(
-    @Param('id') id: string,
-    @Body('color') color: string | null,
-  ) {
-    return this.leadsService.updateColor(id, color);
-  }
-
-  // =========================
-  // UPDATE FOLLOW-UP
-  // =========================
-
-  @Patch(':id/follow-up')
-  async updateFollowUp(
-    @Param('id') id: string,
-    @Body('followUp') followUp: string | null,
-  ) {
-    return this.leadsService.updateFollowUp(id, followUp);
-  }
-
-  // =========================
-  // DELETE LEAD
-  // =========================
-
+  // DELETE /api/v1/leads/:id
   @Delete(':id')
-  async remove(@Param('id') id: string, @CurrentUser() user: User) {
-    return this.leadsService.remove(id, user);
+  deleteLead(@Req() req: RequestWithUser, @Param('id') id: string) {
+    return this.leadsService.deleteLead(req.user.id, id);
+  }
+
+  // PUT /api/v1/leads/:id/stage
+  @Put(':id/stage')
+  moveStage(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Body('stage') stage: string,
+  ) {
+    return this.leadsService.moveStage(req.user.id, id, stage);
+  }
+
+  // PUT /api/v1/leads/:id
+  @Put(':id')
+  updateLead(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Body() body: Record<string, any>,
+  ) {
+    return this.leadsService.updateLead(req.user.id, id, body);
+  }
+
+  // POST /api/v1/leads/:id/notes
+  @Post(':id/notes')
+  addNote(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Body('text') text: string,
+  ) {
+    return this.leadsService.addNote(req.user.id, id, text);
+  }
+
+  // PUT /api/v1/leads/:id/proposal
+  @Put(':id/proposal')
+  setProposal(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Body()
+    body: {
+      amount: string;
+      timeline: string;
+      remarks?: string;
+    },
+  ) {
+    return this.leadsService.setProposal(req.user.id, id, body);
   }
 }

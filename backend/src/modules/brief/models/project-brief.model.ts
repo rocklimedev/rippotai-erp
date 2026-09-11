@@ -21,12 +21,11 @@ import {
   SiteType,
   SiteCondition,
   MaintenanceAppetite,
-  BudgetGstStatus,
-  FundingStage,
-  StartDateStatus,
+  DrawingsAvailable,
 } from '@/common/types/project-brief.types';
 
 import { Project } from '@/modules/projects/models/projects.model';
+import { ProjectType } from '@/modules/projects/models/project-type.model';
 import { User } from '../../users/models/user.model';
 
 import { ProjectBriefDocument } from './project-brief-document.model';
@@ -39,6 +38,7 @@ import { ProjectBriefReference } from './project-bref-reference.model';
 import { ProjectBriefPhase } from './project-bref-phase.model';
 import { ProjectBriefOccupant } from './project-brief-occupant.model';
 import { ProjectBriefAttachment } from './project-brief-attachment.model';
+import { ProjectBriefSiteRestriction } from './project-brief-site-restriction.model';
 
 @Table({
   tableName: 'project_briefs',
@@ -82,8 +82,15 @@ export class ProjectBrief extends Model<ProjectBrief> {
   @Column(DataType.TEXT)
   declare siteAddress: string | null;
 
-  @Column(DataType.STRING)
-  declare propertyType: string | null;
+  @ForeignKey(() => ProjectType)
+  @Column({
+    type: DataType.CHAR(36),
+    allowNull: true,
+  })
+  declare projectTypeId: string | null;
+
+  @BelongsTo(() => ProjectType, 'projectTypeId')
+  declare projectType: ProjectType | null;
 
   @Column(DataType.DECIMAL(15, 2))
   declare siteArea: number | null;
@@ -92,9 +99,6 @@ export class ProjectBrief extends Model<ProjectBrief> {
     type: DataType.ENUM(...Object.values(SiteAreaUnit)),
   })
   declare siteAreaUnit: SiteAreaUnit | null;
-
-  @Column(DataType.STRING(50))
-  declare siteAreaOtherUnit: string | null;
 
   @Column(DataType.STRING)
   declare facingOrientation: string | null;
@@ -116,13 +120,15 @@ export class ProjectBrief extends Model<ProjectBrief> {
   })
   declare siteType: SiteType | null;
 
-  @Column(DataType.STRING)
-  declare siteTypeOther: string | null;
-
   @Column({
     type: DataType.ENUM(...Object.values(SiteCondition)),
   })
   declare siteCondition: SiteCondition | null;
+
+  @Column({
+    type: DataType.ENUM(...Object.values(DrawingsAvailable)),
+  })
+  declare drawingsAvailable: DrawingsAvailable | null;
 
   @Column(DataType.TEXT)
   declare drawingsOther: string | null;
@@ -185,16 +191,6 @@ export class ProjectBrief extends Model<ProjectBrief> {
   @Column(DataType.STRING(10))
   declare budgetCurrency: string;
 
-  @Column({
-    type: DataType.ENUM(...Object.values(BudgetGstStatus)),
-  })
-  declare budgetGstStatus: BudgetGstStatus | null;
-
-  @Column({
-    type: DataType.ENUM(...Object.values(FundingStage)),
-  })
-  declare fundingStage: FundingStage | null;
-
   @Column(DataType.TEXT)
   declare budgetFlexibility: string | null;
 
@@ -204,11 +200,6 @@ export class ProjectBrief extends Model<ProjectBrief> {
 
   @Column(DataType.DATEONLY)
   declare desiredStartDate: string | null;
-
-  @Column({
-    type: DataType.ENUM(...Object.values(StartDateStatus)),
-  })
-  declare startDateStatus: StartDateStatus | null;
 
   @Column(DataType.DATEONLY)
   declare siteHandoverDate: string | null;
@@ -221,34 +212,6 @@ export class ProjectBrief extends Model<ProjectBrief> {
 
   @Column(DataType.BOOLEAN)
   declare phasingRequired: boolean | null;
-
-  // =========================================================
-  // SITE OPERATIONS
-  // =========================================================
-
-  @Column(DataType.TEXT)
-  declare societyRwaPermittedWorkTimings: string | null;
-
-  @Column(DataType.TEXT)
-  declare nocOrSecurityDepositRequired: string | null;
-
-  @Column(DataType.TEXT)
-  declare structuralChangesPermitted: string | null;
-
-  @Column(DataType.TEXT)
-  declare materialMovementRestrictions: string | null;
-
-  @Column(DataType.TEXT)
-  declare neighbourSensitivities: string | null;
-
-  @Column(DataType.TEXT)
-  declare powerAndWaterAvailability: string | null;
-
-  @Column(DataType.TEXT)
-  declare accessStorageDebrisDisposal: string | null;
-
-  @Column(DataType.TEXT)
-  declare ongoingWorkByOtherAgencies: string | null;
 
   // =========================================================
   // HOUSEHOLD
@@ -336,6 +299,9 @@ export class ProjectBrief extends Model<ProjectBrief> {
 
   @HasMany(() => ProjectBriefAttachment, 'projectBriefId')
   declare attachments: ProjectBriefAttachment[];
+
+  @HasMany(() => ProjectBriefSiteRestriction, 'projectBriefId')
+  declare siteRestrictions: ProjectBriefSiteRestriction[];
 
   @CreatedAt
   declare createdAt: Date;

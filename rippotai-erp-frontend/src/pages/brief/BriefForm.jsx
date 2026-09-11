@@ -11,471 +11,18 @@ import {
   useGetProjectBriefQuery,
   useUpdateProjectBriefMutation,
 } from "../../api/documents/brief.api";
+import { useGetProjectTypesQuery } from "../../api/projects/project-type.api"; // adjust path if needed
 
-import { BRIEF_SECTIONS } from "../../hooks/brief-sections";
+import { BRIEF_SECTIONS } from "../../hooks/brief-sections"; // or wherever you place the updated config
+import NewProjectModal from "../../components/projects/CreateNewProject";
+
+import {
+  normalizeProjectBrief,
+  buildProjectBriefPayload,
+  todayISO,
+} from "../../hooks/brief-form-helpers"; // adjust import path
 
 const SAVE_KEY = "bc.project-brief.draft";
-
-// ============================================================
-// HELPERS
-// ============================================================
-
-const splitLines = (value) => {
-  if (!value) {
-    return [];
-  }
-
-  if (Array.isArray(value)) {
-    return value;
-  }
-
-  return String(value)
-    .split("\n")
-    .map((item) => item.trim())
-    .filter(Boolean);
-};
-
-const parseBoolean = (value) => {
-  if (value === true || value === false) {
-    return value;
-  }
-
-  if (value === null || value === undefined || value === "") {
-    return null;
-  }
-
-  const normalized = String(value).trim().toLowerCase();
-
-  if (["yes", "true", "1"].includes(normalized)) {
-    return true;
-  }
-
-  if (["no", "false", "0"].includes(normalized)) {
-    return false;
-  }
-
-  return null;
-};
-
-// ============================================================
-// API RESPONSE -> FORM VALUES
-// ============================================================
-
-const normalizeProjectBrief = (brief) => {
-  if (!brief) {
-    return {};
-  }
-
-  return {
-    // ========================================================
-    // CLIENT / PROJECT
-    // ========================================================
-
-    relationshipToClient: brief.relationshipToClient ?? "",
-
-    referredBySource: brief.referredBySource ?? "",
-
-    briefDate: brief.briefDate ?? "",
-
-    // ========================================================
-    // SITE
-    // ========================================================
-
-    siteAddress: brief.siteAddress ?? "",
-
-    propertyType: brief.propertyType ?? "",
-
-    siteArea: brief.siteArea ?? "",
-
-    siteAreaUnit: brief.siteAreaUnit ?? "",
-
-    siteAreaOtherUnit: brief.siteAreaOtherUnit ?? "",
-
-    facingOrientation: brief.facingOrientation ?? "",
-
-    parkingProvision: brief.parkingProvision ?? "",
-
-    ownershipStatus: brief.ownershipStatus ?? "",
-
-    numberOfFloors: brief.numberOfFloors ?? "",
-
-    liftAvailable: brief.liftAvailable === true ? "Yes" : brief.liftAvailable === false ? "No" : brief.liftAvailable ?? "",
-
-    siteType: brief.siteType ?? "",
-
-    siteTypeOther: brief.siteTypeOther ?? "",
-
-    siteCondition: brief.siteCondition ?? "",
-
-    drawingsOther: brief.drawingsOther ?? "",
-
-    // ========================================================
-    // SCOPE
-    // ========================================================
-
-    workTypeOther: brief.workTypeOther ?? "",
-
-    servicesOther: brief.servicesOther ?? "",
-
-    areasIncludedInScope: brief.areasIncludedInScope ?? "",
-
-    areasExcludedFromScope: brief.areasExcludedFromScope ?? "",
-
-    workAlreadyDoneByOthers: brief.workAlreadyDoneByOthers ?? "",
-
-    // ========================================================
-    // DESIGN
-    // ========================================================
-
-    vastuRequirements: brief.vastuRequirements ?? "",
-
-    coloursToAvoid: brief.coloursToAvoid ?? "",
-
-    materialsLiked: brief.materialsLiked ?? "",
-
-    materialsDislikedHardNo: brief.materialsDislikedHardNo ?? "",
-
-    mustHaveElements: brief.mustHaveElements ?? "",
-
-    coloursPreferred: brief.coloursPreferred ?? "",
-
-    maintenanceAppetite: brief.maintenanceAppetite ?? "",
-
-    // ========================================================
-    // BUDGET
-    // ========================================================
-
-    initialClientBudget: brief.initialClientBudget ?? "",
-
-    budgetCurrency: brief.budgetCurrency ?? "INR",
-
-    budgetGstStatus: brief.budgetGstStatus ?? "",
-
-    fundingStage: brief.fundingStage ?? "",
-
-    budgetFlexibility: brief.budgetFlexibility ?? "",
-
-    // ========================================================
-    // TIMELINE
-    // ========================================================
-
-    desiredStartDate: brief.desiredStartDate ?? "",
-
-    startDateStatus: brief.startDateStatus ?? "",
-
-    siteHandoverDate: brief.siteHandoverDate ?? "",
-
-    targetCompletionDate: brief.targetCompletionDate ?? "",
-
-    deadlineReason: brief.deadlineReason ?? "",
-
-    phasingRequired: brief.phasingRequired === true ? "Yes" : brief.phasingRequired === false ? "No" : brief.phasingRequired ?? "",
-
-    // ========================================================
-    // SITE RESTRICTIONS
-    // ========================================================
-
-    societyRwaPermittedWorkTimings: brief.societyRwaPermittedWorkTimings ?? "",
-
-    nocOrSecurityDepositRequired: brief.nocOrSecurityDepositRequired ?? "",
-
-    structuralChangesPermitted: brief.structuralChangesPermitted ?? "",
-
-    materialMovementRestrictions: brief.materialMovementRestrictions ?? "",
-
-    neighbourSensitivities: brief.neighbourSensitivities ?? "",
-
-    powerAndWaterAvailability: brief.powerAndWaterAvailability ?? "",
-
-    accessStorageDebrisDisposal: brief.accessStorageDebrisDisposal ?? "",
-
-    ongoingWorkByOtherAgencies: brief.ongoingWorkByOtherAgencies ?? "",
-
-    // ========================================================
-    // NOTES
-    // ========================================================
-
-    householdNotes: brief.householdNotes ?? "",
-
-    openPointsToClose: brief.openPointsToClose ?? "",
-
-    // ========================================================
-    // ADMIN
-    // ========================================================
-
-    briefTakenBy: brief.briefTakenBy ?? "",
-
-    briefTakenDate: brief.briefTakenDate ?? "",
-
-    // ========================================================
-    // CHILD COLLECTIONS
-    // ========================================================
-
-    // ProjectBriefWorkType.workType
-    workTypes: (brief.workTypes ?? [])
-      .map((item) => item?.workType)
-      .filter(Boolean),
-
-    // ProjectBriefService.serviceType
-    services: (brief.services ?? [])
-      .map((item) => item?.serviceType)
-      .filter(Boolean),
-
-    // ProjectBriefProcurementCategory.category
-    procurementCategories: (brief.procurementCategories ?? [])
-      .map((item) => item?.category)
-      .filter(Boolean),
-
-    // ProjectBriefSpaceRequirement.spaceName
-    spaceRequirements: [...(brief.spaceRequirements ?? [])]
-      .sort((a, b) => Number(a?.sortOrder ?? 0) - Number(b?.sortOrder ?? 0))
-      .map((item) => item?.spaceName)
-      .filter(Boolean)
-      .join("\n"),
-
-    // ProjectBriefStyleDirection.styleDirection
-    styleDirections: (brief.styleDirections ?? [])
-      .map((item) => item?.styleDirection)
-      .filter(Boolean),
-
-    // ProjectBriefReference.description
-    references: [...(brief.references ?? [])]
-      .sort((a, b) => Number(a?.sortOrder ?? 0) - Number(b?.sortOrder ?? 0))
-      .map((item) => item?.description)
-      .filter(Boolean)
-      .join("\n"),
-
-    // ProjectBriefPhase.phaseName
-    phases: [...(brief.phases ?? [])]
-      .sort((a, b) => Number(a?.sortOrder ?? 0) - Number(b?.sortOrder ?? 0))
-      .map((item) => item?.phaseName)
-      .filter(Boolean)
-      .join("\n"),
-
-    // ProjectBriefOccupant.name
-    occupants: [...(brief.occupants ?? [])]
-      .sort((a, b) => Number(a?.sortOrder ?? 0) - Number(b?.sortOrder ?? 0))
-      .map((item) => item?.name)
-      .filter(Boolean)
-      .join("\n"),
-  };
-};
-
-// ============================================================
-// FORM VALUES -> API PAYLOAD
-// ============================================================
-
-const buildProjectBriefPayload = (projectId, values) => {
-  return {
-    // ========================================================
-    // PROJECT
-    // ========================================================
-
-    projectId,
-
-    // ========================================================
-    // CLIENT / PROJECT
-    // ========================================================
-
-    relationshipToClient: values.relationshipToClient || null,
-
-    referredBySource: values.referredBySource || null,
-
-    briefDate: values.briefDate || null,
-
-    // ========================================================
-    // SITE
-    // ========================================================
-
-    siteAddress: values.siteAddress || null,
-
-    propertyType: values.propertyType || null,
-
-    siteArea:
-      values.siteArea !== "" &&
-      values.siteArea !== null &&
-      values.siteArea !== undefined
-        ? Number(values.siteArea)
-        : null,
-
-    siteAreaUnit: values.siteAreaUnit || null,
-
-    siteAreaOtherUnit: values.siteAreaOtherUnit || null,
-
-    facingOrientation: values.facingOrientation || null,
-
-    parkingProvision: values.parkingProvision || null,
-
-    ownershipStatus: values.ownershipStatus || null,
-
-    numberOfFloors:
-      values.numberOfFloors !== "" &&
-      values.numberOfFloors !== null &&
-      values.numberOfFloors !== undefined
-        ? Number(values.numberOfFloors)
-        : null,
-
-    liftAvailable: parseBoolean(values.liftAvailable),
-
-    siteType: values.siteType || null,
-
-    siteTypeOther: values.siteTypeOther || null,
-
-    siteCondition: values.siteCondition || null,
-
-    drawingsOther: values.drawingsOther || null,
-
-    // ========================================================
-    // SCOPE
-    // ========================================================
-
-    workTypeOther: values.workTypeOther || null,
-
-    servicesOther: values.servicesOther || null,
-
-    areasIncludedInScope: values.areasIncludedInScope || null,
-
-    areasExcludedFromScope: values.areasExcludedFromScope || null,
-
-    workAlreadyDoneByOthers: values.workAlreadyDoneByOthers || null,
-
-    // ========================================================
-    // DESIGN
-    // ========================================================
-
-    vastuRequirements: values.vastuRequirements || null,
-
-    coloursToAvoid: values.coloursToAvoid || null,
-
-    materialsLiked: values.materialsLiked || null,
-
-    materialsDislikedHardNo: values.materialsDislikedHardNo || null,
-
-    mustHaveElements: values.mustHaveElements || null,
-
-    coloursPreferred: values.coloursPreferred || null,
-
-    maintenanceAppetite: values.maintenanceAppetite || null,
-
-    // ========================================================
-    // BUDGET
-    // ========================================================
-
-    initialClientBudget:
-      values.initialClientBudget !== "" &&
-      values.initialClientBudget !== null &&
-      values.initialClientBudget !== undefined
-        ? Number(values.initialClientBudget)
-        : null,
-
-    budgetCurrency: values.budgetCurrency || "INR",
-
-    budgetGstStatus: values.budgetGstStatus || null,
-
-    fundingStage: values.fundingStage || null,
-
-    budgetFlexibility: values.budgetFlexibility || null,
-
-    // ========================================================
-    // TIMELINE
-    // ========================================================
-
-    desiredStartDate: values.desiredStartDate || null,
-
-    startDateStatus: values.startDateStatus || null,
-
-    siteHandoverDate: values.siteHandoverDate || null,
-
-    targetCompletionDate: values.targetCompletionDate || null,
-
-    deadlineReason: values.deadlineReason || null,
-
-    phasingRequired: parseBoolean(values.phasingRequired),
-
-    // ========================================================
-    // SITE RESTRICTIONS
-    // ========================================================
-
-    societyRwaPermittedWorkTimings:
-      values.societyRwaPermittedWorkTimings || null,
-
-    nocOrSecurityDepositRequired: values.nocOrSecurityDepositRequired || null,
-
-    structuralChangesPermitted: values.structuralChangesPermitted || null,
-
-    materialMovementRestrictions: values.materialMovementRestrictions || null,
-
-    neighbourSensitivities: values.neighbourSensitivities || null,
-
-    powerAndWaterAvailability: values.powerAndWaterAvailability || null,
-
-    accessStorageDebrisDisposal: values.accessStorageDebrisDisposal || null,
-
-    ongoingWorkByOtherAgencies: values.ongoingWorkByOtherAgencies || null,
-
-    // ========================================================
-    // NOTES
-    // ========================================================
-
-    householdNotes: values.householdNotes || null,
-
-    openPointsToClose: values.openPointsToClose || null,
-
-    // ========================================================
-    // ADMIN
-    // ========================================================
-
-    briefTakenBy: values.briefTakenBy || null,
-
-    briefTakenDate: values.briefTakenDate || null,
-
-    // ========================================================
-    // CHILD COLLECTIONS
-    // ========================================================
-
-    workTypes: splitLines(values.workTypes).map((workType) => ({
-      workType,
-    })),
-
-    services: splitLines(values.services).map((serviceType) => ({
-      serviceType,
-    })),
-
-    procurementCategories: splitLines(values.procurementCategories).map(
-      (category) => ({
-        category,
-      }),
-    ),
-
-    spaceRequirements: splitLines(values.spaceRequirements).map(
-      (spaceName, index) => ({
-        spaceName,
-        sortOrder: index,
-      }),
-    ),
-
-    styleDirections: splitLines(values.styleDirections).map(
-      (styleDirection) => ({
-        styleDirection,
-      }),
-    ),
-
-    references: splitLines(values.references).map((description, index) => ({
-      description,
-      sortOrder: index,
-    })),
-
-    phases: splitLines(values.phases).map((phaseName, index) => ({
-      phaseName,
-      sortOrder: index,
-    })),
-
-    occupants: splitLines(values.occupants).map((name, index) => ({
-      name,
-      sortOrder: index,
-    })),
-  };
-};
 
 // ============================================================
 // COMPONENT
@@ -491,8 +38,29 @@ export function BriefForm() {
   // PROJECTS
   // ==========================================================
 
-  const { data: projects = [], isLoading: projectsLoading } =
-    useGetProjectsQuery();
+  const {
+    data: projects = [],
+    isLoading: projectsLoading,
+    refetch: refetchProjects,
+  } = useGetProjectsQuery();
+
+  // ==========================================================
+  // PROJECT TYPES (for Project Type dropdown)
+  // ==========================================================
+
+  const { data: projectTypes = [], isLoading: projectTypesLoading } =
+    useGetProjectTypesQuery();
+
+  // ==========================================================
+  // NEW PROJECT MODAL
+  // ==========================================================
+
+  const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+
+  const handleProjectCreated = (project) => {
+    refetchProjects();
+    setProjectId(project.id);
+  };
 
   // ==========================================================
   // EXISTING BRIEF
@@ -530,6 +98,23 @@ export function BriefForm() {
   const [initialized, setInitialized] = useState(false);
 
   // ==========================================================
+  // AUTO-SELECT BRIEF DATE (create mode only)
+  // ==========================================================
+
+  useEffect(() => {
+    if (isEditMode) return;
+    if (initialized) return;
+
+    setValues((current) => {
+      if (current.briefDate) return current; // already set (draft or user)
+      return {
+        ...current,
+        briefDate: todayISO(),
+      };
+    });
+  }, [isEditMode, initialized, setValues]);
+
+  // ==========================================================
   // LOAD EXISTING BRIEF INTO FORM
   // ==========================================================
 
@@ -549,9 +134,7 @@ export function BriefForm() {
     const normalized = normalizeProjectBrief(existingBrief);
 
     setProjectId(existingBrief.projectId ?? "");
-
     setValues(normalized);
-
     setInitialized(true);
   }, [isEditMode, existingBrief, initialized, setValues]);
 
@@ -565,7 +148,6 @@ export function BriefForm() {
     }
 
     console.error("Failed to load project brief:", briefError);
-
     toast.error(briefError?.data?.message || "Failed to load project brief");
   }, [briefError]);
 
@@ -618,9 +200,7 @@ export function BriefForm() {
         );
 
         localStorage.removeItem(SAVE_KEY);
-
         nav(`/documents/brief/${data?.id ?? id}`);
-
         return;
       }
 
@@ -635,7 +215,6 @@ export function BriefForm() {
       );
 
       localStorage.removeItem(SAVE_KEY);
-
       nav(`/documents/brief/${data.id}`);
     } catch (error) {
       console.error(
@@ -669,12 +248,12 @@ export function BriefForm() {
     );
   }
 
-  // ==========================================================
-  // TITLE
-  // ==========================================================
-
   if (isEditMode && briefError && !initialized) {
-    return <div role="alert" className="p-8 text-sm text-destructive">Unable to load this brief. Reload the page to try again.</div>;
+    return (
+      <div role="alert" className="p-8 text-sm text-destructive">
+        Unable to load this brief. Reload the page to try again.
+      </div>
+    );
   }
 
   const title = isEditMode ? "Edit Project Brief" : "Project Brief";
@@ -683,23 +262,56 @@ export function BriefForm() {
     ? "Update the client brief, project requirements, design direction, budget, timeline and site constraints."
     : "Capture the complete client brief, project requirements, design direction, budget, timeline and site constraints.";
 
+  // Inject live project type options into the sections config
+  const sectionsWithProjectTypes = BRIEF_SECTIONS.map((section) => {
+    if (section.key !== "siteProperty") return section;
+
+    return {
+      ...section,
+      fields: section.fields.map((field) => {
+        if (field.key !== "projectType") return field;
+
+        return {
+          ...field,
+          options: (projectTypes || []).map((pt) => ({
+            value: pt.id ?? pt.value ?? pt.name,
+            label: pt.name ?? pt.label ?? String(pt.id),
+          })),
+        };
+      }),
+    };
+  });
+
   // ==========================================================
   // RENDER
   // ==========================================================
 
   return (
-    <BriefSectionForm
-      title={title}
-      subtitle={subtitle}
-      sections={BRIEF_SECTIONS}
-      values={values}
-      onFieldChange={handleFieldChange}
-      projects={projects}
-      projectsLoading={projectsLoading}
-      projectId={projectId}
-      onProjectChange={setProjectId}
-      onSubmit={handleSubmit}
-      isSubmitting={isSubmitting || projectsLoading || briefLoading}
-    />
+    <>
+      <BriefSectionForm
+        title={title}
+        subtitle={subtitle}
+        sections={sectionsWithProjectTypes}
+        values={values}
+        onFieldChange={handleFieldChange}
+        projects={projects}
+        projectsLoading={projectsLoading}
+        projectId={projectId}
+        onProjectChange={setProjectId}
+        onAddProject={() => setShowNewProjectModal(true)}
+        onSubmit={handleSubmit}
+        isSubmitting={
+          isSubmitting || projectsLoading || briefLoading || projectTypesLoading
+        }
+      />
+
+      <NewProjectModal
+        open={showNewProjectModal}
+        onClose={() => setShowNewProjectModal(false)}
+        onCreated={handleProjectCreated}
+      />
+    </>
   );
 }
+
+export default BriefForm;

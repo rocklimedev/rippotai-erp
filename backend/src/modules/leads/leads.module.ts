@@ -12,12 +12,14 @@ import { LeadActivityService } from './lead-activity.service';
 
 import { NotificationsModule } from '../engagement/notifications.module';
 import { ActivityLogsModule } from '../engagement/activity-logs.module';
+import { ZohoModule } from '../zoho/zoho.module';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([Lead, LeadNote, LeadActivity]),
     NotificationsModule,
     ActivityLogsModule,
+    ZohoModule,
   ],
 
   controllers: [LeadsController],

@@ -1,115 +1,109 @@
-// Shared design tokens + lookup helpers for the Leads module.
-// Colors are drawn from the app's brand palette (see index.css --ink-green,
-// --sage, --mist, --gold etc.) rather than one-off hex values, so this module
-// stays visually consistent with the rest of the product.
+// src/hooks/stages.js
+//
+// Single source of truth for the Zoho Bigin "Pipelines" stage
+// picklist used by the Leads board. This mirrors the stages
+// configured on the Bigin pipeline itself (Settings > Pipelines):
+// Qualification -> Needs Analysis -> Proposal/Price Quote ->
+// Negotiation/Review -> Closed Won -> Closed Lost.
+//
+// If the pipeline is edited in Bigin (stage renamed/added/reordered),
+// update this list — the board columns, accent colors, and labels
+// all derive from it.
 
-export const card = {
-  background: "#FFFFFF",
-  border: "1px solid #E4EBF1",
-  borderRadius: "16px",
-  boxShadow: "0 2px 8px rgba(22, 27, 29, 0.04)",
-};
+// `accent` is the solid color used on the board (column header dot +
+// top border), matching Bigin's own board where every open stage
+// shares one accent and only Closed Won/Lost stand out (green/red).
+//
+// `bg`/`fg` are a softer pastel pair used for badges/pills elsewhere
+// (e.g. the Pipeline column on ContactsView) — these vary per stage
+// so a Qualification badge doesn't look identical to a Negotiation
+// one in a plain list view. Purely a display choice; change freely.
 export const STAGES = [
-  { id: "capture", label: "Lead Capture" },
-  { id: "qual", label: "Qualification" },
-  { id: "disc", label: "Discovery / Site Visit" },
-  { id: "prop", label: "Proposal / Concept" },
-  { id: "nego", label: "Negotiation" },
-  { id: "contract", label: "Contract Signed" },
-  { id: "handoff", label: "Handoff to Execution" },
+  {
+    id: "Qualification",
+    label: "Qualification",
+    accent: "#3f6d8a",
+    fg: "#3f6d8a",
+    bg: "#eaf1f5",
+  },
+  {
+    id: "Needs Analysis",
+    label: "Needs Analysis",
+    accent: "#3f6d8a",
+    fg: "#6b7f68",
+    bg: "#eef3ec",
+  },
+  {
+    id: "Proposal/Price Quote",
+    label: "Proposal/Price Quote",
+    accent: "#3f6d8a",
+    fg: "#8a6b3f",
+    bg: "#f5efe3",
+  },
+  {
+    id: "Negotiation/Review",
+    label: "Negotiation/Review",
+    accent: "#3f6d8a",
+    fg: "#6c5b7c",
+    bg: "#f1ecf5",
+  },
+  {
+    id: "Closed Won",
+    label: "Closed Won",
+    accent: "#3f6d5f",
+    fg: "#3f6d5f",
+    bg: "#eaf3ee",
+  },
+  {
+    id: "Closed Lost",
+    label: "Closed Lost",
+    accent: "#a54536",
+    fg: "#a54536",
+    bg: "#fbeae6",
+  },
 ];
 
-export const inputStyle = {
-  width: "100%",
-  padding: "10px 12px",
-  border: "1px solid #D7DEE4",
-  borderRadius: "10px",
-  fontSize: "13px",
-  color: "#161B1D",
-  background: "#FFFFFF",
-  outline: "none",
-  boxSizing: "border-box",
-};
+export const stageOf = (id) =>
+  STAGES.find((s) => s.id === id) || {
+    id,
+    label: id || "Unknown",
+    accent: "var(--ink-green)",
+    fg: "var(--muted)",
+    bg: "var(--mist)",
+  };
 
-// Each stage gets a tint drawn from one consistent earthy family so the
-// pipeline reads as a gradient of progress rather than a traffic light.
-const STAGE_META = {
-  capture: {
-    label: "Lead Capture",
-    fg: "#5b6b64",
-    bg: "#eef1ef",
-    rail: "#b5c4b6",
-  },
-  qual: {
-    label: "Qualification",
-    fg: "#3f6d5f",
-    bg: "#e3ede9",
-    rail: "#3f6d5f",
-  },
-  disc: {
-    label: "Discovery / Site Visit",
-    fg: "#a3701a",
-    bg: "#f6edda",
-    rail: "#c98f2b",
-  },
-  prop: {
-    label: "Proposal / Concept",
-    fg: "#7c5d92",
-    bg: "#efe7f2",
-    rail: "#7c5d92",
-  },
-  nego: { label: "Negotiation", fg: "#a54536", bg: "#f5e7e4", rail: "#a54536" },
-  contract: {
-    label: "Contract Signed",
-    fg: "#1f453b",
-    bg: "#e3f0ea",
-    rail: "#1f453b",
-  },
-  handoff: {
-    label: "Handoff to Execution",
-    fg: "#ffffff",
-    bg: "#1f453b",
-    rail: "#1f453b",
-  },
-};
+export const getStageAccent = (id) => stageOf(id).accent;
 
-export function stageOf(stage) {
-  return (
-    STAGE_META[stage] || {
-      label: stage || "—",
-      fg: "#6b7b7c",
-      bg: "#eaeef0",
-      rail: "#b5c4b6",
-    }
-  );
-}
-
-export const TAG_COLORS = {
-  Hot: { fg: "#a54536", bg: "#f5e7e4" },
-  Warm: { fg: "#a3701a", bg: "#f6edda" },
-  Cold: { fg: "#3f6d8a", bg: "#e6edf3" },
-  VIP: { fg: "#7c5d92", bg: "#efe7f2" },
-  Referral: { fg: "#3f6d5f", bg: "#e3ede9" },
-};
-
+// ----------------------------------------------------------------
+// Card color dots (LeadCard "Card color" menu <-> Card_Color field)
+// ----------------------------------------------------------------
 export const LEAD_COLORS = {
-  Green: { fg: "#1f453b", bg: "#e3f0ea", rail: "#1f453b" },
-  Red: { fg: "#a54536", bg: "#f5e7e4", rail: "#a54536" },
-  Yellow: { fg: "#a3701a", bg: "#f6edda", rail: "#c98f2b" },
-  Blue: { fg: "#3f6d8a", bg: "#e6edf3", rail: "#3f6d8a" },
+  Green: { rail: "#1f453b" },
+  Red: { rail: "#a54536" },
+  Yellow: { rail: "#c98f2b" },
+  Blue: { rail: "#3f6d8a" },
 };
 
-// Small style helper for the pill/chip look — pairs with the .bc-chip class
-// in index.css, which already handles overflow/truncation/shape.
-export function pill(fg, bg) {
-  return { color: fg, background: bg };
-}
+// ----------------------------------------------------------------
+// Tag pill colors — rename/extend to match your Tag picklist values
+// in Bigin's Pipelines module.
+// ----------------------------------------------------------------
+export const TAG_COLORS = {
+  Hot: { fg: "#a54536", bg: "#fbeae6" },
+  Warm: { fg: "#a3701a", bg: "#f7f0e1" },
+  Cold: { fg: "#3f6d8a", bg: "#eaf1f5" },
+  VIP: { fg: "#6c5b7c", bg: "#f1ecf5" },
+};
+
+export const pill = (fg, bg) => ({
+  color: fg || "var(--ink-green)",
+  background: bg || "var(--mist)",
+});
 
 export const labelStyle = {
-  fontFamily: '"Poppins","Arial",sans-serif',
-  fontSize: "11px",
-  fontWeight: 500,
-  letterSpacing: "0.14em",
+  fontSize: "10.5px",
+  fontWeight: 700,
+  letterSpacing: "0.06em",
   textTransform: "uppercase",
   color: "var(--muted)",
 };

@@ -6,13 +6,13 @@
 // what the user sees.
 // =========================================================
 
-const SITE_AREA_UNIT_OPTIONS = [
+export const SITE_AREA_UNIT_OPTIONS = [
   { value: "SQ_FT", label: "Sq. Ft." },
   { value: "GAJ", label: "Gaj" },
   { value: "OTHER", label: "Other" },
 ];
 
-const SITE_TYPE_OPTIONS = [
+export const SITE_TYPE_OPTIONS = [
   { value: "FLAT", label: "Flat" },
   { value: "FLOOR", label: "Floor" },
   { value: "KOTHI", label: "Kothi" },
@@ -20,36 +20,18 @@ const SITE_TYPE_OPTIONS = [
   { value: "OTHER", label: "Other" },
 ];
 
-const SITE_CONDITION_OPTIONS = [
+export const SITE_CONDITION_OPTIONS = [
   { value: "OCCUPIED", label: "Occupied" },
   { value: "UNOCCUPIED", label: "Unoccupied" },
 ];
 
-const MAINTENANCE_APPETITE_OPTIONS = [
+export const MAINTENANCE_APPETITE_OPTIONS = [
   { value: "HIGH", label: "High" },
   { value: "MEDIUM", label: "Medium" },
   { value: "LOW", label: "Low" },
 ];
 
-const BUDGET_GST_STATUS_OPTIONS = [
-  { value: "INCLUDES_GST", label: "Includes GST" },
-  { value: "EXCLUDES_GST", label: "Excludes GST" },
-  { value: "NOT_SPECIFIED", label: "Not Specified" },
-];
-
-const FUNDING_STAGE_OPTIONS = [
-  { value: "SELF_FUNDED", label: "Self Funded" },
-  { value: "LOAN", label: "Loan" },
-  { value: "NOT_SPECIFIED", label: "Not Specified" },
-];
-
-const START_DATE_STATUS_OPTIONS = [
-  { value: "FIXED", label: "Fixed" },
-  { value: "PREFERRED", label: "Preferred" },
-  { value: "NOT_SPECIFIED", label: "Not Specified" },
-];
-
-const WORK_TYPE_OPTIONS = [
+export const WORK_TYPE_OPTIONS = [
   { value: "TURNKEY", label: "Turnkey" },
   { value: "CONSULTANCY", label: "Consultancy" },
   { value: "BUILDER_FINANCE", label: "Builder Finance" },
@@ -57,7 +39,7 @@ const WORK_TYPE_OPTIONS = [
   { value: "OTHER", label: "Other" },
 ];
 
-const SERVICE_TYPE_OPTIONS = [
+export const SERVICE_TYPE_OPTIONS = [
   { value: "ARCHITECTURE_DESIGN", label: "Architecture Design" },
   { value: "INTERIOR_DESIGN", label: "Interior Design" },
   { value: "EXECUTION", label: "Execution" },
@@ -67,7 +49,7 @@ const SERVICE_TYPE_OPTIONS = [
   { value: "OTHER", label: "Other" },
 ];
 
-const PROCUREMENT_CATEGORY_OPTIONS = [
+export const PROCUREMENT_CATEGORY_OPTIONS = [
   { value: "CIVIL_BUILDING_MATERIAL", label: "Civil / Building Material" },
   { value: "METAL_WORK", label: "Metal Work" },
   { value: "AC_PIPING_DRAINAGE", label: "AC, Piping & Drainage" },
@@ -92,7 +74,7 @@ const PROCUREMENT_CATEGORY_OPTIONS = [
   { value: "OTHER", label: "Other" },
 ];
 
-const STYLE_DIRECTION_OPTIONS = [
+export const STYLE_DIRECTION_OPTIONS = [
   { value: "CONTEMPORARY", label: "Contemporary" },
   { value: "MINIMAL", label: "Minimal" },
   { value: "CLASSIC_TRADITIONAL", label: "Classic / Traditional" },
@@ -104,23 +86,66 @@ const STYLE_DIRECTION_OPTIONS = [
   { value: "OTHER", label: "Other" },
 ];
 
-const YES_NO_OPTIONS = [
+export const YES_NO_OPTIONS = [
   { value: "Yes", label: "Yes" },
   { value: "No", label: "No" },
 ];
 
-// Not wired to any field below — there's no status/attachment/document
-// field in this form yet. Kept here so they're easy to reach for if
-// those fields get added later.
-// ProjectBriefStatus, ProjectBriefAttachmentCategory, ProjectBriefDocumentType
+// Mock data for drawings available — replace with real API later
+export const DRAWINGS_AVAILABLE_OPTIONS = [
+  { value: "ARCHITECTURAL", label: "Architectural Drawings" },
+  { value: "STRUCTURAL", label: "Structural Drawings" },
+  { value: "MEP", label: "MEP Drawings" },
+  { value: "WORKING", label: "Working Drawings" },
+  { value: "AS_BUILT", label: "As-Built Drawings" },
+  { value: "NONE", label: "None Available" },
+  { value: "OTHER", label: "Other" },
+];
+
+// Restriction types for the Site Rules table
+export const SITE_RESTRICTION_TYPES = [
+  {
+    value: "societyRwaPermittedWorkTimings",
+    label: "Society / RWA Permitted Work Timings",
+  },
+  {
+    value: "nocOrSecurityDepositRequired",
+    label: "NOC / Security Deposit Requirements",
+  },
+  {
+    value: "structuralChangesPermitted",
+    label: "Structural Changes Permitted?",
+  },
+  {
+    value: "materialMovementRestrictions",
+    label: "Material Movement Restrictions (lift, staircase, hours)",
+  },
+  { value: "neighbourSensitivities", label: "Neighbour Sensitivities" },
+  {
+    value: "powerAndWaterAvailability",
+    label: "Power & Water Availability at Site",
+  },
+  {
+    value: "accessStorageDebrisDisposal",
+    label: "Access, Storage and Debris Disposal",
+  },
+  {
+    value: "ongoingWorkByOtherAgencies",
+    label: "Any Ongoing Work by Other Agencies",
+  },
+];
+
+// =========================================================
+// BRIEF SECTIONS CONFIG
+// =========================================================
 
 export const BRIEF_SECTIONS = [
   // =========================================================
   // CLIENT & PROJECT
   // =========================================================
-
   {
     title: "Client & Project Information",
+    key: "clientProject",
     fields: [
       {
         key: "relationshipToClient",
@@ -141,9 +166,9 @@ export const BRIEF_SECTIONS = [
   // =========================================================
   // SITE
   // =========================================================
-
   {
     title: "Site & Property",
+    key: "siteProperty",
     fields: [
       {
         key: "siteAddress",
@@ -152,8 +177,11 @@ export const BRIEF_SECTIONS = [
         rows: 3,
       },
       {
-        key: "propertyType",
-        label: "Property Type",
+        key: "projectType", // renamed from propertyType
+        label: "Project Type",
+        type: "select",
+        // options will be injected from projectTypesApi at runtime
+        optionsSource: "projectTypes",
       },
       {
         key: "siteArea",
@@ -166,10 +194,7 @@ export const BRIEF_SECTIONS = [
         type: "select",
         options: SITE_AREA_UNIT_OPTIONS,
       },
-      {
-        key: "siteAreaOtherUnit",
-        label: "Other Area Unit",
-      },
+      // siteAreaOtherUnit REMOVED
       {
         key: "facingOrientation",
         label: "Facing / Orientation",
@@ -177,7 +202,7 @@ export const BRIEF_SECTIONS = [
       {
         key: "parkingProvision",
         label: "Parking Provision",
-        type: "textarea",
+        // changed from textarea → normal input
       },
       {
         key: "ownershipStatus",
@@ -200,10 +225,7 @@ export const BRIEF_SECTIONS = [
         type: "select",
         options: SITE_TYPE_OPTIONS,
       },
-      {
-        key: "siteTypeOther",
-        label: "Other Site Type",
-      },
+      // siteTypeOther REMOVED
       {
         key: "siteCondition",
         label: "Current Site Condition",
@@ -211,10 +233,15 @@ export const BRIEF_SECTIONS = [
         options: SITE_CONDITION_OPTIONS,
       },
       {
+        key: "drawingsAvailable",
+        label: "Drawings Available",
+        type: "select",
+        options: DRAWINGS_AVAILABLE_OPTIONS, // mock – replace later
+      },
+      {
         key: "drawingsOther",
-        label: "Other Drawings Available",
-        type: "textarea",
-        rows: 3,
+        label: "Other Drawings / Notes",
+        // small input (not textarea)
       },
     ],
   },
@@ -222,9 +249,9 @@ export const BRIEF_SECTIONS = [
   // =========================================================
   // SCOPE
   // =========================================================
-
   {
     title: "Scope & Work Requirements",
+    key: "scope",
     fields: [
       {
         key: "workTypes",
@@ -248,7 +275,7 @@ export const BRIEF_SECTIONS = [
       },
       {
         key: "procurementCategories",
-        label: "Procurement Categories",
+        label: "Material Procurement", // renamed
         type: "multiselect",
         options: PROCUREMENT_CATEGORY_OPTIONS,
       },
@@ -274,18 +301,29 @@ export const BRIEF_SECTIONS = [
   },
 
   // =========================================================
-  // SPACE REQUIREMENTS
+  // SPACE REQUIREMENTS  (boolean + table)
   // =========================================================
-
   {
     title: "Space Requirements",
+    key: "spaceRequirementsSection",
     fields: [
+      {
+        key: "hasSpaceRequirements",
+        label: "Do you have specific space requirements?",
+        type: "select",
+        options: YES_NO_OPTIONS,
+      },
       {
         key: "spaceRequirements",
         label: "Required Spaces",
-        type: "textarea",
-        rows: 7,
-        placeholder: "Enter one space / room per line",
+        type: "table",
+        // shown only when hasSpaceRequirements === "Yes"
+        showWhen: { field: "hasSpaceRequirements", value: "Yes" },
+        columns: [
+          { key: "spaceName", label: "Space / Room", type: "text" },
+          { key: "requirements", label: "Requirements", type: "text" },
+        ],
+        addLabel: "Add Space",
       },
     ],
   },
@@ -293,15 +331,24 @@ export const BRIEF_SECTIONS = [
   // =========================================================
   // DESIGN DIRECTION
   // =========================================================
-
   {
     title: "Design Direction",
+    key: "designDirection",
     fields: [
       {
         key: "styleDirections",
         label: "Style Directions",
         type: "multiselect",
         options: STYLE_DIRECTION_OPTIONS,
+      },
+      {
+        key: "styleDirectionOther",
+        label: "Other Style Direction",
+        // shown when "OTHER" is selected in styleDirections
+        showWhenMultiselectIncludes: {
+          field: "styleDirections",
+          value: "OTHER",
+        },
       },
       {
         key: "vastuRequirements",
@@ -351,9 +398,9 @@ export const BRIEF_SECTIONS = [
   // =========================================================
   // REFERENCES
   // =========================================================
-
   {
     title: "References & Inspiration",
+    key: "references",
     fields: [
       {
         key: "references",
@@ -366,34 +413,45 @@ export const BRIEF_SECTIONS = [
   },
 
   // =========================================================
-  // PHASES
+  // PROJECT PHASES  (table)
   // =========================================================
-
   {
     title: "Project Phasing",
+    key: "projectPhasing",
     fields: [
-      {
-        key: "phases",
-        label: "Project Phases",
-        type: "textarea",
-        rows: 5,
-        placeholder: "Enter one phase per line",
-      },
       {
         key: "phasingRequired",
         label: "Phasing Required?",
         type: "select",
         options: YES_NO_OPTIONS,
       },
+      {
+        key: "phases",
+        label: "Project Phases",
+        type: "table",
+        showWhen: { field: "phasingRequired", value: "Yes" },
+        columns: [
+          { key: "phaseName", label: "Phase", type: "text" },
+          { key: "startDate", label: "Start Date", type: "date" },
+          { key: "endDate", label: "End Date", type: "date" },
+          {
+            key: "expectedTime",
+            label: "Expected Time",
+            type: "text",
+            placeholder: "e.g. 4 weeks",
+          },
+        ],
+        addLabel: "Add Phase",
+      },
     ],
   },
 
   // =========================================================
-  // BUDGET
+  // BUDGET  (GST status & Funding Stage removed)
   // =========================================================
-
   {
     title: "Budget & Funding",
+    key: "budget",
     fields: [
       {
         key: "initialClientBudget",
@@ -404,18 +462,8 @@ export const BRIEF_SECTIONS = [
         key: "budgetCurrency",
         label: "Budget Currency",
       },
-      {
-        key: "budgetGstStatus",
-        label: "GST Status",
-        type: "select",
-        options: BUDGET_GST_STATUS_OPTIONS,
-      },
-      {
-        key: "fundingStage",
-        label: "Funding Stage",
-        type: "select",
-        options: FUNDING_STAGE_OPTIONS,
-      },
+      // budgetGstStatus REMOVED
+      // fundingStage REMOVED
       {
         key: "budgetFlexibility",
         label: "Budget Flexibility",
@@ -426,23 +474,18 @@ export const BRIEF_SECTIONS = [
   },
 
   // =========================================================
-  // TIMELINE
+  // TIMELINE  (startDateStatus removed)
   // =========================================================
-
   {
     title: "Timeline & Delivery",
+    key: "timeline",
     fields: [
       {
         key: "desiredStartDate",
         label: "Desired Start Date",
         type: "date",
       },
-      {
-        key: "startDateStatus",
-        label: "Start Date Status",
-        type: "select",
-        options: START_DATE_STATUS_OPTIONS,
-      },
+      // startDateStatus REMOVED
       {
         key: "siteHandoverDate",
         label: "Site Handover Date",
@@ -463,76 +506,47 @@ export const BRIEF_SECTIONS = [
   },
 
   // =========================================================
-  // SITE OPERATIONS / RESTRICTIONS
+  // SITE RULES & RESTRICTIONS  (table driven by dropdown)
   // =========================================================
-
   {
     title: "Site Rules & Restrictions",
+    key: "siteRestrictions",
     fields: [
       {
-        key: "societyRwaPermittedWorkTimings",
-        label: "Society / RWA Permitted Work Timings",
-        type: "textarea",
-        rows: 3,
-      },
-      {
-        key: "nocOrSecurityDepositRequired",
-        label: "NOC / Security Deposit Requirements",
-        type: "textarea",
-        rows: 3,
-      },
-      {
-        key: "structuralChangesPermitted",
-        label: "Structural Changes Permitted?",
-        type: "textarea",
-        rows: 3,
-      },
-      {
-        key: "materialMovementRestrictions",
-        label: "Material Movement Restrictions",
-        type: "textarea",
-        rows: 3,
-      },
-      {
-        key: "neighbourSensitivities",
-        label: "Neighbour Sensitivities",
-        type: "textarea",
-        rows: 3,
-      },
-      {
-        key: "powerAndWaterAvailability",
-        label: "Power & Water Availability",
-        type: "textarea",
-        rows: 3,
-      },
-      {
-        key: "accessStorageDebrisDisposal",
-        label: "Access / Storage / Debris Disposal",
-        type: "textarea",
-        rows: 4,
-      },
-      {
-        key: "ongoingWorkByOtherAgencies",
-        label: "Ongoing Work by Other Agencies",
-        type: "textarea",
-        rows: 4,
+        key: "siteRestrictions",
+        label: "Site Restrictions",
+        type: "restriction-table",
+        restrictionOptions: SITE_RESTRICTION_TYPES,
+        columns: [
+          { key: "type", label: "Restriction Type", type: "select" },
+          { key: "details", label: "Details / Notes", type: "text" },
+        ],
+        addLabel: "Add Restriction",
       },
     ],
   },
 
   // =========================================================
-  // OCCUPANTS
+  // OCCUPANTS  (table)
   // =========================================================
-
   {
     title: "Occupants & Household",
+    key: "occupants",
     fields: [
       {
         key: "occupants",
         label: "Occupants",
-        type: "textarea",
-        rows: 6,
-        placeholder: "Enter one occupant / household member per line",
+        type: "table",
+        columns: [
+          { key: "name", label: "Name", type: "text" },
+          { key: "relation", label: "Relation", type: "text" },
+          {
+            key: "specificNeeds",
+            label: "Specific Needs / Preferences",
+            type: "text",
+          },
+        ],
+        addLabel: "Add Occupant",
       },
       {
         key: "householdNotes",
@@ -546,9 +560,9 @@ export const BRIEF_SECTIONS = [
   // =========================================================
   // NOTES
   // =========================================================
-
   {
     title: "Notes & Open Points",
+    key: "notes",
     fields: [
       {
         key: "openPointsToClose",
@@ -562,9 +576,9 @@ export const BRIEF_SECTIONS = [
   // =========================================================
   // BRIEF ADMINISTRATION
   // =========================================================
-
   {
     title: "Brief Administration",
+    key: "admin",
     fields: [
       {
         key: "briefTakenBy",

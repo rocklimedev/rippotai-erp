@@ -283,69 +283,6 @@ export default function LeadCard({
                 {/* PROPOSED */}
 
                 <MenuItem label="Mark as proposed" onClick={handleProposed} />
-
-                <div className="my-1 border-t border-[var(--stroke)]" />
-
-                {/* NURTURE */}
-
-                <MenuItem
-                  label="Move to nurture"
-                  tone="warning"
-                  onClick={handleNurture}
-                />
-
-                {/* LOST */}
-
-                <MenuItem
-                  label="Mark closed-lost"
-                  tone="danger"
-                  onClick={handleLost}
-                />
-
-                {/* ================================================= */}
-                {/* CARD COLOR                                         */}
-                {/* ================================================= */}
-
-                <div className="mt-1 border-t border-[var(--stroke)] px-2.5 pt-2.5 pb-1">
-                  <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--muted)]">
-                    Card color
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {COLOR_DOTS.map(([name, color]) => {
-                      const active = (lead.color || "None") === name;
-
-                      return (
-                        <button
-                          key={name}
-                          type="button"
-                          title={name}
-                          disabled={isUpdating}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleColorChange(name);
-                          }}
-                          className={[
-                            "h-4 w-4 rounded-full transition-transform",
-                            "hover:scale-110",
-                            isUpdating ? "opacity-50" : "",
-                          ].join(" ")}
-                          style={{
-                            background: color,
-                            border:
-                              name === "None"
-                                ? "1px solid var(--sage)"
-                                : `1px solid ${color}`,
-                            outline: active
-                              ? "1.5px solid var(--ink-green)"
-                              : "none",
-                            outlineOffset: "2px",
-                          }}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
               </div>
             )}
           </div>
