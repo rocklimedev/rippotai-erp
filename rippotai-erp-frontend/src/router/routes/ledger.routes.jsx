@@ -8,6 +8,14 @@ import BudgetEstimateForm from "../../pages/budget-estimate/BudgetEstimateForm";
 import BudgetEstimateView from "../../pages/budget-estimate/BudgetEstimatesView";
 import LedgerDashboard from "../../pages/dashboard/LedgerDashboard";
 import LedgerList from "../../pages/LedgerList";
+import BoqDashboard from "@/pages/boq/BoqDashboard";
+import BoqNew from "@/pages/boq/BoqNew";
+import BoqTemplatesList from "@/pages/boq/BoqTemplatesList";
+import BoqTemplateNew from "@/pages/boq/BoqTemplateNew";
+import BoqTemplateEditor from "@/pages/boq/BoqTemplateEditor";
+import BoqLibraryPage from "@/pages/boq/BoqLibraryPage";
+import BoqActivityPage from "@/pages/boq/BoqActivitypage";
+import BoqVersions from "@/pages/boq/BoqVersions";
 export const ledgerRoutes = [
   {
     type: "layout",
@@ -75,6 +83,14 @@ export const ledgerRoutes = [
         path: "aggrements/all",
         element: <PaymentScheduleForm />,
       },
+      { path: "boq/all", element: <BoqDashboard /> },
+      { path: "boq/new", element: <BoqNew /> },
+      { path: "boq/templates", element: <BoqTemplatesList /> },
+      { path: "boq/template/new", element: <BoqTemplateNew /> },
+      { path: "boq/template/:id/editor", element: <BoqTemplateEditor /> },
+      { path: "boq/rate-and-item-library", element: <BoqLibraryPage /> },
+      { path: "boq/activity", element: <BoqActivityPage /> },
+      { path: "boq/:id/versions", element: <BoqVersions /> },
     ],
   },
 ];

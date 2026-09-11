@@ -8,6 +8,8 @@ import ProjectActivity from "@/pages/projects/ProjectActivity";
 import ProjectPlannerList from "../../pages/projects/ProjectPlannerList";
 import ProjectPlannerView from "../../pages/projects/ProjectPlannerView";
 import ProjectPlannerWorkspace from "../../pages/projects/ProjectPlannerWorkspace";
+import { DocumentsAll } from "@/pages/documents/DocumentsAll";
+import { DocumentUpload } from "@/pages/documents/DocumentUpload";
 
 export const projectsRoutes = [
   {
@@ -28,6 +30,8 @@ export const projectsRoutes = [
       { path: "planner/create", element: <ProjectPlannerWorkspace /> },
       { path: "planner/:plannerId", element: <ProjectPlannerView /> },
       { path: ":id", element: <ProjectWorkspace /> },
+      { path: "documents/all", element: <DocumentsAll /> },
+      { path: "documents/upload", element: <DocumentUpload /> },
     ],
   },
 ];

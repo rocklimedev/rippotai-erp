@@ -1,6 +1,8 @@
 // src/zoho/cliq/zoho-cliq.service.ts
 
 import { BadRequestException, Injectable } from '@nestjs/common';
+import FormData from 'form-data';
+import { createReadStream } from 'fs';
 
 import { ZohoHttpService } from '../services/zoho-http.service';
 import { ZohoAuthService } from '@/modules/auth/zoho-auth.service';
@@ -20,6 +22,15 @@ const ZOHO_CLIQ_V3_BASE_URL = 'https://cliq.zoho.in/api/v3';
 
 const MAX_THREAD_PARENTS = 15;
 const MAX_THREAD_PARENT_CONCURRENCY = 5;
+
+/** Shape accepted by upload helpers (Multer file or equivalent). */
+export type CliqUploadFile = {
+  buffer?: Buffer;
+  path?: string;
+  originalname?: string;
+  mimetype?: string;
+  size?: number;
+};
 
 @Injectable()
 export class ZohoCliqService {
@@ -423,6 +434,263 @@ export class ZohoCliqService {
         },
       },
     );
+  }
+
+  // ============================================================
+  // FILES — LIST FROM A CHAT (via message history)
+  // ============================================================
+  //
+  // Cliq has no dedicated "list files in chat" endpoint.
+  // File shares appear as messages with type "file".
+  // We fetch history and normalize file messages for the app.
+  // ============================================================
+
+  async listFilesForChat(
+    ownerKey: string,
+    chatId: string,
+    limit = 50,
+    fromtime?: number,
+  ) {
+    if (!chatId) {
+      throw new BadRequestException('chatId is required');
+    }
+
+    const messagesResponse = await this.getMessages(
+      ownerKey,
+      chatId,
+      limit,
+      fromtime,
+    );
+
+    const messages = this.extractRecords(messagesResponse);
+
+    const files = messages
+      .filter((m: any) => this.isFileMessage(m))
+      .map((m: any) => this.normalizeFileMessage(m, chatId));
+
+    return {
+      type: 'chat_file',
+      data: files,
+    };
+  }
+
+  // ============================================================
+  // FILES — DOWNLOAD BY FILE ID
+  // ============================================================
+  //
+  // GET /api/v2/files/{fileId}
+  // Requires ZohoCliq.Attachments.READ
+  // Returns binary content (arraybuffer).
+  // ============================================================
+
+  async getFile(ownerKey: string, fileId: string) {
+    if (!fileId) {
+      throw new BadRequestException('fileId is required');
+    }
+
+    return this.zohoHttpService.get(
+      ownerKey,
+      `/files/${encodeURIComponent(fileId)}`,
+      {
+        baseURL: ZOHO_CLIQ_BASE_URL,
+
+        responseType: 'arraybuffer',
+
+        headers: {
+          Accept: '*/*',
+        },
+      },
+    );
+  }
+
+  // ============================================================
+  // FILES — UPLOAD TO CHAT
+  // ============================================================
+  //
+  // POST /api/v2/chats/{chatId}/files
+  // multipart/form-data  field: file  (+ optional comment)
+  // ============================================================
+
+  async uploadFileToChat(
+    ownerKey: string,
+    chatId: string,
+    file: CliqUploadFile,
+    comment?: string,
+  ) {
+    if (!chatId) {
+      throw new BadRequestException('chatId is required');
+    }
+
+    return this.postMultipartFile(
+      ownerKey,
+      `/chats/${encodeURIComponent(chatId)}/files`,
+      file,
+      comment,
+    );
+  }
+
+  // ============================================================
+  // FILES — UPLOAD TO CHANNEL
+  // ============================================================
+  //
+  // POST /api/v2/channelsbyname/{uniqueName}/files
+  // ============================================================
+
+  async uploadFileToChannel(
+    ownerKey: string,
+    channelUniqueName: string,
+    file: CliqUploadFile,
+    comment?: string,
+  ) {
+    if (!channelUniqueName) {
+      throw new BadRequestException('Channel unique name is required');
+    }
+
+    return this.postMultipartFile(
+      ownerKey,
+      `/channelsbyname/${encodeURIComponent(channelUniqueName)}/files`,
+      file,
+      comment,
+    );
+  }
+
+  // ============================================================
+  // FILES — UPLOAD TO BUDDY (DM BY EMAIL)
+  // ============================================================
+  //
+  // POST /api/v2/buddies/{EMAIL_ID}/files
+  // ============================================================
+
+  async uploadFileToBuddy(
+    ownerKey: string,
+    emailId: string,
+    file: CliqUploadFile,
+    comment?: string,
+  ) {
+    if (!emailId) {
+      throw new BadRequestException('emailId is required');
+    }
+
+    return this.postMultipartFile(
+      ownerKey,
+      `/buddies/${encodeURIComponent(emailId)}/files`,
+      file,
+      comment,
+    );
+  }
+
+  // ============================================================
+  // INTERNAL — MULTIPART UPLOAD
+  // ============================================================
+
+  private async postMultipartFile(
+    ownerKey: string,
+    path: string,
+    file: CliqUploadFile,
+    comment?: string,
+  ) {
+    if (!file?.buffer && !file?.path) {
+      throw new BadRequestException('File is required');
+    }
+
+    const form = new FormData();
+
+    const filename = file.originalname || 'upload';
+    const contentType = file.mimetype || 'application/octet-stream';
+
+    if (file.buffer) {
+      form.append('file', file.buffer, {
+        filename,
+        contentType,
+        knownLength: file.buffer.length,
+      });
+    } else if (file.path) {
+      form.append('file', createReadStream(file.path), {
+        filename,
+        contentType,
+      });
+    }
+
+    if (typeof comment === 'string' && comment.trim()) {
+      form.append('comment', comment.trim());
+    }
+
+    return this.zohoHttpService.post(ownerKey, path, {
+      baseURL: ZOHO_CLIQ_BASE_URL,
+
+      // Let form-data set Content-Type + boundary.
+      // Do not force application/json here.
+      headers: {
+        ...form.getHeaders(),
+        Accept: 'application/json',
+      },
+
+      data: form,
+
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
+    });
+  }
+
+  // ============================================================
+  // FILE MESSAGE HELPERS
+  // ============================================================
+
+  private isFileMessage(message: any): boolean {
+    if (!message) {
+      return false;
+    }
+
+    const type = String(message.type || '').toLowerCase();
+
+    if (type === 'file' || type === 'attachment') {
+      return true;
+    }
+
+    return Boolean(
+      message?.content?.file?.id ||
+      message?.file?.id ||
+      message?.content?.file?.name,
+    );
+  }
+
+  private normalizeFileMessage(message: any, chatId: string) {
+    const fileMeta =
+      message?.content?.file ??
+      (typeof message?.file === 'object' ? message.file : {}) ??
+      {};
+
+    const fileId = fileMeta?.id ?? null;
+    const fileName =
+      fileMeta?.name ??
+      (typeof message?.file === 'string' ? message.file : null) ??
+      'file';
+
+    return {
+      message_id: message?.id ?? null,
+      time: message?.time ?? null,
+      sender: message?.sender ?? null,
+      comment: message?.content?.comment ?? message?.comment ?? null,
+      chat_id: chatId,
+
+      file: {
+        id: fileId,
+        name: fileName,
+        type: fileMeta?.type ?? null,
+        size: fileMeta?.dimensions?.size ?? fileMeta?.size ?? null,
+        thumbnail: message?.content?.thumbnail ?? null,
+      },
+
+      // Deep link into Cliq web (India DC). Message focus is best-effort.
+      cliq_open_url: fileId
+        ? `https://cliq.zoho.in/chats/${encodeURIComponent(chatId)}`
+        : `https://cliq.zoho.in/chats/${encodeURIComponent(chatId)}`,
+
+      // Your app should expose GET /cliq/files/:fileId that proxies getFile().
+      download_path: fileId
+        ? `/cliq/files/${encodeURIComponent(String(fileId))}`
+        : null,
+    };
   }
 
   // ============================================================
