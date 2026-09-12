@@ -30,6 +30,8 @@ export class ManualApprovalEvaluator implements ConditionEvaluator {
     const latest = await this.logModel.findOne({
       where: {
         projectId,
+        gateDefinitionId: condition.gateDefinitionId,
+        'snapshot.conditionId': condition.id,
         action: GateTransitionAction.MANUAL_CONDITION_TICKED,
       },
       order: [['createdAt', 'DESC']],

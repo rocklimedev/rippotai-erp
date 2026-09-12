@@ -212,7 +212,7 @@ export default function QuotationsDashboard() {
       return;
     }
     const idsParam = Array.from(selectedIds).join(",");
-    nav(`/quotations/compare?ids=${idsParam}`);
+    nav(`/materials/estimates/compare?ids=${idsParam}`);
   };
 
   const loading = isLoading || isFetching;
@@ -287,7 +287,7 @@ export default function QuotationsDashboard() {
           )}
 
           <button
-            onClick={() => nav("/quotations/new")}
+            onClick={() => nav("/materials/estimates/new")}
             data-testid="btn-create-quotation"
             className="px-4 py-2 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold inline-flex items-center gap-1.5"
           >
@@ -513,13 +513,13 @@ export default function QuotationsDashboard() {
                         </td>
                         <td
                           className="py-2.5 pr-3 font-semibold text-[#333333] cursor-pointer truncate"
-                          onClick={() => nav(`/quotations/${r.id}`)}
+                          onClick={() => nav(`/materials/estimates/${r.id}`)}
                         >
                           {r.quotationNumber}
                         </td>
                         <td
                           className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer truncate"
-                          onClick={() => nav(`/quotations/${r.id}`)}
+                          onClick={() => nav(`/materials/estimates/${r.id}`)}
                         >
                           {r.vendorSnapshot?.name ||
                             r.vendorSnapshot?.company_name ||
@@ -527,13 +527,13 @@ export default function QuotationsDashboard() {
                         </td>
                         <td
                           className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer truncate"
-                          onClick={() => nav(`/quotations/${r.id}`)}
+                          onClick={() => nav(`/materials/estimates/${r.id}`)}
                         >
                           {r.projectSnapshot?.name || "—"}
                         </td>
                         <td
                           className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer truncate"
-                          onClick={() => nav(`/quotations/${r.id}`)}
+                          onClick={() => nav(`/materials/estimates/${r.id}`)}
                         >
                           {r.vendorSnapshot?.businessType?.name ||
                             r.vendorSnapshot?.vendorCategory?.name ||
@@ -541,19 +541,19 @@ export default function QuotationsDashboard() {
                         </td>
                         <td
                           className="py-2.5 pr-3 text-right font-semibold text-[#333333] cursor-pointer"
-                          onClick={() => nav(`/quotations/${r.id}`)}
+                          onClick={() => nav(`/materials/estimates/${r.id}`)}
                         >
                           {fmtINR(Number(r.totalAmount || 0))}
                         </td>
                         <td
                           className="py-2.5 pr-3 cursor-pointer"
-                          onClick={() => nav(`/quotations/${r.id}`)}
+                          onClick={() => nav(`/materials/estimates/${r.id}`)}
                         >
                           <StatusChip status={r.status} />
                         </td>
                         <td
                           className="py-2.5 pr-3 text-[#6B7B7C] cursor-pointer truncate"
-                          onClick={() => nav(`/quotations/${r.id}`)}
+                          onClick={() => nav(`/materials/estimates/${r.id}`)}
                         >
                           {r.quotationDate
                             ? r.quotationDate
@@ -585,13 +585,17 @@ export default function QuotationsDashboard() {
                                   view stays on the detail page, edit
                                   goes to /quotations/:id/edit */}
                               <DropdownMenuItem
-                                onSelect={() => nav(`/quotations/${r.id}`)}
+                                onSelect={() =>
+                                  nav(`/materials/estimates/${r.id}`)
+                                }
                               >
                                 <Eye size={16} className="mr-2" /> View
                               </DropdownMenuItem>
 
                               <DropdownMenuItem
-                                onSelect={() => nav(`/quotations/${r.id}/edit`)}
+                                onSelect={() =>
+                                  nav(`/materials/estimates/${r.id}/edit`)
+                                }
                               >
                                 <Edit size={16} className="mr-2" /> Edit
                               </DropdownMenuItem>

@@ -318,7 +318,7 @@ export default function DocumentsDashboard() {
 
           <button
             type="button"
-            onClick={() => nav("/documents/upload")}
+            onClick={() => nav("/projects/documents/upload")}
             className="
               flex items-center gap-2
               h-9 px-4

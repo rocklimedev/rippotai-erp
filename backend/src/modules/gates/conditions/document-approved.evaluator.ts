@@ -1,3 +1,4 @@
+import { DocumentEvidenceService } from './document-evidence.service';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ConditionEvaluator } from './condition-evaluator.interface';
@@ -12,7 +13,7 @@ export class DocumentApprovedEvaluator implements ConditionEvaluator {
   readonly type = GateConditionType.DOCUMENT_APPROVED;
 
   constructor(
-    @InjectModel(Document) private readonly document: typeof Document,
+    private readonly evidence: DocumentEvidenceService,
     @InjectModel(DocumentType)
     private readonly documentTypeModel: typeof DocumentType,
   ) {}
@@ -34,18 +35,9 @@ export class DocumentApprovedEvaluator implements ConditionEvaluator {
       );
     }
 
-    const doc = await this.document.findOne({
-      where: { projectId, documentTypeId: docType.id, status: 'approved' },
-      order: [['updatedAt', 'DESC']],
-    });
+    const evidence = await this.evidence.resolve(projectId, docType, true);
 
-    return this.result(
-      condition,
-      !!doc,
-      doc
-        ? `"${docType.name}" is approved (v${doc.get('version')}).`
-        : `"${docType.name}" has not been approved yet.`,
-    );
+    return this.result(condition, evidence.satisfied, evidence.detail);
   }
 
   private result(

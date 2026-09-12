@@ -420,7 +420,7 @@ export default function QuotationDetail() {
   return (
     <div className="max-w-[1440px] mx-auto p-6">
       <button
-        onClick={() => nav("/quotations")}
+        onClick={() => nav("/materials/estimates/all")}
         className="text-[13px] text-[#6B7B7C] hover:text-[#333333] inline-flex items-center gap-1 mb-3"
         data-testid="btn-back-quotations"
       >

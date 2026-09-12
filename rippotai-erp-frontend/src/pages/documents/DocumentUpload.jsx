@@ -309,7 +309,7 @@ export function DocumentUpload() {
 
       toast.success("Document uploaded successfully");
 
-      nav("/documents/all");
+      nav("/projects/documents/all");
     } catch (error) {
       console.error("Document upload failed:", error);
 
@@ -585,7 +585,7 @@ export function DocumentUpload() {
             <button
               type="button"
               disabled={uploading}
-              onClick={() => nav("/documents/all")}
+              onClick={() => nav("/projects/documents/all")}
               className="h-11 px-5 rounded-lg border border-[#DDD8CE] text-[#333333] font-semibold disabled:opacity-50"
             >
               Cancel

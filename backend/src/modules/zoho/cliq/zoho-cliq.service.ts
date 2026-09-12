@@ -376,10 +376,17 @@ export class ZohoCliqService {
   }
 
   // ============================================================
-  // PEOPLE (ORGANIZATION DIRECTORY)
+  // PEOPLE — ORGANIZATION DIRECTORY
   // ============================================================
   //
   // GET /api/v2/users
+  //
+  // IMPORTANT:
+  // This endpoint represents users in the authenticated
+  // Cliq organization.
+  //
+  // It should NOT be treated as the global directory of
+  // external users from other organizations.
   // ============================================================
 
   async listUsers(ownerKey: string, limit = 100) {
@@ -398,6 +405,181 @@ export class ZohoCliqService {
     });
   }
 
+  // ============================================================
+  // CHANNEL MEMBERS
+  // ============================================================
+  //
+  // GET /api/v2/channels/{CHANNEL_ID}/members
+  //
+  // IMPORTANT:
+  // This is the correct endpoint for determining who is actually
+  // participating in a channel.
+  //
+  // It can return members from external organizations when the
+  // channel is an External channel.
+  //
+  // OAuth:
+  // ZohoCliq.Channels.READ
+  // ============================================================
+
+  async listChannelMembers(ownerKey: string, channelId: string) {
+    if (!channelId) {
+      throw new BadRequestException('channelId is required');
+    }
+
+    return this.zohoHttpService.get(
+      ownerKey,
+      `/channels/${encodeURIComponent(channelId)}/members`,
+      {
+        baseURL: ZOHO_CLIQ_BASE_URL,
+
+        headers: {
+          Accept: 'application/json',
+        },
+      },
+    );
+  }
+
+  // ============================================================
+  // NORMALIZED CHANNEL MEMBERS
+  // ============================================================
+  //
+  // Returns a clean structure for INOS.
+  //
+  // This should be used by the frontend instead of assuming
+  // every participant exists in /users.
+  // ============================================================
+
+  async getChannelMembers(ownerKey: string, channelId: string) {
+    if (!channelId) {
+      throw new BadRequestException('channelId is required');
+    }
+
+    const response = await this.listChannelMembers(ownerKey, channelId);
+
+    const members = this.extractChannelMembers(response);
+
+    return {
+      type: 'channel_members',
+      channel_id: channelId,
+      count: members.length,
+      data: members.map((member: any) => ({
+        user_id: member?.user_id ?? member?.userId ?? member?.id ?? null,
+
+        name:
+          member?.name ?? member?.display_name ?? member?.displayName ?? null,
+
+        email: member?.email_id ?? member?.email ?? member?.emailId ?? null,
+
+        role: member?.user_role ?? member?.role ?? 'member',
+
+        // Channel membership is authoritative here.
+        // Do not infer this from /users.
+        source: 'channel_members',
+      })),
+    };
+  }
+
+  // ============================================================
+  // EXTERNAL MEMBERS ONLY
+  // ============================================================
+  //
+  // Gets channel members and attempts to identify external
+  // participants.
+  //
+  // NOTE:
+  // The safest source of truth is still the channel membership
+  // response itself. Zoho may expose additional flags depending
+  // on the account/channel type.
+  // ============================================================
+
+  async getExternalChannelMembers(ownerKey: string, channelId: string) {
+    if (!channelId) {
+      throw new BadRequestException('channelId is required');
+    }
+
+    const response = await this.listChannelMembers(ownerKey, channelId);
+
+    const members = this.extractChannelMembers(response);
+
+    const normalized = members.map((member: any) => ({
+      user_id: member?.user_id ?? member?.userId ?? member?.id ?? null,
+
+      name: member?.name ?? member?.display_name ?? member?.displayName ?? null,
+
+      email: member?.email_id ?? member?.email ?? member?.emailId ?? null,
+
+      role: member?.user_role ?? member?.role ?? 'member',
+
+      // Preserve every field Zoho gives us so we do not
+      // accidentally lose external-user metadata.
+      raw: member,
+    }));
+
+    /*
+     * Do NOT filter by /users here.
+     *
+     * A user being absent from GET /users does not automatically
+     * mean that they are an external participant. The /users
+     * endpoint is the organization directory.
+     *
+     * For an external channel, the channel-members response is
+     * the authoritative participant list.
+     */
+
+    return {
+      type: 'external_channel_members',
+      channel_id: channelId,
+      count: normalized.length,
+      data: normalized,
+    };
+  }
+
+  // ============================================================
+  // CHANNEL DETAILS + MEMBERS
+  // ============================================================
+  //
+  // Useful for INOS because it returns:
+  //
+  //   channel details
+  //   +
+  //   actual channel participants
+  //
+  // This lets the frontend determine whether it is an
+  // organization/team/private/external channel.
+  // ============================================================
+
+  async getChannelWithMembers(ownerKey: string, channelId: string) {
+    if (!channelId) {
+      throw new BadRequestException('channelId is required');
+    }
+
+    const [channelResponse, membersResponse] = await Promise.all([
+      this.zohoHttpService.get(
+        ownerKey,
+        `/channels/${encodeURIComponent(channelId)}`,
+        {
+          baseURL: ZOHO_CLIQ_BASE_URL,
+
+          headers: {
+            Accept: 'application/json',
+          },
+        },
+      ),
+
+      this.listChannelMembers(ownerKey, channelId),
+    ]);
+
+    const members = this.extractChannelMembers(membersResponse);
+
+    const channel = this.extractSingleRecord(channelResponse);
+
+    return {
+      channel,
+      members,
+      member_count: members.length,
+    };
+  }
   // ============================================================
   // SEND MESSAGE TO A PERSON (BUDDY) DIRECTLY
   // ============================================================
@@ -692,7 +874,63 @@ export class ZohoCliqService {
         : null,
     };
   }
+  // ============================================================
+  // CHANNEL MEMBER RESPONSE HELPER
+  // ============================================================
 
+  private extractChannelMembers(response: any): any[] {
+    if (!response) {
+      return [];
+    }
+
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (Array.isArray(response?.members)) {
+      return response.members;
+    }
+
+    if (Array.isArray(response?.data)) {
+      return response.data;
+    }
+
+    if (response?.data && typeof response.data === 'object') {
+      if (Array.isArray(response.data?.members)) {
+        return response.data.members;
+      }
+
+      if (Array.isArray(response.data?.data)) {
+        return response.data.data;
+      }
+    }
+
+    return [];
+  }
+
+  // ============================================================
+  // SINGLE RECORD RESPONSE HELPER
+  // ============================================================
+
+  private extractSingleRecord(response: any): any {
+    if (!response) {
+      return null;
+    }
+
+    if (Array.isArray(response)) {
+      return response[0] ?? null;
+    }
+
+    if (response?.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+
+    if (response?.channel) {
+      return response.channel;
+    }
+
+    return response;
+  }
   // ============================================================
   // RESPONSE HELPERS
   // ============================================================

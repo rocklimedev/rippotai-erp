@@ -25,7 +25,12 @@ export class PaymentMilestonePaidEvaluator implements ConditionEvaluator {
     const milestoneCode: string = condition.params?.milestoneCode;
 
     const schedules = await this.scheduleModel.findAll({
-      where: { projectId },
+      where: { projectId, status: ['ACTIVE', 'COMPLETED'] },
+      order: [
+        ['createdAt', 'DESC'],
+        ['id', 'DESC'],
+      ],
+      limit: 1,
     });
     const scheduleIds = schedules.map((s) => s.id);
 

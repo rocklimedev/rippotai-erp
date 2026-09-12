@@ -482,7 +482,97 @@ const normalizePerson = (record = {}, index = 0) => {
     raw: record,
   };
 };
+// ============================================================
+// CHANNEL MEMBER NORMALIZATION
+// ============================================================
 
+const normalizeChannelMember = (record = {}, index = 0) => {
+  if (!record || typeof record !== "object") {
+    return {
+      id: `member-${index}`,
+      userId: null,
+      name: `Member ${index + 1}`,
+      email: "",
+      role: "member",
+      status: "",
+      isExternal: false,
+      raw: record,
+    };
+  }
+
+  const userId =
+    getId(getValue(record, "user_id", "userId", "zuid", "id")) ||
+    `member-${index}`;
+
+  const name = toText(
+    getValue(
+      record,
+      "name",
+      "full_name",
+      "fullName",
+      "display_name",
+      "displayName",
+      "username",
+      "user_name",
+    ),
+    `Member ${index + 1}`,
+  );
+
+  const email = toText(
+    getValue(record, "email_id", "emailId", "email", "email_address"),
+    "",
+  );
+
+  const role = toText(
+    getValue(record, "user_role", "role", "member_role", "memberRole"),
+    "member",
+  );
+
+  const status = toText(
+    getValue(record, "status", "member_status", "memberStatus"),
+    "",
+  );
+
+  /*
+   * Do NOT assume every member returned by Zoho is external.
+   *
+   * Zoho's channel-member API gives us the actual members of
+   * the channel. If Zoho explicitly returns an external flag,
+   * preserve it. Otherwise leave it false/unknown rather than
+   * incorrectly classifying internal users.
+   */
+  const explicitExternal = getValue(
+    record,
+    "is_external",
+    "isExternal",
+    "external",
+  );
+
+  const isExternal =
+    explicitExternal === true ||
+    explicitExternal === 1 ||
+    explicitExternal === "true" ||
+    explicitExternal === "1";
+
+  return {
+    id: String(userId),
+    userId: String(userId),
+
+    name: String(name),
+
+    email: String(email),
+
+    role: String(role),
+
+    status: String(status),
+
+    isExternal,
+
+    type: "channel_member",
+
+    raw: record,
+  };
+};
 // ============================================================
 // ATTACHMENT NORMALIZATION (messages)
 // ============================================================
@@ -887,11 +977,11 @@ const extractRecords = (response) => {
     "chats",
     "messages",
     "files",
+    "members",
     "items",
     "results",
     "records",
   ];
-
   for (const key of keys) {
     if (Array.isArray(response?.[key])) {
       return response[key];
@@ -1035,7 +1125,169 @@ export const cliqApi = baseApi.injectEndpoints({
 
       providesTags: ["CliqChannels"],
     }),
+    // ======================================================
+    // CHANNEL MEMBERS
+    // GET :ownerKey/channels/:channelId/members
+    // ======================================================
 
+    getCliqChannelMembers: builder.query({
+      async queryFn(channelId, _queryApi, _extraOptions, fetchWithBQ) {
+        const ownerKey = getOwnerKey();
+
+        if (!ownerKey) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "Zoho Cliq owner key is missing.",
+            },
+          };
+        }
+
+        if (!channelId) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "Channel ID is required.",
+            },
+          };
+        }
+
+        const result = await fetchWithBQ({
+          url: `/zoho/cliq/${encodeURIComponent(
+            ownerKey,
+          )}/channels/${encodeURIComponent(channelId)}/members`,
+          method: "GET",
+        });
+
+        if (result.error) {
+          return {
+            error: result.error,
+          };
+        }
+
+        const records = extractRecords(result.data);
+
+        return {
+          data: records.map(normalizeChannelMember).filter(Boolean),
+        };
+      },
+
+      providesTags: (result, error, channelId) => [
+        {
+          type: "CliqChannelMembers",
+          id: channelId,
+        },
+      ],
+    }),
+    // ======================================================
+    // EXTERNAL CHANNEL MEMBERS
+    // GET :ownerKey/channels/:channelId/members/external
+    // ======================================================
+
+    getCliqExternalChannelMembers: builder.query({
+      async queryFn(channelId, _queryApi, _extraOptions, fetchWithBQ) {
+        const ownerKey = getOwnerKey();
+
+        if (!ownerKey) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "No authenticated user found. Please log in again.",
+            },
+          };
+        }
+
+        if (!channelId) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "channelId is required.",
+            },
+          };
+        }
+
+        const result = await fetchWithBQ({
+          url: `/zoho/cliq/${encodeURIComponent(
+            ownerKey,
+          )}/channels/${encodeURIComponent(channelId)}/members/external`,
+          method: "GET",
+        });
+
+        if (result.error) {
+          return {
+            error: result.error,
+          };
+        }
+
+        const records = extractRecords(result.data);
+
+        return {
+          data: records.map(normalizeChannelMember).filter(Boolean),
+        };
+      },
+
+      providesTags: (result, error, channelId) => [
+        {
+          type: "CliqChannelMembers",
+          id: `${channelId}-external`,
+        },
+      ],
+    }), // ======================================================
+    // CHANNEL DETAILS + MEMBERS
+    // GET :ownerKey/channels/:channelId/details
+    // ======================================================
+
+    getCliqChannelDetails: builder.query({
+      async queryFn(channelId, _queryApi, _extraOptions, fetchWithBQ) {
+        const ownerKey = getOwnerKey();
+
+        if (!ownerKey) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "No authenticated user found. Please log in again.",
+            },
+          };
+        }
+
+        if (!channelId) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "channelId is required.",
+            },
+          };
+        }
+
+        const result = await fetchWithBQ({
+          url: `/zoho/cliq/${encodeURIComponent(
+            ownerKey,
+          )}/channels/${encodeURIComponent(channelId)}/details`,
+          method: "GET",
+        });
+
+        if (result.error) {
+          return {
+            error: result.error,
+          };
+        }
+
+        return {
+          data: result.data,
+        };
+      },
+
+      providesTags: (result, error, channelId) => [
+        {
+          type: "CliqChannel",
+          id: channelId,
+        },
+        {
+          type: "CliqChannelMembers",
+          id: channelId,
+        },
+      ],
+    }),
     // ======================================================
     // CHATS
     // ======================================================
@@ -1955,4 +2207,7 @@ export const {
   useGetCliqThreadsQuery,
   useGetCliqPeopleQuery,
   useSendCliqPersonMessageMutation,
+  useGetCliqChannelMembersQuery,
+  useGetCliqExternalChannelMembersQuery,
+  useGetCliqChannelDetailsQuery,
 } = cliqApi;

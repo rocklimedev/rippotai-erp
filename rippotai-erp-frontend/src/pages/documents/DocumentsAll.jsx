@@ -397,8 +397,8 @@ export function DocumentsAll() {
           onClick={() =>
             nav(
               projectFilter
-                ? `/documents/upload?project_id=${projectFilter}`
-                : "/documents/upload",
+                ? `/projects/documents/upload?project_id=${projectFilter}`
+                : "/projects/documents/upload",
             )
           }
           className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-1.5"

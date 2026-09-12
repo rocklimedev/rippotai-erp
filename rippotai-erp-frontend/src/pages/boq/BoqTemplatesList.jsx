@@ -48,7 +48,7 @@ export function BoqTemplatesList() {
           </p>
         </div>
         <button
-          onClick={() => nav("/boq/template/new")}
+          onClick={() => nav("/ledger/boq/template/new")}
           className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold flex items-center gap-2"
           data-testid="template-create-btn"
         >

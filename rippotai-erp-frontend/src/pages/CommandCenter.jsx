@@ -1,26 +1,24 @@
-import React, { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import GateChecklist from "@/components/command-center/GateChecklist";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   ArrowRight,
   BriefcaseBusiness,
-  CalendarDays,
-  CheckCircle2,
   Clock3,
   Construction,
   DollarSign,
   FileText,
-  Filter,
   ListChecks,
   MessageCircle,
   Plus,
   RefreshCw,
   Search,
-  Send,
   ShieldAlert,
   ShieldCheck,
   UploadCloud,
   Users,
-  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,7 +27,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -40,39 +37,32 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-/**
- * ============================================================
- * RIPPOTAI COMMAND CENTRE — UI (expanded, shadcn/ui edition)
- * ============================================================
- * This UI is deliberately shaped around the fields the live
- * backend (00_Setup.gs / 01_Scanner.gs / 02_Api.gs / 04_People.gs)
- * already produces, so wiring it up later is a data swap, not a
- * redesign:
- *
- *   PHASE_MASTER   -> PHASE_MASTER sheet   (13 phases, gate codes)
- *   DOC_MASTER     -> DOC_MASTER sheet     (mandatory doc checklist)
- *   TASK_MASTER    -> TASK_MASTER sheet    (EXEC / QC checklist)
- *   PROJECTS       -> PROJECTS sheet
- *   project.current -> the row a live scan would write into
- *                       DOC_REGISTRY / TASK_LOG / PHASE_STATUS for
- *                       whichever phase is currently open
- *
- * Every number on screen is *computed* from that data with the same
- * rollup rules as rollupPhases() in 01_Scanner.gs (see computeState
- * below), rather than typed in separately — so once getDashboardData()
- * is live, replacing PROJECTS + buildProjectPhases() with the API
- * response is the entire integration.
- *
- * This pass swaps the raw HTML primitives (button/input/textarea/
- * progress bars/modals/tab strip) for shadcn/ui components
- * (Button, Card, Badge, Input, Textarea, Progress, Checkbox, Dialog,
- * Tabs). Visual tokens (brand green #19352d, spacing, type scale)
- * are preserved via className overrides on each primitive.
- * ============================================================
- */
+// ------------------------------------------------------------
+// LIVE API — everything below used to be read out of local mock
+// arrays (PHASE_MASTER / DOC_MASTER / TASK_MASTER / PROJECTS) and
+// rolled up client-side. That is gone: every number on screen now
+// comes from CommandCenterService via commandCenterApi.js.
+//
+// ADJUST THIS IMPORT PATH to wherever commandCenterApi.js actually
+// lives in your app (it injects endpoints into the same `baseApi`
+// used by projectsApi.js).
+// ------------------------------------------------------------
+import {
+  useGetCommandCenterKpisQuery,
+  useGetCommandCenterPortfolioQuery,
+  useGetProjectPhaseDetailQuery,
+  useGetCommandCenterActionsQuery,
+  useGetCommandCenterDocumentsQuery,
+  useUploadCommandCenterDocumentMutation,
+  useCompleteCommandCenterTaskMutation,
+  useGetCommandCenterCommercialQuery,
+  useGetCommandCenterTeamWorkloadQuery,
+  useGetCommandCenterActivityQuery,
+  useGetCommandCenterTasksQuery,
+} from "../api/projects/command-center.api";
 
 // ------------------------------------------------------------
-// ROUTES — deep links into the canonical modules
+// ROUTES — deep links into the canonical modules (unchanged)
 // ------------------------------------------------------------
 
 const ROUTES = {
@@ -82,777 +72,22 @@ const ROUTES = {
   tasks: "/tasks",
   taskProject: (id) => `/tasks?project=${id}`,
   documents: "/documents",
-  documentsProject: (id) => `/documents?project=${id}`,
+  documentsProject: (id) =>
+    `/documents/all?project_id=${encodeURIComponent(id)}`,
   procurement: "/procurement",
   calendar: "/calendar",
   reports: "/reports",
 };
 
 // ------------------------------------------------------------
-// PHASE MASTER — mirrors PHASE_SEED in 00_Setup.gs exactly
+// PEOPLE — the backend's team-workload rollup only returns
+// { role, count } (TaskDefinition/DocumentType have no "who is
+// this person" column yet). We keep a local role -> display name
+// map purely for presentation. Swap/remove once the API returns
+// a real assignee.
 // ------------------------------------------------------------
 
-const PHASE_MASTER = [
-  {
-    id: "P01",
-    seq: 1,
-    name: "Onboarding & Brief",
-    gate: "G1",
-    gateName: "Brief Sign-off",
-    role: "Principal Architect",
-  },
-  {
-    id: "P02",
-    seq: 2,
-    name: "Site Survey & Feasibility",
-    gate: "G2",
-    gateName: "Survey Freeze",
-    role: "Site Supervisor",
-  },
-  {
-    id: "P03",
-    seq: 3,
-    name: "Concept Design",
-    gate: "G3",
-    gateName: "Concept Approval",
-    role: "Design Lead",
-  },
-  {
-    id: "P04",
-    seq: 4,
-    name: "Design Development & 3D",
-    gate: "G4",
-    gateName: "Design Freeze",
-    role: "Design Lead",
-  },
-  {
-    id: "P05",
-    seq: 5,
-    name: "BOQ & Costing",
-    gate: "G5",
-    gateName: "Commercial Approval",
-    role: "Estimator",
-  },
-  {
-    id: "P06",
-    seq: 6,
-    name: "GFC Drawings",
-    gate: "G6",
-    gateName: "GFC Release",
-    role: "Design Lead",
-  },
-  {
-    id: "P07",
-    seq: 7,
-    name: "Vendor & Procurement",
-    gate: "G7",
-    gateName: "Vendor Award",
-    role: "Procurement",
-  },
-  {
-    id: "P08",
-    seq: 8,
-    name: "Site Mobilisation",
-    gate: "G8",
-    gateName: "Mobilisation Clearance",
-    role: "Project Manager",
-  },
-  {
-    id: "P09",
-    seq: 9,
-    name: "Civil & Structure",
-    gate: "G9",
-    gateName: "Civil QC Clearance",
-    role: "Site Supervisor",
-  },
-  {
-    id: "P10",
-    seq: 10,
-    name: "MEP",
-    gate: "G10",
-    gateName: "MEP QC Clearance",
-    role: "MEP Coordinator",
-  },
-  {
-    id: "P11",
-    seq: 11,
-    name: "Finishes & Fitouts",
-    gate: "G11",
-    gateName: "Finishes QC Clearance",
-    role: "Site Supervisor",
-  },
-  {
-    id: "P12",
-    seq: 12,
-    name: "Snagging & Handover",
-    gate: "G12",
-    gateName: "Handover Sign-off",
-    role: "Project Manager",
-  },
-  {
-    id: "P13",
-    seq: 13,
-    name: "DLP & Project Close",
-    gate: "G13",
-    gateName: "Project Close",
-    role: "Admin Coordinator",
-  },
-];
-
-// ------------------------------------------------------------
-// DOC MASTER — mirrors DOC_SEED. [id, phaseId, name, mandatory, role]
-// ------------------------------------------------------------
-
-const DOC_MASTER = [
-  ["D0101", "P01", "Signed Proposal / LOI", true, "Admin Coordinator"],
-  ["D0102", "P01", "Client Brief Document", true, "Principal Architect"],
-  ["D0103", "P01", "Design Agreement", true, "Admin Coordinator"],
-  ["D0104", "P01", "Advance Payment Receipt", true, "Accounts"],
-  ["D0201", "P02", "Measured Site Survey", true, "Site Supervisor"],
-  ["D0202", "P02", "Site Photographs", true, "Site Supervisor"],
-  ["D0203", "P02", "Existing Layout CAD", true, "Design Lead"],
-  ["D0204", "P02", "Feasibility / Recce Report", true, "Project Manager"],
-  ["D0205", "P02", "Statutory & Society NOCs", false, "Admin Coordinator"],
-  ["D0301", "P03", "Mood Board", true, "Design Lead"],
-  ["D0302", "P03", "Concept Layout Options", true, "Design Lead"],
-  ["D0303", "P03", "Concept Presentation", true, "Design Lead"],
-  ["D0304", "P03", "Client Approval Record", true, "Project Manager"],
-  ["D0401", "P04", "Furniture Layout", true, "Design Lead"],
-  ["D0402", "P04", "3D Renders", true, "3D Visualiser"],
-  ["D0403", "P04", "Material & Finish Schedule", true, "Design Lead"],
-  ["D0404", "P04", "Design Freeze Sign-off", true, "Project Manager"],
-  ["D0501", "P05", "Detailed BOQ", true, "Estimator"],
-  ["D0502", "P05", "Rate Analysis", false, "Estimator"],
-  ["D0503", "P05", "Client Quotation", true, "Estimator"],
-  ["D0504", "P05", "Signed Work Order", true, "Admin Coordinator"],
-  ["D0505", "P05", "Payment Schedule", true, "Accounts"],
-  ["D0601", "P06", "GFC Architectural Drawings", true, "Design Lead"],
-  ["D0602", "P06", "GFC Electrical Drawings", true, "MEP Coordinator"],
-  ["D0603", "P06", "GFC Plumbing Drawings", true, "MEP Coordinator"],
-  ["D0604", "P06", "Joinery / Detail Drawings", true, "Design Lead"],
-  ["D0605", "P06", "Drawing Issue Register", true, "Design Lead"],
-  ["D0701", "P07", "Vendor Comparison Sheet", true, "Procurement"],
-  ["D0702", "P07", "Purchase Orders", true, "Procurement"],
-  ["D0703", "P07", "Material Approval Samples", true, "Design Lead"],
-  ["D0704", "P07", "Vendor Agreements", false, "Admin Coordinator"],
-  ["D0801", "P08", "Site Handover Note", true, "Project Manager"],
-  ["D0802", "P08", "Project Schedule / Programme", true, "Project Manager"],
-  ["D0803", "P08", "Labour & Safety Induction", true, "Site Supervisor"],
-  ["D0804", "P08", "Site Setup Photos", true, "Site Supervisor"],
-  ["D0901", "P09", "Civil Work Method Statement", false, "Site Supervisor"],
-  ["D0902", "P09", "Daily Site Progress Reports", true, "Site Supervisor"],
-  ["D0903", "P09", "Civil QC Checklist Signed", true, "Project Manager"],
-  ["D0904", "P09", "Civil Stage Photos", true, "Site Supervisor"],
-  ["D1001", "P10", "MEP Shop Drawings", true, "MEP Coordinator"],
-  ["D1002", "P10", "Concealed Work Photos", true, "Site Supervisor"],
-  ["D1003", "P10", "Pressure / Load Test Records", true, "MEP Coordinator"],
-  ["D1004", "P10", "MEP QC Checklist Signed", true, "Project Manager"],
-  ["D1101", "P11", "Finish Approval Records", true, "Design Lead"],
-  ["D1102", "P11", "Fitout Progress Photos", true, "Site Supervisor"],
-  ["D1103", "P11", "Finishes QC Checklist Signed", true, "Project Manager"],
-  ["D1201", "P12", "Snag List", true, "Project Manager"],
-  ["D1202", "P12", "Snag Closure Record", true, "Site Supervisor"],
-  ["D1203", "P12", "As-Built Drawings", true, "Design Lead"],
-  ["D1204", "P12", "Warranty & Guarantee Cards", true, "Admin Coordinator"],
-  ["D1205", "P12", "Client Handover Sign-off", true, "Project Manager"],
-  ["D1206", "P12", "Completion Photos", true, "Site Supervisor"],
-  ["D1301", "P13", "Final Account Statement", true, "Accounts"],
-  ["D1302", "P13", "Client Feedback Form", true, "Admin Coordinator"],
-  ["D1303", "P13", "DLP Visit Reports", false, "Site Supervisor"],
-  ["D1304", "P13", "Project Closure Note", true, "Project Manager"],
-].map(([id, phaseId, name, mandatory, role]) => ({
-  id,
-  phaseId,
-  name,
-  mandatory,
-  role,
-}));
-
-// ------------------------------------------------------------
-// TASK MASTER — mirrors TASK_SEED. [id, phaseId, name, type, mandatory, role]
-// ------------------------------------------------------------
-
-const TASK_MASTER = [
-  [
-    "T0101",
-    "P01",
-    "Client requirement call completed",
-    "EXEC",
-    true,
-    "Principal Architect",
-  ],
-  [
-    "T0102",
-    "P01",
-    "Scope & exclusions agreed in writing",
-    "EXEC",
-    true,
-    "Project Manager",
-  ],
-  [
-    "T0103",
-    "P01",
-    "Advance received & confirmed by accounts",
-    "EXEC",
-    true,
-    "Accounts",
-  ],
-  [
-    "T0201",
-    "P02",
-    "Physical site measurement done",
-    "EXEC",
-    true,
-    "Site Supervisor",
-  ],
-  [
-    "T0202",
-    "P02",
-    "Existing services (water/power) mapped",
-    "EXEC",
-    true,
-    "MEP Coordinator",
-  ],
-  [
-    "T0203",
-    "P02",
-    "Access & material storage assessed",
-    "EXEC",
-    true,
-    "Project Manager",
-  ],
-  [
-    "T0204",
-    "P02",
-    "Survey cross-checked against CAD",
-    "QC",
-    true,
-    "Design Lead",
-  ],
-  ["T0301", "P03", "Concept presented to client", "EXEC", true, "Design Lead"],
-  ["T0302", "P03", "Client feedback recorded", "EXEC", true, "Project Manager"],
-  [
-    "T0303",
-    "P03",
-    "Concept approved in writing",
-    "QC",
-    true,
-    "Project Manager",
-  ],
-  [
-    "T0401",
-    "P04",
-    "All rooms detailed to DD level",
-    "EXEC",
-    true,
-    "Design Lead",
-  ],
-  ["T0402", "P04", "Renders approved by client", "EXEC", true, "Design Lead"],
-  [
-    "T0403",
-    "P04",
-    "Materials confirmed & available",
-    "QC",
-    true,
-    "Procurement",
-  ],
-  [
-    "T0404",
-    "P04",
-    "Design frozen — no further changes",
-    "QC",
-    true,
-    "Principal Architect",
-  ],
-  [
-    "T0501",
-    "P05",
-    "BOQ quantities verified against drawings",
-    "QC",
-    true,
-    "Estimator",
-  ],
-  [
-    "T0502",
-    "P05",
-    "Rates benchmarked against last 3 projects",
-    "QC",
-    true,
-    "Estimator",
-  ],
-  [
-    "T0503",
-    "P05",
-    "Margin checked & approved",
-    "QC",
-    true,
-    "Principal Architect",
-  ],
-  [
-    "T0504",
-    "P05",
-    "Work order signed by client",
-    "EXEC",
-    true,
-    "Admin Coordinator",
-  ],
-  ["T0601", "P06", "All GFC sets issued to site", "EXEC", true, "Design Lead"],
-  ["T0602", "P06", "Site team briefed on GFC", "EXEC", true, "Project Manager"],
-  [
-    "T0603",
-    "P06",
-    "Drawing revisions logged in register",
-    "QC",
-    true,
-    "Design Lead",
-  ],
-  [
-    "T0701",
-    "P07",
-    "Minimum 3 quotes taken per trade",
-    "QC",
-    true,
-    "Procurement",
-  ],
-  [
-    "T0702",
-    "P07",
-    "Vendor rates within BOQ allowance",
-    "QC",
-    true,
-    "Estimator",
-  ],
-  ["T0703", "P07", "POs issued & acknowledged", "EXEC", true, "Procurement"],
-  [
-    "T0704",
-    "P07",
-    "Delivery schedule aligned to programme",
-    "EXEC",
-    true,
-    "Project Manager",
-  ],
-  [
-    "T0801",
-    "P08",
-    "Site handed over by client",
-    "EXEC",
-    true,
-    "Project Manager",
-  ],
-  [
-    "T0802",
-    "P08",
-    "Labour deployed & attendance system live",
-    "EXEC",
-    true,
-    "Site Supervisor",
-  ],
-  [
-    "T0803",
-    "P08",
-    "Safety kit & signage in place",
-    "QC",
-    true,
-    "Site Supervisor",
-  ],
-  ["T0804", "P08", "Water & power arranged", "EXEC", true, "Site Supervisor"],
-  [
-    "T0901",
-    "P09",
-    "Demolition complete & debris cleared",
-    "EXEC",
-    true,
-    "Site Supervisor",
-  ],
-  [
-    "T0902",
-    "P09",
-    "Layout marking verified against GFC",
-    "QC",
-    true,
-    "Project Manager",
-  ],
-  [
-    "T0903",
-    "P09",
-    "Masonry plumb & level within tolerance",
-    "QC",
-    true,
-    "Project Manager",
-  ],
-  ["T0904", "P09", "Plaster surface checked", "QC", true, "Site Supervisor"],
-  [
-    "T0905",
-    "P09",
-    "Waterproofing ponding test passed",
-    "QC",
-    true,
-    "Project Manager",
-  ],
-  [
-    "T1001",
-    "P10",
-    "Electrical conduiting as per drawing",
-    "QC",
-    true,
-    "MEP Coordinator",
-  ],
-  [
-    "T1002",
-    "P10",
-    "Plumbing lines pressure tested",
-    "QC",
-    true,
-    "MEP Coordinator",
-  ],
-  [
-    "T1003",
-    "P10",
-    "Concealed work photographed before cover",
-    "QC",
-    true,
-    "Site Supervisor",
-  ],
-  ["T1004", "P10", "Load calculation verified", "QC", true, "MEP Coordinator"],
-  ["T1005", "P10", "Drainage slopes checked", "QC", true, "Site Supervisor"],
-  [
-    "T1101",
-    "P11",
-    "Tile / stone laying level & joint check",
-    "QC",
-    true,
-    "Site Supervisor",
-  ],
-  [
-    "T1102",
-    "P11",
-    "Paint finish inspected in daylight",
-    "QC",
-    true,
-    "Design Lead",
-  ],
-  [
-    "T1103",
-    "P11",
-    "Joinery fit & hardware operation checked",
-    "QC",
-    true,
-    "Site Supervisor",
-  ],
-  [
-    "T1104",
-    "P11",
-    "Sanitaryware installed & leak tested",
-    "QC",
-    true,
-    "MEP Coordinator",
-  ],
-  ["T1105", "P11", "Site deep-cleaned", "EXEC", true, "Site Supervisor"],
-  [
-    "T1201",
-    "P12",
-    "Internal snag walk done before client",
-    "QC",
-    true,
-    "Project Manager",
-  ],
-  [
-    "T1202",
-    "P12",
-    "All snags closed & re-verified",
-    "QC",
-    true,
-    "Project Manager",
-  ],
-  [
-    "T1203",
-    "P12",
-    "Client walkthrough conducted",
-    "EXEC",
-    true,
-    "Principal Architect",
-  ],
-  [
-    "T1204",
-    "P12",
-    "Keys & warranties handed over",
-    "EXEC",
-    true,
-    "Admin Coordinator",
-  ],
-  ["T1205", "P12", "Final payment received", "EXEC", true, "Accounts"],
-  ["T1301", "P13", "Final account reconciled", "EXEC", true, "Accounts"],
-  [
-    "T1302",
-    "P13",
-    "Client feedback collected",
-    "EXEC",
-    true,
-    "Admin Coordinator",
-  ],
-  [
-    "T1303",
-    "P13",
-    "Project photos shot for marketing",
-    "EXEC",
-    false,
-    "Project Manager",
-  ],
-  ["T1304", "P13", "Lessons learned logged", "EXEC", true, "Project Manager"],
-].map(([id, phaseId, name, type, mandatory, role]) => ({
-  id,
-  phaseId,
-  name,
-  type,
-  mandatory,
-  role,
-}));
-
-// ------------------------------------------------------------
-// PROJECTS — mirrors the PROJECTS sheet + the "current phase" a
-// live scan would report. Everything else is derived below.
-// ------------------------------------------------------------
-
-const PROJECTS = [
-  {
-    code: "RT-001",
-    name: "Kothari Residence",
-    client: "Kothari Family",
-    location: "New Delhi",
-    pm: "Dhruv Verma",
-    value: 4280000,
-    target: "18 Dec 2026",
-    folderUrl: "#",
-    lastActivity: "2h ago",
-    currentPhaseSeq: 4,
-    current: {
-      gateState: "PENDING",
-      daysIdle: 0,
-      missingDocIds: ["D0404"],
-      taskOverrides: { T0402: "Pending", T0404: "Pending" },
-    },
-  },
-  {
-    code: "RT-002",
-    name: "Golf Course Residence",
-    client: "Agarwal Family",
-    location: "Gurugram",
-    pm: "Amit Sharma",
-    value: 3150000,
-    target: "02 Mar 2027",
-    folderUrl: "#",
-    lastActivity: "1d ago",
-    currentPhaseSeq: 2,
-    current: {
-      gateState: "PENDING",
-      daysIdle: 2,
-      missingDocIds: [],
-      taskOverrides: {},
-    },
-  },
-  {
-    code: "RT-003",
-    name: "DLF Office",
-    client: "Aria Technologies",
-    location: "Gurugram",
-    pm: "Rohan Mehta",
-    value: 8120000,
-    target: "30 Nov 2026",
-    folderUrl: "#",
-    lastActivity: "4h ago",
-    currentPhaseSeq: 5,
-    current: {
-      gateState: "PENDING",
-      daysIdle: 0,
-      missingDocIds: ["D0504"],
-      taskOverrides: { T0501: "Pending", T0502: "Pending" },
-    },
-  },
-  {
-    code: "RT-004",
-    name: "Vasant Vihar Villa",
-    client: "Kapoor Family",
-    location: "New Delhi",
-    pm: "Neeraj Singh",
-    value: 6150000,
-    target: "14 Feb 2027",
-    folderUrl: "#",
-    lastActivity: "8d ago",
-    currentPhaseSeq: 9,
-    current: {
-      gateState: "PENDING",
-      daysIdle: 8,
-      missingDocIds: ["D0903"],
-      taskOverrides: { T0904: "Failed", T0905: "Pending" },
-    },
-  },
-  {
-    code: "RT-005",
-    name: "Saket Apartment",
-    client: "Shah Family",
-    location: "New Delhi",
-    pm: "Rohit Jain",
-    value: 5420000,
-    target: "05 Oct 2026",
-    folderUrl: "#",
-    lastActivity: "38m ago",
-    currentPhaseSeq: 11,
-    current: {
-      gateState: "PENDING",
-      daysIdle: 0,
-      missingDocIds: [],
-      taskOverrides: { T1105: "Pending" },
-    },
-  },
-];
-
-// ------------------------------------------------------------
-// PEOPLE — mirrors the PEOPLE tab (one row per OWNER_ROLE)
-// ------------------------------------------------------------
-
-const PEOPLE = [
-  { role: "Principal Architect", name: "Ananya Rao" },
-  { role: "Project Manager", name: "Multiple PMs" },
-  { role: "Design Lead", name: "Ishaan Kapoor" },
-  { role: "Site Supervisor", name: "Ramesh Yadav" },
-  { role: "Estimator", name: "Priya Nair" },
-  { role: "Procurement", name: "Vikram Sethi" },
-  { role: "MEP Coordinator", name: "Farhan Ali" },
-  { role: "Admin Coordinator", name: "Neha Bhatt" },
-  { role: "Accounts", name: "Suresh Iyer" },
-  { role: "3D Visualiser", name: "Tanvi Joshi" },
-];
-
-// ------------------------------------------------------------
-// ROLLUP LOGIC — same rules as rollupPhases() in 01_Scanner.gs
-// ------------------------------------------------------------
-
-const mandatoryDocs = (phaseId) =>
-  DOC_MASTER.filter((d) => d.phaseId === phaseId && d.mandatory);
-const mandatoryTasks = (phaseId) =>
-  TASK_MASTER.filter((t) => t.phaseId === phaseId && t.mandatory);
-const STALE_DAYS = 7;
-
-function computeState(pct, gateState, doneCount, idleDays, hasFailed) {
-  if (hasFailed) return "QC FAILED";
-  if (pct === 100 && gateState === "APPROVED") return "COMPLETE";
-  if (pct === 100) return "AWAITING GATE";
-  if (doneCount === 0) return "NOT STARTED";
-  if (idleDays !== "" && idleDays >= STALE_DAYS) return "STALLED";
-  return "IN PROGRESS";
-}
-
-function buildProjectPhases(project, docOverrides = {}) {
-  return PHASE_MASTER.map((ph) => {
-    const dTotal = mandatoryDocs(ph.id).length;
-    const tTotal = mandatoryTasks(ph.id).length;
-
-    if (ph.seq < project.currentPhaseSeq) {
-      return {
-        ...ph,
-        docsDone: dTotal,
-        docsTotal: dTotal,
-        tasksDone: tTotal,
-        tasksTotal: tTotal,
-        pct: 100,
-        state: "COMPLETE",
-        gateState: "APPROVED",
-        gateBy: project.pm,
-        daysIdle: 0,
-      };
-    }
-
-    if (ph.seq > project.currentPhaseSeq) {
-      return {
-        ...ph,
-        docsDone: 0,
-        docsTotal: dTotal,
-        tasksDone: 0,
-        tasksTotal: tTotal,
-        pct: 0,
-        state: "NOT STARTED",
-        gateState: "PENDING",
-        gateBy: "",
-        daysIdle: "",
-      };
-    }
-
-    const cur = project.current;
-    const docs = mandatoryDocs(ph.id);
-    const tasks = mandatoryTasks(ph.id);
-    const stillMissing = (cur.missingDocIds || []).filter(
-      (id) => !docOverrides[`${project.code}|${id}`],
-    );
-    const docsDone = docs.length - stillMissing.length;
-    const hasFailed = tasks.some((t) => cur.taskOverrides?.[t.id] === "Failed");
-    const tasksDone = tasks.filter(
-      (t) => (cur.taskOverrides?.[t.id] || "Done") === "Done",
-    ).length;
-    const total = docs.length + tasks.length;
-    const pct = total ? Math.round(((docsDone + tasksDone) / total) * 100) : 0;
-    const state = computeState(
-      pct,
-      cur.gateState,
-      docsDone + tasksDone,
-      cur.daysIdle,
-      hasFailed,
-    );
-
-    return {
-      ...ph,
-      docsDone,
-      docsTotal: docs.length,
-      tasksDone,
-      tasksTotal: tasks.length,
-      pct,
-      state,
-      gateState: cur.gateState,
-      gateBy: cur.gateBy || "",
-      daysIdle: cur.daysIdle,
-    };
-  });
-}
-
-function getPhaseDetail(project, phaseId, docOverrides = {}) {
-  const ph = PHASE_MASTER.find((p) => p.id === phaseId);
-  const docs = DOC_MASTER.filter((d) => d.phaseId === phaseId);
-  const tasks = TASK_MASTER.filter((t) => t.phaseId === phaseId);
-  let docStatus, taskStatus;
-
-  if (ph.seq < project.currentPhaseSeq) {
-    docStatus = () => "UPLOADED";
-    taskStatus = () => "Done";
-  } else if (ph.seq > project.currentPhaseSeq) {
-    docStatus = () => "MISSING";
-    taskStatus = () => "Pending";
-  } else {
-    const cur = project.current;
-    docStatus = (d) => {
-      if (docOverrides[`${project.code}|${d.id}`]) return "UPLOADED";
-      return d.mandatory && cur.missingDocIds?.includes(d.id)
-        ? "MISSING"
-        : "UPLOADED";
-    };
-    taskStatus = (t) => cur.taskOverrides?.[t.id] || "Done";
-  }
-
-  return {
-    docs: docs.map((d) => ({ ...d, status: docStatus(d) })),
-    tasks: tasks.map((t) => ({ ...t, status: taskStatus(t) })),
-  };
-}
-
-function projectHealth(phases) {
-  if (phases.some((p) => p.state === "QC FAILED"))
-    return { key: "danger", label: "QC Failed" };
-  if (phases.some((p) => p.state === "STALLED"))
-    return { key: "danger", label: "Stalled" };
-  if (phases.some((p) => p.state === "AWAITING GATE"))
-    return { key: "gate", label: "Gate Pending" };
-  if (phases.every((p) => p.state === "COMPLETE"))
-    return { key: "complete", label: "Complete" };
-  return { key: "progress", label: "On Track" };
-}
+const PEOPLE_BY_ROLE = {};
 
 // ------------------------------------------------------------
 // HELPERS
@@ -861,10 +96,84 @@ function projectHealth(phases) {
 const cn = (...classes) => classes.filter(Boolean).join(" ");
 
 const formatINR = (value) => {
-  if (value >= 10000000) return `₹ ${(value / 10000000).toFixed(2)} Cr`;
-  if (value >= 100000) return `₹ ${(value / 100000).toFixed(2)} L`;
-  return `₹ ${Number(value || 0).toLocaleString("en-IN")}`;
+  const n = Number(value || 0);
+  if (n >= 10000000) return `₹ ${(n / 10000000).toFixed(2)} Cr`;
+  if (n >= 100000) return `₹ ${(n / 100000).toFixed(2)} L`;
+  return `₹ ${n.toLocaleString("en-IN")}`;
 };
+
+// Backend enum string values might come back as "AWAITING_GATE",
+// "Awaiting Gate", "awaiting-gate", etc depending on how the enum is
+// serialized. Normalize to a single SCREAMING_SNAKE key so the UI
+// doesn't silently fall through to the "unknown state" style.
+const normalizeKey = (v) =>
+  String(v ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_");
+
+function useDebouncedValue(value, delayMs = 300) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(t);
+  }, [value, delayMs]);
+  return debounced;
+}
+
+function timeAgo(dateLike) {
+  if (!dateLike) return "";
+  const then = new Date(dateLike).getTime();
+  if (Number.isNaN(then)) return "";
+  const diffSec = Math.max(0, Math.floor((Date.now() - then) / 1000));
+  if (diffSec < 60) return "just now";
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  return `${diffDay}d ago`;
+}
+
+// Turns an ActivityLog row (user_id, user_email, action, entity_type,
+// entity_label, changes, created_at, ...) into the {type, title,
+// detail, time} shape ActivityTimeline already knows how to render.
+function mapActivityLog(row) {
+  const action = normalizeKey(row.action);
+  const ICON_TYPE = {
+    FILE_UPLOADED: "DOC",
+    GATE_CLEARED: "GATE_APPROVED",
+    GATE_REOPENED: "GATE_APPROVED",
+    DOCUMENT_UPLOADED: "DOC",
+    DOCUMENT_APPROVED: "DOC",
+    DOCUMENT_REJECTED: "DOC",
+    TASK_COMPLETED: "TASK",
+    TASK_FAILED: "TASK",
+    GATE_APPROVED: "GATE_APPROVED",
+    GATE_OVERRIDDEN: "GATE_APPROVED",
+  };
+  const TITLE = {
+    FILE_UPLOADED:
+      row.changes?.status === "rejected"
+        ? "Document rejected"
+        : "Document updated",
+    GATE_CLEARED: "Gate cleared",
+    GATE_REOPENED: "Gate reopened",
+    DOCUMENT_UPLOADED: "Document uploaded",
+    DOCUMENT_APPROVED: "Document approved",
+    DOCUMENT_REJECTED: "Document rejected",
+    TASK_COMPLETED: "Task completed",
+    TASK_FAILED: "Task failed QC",
+    GATE_APPROVED: "Gate approved",
+    GATE_OVERRIDDEN: "Gate force-approved",
+  };
+  return {
+    type: ICON_TYPE[action] || "SCAN",
+    title: TITLE[action] || action.replace(/_/g, " ").toLowerCase(),
+    detail: row.entity_label || row.user_email || "",
+    time: timeAgo(row.created_at),
+  };
+}
 
 const STATE_META = {
   COMPLETE: {
@@ -872,12 +181,12 @@ const STATE_META = {
     dot: "bg-emerald-500",
     indicator: "bg-emerald-500",
   },
-  "AWAITING GATE": {
+  AWAITING_GATE: {
     badge: "bg-blue-50 text-blue-700 border-blue-200",
     dot: "bg-blue-500",
     indicator: "bg-blue-500",
   },
-  "IN PROGRESS": {
+  IN_PROGRESS: {
     badge: "bg-[#eef4f0] text-[#2f6655] border-[#c9d7cf]",
     dot: "bg-[#2f6655]",
     indicator: "bg-[#2f6655]",
@@ -887,24 +196,29 @@ const STATE_META = {
     dot: "bg-amber-500",
     indicator: "bg-amber-500",
   },
-  "QC FAILED": {
+  QC_FAILED: {
     badge: "bg-red-50 text-red-700 border-red-200",
     dot: "bg-red-500",
     indicator: "bg-red-500",
   },
-  "NOT STARTED": {
+  NOT_STARTED: {
     badge: "bg-slate-50 text-slate-400 border-slate-200",
     dot: "bg-slate-300",
     indicator: "bg-slate-300",
   },
 };
+const stateMeta = (state) =>
+  STATE_META[normalizeKey(state)] || STATE_META.NOT_STARTED;
+const stateLabel = (state) => normalizeKey(state).replace(/_/g, " ");
 
 const HEALTH_META = {
-  danger: "bg-red-50 text-red-700 border-red-200",
-  gate: "bg-blue-50 text-blue-700 border-blue-200",
-  progress: "bg-[#eef4f0] text-[#2f6655] border-[#c9d7cf]",
-  complete: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  DANGER: "bg-red-50 text-red-700 border-red-200",
+  GATE: "bg-blue-50 text-blue-700 border-blue-200",
+  PROGRESS: "bg-[#eef4f0] text-[#2f6655] border-[#c9d7cf]",
+  COMPLETE: "bg-emerald-50 text-emerald-700 border-emerald-200",
 };
+const healthMeta = (key) =>
+  HEALTH_META[normalizeKey(key)] || HEALTH_META.PROGRESS;
 
 // ------------------------------------------------------------
 // SMALL UI COMPONENTS
@@ -938,10 +252,6 @@ function SectionHeader({ eyebrow, title, action, onAction }) {
   );
 }
 
-// Thin wrapper around shadcn Progress so callers can still pick a
-// semantic "tone" (brand / warn / danger / gate) the way the bars
-// did before. Progress itself only paints the track; we tint the
-// indicator with a targeted child selector.
 function ProgressBar({ value, tone = "brand" }) {
   const toneClass =
     tone === "danger"
@@ -953,7 +263,7 @@ function ProgressBar({ value, tone = "brand" }) {
           : "bg-[#2f6655]";
   return (
     <Progress
-      value={Math.min(Math.max(value, 0), 100)}
+      value={Math.min(Math.max(value || 0, 0), 100)}
       className={cn(
         "h-1.5 bg-slate-100 [&>div]:transition-all",
         "[&>div]:" + toneClass,
@@ -962,7 +272,7 @@ function ProgressBar({ value, tone = "brand" }) {
   );
 }
 
-function KPI({ label, value, meta, icon: Icon, tone, onClick }) {
+function KPI({ label, value, meta, icon: Icon, tone, onClick, loading }) {
   return (
     <Card
       onClick={onClick}
@@ -983,7 +293,7 @@ function KPI({ label, value, meta, icon: Icon, tone, onClick }) {
       </div>
       <div className="mt-4">
         <div className="text-[24px] font-semibold tracking-[-0.04em] text-[#19352d]">
-          {value}
+          {loading ? "—" : value}
         </div>
         <div className="text-[11px] font-medium text-slate-500 mt-0.5">
           {label}
@@ -1003,6 +313,34 @@ function Toast({ message }) {
   );
 }
 
+function LoadingRow({ label = "Loading…" }) {
+  return (
+    <div className="px-4 py-8 text-center text-[11px] text-slate-400">
+      {label}
+    </div>
+  );
+}
+
+function ErrorRow({ error, onRetry }) {
+  return (
+    <div className="px-4 py-8 text-center">
+      <div className="text-[11px] text-red-500 mb-2">
+        Couldn't load this data{error?.status ? ` (HTTP ${error.status})` : ""}.
+      </div>
+      {onRetry && (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onRetry}
+          className="h-auto px-3 py-1.5 text-[10px] font-semibold"
+        >
+          Retry
+        </Button>
+      )}
+    </div>
+  );
+}
+
 // ------------------------------------------------------------
 // PROJECT BOARD — expandable rows with a per-project gate ladder
 // ------------------------------------------------------------
@@ -1011,15 +349,17 @@ function PhaseLadder({ phases, activeSeq }) {
   return (
     <div className="flex items-center gap-[3px]">
       {phases.map((ph) => {
-        const meta = STATE_META[ph.state];
+        const meta = stateMeta(ph.state);
         return (
           <div
             key={ph.id}
-            title={`${ph.gate} · ${ph.name} — ${ph.state}`}
+            title={`${ph.gate?.code ?? ""} · ${ph.name} — ${stateLabel(ph.state)}`}
             className={cn(
               "w-3 h-3 rotate-45 flex-shrink-0 border",
               meta.dot,
-              ph.seq === activeSeq ? "ring-2 ring-offset-1 ring-[#19352d]" : "",
+              ph.phaseNumber === activeSeq
+                ? "ring-2 ring-offset-1 ring-[#19352d]"
+                : "",
             )}
             style={{ borderColor: "transparent" }}
           />
@@ -1029,32 +369,47 @@ function PhaseLadder({ phases, activeSeq }) {
   );
 }
 
-function PhaseDetailCard({
-  project,
-  phase,
-  isAdmin,
-  onApproveGate,
-  onOpen,
-  docOverrides,
-  onUploadDoc,
-}) {
-  const detail = getPhaseDetail(project, phase.id, docOverrides);
-  const meta = STATE_META[phase.state];
-  const canApprove =
-    phase.pct === 100 && phase.gateState !== "APPROVED" && isAdmin;
+function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlash }) {
+  const {
+    data: detail,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useGetProjectPhaseDetailQuery(
+    { projectId: project.code, phaseId: phase.id },
+    { skip: !project?.code || !phase?.id },
+  );
+
+  const [completeTask, { isLoading: completingTask }] =
+    useCompleteCommandCenterTaskMutation();
+
+  const meta = stateMeta(phase.state);
+  const handleTaskStatus = async (taskDefinitionId, status) => {
+    try {
+      await completeTask({
+        projectId: project.code,
+        taskDefinitionId,
+        body: { status },
+      }).unwrap();
+      onFlash?.(`Task marked ${status.toLowerCase()}.`);
+    } catch (e) {
+      onFlash?.(e?.data?.message || "Couldn't update the task.");
+    }
+  };
 
   return (
     <Card className="bg-[#fafbfa] border border-[#edf0ee] rounded-lg p-4 mt-3 shadow-none">
       <div className="flex items-start justify-between gap-4 mb-3">
         <div>
           <div className="text-[9px] uppercase tracking-[0.1em] text-slate-400 font-semibold">
-            Phase {phase.seq} · {phase.gate}
+            Phase {phase.phaseNumber} · {phase.gate?.code ?? "—"}
           </div>
           <div className="text-[13px] font-semibold text-[#19352d] mt-0.5">
             {phase.name}
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            {phase.gateName}
+            {phase.gate?.name ?? ""}
           </div>
         </div>
         <Badge
@@ -1064,7 +419,7 @@ function PhaseDetailCard({
             meta.badge,
           )}
         >
-          {phase.state}
+          {stateLabel(phase.state)}
         </Badge>
       </div>
 
@@ -1081,158 +436,212 @@ function PhaseDetailCard({
         <ProgressBar
           value={phase.pct}
           tone={
-            phase.state === "QC FAILED"
+            normalizeKey(phase.state) === "QC_FAILED"
               ? "danger"
-              : phase.state === "STALLED"
+              : normalizeKey(phase.state) === "STALLED"
                 ? "warn"
-                : phase.state === "AWAITING GATE"
+                : normalizeKey(phase.state) === "AWAITING_GATE"
                   ? "gate"
                   : "brand"
           }
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <div className="text-[9px] uppercase tracking-[0.1em] text-slate-400 font-semibold mb-1.5">
-            Documents
-          </div>
-          <div className="space-y-1">
-            {detail.docs.map((d) => (
-              <div
-                key={d.id}
-                className="flex items-center justify-between gap-2 text-[10.5px]"
-              >
-                <span
-                  className={cn(
-                    "flex items-center gap-1.5 min-w-0",
-                    d.status === "MISSING"
-                      ? "text-slate-500"
-                      : "text-slate-700",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "w-1.5 h-1.5 rounded-full flex-shrink-0",
-                      d.status === "UPLOADED"
-                        ? "bg-emerald-500"
-                        : "bg-slate-300",
-                    )}
-                  />
-                  <span className="truncate">{d.name}</span>
-                  {!d.mandatory && (
-                    <span className="text-slate-400 flex-shrink-0">
-                      (optional)
-                    </span>
-                  )}
-                </span>
-                {d.status === "MISSING" ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() =>
-                      onUploadDoc?.({
-                        id: d.id,
-                        name: d.name,
-                        role: d.role,
-                        projectCode: project.code,
-                        projectName: project.name,
-                        phaseName: phase.name,
-                      })
-                    }
-                    className="flex-shrink-0 h-auto inline-flex items-center gap-1 px-1.5 py-1 rounded bg-[#19352d] text-white text-[8.5px] font-semibold hover:bg-[#0f231d]"
-                  >
-                    <UploadCloud size={10} />
-                    Upload
-                  </Button>
-                ) : (
-                  <span className="text-emerald-600 flex-shrink-0">
-                    {d.status}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div>
-          <div className="text-[9px] uppercase tracking-[0.1em] text-slate-400 font-semibold mb-1.5">
-            Execution &amp; QC checks
-          </div>
-          <div className="space-y-1">
-            {detail.tasks.map((t) => (
-              <div
-                key={t.id}
-                className="flex items-center justify-between text-[10.5px]"
-              >
-                <span className="flex items-center gap-1.5 text-slate-700">
-                  <span
-                    className={cn(
-                      "w-1.5 h-1.5 rounded-full",
-                      t.status === "Done"
-                        ? "bg-emerald-500"
-                        : t.status === "Failed"
-                          ? "bg-red-500"
-                          : "bg-slate-300",
-                    )}
-                  />
-                  {t.name}
-                  {t.type === "QC" && (
-                    <span className="text-[8px] font-semibold text-slate-400">
-                      QC
-                    </span>
-                  )}
-                </span>
-                <span
-                  className={cn(
-                    "font-medium",
-                    t.status === "Done"
-                      ? "text-emerald-600"
-                      : t.status === "Failed"
-                        ? "text-red-500"
-                        : "text-slate-500",
-                  )}
-                >
-                  {t.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {isLoading && <LoadingRow label="Loading documents & checks…" />}
+      {isError && <ErrorRow error={error} onRetry={refetch} />}
 
+      {detail && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <div className="text-[9px] uppercase tracking-[0.1em] text-slate-400 font-semibold mb-1.5">
+              Documents
+            </div>
+            <div className="space-y-1">
+              {detail.docs.map((d) => (
+                <div
+                  key={d.id}
+                  className="flex items-center justify-between gap-2 text-[10.5px]"
+                >
+                  <span
+                    className={cn(
+                      "flex items-center gap-1.5 min-w-0",
+                      d.status === "MISSING"
+                        ? "text-slate-500"
+                        : "text-slate-700",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "w-1.5 h-1.5 rounded-full flex-shrink-0",
+                        d.status === "UPLOADED" || d.status === "approved"
+                          ? "bg-emerald-500"
+                          : "bg-slate-300",
+                      )}
+                    />
+                    <span className="truncate">{d.name}</span>
+                    {!d.mandatory && (
+                      <span className="text-slate-400 flex-shrink-0">
+                        (optional)
+                      </span>
+                    )}
+                  </span>
+                  {d.evidence?.source === "DATABASE" ? (
+                    <span className="text-right text-[10px]">
+                      <span className="block text-slate-500">
+                        {d.evidence.sourceLabel} · {d.evidence.status}
+                      </span>
+                      <button
+                        type="button"
+                        className="text-emerald-700 underline"
+                        onClick={() => onOpen?.navigate(d.evidence.actionUrl)}
+                      >
+                        Open source record
+                      </button>
+                    </span>
+                  ) : d.status === "MISSING" ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={d.targetType === "DRAWING"}
+                      title={
+                        d.targetType === "DRAWING"
+                          ? "Submit and review this item through the drawings workflow"
+                          : undefined
+                      }
+                      onClick={() =>
+                        onOpen?.uploadDoc?.({
+                          documentTypeId: d.id,
+                          name: d.name,
+                          role: d.role,
+                          projectId: project.id,
+                          projectCode: project.code,
+                          projectName: project.name,
+                          phaseName: phase.name,
+                        })
+                      }
+                      className="flex-shrink-0 h-auto inline-flex items-center gap-1 px-1.5 py-1 rounded bg-[#19352d] text-white text-[8.5px] font-semibold hover:bg-[#0f231d]"
+                    >
+                      <UploadCloud size={10} />
+                      {d.targetType === "DRAWING"
+                        ? "Drawing required"
+                        : "Upload"}
+                    </Button>
+                  ) : (
+                    <span className="text-emerald-600 flex-shrink-0">
+                      {d.status}
+                    </span>
+                  )}
+                </div>
+              ))}
+              {detail.docs.length === 0 && (
+                <div className="text-[10px] text-slate-400">
+                  No documents configured for this phase.
+                </div>
+              )}
+            </div>
+          </div>
+          <div>
+            <div className="text-[9px] uppercase tracking-[0.1em] text-slate-400 font-semibold mb-1.5">
+              Execution &amp; QC checks
+            </div>
+            <div className="space-y-1">
+              {detail.tasks.map((t) => (
+                <div
+                  key={t.id}
+                  className="flex items-center justify-between text-[10.5px]"
+                >
+                  <span className="flex items-center gap-1.5 text-slate-700 min-w-0">
+                    <span
+                      className={cn(
+                        "w-1.5 h-1.5 rounded-full flex-shrink-0",
+                        t.status === "DONE" || t.status === "Done"
+                          ? "bg-emerald-500"
+                          : t.status === "FAILED" || t.status === "Failed"
+                            ? "bg-red-500"
+                            : "bg-slate-300",
+                      )}
+                    />
+                    <span className="truncate">{t.name}</span>
+                    {t.type === "QC" && (
+                      <span className="text-[8px] font-semibold text-slate-400 flex-shrink-0">
+                        QC
+                      </span>
+                    )}
+                  </span>
+                  <span className="flex items-center gap-1.5 flex-shrink-0">
+                    <span
+                      className={cn(
+                        "font-medium",
+                        t.status === "DONE" || t.status === "Done"
+                          ? "text-emerald-600"
+                          : t.status === "FAILED" || t.status === "Failed"
+                            ? "text-red-500"
+                            : "text-slate-500",
+                      )}
+                    >
+                      {t.status}
+                    </span>
+                    {canUpdateTasks &&
+                      t.status !== "DONE" &&
+                      t.status !== "Done" && (
+                        <span className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            disabled={completingTask}
+                            onClick={() => handleTaskStatus(t.id, "DONE")}
+                            className="text-[8px] font-semibold text-emerald-600 hover:underline disabled:opacity-40"
+                          >
+                            Mark done
+                          </button>
+                          <button
+                            type="button"
+                            disabled={completingTask}
+                            onClick={() => handleTaskStatus(t.id, "FAILED")}
+                            className="text-[8px] font-semibold text-red-500 hover:underline disabled:opacity-40"
+                          >
+                            Fail
+                          </button>
+                        </span>
+                      )}
+                  </span>
+                </div>
+              ))}
+              {detail.tasks.length === 0 && (
+                <div className="text-[10px] text-slate-400">
+                  No checks configured for this phase.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {detail &&
+        !isError &&
+        (detail.gates?.length ? (
+          detail.gates.map((gate) => (
+            <GateChecklist
+              key={`${project.id}:${gate.gateCode}`}
+              projectId={project.id}
+              gate={gate}
+              onFlash={onFlash}
+            />
+          ))
+        ) : (
+          <p className="mt-4 text-xs text-slate-500">
+            No sign-off gate is configured for this phase.
+          </p>
+        ))}
       <Separator className="mt-4 mb-3 bg-[#edf0ee]" />
       <div className="flex items-center justify-between">
         <Button
           type="button"
           variant="ghost"
-          onClick={() => onOpen(ROUTES.documentsProject(project.code))}
+          onClick={() => onOpen?.navigate(ROUTES.documentsProject(project.id))}
           className="h-auto p-0 text-[10px] font-semibold text-[#2f6655] hover:bg-transparent hover:text-[#19352d]"
         >
           Open in Documents →
         </Button>
-        {phase.gateState === "APPROVED" ? (
-          <span className="text-[10px] text-slate-400">
-            Gate approved by {phase.gateBy}
-          </span>
-        ) : (
-          <Button
-            type="button"
-            disabled={!canApprove}
-            onClick={() => onApproveGate(project.code, phase.id)}
-            className={cn(
-              "h-auto px-3 py-1.5 rounded-md text-[10px] font-semibold",
-              canApprove
-                ? "bg-[#19352d] text-white hover:bg-[#0f231d]"
-                : "bg-slate-100 text-slate-400 hover:bg-slate-100 cursor-not-allowed",
-            )}
-          >
-            {canApprove
-              ? `Approve ${phase.gate}`
-              : phase.pct === 100
-                ? "Admin approval required"
-                : `${phase.gate} locked`}
-          </Button>
-        )}
       </div>
     </Card>
   );
@@ -1243,18 +652,16 @@ function ProjectExecutionBoard({
   expanded,
   onToggle,
   onOpenProject,
-  isAdmin,
-  onApproveGate,
+  canUpdateTasks,
   onOpen,
-  docOverrides,
-  onUploadDoc,
+  onFlash,
 }) {
   return (
     <Card className="bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
       {rows.map((row) => {
         const isOpen = expanded === row.code;
         const activePhase = row.phases.find(
-          (p) => p.seq === row.currentPhaseSeq,
+          (p) => p.phaseNumber === row.currentPhaseSeq,
         );
         return (
           <div
@@ -1285,7 +692,7 @@ function ProjectExecutionBoard({
                     <span className="text-[11px] font-medium text-slate-700 truncate">
                       {activePhase?.name}{" "}
                       <span className="text-slate-400">
-                        ({activePhase?.gate})
+                        ({activePhase?.gate?.code ?? "—"})
                       </span>
                     </span>
                     <span className="text-[10px] font-semibold text-slate-600">
@@ -1303,17 +710,17 @@ function ProjectExecutionBoard({
                     variant="outline"
                     className={cn(
                       "inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[9px] font-semibold",
-                      HEALTH_META[row.health.key],
+                      healthMeta(row.health?.key),
                     )}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                    {row.health.label}
+                    {row.health?.label}
                   </Badge>
                 </div>
 
                 <div className="text-[10px] text-slate-600">
-                  {row.lastActivity}
-                  {row.daysIdle !== "" && row.daysIdle > 0 && (
+                  {timeAgo(row.lastActivity) || "—"}
+                  {row.daysIdle != null && row.daysIdle > 0 && (
                     <div className="text-[9px] text-amber-600 mt-0.5">
                       {row.daysIdle}d idle
                     </div>
@@ -1347,13 +754,11 @@ function ProjectExecutionBoard({
               <div className="px-4 pb-4">
                 {activePhase && (
                   <PhaseDetailCard
-                    project={row.project}
+                    project={row}
                     phase={activePhase}
-                    isAdmin={isAdmin}
-                    onApproveGate={onApproveGate}
+                    canUpdateTasks={canUpdateTasks}
                     onOpen={onOpen}
-                    docOverrides={docOverrides}
-                    onUploadDoc={onUploadDoc}
+                    onFlash={onFlash}
                   />
                 )}
               </div>
@@ -1361,15 +766,26 @@ function ProjectExecutionBoard({
           </div>
         );
       })}
+      {rows.length === 0 && <LoadingRow label="No projects match this view." />}
     </Card>
   );
 }
 
 // ------------------------------------------------------------
-// ACTION REQUIRED — derived live from missing docs / open tasks
+// ACTION REQUIRED — GET /command-center/actions
 // ------------------------------------------------------------
 
-function ActionRequired({ actions, onOpen }) {
+function ActionRequired({ onOpen }) {
+  const { data, isLoading, isError, error, refetch } =
+    useGetCommandCenterActionsQuery();
+  const actions = data || [];
+
+  // The service doesn't currently tag each item with a "kind", so we
+  // route generically to the project page. If you add a `route` (or
+  // `kind`) field to CommandCenterService#getActionRequired, wire it
+  // in here instead of this fallback.
+  const routeFor = (item) => ROUTES.project(item.projectCode);
+
   return (
     <Card className="bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
       <div className="px-4 py-3 border-b border-[#edf0ee] flex items-center justify-between">
@@ -1391,43 +807,45 @@ function ActionRequired({ actions, onOpen }) {
         </Badge>
       </div>
       <div>
-        {actions.map((item, i) => (
-          <Button
-            key={i}
-            type="button"
-            variant="ghost"
-            onClick={() => onOpen(item.route)}
-            className="w-full h-auto justify-start text-left px-4 py-3 border-b last:border-b-0 border-[#edf0ee] hover:bg-[#fbfcfb] rounded-none"
-          >
-            <div className="flex items-start gap-3 w-full">
-              <span
-                className={cn(
-                  "mt-1 w-2 h-2 rounded-full flex-shrink-0",
-                  item.severe ? "bg-red-500" : "bg-amber-500",
-                )}
-              />
-              <div className="min-w-0 flex-1">
-                <div className="text-[11px] font-medium text-slate-700 truncate">
-                  {item.title}
+        {isLoading && <LoadingRow />}
+        {isError && <ErrorRow error={error} onRetry={refetch} />}
+        {!isLoading &&
+          !isError &&
+          actions.map((item, i) => (
+            <Button
+              key={i}
+              type="button"
+              variant="ghost"
+              onClick={() => onOpen(routeFor(item))}
+              className="w-full h-auto justify-start text-left px-4 py-3 border-b last:border-b-0 border-[#edf0ee] hover:bg-[#fbfcfb] rounded-none"
+            >
+              <div className="flex items-start gap-3 w-full">
+                <span
+                  className={cn(
+                    "mt-1 w-2 h-2 rounded-full flex-shrink-0",
+                    item.severe ? "bg-red-500" : "bg-amber-500",
+                  )}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[11px] font-medium text-slate-700 truncate">
+                    {item.title}
+                  </div>
+                  <div className="text-[10px] text-[#2f6655] mt-1">
+                    {item.project}
+                  </div>
+                  <div className="text-[9px] text-slate-400 mt-0.5">
+                    {item.meta}
+                  </div>
                 </div>
-                <div className="text-[10px] text-[#2f6655] mt-1">
-                  {item.project}
-                </div>
-                <div className="text-[9px] text-slate-400 mt-0.5">
-                  {item.meta}
-                </div>
+                <ArrowRight
+                  size={13}
+                  className="mt-1 flex-shrink-0 text-slate-300"
+                />
               </div>
-              <ArrowRight
-                size={13}
-                className="mt-1 flex-shrink-0 text-slate-300"
-              />
-            </div>
-          </Button>
-        ))}
-        {actions.length === 0 && (
-          <div className="px-4 py-8 text-center text-[11px] text-slate-400">
-            No blockers right now.
-          </div>
+            </Button>
+          ))}
+        {!isLoading && !isError && actions.length === 0 && (
+          <LoadingRow label="No blockers right now." />
         )}
       </div>
     </Card>
@@ -1435,10 +853,16 @@ function ActionRequired({ actions, onOpen }) {
 }
 
 // ------------------------------------------------------------
-// DOCUMENT CONTROL
+// DOCUMENT CONTROL — GET /command-center/documents,
+// POST /command-center/projects/:id/documents/upload
 // ------------------------------------------------------------
 
-function DocumentControl({ docStats, missingDocs, onOpen }) {
+function DocumentControl({ onOpen, onUploadDoc }) {
+  const { data, isLoading, isError, error, refetch } =
+    useGetCommandCenterDocumentsQuery();
+  const docStats = data?.stats || { required: 0, uploaded: 0, missing: 0 };
+  const missingDocs = data?.missingDocs || [];
+
   return (
     <Card className="bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
       <div className="px-4 py-3 border-b border-[#edf0ee] flex items-center justify-between">
@@ -1471,7 +895,7 @@ function DocumentControl({ docStats, missingDocs, onOpen }) {
           <div className="text-[17px] font-semibold text-emerald-600">
             {docStats.uploaded}
           </div>
-          <div className="text-[9px] text-slate-400">Uploaded</div>
+          <div className="text-[9px] text-slate-400">Evidence satisfied</div>
         </div>
         <div className="px-4 py-3">
           <div className="text-[17px] font-semibold text-red-500">
@@ -1482,46 +906,73 @@ function DocumentControl({ docStats, missingDocs, onOpen }) {
       </div>
 
       <div>
-        {missingDocs.map((doc, i) => (
-          <div
-            key={i}
-            className="w-full px-4 py-3 flex items-center gap-3 border-b last:border-b-0 border-[#edf0ee] hover:bg-[#fbfcfb] transition"
-          >
-            <div className="w-7 h-7 rounded-lg bg-[#f3f6f4] text-[#2f6655] flex items-center justify-center flex-shrink-0">
-              <FileText size={13} />
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onOpen(ROUTES.documentsProject(doc.code))}
-              className="h-auto p-0 min-w-0 flex-1 justify-start text-left hover:bg-transparent"
+        {isLoading && <LoadingRow />}
+        {isError && <ErrorRow error={error} onRetry={refetch} />}
+        {!isLoading &&
+          !isError &&
+          missingDocs.map((doc, i) => (
+            <div
+              key={i}
+              className="w-full px-4 py-3 flex items-center gap-3 border-b last:border-b-0 border-[#edf0ee] hover:bg-[#fbfcfb] transition"
             >
-              <div>
-                <div className="text-[10px] font-medium text-slate-700 truncate">
-                  {doc.name}
-                </div>
-                <div className="text-[9px] text-slate-400 mt-0.5">
-                  {doc.project} · {doc.phase} · owner {doc.role}
-                </div>
+              <div className="w-7 h-7 rounded-lg bg-[#f3f6f4] text-[#2f6655] flex items-center justify-center flex-shrink-0">
+                <FileText size={13} />
               </div>
-            </Button>
-            <div className="text-[8px] font-semibold text-red-500 flex-shrink-0">
-              MISSING
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => onOpen(ROUTES.documentsProject(doc.projectId))}
+                className="h-auto p-0 min-w-0 flex-1 justify-start text-left hover:bg-transparent"
+              >
+                <div>
+                  <div className="text-[10px] font-medium text-slate-700 truncate">
+                    {doc.name}
+                  </div>
+                  <div className="text-[9px] text-slate-400 mt-0.5">
+                    {doc.project} · {doc.phase} · owner {doc.role}
+                  </div>
+                </div>
+              </Button>
+              <div className="text-[8px] font-semibold text-red-500 flex-shrink-0">
+                MISSING
+              </div>
+              <Button
+                type="button"
+                disabled={
+                  doc.evidence?.source !== "DATABASE" &&
+                  doc.targetType === "DRAWING"
+                }
+                title={
+                  doc.targetType === "DRAWING"
+                    ? "Submit and review this item through the drawings workflow"
+                    : undefined
+                }
+                onClick={() =>
+                  doc.evidence?.source === "DATABASE"
+                    ? onOpen(doc.evidence.actionUrl)
+                    : onUploadDoc({
+                        projectId: doc.projectId,
+                        documentTypeId: doc.id,
+                        name: doc.name,
+                        role: doc.role,
+                        projectCode: doc.code,
+                        projectName: doc.project,
+                        phaseName: doc.phase,
+                      })
+                }
+                className="flex-shrink-0 h-auto inline-flex items-center gap-1 px-2 py-1.5 rounded-md bg-[#19352d] text-white text-[9px] font-semibold hover:bg-[#0f231d]"
+              >
+                <UploadCloud size={11} />
+                {doc.evidence?.source === "DATABASE"
+                  ? "Open source"
+                  : doc.targetType === "DRAWING"
+                    ? "Drawing required"
+                    : "Upload"}
+              </Button>
             </div>
-            <Button
-              type="button"
-              onClick={() => doc.onUpload?.(doc)}
-              className="flex-shrink-0 h-auto inline-flex items-center gap-1 px-2 py-1.5 rounded-md bg-[#19352d] text-white text-[9px] font-semibold hover:bg-[#0f231d]"
-            >
-              <UploadCloud size={11} />
-              Upload
-            </Button>
-          </div>
-        ))}
-        {missingDocs.length === 0 && (
-          <div className="px-4 py-8 text-center text-[11px] text-slate-400">
-            Nothing missing right now.
-          </div>
+          ))}
+        {!isLoading && !isError && missingDocs.length === 0 && (
+          <LoadingRow label="Nothing missing right now." />
         )}
       </div>
     </Card>
@@ -1529,10 +980,14 @@ function DocumentControl({ docStats, missingDocs, onOpen }) {
 }
 
 // ------------------------------------------------------------
-// EXECUTION & QC CHECKS
+// EXECUTION & QC CHECKS — GET /command-center/tasks
 // ------------------------------------------------------------
 
-function TaskQCPanel({ openTasks, onOpen }) {
+function TaskQCPanel({ onOpen }) {
+  const { data, isLoading, isError, error, refetch } =
+    useGetCommandCenterTasksQuery();
+  const openTasks = data || [];
+
   return (
     <Card className="bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
       <div className="px-4 py-3 border-b border-[#edf0ee] flex items-center justify-between">
@@ -1549,57 +1004,61 @@ function TaskQCPanel({ openTasks, onOpen }) {
         </Badge>
       </div>
       <div>
-        {openTasks.map((t, i) => (
-          <Button
-            key={i}
-            type="button"
-            variant="ghost"
-            onClick={() => onOpen(ROUTES.taskProject(t.code))}
-            className="w-full h-auto justify-start px-4 py-3 text-left border-b last:border-b-0 border-[#edf0ee] hover:bg-[#fbfcfb] rounded-none"
-          >
-            <div className="flex items-center gap-3 w-full">
-              <div
-                className={cn(
-                  "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0",
-                  t.status === "Failed"
-                    ? "bg-red-50 text-red-500"
-                    : "bg-[#f3f6f4] text-[#2f6655]",
-                )}
-              >
-                {t.status === "Failed" ? (
-                  <ShieldAlert size={13} />
-                ) : (
-                  <ListChecks size={13} />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[10px] font-medium text-slate-700 truncate">
-                  {t.name}{" "}
-                  {t.type === "QC" && (
-                    <span className="text-[8px] font-semibold text-slate-400">
-                      QC
-                    </span>
+        {isLoading && <LoadingRow />}
+        {isError && <ErrorRow error={error} onRetry={refetch} />}
+        {!isLoading &&
+          !isError &&
+          openTasks.map((t, i) => (
+            <Button
+              key={i}
+              type="button"
+              variant="ghost"
+              onClick={() => onOpen(ROUTES.taskProject(t.code))}
+              className="w-full h-auto justify-start px-4 py-3 text-left border-b last:border-b-0 border-[#edf0ee] hover:bg-[#fbfcfb] rounded-none"
+            >
+              <div className="flex items-center gap-3 w-full">
+                <div
+                  className={cn(
+                    "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0",
+                    t.status === "FAILED" || t.status === "Failed"
+                      ? "bg-red-50 text-red-500"
+                      : "bg-[#f3f6f4] text-[#2f6655]",
+                  )}
+                >
+                  {t.status === "FAILED" || t.status === "Failed" ? (
+                    <ShieldAlert size={13} />
+                  ) : (
+                    <ListChecks size={13} />
                   )}
                 </div>
-                <div className="text-[9px] text-slate-400 mt-0.5">
-                  {t.project} · {t.phase} · owner {t.role}
+                <div className="min-w-0 flex-1">
+                  <div className="text-[10px] font-medium text-slate-700 truncate">
+                    {t.name}{" "}
+                    {t.type === "QC" && (
+                      <span className="text-[8px] font-semibold text-slate-400">
+                        QC
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[9px] text-slate-400 mt-0.5">
+                    {t.project} · {t.phase} · owner {t.role}
+                  </div>
+                </div>
+                <div
+                  className={cn(
+                    "text-[8px] font-semibold flex-shrink-0",
+                    t.status === "FAILED" || t.status === "Failed"
+                      ? "text-red-500"
+                      : "text-amber-600",
+                  )}
+                >
+                  {String(t.status).toUpperCase()}
                 </div>
               </div>
-              <div
-                className={cn(
-                  "text-[8px] font-semibold flex-shrink-0",
-                  t.status === "Failed" ? "text-red-500" : "text-amber-600",
-                )}
-              >
-                {t.status.toUpperCase()}
-              </div>
-            </div>
-          </Button>
-        ))}
-        {openTasks.length === 0 && (
-          <div className="px-4 py-8 text-center text-[11px] text-slate-400">
-            All checks clear.
-          </div>
+            </Button>
+          ))}
+        {!isLoading && !isError && openTasks.length === 0 && (
+          <LoadingRow label="All checks clear." />
         )}
       </div>
     </Card>
@@ -1607,24 +1066,12 @@ function TaskQCPanel({ openTasks, onOpen }) {
 }
 
 // ------------------------------------------------------------
-// COMMERCIAL — grounded in the BOQ & Costing phase (P05)
+// COMMERCIAL — GET /command-center/commercial
 // ------------------------------------------------------------
 
-function CommercialPanel({ projects, onOpen }) {
-  const boqPhase = (p) => buildProjectPhases(p).find((ph) => ph.id === "P05");
-  const passed = projects.filter(
-    (p) => boqPhase(p).state === "COMPLETE",
-  ).length;
-  const awaiting = projects.filter(
-    (p) => boqPhase(p).state === "AWAITING GATE",
-  ).length;
-  const inProgress = projects.filter((p) =>
-    ["IN PROGRESS", "STALLED", "QC FAILED"].includes(boqPhase(p).state),
-  ).length;
-  const approvedValue = projects
-    .filter((p) => boqPhase(p).state === "COMPLETE")
-    .reduce((s, p) => s + p.value, 0);
-  const totalValue = projects.reduce((s, p) => s + p.value, 0);
+function CommercialPanel({ onOpen }) {
+  const { data, isLoading, isError, error, refetch } =
+    useGetCommandCenterCommercialQuery();
 
   return (
     <Card className="bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
@@ -1647,68 +1094,83 @@ function CommercialPanel({ projects, onOpen }) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2">
-        <div className="p-4 border-r border-b border-[#edf0ee]">
-          <div className="text-[17px] font-semibold text-[#19352d]">
-            {totalValue ? formatINR(totalValue) : "—"}
-          </div>
-          <div className="text-[9px] text-slate-400">Total portfolio value</div>
-        </div>
-        <div className="p-4 border-b border-[#edf0ee]">
-          <div className="text-[17px] font-semibold text-emerald-600">
-            {formatINR(approvedValue)}
-          </div>
-          <div className="text-[9px] text-slate-400">
-            Commercially approved (G5)
-          </div>
-        </div>
-      </div>
+      {isLoading && <LoadingRow />}
+      {isError && <ErrorRow error={error} onRetry={refetch} />}
 
-      <div className="px-4 py-3">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[9px] uppercase tracking-[0.12em] font-semibold text-slate-400">
-            G5 status across portfolio
-          </span>
-        </div>
-        <div className="flex gap-2">
-          {[
-            ["Not reached", projects.length - passed - awaiting - inProgress],
-            ["Costing in progress", inProgress],
-            ["Awaiting approval", awaiting],
-            ["Approved", passed],
-          ].map(([label, value]) => (
-            <div key={label} className="flex-1 bg-[#fafbfa] rounded-lg p-2">
-              <div className="text-[13px] font-semibold text-[#19352d]">
-                {value}
+      {data && (
+        <>
+          <div className="grid grid-cols-2">
+            <div className="p-4 border-r border-b border-[#edf0ee]">
+              <div className="text-[17px] font-semibold text-[#19352d]">
+                {data.totalValue ? formatINR(data.totalValue) : "—"}
               </div>
-              <div className="text-[8px] text-slate-400">{label}</div>
+              <div className="text-[9px] text-slate-400">
+                Total portfolio value
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="p-4 border-b border-[#edf0ee]">
+              <div className="text-[17px] font-semibold text-emerald-600">
+                {formatINR(data.approvedValue)}
+              </div>
+              <div className="text-[9px] text-slate-400">
+                Commercially approved (G5)
+              </div>
+            </div>
+          </div>
+
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[9px] uppercase tracking-[0.12em] font-semibold text-slate-400">
+                G5 status across portfolio
+              </span>
+            </div>
+            <div className="flex gap-2">
+              {[
+                ["Not reached", data.notReached],
+                ["Costing in progress", data.inProgress],
+                ["Awaiting approval", data.awaiting],
+                ["Approved", data.approved],
+              ].map(([label, value]) => (
+                <div key={label} className="flex-1 bg-[#fafbfa] rounded-lg p-2">
+                  <div className="text-[13px] font-semibold text-[#19352d]">
+                    {value}
+                  </div>
+                  <div className="text-[8px] text-slate-400">{label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </Card>
   );
 }
 
 // ------------------------------------------------------------
-// SITE EXECUTION — grounded in Civil / MEP / Finishes phases
+// SITE EXECUTION — derived client-side from the already-loaded
+// portfolio rows (Civil / MEP / Finishes = phase numbers 9–11).
+// No dedicated endpoint needed since getPortfolio() already
+// returns each project's full phase rollup.
 // ------------------------------------------------------------
 
-function SiteExecution({ projects, onOpen }) {
-  const siteIds = ["P09", "P10", "P11"];
-  const inSitePhase = projects.filter((p) =>
-    siteIds.includes(
-      PHASE_MASTER.find((ph) => ph.seq === p.currentPhaseSeq)?.id,
+const SITE_PHASE_NUMBERS = [9, 10, 11];
+
+function SiteExecution({ rows, isLoading, isError, error, refetch, onOpen }) {
+  const inSitePhase = rows.filter((r) =>
+    SITE_PHASE_NUMBERS.includes(r.currentPhaseSeq),
+  );
+  const stalled = inSitePhase.filter((r) =>
+    r.phases.some(
+      (ph) =>
+        SITE_PHASE_NUMBERS.includes(ph.phaseNumber) &&
+        normalizeKey(ph.state) === "STALLED",
     ),
   );
-  const stalled = inSitePhase.filter((p) =>
-    buildProjectPhases(p).some(
-      (ph) => siteIds.includes(ph.id) && ph.state === "STALLED",
-    ),
-  );
-  const qcFailed = inSitePhase.filter((p) =>
-    buildProjectPhases(p).some(
-      (ph) => siteIds.includes(ph.id) && ph.state === "QC FAILED",
+  const qcFailed = inSitePhase.filter((r) =>
+    r.phases.some(
+      (ph) =>
+        SITE_PHASE_NUMBERS.includes(ph.phaseNumber) &&
+        normalizeKey(ph.state) === "QC_FAILED",
     ),
   );
 
@@ -1733,91 +1195,101 @@ function SiteExecution({ projects, onOpen }) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-3 border-b border-[#edf0ee]">
-        <div className="p-4 border-r border-[#edf0ee]">
-          <Construction size={14} className="text-[#2f6655]" />
-          <div className="text-[20px] font-semibold text-[#19352d] mt-3">
-            {inSitePhase.length}
-          </div>
-          <div className="text-[9px] text-slate-400 mt-0.5">
-            Projects on site
-          </div>
-        </div>
-        <div className="p-4 border-r border-[#edf0ee]">
-          <ShieldAlert size={14} className="text-red-500" />
-          <div className="text-[20px] font-semibold text-red-500 mt-3">
-            {qcFailed.length}
-          </div>
-          <div className="text-[9px] text-slate-400 mt-0.5">
-            QC failures on site
-          </div>
-        </div>
-        <div className="p-4">
-          <Clock3 size={14} className="text-amber-500" />
-          <div className="text-[20px] font-semibold text-amber-600 mt-3">
-            {stalled.length}
-          </div>
-          <div className="text-[9px] text-slate-400 mt-0.5">
-            Stalled on site
-          </div>
-        </div>
-      </div>
+      {isLoading && <LoadingRow />}
+      {isError && <ErrorRow error={error} onRetry={refetch} />}
 
-      <div>
-        {inSitePhase.map((p) => {
-          const ph = buildProjectPhases(p).find(
-            (x) => x.seq === p.currentPhaseSeq,
-          );
-          return (
-            <Button
-              type="button"
-              variant="ghost"
-              key={p.code}
-              onClick={() => onOpen(ROUTES.taskProject(p.code))}
-              className="w-full h-auto justify-start px-4 py-3 border-b last:border-b-0 border-[#edf0ee] text-left hover:bg-[#fbfcfb] rounded-none"
-            >
-              <div className="flex items-center gap-3 w-full">
-                <div className="w-7 h-7 rounded-lg bg-[#f3f6f4] flex items-center justify-center text-[#2f6655]">
-                  <Construction size={13} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[10px] font-semibold text-slate-700">
-                    {p.name}
-                  </div>
-                  <div className="text-[9px] text-slate-400 mt-0.5 truncate">
-                    {ph.name} · {ph.tasksDone}/{ph.tasksTotal} checks ·{" "}
-                    {ph.docsDone}/{ph.docsTotal} docs
-                  </div>
-                </div>
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "text-[8px] font-semibold px-1.5 py-0.5 rounded",
-                    STATE_META[ph.state].badge,
-                  )}
-                >
-                  {ph.state}
-                </Badge>
+      {!isLoading && !isError && (
+        <>
+          <div className="grid grid-cols-3 border-b border-[#edf0ee]">
+            <div className="p-4 border-r border-[#edf0ee]">
+              <Construction size={14} className="text-[#2f6655]" />
+              <div className="text-[20px] font-semibold text-[#19352d] mt-3">
+                {inSitePhase.length}
               </div>
-            </Button>
-          );
-        })}
-        {inSitePhase.length === 0 && (
-          <div className="px-4 py-6 text-center text-[11px] text-slate-400">
-            No project on site right now.
+              <div className="text-[9px] text-slate-400 mt-0.5">
+                Projects on site
+              </div>
+            </div>
+            <div className="p-4 border-r border-[#edf0ee]">
+              <ShieldAlert size={14} className="text-red-500" />
+              <div className="text-[20px] font-semibold text-red-500 mt-3">
+                {qcFailed.length}
+              </div>
+              <div className="text-[9px] text-slate-400 mt-0.5">
+                QC failures on site
+              </div>
+            </div>
+            <div className="p-4">
+              <Clock3 size={14} className="text-amber-500" />
+              <div className="text-[20px] font-semibold text-amber-600 mt-3">
+                {stalled.length}
+              </div>
+              <div className="text-[9px] text-slate-400 mt-0.5">
+                Stalled on site
+              </div>
+            </div>
           </div>
-        )}
-      </div>
+
+          <div>
+            {inSitePhase.map((row) => {
+              const ph = row.phases.find(
+                (x) => x.phaseNumber === row.currentPhaseSeq,
+              );
+              if (!ph) return null;
+              return (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  key={row.code}
+                  onClick={() => onOpen(ROUTES.taskProject(row.code))}
+                  className="w-full h-auto justify-start px-4 py-3 border-b last:border-b-0 border-[#edf0ee] text-left hover:bg-[#fbfcfb] rounded-none"
+                >
+                  <div className="flex items-center gap-3 w-full">
+                    <div className="w-7 h-7 rounded-lg bg-[#f3f6f4] flex items-center justify-center text-[#2f6655]">
+                      <Construction size={13} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] font-semibold text-slate-700">
+                        {row.name}
+                      </div>
+                      <div className="text-[9px] text-slate-400 mt-0.5 truncate">
+                        {ph.name} · {ph.tasksDone}/{ph.tasksTotal} checks ·{" "}
+                        {ph.docsDone}/{ph.docsTotal} docs
+                      </div>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-[8px] font-semibold px-1.5 py-0.5 rounded",
+                        stateMeta(ph.state).badge,
+                      )}
+                    >
+                      {stateLabel(ph.state)}
+                    </Badge>
+                  </div>
+                </Button>
+              );
+            })}
+            {inSitePhase.length === 0 && (
+              <LoadingRow label="No project on site right now." />
+            )}
+          </div>
+        </>
+      )}
     </Card>
   );
 }
 
 // ------------------------------------------------------------
-// TEAM WORKLOAD — by OWNER_ROLE, mirrors openWorkByRole() in 04_People.gs
+// TEAM WORKLOAD — GET /command-center/team-workload
 // ------------------------------------------------------------
 
-function TeamWorkload({ roleLoad, onOpen }) {
+function TeamWorkload({ onOpen }) {
+  const { data, isLoading, isError, error, refetch } =
+    useGetCommandCenterTeamWorkloadQuery();
+  const roleLoad = data || [];
   const maxCount = Math.max(1, ...roleLoad.map((r) => r.count));
+
   return (
     <Card className="bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
       <div className="px-4 py-3 border-b border-[#edf0ee] flex items-center justify-between">
@@ -1832,48 +1304,61 @@ function TeamWorkload({ roleLoad, onOpen }) {
         <Users size={14} className="text-slate-400" />
       </div>
       <div>
-        {roleLoad.map((r) => (
-          <Button
-            type="button"
-            variant="ghost"
-            key={r.role}
-            onClick={() => onOpen(ROUTES.tasks)}
-            className="w-full h-auto flex-col items-stretch justify-start px-4 py-3 border-b last:border-b-0 border-[#edf0ee] text-left hover:bg-[#fbfcfb] rounded-none"
-          >
-            <div className="flex items-center justify-between mb-1.5 w-full">
-              <span className="text-[10px] font-medium text-slate-700">
-                {r.role}
-              </span>
-              <span
-                className={cn(
-                  "text-[9px] font-semibold",
-                  r.count >= 3
-                    ? "text-red-500"
-                    : r.count > 0
-                      ? "text-amber-600"
-                      : "text-emerald-600",
-                )}
-              >
-                {r.count} open
-              </span>
-            </div>
-            <ProgressBar
-              value={(r.count / maxCount) * 100}
-              tone={r.count >= 3 ? "danger" : r.count > 0 ? "warn" : "brand"}
-            />
-            <div className="text-[8px] text-slate-400 mt-1">{r.name}</div>
-          </Button>
-        ))}
+        {isLoading && <LoadingRow />}
+        {isError && <ErrorRow error={error} onRetry={refetch} />}
+        {!isLoading &&
+          !isError &&
+          roleLoad.map((r) => (
+            <Button
+              type="button"
+              variant="ghost"
+              key={r.role}
+              onClick={() => onOpen(ROUTES.tasks)}
+              className="w-full h-auto flex-col items-stretch justify-start px-4 py-3 border-b last:border-b-0 border-[#edf0ee] text-left hover:bg-[#fbfcfb] rounded-none"
+            >
+              <div className="flex items-center justify-between mb-1.5 w-full">
+                <span className="text-[10px] font-medium text-slate-700">
+                  {r.role}
+                </span>
+                <span
+                  className={cn(
+                    "text-[9px] font-semibold",
+                    r.count >= 3
+                      ? "text-red-500"
+                      : r.count > 0
+                        ? "text-amber-600"
+                        : "text-emerald-600",
+                  )}
+                >
+                  {r.count} open
+                </span>
+              </div>
+              <ProgressBar
+                value={(r.count / maxCount) * 100}
+                tone={r.count >= 3 ? "danger" : r.count > 0 ? "warn" : "brand"}
+              />
+              <div className="text-[8px] text-slate-400 mt-1">
+                {PEOPLE_BY_ROLE[r.role] || "Unassigned"}
+              </div>
+            </Button>
+          ))}
+        {!isLoading && !isError && roleLoad.length === 0 && (
+          <LoadingRow label="No open work right now." />
+        )}
       </div>
     </Card>
   );
 }
 
 // ------------------------------------------------------------
-// ACTIVITY — mirrors LOG tab event types
+// ACTIVITY — GET /command-center/activity
 // ------------------------------------------------------------
 
-function ActivityTimeline({ activities }) {
+function ActivityTimeline() {
+  const { data, isLoading, isError, error, refetch } =
+    useGetCommandCenterActivityQuery({ limit: 20 });
+  const activities = (data || []).map(mapActivityLog);
+
   const iconFor = (type) => {
     if (type === "SCAN") return RefreshCw;
     if (type === "GATE_APPROVED") return ShieldCheck;
@@ -1891,7 +1376,7 @@ function ActivityTimeline({ activities }) {
             Live Activity
           </div>
           <div className="text-[9px] text-slate-400 mt-0.5">
-            From the LOG sheet
+            From the activity log
           </div>
         </div>
         <div className="flex items-center gap-1.5 text-[9px] text-emerald-600">
@@ -1900,39 +1385,48 @@ function ActivityTimeline({ activities }) {
         </div>
       </div>
       <div>
-        {activities.map((a, index) => {
-          const Icon = iconFor(a.type);
-          return (
-            <div key={index} className="px-4 py-3 flex gap-3">
-              <div className="flex flex-col items-center">
-                <div className="w-7 h-7 rounded-lg bg-[#f3f6f4] text-[#2f6655] flex items-center justify-center">
-                  <Icon size={12} />
-                </div>
-                {index !== activities.length - 1 && (
-                  <div className="w-px flex-1 bg-[#edf0ee] mt-1" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0 pb-1">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-[10px] font-medium text-slate-700 truncate">
-                    {a.title}
+        {isLoading && <LoadingRow />}
+        {isError && <ErrorRow error={error} onRetry={refetch} />}
+        {!isLoading &&
+          !isError &&
+          activities.map((a, index) => {
+            const Icon = iconFor(a.type);
+            return (
+              <div key={index} className="px-4 py-3 flex gap-3">
+                <div className="flex flex-col items-center">
+                  <div className="w-7 h-7 rounded-lg bg-[#f3f6f4] text-[#2f6655] flex items-center justify-center">
+                    <Icon size={12} />
                   </div>
-                  <span className="text-[8px] text-slate-400 whitespace-nowrap">
-                    {a.time}
-                  </span>
+                  {index !== activities.length - 1 && (
+                    <div className="w-px flex-1 bg-[#edf0ee] mt-1" />
+                  )}
                 </div>
-                <div className="text-[9px] text-[#2f6655] mt-1">{a.detail}</div>
+                <div className="flex-1 min-w-0 pb-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-[10px] font-medium text-slate-700 truncate">
+                      {a.title}
+                    </div>
+                    <span className="text-[8px] text-slate-400 whitespace-nowrap">
+                      {a.time}
+                    </span>
+                  </div>
+                  <div className="text-[9px] text-[#2f6655] mt-1">
+                    {a.detail}
+                  </div>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        {!isLoading && !isError && activities.length === 0 && (
+          <LoadingRow label="No activity yet." />
+        )}
       </div>
     </Card>
   );
 }
 
 // ------------------------------------------------------------
-// MODALS — New Project / Post to Cliq / Upload Document
+// UPLOAD DOCUMENT MODAL — POST /command-center/projects/:id/documents/upload
 // ------------------------------------------------------------
 
 function Field({ label, children }) {
@@ -1949,15 +1443,12 @@ function Field({ label, children }) {
 const inputClass =
   "text-[13px] border-[#dfe5e1] focus-visible:border-[#2f6655] focus-visible:ring-[#2f6655]";
 
-// ------------------------------------------------------------
-// UPLOAD DOCUMENT MODAL — attach evidence for a single doc item
-// ------------------------------------------------------------
-
-function UploadDocumentModal({ target, onClose, onSubmit }) {
+function UploadDocumentModal({ target, onClose, onUploaded, onFlash }) {
   const [file, setFile] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [notes, setNotes] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [uploadDocument, { isLoading: submitting }] =
+    useUploadCommandCenterDocumentMutation();
 
   if (!target) return null;
 
@@ -1965,15 +1456,24 @@ function UploadDocumentModal({ target, onClose, onSubmit }) {
     if (fileList && fileList[0]) setFile(fileList[0]);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!file || submitting) return;
-    setSubmitting(true);
-    // Simulated upload — a live integration would PUT to the DOC_REGISTRY
-    // sheet / Drive folder for this project + doc id here.
-    setTimeout(() => {
-      setSubmitting(false);
-      onSubmit({ ...target, fileName: file.name, notes });
-    }, 500);
+    const body = new FormData();
+    body.append("file", file);
+    body.append("documentTypeId", target.documentTypeId);
+    if (notes) body.append("remarks", notes);
+
+    try {
+      await uploadDocument({
+        projectId: target.projectId ?? target.projectCode,
+        body,
+      }).unwrap();
+      onUploaded(target, file.name);
+      setFile(null);
+      setNotes("");
+    } catch (e) {
+      onFlash?.(e?.data?.message || "Upload failed. Please try again.");
+    }
   };
 
   return (
@@ -2153,289 +1653,80 @@ function TabNav({ active, onChange, counts }) {
 export default function CommandCenter() {
   const [healthFilter, setHealthFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [expanded, setExpanded] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(true);
-  const [showNew, setShowNew] = useState(false);
-  const [showMsg, setShowMsg] = useState(false);
+  const { user } = useAuth();
+  const canUpdateTasks = !!user;
+  const navigate = useNavigate();
   const [toast, setToast] = useState("");
-  const [gateOverrides, setGateOverrides] = useState({}); // "code|phaseId" -> approver
-  const [docOverrides, setDocOverrides] = useState({}); // "code|docId" -> true once uploaded
-  const [uploadTarget, setUploadTarget] = useState(null); // doc being uploaded via modal
+  const [uploadTarget, setUploadTarget] = useState(null);
   const [activeTab, setActiveTab] = useState("portfolio");
-  const [log, setLog] = useState([
-    {
-      type: "SCAN",
-      title: "Full Drive scan complete",
-      detail: "5 projects · 65 phase slots",
-      time: "2m ago",
-    },
-    {
-      type: "DOC",
-      title: "GFC Electrical uploaded",
-      detail: "Kothari Residence · GFC Drawings",
-      time: "12m ago",
-    },
-    {
-      type: "PROJECT_CREATED",
-      title: "Project opened",
-      detail: "Saket Apartment · by Rohit Jain",
-      time: "3d ago",
-    },
-  ]);
 
   const flashToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(""), 3200);
   };
 
-  const navigate = (route) => {
-    // In production: navigate(route) via react-router-dom / Next router.
-    // The Command Centre never duplicates the canonical modules.
-    flashToast(`Navigating to ${route}`);
-  };
+  // ---- KPI strip ----
+  const {
+    data: kpi = {
+      live: 0,
+      awaiting: 0,
+      stalled: 0,
+      failed: 0,
+      docsMissing: 0,
+      value: 0,
+    },
+    isFetching: kpiLoading,
+    refetch: refetchKpis,
+  } = useGetCommandCenterKpisQuery();
 
-  // ---- derive everything from PROJECTS + masters, same shape getDashboardData() returns ----
-  const projectRows = useMemo(() => {
-    return PROJECTS.map((p) => {
-      const key = p.code;
-      const withOverride = {
-        ...p,
-        current: gateOverrides[`${key}|current`]
-          ? { ...p.current, gateState: "APPROVED" }
-          : p.current,
-      };
-      const phases = buildProjectPhases(withOverride, docOverrides);
-      const pct = Math.round(
-        phases.reduce((s, ph) => s + ph.pct, 0) / phases.length,
-      );
-      const complete = phases.filter((ph) => ph.state === "COMPLETE").length;
-      return {
-        code: p.code,
-        name: p.name,
-        location: p.location,
-        lastActivity: p.lastActivity,
-        currentPhaseSeq: p.currentPhaseSeq,
-        phases,
-        pct,
-        complete,
-        total: phases.length,
-        health: projectHealth(phases),
-        daysIdle: p.current.daysIdle,
-        project: withOverride,
-      };
-    });
-  }, [gateOverrides, docOverrides]);
+  // ---- Portfolio, filtered (drives the Portfolio tab board) ----
+  const {
+    data: filteredRows = [],
+    isLoading: portfolioLoading,
+    isError: portfolioError,
+    error: portfolioErrorObj,
+    refetch: refetchPortfolio,
+  } = useGetCommandCenterPortfolioQuery({
+    health: healthFilter === "all" ? undefined : healthFilter.toUpperCase(),
+    search: debouncedSearch || undefined,
+  });
 
-  const filteredRows = useMemo(() => {
-    let rows = [...projectRows];
-    if (healthFilter !== "all")
-      rows = rows.filter((r) => r.health.key === healthFilter);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      rows = rows.filter((r) =>
-        `${r.name} ${r.code} ${r.location}`.toLowerCase().includes(q),
-      );
-    }
-    return rows;
-  }, [projectRows, healthFilter, search]);
+  // ---- Portfolio, unfiltered (drives Site Execution + tab badges
+  // that need the whole book of work regardless of the board's
+  // filter/search state) ----
+  const { data: allRows = [], refetch: refetchAllRows } =
+    useGetCommandCenterPortfolioQuery({});
 
-  const kpi = useMemo(() => {
-    const allPhases = projectRows.flatMap((r) => r.phases);
-    return {
-      live: projectRows.length,
-      awaiting: allPhases.filter((p) => p.state === "AWAITING GATE").length,
-      stalled: allPhases.filter((p) => p.state === "STALLED").length,
-      failed: allPhases.filter((p) => p.state === "QC FAILED").length,
-      docsMissing: allPhases.reduce(
-        (s, p) =>
-          s +
-          Math.max(0, p.docsTotal - p.docsDone) *
-            (p.state !== "NOT STARTED" && p.state !== "COMPLETE" ? 1 : 0),
-        0,
-      ),
-      value: PROJECTS.reduce((s, p) => s + p.value, 0),
-    };
-  }, [projectRows]);
-
-  const actions = useMemo(() => {
-    const items = [];
-    projectRows.forEach((row) => {
-      const ph = row.phases.find((p) => p.seq === row.currentPhaseSeq);
-      if (!ph || row.health.key === "complete") return;
-      const detail = getPhaseDetail(row.project, ph.id, docOverrides);
-      detail.docs
-        .filter((d) => d.status === "MISSING" && d.mandatory)
-        .forEach((d) => {
-          items.push({
-            severe: ph.state === "QC FAILED",
-            title: `${d.name} missing`,
-            project: `${row.name} · ${ph.name}`,
-            meta: `Owner: ${d.role}`,
-            route: ROUTES.documentsProject(row.code),
-          });
-        });
-      detail.tasks
-        .filter((t) => t.status !== "Done" && t.mandatory)
-        .forEach((t) => {
-          items.push({
-            severe: t.status === "Failed",
-            title: `${t.status === "Failed" ? "Redo" : "Complete"}: ${t.name}`,
-            project: `${row.name} · ${ph.name}`,
-            meta: `Owner: ${t.role}${row.daysIdle ? ` · ${row.daysIdle}d idle` : ""}`,
-            route: ROUTES.taskProject(row.code),
-          });
-        });
-      if (ph.state === "AWAITING GATE") {
-        items.push({
-          severe: false,
-          title: `${ph.gate} awaiting approval`,
-          project: `${row.name} · ${ph.gateName}`,
-          meta: "Owner: Admin",
-          route: ROUTES.project(row.code),
-        });
-      }
-    });
-    return items.sort((a, b) => (b.severe ? 1 : 0) - (a.severe ? 1 : 0));
-  }, [projectRows, docOverrides]);
-
-  const missingDocsList = useMemo(() => {
-    const out = [];
-    projectRows.forEach((row) => {
-      const ph = row.phases.find((p) => p.seq === row.currentPhaseSeq);
-      if (!ph) return;
-      const detail = getPhaseDetail(row.project, ph.id, docOverrides);
-      detail.docs
-        .filter((d) => d.status === "MISSING" && d.mandatory)
-        .forEach((d) => {
-          out.push({
-            id: d.id,
-            name: d.name,
-            project: row.name,
-            code: row.code,
-            phase: ph.name,
-            role: d.role,
-            onUpload: () =>
-              setUploadTarget({
-                id: d.id,
-                name: d.name,
-                role: d.role,
-                projectCode: row.code,
-                projectName: row.name,
-                phaseName: ph.name,
-              }),
-          });
-        });
-    });
-    return out;
-  }, [projectRows, docOverrides]);
-
-  const docStats = useMemo(() => {
-    let required = 0,
-      uploaded = 0;
-    projectRows.forEach((row) => {
-      const ph = row.phases.find((p) => p.seq === row.currentPhaseSeq);
-      if (!ph) return;
-      required += ph.docsTotal;
-      uploaded += ph.docsDone;
-    });
-    return { required, uploaded, missing: required - uploaded };
-  }, [projectRows]);
-
-  const openTasks = useMemo(() => {
-    const out = [];
-    projectRows.forEach((row) => {
-      const ph = row.phases.find((p) => p.seq === row.currentPhaseSeq);
-      if (!ph) return;
-      const detail = getPhaseDetail(row.project, ph.id, docOverrides);
-      detail.tasks
-        .filter((t) => t.status !== "Done" && t.mandatory)
-        .forEach((t) => {
-          out.push({
-            name: t.name,
-            type: t.type,
-            status: t.status,
-            project: row.name,
-            code: row.code,
-            phase: ph.name,
-            role: t.role,
-          });
-        });
-    });
-    return out.sort(
-      (a, b) =>
-        (b.status === "Failed" ? 1 : 0) - (a.status === "Failed" ? 1 : 0),
-    );
-  }, [projectRows, docOverrides]);
-
-  const roleLoad = useMemo(() => {
-    const counts = {};
-    [
-      ...missingDocsList.map((d) => d.role),
-      ...openTasks.map((t) => t.role),
-    ].forEach((role) => {
-      counts[role] = (counts[role] || 0) + 1;
-    });
-    return PEOPLE.map((p) => ({
-      role: p.role,
-      name: p.name,
-      count: counts[p.role] || 0,
-    })).sort((a, b) => b.count - a.count);
-  }, [missingDocsList, openTasks]);
-
-  const handleApproveGate = (code, phaseId) => {
-    if (!isAdmin) {
-      flashToast("Only super admins can approve gates.");
-      return;
-    }
-    setGateOverrides((prev) => ({ ...prev, [`${code}|current`]: true }));
-    const row = projectRows.find((r) => r.code === code);
-    const ph = row?.phases.find((p) => p.id === phaseId);
-    setLog((l) => [
-      {
-        type: "GATE_APPROVED",
-        title: `Gate cleared — ${ph?.gate}`,
-        detail: `${row?.name} · approved by you`,
-        time: "just now",
-      },
-      ...l,
-    ]);
-    flashToast(`${ph?.gate} approved.`);
-  };
-
-  const handleUploadDocument = ({
-    id,
-    name,
-    fileName,
-    projectCode,
-    projectName,
-    phaseName,
-  }) => {
-    setDocOverrides((prev) => ({ ...prev, [`${projectCode}|${id}`]: true }));
-    setLog((l) => [
-      {
-        type: "DOC",
-        title: `${name} uploaded`,
-        detail: `${projectName} · ${phaseName} · ${fileName}`,
-        time: "just now",
-      },
-      ...l,
-    ]);
-    setUploadTarget(null);
-    flashToast(`${name} uploaded to ${projectName}.`);
-  };
+  // ---- Other tabs, each backed by its own endpoint ----
+  const { data: actionsData } = useGetCommandCenterActionsQuery();
+  const { data: documentsData } = useGetCommandCenterDocumentsQuery();
+  const { data: tasksData } = useGetCommandCenterTasksQuery();
 
   const handleRescan = () => {
-    setLog((l) => [
-      {
-        type: "SCAN",
-        title: "Full Drive scan complete",
-        detail: `${PROJECTS.length} projects rescanned`,
-        time: "just now",
-      },
-      ...l,
-    ]);
-    flashToast("Scan complete.");
+    // No dedicated rescan endpoint is exposed yet — this refreshes
+    // every live query on the page. Wire a real POST /command-center/rescan
+    // (or similar) here once the backend has one.
+    refetchKpis();
+    refetchPortfolio();
+    refetchAllRows();
+    flashToast("Refreshed.");
   };
+
+  const handleUploaded = (target) => {
+    setUploadTarget(null);
+    flashToast(`${target.name} uploaded to ${target.projectName}.`);
+  };
+
+  const tabCounts = useMemo(
+    () => ({
+      actions: actionsData?.length ?? 0,
+      documents: documentsData?.stats?.missing ?? 0,
+      qc: tasksData?.length ?? 0,
+    }),
+    [actionsData, documentsData, tasksData],
+  );
 
   return (
     <div className="min-h-screen bg-[#f5f7f5] text-[#19352d]">
@@ -2448,32 +1739,22 @@ export default function CommandCenter() {
             </h1>
             <p className="text-[11px] text-slate-400 mt-1 max-w-xl">
               One operational view across projects, phases, gates, documents,
-              checks and site execution — sourced from PHASE_MASTER, DOC_MASTER,
-              TASK_MASTER and live Drive scans.
+              checks and site execution — sourced live from your project
+              records.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 mr-1">
-              <Checkbox
-                id="admin-view"
-                checked={isAdmin}
-                onCheckedChange={(v) => setIsAdmin(!!v)}
-                className="data-[state=checked]:bg-[#19352d] data-[state=checked]:border-[#19352d]"
-              />
-              <Label
-                htmlFor="admin-view"
-                className="text-[10px] text-slate-500 font-medium cursor-pointer"
-              >
-                Admin view
-              </Label>
-            </div>
             <Button
               type="button"
               variant="outline"
               onClick={handleRescan}
               className="h-auto inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white border-[#dfe5e1] text-[10px] font-semibold text-slate-600 hover:border-[#aebfb5] hover:bg-white"
             >
-              <RefreshCw size={13} /> Rescan
+              <RefreshCw
+                size={13}
+                className={kpiLoading ? "animate-spin" : ""}
+              />
+              Refresh
             </Button>
           </div>
         </div>
@@ -2483,13 +1764,15 @@ export default function CommandCenter() {
           <KPI
             label="Live Projects"
             value={kpi.live}
-            meta="Active in PROJECTS sheet"
+            loading={kpiLoading}
+            meta="Active projects"
             icon={BriefcaseBusiness}
             onClick={() => setActiveTab("portfolio")}
           />
           <KPI
             label="Gates Awaiting Approval"
             value={kpi.awaiting}
+            loading={kpiLoading}
             meta="100% complete, unsigned"
             icon={ShieldCheck}
             tone="gate"
@@ -2501,6 +1784,7 @@ export default function CommandCenter() {
           <KPI
             label="Stalled Phases"
             value={kpi.stalled}
+            loading={kpiLoading}
             meta="7+ days no activity"
             icon={Clock3}
             tone={kpi.stalled ? "danger" : undefined}
@@ -2509,6 +1793,7 @@ export default function CommandCenter() {
           <KPI
             label="QC Failures"
             value={kpi.failed}
+            loading={kpiLoading}
             meta="Failed checklist items"
             icon={ShieldAlert}
             tone={kpi.failed ? "danger" : undefined}
@@ -2517,6 +1802,7 @@ export default function CommandCenter() {
           <KPI
             label="Documents Pending"
             value={kpi.docsMissing}
+            loading={kpiLoading}
             meta="Mandatory, in open phases"
             icon={FileText}
             tone={kpi.docsMissing ? "danger" : undefined}
@@ -2525,6 +1811,7 @@ export default function CommandCenter() {
           <KPI
             label="Portfolio Value"
             value={formatINR(kpi.value)}
+            loading={kpiLoading}
             meta="Across active projects"
             icon={DollarSign}
             onClick={() => setActiveTab("commercial")}
@@ -2532,15 +1819,7 @@ export default function CommandCenter() {
         </div>
 
         {/* TABS */}
-        <TabNav
-          active={activeTab}
-          onChange={setActiveTab}
-          counts={{
-            actions: actions.length,
-            documents: docStats.missing,
-            qc: openTasks.length,
-          }}
-        />
+        <TabNav active={activeTab} onChange={setActiveTab} counts={tabCounts} />
 
         {/* PORTFOLIO TAB */}
         {activeTab === "portfolio" && (
@@ -2589,17 +1868,32 @@ export default function CommandCenter() {
               </div>
             </Card>
 
-            <ProjectExecutionBoard
-              rows={filteredRows}
-              expanded={expanded}
-              onToggle={(code) => setExpanded(expanded === code ? null : code)}
-              onOpenProject={(code) => navigate(ROUTES.project(code))}
-              isAdmin={isAdmin}
-              onApproveGate={handleApproveGate}
-              onOpen={navigate}
-              docOverrides={docOverrides}
-              onUploadDoc={setUploadTarget}
-            />
+            {portfolioLoading && (
+              <Card className="bg-white border border-[#e4e8e5] rounded-xl shadow-none p-0">
+                <LoadingRow label="Loading portfolio…" />
+              </Card>
+            )}
+            {portfolioError && (
+              <Card className="bg-white border border-[#e4e8e5] rounded-xl shadow-none p-0">
+                <ErrorRow
+                  error={portfolioErrorObj}
+                  onRetry={refetchPortfolio}
+                />
+              </Card>
+            )}
+            {!portfolioLoading && !portfolioError && (
+              <ProjectExecutionBoard
+                rows={filteredRows}
+                expanded={expanded}
+                onToggle={(code) =>
+                  setExpanded(expanded === code ? null : code)
+                }
+                onOpenProject={(code) => navigate(ROUTES.project(code))}
+                canUpdateTasks={canUpdateTasks}
+                onOpen={{ navigate, uploadDoc: setUploadTarget }}
+                onFlash={flashToast}
+              />
+            )}
           </section>
         )}
 
@@ -2607,7 +1901,7 @@ export default function CommandCenter() {
         {activeTab === "actions" && (
           <section className="mb-6">
             <SectionHeader eyebrow="Blockers" title="Action Required" />
-            <ActionRequired actions={actions} onOpen={navigate} />
+            <ActionRequired onOpen={navigate} />
           </section>
         )}
 
@@ -2620,11 +1914,7 @@ export default function CommandCenter() {
               action="Open documents module"
               onAction={() => navigate(ROUTES.documents)}
             />
-            <DocumentControl
-              docStats={docStats}
-              missingDocs={missingDocsList}
-              onOpen={navigate}
-            />
+            <DocumentControl onOpen={navigate} onUploadDoc={setUploadTarget} />
           </section>
         )}
 
@@ -2632,7 +1922,7 @@ export default function CommandCenter() {
         {activeTab === "execution" && (
           <section className="mb-6">
             <SectionHeader eyebrow="On site" title="Site Execution" />
-            <SiteExecution projects={PROJECTS} onOpen={navigate} />
+            <SiteExecution rows={allRows} onOpen={navigate} />
           </section>
         )}
 
@@ -2640,7 +1930,7 @@ export default function CommandCenter() {
         {activeTab === "qc" && (
           <section className="mb-6">
             <SectionHeader eyebrow="Checklist" title="Execution & QC Checks" />
-            <TaskQCPanel openTasks={openTasks} onOpen={navigate} />
+            <TaskQCPanel onOpen={navigate} />
           </section>
         )}
 
@@ -2648,7 +1938,7 @@ export default function CommandCenter() {
         {activeTab === "commercial" && (
           <section className="mb-6">
             <SectionHeader eyebrow="BOQ & Costing" title="Commercial" />
-            <CommercialPanel projects={PROJECTS} onOpen={navigate} />
+            <CommercialPanel onOpen={navigate} />
           </section>
         )}
 
@@ -2656,15 +1946,15 @@ export default function CommandCenter() {
         {activeTab === "team" && (
           <section className="mb-6">
             <SectionHeader eyebrow="Roles" title="Team Workload" />
-            <TeamWorkload roleLoad={roleLoad} onOpen={navigate} />
+            <TeamWorkload onOpen={navigate} />
           </section>
         )}
 
         {/* LIVE ACTIVITY TAB */}
         {activeTab === "activity" && (
           <section className="mb-6">
-            <SectionHeader eyebrow="LOG sheet" title="Live Activity" />
-            <ActivityTimeline activities={log} />
+            <SectionHeader eyebrow="Activity log" title="Live Activity" />
+            <ActivityTimeline />
           </section>
         )}
       </main>
@@ -2673,7 +1963,8 @@ export default function CommandCenter() {
         <UploadDocumentModal
           target={uploadTarget}
           onClose={() => setUploadTarget(null)}
-          onSubmit={handleUploadDocument}
+          onUploaded={handleUploaded}
+          onFlash={flashToast}
         />
       )}
 

@@ -51,16 +51,30 @@ export function AttachmentPreview({
     setLoading(true);
     setError("");
     try {
-      const result = await downloadFile({
-        fileId,
-        filename,
-      }).unwrap();
-      const url = result.objectUrl;
-      if (url) {
-        objectUrlsRef.current.push(url);
-        return url;
+      const result = await downloadFile({ fileId, filename }).unwrap();
+      const rawUrl = result.objectUrl;
+      if (!rawUrl) return null;
+
+      // The API often returns a generic octet-stream blob with no real
+      // Content-Type/Content-Disposition. That breaks inline PDF preview
+      // and makes the browser's own PDF-viewer download button save the
+      // file under its blob UUID instead of the real name. Re-wrap it.
+      const rawBlob = await (await fetch(rawUrl)).blob();
+      const properType = mimeType || (isPdf ? "application/pdf" : rawBlob.type);
+      const typedBlob =
+        rawBlob.type === properType
+          ? rawBlob
+          : new Blob([rawBlob], { type: properType });
+
+      const url = URL.createObjectURL(typedBlob);
+      objectUrlsRef.current.push(url);
+      try {
+        URL.revokeObjectURL(rawUrl);
+      } catch {
+        /* ignore */
       }
-      return null;
+
+      return url;
     } catch (err) {
       const msg =
         err?.data?.message || err?.error || err?.message || "Failed to load";
@@ -69,8 +83,7 @@ export function AttachmentPreview({
     } finally {
       setLoading(false);
     }
-  }, [downloadFile, fileId, filename]);
-
+  }, [downloadFile, fileId, filename, isPdf, mimeType]);
   // Preload thumbnail for images
   useEffect(() => {
     if (!isImage || !fileId || thumbUrl) return;
