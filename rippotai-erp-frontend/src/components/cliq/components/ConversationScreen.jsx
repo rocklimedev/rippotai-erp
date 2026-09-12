@@ -4,6 +4,7 @@ import {
   useGetCliqMessagesQuery,
   useGetCliqChatThreadsQuery,
   useGetCliqChatFilesQuery,
+  useGetCliqChannelMembersQuery,
   useSendCliqMessageMutation,
   useSendCliqChannelMessageMutation,
   useSendCliqPersonMessageMutation,
@@ -11,6 +12,7 @@ import {
   useUploadCliqChannelFileMutation,
   useUploadCliqPersonFileMutation,
 } from "../../../api/connectors/cliq.api"; // adjust path if needed to match project layout
+
 import { T, EMPTY } from "../theme";
 import { personChat, targetFor } from "../helpers";
 import { PaperclipIcon, SendIcon } from "../icons";
@@ -31,10 +33,13 @@ export function ConversationScreen({
   chats,
   onOpenThread,
 }) {
+  console.log("DEBUG currentCliqUserId:", currentCliqUserId);
   const [sendError, setSendError] = useState("");
   const [confirmed, setConfirmed] = useState([]);
-  // "messages" | "threads" | "files"
+
+  // "messages" | "threads" | "files" | "members"
   const [panel, setPanel] = useState("messages");
+
   const [uploading, setUploading] = useState(false);
 
   const listRef = useRef(null);
@@ -42,37 +47,120 @@ export function ConversationScreen({
   const atBottom = useRef(true);
   const sendingLock = useRef(false);
 
+  /*
+   * --------------------------------------------------------------------------
+   * CHAT DESTINATION
+   * --------------------------------------------------------------------------
+   */
+
   const existing = chat.kind === "person" ? personChat(chat, chats) : null;
+
   const chatId = chat.chatId || existing?.chatId || null;
+
+  const channelId = chat.channelId || existing?.channelId || null;
+  /*
+   * --------------------------------------------------------------------------
+   * CHAT DETAILS
+   * --------------------------------------------------------------------------
+   */
 
   const details = useGetCliqChatQuery(chatId, {
     skip: !connected || !chatId,
   });
 
+  /*
+   * --------------------------------------------------------------------------
+   * MESSAGE HISTORY
+   * --------------------------------------------------------------------------
+   */
+
   const history = useGetCliqMessagesQuery(
-    { chatId, limit: 50 },
+    {
+      chatId,
+      limit: 50,
+    },
     {
       skip: !connected || !chatId || panel !== "messages",
+
       pollingInterval: panel === "messages" ? 4000 : 0,
     },
   );
+
+  /*
+   * --------------------------------------------------------------------------
+   * THREADS
+   * --------------------------------------------------------------------------
+   */
 
   const threads = useGetCliqChatThreadsQuery(chatId, {
     skip: !connected || !chatId || panel !== "threads",
   });
 
+  /*
+   * --------------------------------------------------------------------------
+   * FILES
+   * --------------------------------------------------------------------------
+   */
+
   const filesQuery = useGetCliqChatFilesQuery(
-    { chatId, limit: 50 },
-    { skip: !connected || !chatId || panel !== "files" },
+    {
+      chatId,
+      limit: 50,
+    },
+    {
+      skip: !connected || !chatId || panel !== "files",
+    },
   );
 
+  /*
+   * --------------------------------------------------------------------------
+   * CHANNEL MEMBERS
+   *
+   * This uses the actual Cliq channel membership endpoint.
+   *
+   * Important:
+   * - This is NOT the organization /people directory.
+   * - External users who are members of an external channel can appear here.
+   * - An invited user who has not joined yet may not appear as an active member.
+   * --------------------------------------------------------------------------
+   */
+
+  const membersQuery = useGetCliqChannelMembersQuery(channelId, {
+    skip:
+      !connected ||
+      !channelId ||
+      chat.kind !== "channel" ||
+      panel !== "members",
+  });
+  /*
+   * --------------------------------------------------------------------------
+   * SEND MUTATIONS
+   * --------------------------------------------------------------------------
+   */
+
   const [sendMessage, sendState] = useSendCliqMessageMutation();
+
   const [sendChannel, channelState] = useSendCliqChannelMessageMutation();
+
   const [sendPerson, personState] = useSendCliqPersonMessageMutation();
 
+  /*
+   * --------------------------------------------------------------------------
+   * FILE UPLOAD MUTATIONS
+   * --------------------------------------------------------------------------
+   */
+
   const [uploadChatFile] = useUploadCliqChatFileMutation();
+
   const [uploadChannelFile] = useUploadCliqChannelFileMutation();
+
   const [uploadPersonFile] = useUploadCliqPersonFileMutation();
+
+  /*
+   * --------------------------------------------------------------------------
+   * UI STATE
+   * --------------------------------------------------------------------------
+   */
 
   const isSending =
     sendState.isLoading ||
@@ -90,16 +178,30 @@ export function ConversationScreen({
   const canAttach = connected && hasDestination;
 
   const messages = history.currentData || EMPTY;
+
   const canSend =
     connected && hasDestination && draft.trim().length > 0 && !isSending;
 
+  /*
+   * --------------------------------------------------------------------------
+   * HEADER DATA
+   * --------------------------------------------------------------------------
+   */
+
   const titleChat = {
     ...chat,
+
     name:
       details.currentData?.name && details.currentData.name !== "Unknown"
         ? details.currentData.name
         : chat.name,
   };
+
+  /*
+   * --------------------------------------------------------------------------
+   * AUTO SCROLL
+   * --------------------------------------------------------------------------
+   */
 
   useEffect(() => {
     if (atBottom.current && listRef.current) {
@@ -107,25 +209,58 @@ export function ConversationScreen({
     }
   }, [messages, confirmed, panel]);
 
+  /*
+   * --------------------------------------------------------------------------
+   * SEND MESSAGE
+   * --------------------------------------------------------------------------
+   */
+
   const handleSend = async () => {
     const text = draft.trim();
-    if (!canSend || sendingLock.current) return;
+
+    if (!canSend || sendingLock.current) {
+      return;
+    }
+
     sendingLock.current = true;
     setSendError("");
+
     try {
+      /*
+       * PERSON MESSAGE
+       */
       if (chat.kind === "person") {
-        await sendPerson({ email: chat.email, chatId, text }).unwrap();
+        await sendPerson({
+          email: chat.email,
+          chatId,
+          text,
+        }).unwrap();
       } else if (chat.kind === "channel" && chat.uniqueName) {
+        /*
+         * CHANNEL MESSAGE
+         */
         await sendChannel({
           channelUniqueName: chat.uniqueName,
           chatId,
           text,
         }).unwrap();
       } else {
-        await sendMessage({ chatId, text }).unwrap();
+        /*
+         * NORMAL CHAT MESSAGE
+         */
+        await sendMessage({
+          chatId,
+          text,
+        }).unwrap();
       }
+
       setDraft("");
       atBottom.current = true;
+
+      /*
+       * Optimistic confirmation for destinations
+       * that do not yet have a linked chat id.
+       */
       if (!chatId) {
         setConfirmed((previous) => [
           ...previous,
@@ -138,7 +273,8 @@ export function ConversationScreen({
         ]);
       }
     } catch (error) {
-      const message = error?.data?.message || error?.error;
+      const message = error?.data?.message || error?.error || error?.message;
+
       setSendError(
         typeof message === "string"
           ? message
@@ -149,19 +285,42 @@ export function ConversationScreen({
     }
   };
 
+  /*
+   * --------------------------------------------------------------------------
+   * PICK FILE
+   * --------------------------------------------------------------------------
+   */
+
   const handlePickFile = () => {
-    if (!canAttach || uploading) return;
+    if (!canAttach || uploading) {
+      return;
+    }
+
     fileInputRef.current?.click();
   };
 
+  /*
+   * --------------------------------------------------------------------------
+   * FILE SELECTED
+   * --------------------------------------------------------------------------
+   */
+
   const handleFileSelected = async (event) => {
     const file = event.target.files?.[0];
+
     event.target.value = "";
-    if (!file || !canAttach) return;
+
+    if (!file || !canAttach) {
+      return;
+    }
 
     setUploading(true);
     setSendError("");
+
     try {
+      /*
+       * PERSON FILE
+       */
       if (chat.kind === "person" && chat.email) {
         await uploadPersonFile({
           email: chat.email,
@@ -169,26 +328,40 @@ export function ConversationScreen({
           comment: draft.trim() || undefined,
         }).unwrap();
       } else if (chat.kind === "channel" && chat.uniqueName) {
+        /*
+         * CHANNEL FILE
+         */
         await uploadChannelFile({
           channelUniqueName: chat.uniqueName,
           file,
           comment: draft.trim() || undefined,
         }).unwrap();
       } else if (chatId) {
+        /*
+         * CHAT FILE
+         */
         await uploadChatFile({
           chatId,
           file,
           comment: draft.trim() || undefined,
         }).unwrap();
       } else {
+        /*
+         * NO DESTINATION
+         */
         throw new Error("No destination for this file.");
       }
 
-      if (draft.trim()) setDraft("");
+      if (draft.trim()) {
+        setDraft("");
+      }
+
       atBottom.current = true;
+
       setPanel("messages");
     } catch (error) {
       const message = error?.data?.message || error?.error || error?.message;
+
       setSendError(
         typeof message === "string"
           ? message
@@ -199,9 +372,21 @@ export function ConversationScreen({
     }
   };
 
+  /*
+   * --------------------------------------------------------------------------
+   * RENDER
+   * --------------------------------------------------------------------------
+   */
+
   return (
     <>
       <ConversationHeader chat={titleChat} onBack={onBack} onClose={onClose} />
+
+      {/*
+       * ----------------------------------------------------------------------
+       * CONVERSATION PANELS
+       * ----------------------------------------------------------------------
+       */}
 
       {chatId && chat.kind !== "thread" && (
         <div
@@ -213,6 +398,9 @@ export function ConversationScreen({
             flexWrap: "wrap",
           }}
         >
+          {/*
+           * MESSAGES
+           */}
           <button
             className="cliq-control"
             type="button"
@@ -221,6 +409,10 @@ export function ConversationScreen({
           >
             Messages
           </button>
+
+          {/*
+           * THREADS
+           */}
           <button
             className="cliq-control"
             type="button"
@@ -229,6 +421,10 @@ export function ConversationScreen({
           >
             Threads
           </button>
+
+          {/*
+           * FILES
+           */}
           <button
             className="cliq-control"
             type="button"
@@ -237,8 +433,30 @@ export function ConversationScreen({
           >
             Files
           </button>
+
+          {/*
+           * MEMBERS
+           *
+           * Only channels have a member panel.
+           */}
+          {chat.kind === "channel" && (
+            <button
+              className="cliq-control"
+              type="button"
+              aria-pressed={panel === "members"}
+              onClick={() => setPanel("members")}
+            >
+              Members
+            </button>
+          )}
         </div>
       )}
+
+      {/*
+       * ----------------------------------------------------------------------
+       * CONNECTION WARNING
+       * ----------------------------------------------------------------------
+       */}
 
       {!connected && (
         <div className="cliq-notice" role="status">
@@ -246,10 +464,17 @@ export function ConversationScreen({
         </div>
       )}
 
+      {/*
+       * ----------------------------------------------------------------------
+       * MAIN CONTENT
+       * ----------------------------------------------------------------------
+       */}
+
       <div
         ref={listRef}
         onScroll={(event) => {
           const el = event.currentTarget;
+
           atBottom.current =
             el.scrollHeight - el.scrollTop - el.clientHeight < 70;
         }}
@@ -264,13 +489,185 @@ export function ConversationScreen({
           background: T.surfaceAlt,
         }}
       >
-        {panel === "threads" ? (
+        {/*
+         * ====================================================================
+         * MEMBERS PANEL
+         * ====================================================================
+         */}
+
+        {panel === "members" ? (
+          <>
+            {membersQuery.isFetching && !membersQuery.currentData ? (
+              <CenterState text="Loading channel members…" fill />
+            ) : membersQuery.isError ? (
+              <>
+                <CenterState
+                  title="Couldn't load channel members"
+                  text="Please try again."
+                  fill
+                />
+
+                <button
+                  className="cliq-control"
+                  type="button"
+                  onClick={membersQuery.refetch}
+                >
+                  Retry
+                </button>
+              </>
+            ) : !(membersQuery.currentData || []).length ? (
+              <CenterState text="No members found in this channel." fill />
+            ) : (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  width: "100%",
+                }}
+              >
+                {(membersQuery.currentData || []).map((member, index) => {
+                  const memberName =
+                    member.name || member.email || "Unknown user";
+
+                  const memberEmail = member.email || "";
+
+                  const memberId =
+                    member.id ||
+                    member.userId ||
+                    member.email ||
+                    `member-${index}`;
+
+                  return (
+                    <div
+                      key={memberId}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        padding: "10px 12px",
+                        borderRadius: 10,
+                        border: `1px solid ${T.border}`,
+                        background: T.surface,
+                      }}
+                    >
+                      {/*
+                       * AVATAR
+                       */}
+                      <div
+                        style={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: "50%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: T.surfaceAlt,
+                          color: T.ink,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {memberName.charAt(0).toUpperCase()}
+                      </div>
+
+                      {/*
+                       * USER INFORMATION
+                       */}
+                      <div
+                        style={{
+                          minWidth: 0,
+                          flex: 1,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: T.ink,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {memberName}
+                        </div>
+
+                        {memberEmail && (
+                          <div
+                            style={{
+                              fontSize: 10,
+                              color: T.muted,
+                              marginTop: 2,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {memberEmail}
+                          </div>
+                        )}
+                      </div>
+
+                      {/*
+                       * ROLE / EXTERNAL STATUS
+                       */}
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-end",
+                          gap: 3,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {member.role && (
+                          <span
+                            style={{
+                              fontSize: 9,
+                              color: T.muted,
+                              textTransform: "capitalize",
+                            }}
+                          >
+                            {member.role}
+                          </span>
+                        )}
+
+                        {member.isExternal && (
+                          <span
+                            style={{
+                              fontSize: 9,
+                              padding: "2px 6px",
+                              borderRadius: 999,
+                              border: `1px solid ${T.border}`,
+                              color: T.accent,
+                              background: T.surfaceAlt,
+                            }}
+                          >
+                            External
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        ) : panel === "threads" ? (
+          /*
+           * ==================================================================
+           * THREADS PANEL
+           * ==================================================================
+           */
           <>
             {threads.isFetching && !threads.currentData ? (
               <CenterState text="Loading threads…" fill />
             ) : threads.isError ? (
               <>
                 <CenterState text="Couldn't load threads." fill />
+
                 <button
                   className="cliq-control"
                   type="button"
@@ -292,6 +689,11 @@ export function ConversationScreen({
             )}
           </>
         ) : panel === "files" ? (
+          /*
+           * ==================================================================
+           * FILES PANEL
+           * ==================================================================
+           */
           <>
             {!chatId ? (
               <CenterState
@@ -304,6 +706,7 @@ export function ConversationScreen({
             ) : filesQuery.isError ? (
               <>
                 <CenterState text="Couldn't load files." fill />
+
                 <button
                   className="cliq-control"
                   type="button"
@@ -321,6 +724,11 @@ export function ConversationScreen({
             )}
           </>
         ) : !chatId ? (
+          /*
+           * ==================================================================
+           * NO CHAT ID
+           * ==================================================================
+           */
           <>
             <CenterState
               title={
@@ -335,19 +743,31 @@ export function ConversationScreen({
               }
               fill
             />
+
             {confirmed.map((message) => (
               <MessageBubble key={message.id} message={message} />
             ))}
           </>
         ) : history.isFetching && !history.currentData ? (
+          /*
+           * ==================================================================
+           * LOADING MESSAGES
+           * ==================================================================
+           */
           <CenterState text="Loading messages…" fill />
         ) : history.isError ? (
+          /*
+           * ==================================================================
+           * MESSAGE ERROR
+           * ==================================================================
+           */
           <>
             <CenterState
               title="Couldn't load messages"
               text="Your draft is safe."
               fill
             />
+
             <button
               className="cliq-control"
               type="button"
@@ -357,9 +777,19 @@ export function ConversationScreen({
             </button>
           </>
         ) : !messages.length ? (
+          /*
+           * ==================================================================
+           * EMPTY MESSAGES
+           * ==================================================================
+           */
           <CenterState text="No messages yet. Say hello." fill />
         ) : (
-          messages.map((message) => (
+          /*
+           * ==================================================================
+           * MESSAGE LIST
+           * ==================================================================
+           */
+          messages.map((message, i) => (
             <MessageBubble
               key={message.id}
               message={{
@@ -376,31 +806,66 @@ export function ConversationScreen({
         )}
       </div>
 
-      {panel !== "threads" && (
+      {/*
+       * ----------------------------------------------------------------------
+       * COMPOSER
+       *
+       * Do not display the composer in the Threads or Members panel.
+       * ----------------------------------------------------------------------
+       */}
+
+      {panel !== "threads" && panel !== "members" && (
         <div
-          style={{ borderTop: `1px solid ${T.border}`, padding: "8px 10px" }}
+          style={{
+            borderTop: `1px solid ${T.border}`,
+            padding: "8px 10px",
+          }}
         >
+          {/*
+           * SEND / UPLOAD ERROR
+           */}
           {sendError && (
             <div
               role="alert"
-              style={{ color: T.danger, fontSize: 11, marginBottom: 6 }}
+              style={{
+                color: T.danger,
+                fontSize: 11,
+                marginBottom: 6,
+              }}
             >
               {sendError}
             </div>
           )}
 
+          {/*
+           * HIDDEN FILE INPUT
+           */}
           <input
             ref={fileInputRef}
             type="file"
-            style={{ display: "none" }}
+            style={{
+              display: "none",
+            }}
             onChange={handleFileSelected}
           />
 
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-end",
+              gap: 8,
+            }}
+          >
+            {/*
+             * ATTACH FILE
+             */}
             <IconButton label="Attach file" onClick={handlePickFile}>
               <PaperclipIcon />
             </IconButton>
 
+            {/*
+             * MESSAGE INPUT
+             */}
             <textarea
               value={draft}
               aria-label={`Message ${chat.name}`}
@@ -435,6 +900,9 @@ export function ConversationScreen({
               }}
             />
 
+            {/*
+             * SEND BUTTON
+             */}
             <button
               type="button"
               onClick={handleSend}
@@ -458,8 +926,17 @@ export function ConversationScreen({
             </button>
           </div>
 
+          {/*
+           * SYNC / UPLOAD STATUS
+           */}
           {(history.isFetching || uploading) && (
-            <div style={{ marginTop: 4, fontSize: 9.5, color: T.muted }}>
+            <div
+              style={{
+                marginTop: 4,
+                fontSize: 9.5,
+                color: T.muted,
+              }}
+            >
               {uploading ? "Uploading…" : "Syncing…"}
             </div>
           )}

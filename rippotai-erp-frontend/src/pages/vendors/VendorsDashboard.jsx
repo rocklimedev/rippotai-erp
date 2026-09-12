@@ -287,14 +287,14 @@ export default function VendorsDashboard() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => nav("/vendors/shortlists")}
+            onClick={() => nav("/materials/vendors/shortlists")}
             className="h-10 px-4 rounded-xl border border-[#B5C4B6] bg-white hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C] flex items-center gap-2"
             data-testid="shortlists-link"
           >
             <Bookmark size={15} /> Shortlists
           </button>
           <button
-            onClick={() => nav("/vendors/new")}
+            onClick={() => nav("/materials/vendors/new")}
             className="h-10 px-4 rounded-xl bg-[#1F453B] hover:bg-[#1F453B] text-white text-[13px] font-semibold flex items-center gap-2 shadow-sm"
             data-testid="add-vendor-btn"
           >
@@ -587,7 +587,7 @@ export default function VendorsDashboard() {
               <div className="p-10 text-center text-[13px] text-[#6B7B7C]">
                 No vendors match. Adjust filters or{" "}
                 <button
-                  onClick={() => nav("/vendors/new")}
+                  onClick={() => nav("/materials/vendors/new")}
                   className="text-[#333333] font-semibold"
                 >
                   add a vendor

@@ -1,7 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { InjectModel, InjectConnection } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
-import { v4 as uuid } from 'uuid';
+import { randomUUID as uuid } from 'crypto';
 import { Op } from 'sequelize';
 
 import { GateDefinition } from './models/gate-definition.model';
@@ -72,13 +77,16 @@ export class GateEngineService {
     for (const gate of gates) {
       if (!existingByGateId.has(gate.id)) {
         const status =
-          gate.sequenceOrder === 1 ? GateStatus.PENDING : GateStatus.LOCKED;
-        await this.projectGateModel.create({
-          id: uuid(),
-          projectId,
-          gateDefinitionId: gate.id,
-          status,
-        } as any);
+          gate.id === gates[0]?.id ? GateStatus.PENDING : GateStatus.LOCKED;
+        await this.projectGateModel.findOrCreate({
+          where: { projectId, gateDefinitionId: gate.id },
+          defaults: {
+            id: uuid(),
+            projectId,
+            gateDefinitionId: gate.id,
+            status,
+          },
+        });
       }
     }
   }
@@ -89,9 +97,24 @@ export class GateEngineService {
 
     const rows = await this.projectGateModel.findAll({
       where: { projectId },
-      include: [{ model: GateDefinition }],
+      include: [
+        { model: GateDefinition, where: { isActive: true }, required: true },
+      ],
     });
 
+    const readiness = new Map(
+      await Promise.all(
+        rows
+          .filter((r) => r.status !== GateStatus.CLEARED)
+          .map(
+            async (r) =>
+              [
+                r.gateDefinitionId,
+                await this.checkReadiness(projectId, r.gateDefinition.code),
+              ] as const,
+          ),
+      ),
+    );
     return rows
       .sort(
         (a, b) =>
@@ -99,12 +122,21 @@ export class GateEngineService {
       )
       .map((pg) => ({
         gateCode: pg.gateDefinition.code,
+        phaseCode: pg.gateDefinition.phaseCode,
+        allowsOverride: pg.gateDefinition.allowsOverride,
         gateName: pg.gateDefinition.name,
         sequenceOrder: pg.gateDefinition.sequenceOrder,
         progressThresholdPct: pg.gateDefinition.progressThresholdPct,
         triggerCondition: pg.gateDefinition.triggerCondition,
         handoffBetween: pg.gateDefinition.handoffBetween,
-        status: pg.status,
+        status:
+          pg.status === GateStatus.CLEARED
+            ? pg.status
+            : readiness.get(pg.gateDefinitionId)?.isReady
+              ? GateStatus.READY
+              : readiness.get(pg.gateDefinitionId)?.unlockedByPreviousGate
+                ? GateStatus.PENDING
+                : GateStatus.LOCKED,
         clearedAt: pg.clearedAt,
         clearedBy: pg.clearedBy,
         overridden: pg.overridden,
@@ -124,13 +156,14 @@ export class GateEngineService {
     await this.ensureInitialized(projectId);
 
     const gate = await this.gateDefinitionModel.findOne({
-      where: { code: gateCode },
+      where: { code: gateCode, isActive: true },
       include: [{ model: GateCondition }],
     });
     if (!gate) throw new GateNotFoundException(gateCode);
 
     const previousGate = await this.gateDefinitionModel.findOne({
-      where: { sequenceOrder: gate.sequenceOrder - 1 },
+      where: { isActive: true, sequenceOrder: { [Op.lt]: gate.sequenceOrder } },
+      order: [['sequenceOrder', 'DESC']],
     });
 
     let unlockedByPreviousGate = true;
@@ -147,14 +180,28 @@ export class GateEngineService {
     );
     const results: GateConditionResult[] = [];
     for (const condition of conditions) {
-      const evaluator = this.conditionRegistry.resolve(condition.type);
-      results.push(await evaluator.evaluate(projectId, condition));
+      try {
+        const evaluator = this.conditionRegistry.resolve(condition.type);
+        results.push(await evaluator.evaluate(projectId, condition));
+      } catch (error) {
+        this.logger.error(`Cannot evaluate condition ${condition.id}`, error);
+        results.push({
+          conditionId: condition.id,
+          type: condition.type,
+          label: condition.label,
+          optional: condition.optional,
+          passed: false,
+          detail:
+            'Evidence could not be evaluated; check engine configuration.',
+        });
+      }
     }
 
     const requiredResults = results.filter((r) => !r.optional);
     const optionalResults = results.filter((r) => r.optional);
 
-    const requiredConditionsPassed = requiredResults.every((r) => r.passed);
+    const requiredConditionsPassed =
+      conditions.length > 0 && requiredResults.every((r) => r.passed);
     // If there are no optional conditions at all, that bucket trivially passes.
     // Otherwise at least one optional condition must pass (e.g. Agreement OR Contract).
     const optionalGroupPassed =
@@ -180,26 +227,6 @@ export class GateEngineService {
       conditions: results,
     };
 
-    // Keep PENDING/READY in sync with the live evaluation so list views stay accurate
-    // between explicit clears, without ever silently marking something CLEARED.
-    if (
-      projectGate &&
-      projectGate.status !== GateStatus.CLEARED &&
-      projectGate.status !== GateStatus.LOCKED
-    ) {
-      const nextStatus = readiness.isReady
-        ? GateStatus.READY
-        : GateStatus.PENDING;
-      if (nextStatus !== projectGate.status) {
-        await projectGate.update({
-          status: nextStatus,
-          lastReadinessSnapshot: readiness as any,
-        });
-      } else {
-        await projectGate.update({ lastReadinessSnapshot: readiness as any });
-      }
-    }
-
     return readiness;
   }
 
@@ -216,34 +243,49 @@ export class GateEngineService {
     user: CurrentUserPayload,
     opts: { remarks?: string; override?: boolean } = {},
   ): Promise<GateReadiness> {
-    const readiness = await this.checkReadiness(projectId, gateCode);
-
-    const gate = await this.gateDefinitionModel.findOne({
-      where: { code: gateCode },
-    });
-    if (!gate) throw new GateNotFoundException(gateCode);
-
-    if (readiness.status === GateStatus.CLEARED) {
-      throw new GateAlreadyClearedException(gateCode);
-    }
-
-    if (!readiness.unlockedByPreviousGate) {
-      throw new GateLockedException(
-        gateCode,
-        readiness.previousGateCode ?? '(unknown)',
+    if (!user.permissions?.includes('gates:clear'))
+      throw new ForbiddenException('Missing gates:clear permission');
+    if (
+      opts.override &&
+      (!user.permissions?.includes('gates:override') || !opts.remarks?.trim())
+    ) {
+      throw new ForbiddenException(
+        'Override requires gates:override permission and a reason',
       );
     }
-
-    const isOverride =
-      !readiness.isReady && !!opts.override && gate.allowsOverride;
-    if (!readiness.isReady && !isOverride) {
-      const failed = readiness.conditions
-        .filter((c) => !c.optional && !c.passed)
-        .map((c) => c.label);
-      throw new GateNotReadyException(gateCode, failed);
-    }
-
+    await this.ensureInitialized(projectId);
     return this.sequelize.transaction(async (tx) => {
+      await this.projectModel.findByPk(projectId, {
+        transaction: tx,
+        lock: tx.LOCK.UPDATE,
+      });
+      const readiness = await this.checkReadiness(projectId, gateCode);
+
+      const gate = await this.gateDefinitionModel.findOne({
+        where: { code: gateCode, isActive: true },
+      });
+      if (!gate) throw new GateNotFoundException(gateCode);
+
+      if (readiness.status === GateStatus.CLEARED) {
+        throw new GateAlreadyClearedException(gateCode);
+      }
+
+      if (!readiness.unlockedByPreviousGate) {
+        throw new GateLockedException(
+          gateCode,
+          readiness.previousGateCode ?? '(unknown)',
+        );
+      }
+
+      const isOverride =
+        !readiness.isReady && !!opts.override && gate.allowsOverride;
+      if (!readiness.isReady && !isOverride) {
+        const failed = readiness.conditions
+          .filter((c) => !c.optional && !c.passed)
+          .map((c) => c.label);
+        throw new GateNotReadyException(gateCode, failed);
+      }
+
       const projectGate = await this.projectGateModel.findOne({
         where: { projectId, gateDefinitionId: gate.id },
         transaction: tx,
@@ -264,7 +306,11 @@ export class GateEngineService {
 
       // Unlock the next gate in sequence.
       const nextGate = await this.gateDefinitionModel.findOne({
-        where: { sequenceOrder: gate.sequenceOrder + 1 },
+        where: {
+          isActive: true,
+          sequenceOrder: { [Op.gt]: gate.sequenceOrder },
+        },
+        order: [['sequenceOrder', 'ASC']],
         transaction: tx,
       });
       if (nextGate) {
@@ -282,7 +328,7 @@ export class GateEngineService {
               id: uuid(),
               projectId,
               gateDefinitionId: nextGate.id,
-              action: GateTransitionAction.UNLOCKED,
+              action: GateTransitionAction.REOPENED,
               fromStatus: GateStatus.LOCKED,
               toStatus: GateStatus.PENDING,
               performedBy: user.id,
@@ -306,7 +352,8 @@ export class GateEngineService {
       };
       if (gate.opensPhaseId) {
         const phase = await gate.$get('opensPhase', { transaction: tx });
-        if (phase) updates.currentPhase = (phase as any).code;
+        if (phase && !(phase as any).isParallel)
+          updates.current_phase = (phase as any).code;
       }
       await project!.update(updates, { transaction: tx });
 
@@ -366,19 +413,36 @@ export class GateEngineService {
     user: CurrentUserPayload,
     remarks: string,
   ): Promise<void> {
+    if (!user.permissions?.includes('gates:reopen'))
+      throw new ForbiddenException('Missing gates:reopen permission');
+    if (!remarks?.trim())
+      throw new BadRequestException('A reopening reason is required');
     await this.ensureInitialized(projectId);
 
     const gate = await this.gateDefinitionModel.findOne({
-      where: { code: gateCode },
+      where: { code: gateCode, isActive: true },
     });
     if (!gate) throw new GateNotFoundException(gateCode);
 
     const downstreamGates = await this.gateDefinitionModel.findAll({
-      where: { sequenceOrder: { [Op.gte]: gate.sequenceOrder } },
+      where: {
+        isActive: true,
+        sequenceOrder: { [Op.gte]: gate.sequenceOrder },
+      },
       order: [['sequenceOrder', 'ASC']],
     });
 
     await this.sequelize.transaction(async (tx) => {
+      await this.projectModel.findByPk(projectId, {
+        transaction: tx,
+        lock: tx.LOCK.UPDATE,
+      });
+      const target = await this.projectGateModel.findOne({
+        where: { projectId, gateDefinitionId: gate.id },
+        transaction: tx,
+      });
+      if (target?.status !== GateStatus.CLEARED)
+        throw new BadRequestException('Only a cleared gate can be reopened');
       for (const [idx, dGate] of downstreamGates.entries()) {
         const projectGate = await this.projectGateModel.findOne({
           where: { projectId, gateDefinitionId: dGate.id },
@@ -408,7 +472,7 @@ export class GateEngineService {
             action:
               idx === 0
                 ? GateTransitionAction.REOPENED
-                : GateTransitionAction.UNLOCKED,
+                : GateTransitionAction.REOPENED,
             fromStatus,
             toStatus,
             performedBy: user.id,
@@ -432,6 +496,26 @@ export class GateEngineService {
         );
       }
 
+      const project = await this.projectModel.findByPk(projectId, {
+        transaction: tx,
+      });
+      const remaining = await this.projectGateModel.findAll({
+        where: { projectId, status: GateStatus.CLEARED },
+        include: [GateDefinition],
+        transaction: tx,
+      });
+      await project!.update(
+        {
+          current_phase: gate.phaseCode,
+          progress_pct: Math.max(
+            0,
+            ...remaining.map((r) =>
+              Number(r.gateDefinition.progressThresholdPct ?? 0),
+            ),
+          ),
+        },
+        { transaction: tx },
+      );
       await this.activityLog.log({
         user_id: user.id,
         user_email: user.email,
@@ -456,9 +540,14 @@ export class GateEngineService {
     ticked: boolean,
     remarks?: string,
   ): Promise<void> {
+    if (!user.permissions?.includes('gates:clear'))
+      throw new ForbiddenException('Missing gates:clear permission');
+    await this.ensureInitialized(projectId);
     const condition = await this.gateConditionModel.findByPk(conditionId);
     if (!condition) throw new Error(`Condition "${conditionId}" not found.`);
 
+    if (condition.type !== 'MANUAL_APPROVAL')
+      throw new BadRequestException('Only manual conditions can be ticked');
     await this.transitionLogModel.create({
       id: uuid(),
       projectId,

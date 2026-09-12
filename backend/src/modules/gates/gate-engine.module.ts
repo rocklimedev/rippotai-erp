@@ -1,3 +1,8 @@
+import { NativeEvidenceService } from './conditions/native-evidence.service';
+import { TaskDefinition } from '../tasks/models/task-definitions.model';
+import { TaskExecution } from '../tasks/models/task-execution.model';
+import { Drawing } from '@/modules/documents/models/drawing.model';
+import { DocumentEvidenceService } from './conditions/document-evidence.service';
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 
@@ -37,6 +42,7 @@ import { ActivityLogsModule } from '@/modules/engagement/activity-logs.module';
       GateTransitionLog,
       Project,
       Document,
+      Drawing,
       DocumentType,
       DocumentRequirement,
       PaymentSchedule,
@@ -45,12 +51,16 @@ import { ActivityLogsModule } from '@/modules/engagement/activity-logs.module';
       Boq,
       TeamMember,
       Task,
+      TaskDefinition,
+      TaskExecution,
     ]),
     ActivityLogsModule,
   ],
   providers: [
+    NativeEvidenceService,
     GateEngineService,
     ConditionRegistry,
+    DocumentEvidenceService,
     DocumentApprovedEvaluator,
     DocumentTypeAllApprovedEvaluator,
     PaymentMilestonePaidEvaluator,
@@ -60,6 +70,6 @@ import { ActivityLogsModule } from '@/modules/engagement/activity-logs.module';
     TasksCompletedEvaluator,
     ManualApprovalEvaluator,
   ],
-  exports: [GateEngineService],
+  exports: [GateEngineService, DocumentEvidenceService],
 })
 export class GateEngineModule {}

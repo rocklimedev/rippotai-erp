@@ -29,6 +29,9 @@ export class GateDefinition extends Model {
   @Column({ type: DataType.STRING(60), unique: true })
   declare code: string;
 
+  @Column({ type: DataType.STRING(50), field: 'phase_code' })
+  declare phaseCode: string;
+
   @Column(DataType.STRING(150))
   declare name: string;
 

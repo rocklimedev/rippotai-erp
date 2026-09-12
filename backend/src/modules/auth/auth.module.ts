@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { RolePermission } from '../rbac/models/role_permission.model';
+import { Permission } from '../rbac/models/permission.model';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
@@ -30,6 +32,8 @@ import { MicrosoftModule } from '../microsoft/microsoft.module';
 @Module({
   imports: [
     SequelizeModule.forFeature([
+      RolePermission,
+      Permission,
       User,
       AuthToken,
       VerificationToken,

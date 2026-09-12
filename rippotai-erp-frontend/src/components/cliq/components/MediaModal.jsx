@@ -3,12 +3,6 @@ import { T } from "../theme";
 import { CloseIcon, DownloadIcon } from "../icons";
 import { formatBytes } from "../helpers";
 
-/**
- * In-app modal viewer for images and PDFs.
- * - Images render as full <img>
- * - PDFs render in an <iframe> / <embed>
- * Never navigates away from the app.
- */
 export function MediaModal({
   open,
   onClose,
@@ -27,7 +21,6 @@ export function MediaModal({
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", handleKey);
-    // Prevent background scroll
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
@@ -40,6 +33,12 @@ export function MediaModal({
 
   const isImage = mediaType === "image";
   const isPdf = mediaType === "pdf";
+
+  // Chrome's built-in PDF viewer ships its own toolbar with its own
+  // Download/Print icons that ignore our filename and save under the
+  // blob's internal id. Hide it so people only ever use our header
+  // Download button, which sets the correct filename.
+  const iframeSrc = isPdf ? `${objectUrl}#toolbar=0&navpanes=0` : objectUrl;
 
   return (
     <div
@@ -76,7 +75,6 @@ export function MediaModal({
           overflow: "hidden",
         }}
       >
-        {/* Header */}
         <div
           style={{
             display: "flex",
@@ -151,7 +149,6 @@ export function MediaModal({
           </button>
         </div>
 
-        {/* Body */}
         <div
           style={{
             flex: 1,
@@ -177,7 +174,7 @@ export function MediaModal({
           ) : isPdf ? (
             <iframe
               title={filename}
-              src={objectUrl}
+              src={iframeSrc}
               style={{
                 width: "100%",
                 height: "calc(92vh - 56px)",

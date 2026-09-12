@@ -271,7 +271,7 @@ export default function BoqDashboard() {
       k: "templates",
       l: "Templates",
       v: summary?.templates ?? "—",
-      href: "/boq/templates",
+      href: "/ledger/boq/templates",
     },
   ];
 
@@ -586,7 +586,7 @@ export default function BoqDashboard() {
           ================================================== */}
 
           <button
-            onClick={() => nav("/boq/templates")}
+            onClick={() => nav("/ledger/boq/templates")}
             className="h-10 px-4 rounded-xl border border-[#B5C4B6] bg-white hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C] flex items-center gap-2"
           >
             <LayoutTemplate size={15} />
@@ -598,7 +598,7 @@ export default function BoqDashboard() {
           ================================================== */}
 
           <button
-            onClick={() => nav("/boq/new")}
+            onClick={() => nav("/ledger/boq/new")}
             className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold flex items-center gap-2 shadow-sm"
           >
             <Plus size={15} />
@@ -1079,7 +1079,7 @@ export default function BoqDashboard() {
                     </div>
 
                     <button
-                      onClick={() => nav("/boq/new")}
+                      onClick={() => nav("/ledger/boq/new")}
                       className="mt-4 h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold"
                     >
                       Create First BOQ

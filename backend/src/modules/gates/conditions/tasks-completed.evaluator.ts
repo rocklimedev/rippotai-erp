@@ -19,7 +19,7 @@ export class TasksCompletedEvaluator implements ConditionEvaluator {
   ): Promise<GateConditionResult> {
     const titleContains: string | undefined = condition.params?.titleContains;
 
-    const where: any = { projectId };
+    const where: any = { project_id: projectId };
     if (titleContains) where.title = { [Op.like]: `%${titleContains}%` };
 
     const total = await this.taskModel.count({ where });

@@ -13,10 +13,14 @@ import { Role } from '@/modules/rbac/models/role.model';
 import { AuthTokensService } from './auth-tokens.service';
 import { PasswordResetToken } from './models/password-reset-token.model';
 import { AuthTokenType } from '@/common/enums';
+import { RolePermission } from '../rbac/models/role_permission.model';
+import { Permission } from '../rbac/models/permission.model';
 
 @Injectable()
 export class AuthService {
   constructor(
+    @InjectModel(RolePermission)
+    private readonly rolePermissions: typeof RolePermission,
     @InjectModel(User)
     private readonly userModel: typeof User,
 
@@ -125,12 +129,26 @@ export class AuthService {
 
     await this.authTokensService.touchLastUsed(authToken.id);
 
+    const grants = authToken.user?.role_id
+      ? await this.rolePermissions.findAll({
+          where: { role_id: authToken.user.role_id },
+          include: [{ model: Permission }],
+        })
+      : [];
+
     return {
       id: authToken.user?.id,
       name: authToken.user?.name,
       email: authToken.user?.email,
       role: authToken.user?.role?.name,
       role_id: authToken.user?.role_id,
+      roleId: authToken.user?.role_id ?? null,
+      roleName: authToken.user?.role?.name ?? null,
+      permissions: grants
+        .filter((grant) => grant.permission)
+        .map(
+          (grant) => `${grant.permission.resource}:${grant.permission.action}`,
+        ),
       phone: authToken.user?.phone,
       job_title: authToken.user?.job_title,
       avatar_url: authToken.user?.avatar_url,
