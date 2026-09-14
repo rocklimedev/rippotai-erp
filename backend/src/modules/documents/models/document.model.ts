@@ -10,6 +10,7 @@ import {
   HasMany,
 } from 'sequelize-typescript';
 
+import { Project } from '../../projects/models/projects.model';
 import { DocumentType } from './document-type.model';
 import { DocumentRequirement } from './document-requirement.model';
 import { DocumentVersion } from './document-version.model';
@@ -29,36 +30,80 @@ export type DocumentSourceType = 'upload' | 'generated' | 'system';
 
 @Table({
   tableName: 'documents',
-  underscored: true,
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
 })
 export class Document extends Model<Document> {
+  // ============================================================
+  // PRIMARY KEY
+  // ============================================================
+
   @PrimaryKey
   @Default(DataType.UUIDV4)
-  @Column(DataType.UUID)
+  @Column({
+    type: DataType.UUID,
+    allowNull: false,
+  })
   declare id: string;
 
+  // ============================================================
+  // PROJECT
+  // ============================================================
+
+  @ForeignKey(() => Project)
   @Column({
     type: DataType.UUID,
     allowNull: true,
+    field: 'project_id',
   })
   declare projectId: string | null;
+
+  @BelongsTo(() => Project, {
+    foreignKey: 'projectId',
+    as: 'project',
+  })
+  declare project: Project;
+
+  // ============================================================
+  // DOCUMENT TYPE
+  // ============================================================
 
   @ForeignKey(() => DocumentType)
   @Column({
     type: DataType.UUID,
     allowNull: true,
+    field: 'document_type_id',
   })
   declare documentTypeId: string | null;
+
+  @BelongsTo(() => DocumentType, {
+    foreignKey: 'documentTypeId',
+    as: 'documentType',
+  })
+  declare documentType: DocumentType;
+
+  // ============================================================
+  // REQUIREMENT
+  // ============================================================
 
   @ForeignKey(() => DocumentRequirement)
   @Column({
     type: DataType.UUID,
     allowNull: true,
+    field: 'requirement_id',
   })
   declare requirementId: string | null;
+
+  @BelongsTo(() => DocumentRequirement, {
+    foreignKey: 'requirementId',
+    as: 'requirement',
+  })
+  declare requirement: DocumentRequirement;
+
+  // ============================================================
+  // BASIC DOCUMENT INFORMATION
+  // ============================================================
 
   @Column({
     type: DataType.STRING(100),
@@ -81,6 +126,7 @@ export class Document extends Model<Document> {
   @Column({
     type: DataType.STRING(255),
     allowNull: true,
+    field: 'storage_filename',
   })
   declare storageFilename: string | null;
 
@@ -101,6 +147,10 @@ export class Document extends Model<Document> {
     allowNull: true,
   })
   declare size: number | null;
+
+  // ============================================================
+  // VERSION / STATUS
+  // ============================================================
 
   @Default('V1')
   @Column({
@@ -129,40 +179,54 @@ export class Document extends Model<Document> {
   })
   declare remarks: string | null;
 
+  // ============================================================
+  // LOCKING
+  // ============================================================
+
   @Default(false)
   @Column({
     type: DataType.BOOLEAN,
     allowNull: false,
+    field: 'is_locked',
   })
   declare isLocked: boolean;
 
   @Column({
     type: DataType.UUID,
     allowNull: true,
+    field: 'locked_by',
   })
   declare lockedBy: string | null;
 
   @Column({
     type: DataType.DATE,
     allowNull: true,
+    field: 'locked_at',
   })
   declare lockedAt: Date | null;
+
+  // ============================================================
+  // UPLOAD INFORMATION
+  // ============================================================
 
   @Column({
     type: DataType.UUID,
     allowNull: true,
+    field: 'uploaded_by',
   })
   declare uploadedBy: string | null;
 
   @Column({
     type: DataType.STRING(255),
     allowNull: true,
+    field: 'uploaded_by_name',
   })
   declare uploadedByName: string | null;
 
   @Column({
     type: DataType.DATEONLY,
     allowNull: true,
+    field: 'document_date',
   })
   declare documentDate: string | null;
 
@@ -170,14 +234,20 @@ export class Document extends Model<Document> {
   @Column({
     type: DataType.STRING(50),
     allowNull: true,
+    field: 'doc_type',
   })
   declare docType: DocumentSourceType | null;
 
   @Column({
     type: DataType.STRING(255),
     allowNull: true,
+    field: 'doc_no',
   })
   declare docNo: string | null;
+
+  // ============================================================
+  // EXTENDED DATA
+  // ============================================================
 
   @Column({
     type: DataType.JSON,
@@ -188,18 +258,41 @@ export class Document extends Model<Document> {
   @Column({
     type: DataType.STRING(255),
     allowNull: true,
+    field: 'source_app',
   })
   declare sourceApp: string | null;
 
-  @BelongsTo(() => DocumentType)
-  declare documentType: DocumentType;
+  // ============================================================
+  // TIMESTAMPS
+  // ============================================================
 
-  @BelongsTo(() => DocumentRequirement)
-  declare requirement: DocumentRequirement;
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    field: 'created_at',
+  })
+  declare createdAt: Date;
 
-  @HasMany(() => DocumentVersion)
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    field: 'updated_at',
+  })
+  declare updatedAt: Date;
+
+  // ============================================================
+  // CHILD RELATIONSHIPS
+  // ============================================================
+
+  @HasMany(() => DocumentVersion, {
+    foreignKey: 'documentId',
+    as: 'versions',
+  })
   declare versions: DocumentVersion[];
 
-  @HasMany(() => DocumentAttachment)
+  @HasMany(() => DocumentAttachment, {
+    foreignKey: 'documentId',
+    as: 'attachments',
+  })
   declare attachments: DocumentAttachment[];
 }

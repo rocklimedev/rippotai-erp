@@ -15,7 +15,7 @@ export default registerAs(
     logging: process.env.NODE_ENV === 'development',
     define: {
       timestamps: true,
-      underscored: false,
+      underscored: true,
     },
     pool: {
       max: 5,

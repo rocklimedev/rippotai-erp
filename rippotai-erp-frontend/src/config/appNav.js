@@ -68,6 +68,11 @@ export const APP_META = {
     base: "/settings",
     searchPh: "Search settings...",
   },
+  automation: {
+    name: "Automation",
+    base: "/automation",
+    searchPh: "Search automation...",
+  },
 };
 
 // Landing tile order: 7 apps (Clients + Notes removed in Phase A)
@@ -85,6 +90,7 @@ export const LANDING_ORDER = [
   "calendar",
   "commandCenter",
   "adminConsole",
+  "automation",
 ];
 
 const I = (label, slug) => ({ label, slug });
@@ -131,6 +137,26 @@ export const APP_MENUS = {
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles & Permissions", "roles"),
       ],
+    },
+  ],
+  automation: [
+    {
+      label: "Automation",
+      items: [
+        I("Overview", "all"),
+        I("Rules", "rules"),
+        I("Create Rule", "rules/new"),
+      ],
+    },
+
+    {
+      label: "Monitoring",
+      items: [I("Run Log", "run-log"), I("Escalations", "escalations")],
+    },
+
+    {
+      label: "Configuration",
+      items: [I("Notification Preferences", "notifications")],
     },
   ],
   crm: [
