@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   Logger,
 } from '@nestjs/common';
@@ -8,7 +9,9 @@ import { InjectModel, InjectConnection } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
 import { randomUUID as uuid } from 'crypto';
 import { Op } from 'sequelize';
+import type Redis from 'ioredis';
 
+import { REDIS_CLIENT } from '@/common/redis/redis.module';
 import { GateDefinition } from './models/gate-definition.model';
 import { GateCondition } from './models/gate-condition.model';
 import { ProjectGate } from './models/project-gate.model';
@@ -33,9 +36,58 @@ import {
 import { ConditionRegistry } from './conditions/condition-registry';
 import { ActivityLogsService } from '@/modules/engagement/activity-logs.service';
 
+/**
+ * Plain-object projection of a GateCondition, used for the Redis-cached gate
+ * config. Evaluators only ever read data fields off `condition` (never call
+ * Sequelize instance methods on it), so a plain object is safe to pass into
+ * `ConditionEvaluator.evaluate()` wherever the type expects `GateCondition`.
+ */
+interface CachedGateCondition {
+  id: string;
+  gateDefinitionId: string;
+  type: string;
+  label: string;
+  params: Record<string, any>;
+  optional: boolean;
+  sortOrder: number;
+}
+
+/** Plain-object projection of a GateDefinition + its conditions, cached in Redis. */
+interface CachedGateDefinition {
+  id: string;
+  code: string;
+  phaseCode: string;
+  name: string;
+  sequenceOrder: number;
+  progressThresholdPct: number;
+  triggerCondition: string;
+  handoffBetween: string;
+  allowsOverride: boolean;
+  opensPhaseId: string | null;
+  conditions: CachedGateCondition[];
+}
+
 @Injectable()
 export class GateEngineService {
   private readonly logger = new Logger(GateEngineService.name);
+
+  // ---- Redis cache tuning ---------------------------------------------
+  // Config data (gate/condition definitions): admin-edited, near-static,
+  // read on every single check. Long TTL, safe to serve stale for a while.
+  private static readonly CONFIG_CACHE_KEY = 'gatecfg:definitions:active';
+  private static readonly CONFIG_TTL_SECONDS = 15 * 60;
+
+  // "Have this project's ProjectGate rows been bootstrapped" flag. Cheap to
+  // recompute if wrong; TTL just bounds how long a stale flag can linger if
+  // gate definitions change underneath a project.
+  private static readonly INIT_TTL_SECONDS = 10 * 60;
+
+  // Computed readiness: derived from data owned by other modules (documents,
+  // tasks, payments, quotations, BOQs, team members). Cached per-project
+  // using a version counter (see invalidateReadinessCache) so writes in
+  // those modules can invalidate precisely; the TTL below is only a safety
+  // net in case an invalidation call is ever missed somewhere upstream.
+  private static readonly READINESS_TTL_SECONDS = 15;
 
   constructor(
     @InjectModel(GateDefinition)
@@ -50,22 +102,189 @@ export class GateEngineService {
     @InjectConnection() private readonly sequelize: Sequelize,
     private readonly conditionRegistry: ConditionRegistry,
     private readonly activityLog: ActivityLogsService,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
+
+  // ---- Redis helpers -----------------------------------------------------
+  // All cache reads/writes fail OPEN: if Redis is down or a value is
+  // malformed, we fall back to hitting the DB rather than breaking gate
+  // reads/writes. Caching must never make this module less available than
+  // it was before.
+
+  private async getRedisJson<T>(key: string): Promise<T | null> {
+    try {
+      const raw = await this.redis.get(key);
+      return raw ? (JSON.parse(raw) as T) : null;
+    } catch (error) {
+      this.logger.warn(`Redis read failed for "${key}": ${error}`);
+      return null;
+    }
+  }
+
+  private async setRedisJson(
+    key: string,
+    value: unknown,
+    ttlSeconds: number,
+  ): Promise<void> {
+    try {
+      await this.redis.set(key, JSON.stringify(value), 'EX', ttlSeconds);
+    } catch (error) {
+      this.logger.warn(`Redis write failed for "${key}": ${error}`);
+    }
+  }
+
+  private initKey(projectId: string): string {
+    return `gate:init:${projectId}`;
+  }
+
+  private versionKey(projectId: string): string {
+    return `gate:version:${projectId}`;
+  }
+
+  private listKey(projectId: string, version: number): string {
+    return `gate:list:${projectId}:v${version}`;
+  }
+
+  private readinessKey(
+    projectId: string,
+    gateCode: string,
+    version: number,
+  ): string {
+    return `gate:readiness:${projectId}:${gateCode}:v${version}`;
+  }
+
+  private async getProjectVersion(projectId: string): Promise<number> {
+    try {
+      const v = await this.redis.get(this.versionKey(projectId));
+      return v ? Number(v) : 0;
+    } catch (error) {
+      this.logger.warn(
+        `Redis read failed for gate version of ${projectId}: ${error}`,
+      );
+      return 0;
+    }
+  }
+
+  /**
+   * Bumps the cache "generation" for a project, invalidating every cached
+   * readiness/list entry for it in one cheap op (no need to enumerate or
+   * delete individual gate/condition keys).
+   *
+   * Called internally after clearGate/reopenGate/tickManualCondition.
+   * IMPORTANT: any *other* module whose data feeds a gate condition
+   * (documents, drawings, tasks, payments, quotations, BOQs, team members)
+   * should call this too after a write that could flip a condition's
+   * result — otherwise its effect on gate readiness won't be visible until
+   * the READINESS_TTL_SECONDS safety-net TTL expires.
+   */
+  async invalidateReadinessCache(projectId: string): Promise<void> {
+    try {
+      await this.redis.incr(this.versionKey(projectId));
+    } catch (error) {
+      this.logger.warn(
+        `Failed to bump gate cache version for project ${projectId}: ${error}`,
+      );
+    }
+  }
+
+  /** Cached (config-tier) fetch of every active gate + its conditions, sorted. */
+  private async getActiveGateDefinitions(): Promise<CachedGateDefinition[]> {
+    const cached = await this.getRedisJson<CachedGateDefinition[]>(
+      GateEngineService.CONFIG_CACHE_KEY,
+    );
+    if (cached) return cached;
+
+    const rows = await this.gateDefinitionModel.findAll({
+      where: { isActive: true },
+      include: [{ model: GateCondition }],
+      order: [['sequenceOrder', 'ASC']],
+    });
+
+    const plain: CachedGateDefinition[] = rows.map((g) => ({
+      id: g.id,
+      code: g.code,
+      phaseCode: g.phaseCode,
+      name: g.name,
+      sequenceOrder: g.sequenceOrder,
+      progressThresholdPct: g.progressThresholdPct,
+      triggerCondition: g.triggerCondition,
+      handoffBetween: g.handoffBetween,
+      allowsOverride: g.allowsOverride,
+      opensPhaseId: g.opensPhaseId,
+      conditions: (g.conditions ?? [])
+        .slice()
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((c) => ({
+          id: c.id,
+          gateDefinitionId: c.gateDefinitionId,
+          type: c.type,
+          label: c.label,
+          params: c.params,
+          optional: c.optional,
+          sortOrder: c.sortOrder,
+        })),
+    }));
+
+    await this.setRedisJson(
+      GateEngineService.CONFIG_CACHE_KEY,
+      plain,
+      GateEngineService.CONFIG_TTL_SECONDS,
+    );
+    return plain;
+  }
+
+  /**
+   * Runs every condition's evaluator in parallel instead of one-at-a-time.
+   * Conditions are independent of each other, so serial evaluation was pure
+   * added latency — a gate with 5 conditions paid 5x the round-trip cost of
+   * a gate with 1. Order of `results` matches the order of `conditions`.
+   */
+  private async evaluateConditions(
+    projectId: string,
+    conditions: GateCondition[] | CachedGateCondition[],
+  ): Promise<GateConditionResult[]> {
+    return Promise.all(
+      conditions.map(async (condition) => {
+        try {
+          const evaluator = this.conditionRegistry.resolve(condition.type);
+          return await evaluator.evaluate(
+            projectId,
+            condition as unknown as GateCondition,
+          );
+        } catch (error) {
+          this.logger.error(`Cannot evaluate condition ${condition.id}`, error);
+          return {
+            conditionId: condition.id,
+            type: condition.type,
+            label: condition.label,
+            optional: condition.optional,
+            passed: false,
+            detail:
+              'Evidence could not be evaluated; check engine configuration.',
+          };
+        }
+      }),
+    );
+  }
 
   /**
    * Creates a LOCKED ProjectGate row for every active gate definition that
    * doesn't have one yet, and makes sure gate #1 is at least PENDING. Called
    * lazily on every read/write so a project never needs an explicit
    * "initialize gates" step — the very first call bootstraps it.
+   *
+   * Guarded by a Redis flag so this is a single GET on every call after the
+   * first for a project, instead of 2-3 queries every single time.
    */
   async ensureInitialized(projectId: string): Promise<void> {
+    const initKey = this.initKey(projectId);
+    const alreadyInitialized = await this.getRedisJson<boolean>(initKey);
+    if (alreadyInitialized) return;
+
     const project = await this.projectModel.findByPk(projectId);
     if (!project) throw new ProjectNotFoundException(projectId);
 
-    const gates = await this.gateDefinitionModel.findAll({
-      where: { isActive: true },
-      order: [['sequenceOrder', 'ASC']],
-    });
+    const gates = await this.getActiveGateDefinitions();
 
     const existing = await this.projectGateModel.findAll({
       where: { projectId },
@@ -89,65 +308,139 @@ export class GateEngineService {
         });
       }
     }
+
+    await this.setRedisJson(initKey, true, GateEngineService.INIT_TTL_SECONDS);
   }
 
-  /** Full ordered list of every gate + its live status for a project. */
+  /**
+   * Full ordered list of every gate + its live status for a project.
+   *
+   * Batches all gate-definition and project-gate reads into one query each
+   * (instead of calling checkReadiness() per gate, which used to re-fetch
+   * the gate + conditions + previous gate + project-gate row individually
+   * for every single gate), and serves from Redis for the duration of the
+   * project's current cache "generation" (see invalidateReadinessCache).
+   */
   async listProjectGates(projectId: string): Promise<any[]> {
     await this.ensureInitialized(projectId);
 
-    const rows = await this.projectGateModel.findAll({
-      where: { projectId },
-      include: [
-        { model: GateDefinition, where: { isActive: true }, required: true },
-      ],
-    });
+    const version = await this.getProjectVersion(projectId);
+    const listKey = this.listKey(projectId, version);
+    const cached = await this.getRedisJson<any[]>(listKey);
+    if (cached) return cached;
 
-    const readiness = new Map(
-      await Promise.all(
-        rows
-          .filter((r) => r.status !== GateStatus.CLEARED)
-          .map(
-            async (r) =>
-              [
-                r.gateDefinitionId,
-                await this.checkReadiness(projectId, r.gateDefinition.code),
-              ] as const,
-          ),
+    const gateDefs = await this.getActiveGateDefinitions(); // already sorted by sequenceOrder
+    const projectGates = await this.projectGateModel.findAll({
+      where: { projectId },
+    });
+    const projectGateByGateId = new Map(
+      projectGates.map((pg) => [pg.gateDefinitionId, pg]),
+    );
+
+    const readinessEntries = await Promise.all(
+      gateDefs.map(async (gate, index) => {
+        const projectGate = projectGateByGateId.get(gate.id);
+        if (!projectGate || projectGate.status === GateStatus.CLEARED) {
+          return null;
+        }
+        const previousGate = index > 0 ? gateDefs[index - 1] : null;
+        const previousProjectGate = previousGate
+          ? projectGateByGateId.get(previousGate.id)
+          : null;
+        const readiness = await this.computeReadinessFromLoaded(
+          projectId,
+          gate,
+          previousGate,
+          previousProjectGate?.status ?? null,
+          projectGate,
+        );
+        return [gate.id, readiness] as const;
+      }),
+    );
+    const readinessByGateId = new Map(
+      readinessEntries.filter(
+        (entry): entry is readonly [string, GateReadiness] => entry !== null,
       ),
     );
-    return rows
-      .sort(
-        (a, b) =>
-          a.gateDefinition.sequenceOrder - b.gateDefinition.sequenceOrder,
-      )
-      .map((pg) => ({
-        gateCode: pg.gateDefinition.code,
-        phaseCode: pg.gateDefinition.phaseCode,
-        allowsOverride: pg.gateDefinition.allowsOverride,
-        gateName: pg.gateDefinition.name,
-        sequenceOrder: pg.gateDefinition.sequenceOrder,
-        progressThresholdPct: pg.gateDefinition.progressThresholdPct,
-        triggerCondition: pg.gateDefinition.triggerCondition,
-        handoffBetween: pg.gateDefinition.handoffBetween,
+
+    const result = gateDefs.map((gate) => {
+      const pg = projectGateByGateId.get(gate.id);
+      const readiness = readinessByGateId.get(gate.id);
+      return {
+        gateCode: gate.code,
+        phaseCode: gate.phaseCode,
+        allowsOverride: gate.allowsOverride,
+        gateName: gate.name,
+        sequenceOrder: gate.sequenceOrder,
+        progressThresholdPct: gate.progressThresholdPct,
+        triggerCondition: gate.triggerCondition,
+        handoffBetween: gate.handoffBetween,
         status:
-          pg.status === GateStatus.CLEARED
+          pg?.status === GateStatus.CLEARED
             ? pg.status
-            : readiness.get(pg.gateDefinitionId)?.isReady
+            : readiness?.isReady
               ? GateStatus.READY
-              : readiness.get(pg.gateDefinitionId)?.unlockedByPreviousGate
+              : readiness?.unlockedByPreviousGate
                 ? GateStatus.PENDING
                 : GateStatus.LOCKED,
-        clearedAt: pg.clearedAt,
-        clearedBy: pg.clearedBy,
-        overridden: pg.overridden,
-        remarks: pg.remarks,
-      }));
+        clearedAt: pg?.clearedAt ?? null,
+        clearedBy: pg?.clearedBy ?? null,
+        overridden: pg?.overridden ?? false,
+        remarks: pg?.remarks ?? null,
+      };
+    });
+
+    await this.setRedisJson(
+      listKey,
+      result,
+      GateEngineService.READINESS_TTL_SECONDS,
+    );
+    return result;
+  }
+
+  /** Shared readiness computation for the batched listProjectGates() path. */
+  private async computeReadinessFromLoaded(
+    projectId: string,
+    gate: CachedGateDefinition,
+    previousGate: CachedGateDefinition | null,
+    previousProjectGateStatus: GateStatus | null,
+    projectGate: ProjectGate,
+  ): Promise<GateReadiness> {
+    const unlockedByPreviousGate =
+      !previousGate || previousProjectGateStatus === GateStatus.CLEARED;
+
+    const results = await this.evaluateConditions(projectId, gate.conditions);
+
+    const requiredResults = results.filter((r) => !r.optional);
+    const optionalResults = results.filter((r) => r.optional);
+
+    const requiredConditionsPassed =
+      gate.conditions.length > 0 && requiredResults.every((r) => r.passed);
+    const optionalGroupPassed =
+      optionalResults.length === 0 || optionalResults.some((r) => r.passed);
+
+    return {
+      gateCode: gate.code,
+      gateName: gate.name,
+      sequenceOrder: gate.sequenceOrder,
+      status: projectGate?.status ?? GateStatus.LOCKED,
+      unlockedByPreviousGate,
+      previousGateCode: previousGate?.code ?? null,
+      requiredConditionsPassed,
+      optionalGroupPassed,
+      isReady:
+        unlockedByPreviousGate &&
+        requiredConditionsPassed &&
+        optionalGroupPassed,
+      conditions: results,
+    };
   }
 
   /**
    * Evaluates every condition on a gate, plus the mandatory "previous gate
    * cleared" rule, WITHOUT changing any state. Safe to call as often as you
-   * like (e.g. to render a checklist UI).
+   * like (e.g. to render a checklist UI). Served from the Redis readiness
+   * cache when available; falls back to a fresh DB-backed computation.
    */
   async checkReadiness(
     projectId: string,
@@ -155,6 +448,31 @@ export class GateEngineService {
   ): Promise<GateReadiness> {
     await this.ensureInitialized(projectId);
 
+    const version = await this.getProjectVersion(projectId);
+    const key = this.readinessKey(projectId, gateCode, version);
+    const cached = await this.getRedisJson<GateReadiness>(key);
+    if (cached) return cached;
+
+    const readiness = await this.computeReadinessFresh(projectId, gateCode);
+    await this.setRedisJson(
+      key,
+      readiness,
+      GateEngineService.READINESS_TTL_SECONDS,
+    );
+    return readiness;
+  }
+
+  /**
+   * DB-fresh single-gate readiness computation, with zero caching. This is
+   * the version used inside clearGate()'s transaction — a gating decision
+   * that mutates state must never be made off a cached read, no matter how
+   * short the TTL. checkReadiness() (the public, cached, display-only path)
+   * falls back to this on a cache miss.
+   */
+  private async computeReadinessFresh(
+    projectId: string,
+    gateCode: string,
+  ): Promise<GateReadiness> {
     const gate = await this.gateDefinitionModel.findOne({
       where: { code: gateCode, isActive: true },
       include: [{ model: GateCondition }],
@@ -175,27 +493,10 @@ export class GateEngineService {
         previousProjectGate?.status === GateStatus.CLEARED;
     }
 
-    const conditions = (gate.conditions ?? []).sort(
-      (a, b) => a.sortOrder - b.sortOrder,
-    );
-    const results: GateConditionResult[] = [];
-    for (const condition of conditions) {
-      try {
-        const evaluator = this.conditionRegistry.resolve(condition.type);
-        results.push(await evaluator.evaluate(projectId, condition));
-      } catch (error) {
-        this.logger.error(`Cannot evaluate condition ${condition.id}`, error);
-        results.push({
-          conditionId: condition.id,
-          type: condition.type,
-          label: condition.label,
-          optional: condition.optional,
-          passed: false,
-          detail:
-            'Evidence could not be evaluated; check engine configuration.',
-        });
-      }
-    }
+    const conditions = (gate.conditions ?? [])
+      .slice()
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+    const results = await this.evaluateConditions(projectId, conditions);
 
     const requiredResults = results.filter((r) => !r.optional);
     const optionalResults = results.filter((r) => r.optional);
@@ -254,12 +555,14 @@ export class GateEngineService {
       );
     }
     await this.ensureInitialized(projectId);
-    return this.sequelize.transaction(async (tx) => {
+    const result = await this.sequelize.transaction(async (tx) => {
       await this.projectModel.findByPk(projectId, {
         transaction: tx,
         lock: tx.LOCK.UPDATE,
       });
-      const readiness = await this.checkReadiness(projectId, gateCode);
+      // Always the fresh, uncached computation — this is the actual gating
+      // decision and must reflect committed state at this instant.
+      const readiness = await this.computeReadinessFresh(projectId, gateCode);
 
       const gate = await this.gateDefinitionModel.findOne({
         where: { code: gateCode, isActive: true },
@@ -399,6 +702,9 @@ export class GateEngineService {
 
       return { ...readiness, status: GateStatus.CLEARED };
     });
+
+    await this.invalidateReadinessCache(projectId);
+    return result;
   }
 
   /**
@@ -530,6 +836,8 @@ export class GateEngineService {
         },
       });
     });
+
+    await this.invalidateReadinessCache(projectId);
   }
 
   /** Records (or clears) a human tick against a MANUAL_APPROVAL condition. */
@@ -574,5 +882,9 @@ export class GateEngineService {
         remarks,
       },
     });
+
+    // A manual tick can flip ManualApprovalEvaluator's result for this
+    // project's gates — invalidate so the next read reflects it immediately.
+    await this.invalidateReadinessCache(projectId);
   }
 }
