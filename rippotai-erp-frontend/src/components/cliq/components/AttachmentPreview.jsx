@@ -9,6 +9,7 @@ import { MediaModal } from "./MediaModal";
 /**
  * Renders an attachment:
  * - Images show an inline thumbnail (like Cliq)
+ * - Videos show an inline <video> player
  * - PDFs / other files show an icon + name
  * - Click opens MediaModal (image or PDF) inside the app
  */
@@ -30,6 +31,7 @@ export function AttachmentPreview({
 
   const mediaType = getMediaType(mimeType, filename);
   const isImage = mediaType === "image";
+  const isVideo = mediaType === "video";
   const isPdf = mediaType === "pdf";
 
   // Cleanup object URLs on unmount
@@ -56,11 +58,13 @@ export function AttachmentPreview({
       if (!rawUrl) return null;
 
       // The API often returns a generic octet-stream blob with no real
-      // Content-Type/Content-Disposition. That breaks inline PDF preview
-      // and makes the browser's own PDF-viewer download button save the
-      // file under its blob UUID instead of the real name. Re-wrap it.
+      // Content-Type/Content-Disposition. That breaks inline PDF/video
+      // preview and makes the browser's own viewer download button save
+      // the file under its blob UUID instead of the real name. Re-wrap it.
       const rawBlob = await (await fetch(rawUrl)).blob();
-      const properType = mimeType || (isPdf ? "application/pdf" : rawBlob.type);
+      const properType =
+        mimeType ||
+        (isPdf ? "application/pdf" : isVideo ? "video/mp4" : rawBlob.type);
       const typedBlob =
         rawBlob.type === properType
           ? rawBlob
@@ -83,10 +87,12 @@ export function AttachmentPreview({
     } finally {
       setLoading(false);
     }
-  }, [downloadFile, fileId, filename, isPdf, mimeType]);
-  // Preload thumbnail for images
+  }, [downloadFile, fileId, filename, isPdf, isVideo, mimeType]);
+
+  // Preload object URL for images and videos so they render inline
+  // without requiring a click first.
   useEffect(() => {
-    if (!isImage || !fileId || thumbUrl) return;
+    if (!(isImage || isVideo) || !fileId || thumbUrl) return;
     let cancelled = false;
     (async () => {
       const url = await fetchObjectUrl();
@@ -95,7 +101,7 @@ export function AttachmentPreview({
     return () => {
       cancelled = true;
     };
-  }, [isImage, fileId, thumbUrl, fetchObjectUrl]);
+  }, [isImage, isVideo, fileId, thumbUrl, fetchObjectUrl]);
 
   const openModal = async () => {
     if (modalUrl) {
@@ -213,6 +219,101 @@ export function AttachmentPreview({
     );
   }
 
+  // ---- Video inline preview ----
+  if (isVideo) {
+    return (
+      <div
+        style={{
+          maxWidth: compact ? 220 : 260,
+        }}
+      >
+        {thumbUrl ? (
+          <video
+            src={thumbUrl}
+            controls
+            preload="metadata"
+            style={{
+              display: "block",
+              width: "100%",
+              maxHeight: 220,
+              borderRadius: 10,
+              background: "#000",
+            }}
+          >
+            Sorry, your browser doesn't support embedded videos.
+          </video>
+        ) : (
+          <div
+            style={{
+              width: compact ? 160 : 200,
+              height: 120,
+              borderRadius: 10,
+              background: accentBg,
+              color: accentColor,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 12,
+            }}
+          >
+            {loading ? "Loading…" : error || "Video"}
+          </div>
+        )}
+
+        {!compact && (
+          <div
+            style={{
+              marginTop: 4,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                color: mutedColor,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                flex: 1,
+                minWidth: 0,
+              }}
+            >
+              {filename}
+            </div>
+
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label="Download video"
+              onClick={handleDownload}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  handleDownload();
+                }
+              }}
+              style={{
+                display: "flex",
+                height: 22,
+                width: 22,
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 6,
+                color: mutedColor,
+                cursor: "pointer",
+                flexShrink: 0,
+              }}
+            >
+              <DownloadIcon />
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // ---- PDF / generic file card ----
   const Icon = isPdf ? PdfIcon : FileIcon;
 
@@ -220,7 +321,7 @@ export function AttachmentPreview({
     <>
       <button
         type="button"
-        onClick={isPdf || isImage ? openModal : undefined}
+        onClick={isPdf ? openModal : undefined}
         style={{
           display: "flex",
           alignItems: "center",

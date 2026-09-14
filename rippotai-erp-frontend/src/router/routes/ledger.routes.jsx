@@ -16,6 +16,8 @@ import BoqTemplateEditor from "@/pages/boq/BoqTemplateEditor";
 import BoqLibraryPage from "@/pages/boq/BoqLibraryPage";
 import BoqActivityPage from "@/pages/boq/BoqActivitypage";
 import BoqVersions from "@/pages/boq/BoqVersions";
+import BoqWorkspace from "@/pages/boq/BoqWorkspace";
+import BoqPreview from "@/pages/boq/BoqPreview";
 export const ledgerRoutes = [
   {
     type: "layout",
@@ -93,6 +95,9 @@ export const ledgerRoutes = [
       { path: "boq/:id/versions", element: <BoqVersions /> },
     ],
   },
+  // These live outside the AppLayout shell (full-bleed workspace views)
+  { path: "/ledger/boq/:id", element: <BoqWorkspace /> },
+  { path: "/ledger/boq/:id/preview", element: <BoqPreview /> },
 ];
 
 export default ledgerRoutes;

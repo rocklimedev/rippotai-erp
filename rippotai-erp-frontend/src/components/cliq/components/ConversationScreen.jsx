@@ -12,7 +12,7 @@ import {
   useUploadCliqChannelFileMutation,
   useUploadCliqPersonFileMutation,
 } from "../../../api/connectors/cliq.api"; // adjust path if needed to match project layout
-
+import { normalizeCliqMessage } from "../helpers";
 import { T, EMPTY } from "../theme";
 import { personChat, targetFor } from "../helpers";
 import { PaperclipIcon, SendIcon } from "../icons";
@@ -789,20 +789,39 @@ export function ConversationScreen({
            * MESSAGE LIST
            * ==================================================================
            */
-          messages.map((message, i) => (
-            <MessageBubble
-              key={message.id}
-              message={{
-                ...message,
-                isOwn:
-                  message.isOwn ||
-                  Boolean(
-                    currentCliqUserId &&
-                    String(message.senderId) === String(currentCliqUserId),
-                  ),
-              }}
-            />
-          ))
+          messages.map((message, i) => {
+            const norm = (v) =>
+              String(v ?? "")
+                .trim()
+                .toLowerCase();
+
+            const myId = norm(currentCliqUserId);
+
+            const senderCandidates = [
+              message.senderId,
+              message.sender?.id,
+              message.sender?.userId,
+              message.from?.id,
+              message.senderEmail,
+              message.sender?.email,
+            ].map(norm);
+
+            const resolvedIsOwn =
+              message.isOwn === true ||
+              message.fromMe === true ||
+              message.direction === "outgoing" ||
+              (Boolean(myId) && senderCandidates.includes(myId));
+
+            return (
+              <MessageBubble
+                key={message.id}
+                message={{
+                  ...message,
+                  isOwn: resolvedIsOwn,
+                }}
+              />
+            );
+          })
         )}
       </div>
 

@@ -1,11 +1,8 @@
 import { authRoutes } from "./routes/auth.routes";
 import { dashboardRoutes } from "./routes/dashboard.routes";
-import { boqRoutes } from "./routes/boq.routes";
 
-import { vendorsRoutes } from "./routes/vendors.routes";
-import { quotationsRoutes } from "./routes/quotations.routes";
 import { projectsRoutes } from "./routes/projects.routes";
-import { documentsRoutes } from "./routes/documents.routes";
+
 import { calendarRoutes } from "./routes/calendar.routes";
 import { tasksRoutes } from "./routes/tasks.routes";
 import { settingsRoutes } from "./routes/settings.routes";
@@ -24,12 +21,11 @@ import { commandCenterRoutes } from "./routes/command-center.routes";
 const masterRoutes = [
   ...authRoutes,
   ...dashboardRoutes,
-  ...boqRoutes,
+
   ...commandCenterRoutes,
-  ...vendorsRoutes,
-  ...quotationsRoutes,
+
   ...projectsRoutes,
-  ...documentsRoutes,
+
   ...calendarRoutes,
   ...tasksRoutes,
   ...redirectRoutes,

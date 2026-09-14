@@ -231,7 +231,7 @@ export default function BoqDashboard() {
   const filterByStatus = (status) => {
     const qs = status ? `?status=${status}` : "";
 
-    nav(`/boq/all${qs}`);
+    nav(`/ledger/boq/all${qs}`);
   };
 
   // ============================================================
@@ -303,7 +303,7 @@ export default function BoqDashboard() {
       setSelectedBoqs(new Set());
 
       if (result?.id) {
-        nav(`/boq/${result.id}`);
+        nav(`/ledger/boq/${result.id}`);
       }
     } catch (err) {
       toast.error(err?.data?.message || "Failed to combine BOQs");
@@ -359,7 +359,7 @@ export default function BoqDashboard() {
       toast.success(`Created v${result?.version ?? "?"} as a new draft`);
 
       if (result?.id) {
-        nav(`/boq/${result.id}`);
+        nav(`/ledger/boq/${result.id}`);
       }
     } catch (e) {
       toast.error(e?.data?.message || "Failed to duplicate version");
@@ -377,7 +377,7 @@ export default function BoqDashboard() {
       toast.success(`Created v${result?.version ?? "?"} draft to edit`);
 
       if (result?.id) {
-        nav(`/boq/${result.id}`);
+        nav(`/ledger/boq/${result.id}`);
       }
     } catch (e) {
       toast.error(e?.data?.message || "Failed to create a new version");
@@ -797,7 +797,7 @@ export default function BoqDashboard() {
                       className={`border-b border-[#B5C4B6] hover:bg-[#EAEEF0] cursor-pointer ${
                         isSelected ? "bg-[#F0F7F4]" : ""
                       }`}
-                      onClick={() => nav(`/boq/${b.id}`)}
+                      onClick={() => nav(`/ledger/boq/${b.id}`)}
                     >
                       {/* ==================================================
                           CHECKBOX
@@ -941,7 +941,7 @@ export default function BoqDashboard() {
                               ======================================== */}
 
                               <DropdownMenuItem
-                                onClick={() => nav(`/boq/${b.id}`)}
+                                onClick={() => nav(`/ledger/boq/${b.id}`)}
                               >
                                 <Eye size={13} className="mr-2" />
                                 Open BOQ
@@ -1016,7 +1016,9 @@ export default function BoqDashboard() {
                               ======================================== */}
 
                               <DropdownMenuItem
-                                onClick={() => nav(`/boq/${b.id}/preview`)}
+                                onClick={() =>
+                                  nav(`/ledger/boq/${b.id}/preview`)
+                                }
                               >
                                 <Eye size={13} className="mr-2" />
                                 Preview

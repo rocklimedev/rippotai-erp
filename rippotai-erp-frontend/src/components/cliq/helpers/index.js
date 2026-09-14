@@ -101,19 +101,18 @@ export function personChat(person, chats) {
 }
 
 /** Detect media type from mime or filename */
-export function getMediaType(mimeType = "", filename = "") {
-  const mime = String(mimeType || "").toLowerCase();
-  const name = String(filename || "").toLowerCase();
+export function getMediaType(mimeType, filename = "") {
+  const ext = filename.split(".").pop()?.toLowerCase();
 
-  if (
-    mime.startsWith("image/") ||
-    /\.(png|jpe?g|gif|webp|bmp|svg|heic|avif)$/i.test(name)
-  ) {
-    return "image";
-  }
-  if (mime === "application/pdf" || name.endsWith(".pdf")) {
-    return "pdf";
-  }
+  if (mimeType?.startsWith("image/")) return "image";
+  if (mimeType?.startsWith("video/")) return "video";
+  if (mimeType === "application/pdf") return "pdf";
+
+  // fallback by extension if mimeType is missing/generic (octet-stream)
+  if (["mp4", "webm", "mov", "m4v", "ogg"].includes(ext)) return "video";
+  if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext)) return "image";
+  if (ext === "pdf") return "pdf";
+
   return "file";
 }
 
@@ -123,4 +122,43 @@ export function isImageMedia(mimeType, filename) {
 
 export function isPdfMedia(mimeType, filename) {
   return getMediaType(mimeType, filename) === "pdf";
+}
+export function normalizeCliqMessage(raw, currentCliqUserId) {
+  const senderId = raw.sender?.id ?? raw.sender_id ?? null;
+  const senderName = raw.sender?.name || raw.sender_name || "Unknown";
+
+  const myId = String(currentCliqUserId ?? "").trim();
+  const isOwn = Boolean(myId) && String(senderId ?? "").trim() === myId;
+
+  const isDeleted = raw.type === "deleted" || raw.content?.deleted === true;
+  const rawFile = raw.content?.file;
+  const isFile = raw.type === "file" && Boolean(rawFile);
+
+  let text = "";
+  if (isDeleted) {
+    text = "This message was deleted";
+  } else if (raw.content?.text) {
+    text = raw.content.text;
+  }
+
+  const attachment = isFile
+    ? {
+        fileId: rawFile.id,
+        file: rawFile.name,
+        mimeType: rawFile.type,
+        size: rawFile.dimensions?.size,
+      }
+    : null;
+
+  return {
+    id: raw.id,
+    text,
+    senderId,
+    senderName,
+    createdAt: raw.time, // epoch ms
+    isOwn,
+    isFile,
+    isDeleted,
+    attachment,
+  };
 }
