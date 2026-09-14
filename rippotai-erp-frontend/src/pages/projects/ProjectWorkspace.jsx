@@ -574,45 +574,6 @@ function CommercialSnapshot({
   );
 }
 
-function MilestonesPanel({ milestones }) {
-  return (
-    <div className="overflow-hidden rounded-xl border border-[#e4e8e5] bg-white">
-      <div className="border-b border-[#edf0ee] px-4 py-3">
-        <div className="text-[12px] font-semibold text-[#19352d]">
-          Milestones
-        </div>
-        <div className="mt-0.5 text-[9px] text-slate-400">
-          Upcoming project commitments
-        </div>
-      </div>
-      {milestones.length === 0 ? (
-        <EmptyState>No milestones configured.</EmptyState>
-      ) : (
-        milestones.slice(0, 6).map((milestone) => (
-          <div
-            key={milestone.id}
-            className="flex items-center gap-3 border-b border-[#edf0ee] px-4 py-3 last:border-0"
-          >
-            <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-[#f3f6f4] text-[#2f6655]">
-              <CalendarDays size={13} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-[10px] font-medium text-slate-700">
-                {milestone.name}
-              </div>
-              <div className="mt-0.5 text-[8px] text-slate-400">
-                {milestone.planned_end || "No date"} ·{" "}
-                {milestone.assignee || "Unassigned"}
-              </div>
-            </div>
-            <StatusBadge status={milestone.status} />
-          </div>
-        ))
-      )}
-    </div>
-  );
-}
-
 function RecentActivity({ rows }) {
   return (
     <div className="overflow-hidden rounded-xl border border-[#e4e8e5] bg-white">
@@ -845,7 +806,7 @@ export default function ProjectWorkspace() {
     quotesFromApi.length > 0 ? quotesFromApi : projectData?.quotations || [];
 
   const [phaseData, setPhaseData] = useState(null);
-  const [milestones, setMilestones] = useState([]);
+
   const [work, setWork] = useState({});
   const [vendors, setVendors] = useState({ engaged: [], attached: [] });
   const [financial, setFinancial] = useState(null);
@@ -868,7 +829,7 @@ export default function ProjectWorkspace() {
 
     const [phase, ms, wk, vd, fn, activity] = await Promise.all([
       api.get(`/projects/${id}/phases`).catch(() => ({ data: null })),
-      api.get(`/projects/${id}/milestones`).catch(() => ({ data: [] })),
+
       api.get(`/projects/${id}/pending-work`).catch(() => ({ data: {} })),
       api
         .get(`/projects/${id}/vendors`)
@@ -880,7 +841,7 @@ export default function ProjectWorkspace() {
     ]);
 
     setPhaseData(phase.data);
-    setMilestones(ms.data || []);
+
     setWork(wk.data || {});
     setVendors(vd.data || { engaged: [], attached: [] });
     setFinancial(fn.data);
@@ -1157,9 +1118,8 @@ export default function ProjectWorkspace() {
           />
         </section>
 
-        {/* MILESTONE + ACTIVITY */}
+        {/* M ACTIVITY */}
         <section className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-[0.85fr_1.15fr]">
-          <MilestonesPanel milestones={milestones} />
           <RecentActivity
             rows={activityRows.length ? activityRows : p.recent_activity || []}
           />
