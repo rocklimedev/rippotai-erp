@@ -17,22 +17,11 @@ import { useGetProjectsQuery } from "../../api/projects/project.api";
    Drawings
 ========================================================= */
 
-export function DrawingsAll({ projectId }) {
+export function DrawingsAll() {
   const nav = useNavigate();
 
-  /*
-   * Backend requires:
-   * GET /drawings?projectId=...
-   *
-   * If this page is meant to show drawings across ALL projects,
-   * the backend controller will need a different endpoint.
-   */
-  const { data: rows = [], isLoading } = useGetDrawingsQuery(
-    { projectId },
-    {
-      skip: !projectId,
-    },
-  );
+  // GET /drawings — returns drawings across all projects.
+  const { data: rows = [], isLoading, isError } = useGetDrawingsQuery();
 
   return (
     <Shell
@@ -91,11 +80,20 @@ export function DrawingsAll({ projectId }) {
                 </tr>
               )}
 
+              {isError && !isLoading && (
+                <tr>
+                  <td colSpan={6} className="text-center py-8 text-red-500">
+                    Failed to load drawings. Please try again.
+                  </td>
+                </tr>
+              )}
+
               {!isLoading &&
+                !isError &&
                 rows.map((r) => (
                   <tr
                     key={r.id}
-                    onClick={() => nav(`/documents/drawings/${r.id}`)}
+                    onClick={() => nav(`/design-studio/${r.id}`)}
                     className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F4F6F7] cursor-pointer"
                     data-testid={`drawing-row-${r.id}`}
                   >
@@ -132,7 +130,7 @@ export function DrawingsAll({ projectId }) {
                   </tr>
                 ))}
 
-              {!isLoading && !rows.length && (
+              {!isLoading && !isError && !rows.length && (
                 <tr>
                   <td colSpan={6} className="text-center py-8 text-[#B5C4B6]">
                     No drawings yet.
@@ -146,7 +144,6 @@ export function DrawingsAll({ projectId }) {
     </Shell>
   );
 }
-
 /* =========================================================
    Drawing Upload
 ========================================================= */

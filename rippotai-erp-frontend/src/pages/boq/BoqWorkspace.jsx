@@ -193,7 +193,7 @@ export default function BoqWorkspace() {
       const data = await createNewVersion({ id }).unwrap();
       toast.success(`Created ${data.boq_number || "new version"}`);
       setLockedOpen(false);
-      nav(`/boq/${data.id}`);
+      nav(`/ledger/boq/${data.id}`);
     } catch {
       toast.error("Failed to create new version");
     }
@@ -341,7 +341,7 @@ export default function BoqWorkspace() {
       }).unwrap();
       toast.success(`Created ${data.version}`);
       setDupOpen(false);
-      nav(`/boq/${data.id}`);
+      nav(`/ledger/boq/${data.id}`);
     } catch {
       toast.error("Duplicate failed");
     }
@@ -473,7 +473,7 @@ export default function BoqWorkspace() {
       <header className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-[#B5C4B6]">
         <div className="h-14 px-4 lg:px-8 flex items-center gap-3">
           <button
-            onClick={() => nav("/boq")}
+            onClick={() => nav("/ledger/boq/all")}
             className="flex items-center gap-2 text-[13px] text-[#6B7B7C] hover:text-[#333333]"
             data-testid="back-to-boq-dashboard"
           >
@@ -504,7 +504,7 @@ export default function BoqWorkspace() {
               <Copy size={13} /> Duplicate Version
             </button>
             <button
-              onClick={() => nav(`/boq/${id}/versions`)}
+              onClick={() => nav(`/ledger/boq/${id}/versions`)}
               className="h-9 px-3 rounded-lg border border-[#B5C4B6] hover:bg-[#EAEEF0] text-[12.5px] font-semibold text-[#6B7B7C] flex items-center gap-1.5"
             >
               <GitBranch size={13} /> Versions
@@ -542,7 +542,9 @@ export default function BoqWorkspace() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem onClick={() => nav(`/boq/${id}/preview`)}>
+                <DropdownMenuItem
+                  onClick={() => nav(`/ledger/boq/${id}/preview`)}
+                >
                   <Eye size={13} className="mr-2" /> Preview BOQ
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleExportExcel}>

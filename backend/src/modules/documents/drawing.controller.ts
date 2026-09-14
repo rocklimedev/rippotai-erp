@@ -35,13 +35,13 @@ export class DrawingsController {
   }
 
   @Get()
-  findAllForProject(
-    @Query('projectId', ParseUUIDPipe) projectId: string,
+  findAll(
+    @Query('projectId') projectId?: string,
     @Query('discipline') discipline?: string,
     @Query('status') status?: string,
     @Query('phaseCode') phaseCode?: string,
   ) {
-    return this.drawingsService.findAllForProject(projectId, {
+    return this.drawingsService.findAll(projectId, {
       discipline,
       status,
       phaseCode,

@@ -44,12 +44,13 @@ export class DrawingsService {
     }
   }
 
-  async findAllForProject(
-    projectId: string,
+  async findAll(
+    projectId: string | undefined,
     filters: { discipline?: string; status?: string; phaseCode?: string },
   ): Promise<Drawing[]> {
-    const where: Record<string, unknown> = { projectId };
+    const where: Record<string, unknown> = {};
 
+    if (projectId) where.projectId = projectId;
     if (filters.discipline) where.discipline = filters.discipline;
     if (filters.status) where.status = filters.status;
     if (filters.phaseCode) where.phaseCode = filters.phaseCode;
@@ -59,7 +60,7 @@ export class DrawingsService {
       include: DRAWING_INCLUDES,
       order: [
         ['sequence', 'ASC'],
-        ['createdAt', 'DESC'],
+        ['created_at', 'DESC'],
       ],
     });
   }
@@ -165,7 +166,7 @@ export class DrawingsService {
 
     return this.revisionModel.findAll({
       where: { drawingId },
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
     });
   }
 

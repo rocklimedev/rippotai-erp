@@ -10,6 +10,8 @@ export function MessageBubble({ message }) {
     message.type === "file" ||
     Boolean(attachment?.fileId || attachment?.file);
 
+  const isOwn = Boolean(message.isOwn);
+
   return (
     <div
       style={{
@@ -17,11 +19,11 @@ export function MessageBubble({ message }) {
         flexDirection: "column",
         gap: 2,
         maxWidth: "80%",
-        alignSelf: message.isOwn ? "flex-end" : "flex-start",
-        alignItems: message.isOwn ? "flex-end" : "flex-start",
+        alignSelf: isOwn ? "flex-end" : "flex-start",
+        alignItems: isOwn ? "flex-end" : "flex-start",
       }}
     >
-      {!message.isOwn && (
+      {!isOwn && message.senderName && (
         <span
           style={{
             padding: "0 2px",
@@ -42,11 +44,12 @@ export function MessageBubble({ message }) {
           lineHeight: 1.4,
           whiteSpace: "pre-wrap",
           wordBreak: "break-word",
-          background: message.isOwn ? T.accent : T.surface,
-          color: message.isOwn ? "#fff" : T.ink,
-          border: message.isOwn ? "none" : `1px solid ${T.border}`,
-          borderBottomRightRadius: message.isOwn ? 3 : 12,
-          borderBottomLeftRadius: message.isOwn ? 12 : 3,
+          background: isOwn ? T.accent : T.surface,
+          color: isOwn ? "#fff" : T.ink,
+          border: isOwn ? "none" : `1px solid ${T.border}`,
+          borderBottomRightRadius: isOwn ? 3 : 12,
+          borderBottomLeftRadius: isOwn ? 12 : 3,
+          boxShadow: isOwn ? "none" : "0 1px 2px rgba(15, 31, 26, 0.04)",
         }}
       >
         {isFile && attachment ? (
@@ -55,7 +58,7 @@ export function MessageBubble({ message }) {
             filename={attachment.file || message.text || "File"}
             mimeType={attachment.mimeType}
             size={attachment.size}
-            isOwn={message.isOwn}
+            isOwn={isOwn}
             compact
           />
         ) : (

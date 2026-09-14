@@ -3,19 +3,23 @@ import { baseApi } from "../../store/baseApi";
 export const drawingApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // =========================================================
-    // Get all drawings for a project
-    // GET /drawings?projectId=...
+    // Get all drawings (optionally filtered by projectId,
+    // discipline, status, phaseCode)
+    // GET /drawings
     // =========================================================
     getDrawings: builder.query({
-      query: ({ projectId, discipline, status, phaseCode }) => ({
-        url: "/drawings",
-        params: {
-          projectId,
-          ...(discipline ? { discipline } : {}),
-          ...(status ? { status } : {}),
-          ...(phaseCode ? { phaseCode } : {}),
-        },
-      }),
+      query: (params = {}) => {
+        const { discipline, status, phaseCode } = params;
+
+        return {
+          url: "/drawings",
+          params: {
+            ...(discipline ? { discipline } : {}),
+            ...(status ? { status } : {}),
+            ...(phaseCode ? { phaseCode } : {}),
+          },
+        };
+      },
       providesTags: (result) =>
         result
           ? [
