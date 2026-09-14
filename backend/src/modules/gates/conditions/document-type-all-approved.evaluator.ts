@@ -41,9 +41,24 @@ export class DocumentTypeAllApprovedEvaluator implements ConditionEvaluator {
   ): Promise<GateConditionResult> {
     const phaseCode: string = condition.params?.phaseCode;
 
-    const docTypes = await this.documentTypeModel.findAll({
-      where: { phaseCode, isActive: true },
-    });
+    // docTypes and tasks are independent of each other (one is keyed by
+    // phaseCode against document_types, the other against project_phases) —
+    // fetch both in parallel instead of one after another.
+    const [docTypes, tasks] = await Promise.all([
+      this.documentTypeModel.findAll({
+        where: { phaseCode, isActive: true },
+      }),
+      this.tasks.findAll({
+        where: { module: 'DOCUMENTS', mandatory: true },
+        include: [
+          {
+            model: ProjectPhase,
+            where: { phase_code: phaseCode, module: 'DOCUMENTS' },
+            required: true,
+          },
+        ],
+      }),
+    ]);
     const docTypeIds = docTypes.map((d) => d.id);
 
     if (docTypeIds.length === 0) {
@@ -54,9 +69,21 @@ export class DocumentTypeAllApprovedEvaluator implements ConditionEvaluator {
       );
     }
 
-    const requirements = await this.requirementModel.findAll({
-      where: { projectId, documentTypeId: docTypeIds },
-    });
+    // requirements (needs docTypeIds) and executions (needs tasks) are also
+    // independent of each other — run together rather than sequentially.
+    const [requirements, executions] = await Promise.all([
+      this.requirementModel.findAll({
+        where: { projectId, documentTypeId: docTypeIds },
+      }),
+      tasks.length
+        ? this.executions.findAll({
+            where: {
+              project_id: projectId,
+              task_definition_id: tasks.map((t) => t.id),
+            },
+          })
+        : Promise.resolve([]),
+    ]);
 
     const byType = new Map(requirements.map((r) => [r.documentTypeId, r]));
     const required = docTypes.filter((d) =>
@@ -67,24 +94,6 @@ export class DocumentTypeAllApprovedEvaluator implements ConditionEvaluator {
       required.map((d) => this.evidence.resolve(projectId, d)),
     );
     const completed = evidence.filter((e) => e.satisfied).length;
-    const tasks = await this.tasks.findAll({
-      where: { module: 'DOCUMENTS', mandatory: true },
-      include: [
-        {
-          model: ProjectPhase,
-          where: { phase_code: phaseCode, module: 'DOCUMENTS' },
-          required: true,
-        },
-      ],
-    });
-    const executions = tasks.length
-      ? await this.executions.findAll({
-          where: {
-            project_id: projectId,
-            task_definition_id: tasks.map((t) => t.id),
-          },
-        })
-      : [];
     const tasksPassed = tasks.every((t) =>
       executions.some(
         (e) => e.task_definition_id === t.id && e.status === 'DONE',
