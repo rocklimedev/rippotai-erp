@@ -89,7 +89,7 @@ export class DocumentsService {
     return this.documentModel.findAll({
       where,
       include: DOCUMENT_INCLUDES,
-      order: [['created_at', 'DESC']],
+      order: [['createdAt', 'DESC']],
     });
   }
 
@@ -301,7 +301,7 @@ export class DocumentsService {
 
     return this.versionModel.findAll({
       where: { documentId },
-      order: [['created_at', 'DESC']],
+      order: [['createdAt', 'DESC']],
     });
   }
 
@@ -361,7 +361,7 @@ export class DocumentsService {
 
     return this.attachmentModel.findAll({
       where: { documentId },
-      order: [['created_at', 'DESC']],
+      order: [['createdAt', 'DESC']],
     });
   }
 

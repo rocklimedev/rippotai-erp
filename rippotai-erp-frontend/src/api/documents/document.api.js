@@ -60,6 +60,7 @@ export const documentApi = baseApi.injectEndpoints({
 
       providesTags: (result) => [
         "Document",
+
         ...(Array.isArray(result)
           ? result.map((doc) => ({
               type: "Document",
@@ -110,7 +111,7 @@ export const documentApi = baseApi.injectEndpoints({
         };
       },
 
-      invalidatesTags: ["Document"],
+      invalidatesTags: ["Document", "ProjectDocumentPhase"],
     }),
 
     /**
@@ -129,6 +130,7 @@ export const documentApi = baseApi.injectEndpoints({
           type: "Document",
           id,
         },
+        "ProjectDocumentPhase",
       ],
     }),
 
@@ -156,6 +158,7 @@ export const documentApi = baseApi.injectEndpoints({
           type: "Document",
           id,
         },
+        "ProjectDocumentPhase",
       ],
     }),
 
@@ -168,7 +171,7 @@ export const documentApi = baseApi.injectEndpoints({
         method: "DELETE",
       }),
 
-      invalidatesTags: ["Document"],
+      invalidatesTags: ["Document", "ProjectDocumentPhase"],
     }),
 
     // ============================================================
@@ -270,6 +273,7 @@ export const documentApi = baseApi.injectEndpoints({
       invalidatesTags: (result, error, { documentId }) => [
         "Document",
         "DocumentVersion",
+        "ProjectDocumentPhase",
         {
           type: "DocumentVersion",
           id: documentId,
@@ -293,6 +297,7 @@ export const documentApi = baseApi.injectEndpoints({
           type: "DocumentVersion",
           id: documentId,
         },
+
         ...(Array.isArray(result)
           ? result.map((version) => ({
               type: "DocumentVersion",
@@ -314,6 +319,7 @@ export const documentApi = baseApi.injectEndpoints({
       invalidatesTags: (result, error, { documentId }) => [
         "Document",
         "DocumentVersion",
+        "ProjectDocumentPhase",
         {
           type: "DocumentVersion",
           id: documentId,
@@ -355,11 +361,12 @@ export const documentApi = baseApi.injectEndpoints({
 
       invalidatesTags: (result, error, { documentId }) => [
         "Document",
+        "DocumentAttachment",
+        "ProjectDocumentPhase",
         {
           type: "Document",
           id: documentId,
         },
-        "DocumentAttachment",
         {
           type: "DocumentAttachment",
           id: documentId,
@@ -379,6 +386,7 @@ export const documentApi = baseApi.injectEndpoints({
           type: "DocumentAttachment",
           id: documentId,
         },
+
         ...(Array.isArray(result)
           ? result.map((attachment) => ({
               type: "DocumentAttachment",
@@ -399,11 +407,12 @@ export const documentApi = baseApi.injectEndpoints({
 
       invalidatesTags: (result, error, { documentId }) => [
         "Document",
+        "DocumentAttachment",
+        "ProjectDocumentPhase",
         {
           type: "Document",
           id: documentId,
         },
-        "DocumentAttachment",
         {
           type: "DocumentAttachment",
           id: documentId,
@@ -418,20 +427,22 @@ export const documentApi = baseApi.injectEndpoints({
     /**
      * GET /document-types
      *
-     * Backend:
-     * DocumentTypesController.findAll()
-     *
      * Supported query params:
      * - phaseCode
+     * - projectPhaseId
      * - targetType
      * - isActive
      */
     getDocumentTypes: builder.query({
-      query: ({ phaseCode, targetType, isActive } = {}) => {
+      query: ({ phaseCode, projectPhaseId, targetType, isActive } = {}) => {
         const params = new URLSearchParams();
 
         if (phaseCode) {
           params.append("phaseCode", phaseCode);
+        }
+
+        if (projectPhaseId) {
+          params.append("projectPhaseId", projectPhaseId);
         }
 
         if (targetType) {
@@ -449,6 +460,7 @@ export const documentApi = baseApi.injectEndpoints({
 
       providesTags: (result) => [
         "DocumentType",
+
         ...(Array.isArray(result)
           ? result.map((item) => ({
               type: "DocumentType",
@@ -483,7 +495,7 @@ export const documentApi = baseApi.injectEndpoints({
         body: data,
       }),
 
-      invalidatesTags: ["DocumentType"],
+      invalidatesTags: ["DocumentType", "ProjectDocumentPhase"],
     }),
 
     /**
@@ -498,6 +510,7 @@ export const documentApi = baseApi.injectEndpoints({
 
       invalidatesTags: (result, error, { id }) => [
         "DocumentType",
+        "ProjectDocumentPhase",
         {
           type: "DocumentType",
           id,
@@ -514,7 +527,51 @@ export const documentApi = baseApi.injectEndpoints({
         method: "DELETE",
       }),
 
-      invalidatesTags: ["DocumentType"],
+      invalidatesTags: ["DocumentType", "ProjectDocumentPhase"],
+    }),
+
+    // ============================================================
+    // PROJECT DOCUMENT PHASE CHECKLIST
+    // ============================================================
+    getProjectDocumentPhaseTree: builder.query({
+      query: () => "/document-types/project-phase-tree",
+
+      providesTags: ["ProjectDocumentPhase"],
+    }),
+    /**
+     * GET /document-types/projects/:projectId/phases
+     *
+     * Returns the complete project-wise document structure:
+     *
+     * Project
+     *   └── Document Phases
+     *         └── Document Types
+     *               ├── isUploaded
+     *               ├── uploadCount
+     *               ├── documentIds
+     *               ├── latestDocumentId
+     *               └── completion information
+     *
+     * This endpoint is the frontend source of truth for:
+     *
+     * - What documents should exist
+     * - Which phase each document belongs to
+     * - Which documents are required
+     * - Which documents have been uploaded
+     * - Phase completion
+     * - Overall project document completion
+     */
+    getProjectDocumentPhases: builder.query({
+      query: (projectId) => `/document-types/projects/${projectId}/phases`,
+
+      providesTags: (result, error, projectId) => [
+        {
+          type: "ProjectDocumentPhase",
+          id: projectId,
+        },
+
+        "ProjectDocumentPhase",
+      ],
     }),
 
     // ============================================================
@@ -537,6 +594,7 @@ export const documentApi = baseApi.injectEndpoints({
 
       providesTags: (result) => [
         "DocumentRequirement",
+
         ...(Array.isArray(result)
           ? result.map((item) => ({
               type: "DocumentRequirement",
@@ -571,7 +629,7 @@ export const documentApi = baseApi.injectEndpoints({
         body: data,
       }),
 
-      invalidatesTags: ["DocumentRequirement"],
+      invalidatesTags: ["DocumentRequirement", "ProjectDocumentPhase"],
     }),
 
     /**
@@ -586,6 +644,7 @@ export const documentApi = baseApi.injectEndpoints({
 
       invalidatesTags: (result, error, { id }) => [
         "DocumentRequirement",
+        "ProjectDocumentPhase",
         {
           type: "DocumentRequirement",
           id,
@@ -623,7 +682,7 @@ export const documentApi = baseApi.injectEndpoints({
         method: "DELETE",
       }),
 
-      invalidatesTags: ["DocumentRequirement"],
+      invalidatesTags: ["DocumentRequirement", "ProjectDocumentPhase"],
     }),
 
     // ============================================================
@@ -634,9 +693,6 @@ export const documentApi = baseApi.injectEndpoints({
      * POST /documents/deliverable-records
      *
      * Record a deliverable.
-     *
-     * Backend:
-     * DocumentRegisterController.recordDeliverable()
      */
     recordDeliverable: builder.mutation({
       query: (data) => ({
@@ -770,7 +826,6 @@ export const documentApi = baseApi.injectEndpoints({
      *
      * Keep them only if these endpoints exist in another controller.
      */
-
     getDocumentReki: builder.query({
       query: (id) => `/documents/${id}/reki`,
     }),
@@ -838,6 +893,12 @@ export const {
   useUpdateDocumentTypeMutation,
   useDeleteDocumentTypeMutation,
 
+  // ------------------------------------------------------------
+  // Project Document Phases
+  // ------------------------------------------------------------
+
+  useGetProjectDocumentPhasesQuery,
+  useGetProjectDocumentPhaseTreeQuery,
   // ------------------------------------------------------------
   // Document Requirements
   // ------------------------------------------------------------

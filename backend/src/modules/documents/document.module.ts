@@ -9,6 +9,9 @@ import { DocumentType } from './models/document-type.model';
 import { DocumentRequirement } from './models/document-requirement.model';
 import { Drawing } from './models/drawing.model';
 
+// Project Phases
+import { ProjectPhase } from '../projects/models/project-phase.model';
+
 // Projects
 import { Project } from '@/modules/projects/models/projects.model';
 
@@ -37,6 +40,7 @@ import { DocumentRegisterService } from './document-register.service';
 import { DocumentTypesService } from './document-types.service';
 import { DocumentRequirementsService } from './document-requirements.service';
 import { DocumentsDashboardService } from './documents-dashboard.service';
+import { ProjectDocumentPhaseService } from './project-document-phase.service';
 
 // Controllers
 import { DocumentsController } from './document.controller';
@@ -59,6 +63,11 @@ import { CdnModule } from '@/modules/cdn/cdn.module';
       DocumentType,
       DocumentRequirement,
       Drawing,
+
+      // ============================================
+      // PROJECT PHASES
+      // ============================================
+      ProjectPhase,
 
       // ============================================
       // PROJECT
@@ -114,11 +123,14 @@ import { CdnModule } from '@/modules/cdn/cdn.module';
     DocumentTypesService,
     DocumentsDashboardService,
     DocumentRequirementsService,
+
+    // Project-wise document phase/checklist
+    ProjectDocumentPhaseService,
   ],
 
   // ============================================
   // EXPORTS
   // ============================================
-  exports: [DocumentsService, SequelizeModule],
+  exports: [DocumentsService, ProjectDocumentPhaseService, SequelizeModule],
 })
 export class DocumentsModule {}

@@ -250,7 +250,59 @@ export const IconDocuments = () =>
       <rect x="30" y="42" width="22" height="3.5" rx="2" fill={W} />
     </>,
   );
+export const IconAutomation = () =>
+  wrap(
+    <>
+      {/* Automation / workflow engine */}
 
+      {/* Workflow nodes */}
+      <circle cx="18" cy="40" r="10" fill={S} />
+      <circle cx="40" cy="22" r="10" fill={P} />
+      <circle cx="40" cy="58" r="10" fill={P} />
+      <circle cx="62" cy="40" r="10" fill={S} />
+
+      {/* Workflow connections */}
+      <path
+        d="M26 35 L33 27"
+        stroke={P}
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+
+      <path
+        d="M26 45 L33 53"
+        stroke={P}
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+
+      <path
+        d="M47 22 H53 C57 22 57 30 57 34"
+        stroke={P}
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+
+      <path
+        d="M47 58 H53 C57 58 57 50 57 46"
+        stroke={P}
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+
+      {/* Trigger / automation center */}
+      <circle cx="40" cy="40" r="13" fill={P} />
+
+      {/* Lightning bolt / execution symbol */}
+      <path d="M43 31 L35 42 H40 L37 50 L46 38 H41 Z" fill={W} />
+
+      {/* Small status indicators */}
+      <circle cx="18" cy="40" r="4" fill={W} />
+      <circle cx="62" cy="40" r="4" fill={W} />
+    </>,
+  );
 export const IconQuotations = () =>
   wrap(
     <>
@@ -496,7 +548,7 @@ export const MODULE_ICONS = {
 
   ledger: IconLedger,
   commandCenter: IconCommandCenter,
-
+  automation: IconAutomation,
   documents: IconDocuments,
   designStudio: IconDesignStudio,
   materials: IconMaterials,
