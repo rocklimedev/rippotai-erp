@@ -24,11 +24,17 @@ import { PurchaseOrderItem } from '../models/purchase-order-item.model';
 
 import { MaterialMaster } from '../models/material-master.model';
 
+import { Unit } from '@/modules/metas/models/unit.model';
+
+import { InventoryConditionStatus } from '../models/inventory-transaction.model';
+
 import {
   CreateDeliveryChallanDto,
   UpdateDeliveryChallanDto,
 } from '../dto/delivery-challan.dto';
+
 import { MaterialConditionStatus } from '../models/delivery-challan-item.model';
+
 import { InventoryService } from './inventory.service';
 
 @Injectable()
@@ -54,6 +60,10 @@ export class DeliveryChallanService {
     @InjectConnection()
     private readonly sequelize: Sequelize,
   ) {}
+
+  // ============================================================
+  // CREATE DELIVERY CHALLAN
+  // ============================================================
 
   async create(dto: CreateDeliveryChallanDto, userId?: string) {
     if (!dto.items?.length) {
@@ -107,6 +117,13 @@ export class DeliveryChallanService {
         where: {
           id: materialIds,
         },
+        include: [
+          {
+            model: Unit,
+            as: 'unit',
+            required: true,
+          },
+        ],
         transaction,
       });
 
@@ -128,6 +145,12 @@ export class DeliveryChallanService {
         if (!material.is_active) {
           throw new BadRequestException(
             `Material ${material.name} is inactive`,
+          );
+        }
+
+        if (!material.unit_id || !material.unit) {
+          throw new BadRequestException(
+            `Material ${material.name} does not have a valid unit configured`,
           );
         }
 
@@ -207,20 +230,10 @@ export class DeliveryChallanService {
           );
         }
 
-        /**
-         * The quantities represent the disposition of the delivered
-         * material. They should not exceed the delivered quantity.
-         *
-         * Example:
-         *
-         * delivered = 100
-         * accepted = 90
-         * damaged = 5
-         * rejected = 5
-         * shortage = 0
-         *
-         * total = 100
-         */
+        // ============================================================
+        // DISPOSITION VALIDATION
+        // ============================================================
+
         const dispositionTotal =
           acceptedQuantity + damagedQuantity + rejectedQuantity;
 
@@ -230,20 +243,16 @@ export class DeliveryChallanService {
           );
         }
 
-        /**
-         * Shortage is not physically part of the received quantity,
-         * so it is not added to the disposition total.
-         *
-         * Example:
-         *
-         * ordered = 100
-         * delivered = 95
-         * accepted = 90
-         * damaged = 5
-         * shortage = 5
-         *
-         * The shortage is recorded separately.
-         */
+        // Shortage is not part of the physical delivered quantity.
+        //
+        // Example:
+        //
+        // delivered = 95
+        // accepted  = 90
+        // damaged   = 5
+        // shortage  = 5
+        //
+        // shortage is recorded separately.
       }
 
       // ============================================================
@@ -326,7 +335,6 @@ export class DeliveryChallanService {
         description: string;
         brand: string | null;
         specification: string | null;
-        unit: string;
         quantity: number;
         accepted_quantity: number;
         shortage_quantity: number;
@@ -362,7 +370,19 @@ export class DeliveryChallanService {
 
           specification: item.specification ?? material.specification ?? null,
 
-          unit: item.unit ?? material.default_unit,
+          // ========================================================
+          // UNIT IS NOT STORED HERE.
+          //
+          // It is derived through:
+          //
+          // material_id
+          //      ↓
+          // MaterialMaster
+          //      ↓
+          // unit_id
+          //      ↓
+          // Unit
+          // ========================================================
 
           quantity: Number(item.quantity),
 
@@ -427,6 +447,10 @@ export class DeliveryChallanService {
     }
   }
 
+  // ============================================================
+  // FIND ALL
+  // ============================================================
+
   async findAll(params?: {
     projectId?: string;
     purchaseOrderId?: string;
@@ -453,22 +477,68 @@ export class DeliveryChallanService {
 
     return this.challanModel.findAll({
       where,
+
       include: [
         {
           model: DeliveryChallanItem,
-          include: [MaterialMaster, PurchaseOrderItem],
+          as: 'items',
+
+          include: [
+            {
+              model: MaterialMaster,
+              as: 'material',
+
+              include: [
+                {
+                  model: Unit,
+                  as: 'unit',
+                  required: true,
+                },
+              ],
+            },
+
+            {
+              model: PurchaseOrderItem,
+              as: 'purchase_order_item',
+            },
+          ],
         },
       ],
+
       order: [['challan_date', 'DESC']],
     });
   }
+
+  // ============================================================
+  // FIND ONE
+  // ============================================================
 
   async findOne(id: string) {
     const challan = await this.challanModel.findByPk(id, {
       include: [
         {
           model: DeliveryChallanItem,
-          include: [MaterialMaster, PurchaseOrderItem],
+          as: 'items',
+
+          include: [
+            {
+              model: MaterialMaster,
+              as: 'material',
+
+              include: [
+                {
+                  model: Unit,
+                  as: 'unit',
+                  required: true,
+                },
+              ],
+            },
+
+            {
+              model: PurchaseOrderItem,
+              as: 'purchase_order_item',
+            },
+          ],
         },
       ],
     });
@@ -479,6 +549,10 @@ export class DeliveryChallanService {
 
     return challan;
   }
+
+  // ============================================================
+  // UPDATE
+  // ============================================================
 
   async update(id: string, dto: UpdateDeliveryChallanDto) {
     const challan = await this.findOne(id);
@@ -499,24 +573,58 @@ export class DeliveryChallanService {
     return this.findOne(id);
   }
 
+  // ============================================================
+  // RECEIVE DELIVERY CHALLAN
+  // ============================================================
+
   async receive(id: string, userId?: string) {
     const transaction = await this.sequelize.transaction();
 
     try {
+      // ============================================================
+      // LOAD CHALLAN
+      // ============================================================
+
       const challan = await this.challanModel.findByPk(id, {
         include: [
           {
             model: DeliveryChallanItem,
-            include: [MaterialMaster, PurchaseOrderItem],
+            as: 'items',
+
+            include: [
+              {
+                model: MaterialMaster,
+                as: 'material',
+
+                include: [
+                  {
+                    model: Unit,
+                    as: 'unit',
+                    required: true,
+                  },
+                ],
+              },
+
+              {
+                model: PurchaseOrderItem,
+                as: 'purchase_order_item',
+              },
+            ],
           },
         ],
+
         transaction,
+
         lock: transaction.LOCK.UPDATE,
       });
 
       if (!challan) {
         throw new NotFoundException('Delivery challan not found');
       }
+
+      // ============================================================
+      // STATUS VALIDATION
+      // ============================================================
 
       if (
         [
@@ -526,6 +634,10 @@ export class DeliveryChallanService {
       ) {
         throw new BadRequestException(`Challan is already ${challan.status}`);
       }
+
+      // ============================================================
+      // MATERIAL CHECK VALIDATION
+      // ============================================================
 
       if (!challan.material_checked) {
         throw new BadRequestException(
@@ -572,6 +684,18 @@ export class DeliveryChallanService {
           continue;
         }
 
+        const material = item.material;
+
+        if (!material) {
+          throw new NotFoundException(`Material ${item.material_id} not found`);
+        }
+
+        if (!material.unit_id) {
+          throw new BadRequestException(
+            `Material ${material.name} does not have a unit configured`,
+          );
+        }
+
         await this.inventoryService.receiveFromDelivery(
           {
             project_id: challan.project_id,
@@ -582,8 +706,6 @@ export class DeliveryChallanService {
 
             quantity: accepted,
 
-            unit: item.unit,
-
             delivery_challan_id: challan.id,
 
             delivery_challan_item_id: item.id,
@@ -592,7 +714,7 @@ export class DeliveryChallanService {
 
             storage_location: item.stored_at ?? undefined,
 
-            condition_status: item.condition_status,
+            condition_status: this.mapConditionStatus(item.condition_status),
 
             condition_notes: item.condition_notes ?? undefined,
 
@@ -602,6 +724,7 @@ export class DeliveryChallanService {
 
             remarks: item.remarks ?? undefined,
           },
+
           userId,
         );
       }
@@ -623,14 +746,57 @@ export class DeliveryChallanService {
         },
       );
 
+      // ============================================================
+      // COMMIT
+      // ============================================================
+
       await transaction.commit();
 
       return this.findOne(id);
     } catch (error) {
       await transaction.rollback();
+
       throw error;
     }
   }
+
+  // ============================================================
+  // MAP DELIVERY CONDITION → INVENTORY CONDITION
+  // ============================================================
+
+  private mapConditionStatus(
+    status?: MaterialConditionStatus,
+  ): InventoryConditionStatus {
+    switch (status) {
+      case MaterialConditionStatus.GOOD:
+        return InventoryConditionStatus.GOOD;
+
+      case MaterialConditionStatus.DAMAGED:
+        return InventoryConditionStatus.DAMAGED;
+
+      case MaterialConditionStatus.SHORT:
+        return InventoryConditionStatus.SHORT;
+
+      case MaterialConditionStatus.REJECTED:
+        return InventoryConditionStatus.REJECTED;
+
+      case MaterialConditionStatus.DAMAGED_AND_SHORT:
+        // Inventory has no DAMAGED_AND_SHORT state.
+        //
+        // Since inventory receives only accepted quantity,
+        // the accepted stock itself should be treated as
+        // GOOD. The damaged/short quantities remain recorded
+        // on the Delivery Challan Item.
+        return InventoryConditionStatus.GOOD;
+
+      default:
+        return InventoryConditionStatus.NOT_APPLICABLE;
+    }
+  }
+
+  // ============================================================
+  // GENERATE CHALLAN NUMBER
+  // ============================================================
 
   private async generateChallanNumber() {
     const year = new Date().getFullYear();
@@ -644,6 +810,7 @@ export class DeliveryChallanService {
           [require('sequelize').Op.like]: `${prefix}%`,
         },
       },
+
       order: [['created_at', 'DESC']],
     });
 

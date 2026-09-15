@@ -18,6 +18,7 @@ import type {
 } from 'sequelize';
 
 import { MaterialMaster } from './material-master.model';
+import { Unit } from '@/modules/metas/models/unit.model';
 
 export enum InventoryTransactionType {
   RECEIPT = 'RECEIPT',
@@ -93,8 +94,30 @@ export class InventoryTransaction extends Model<
   @Column(DataType.UUID)
   declare material_id: string;
 
-  @BelongsTo(() => MaterialMaster)
+  @BelongsTo(() => MaterialMaster, {
+    foreignKey: 'material_id',
+    as: 'material',
+  })
   declare material?: MaterialMaster;
+
+  // ============================================================
+  // UNIT
+  // ============================================================
+
+  @ForeignKey(() => Unit)
+  @AllowNull(false)
+  @Index
+  @Column({
+    type: DataType.CHAR(36),
+    allowNull: false,
+  })
+  declare unit_id: string;
+
+  @BelongsTo(() => Unit, {
+    foreignKey: 'unit_id',
+    as: 'unit',
+  })
+  declare unit?: Unit;
 
   // ============================================================
   // TRANSACTION
@@ -113,10 +136,6 @@ export class InventoryTransaction extends Model<
   @AllowNull(false)
   @Column(DataType.DECIMAL(15, 3))
   declare quantity: number;
-
-  @AllowNull(false)
-  @Column(DataType.STRING(30))
-  declare unit: string;
 
   @AllowNull(false)
   @Column(DataType.ENUM(...Object.values(InventoryDirection)))
@@ -144,10 +163,12 @@ export class InventoryTransaction extends Model<
   // ============================================================
 
   @AllowNull(true)
+  @Index
   @Column(DataType.UUID)
   declare vendor_id: string | null;
 
   @AllowNull(true)
+  @Index
   @Column(DataType.UUID)
   declare contractor_id: string | null;
 

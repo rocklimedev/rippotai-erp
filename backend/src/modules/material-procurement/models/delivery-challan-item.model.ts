@@ -56,7 +56,10 @@ export class DeliveryChallanItem extends Model<
   @Column(DataType.UUID)
   declare delivery_challan_id: string;
 
-  @BelongsTo(() => DeliveryChallan)
+  @BelongsTo(() => DeliveryChallan, {
+    foreignKey: 'delivery_challan_id',
+    as: 'delivery_challan',
+  })
   declare delivery_challan?: DeliveryChallan;
 
   // ============================================================
@@ -69,7 +72,10 @@ export class DeliveryChallanItem extends Model<
   @Column(DataType.UUID)
   declare purchase_order_item_id: string | null;
 
-  @BelongsTo(() => PurchaseOrderItem)
+  @BelongsTo(() => PurchaseOrderItem, {
+    foreignKey: 'purchase_order_item_id',
+    as: 'purchase_order_item',
+  })
   declare purchase_order_item?: PurchaseOrderItem;
 
   // ============================================================
@@ -82,7 +88,10 @@ export class DeliveryChallanItem extends Model<
   @Column(DataType.UUID)
   declare material_id: string;
 
-  @BelongsTo(() => MaterialMaster)
+  @BelongsTo(() => MaterialMaster, {
+    foreignKey: 'material_id',
+    as: 'material',
+  })
   declare material?: MaterialMaster;
 
   // ============================================================
@@ -105,9 +114,21 @@ export class DeliveryChallanItem extends Model<
   @Column(DataType.TEXT)
   declare specification: string | null;
 
-  @AllowNull(false)
-  @Column(DataType.STRING(30))
-  declare unit: string;
+  // ============================================================
+  // IMPORTANT
+  // ============================================================
+  //
+  // DO NOT store unit here.
+  //
+  // Unit is derived through:
+  //
+  // delivery_challan_item.material_id
+  //             ↓
+  // material_masters.unit_id
+  //             ↓
+  // units.id
+  //
+  // ============================================================
 
   // ============================================================
   // QUANTITIES

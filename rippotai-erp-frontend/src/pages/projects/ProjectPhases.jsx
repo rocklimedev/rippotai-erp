@@ -1,14 +1,29 @@
 import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Plus, Search, Pencil, Trash2, Layers3, RefreshCw } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
-  Plus,
-  Search,
-  Pencil,
-  Trash2,
-  X,
-  Layers3,
-  RefreshCw,
-} from "lucide-react";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 import {
   useGetProjectPhasesQuery,
@@ -55,7 +70,7 @@ const ProjectPhases = () => {
     if (!value) return projectPhases;
 
     return projectPhases.filter((item) =>
-      [item.name, item.code, item.description]
+      [item.title, item.code, item.description]
         .filter(Boolean)
         .some((field) => String(field).toLowerCase().includes(value)),
     );
@@ -71,7 +86,7 @@ const ProjectPhases = () => {
     setEditingId(item.id);
 
     setForm({
-      name: item.name || "",
+      name: item.title || "",
       code: item.code || item.phaseCode || "",
       description: item.description || "",
     });
@@ -99,14 +114,14 @@ const ProjectPhases = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!form.name.trim()) {
+    if (!form.title.trim()) {
       toast.error("Project phase name is required");
       return;
     }
 
     try {
       const payload = {
-        name: form.name.trim(),
+        name: form.title.trim(),
         code: form.code.trim() || undefined,
         description: form.description.trim() || undefined,
       };
@@ -136,7 +151,7 @@ const ProjectPhases = () => {
 
   const handleDelete = async (item) => {
     const confirmed = window.confirm(
-      `Delete project phase "${item.name}"? This action cannot be undone.`,
+      `Delete project phase "${item.title}"? This action cannot be undone.`,
     );
 
     if (!confirmed) return;
@@ -155,300 +170,259 @@ const ProjectPhases = () => {
   };
 
   return (
-    <div className="min-h-full bg-slate-50 p-6">
+    <div className="min-h-full bg-muted/40 p-6">
       {/* Header */}
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#1F453B] text-white">
-            <Layers3 size={21} />
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <Layers3 className="h-5 w-5" />
           </div>
 
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">
+            <h1 className="text-2xl font-semibold text-foreground">
               Project Phases
             </h1>
-
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
               Manage the master phases used throughout project workflows.
             </p>
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={openCreate}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#1F453B] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
-        >
-          <Plus size={17} />
+        <Button onClick={openCreate}>
+          <Plus className="mr-2 h-4 w-4" />
           Add Project Phase
-        </button>
+        </Button>
       </div>
 
       {/* Toolbar */}
-      <div className="mb-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="relative w-full md:max-w-md">
-            <Search
-              size={17}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
+      <Card className="mb-5">
+        <CardContent className="p-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="relative w-full md:max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search project phases..."
+                className="pl-10"
+              />
+            </div>
 
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search project phases..."
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-[#1F453B] focus:bg-white"
-            />
+            <Button
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </Button>
           </div>
-
-          <button
-            type="button"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-          >
-            <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
-            Refresh
-          </button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Stats */}
       <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            Total Phases
-          </div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Total Phases
+            </div>
+            <div className="mt-2 text-2xl font-semibold text-foreground">
+              {normalizedPhases.length}
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="mt-2 text-2xl font-semibold text-slate-900">
-            {normalizedPhases.length}
-          </div>
-        </div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Master Configuration
+            </div>
+            <div className="mt-2 text-sm font-medium text-primary">
+              Project Workflow
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            Master Configuration
-          </div>
-
-          <div className="mt-2 text-sm font-medium text-[#1F453B]">
-            Project Workflow
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            Search Result
-          </div>
-
-          <div className="mt-2 text-2xl font-semibold text-slate-900">
-            {normalizedPhases.length}
-          </div>
-        </div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Search Result
+            </div>
+            <div className="mt-2 text-2xl font-semibold text-foreground">
+              {normalizedPhases.length}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <Card>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[750px] text-left">
-            <thead className="border-b border-slate-200 bg-slate-50">
-              <tr>
-                <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Phase
-                </th>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Phase</TableHead>
+                <TableHead>Code</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
 
-                <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Code
-                </th>
-
-                <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Description
-                </th>
-
-                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-slate-100">
+            <TableBody>
               {isLoading ? (
-                <tr>
-                  <td
+                <TableRow>
+                  <TableCell
                     colSpan={4}
-                    className="px-5 py-12 text-center text-sm text-slate-500"
+                    className="h-24 text-center text-muted-foreground"
                   >
                     Loading project phases...
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : normalizedPhases.length === 0 ? (
-                <tr>
-                  <td
+                <TableRow>
+                  <TableCell
                     colSpan={4}
-                    className="px-5 py-12 text-center text-sm text-slate-500"
+                    className="h-24 text-center text-muted-foreground"
                   >
                     No project phases found.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 normalizedPhases.map((item, index) => (
-                  <tr key={item.id} className="hover:bg-slate-50">
-                    <td className="px-5 py-4">
+                  <TableRow key={item.id}>
+                    <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#D8E0DA] text-sm font-semibold text-[#1F453B]">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-sm font-semibold text-primary">
                           {index + 1}
                         </div>
-
                         <div>
-                          <div className="font-medium text-slate-900">
-                            {item.name || "—"}
-                          </div>
-
-                          <div className="text-xs text-slate-400">
-                            ID: {item.id}
+                          <div className="font-medium text-foreground">
+                            {item.title || "—"}
                           </div>
                         </div>
                       </div>
-                    </td>
+                    </TableCell>
 
-                    <td className="px-5 py-4">
-                      <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs text-slate-700">
-                        {item.code || item.phaseCode || "—"}
-                      </span>
-                    </td>
+                    <TableCell>
+                      <Badge variant="secondary" className="font-mono">
+                        {item.phase_code || "—"}
+                      </Badge>
+                    </TableCell>
 
-                    <td className="max-w-lg px-5 py-4 text-sm text-slate-600">
+                    <TableCell className="max-w-lg text-muted-foreground">
                       <div className="truncate">
                         {item.description || "No description"}
                       </div>
-                    </td>
+                    </TableCell>
 
-                    <td className="px-5 py-4">
+                    <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
+                        <Button
+                          variant="outline"
+                          size="icon"
                           onClick={() => openEdit(item)}
-                          className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 hover:text-[#1F453B]"
                           title="Edit"
                         >
-                          <Pencil size={16} />
-                        </button>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
 
-                        <button
-                          type="button"
+                        <Button
+                          variant="outline"
+                          size="icon"
                           onClick={() => handleDelete(item)}
                           disabled={isDeleting}
-                          className="rounded-lg border border-red-100 p-2 text-red-500 hover:bg-red-50 disabled:opacity-50"
+                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                           title="Delete"
                         >
-                          <Trash2 size={16} />
-                        </button>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
-      </div>
+      </Card>
 
       {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">
-                  {editingId ? "Edit Project Phase" : "Create Project Phase"}
-                </h2>
+      <Dialog
+        open={showModal}
+        onOpenChange={(open) => {
+          if (!open) closeModal();
+        }}
+      >
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingId ? "Edit Project Phase" : "Create Project Phase"}
+            </DialogTitle>
+            <DialogDescription>
+              Define a phase for the project workflow.
+            </DialogDescription>
+          </DialogHeader>
 
-                <p className="mt-1 text-xs text-slate-500">
-                  Define a phase for the project workflow.
-                </p>
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-5 py-2">
+              <div className="space-y-2">
+                <Label>
+                  Phase Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  name="name"
+                  value={form.title}
+                  onChange={handleChange}
+                  placeholder="e.g. Design Development"
+                />
               </div>
 
-              <button
-                type="button"
-                onClick={closeModal}
-                className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-              >
-                <X size={19} />
-              </button>
+              <div className="space-y-2">
+                <Label>Phase Code</Label>
+                <Input
+                  name="code"
+                  value={form.code}
+                  onChange={handleChange}
+                  placeholder="e.g. DESIGN"
+                  className="uppercase"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  rows={4}
+                  placeholder="Describe what this project phase represents..."
+                />
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-5 p-6">
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                    Phase Name <span className="text-red-500">*</span>
-                  </label>
-
-                  <input
-                    name="name"
-                    value={form.name}
-                    onChange={handleChange}
-                    placeholder="e.g. Design Development"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1F453B]"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                    Phase Code
-                  </label>
-
-                  <input
-                    name="code"
-                    value={form.code}
-                    onChange={handleChange}
-                    placeholder="e.g. DESIGN"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm uppercase outline-none focus:border-[#1F453B]"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                    Description
-                  </label>
-
-                  <textarea
-                    name="description"
-                    value={form.description}
-                    onChange={handleChange}
-                    rows={4}
-                    placeholder="Describe what this project phase represents..."
-                    className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1F453B]"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 border-t border-slate-200 px-6 py-4">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  disabled={isCreating || isUpdating}
-                  className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={isCreating || isUpdating}
-                  className="rounded-lg bg-[#1F453B] px-5 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-                >
-                  {isCreating || isUpdating
-                    ? "Saving..."
-                    : editingId
-                      ? "Update Project Phase"
-                      : "Create Project Phase"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <DialogFooter className="mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeModal}
+                disabled={isCreating || isUpdating}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isCreating || isUpdating}>
+                {isCreating || isUpdating
+                  ? "Saving..."
+                  : editingId
+                    ? "Update Project Phase"
+                    : "Create Project Phase"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

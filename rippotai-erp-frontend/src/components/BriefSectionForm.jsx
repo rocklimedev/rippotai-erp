@@ -1,9 +1,36 @@
 import React, { useMemo } from "react";
 import { Save, Plus, Trash2 } from "lucide-react";
-import { Shell, Card, Input, TextArea } from "./Shared"; // adjust path
+
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 /**
- * Enhanced BriefSectionForm
+ * Enhanced BriefSectionForm (shadcn/ui)
  * Supports: text, textarea, number, date, select, checkbox, multiselect,
  * table, restriction-table, and conditional visibility (showWhen).
  */
@@ -25,18 +52,13 @@ export function BriefSectionForm({
 }) {
   const filledCount = useMemo(() => {
     let count = 0;
-
     Object.values(values || {}).forEach((value) => {
       if (Array.isArray(value)) {
         if (value.length > 0) count++;
         return;
       }
-
-      if (value !== "" && value !== null && value !== undefined) {
-        count++;
-      }
+      if (value !== "" && value !== null && value !== undefined) count++;
     });
-
     return count;
   }, [values]);
 
@@ -78,13 +100,11 @@ export function BriefSectionForm({
       const current = values?.[field.showWhen.field];
       return current === field.showWhen.value;
     }
-
     if (field.showWhenMultiselectIncludes) {
       const current = values?.[field.showWhenMultiselectIncludes.field] || [];
       const arr = Array.isArray(current) ? current : [];
       return arr.includes(field.showWhenMultiselectIncludes.value);
     }
-
     return true;
   };
 
@@ -105,11 +125,12 @@ export function BriefSectionForm({
       return (
         <div key={field.key} className="space-y-3">
           <div className="flex items-center justify-between">
-            <label className="block text-[13px] font-semibold text-[#333333]">
-              {field.label}
-            </label>
-            <button
+            <Label className="text-[13px] font-semibold">{field.label}</Label>
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
+              className="text-[#1F453B] hover:text-[#1F453B]"
               onClick={() =>
                 addTableRow(
                   field.key,
@@ -119,82 +140,62 @@ export function BriefSectionForm({
                   }, {}),
                 )
               }
-              className="inline-flex items-center gap-1 text-sm font-medium text-[#1F453B] hover:underline"
             >
-              <Plus size={14} />
+              <Plus size={14} className="mr-1" />
               {field.addLabel || "Add row"}
-            </button>
+            </Button>
           </div>
 
           {rows.length === 0 ? (
-            <p className="text-sm text-[#94A3A5]">
-              No rows yet. Click “Add” to begin.
+            <p className="text-sm text-muted-foreground">
+              No rows yet. Click "Add" to begin.
             </p>
           ) : (
-            <div className="overflow-x-auto border rounded-lg">
-              <table className="w-full text-sm">
-                <thead className="bg-[#F8FAFA]">
-                  <tr>
+            <div className="overflow-x-auto rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
                     {columns.map((col) => (
-                      <th
-                        key={col.key}
-                        className="px-3 py-2 text-left font-semibold text-[#333333]"
-                      >
-                        {col.label}
-                      </th>
+                      <TableHead key={col.key}>{col.label}</TableHead>
                     ))}
-                    <th className="px-3 py-2 w-12" />
-                  </tr>
-                </thead>
-                <tbody>
+                    <TableHead className="w-12" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {rows.map((row, idx) => (
-                    <tr key={idx} className="border-t">
+                    <TableRow key={idx}>
                       {columns.map((col) => (
-                        <td key={col.key} className="px-3 py-2">
-                          {col.type === "date" ? (
-                            <Input
-                              type="date"
-                              value={row[col.key] ?? ""}
-                              onChange={(e) =>
-                                updateTableRow(
-                                  field.key,
-                                  idx,
-                                  col.key,
-                                  e.target.value,
-                                )
-                              }
-                            />
-                          ) : (
-                            <Input
-                              type="text"
-                              value={row[col.key] ?? ""}
-                              placeholder={col.placeholder || ""}
-                              onChange={(e) =>
-                                updateTableRow(
-                                  field.key,
-                                  idx,
-                                  col.key,
-                                  e.target.value,
-                                )
-                              }
-                            />
-                          )}
-                        </td>
+                        <TableCell key={col.key}>
+                          <Input
+                            type={col.type === "date" ? "date" : "text"}
+                            value={row[col.key] ?? ""}
+                            placeholder={col.placeholder || ""}
+                            onChange={(e) =>
+                              updateTableRow(
+                                field.key,
+                                idx,
+                                col.key,
+                                e.target.value,
+                              )
+                            }
+                          />
+                        </TableCell>
                       ))}
-                      <td className="px-3 py-2">
-                        <button
+                      <TableCell>
+                        <Button
                           type="button"
-                          onClick={() => removeTableRow(field.key, idx)}
+                          variant="ghost"
+                          size="icon"
                           className="text-red-500 hover:text-red-700"
-                          title="Remove row"
+                          onClick={() => removeTableRow(field.key, idx)}
                         >
                           <Trash2 size={15} />
-                        </button>
-                      </td>
-                    </tr>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>
@@ -205,40 +206,36 @@ export function BriefSectionForm({
     if (field.type === "restriction-table") {
       const rows = getTableRows(field.key);
       const options = field.restrictionOptions || [];
-
-      // Only show types not already used
       const usedTypes = new Set(rows.map((r) => r.type));
       const availableOptions = options.filter((o) => !usedTypes.has(o.value));
 
       return (
         <div key={field.key} className="space-y-3">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <label className="block text-[13px] font-semibold text-[#333333]">
-              {field.label}
-            </label>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <Label className="text-[13px] font-semibold">{field.label}</Label>
 
-            <div className="flex items-center gap-2">
-              <select
-                className="bc-input h-9 min-w-[260px]"
-                value=""
-                onChange={(e) => {
-                  const type = e.target.value;
-                  if (!type) return;
-                  addTableRow(field.key, { type, details: "" });
-                }}
-              >
-                <option value="">+ Add restriction type…</option>
+            <Select
+              value=""
+              onValueChange={(type) => {
+                if (!type) return;
+                addTableRow(field.key, { type, details: "" });
+              }}
+            >
+              <SelectTrigger className="h-9 min-w-[260px]">
+                <SelectValue placeholder="+ Add restriction type…" />
+              </SelectTrigger>
+              <SelectContent>
                 {availableOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
+                  <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
-                  </option>
+                  </SelectItem>
                 ))}
-              </select>
-            </div>
+              </SelectContent>
+            </Select>
           </div>
 
           {rows.length === 0 ? (
-            <p className="text-sm text-[#94A3A5]">
+            <p className="text-sm text-muted-foreground">
               No restrictions added yet. Choose a type from the dropdown.
             </p>
           ) : (
@@ -248,37 +245,37 @@ export function BriefSectionForm({
                   options.find((o) => o.value === row.type)?.label || row.type;
 
                 return (
-                  <div
-                    key={idx}
-                    className="flex items-start gap-3 p-3 border rounded-lg bg-[#FAFBFC]"
-                  >
-                    <div className="flex-1 space-y-1">
-                      <div className="text-[13px] font-semibold text-[#333333]">
-                        {label}
+                  <Card key={idx} className="bg-[#FAFBFC]">
+                    <CardContent className="flex items-start gap-3 p-3">
+                      <div className="flex-1 space-y-1">
+                        <div className="text-[13px] font-semibold text-[#333333]">
+                          {label}
+                        </div>
+                        <Textarea
+                          rows={2}
+                          value={row.details ?? ""}
+                          placeholder="Details / notes…"
+                          onChange={(e) =>
+                            updateTableRow(
+                              field.key,
+                              idx,
+                              "details",
+                              e.target.value,
+                            )
+                          }
+                        />
                       </div>
-                      <TextArea
-                        rows={2}
-                        value={row.details ?? ""}
-                        placeholder="Details / notes…"
-                        onChange={(e) =>
-                          updateTableRow(
-                            field.key,
-                            idx,
-                            "details",
-                            e.target.value,
-                          )
-                        }
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeTableRow(field.key, idx)}
-                      className="mt-1 text-red-500 hover:text-red-700"
-                      title="Remove"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="mt-1 text-red-500 hover:text-red-700"
+                        onClick={() => removeTableRow(field.key, idx)}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </CardContent>
+                  </Card>
                 );
               })}
             </div>
@@ -287,7 +284,7 @@ export function BriefSectionForm({
       );
     }
 
-    // ---- MULTISELECT (simple checkbox list) ----
+    // ---- MULTISELECT (checkbox list) ----
     if (field.type === "multiselect") {
       const selected = Array.isArray(fieldValue) ? fieldValue : [];
       const options = field.options || [];
@@ -301,14 +298,14 @@ export function BriefSectionForm({
 
       return (
         <div key={field.key} className="space-y-2">
-          <label className="block text-[13px] font-semibold text-[#333333]">
+          <Label className="text-[13px] font-semibold">
             {field.label}
-            {field.required && <span className="text-red-500 ml-1">*</span>}
-          </label>
+            {field.required && <span className="ml-1 text-red-500">*</span>}
+          </Label>
           {field.description && (
-            <p className="text-xs text-[#94A3A5]">{field.description}</p>
+            <p className="text-xs text-muted-foreground">{field.description}</p>
           )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {options.map((option) => {
               const optionValue =
                 typeof option === "object" ? option.value : option;
@@ -319,13 +316,11 @@ export function BriefSectionForm({
               return (
                 <label
                   key={optionValue}
-                  className="flex items-center gap-2 text-sm text-[#333333] cursor-pointer"
+                  className="flex cursor-pointer items-center gap-2 text-sm text-[#333333]"
                 >
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={checked}
-                    onChange={() => toggle(optionValue)}
-                    className="h-4 w-4"
+                    onCheckedChange={() => toggle(optionValue)}
                   />
                   {optionLabel}
                 </label>
@@ -339,17 +334,19 @@ export function BriefSectionForm({
     // ---- STANDARD FIELDS ----
     return (
       <div key={field.key} className={field.fullWidth ? "md:col-span-2" : ""}>
-        <label className="block text-[13px] font-semibold text-[#333333] mb-1">
+        <Label className="mb-1 block text-[13px] font-semibold">
           {field.label}
-          {field.required && <span className="text-red-500 ml-1">*</span>}
-        </label>
+          {field.required && <span className="ml-1 text-red-500">*</span>}
+        </Label>
 
         {field.description && (
-          <p className="text-xs text-[#94A3A5] mb-1">{field.description}</p>
+          <p className="mb-1 text-xs text-muted-foreground">
+            {field.description}
+          </p>
         )}
 
         {field.type === "textarea" ? (
-          <TextArea
+          <Textarea
             rows={field.rows || 4}
             value={fieldValue}
             placeholder={field.placeholder || ""}
@@ -378,35 +375,36 @@ export function BriefSectionForm({
             }
           />
         ) : field.type === "select" ? (
-          <select
-            className="bc-input h-10 w-full"
-            value={fieldValue}
-            onChange={(event) =>
-              handleFieldChange(section, field.key, event.target.value)
+          <Select
+            value={fieldValue || undefined}
+            onValueChange={(value) =>
+              handleFieldChange(section, field.key, value)
             }
           >
-            <option value="">{field.placeholder || "Select..."}</option>
-            {(field.options || []).map((option) => {
-              const optionValue =
-                typeof option === "object" ? option.value : option;
-              const optionLabel =
-                typeof option === "object" ? option.label : option;
-              return (
-                <option key={optionValue} value={optionValue}>
-                  {optionLabel}
-                </option>
-              );
-            })}
-          </select>
+            <SelectTrigger className="h-10 w-full">
+              <SelectValue placeholder={field.placeholder || "Select..."} />
+            </SelectTrigger>
+            <SelectContent>
+              {(field.options || []).map((option) => {
+                const optionValue =
+                  typeof option === "object" ? option.value : option;
+                const optionLabel =
+                  typeof option === "object" ? option.label : option;
+                return (
+                  <SelectItem key={optionValue} value={String(optionValue)}>
+                    {optionLabel}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
         ) : field.type === "checkbox" ? (
-          <label className="flex items-center gap-2 h-10">
-            <input
-              type="checkbox"
+          <label className="flex h-10 items-center gap-2">
+            <Checkbox
               checked={Boolean(fieldValue)}
-              onChange={(event) =>
-                handleFieldChange(section, field.key, event.target.checked)
+              onCheckedChange={(checked) =>
+                handleFieldChange(section, field.key, checked)
               }
-              className="h-4 w-4"
             />
             <span className="text-sm text-[#333333]">
               {field.checkboxLabel || field.label}
@@ -458,50 +456,61 @@ export function BriefSectionForm({
   };
 
   return (
-    <Shell
-      title={title}
-      subtitle={subtitle}
-      action={
-        <button
+    <div className="space-y-5">
+      {/* HEADER */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-semibold text-[#333333]">{title}</h1>
+          {subtitle && (
+            <p className="mt-1 text-sm text-[#6B7B7C]">{subtitle}</p>
+          )}
+        </div>
+        <Button
           type="button"
           onClick={onSubmit}
           disabled={isSubmitting}
-          className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-2 disabled:opacity-60"
+          className="bg-[#1F453B] hover:bg-[#1F453B]/90"
         >
-          <Save size={15} />
+          <Save size={15} className="mr-2" />
           {isSubmitting ? "Saving..." : submitLabel}
-        </button>
-      }
-    >
+        </Button>
+      </div>
+
       {/* PROJECT SELECTOR */}
       <Card>
-        <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-          Project
-        </label>
-        <div className="flex items-center gap-3 flex-wrap">
-          <select
-            className="bc-input h-10 max-w-lg"
-            value={projectId}
-            onChange={(event) => onProjectChange?.(event.target.value)}
-          >
-            <option value="">Select Project</option>
-            {(projects || []).map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.name}
-              </option>
-            ))}
-          </select>
-
-          {onAddProject && (
-            <button
-              type="button"
-              onClick={onAddProject}
-              className="h-10 px-3 rounded-lg border border-[#1F453B] text-[#1F453B] text-sm font-medium hover:bg-[#F0F7F5]"
+        <CardContent className="pt-6">
+          <Label className="mb-1 block text-[13px] font-semibold">
+            Project
+          </Label>
+          <div className="flex flex-wrap items-center gap-3">
+            <Select
+              value={projectId || undefined}
+              onValueChange={(v) => onProjectChange?.(v)}
             >
-              + New Project
-            </button>
-          )}
-        </div>
+              <SelectTrigger className="h-10 max-w-lg">
+                <SelectValue placeholder="Select Project" />
+              </SelectTrigger>
+              <SelectContent>
+                {(projects || []).map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {onAddProject && (
+              <Button
+                type="button"
+                variant="outline"
+                className="border-[#1F453B] text-[#1F453B] hover:bg-[#F0F7F5]"
+                onClick={onAddProject}
+              >
+                + New Project
+              </Button>
+            )}
+          </div>
+        </CardContent>
       </Card>
 
       {/* ALL SECTIONS STACKED */}
@@ -511,31 +520,28 @@ export function BriefSectionForm({
 
           return (
             <Card key={sectionKey}>
-              <div className="mb-5">
-                <div className="text-lg font-semibold text-[#333333]">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-[#333333]">
                   <span className="mr-1">{index + 1}.</span>
                   {section.title}
-                </div>
+                </CardTitle>
                 {section.description && (
-                  <p className="text-sm text-[#6B7B7C] mt-1">
-                    {section.description}
-                  </p>
+                  <CardDescription>{section.description}</CardDescription>
                 )}
-              </div>
-
-              {renderSectionBody(section)}
+              </CardHeader>
+              <CardContent>{renderSectionBody(section)}</CardContent>
             </Card>
           );
         })}
       </div>
 
-      <div className="mt-4 text-xs text-[#94A3A5] text-center">
+      <div className="text-center text-xs text-muted-foreground">
         Draft autosaved locally • {filledCount} field
         {filledCount !== 1 ? "s" : ""} completed
       </div>
 
       {children}
-    </Shell>
+    </div>
   );
 }
 

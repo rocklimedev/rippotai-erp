@@ -15,14 +15,35 @@ import {
   RefreshCw,
   CheckCircle2,
   Circle,
-  Clock3,
-  CalendarDays,
   FolderOpen,
   ChevronRight,
   List,
   GitBranch,
 } from "lucide-react";
 
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,7 +51,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { Shell, Card } from "../../hooks/shared";
+import { Shell } from "../../hooks/shared";
 
 import {
   useGetProjectsSummaryQuery,
@@ -42,9 +63,16 @@ import {
 
 import { useGetProjectDocumentPhaseTreeQuery } from "../../api/documents/document.api";
 
-/* ============================================================================
+/* ------------------------------------------------------------------
+ * Brand — centralised until these live in the tailwind theme.
+ * ------------------------------------------------------------------ */
+const BRAND = "bg-[#1F453B] hover:bg-[#17372f] text-white";
+const BRAND_TEXT = "text-[#1F453B]";
+const BRAND_SOFT = "bg-[#E7F1EA] text-[#1F453B]";
+
+/* ============================================================
    STATUS
-============================================================================ */
+============================================================ */
 
 const STATUS_LABEL = {
   active: "Active",
@@ -53,28 +81,16 @@ const STATUS_LABEL = {
   on_hold: "On Hold",
 };
 
-const STATUS_TONE = {
-  active: {
-    bg: "#E7F1EA",
-    fg: "#2F6B3F",
-  },
-  completed: {
-    bg: "#E7F1EA",
-    fg: "#2F6B3F",
-  },
-  archived: {
-    bg: "#EAEEF0",
-    fg: "#6B7B7C",
-  },
-  on_hold: {
-    bg: "#F4E1D6",
-    fg: "#A34D27",
-  },
+const STATUS_CLASS = {
+  active: "bg-[#E7F1EA] text-[#2F6B3F] hover:bg-[#E7F1EA]",
+  completed: "bg-[#E7F1EA] text-[#2F6B3F] hover:bg-[#E7F1EA]",
+  archived: "bg-muted text-muted-foreground hover:bg-muted",
+  on_hold: "bg-[#F4E1D6] text-[#A34D27] hover:bg-[#F4E1D6]",
 };
 
-/* ============================================================================
+/* ============================================================
    DOCUMENT TEMPLATES
-============================================================================ */
+============================================================ */
 
 const DOCUMENT_TEMPLATES = [
   {
@@ -97,59 +113,42 @@ const DOCUMENT_TEMPLATES = [
   },
 ];
 
-/* ============================================================================
+/* ============================================================
    HELPERS — PROJECT
-============================================================================ */
+============================================================ */
 
-const getProjectId = (project) => {
-  return project?.id || project?.projectId || project?.project_id || "";
-};
+const getProjectId = (project) =>
+  project?.id || project?.projectId || project?.project_id || "";
 
-const getProjectName = (project) => {
-  return (
-    project?.name ||
-    project?.projectName ||
-    project?.title ||
-    project?.code ||
-    project?.project_code ||
-    getProjectId(project) ||
-    "Untitled Project"
-  );
-};
+const getProjectName = (project) =>
+  project?.name ||
+  project?.projectName ||
+  project?.title ||
+  project?.code ||
+  project?.project_code ||
+  getProjectId(project) ||
+  "Untitled project";
 
-const getProjectCode = (project) => {
-  return project?.code || project?.project_code || project?.slug || "";
-};
+const getProjectCode = (project) =>
+  project?.code || project?.project_code || project?.slug || "";
 
-const getClientName = (project) => {
-  return (
-    project?.client?.name || project?.clientName || project?.client_name || "—"
-  );
-};
+const getClientName = (project) =>
+  project?.client?.name || project?.clientName || project?.client_name || "—";
 
-const getProjectType = (project) => {
-  return (
-    project?.project_type?.name ||
-    project?.projectType?.name ||
-    project?.project_type_name ||
-    project?.projectTypeName ||
-    "—"
-  );
-};
+const getProjectType = (project) =>
+  project?.project_type?.name ||
+  project?.projectType?.name ||
+  project?.project_type_name ||
+  project?.projectTypeName ||
+  "—";
 
-const getProjectStatus = (project) => {
-  return String(project?.status || "active").toLowerCase();
-};
+const getProjectStatus = (project) =>
+  String(project?.status || "active").toLowerCase();
 
 const formatDate = (value) => {
   if (!value) return "—";
-
   const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return String(value).slice(0, 10);
-  }
-
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
   return date.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -174,28 +173,22 @@ const getProjectPhases = (project) => {
   return Array.isArray(phases) ? phases : [];
 };
 
-const getPhaseName = (phase) => {
-  return (
-    phase?.name ||
-    phase?.title ||
-    phase?.phase_name ||
-    phase?.phaseName ||
-    phase?.label ||
-    phase?.process_name ||
-    "Untitled Phase"
-  );
-};
+const getPhaseName = (phase) =>
+  phase?.name ||
+  phase?.title ||
+  phase?.phase_name ||
+  phase?.phaseName ||
+  phase?.label ||
+  phase?.process_name ||
+  "Untitled phase";
 
-const getPhaseId = (phase, index) => {
-  return (
-    phase?.id ||
-    phase?.phaseId ||
-    phase?.phase_id ||
-    phase?.code ||
-    phase?.phase_code ||
-    `phase-${index}`
-  );
-};
+const getPhaseId = (phase, index) =>
+  phase?.id ||
+  phase?.phaseId ||
+  phase?.phase_id ||
+  phase?.code ||
+  phase?.phase_code ||
+  `phase-${index}`;
 
 const getPhaseStatus = (phase) => {
   const explicitStatus = String(
@@ -226,17 +219,14 @@ const getPhaseStatus = (phase) => {
     return "upcoming";
   }
 
-  if (phase?.completed === true || phase?.isComplete === true) {
+  if (phase?.completed === true || phase?.isComplete === true)
     return "completed";
-  }
-
   if (
     phase?.current === true ||
     phase?.isCurrent === true ||
     phase?.active === true
-  ) {
+  )
     return "current";
-  }
 
   return "upcoming";
 };
@@ -278,9 +268,7 @@ const getCurrentDocumentName = (project) => {
     project?.documentBeingPrepared ||
     null;
 
-  if (typeof document === "string") {
-    return document;
-  }
+  if (typeof document === "string") return document;
 
   return (
     document?.name ||
@@ -294,7 +282,7 @@ const getCurrentDocumentName = (project) => {
 };
 
 /*
- * ============================================================================
+ * ============================================================
  * PHASE TREE (getProjectDocumentPhaseTree)
  *
  * GET /document-types/project-phase-tree returns:
@@ -335,7 +323,7 @@ const getCurrentDocumentName = (project) => {
  * This is the source of truth for phase order, completion, and which
  * document should be worked on next within a phase. It's matched to a
  * project from useGetProjectsQuery by id (falling back to name).
- * ============================================================================
+ * ============================================================
  */
 
 const normalizePhaseTreeProjects = (tree) => {
@@ -361,27 +349,22 @@ const findPhaseTreeProject = (project, phaseTree) => {
   );
 };
 
-const getTreePhases = (entry) => {
-  return Array.isArray(entry?.phases) ? entry.phases : [];
-};
+const getTreePhases = (entry) =>
+  Array.isArray(entry?.phases) ? entry.phases : [];
 
-const getTreePhaseId = (phase, index) => {
-  return phase?.id || phase?.phaseCode || phase?.code || `phase-${index}`;
-};
+const getTreePhaseId = (phase, index) =>
+  phase?.id || phase?.phaseCode || phase?.code || `phase-${index}`;
 
-const getTreePhaseName = (phase) => {
-  return phase?.title || phase?.phaseCode || phase?.name || "Untitled Phase";
-};
+const getTreePhaseName = (phase) =>
+  phase?.title || phase?.phaseCode || phase?.name || "Untitled phase";
 
-const getTreePhaseOrder = (phase, index) => {
-  return phase?.sortOrder ?? phase?.phaseNumber ?? index;
-};
+const getTreePhaseOrder = (phase, index) =>
+  phase?.sortOrder ?? phase?.phaseNumber ?? index;
 
 const getTreePhaseComplete = (phase) => Boolean(phase?.isComplete);
 
 const getTreePhaseDocCounts = (phase) => {
   const summary = phase?.summary;
-
   if (!summary) return null;
 
   return {
@@ -440,9 +423,7 @@ const buildTimelinePhases = (project, phaseTree) => {
     .slice()
     .sort((a, b) => getTreePhaseOrder(a, 0) - getTreePhaseOrder(b, 0));
 
-  if (!treePhases.length) {
-    return [];
-  }
+  if (!treePhases.length) return [];
 
   const firstIncompleteIndex = treePhases.findIndex(
     (phase) => !getTreePhaseComplete(phase),
@@ -482,22 +463,14 @@ const getProjectCurrentInfo = (project, phaseTree) => {
 };
 
 const getPhaseProgress = (phases) => {
-  if (!phases.length) {
-    return {
-      completed: 0,
-      current: 0,
-      percentage: 0,
-    };
-  }
+  if (!phases.length) return { completed: 0, current: 0, percentage: 0 };
 
   const completed = phases.filter(
     (phase) => getPhaseStatus(phase) === "completed",
   ).length;
-
   const current = phases.findIndex(
     (phase) => getPhaseStatus(phase) === "current",
   );
-
   const currentIndex =
     current >= 0 ? current + 1 : completed > 0 ? completed : 0;
 
@@ -508,59 +481,63 @@ const getPhaseProgress = (phases) => {
   };
 };
 
-/* ============================================================================
+const clampPercent = (value) => Math.min(Math.max(value, 0), 100);
+
+/* ============================================================
    STATUS CHIP
-============================================================================ */
+============================================================ */
 
 function StatusChip({ status }) {
   const normalized = String(status || "active").toLowerCase();
 
-  const tone = STATUS_TONE[normalized] || STATUS_TONE.active;
-
   return (
-    <span
-      className="inline-flex items-center px-2 py-1 rounded-full text-[10.5px] font-bold"
-      style={{
-        background: tone.bg,
-        color: tone.fg,
-      }}
+    <Badge
+      className={cn(
+        "rounded-full text-[10.5px] font-bold",
+        STATUS_CLASS[normalized] || STATUS_CLASS.active,
+      )}
     >
       {STATUS_LABEL[normalized] || normalized}
-    </span>
+    </Badge>
   );
 }
 
-/* ============================================================================
+/* ============================================================
    PHASE DOT
-============================================================================ */
+============================================================ */
 
 function PhaseDot({ status }) {
   if (status === "completed") {
     return (
-      <div className="w-7 h-7 rounded-full bg-[#E7F1EA] border border-[#BBD5C1] flex items-center justify-center shrink-0">
-        <CheckCircle2 size={15} className="text-[#2F6B3F]" />
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#BBD5C1] bg-[#E7F1EA]">
+        <CheckCircle2 className="h-[15px] w-[15px] text-[#2F6B3F]" />
       </div>
     );
   }
 
   if (status === "current") {
     return (
-      <div className="w-7 h-7 rounded-full bg-[#1F453B] border-4 border-[#D8E0DA] flex items-center justify-center shrink-0">
-        <div className="w-1.5 h-1.5 rounded-full bg-white" />
+      <div
+        className={cn(
+          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-4 border-[#D8E0DA]",
+          BRAND,
+        )}
+      >
+        <div className="h-1.5 w-1.5 rounded-full bg-white" />
       </div>
     );
   }
 
   return (
-    <div className="w-7 h-7 rounded-full bg-white border-2 border-[#D8E0DA] flex items-center justify-center shrink-0">
-      <Circle size={11} className="text-[#B5C4B6]" />
+    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[#D8E0DA] bg-background">
+      <Circle className="h-[11px] w-[11px] text-muted-foreground" />
     </div>
   );
 }
 
-/* ============================================================================
+/* ============================================================
    PROJECT TIMELINE
-============================================================================ */
+============================================================ */
 
 function ProjectTimeline({ project, phaseTree }) {
   const { phases, phaseName, documentName } = useMemo(
@@ -571,29 +548,36 @@ function ProjectTimeline({ project, phaseTree }) {
   const progress = getPhaseProgress(phases);
 
   return (
-    <Card className="overflow-hidden">
-      {/* PROJECT HEADER */}
-
-      <div className="px-4 py-3 border-b border-[rgba(31,69,59,0.08)] bg-white">
+    <Card className="overflow-hidden py-0">
+      {/* Project header */}
+      <div className="border-b px-4 py-3">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#E7F1EA] flex items-center justify-center shrink-0">
-            <FolderOpen size={18} className="text-[#1F453B]" />
+          <div
+            className={cn(
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+              BRAND_SOFT,
+            )}
+          >
+            <FolderOpen className="h-[18px] w-[18px]" />
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
                 type="button"
-                className="font-bold text-[15px] text-[#333333] hover:text-[#1F453B] text-left"
+                variant="link"
+                className={cn(
+                  "h-auto p-0 text-[15px] font-bold text-foreground hover:no-underline hover:text-[#1F453B]",
+                )}
                 onClick={() =>
                   (window.location.href = `/projects/${getProjectId(project)}`)
                 }
               >
                 {getProjectName(project)}
-              </button>
+              </Button>
 
               {getProjectCode(project) && (
-                <span className="text-[10.5px] text-[#8A9697]">
+                <span className="text-[10.5px] text-muted-foreground">
                   {getProjectCode(project)}
                 </span>
               )}
@@ -601,17 +585,16 @@ function ProjectTimeline({ project, phaseTree }) {
               <StatusChip status={getProjectStatus(project)} />
             </div>
 
-            <div className="text-[11.5px] text-[#8A9697] mt-0.5">
+            <div className="mt-0.5 text-[11.5px] text-muted-foreground">
               {getClientName(project)}
             </div>
           </div>
 
-          <div className="hidden sm:block text-right shrink-0">
-            <div className="text-[10px] uppercase tracking-[0.12em] text-[#8A9697]">
+          <div className="hidden shrink-0 text-right sm:block">
+            <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
               ECD
             </div>
-
-            <div className="text-[12px] font-semibold text-[#333333] mt-0.5">
+            <div className="mt-0.5 text-xs font-semibold">
               {formatDate(
                 project?.expected_completion_date ||
                   project?.expectedCompletionDate,
@@ -621,84 +604,62 @@ function ProjectTimeline({ project, phaseTree }) {
         </div>
       </div>
 
-      {/* CURRENT WORK */}
-
-      <div className="px-4 py-3 bg-[#FAFBFA] border-b border-[rgba(31,69,59,0.08)]">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="rounded-lg bg-white border border-[#D8E0DA] px-3 py-2.5">
+      {/* Current work */}
+      <div className="border-b bg-muted/30 px-4 py-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div className="rounded-lg border bg-background px-3 py-2.5">
             <div className="flex items-center gap-2">
-              <GitBranch size={14} className="text-[#1F453B]" />
-
-              <span className="text-[10px] uppercase tracking-[0.12em] text-[#8A9697]">
-                Current Phase
+              <GitBranch className={cn("h-[14px] w-[14px]", BRAND_TEXT)} />
+              <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                Current phase
               </span>
             </div>
-
-            <div className="text-[13px] font-bold text-[#333333] mt-1">
-              {phaseName}
-            </div>
+            <div className="mt-1 text-[13px] font-bold">{phaseName}</div>
           </div>
 
-          <div className="rounded-lg bg-white border border-[#D8E0DA] px-3 py-2.5">
+          <div className="rounded-lg border bg-background px-3 py-2.5">
             <div className="flex items-center gap-2">
-              <FileText size={14} className="text-[#1F453B]" />
-
-              <span className="text-[10px] uppercase tracking-[0.12em] text-[#8A9697]">
-                Document Being Prepared
+              <FileText className={cn("h-[14px] w-[14px]", BRAND_TEXT)} />
+              <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                Document being prepared
               </span>
             </div>
-
-            <div className="text-[13px] font-bold text-[#333333] mt-1 truncate">
+            <div className="mt-1 truncate text-[13px] font-bold">
               {documentName}
             </div>
           </div>
         </div>
       </div>
 
-      {/* TIMELINE */}
-
+      {/* Timeline */}
       <div className="px-5 py-5">
         {phases.length ? (
           <>
-            <div className="flex items-center justify-between mb-3">
+            <div className="mb-3 flex items-center justify-between">
               <div>
-                <div className="text-[12px] font-semibold text-[#333333]">
-                  Project Timeline
-                </div>
-
-                <div className="text-[10.5px] text-[#8A9697] mt-0.5">
+                <div className="text-xs font-semibold">Project timeline</div>
+                <div className="mt-0.5 text-[10.5px] text-muted-foreground">
                   {progress.completed} of {phases.length} phases completed
                 </div>
               </div>
-
-              <div className="text-[12px] font-bold text-[#1F453B]">
+              <div className={cn("text-xs font-bold", BRAND_TEXT)}>
                 {progress.percentage}%
               </div>
             </div>
 
-            {/* PROGRESS BAR */}
-
-            <div className="h-1.5 rounded-full bg-[#E5EAE7] overflow-hidden mb-6">
-              <div
-                className="h-full rounded-full bg-[#1F453B] transition-all"
-                style={{
-                  width: `${Math.min(Math.max(progress.percentage, 0), 100)}%`,
-                }}
-              />
-            </div>
-
-            {/* PHASE TRACK */}
+            <Progress
+              value={clampPercent(progress.percentage)}
+              className="mb-6 h-1.5"
+            />
 
             <div className="overflow-x-auto pb-2">
               <div
-                className="min-w-[720px] relative"
+                className="relative min-w-[720px]"
                 style={{
                   display: "grid",
                   gridTemplateColumns: `repeat(${phases.length}, minmax(130px, 1fr))`,
                 }}
               >
-                {/* CONNECTOR */}
-
                 <div className="absolute left-4 right-4 top-[13px] h-[2px] bg-[#D8E0DA]" />
 
                 {phases.map((phase, index) => {
@@ -713,21 +674,21 @@ function ProjectTimeline({ project, phaseTree }) {
                         <PhaseDot status={status} />
                       </div>
 
-                      <div className="text-center mt-2">
+                      <div className="mt-2 text-center">
                         <div
-                          className={[
+                          className={cn(
                             "text-[11.5px] font-semibold leading-tight",
                             status === "current"
-                              ? "text-[#1F453B]"
+                              ? BRAND_TEXT
                               : status === "completed"
-                                ? "text-[#333333]"
-                                : "text-[#8A9697]",
-                          ].join(" ")}
+                                ? "text-foreground"
+                                : "text-muted-foreground",
+                          )}
                         >
                           {getPhaseName(phase)}
                         </div>
 
-                        <div className="text-[9.5px] text-[#A0AAAB] mt-1">
+                        <div className="mt-1 text-[9.5px] text-muted-foreground/80">
                           {status === "completed"
                             ? "Completed"
                             : status === "current"
@@ -736,7 +697,7 @@ function ProjectTimeline({ project, phaseTree }) {
                         </div>
 
                         {phase.docCounts && (
-                          <div className="text-[9.5px] text-[#A0AAAB] mt-0.5">
+                          <div className="mt-0.5 text-[9.5px] text-muted-foreground/80">
                             {phase.docCounts.uploaded}/{phase.docCounts.total}{" "}
                             docs
                           </div>
@@ -750,13 +711,11 @@ function ProjectTimeline({ project, phaseTree }) {
           </>
         ) : (
           <div className="py-8 text-center">
-            <GitBranch size={30} className="mx-auto mb-2 text-[#B5C4B6]" />
-
-            <div className="text-[13px] font-semibold text-[#333333]">
+            <GitBranch className="mx-auto mb-2 h-[30px] w-[30px] text-muted-foreground/50" />
+            <div className="text-[13px] font-semibold">
               Timeline not configured
             </div>
-
-            <div className="text-[11px] text-[#8A9697] mt-1">
+            <div className="mt-1 text-[11px] text-muted-foreground">
               Project phases will appear here once configured.
             </div>
           </div>
@@ -766,9 +725,9 @@ function ProjectTimeline({ project, phaseTree }) {
   );
 }
 
-/* ============================================================================
+/* ============================================================
    PROJECT TABLE
-============================================================================ */
+============================================================ */
 
 function ProjectTable({
   projects,
@@ -781,175 +740,139 @@ function ProjectTable({
   const nav = useNavigate();
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden py-0">
       <div className="overflow-x-auto">
-        <table className="w-full text-[12px]">
-          <thead className="bg-[#FAFBFA]">
-            <tr className="border-b border-[#D8E0DA]">
-              <th className="text-left px-4 py-3 text-[10px] uppercase tracking-[0.12em] text-[#8A9697] font-semibold">
-                Project
-              </th>
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/30 hover:bg-muted/30">
+              <TableHead>Project</TableHead>
+              <TableHead>Client</TableHead>
+              <TableHead>Current phase</TableHead>
+              <TableHead>Document</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>ECD</TableHead>
+              <TableHead className="w-12" />
+            </TableRow>
+          </TableHeader>
 
-              <th className="text-left px-4 py-3 text-[10px] uppercase tracking-[0.12em] text-[#8A9697] font-semibold">
-                Client
-              </th>
-
-              <th className="text-left px-4 py-3 text-[10px] uppercase tracking-[0.12em] text-[#8A9697] font-semibold">
-                Current Phase
-              </th>
-
-              <th className="text-left px-4 py-3 text-[10px] uppercase tracking-[0.12em] text-[#8A9697] font-semibold">
-                Document
-              </th>
-
-              <th className="text-left px-4 py-3 text-[10px] uppercase tracking-[0.12em] text-[#8A9697] font-semibold">
-                Status
-              </th>
-
-              <th className="text-left px-4 py-3 text-[10px] uppercase tracking-[0.12em] text-[#8A9697] font-semibold">
-                ECD
-              </th>
-
-              <th className="w-12" />
-            </tr>
-          </thead>
-
-          <tbody>
+          <TableBody>
             {loading && (
-              <tr>
-                <td colSpan={7} className="py-12 text-center text-[#8A9697]">
-                  Loading projects…
-                </td>
-              </tr>
+              <TableRow>
+                <TableCell
+                  colSpan={7}
+                  className="py-12 text-center text-muted-foreground"
+                >
+                  Loading projects...
+                </TableCell>
+              </TableRow>
             )}
 
             {!loading && !projects.length && (
-              <tr>
-                <td colSpan={7} className="py-12 text-center">
-                  <FolderOpen
-                    size={32}
-                    className="mx-auto mb-2 text-[#B5C4B6]"
-                  />
-
-                  <div className="text-[13px] font-semibold text-[#333333]">
+              <TableRow>
+                <TableCell colSpan={7} className="py-12 text-center">
+                  <FolderOpen className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
+                  <div className="text-[13px] font-semibold">
                     No projects found
                   </div>
-
-                  <div className="text-[11px] text-[#8A9697] mt-1">
+                  <div className="mt-1 text-[11px] text-muted-foreground">
                     Try changing your search or status filter.
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
 
             {!loading &&
               projects.map((project) => {
                 const projectId = getProjectId(project);
-
                 const { phaseName, documentName } = getProjectCurrentInfo(
                   project,
                   phaseTree,
                 );
 
                 return (
-                  <tr
-                    key={projectId}
-                    className="border-b border-[rgba(31,69,59,0.08)] hover:bg-[#F8FAF9] transition-colors"
-                  >
-                    {/* PROJECT */}
-
-                    <td className="px-4 py-3">
+                  <TableRow key={projectId}>
+                    <TableCell>
                       <button
                         type="button"
                         onClick={() => nav(`/projects/${projectId}`)}
-                        className="text-left min-w-0"
+                        className="min-w-0 text-left"
                       >
-                        <div className="font-semibold text-[#333333] hover:text-[#1F453B] truncate max-w-[220px]">
+                        <div
+                          className={cn(
+                            "max-w-[220px] truncate font-semibold hover:text-[#1F453B]",
+                          )}
+                        >
                           {getProjectName(project)}
                         </div>
-
-                        <div className="text-[10.5px] text-[#8A9697] mt-0.5 truncate max-w-[220px]">
+                        <div className="mt-0.5 max-w-[220px] truncate text-[10.5px] text-muted-foreground">
                           {getProjectCode(project)}
                         </div>
                       </button>
-                    </td>
+                    </TableCell>
 
-                    {/* CLIENT */}
-
-                    <td className="px-4 py-3 text-[#6B7B7C]">
+                    <TableCell className="text-muted-foreground">
                       {getClientName(project)}
-                    </td>
+                    </TableCell>
 
-                    {/* PHASE */}
-
-                    <td className="px-4 py-3">
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         <GitBranch
-                          size={13}
-                          className="text-[#1F453B] shrink-0"
+                          className={cn(
+                            "h-[13px] w-[13px] shrink-0",
+                            BRAND_TEXT,
+                          )}
                         />
-
-                        <span className="font-semibold text-[#333333] truncate max-w-[180px]">
+                        <span className="max-w-[180px] truncate font-semibold">
                           {phaseName}
                         </span>
                       </div>
-                    </td>
+                    </TableCell>
 
-                    {/* DOCUMENT */}
-
-                    <td className="px-4 py-3">
+                    <TableCell>
                       <div className="flex items-center gap-2">
-                        <FileText
-                          size={13}
-                          className="text-[#8A9697] shrink-0"
-                        />
-
-                        <span className="text-[#6B7B7C] truncate max-w-[210px]">
+                        <FileText className="h-[13px] w-[13px] shrink-0 text-muted-foreground" />
+                        <span className="max-w-[210px] truncate text-muted-foreground">
                           {documentName}
                         </span>
                       </div>
-                    </td>
+                    </TableCell>
 
-                    {/* STATUS */}
-
-                    <td className="px-4 py-3">
+                    <TableCell>
                       <StatusChip status={getProjectStatus(project)} />
-                    </td>
+                    </TableCell>
 
-                    {/* ECD */}
-
-                    <td className="px-4 py-3 text-[#6B7B7C] whitespace-nowrap">
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
                       {formatDate(
                         project?.expected_completion_date ||
                           project?.expectedCompletionDate,
                       )}
-                    </td>
+                    </TableCell>
 
-                    {/* ACTIONS */}
-
-                    <td className="px-2 py-3">
+                    <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button
+                          <Button
                             type="button"
-                            className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-[#6B7B7C] hover:bg-[#EAEEF0] hover:text-[#333333]"
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Project actions"
                           >
-                            <MoreHorizontal size={17} />
-                          </button>
+                            <MoreHorizontal className="h-[17px] w-[17px]" />
+                          </Button>
                         </DropdownMenuTrigger>
 
                         <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem
                             onSelect={() => nav(`/projects/${projectId}`)}
                           >
-                            <ChevronRight size={15} className="mr-2" />
+                            <ChevronRight className="mr-2 h-[15px] w-[15px]" />
                             View
                           </DropdownMenuItem>
 
                           <DropdownMenuItem
                             onSelect={() => nav(`/projects/${projectId}/edit`)}
                           >
-                            <Edit size={15} className="mr-2" />
+                            <Edit className="mr-2 h-[15px] w-[15px]" />
                             Edit
                           </DropdownMenuItem>
 
@@ -960,7 +883,7 @@ function ProjectTable({
                               }
                               className="text-amber-700"
                             >
-                              <Archive size={15} className="mr-2" />
+                              <Archive className="mr-2 h-[15px] w-[15px]" />
                               Archive
                             </DropdownMenuItem>
                           ) : (
@@ -970,7 +893,7 @@ function ProjectTable({
                               }
                               className="text-emerald-700"
                             >
-                              <RotateCcw size={15} className="mr-2" />
+                              <RotateCcw className="mr-2 h-[15px] w-[15px]" />
                               Restore
                             </DropdownMenuItem>
                           )}
@@ -981,123 +904,144 @@ function ProjectTable({
                             }
                             className="text-red-600"
                           >
-                            <Trash2 size={15} className="mr-2" />
+                            <Trash2 className="mr-2 h-[15px] w-[15px]" />
                             Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </Card>
   );
 }
 
-/* ============================================================================
+/* ============================================================
    DOCUMENTS VIEW
-============================================================================ */
+============================================================ */
 
 function DocumentsView() {
   return (
-    <Card className="overflow-hidden">
-      <div className="px-4 py-4 border-b border-[rgba(31,69,59,0.08)]">
+    <Card className="overflow-hidden py-0">
+      <CardHeader className="border-b py-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-[#E7F1EA] flex items-center justify-center">
-            <FileText size={17} className="text-[#1F453B]" />
+          <div
+            className={cn(
+              "flex h-9 w-9 items-center justify-center rounded-lg",
+              BRAND_SOFT,
+            )}
+          >
+            <FileText className="h-[17px] w-[17px]" />
           </div>
-
           <div>
-            <div className="text-[14px] font-bold text-[#333333]">
-              Project Documents
-            </div>
-
-            <div className="text-[11px] text-[#8A9697] mt-0.5">
+            <div className="text-sm font-bold">Project documents</div>
+            <div className="mt-0.5 text-[11px] text-muted-foreground">
               Approved templates and documents available for download.
             </div>
           </div>
         </div>
-      </div>
+      </CardHeader>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[12px]">
-          <thead className="bg-[#FAFBFA]">
-            <tr className="border-b border-[#D8E0DA]">
-              <th className="text-left px-4 py-3 text-[10px] uppercase tracking-[0.12em] text-[#8A9697]">
-                Document
-              </th>
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/30 hover:bg-muted/30">
+              <TableHead>Document</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Format</TableHead>
+              <TableHead className="text-right">Action</TableHead>
+            </TableRow>
+          </TableHeader>
 
-              <th className="text-left px-4 py-3 text-[10px] uppercase tracking-[0.12em] text-[#8A9697]">
-                Type
-              </th>
-
-              <th className="text-left px-4 py-3 text-[10px] uppercase tracking-[0.12em] text-[#8A9697]">
-                Format
-              </th>
-
-              <th className="text-right px-4 py-3 text-[10px] uppercase tracking-[0.12em] text-[#8A9697]">
-                Action
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
+          <TableBody>
             {DOCUMENT_TEMPLATES.map((document) => (
-              <tr
-                key={document.id}
-                className="border-b border-[rgba(31,69,59,0.08)] last:border-0 hover:bg-[#F8FAF9]"
-              >
-                <td className="px-4 py-4">
+              <TableRow key={document.id}>
+                <TableCell>
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-[#E7F1EA] flex items-center justify-center shrink-0">
-                      <FileText size={16} className="text-[#1F453B]" />
+                    <div
+                      className={cn(
+                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+                        BRAND_SOFT,
+                      )}
+                    >
+                      <FileText className="h-4 w-4" />
                     </div>
-
                     <div className="min-w-0">
-                      <div className="font-semibold text-[#333333]">
-                        {document.name}
-                      </div>
-
-                      <div className="text-[10.5px] text-[#8A9697] mt-0.5">
+                      <div className="font-semibold">{document.name}</div>
+                      <div className="mt-0.5 text-[10.5px] text-muted-foreground">
                         {document.description}
                       </div>
                     </div>
                   </div>
-                </td>
+                </TableCell>
 
-                <td className="px-4 py-4 text-[#6B7B7C]">{document.type}</td>
+                <TableCell className="text-muted-foreground">
+                  {document.type}
+                </TableCell>
 
-                <td className="px-4 py-4">
-                  <span className="inline-flex px-2 py-1 rounded-md bg-[#EAEEF0] text-[#1F453B] text-[10px] font-bold">
-                    {document.format}
-                  </span>
-                </td>
-
-                <td className="px-4 py-4 text-right">
-                  <a
-                    href={document.file}
-                    download
-                    className="inline-flex items-center gap-2 h-8 px-3 rounded-lg bg-[#1F453B] text-white text-[11.5px] font-semibold hover:opacity-90"
+                <TableCell>
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      "rounded-md text-[10px] font-bold",
+                      BRAND_TEXT,
+                    )}
                   >
-                    <Download size={13} />
-                    Download
-                  </a>
-                </td>
-              </tr>
+                    {document.format}
+                  </Badge>
+                </TableCell>
+
+                <TableCell className="text-right">
+                  <Button asChild size="sm" className={BRAND}>
+                    <a href={document.file} download>
+                      <Download className="h-[13px] w-[13px]" />
+                      Download
+                    </a>
+                  </Button>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </Card>
   );
 }
 
-/* ============================================================================
+/* ============================================================
+   SUMMARY CARD
+============================================================ */
+
+function SummaryCard({ label, value, sub, valueClassName }) {
+  return (
+    <Card className="p-3">
+      <div className="text-[10.5px] uppercase tracking-[0.12em] text-muted-foreground">
+        {label}
+      </div>
+      <div className={cn("mt-1 text-[22px] font-bold", valueClassName)}>
+        {value}
+      </div>
+      <div className="text-[10.5px] text-muted-foreground">{sub}</div>
+    </Card>
+  );
+}
+
+/* ============================================================
    MAIN
-============================================================================ */
+============================================================ */
+
+const TABS = [
+  ["all", "Projects"],
+  ["active", "Active"],
+  ["completed", "Completed"],
+  ["on_hold", "On Hold"],
+  ["archived", "Archived"],
+  ["documents", "Documents"],
+];
 
 export default function ProjectsDashboard() {
   const nav = useNavigate();
@@ -1107,9 +1051,7 @@ export default function ProjectsDashboard() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  /* --------------------------------------------------------------------------
-     QUERIES
-  -------------------------------------------------------------------------- */
+  /* -------------------------------------------------- Queries */
 
   const {
     data: summary,
@@ -1135,47 +1077,34 @@ export default function ProjectsDashboard() {
     isError: phaseTreeError,
   } = useGetProjectDocumentPhaseTreeQuery();
 
-  /* --------------------------------------------------------------------------
-     NORMALIZE
-  -------------------------------------------------------------------------- */
+  /* -------------------------------------------------- Normalize */
 
   const projects = useMemo(() => {
-    if (Array.isArray(projectsResponse)) {
-      return projectsResponse;
-    }
-
+    if (Array.isArray(projectsResponse)) return projectsResponse;
     return projectsResponse?.data || projectsResponse?.projects || [];
   }, [projectsResponse]);
 
-  /* --------------------------------------------------------------------------
-     MUTATIONS
-  -------------------------------------------------------------------------- */
+  /* -------------------------------------------------- Mutations */
 
   const [archiveProject] = useArchiveProjectMutation();
-
   const [restoreProject] = useRestoreProjectMutation();
-
   const [deleteProject] = useDeleteProjectMutation();
 
-  /* --------------------------------------------------------------------------
-     ERROR
-  -------------------------------------------------------------------------- */
+  /* -------------------------------------------------- Errors */
 
   useEffect(() => {
     if (summaryError || projectsError) {
-      toast.error("Failed to load projects");
+      toast.error("Projects could not be loaded.");
     }
   }, [summaryError, projectsError]);
 
   useEffect(() => {
     if (phaseTreeError) {
-      toast.error("Failed to load project timeline phases");
+      toast.error("Project timeline phases could not be loaded.");
     }
   }, [phaseTreeError]);
 
-  /* --------------------------------------------------------------------------
-     FILTER
-  -------------------------------------------------------------------------- */
+  /* -------------------------------------------------- Filter */
 
   const filteredProjects = useMemo(() => {
     const search = q.trim().toLowerCase();
@@ -1183,13 +1112,8 @@ export default function ProjectsDashboard() {
     return projects.filter((project) => {
       const status = getProjectStatus(project);
 
-      if (statusFilter !== "all" && status !== statusFilter) {
-        return false;
-      }
-
-      if (!search) {
-        return true;
-      }
+      if (statusFilter !== "all" && status !== statusFilter) return false;
+      if (!search) return true;
 
       const { phaseName, documentName } = getProjectCurrentInfo(
         project,
@@ -1213,64 +1137,49 @@ export default function ProjectsDashboard() {
     });
   }, [projects, q, statusFilter, phaseTree]);
 
-  /* --------------------------------------------------------------------------
-     ACTIONS
-  -------------------------------------------------------------------------- */
+  /* -------------------------------------------------- Actions */
 
   const handleArchive = async (id, name) => {
-    if (!window.confirm(`Archive project "${name}"?`)) {
-      return;
-    }
+    if (!window.confirm(`Archive project "${name}"?`)) return;
 
     try {
-      await archiveProject({
-        id,
-        archived_by: "current_user",
-      }).unwrap();
-
-      toast.success(`Project "${name}" has been archived`);
+      await archiveProject({ id, archived_by: "current_user" }).unwrap();
+      toast.success(`"${name}" has been archived.`);
     } catch (error) {
-      toast.error(error?.data?.message || "Failed to archive project");
+      toast.error(error?.data?.message || "The project could not be archived.");
     }
   };
 
   const handleRestore = async (id, name) => {
-    if (!window.confirm(`Restore project "${name}"?`)) {
-      return;
-    }
+    if (!window.confirm(`Restore project "${name}"?`)) return;
 
     try {
       await restoreProject(id).unwrap();
-
-      toast.success(`Project "${name}" has been restored`);
+      toast.success(`"${name}" has been restored.`);
     } catch (error) {
-      toast.error(error?.data?.message || "Failed to restore project");
+      toast.error(error?.data?.message || "The project could not be restored.");
     }
   };
 
   const handleDelete = async (id, name) => {
     if (
       !window.confirm(
-        `PERMANENTLY DELETE "${name}"?\n\nThis action cannot be undone.`,
+        `Permanently delete "${name}"?\n\nThis action cannot be undone.`,
       )
-    ) {
+    )
       return;
-    }
 
     try {
       await deleteProject(id).unwrap();
-
-      toast.success(`Project "${name}" deleted successfully`);
+      toast.success(`"${name}" was deleted.`);
     } catch (error) {
-      toast.error(error?.data?.message || "Failed to delete project");
+      toast.error(error?.data?.message || "The project could not be deleted.");
     }
   };
 
   const loading = summaryLoading || projectsLoading;
 
-  /* --------------------------------------------------------------------------
-     SUMMARY FALLBACKS
-  -------------------------------------------------------------------------- */
+  /* -------------------------------------------------- Summary fallbacks */
 
   const total = summary?.total ?? projects.length;
 
@@ -1293,9 +1202,7 @@ export default function ProjectsDashboard() {
     projects.filter((project) => getProjectStatus(project) === "archived")
       .length;
 
-  /* --------------------------------------------------------------------------
-     RENDER
-  -------------------------------------------------------------------------- */
+  /* -------------------------------------------------- Render */
 
   return (
     <Shell
@@ -1303,320 +1210,239 @@ export default function ProjectsDashboard() {
       subtitle="Manage every project from briefing to final handover through one connected workspace."
       action={
         <div className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={() => refetch()}
             disabled={loading}
-            className="h-10 px-3 rounded-lg border border-[#D8E0DA] text-[12.5px] font-semibold inline-flex items-center gap-1.5 hover:bg-[#F4F6F7] disabled:opacity-50"
           >
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-
+            <RefreshCw
+              className={cn("h-[14px] w-[14px]", loading && "animate-spin")}
+            />
             <span className="hidden sm:inline">Refresh</span>
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            className={BRAND}
             onClick={() => nav("/projects/new")}
-            className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold inline-flex items-center gap-1.5 hover:opacity-90"
           >
-            <Plus size={14} />
-            Create Project
-          </button>
+            <Plus className="h-[14px] w-[14px]" />
+            Create project
+          </Button>
         </div>
       }
     >
-      {/* =====================================================================
-          SUMMARY
-      ====================================================================== */}
+      <div className="space-y-4">
+        {/* -------------------------------------------- Summary */}
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+          <SummaryCard
+            label="Total projects"
+            value={total}
+            sub="in workspace"
+          />
+          <SummaryCard
+            label="Active"
+            value={active}
+            valueClassName={BRAND_TEXT}
+            sub="currently running"
+          />
+          <SummaryCard
+            label="On hold"
+            value={onHold}
+            valueClassName="text-[#A34D27]"
+            sub="require attention"
+          />
+          <SummaryCard
+            label="Completed"
+            value={completed}
+            valueClassName="text-[#2F6B3F]"
+            sub="handed over"
+          />
+          <SummaryCard
+            label="Archived"
+            value={archived}
+            valueClassName="text-muted-foreground"
+            sub="archived projects"
+          />
+        </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <Card className="p-3">
-          <div className="text-[10.5px] uppercase tracking-[0.12em] text-[#8A9697]">
-            Total Projects
-          </div>
-
-          <div className="text-[22px] font-bold text-[#333333] mt-1">
-            {total}
-          </div>
-
-          <div className="text-[10.5px] text-[#6B7B7C]">in workspace</div>
-        </Card>
-
-        <Card className="p-3">
-          <div className="text-[10.5px] uppercase tracking-[0.12em] text-[#8A9697]">
-            Active
-          </div>
-
-          <div className="text-[22px] font-bold text-[#1F453B] mt-1">
-            {active}
-          </div>
-
-          <div className="text-[10.5px] text-[#6B7B7C]">currently running</div>
-        </Card>
-
-        <Card className="p-3">
-          <div className="text-[10.5px] uppercase tracking-[0.12em] text-[#8A9697]">
-            On Hold
-          </div>
-
-          <div className="text-[22px] font-bold text-[#A34D27] mt-1">
-            {onHold}
-          </div>
-
-          <div className="text-[10.5px] text-[#6B7B7C]">require attention</div>
-        </Card>
-
-        <Card className="p-3">
-          <div className="text-[10.5px] uppercase tracking-[0.12em] text-[#8A9697]">
-            Completed
-          </div>
-
-          <div className="text-[22px] font-bold text-[#2F6B3F] mt-1">
-            {completed}
-          </div>
-
-          <div className="text-[10.5px] text-[#6B7B7C]">handed over</div>
-        </Card>
-
-        <Card className="p-3">
-          <div className="text-[10.5px] uppercase tracking-[0.12em] text-[#8A9697]">
-            Archived
-          </div>
-
-          <div className="text-[22px] font-bold text-[#6B7B7C] mt-1">
-            {archived}
-          </div>
-
-          <div className="text-[10.5px] text-[#6B7B7C]">archived projects</div>
-        </Card>
-      </div>
-
-      {/* =====================================================================
-          TABS
-      ====================================================================== */}
-
-      <div className="flex items-center gap-1 border-b border-[#D8E0DA]">
-        {[
-          ["all", "Projects"],
-          ["active", "Active"],
-          ["completed", "Completed"],
-          ["on_hold", "On Hold"],
-          ["archived", "Archived"],
-          ["documents", "Documents"],
-        ].map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setTab(key)}
-            className={[
-              "px-3 py-2 rounded-t-lg text-[12px] font-semibold transition-colors",
-              tab === key
-                ? "bg-[#EAF0EB] text-[#1F453B]"
-                : "text-[#6B7B7C] hover:bg-[#F4F6F7]",
-            ].join(" ")}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* =====================================================================
-          DOCUMENTS
-      ====================================================================== */}
-
-      {tab === "documents" ? (
-        <DocumentsView />
-      ) : (
-        <>
-          {/* ================================================================
-              FILTER / VIEW BAR
-          ================================================================ */}
-
-          <Card className="p-3">
-            <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
-              {/* SEARCH */}
-
-              <div className="relative flex-1 max-w-xl">
-                <Search
-                  size={14}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8A9697]"
-                />
-
-                <input
-                  value={q}
-                  onChange={(event) => setQ(event.target.value)}
-                  placeholder="Search project, client, phase, document…"
-                  className="w-full h-10 pl-9 pr-3 rounded-lg border border-[#D8E0DA] bg-white text-[12.5px] outline-none focus:border-[#1F453B] focus:ring-2 focus:ring-[rgba(31,69,59,0.08)]"
-                />
-              </div>
-
-              {/* STATUS */}
-
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
-                className="h-10 px-3 rounded-lg border border-[#D8E0DA] bg-white text-[12px] font-semibold text-[#333333] outline-none"
-              >
-                <option value="all">All Statuses</option>
-
-                <option value="active">Active</option>
-
-                <option value="on_hold">On Hold</option>
-
-                <option value="completed">Completed</option>
-
-                <option value="archived">Archived</option>
-              </select>
-
-              {/* VIEW TOGGLE */}
-
-              <div className="lg:ml-auto flex items-center border border-[#D8E0DA] rounded-lg p-1 bg-[#FAFBFA]">
-                <button
-                  type="button"
-                  onClick={() => setView("timeline")}
-                  className={[
-                    "h-8 px-3 rounded-md text-[11.5px] font-semibold inline-flex items-center gap-1.5",
-                    view === "timeline"
-                      ? "bg-[#1F453B] text-white"
-                      : "text-[#6B7B7C] hover:bg-[#EAEEF0]",
-                  ].join(" ")}
-                >
-                  <GitBranch size={13} />
-                  Timeline
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setView("table")}
-                  className={[
-                    "h-8 px-3 rounded-md text-[11.5px] font-semibold inline-flex items-center gap-1.5",
-                    view === "table"
-                      ? "bg-[#1F453B] text-white"
-                      : "text-[#6B7B7C] hover:bg-[#EAEEF0]",
-                  ].join(" ")}
-                >
-                  <List size={13} />
-                  Table
-                </button>
-              </div>
-            </div>
-          </Card>
-
-          {/* ================================================================
-              RESULT INFO
-          ================================================================ */}
-
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-[13px] font-semibold text-[#333333]">
-                {tab === "all"
-                  ? "Project Workspace"
-                  : `${STATUS_LABEL[tab] || tab} Projects`}
-              </div>
-
-              <div className="text-[11px] text-[#8A9697] mt-0.5">
-                {filteredProjects.length} project
-                {filteredProjects.length !== 1 ? "s" : ""} in view
-              </div>
-            </div>
-
-            {view === "timeline" && (
-              <div className="hidden sm:flex items-center gap-3 text-[10.5px] text-[#8A9697]">
-                <span className="inline-flex items-center gap-1">
-                  <CheckCircle2 size={12} className="text-[#2F6B3F]" />
-                  Completed
-                </span>
-
-                <span className="inline-flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#1F453B]" />
-                  Current
-                </span>
-
-                <span className="inline-flex items-center gap-1">
-                  <Circle size={12} className="text-[#B5C4B6]" />
-                  Upcoming
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* ================================================================
-              LOADING
-          ================================================================ */}
-
-          {(loading || (view === "timeline" && phaseTreeLoading)) && (
-            <Card>
-              <div className="py-12 text-center text-[12px] text-[#8A9697]">
-                Loading project workspace…
-              </div>
-            </Card>
-          )}
-
-          {/* ================================================================
-              EMPTY
-          ================================================================ */}
-
-          {!loading && !filteredProjects.length && (
-            <Card>
-              <div className="py-12 text-center">
-                <FolderOpen size={38} className="mx-auto mb-3 text-[#B5C4B6]" />
-
-                <div className="text-[14px] font-semibold text-[#333333]">
-                  No projects found
-                </div>
-
-                <div className="text-[11.5px] text-[#8A9697] mt-1">
-                  {q ? "Try a different search." : "No projects are available."}
-                </div>
-
-                {q && (
-                  <button
-                    type="button"
-                    onClick={() => setQ("")}
-                    className="mt-4 h-8 px-3 rounded-lg bg-[#1F453B] text-white text-[11.5px] font-semibold"
-                  >
-                    Clear Search
-                  </button>
+        {/* -------------------------------------------- Tabs */}
+        <Tabs value={tab} onValueChange={setTab}>
+          <TabsList className="h-auto w-full justify-start gap-1 rounded-none border-b bg-transparent p-0">
+            {TABS.map(([key, label]) => (
+              <TabsTrigger
+                key={key}
+                value={key}
+                className={cn(
+                  "rounded-t-lg rounded-b-none border-0 px-3 py-2 text-xs font-semibold shadow-none",
+                  "data-[state=active]:bg-[#EAF0EB] data-[state=active]:text-[#1F453B] data-[state=active]:shadow-none",
                 )}
+              >
+                {label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+
+        {/* -------------------------------------------- Documents */}
+        {tab === "documents" ? (
+          <DocumentsView />
+        ) : (
+          <>
+            {/* Filter / view bar */}
+            <Card className="p-3">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                <div className="relative max-w-xl flex-1">
+                  <Search className="absolute left-3 top-1/2 h-[14px] w-[14px] -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={q}
+                    onChange={(event) => setQ(event.target.value)}
+                    placeholder="Search project, client, phase, document..."
+                    className="pl-9"
+                  />
+                </div>
+
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full font-semibold lg:w-[170px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="on_hold">On hold</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className="flex items-center rounded-lg border bg-muted/30 p-1 lg:ml-auto">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={view === "timeline" ? "default" : "ghost"}
+                    onClick={() => setView("timeline")}
+                    className={cn(
+                      "h-8 gap-1.5 text-[11.5px]",
+                      view === "timeline" && BRAND,
+                    )}
+                  >
+                    <GitBranch className="h-[13px] w-[13px]" />
+                    Timeline
+                  </Button>
+
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={view === "table" ? "default" : "ghost"}
+                    onClick={() => setView("table")}
+                    className={cn(
+                      "h-8 gap-1.5 text-[11.5px]",
+                      view === "table" && BRAND,
+                    )}
+                  >
+                    <List className="h-[13px] w-[13px]" />
+                    Table
+                  </Button>
+                </div>
               </div>
             </Card>
-          )}
 
-          {/* ================================================================
-              TIMELINE
-          ================================================================ */}
+            {/* Result info */}
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[13px] font-semibold">
+                  {tab === "all"
+                    ? "Project workspace"
+                    : `${STATUS_LABEL[tab] || tab} projects`}
+                </div>
+                <div className="mt-0.5 text-[11px] text-muted-foreground">
+                  {filteredProjects.length} project
+                  {filteredProjects.length !== 1 ? "s" : ""} in view
+                </div>
+              </div>
 
-          {!loading &&
-            !phaseTreeLoading &&
-            filteredProjects.length > 0 &&
-            view === "timeline" && (
+              {view === "timeline" && (
+                <div className="hidden items-center gap-3 text-[10.5px] text-muted-foreground sm:flex">
+                  <span className="inline-flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3 text-[#2F6B3F]" />
+                    Completed
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className={cn("h-2.5 w-2.5 rounded-full", BRAND)} />
+                    Current
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <Circle className="h-3 w-3 text-muted-foreground" />
+                    Upcoming
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Loading */}
+            {(loading || (view === "timeline" && phaseTreeLoading)) && (
               <div className="space-y-3">
-                {filteredProjects.map((project) => (
-                  <ProjectTimeline
-                    key={getProjectId(project)}
-                    project={project}
-                    phaseTree={phaseTree}
-                  />
-                ))}
+                <Skeleton className="h-24 w-full rounded-xl" />
+                <Skeleton className="h-24 w-full rounded-xl" />
               </div>
             )}
 
-          {/* ================================================================
-              TABLE
-          ================================================================ */}
+            {/* Empty */}
+            {!loading && !filteredProjects.length && (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <FolderOpen className="mx-auto mb-3 h-[38px] w-[38px] text-muted-foreground/50" />
+                  <div className="text-sm font-semibold">No projects found</div>
+                  <div className="mt-1 text-[11.5px] text-muted-foreground">
+                    {q
+                      ? "Try a different search."
+                      : "No projects are available."}
+                  </div>
+                  {q && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className={cn(BRAND, "mt-4")}
+                      onClick={() => setQ("")}
+                    >
+                      Clear search
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
-          {!loading && filteredProjects.length > 0 && view === "table" && (
-            <ProjectTable
-              projects={filteredProjects}
-              loading={loading}
-              phaseTree={phaseTree}
-              onArchive={handleArchive}
-              onRestore={handleRestore}
-              onDelete={handleDelete}
-            />
-          )}
-        </>
-      )}
+            {/* Timeline */}
+            {!loading &&
+              !phaseTreeLoading &&
+              filteredProjects.length > 0 &&
+              view === "timeline" && (
+                <div className="space-y-3">
+                  {filteredProjects.map((project) => (
+                    <ProjectTimeline
+                      key={getProjectId(project)}
+                      project={project}
+                      phaseTree={phaseTree}
+                    />
+                  ))}
+                </div>
+              )}
+
+            {/* Table */}
+            {!loading && filteredProjects.length > 0 && view === "table" && (
+              <ProjectTable
+                projects={filteredProjects}
+                loading={loading}
+                phaseTree={phaseTree}
+                onArchive={handleArchive}
+                onRestore={handleRestore}
+                onDelete={handleDelete}
+              />
+            )}
+          </>
+        )}
+      </div>
     </Shell>
   );
 }

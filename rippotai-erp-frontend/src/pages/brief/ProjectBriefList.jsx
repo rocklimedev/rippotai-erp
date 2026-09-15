@@ -10,11 +10,30 @@ import {
   CalendarDays,
   RefreshCw,
   Trash2,
-  Check,
   ChevronDown,
 } from "lucide-react";
 
-import { Shell, Card, Input } from "../../hooks/shared";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+import { Shell } from "../../hooks/shared";
 import {
   useGetProjectBriefsQuery,
   useUpdateProjectBriefStatusMutation,
@@ -48,7 +67,6 @@ export default function ProjectBriefList() {
   } = useGetProjectBriefsQuery(projectFilter || undefined);
 
   const [updateProjectBriefStatus] = useUpdateProjectBriefStatusMutation();
-
   const [deleteProjectBrief] = useDeleteProjectBriefMutation();
 
   // =========================================================
@@ -58,9 +76,7 @@ export default function ProjectBriefList() {
   const filteredRows = useMemo(() => {
     const term = q.trim().toLowerCase();
 
-    if (!term) {
-      return rows;
-    }
+    if (!term) return rows;
 
     return rows.filter((brief) => {
       const searchable = [
@@ -92,15 +108,10 @@ export default function ProjectBriefList() {
   // =========================================================
 
   const formatDate = (value) => {
-    if (!value) {
-      return "—";
-    }
+    if (!value) return "—";
 
     const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-      return "—";
-    }
+    if (Number.isNaN(date.getTime())) return "—";
 
     return date.toLocaleDateString("en-IN", {
       day: "2-digit",
@@ -118,26 +129,20 @@ export default function ProjectBriefList() {
     );
   };
 
-  const getStatusClass = (status) => {
+  const getStatusVariant = (status) => {
     switch (status) {
       case "SIGNED_OFF":
-        return "bg-[#E8F4EC] text-[#276749]";
-
       case "APPROVED":
-        return "bg-[#E8F4EC] text-[#276749]";
-
+        return "default";
       case "SUBMITTED":
-        return "bg-[#EAF1F8] text-[#285A8F]";
-
+        return "outline";
       case "IN_REVIEW":
-        return "bg-[#FFF4DC] text-[#8A6500]";
-
+        return "secondary";
       case "REJECTED":
-        return "bg-[#FDECEC] text-[#B42318]";
-
+        return "destructive";
       case "DRAFT":
       default:
-        return "bg-[#F1F3F4] text-[#5F6B6D]";
+        return "secondary";
     }
   };
 
@@ -153,30 +158,12 @@ export default function ProjectBriefList() {
   // =========================================================
 
   const STATUS_OPTIONS = [
-    {
-      value: "DRAFT",
-      label: "Draft",
-    },
-    {
-      value: "IN_REVIEW",
-      label: "In Review",
-    },
-    {
-      value: "SUBMITTED",
-      label: "Submitted",
-    },
-    {
-      value: "APPROVED",
-      label: "Approved",
-    },
-    {
-      value: "SIGNED_OFF",
-      label: "Signed Off",
-    },
-    {
-      value: "REJECTED",
-      label: "Rejected",
-    },
+    { value: "DRAFT", label: "Draft" },
+    { value: "IN_REVIEW", label: "In Review" },
+    { value: "SUBMITTED", label: "Submitted" },
+    { value: "APPROVED", label: "Approved" },
+    { value: "SIGNED_OFF", label: "Signed Off" },
+    { value: "REJECTED", label: "Rejected" },
   ];
 
   // =========================================================
@@ -184,13 +171,8 @@ export default function ProjectBriefList() {
   // =========================================================
 
   const handleStatusChange = async (brief, status) => {
-    if (!brief?.id) {
-      return;
-    }
-
-    if ((brief.status || "DRAFT") === status) {
-      return;
-    }
+    if (!brief?.id) return;
+    if ((brief.status || "DRAFT") === status) return;
 
     try {
       setUpdatingStatusId(brief.id);
@@ -203,7 +185,6 @@ export default function ProjectBriefList() {
       toast.success(`Project brief status updated to ${formatStatus(status)}`);
     } catch (error) {
       console.error("Failed to update project brief status:", error);
-
       toast.error(
         error?.data?.message ||
           error?.message ||
@@ -219,9 +200,7 @@ export default function ProjectBriefList() {
   // =========================================================
 
   const handleDelete = async (brief) => {
-    if (!brief?.id) {
-      return;
-    }
+    if (!brief?.id) return;
 
     const projectName = getProjectName(brief);
 
@@ -229,19 +208,14 @@ export default function ProjectBriefList() {
       `Are you sure you want to delete "${projectName}"?\n\nThis action cannot be undone.`,
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     try {
       setDeletingId(brief.id);
-
       await deleteProjectBrief(brief.id).unwrap();
-
       toast.success("Project brief deleted successfully");
     } catch (error) {
       console.error("Failed to delete project brief:", error);
-
       toast.error(
         error?.data?.message ||
           error?.message ||
@@ -263,21 +237,17 @@ export default function ProjectBriefList() {
         rows.length !== 1 ? "s" : ""
       } across the workspace`}
       action={
-        <button
+        <Button
           onClick={() => nav("/crm/forms/project-brief")}
-          className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-1.5 hover:bg-[#17382F] transition-colors"
           data-testid="project-brief-new-btn"
         >
-          <Plus size={15} />
+          <Plus className="mr-2 h-4 w-4" />
           New Project Brief
-        </button>
+        </Button>
       }
     >
-      {/* =====================================================
-          FILTER BAR
-          ===================================================== */}
-
-      <div className="flex gap-3 flex-wrap items-center">
+      {/* FILTER BAR */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <Input
           placeholder="Search project briefs…"
           value={q}
@@ -286,285 +256,220 @@ export default function ProjectBriefList() {
         />
 
         {projectFilter && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => nav("/crm/brief/all")}
-            className="text-[13px] text-[#333333] font-semibold hover:text-[#1F453B]"
           >
             Clear project filter ×
-          </button>
+          </Button>
         )}
       </div>
 
-      {/* =====================================================
-          TABLE
-          ===================================================== */}
-
+      {/* TABLE */}
       <Card>
-        <div className="overflow-x-auto">
-          <table
-            className="w-full text-[14px]"
-            data-testid="project-brief-table"
-          >
-            <thead className="bg-[#F4F6F7]">
-              <tr>
-                <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#6B7B7C]">
-                  Project
-                </th>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table data-testid="project-brief-table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Project</TableHead>
+                  <TableHead>Version</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Site</TableHead>
+                  <TableHead>Brief Date</TableHead>
+                  <TableHead className="w-[160px] text-right">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
 
-                <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#6B7B7C]">
-                  Version
-                </th>
-
-                <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#6B7B7C]">
-                  Status
-                </th>
-
-                <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#6B7B7C]">
-                  Site
-                </th>
-
-                <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#6B7B7C]">
-                  Brief Date
-                </th>
-
-                <th className="text-right px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#6B7B7C] w-[160px]">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {/* =================================================
-                  LOADING
-                  ================================================= */}
-
-              {isFetching && !rows.length ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-12 text-[#8A9697]">
-                    <div className="inline-flex items-center gap-2">
-                      <RefreshCw size={15} className="animate-spin" />
-                      Loading project briefs...
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredRows.map((brief) => {
-                  const currentStatus = brief.status || "DRAFT";
-                  const isUpdating = updatingStatusId === brief.id;
-                  const isDeleting = deletingId === brief.id;
-
-                  return (
-                    <tr
-                      key={brief.id}
-                      onClick={() => nav(`/crm/brief/${brief.id}`)}
-                      className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F8FAF9] cursor-pointer transition-colors"
-                      data-testid={`project-brief-row-${brief.id}`}
+              <TableBody>
+                {/* LOADING */}
+                {isFetching && !rows.length ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="h-24 text-center text-muted-foreground"
                     >
-                      {/* =================================================
-                          PROJECT
-                          ================================================= */}
+                      <div className="inline-flex items-center gap-2">
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        Loading project briefs...
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredRows.map((brief) => {
+                    const currentStatus = brief.status || "DRAFT";
+                    const isUpdating = updatingStatusId === brief.id;
+                    const isDeleting = deletingId === brief.id;
 
-                      <td className="px-4 py-3">
-                        <div className="flex items-start gap-2.5 min-w-[220px]">
-                          <div className="w-8 h-8 rounded-lg bg-[#EEF3F0] flex items-center justify-center shrink-0">
-                            <FileText size={15} className="text-[#1F453B]" />
-                          </div>
-
-                          <div className="min-w-0">
-                            <div className="font-semibold text-[#333333] truncate max-w-[280px]">
-                              {getProjectName(brief)}
-                            </div>
-
-                            <div className="text-[12px] text-[#8A9697] mt-0.5">
-                              {brief.propertyType ||
-                                brief.siteType ||
-                                "Project Brief"}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* =================================================
-                          VERSION
-                          ================================================= */}
-
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-[#F1F3F4] text-[#4E5A5C] text-[12px] font-semibold">
-                          v{brief.version ?? 1}
-                        </span>
-                      </td>
-
-                      {/* =================================================
-                          STATUS
-                          ================================================= */}
-
-                      <td
-                        className="px-4 py-3"
-                        onClick={(e) => e.stopPropagation()}
+                    return (
+                      <TableRow
+                        key={brief.id}
+                        onClick={() => nav(`/crm/brief/${brief.id}`)}
+                        className="cursor-pointer"
+                        data-testid={`project-brief-row-${brief.id}`}
                       >
-                        <div className="relative inline-flex">
-                          <select
+                        {/* PROJECT */}
+                        <TableCell>
+                          <div className="flex min-w-[220px] items-start gap-2.5">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                              <FileText className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="max-w-[280px] truncate font-semibold text-foreground">
+                                {getProjectName(brief)}
+                              </div>
+                              <div className="mt-0.5 text-xs text-muted-foreground">
+                                {brief.propertyType ||
+                                  brief.siteType ||
+                                  "Project Brief"}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+
+                        {/* VERSION */}
+                        <TableCell>
+                          <Badge variant="secondary">
+                            v{brief.version ?? 1}
+                          </Badge>
+                        </TableCell>
+
+                        {/* STATUS */}
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Select
                             value={currentStatus}
                             disabled={isUpdating}
-                            onChange={(e) =>
-                              handleStatusChange(brief, e.target.value)
+                            onValueChange={(value) =>
+                              handleStatusChange(brief, value)
                             }
-                            className={`
-                              appearance-none
-                              pl-3
-                              pr-8
-                              py-1.5
-                              rounded-full
-                              text-[11px]
-                              font-bold
-                              tracking-wide
-                              border-0
-                              outline-none
-                              cursor-pointer
-                              disabled:opacity-60
-                              disabled:cursor-not-allowed
-                              ${getStatusClass(currentStatus)}
-                            `}
-                            data-testid={`project-brief-status-${brief.id}`}
-                            title="Update status"
                           >
-                            {STATUS_OPTIONS.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
+                            <SelectTrigger
+                              className="h-8 w-[130px] border-0"
+                              data-testid={`project-brief-status-${brief.id}`}
+                            >
+                              <SelectValue>
+                                <Badge
+                                  variant={getStatusVariant(currentStatus)}
+                                >
+                                  {isUpdating ? (
+                                    <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+                                  ) : null}
+                                  {formatStatus(currentStatus)}
+                                </Badge>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {STATUS_OPTIONS.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
 
-                          {isUpdating ? (
-                            <RefreshCw
-                              size={12}
-                              className="absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin pointer-events-none"
-                            />
-                          ) : (
-                            <ChevronDown
-                              size={12}
-                              className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60"
-                            />
-                          )}
-                        </div>
-                      </td>
+                        {/* SITE */}
+                        <TableCell>
+                          <div className="flex max-w-[280px] items-start gap-1.5">
+                            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                            <span className="truncate text-muted-foreground">
+                              {brief.siteAddress || "No site address"}
+                            </span>
+                          </div>
+                        </TableCell>
 
-                      {/* =================================================
-                          SITE
-                          ================================================= */}
-
-                      <td className="px-4 py-3">
-                        <div className="flex items-start gap-1.5 max-w-[280px]">
-                          <MapPin
-                            size={14}
-                            className="text-[#9AA7A8] mt-0.5 shrink-0"
-                          />
-
-                          <span className="text-[#667375] truncate">
-                            {brief.siteAddress || "No site address"}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* =================================================
-                          DATE
-                          ================================================= */}
-
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5 text-[#667375] whitespace-nowrap">
-                          <CalendarDays size={14} className="text-[#9AA7A8]" />
-
-                          {formatDate(
-                            brief.briefDate ||
-                              brief.updatedAt ||
-                              brief.createdAt,
-                          )}
-                        </div>
-                      </td>
-
-                      {/* =================================================
-                          ACTIONS
-                          ================================================= */}
-
-                      <td
-                        className="px-4 py-3 text-right"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div className="inline-flex items-center gap-1">
-                          {/* VIEW */}
-
-                          <button
-                            onClick={() => nav(`/crm/brief/${brief.id}`)}
-                            className="p-1.5 rounded-md hover:bg-[#EAEEF0] text-[#333333] transition-colors"
-                            title="View"
-                            data-testid={`project-brief-view-${brief.id}`}
-                          >
-                            <Eye size={15} />
-                          </button>
-
-                          {/* EDIT */}
-
-                          <button
-                            onClick={() => nav(`/crm/brief/${brief.id}/edit`)}
-                            className="p-1.5 rounded-md hover:bg-[#EAEEF0] text-[#333333] transition-colors"
-                            title="Edit"
-                            data-testid={`project-brief-edit-${brief.id}`}
-                          >
-                            <Edit3 size={15} />
-                          </button>
-
-                          {/* DELETE */}
-
-                          <button
-                            onClick={() => handleDelete(brief)}
-                            disabled={isDeleting}
-                            className="p-1.5 rounded-md hover:bg-[#FDECEC] text-[#B42318] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Delete"
-                            data-testid={`project-brief-delete-${brief.id}`}
-                          >
-                            {isDeleting ? (
-                              <RefreshCw size={15} className="animate-spin" />
-                            ) : (
-                              <Trash2 size={15} />
+                        {/* DATE */}
+                        <TableCell>
+                          <div className="flex items-center gap-1.5 whitespace-nowrap text-muted-foreground">
+                            <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                            {formatDate(
+                              brief.briefDate ||
+                                brief.updatedAt ||
+                                brief.createdAt,
                             )}
-                          </button>
+                          </div>
+                        </TableCell>
+
+                        {/* ACTIONS */}
+                        <TableCell
+                          className="text-right"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="inline-flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => nav(`/crm/brief/${brief.id}`)}
+                              title="View"
+                              data-testid={`project-brief-view-${brief.id}`}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => nav(`/crm/brief/${brief.id}/edit`)}
+                              title="Edit"
+                              data-testid={`project-brief-edit-${brief.id}`}
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(brief)}
+                              disabled={isDeleting}
+                              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                              title="Delete"
+                              data-testid={`project-brief-delete-${brief.id}`}
+                            >
+                              {isDeleting ? (
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+
+                {/* EMPTY STATE */}
+                {!isFetching && !filteredRows.length && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-32 text-center">
+                      <div className="flex flex-col items-center">
+                        <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-muted">
+                          <FileText className="h-5 w-5 text-muted-foreground" />
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-
-              {/* =================================================
-                  EMPTY STATE
-                  ================================================= */}
-
-              {!isFetching && !filteredRows.length && (
-                <tr>
-                  <td colSpan={6} className="text-center py-12">
-                    <div className="flex flex-col items-center">
-                      <div className="w-11 h-11 rounded-xl bg-[#F1F4F2] flex items-center justify-center mb-3">
-                        <FileText size={20} className="text-[#A8B5B0]" />
+                        <div className="text-sm font-semibold text-foreground">
+                          {q
+                            ? "No matching project briefs"
+                            : "No project briefs yet"}
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {q
+                            ? "Try a different search term."
+                            : "Create the first brief from a project."}
+                        </div>
                       </div>
-
-                      <div className="text-[14px] font-semibold text-[#4F5B5D]">
-                        {q
-                          ? "No matching project briefs"
-                          : "No project briefs yet"}
-                      </div>
-
-                      <div className="text-[12px] text-[#8A9697] mt-1">
-                        {q
-                          ? "Try a different search term."
-                          : "Create the first brief from a project."}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
       </Card>
     </Shell>
   );
