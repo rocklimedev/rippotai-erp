@@ -1,13 +1,30 @@
-import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateMaterialMasterDto {
+  // ============================================================
+  // MATERIAL IDENTIFICATION
+  // ============================================================
+
   @IsString()
+  @IsNotEmpty()
   @MaxLength(50)
   material_code: string;
 
   @IsString()
+  @IsNotEmpty()
   @MaxLength(255)
   name: string;
+
+  // ============================================================
+  // CLASSIFICATION
+  // ============================================================
 
   @IsOptional()
   @IsString()
@@ -19,10 +36,22 @@ export class CreateMaterialMasterDto {
   @MaxLength(100)
   sub_category?: string;
 
+  // ============================================================
+  // BRAND / PRODUCT INFORMATION
+  // ============================================================
+
   @IsOptional()
   @IsString()
   @MaxLength(150)
   brand?: string;
+
+  // ============================================================
+  // VENDOR
+  // ============================================================
+
+  @IsOptional()
+  @IsUUID()
+  vendor_id?: string | null;
 
   @IsOptional()
   @IsString()
@@ -33,18 +62,34 @@ export class CreateMaterialMasterDto {
   @IsString()
   specification?: string;
 
-  @IsString()
-  @MaxLength(30)
-  default_unit: string;
+  // ============================================================
+  // UNIT
+  // ============================================================
+
+  @IsUUID()
+  @IsNotEmpty()
+  unit_id: string;
+
+  // ============================================================
+  // TAX
+  // ============================================================
 
   @IsOptional()
   @IsString()
   @MaxLength(30)
   hsn_code?: string;
 
+  // ============================================================
+  // DESCRIPTION
+  // ============================================================
+
   @IsOptional()
   @IsString()
   description?: string;
+
+  // ============================================================
+  // STATUS
+  // ============================================================
 
   @IsOptional()
   @IsBoolean()
@@ -52,10 +97,27 @@ export class CreateMaterialMasterDto {
 }
 
 export class UpdateMaterialMasterDto {
+  // ============================================================
+  // MATERIAL IDENTIFICATION
+  // ============================================================
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  material_code?: string;
+
+  // ============================================================
+  // BASIC INFORMATION
+  // ============================================================
+
   @IsOptional()
   @IsString()
   @MaxLength(255)
   name?: string;
+
+  // ============================================================
+  // CLASSIFICATION
+  // ============================================================
 
   @IsOptional()
   @IsString()
@@ -67,10 +129,22 @@ export class UpdateMaterialMasterDto {
   @MaxLength(100)
   sub_category?: string;
 
+  // ============================================================
+  // BRAND / PRODUCT INFORMATION
+  // ============================================================
+
   @IsOptional()
   @IsString()
   @MaxLength(150)
   brand?: string;
+
+  // ============================================================
+  // VENDOR
+  // ============================================================
+
+  @IsOptional()
+  @IsUUID()
+  vendor_id?: string | null;
 
   @IsOptional()
   @IsString()
@@ -81,19 +155,34 @@ export class UpdateMaterialMasterDto {
   @IsString()
   specification?: string;
 
+  // ============================================================
+  // UNIT
+  // ============================================================
+
   @IsOptional()
-  @IsString()
-  @MaxLength(30)
-  default_unit?: string;
+  @IsUUID()
+  unit_id?: string;
+
+  // ============================================================
+  // TAX
+  // ============================================================
 
   @IsOptional()
   @IsString()
   @MaxLength(30)
   hsn_code?: string;
 
+  // ============================================================
+  // DESCRIPTION
+  // ============================================================
+
   @IsOptional()
   @IsString()
   description?: string;
+
+  // ============================================================
+  // STATUS
+  // ============================================================
 
   @IsOptional()
   @IsBoolean()

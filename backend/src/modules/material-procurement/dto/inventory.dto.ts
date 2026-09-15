@@ -20,6 +20,7 @@ import {
  * ============================================================
  *
  * Used for:
+ *
  * - RECEIPT
  * - ISSUE
  * - RETURN_FROM_CONTRACTOR
@@ -28,8 +29,29 @@ import {
  * - TRANSFER_OUT
  * - ADJUSTMENT_IN
  * - ADJUSTMENT_OUT
+ *
+ * IMPORTANT:
+ *
+ * Unit is intentionally NOT accepted here.
+ *
+ * The unit is always derived from:
+ *
+ * material_id
+ *      ↓
+ * MaterialMaster
+ *      ↓
+ * unit_id
+ *      ↓
+ * InventoryTransaction.unit_id
+ *
+ * This guarantees that the inventory ledger always uses
+ * the same unit configured for the material master.
  */
 export class CreateInventoryTransactionDto {
+  // ============================================================
+  // PROJECT / SITE
+  // ============================================================
+
   @IsUUID()
   project_id: string;
 
@@ -37,8 +59,16 @@ export class CreateInventoryTransactionDto {
   @IsUUID()
   site_id?: string;
 
+  // ============================================================
+  // MATERIAL
+  // ============================================================
+
   @IsUUID()
   material_id: string;
+
+  // ============================================================
+  // TRANSACTION
+  // ============================================================
 
   @IsDateString()
   transaction_date: string;
@@ -50,20 +80,10 @@ export class CreateInventoryTransactionDto {
   @Min(0.001)
   quantity: number;
 
-  @IsOptional()
-  @IsString()
-  unit?: string;
+  // ============================================================
+  // REFERENCES
+  // ============================================================
 
-  /**
-   * Must match InventoryReferenceType.
-   *
-   * Previously this was:
-   *   reference_type?: string;
-   *
-   * That caused:
-   *   Type 'string | null' is not assignable to
-   *   type 'InventoryReferenceType | null | undefined'
-   */
   @IsOptional()
   @IsEnum(InventoryReferenceType)
   reference_type?: InventoryReferenceType;
@@ -75,6 +95,10 @@ export class CreateInventoryTransactionDto {
   @IsOptional()
   @IsUUID()
   reference_item_id?: string;
+
+  // ============================================================
+  // VENDOR / CONTRACTOR
+  // ============================================================
 
   @IsOptional()
   @IsUUID()
@@ -88,6 +112,10 @@ export class CreateInventoryTransactionDto {
   @IsString()
   trade?: string;
 
+  // ============================================================
+  // WORK / STORAGE
+  // ============================================================
+
   @IsOptional()
   @IsString()
   work_reference?: string;
@@ -95,6 +123,10 @@ export class CreateInventoryTransactionDto {
   @IsOptional()
   @IsString()
   storage_location?: string;
+
+  // ============================================================
+  // CONDITION
+  // ============================================================
 
   @IsOptional()
   @IsEnum(InventoryConditionStatus)
@@ -104,6 +136,10 @@ export class CreateInventoryTransactionDto {
   @IsString()
   condition_notes?: string;
 
+  // ============================================================
+  // ISSUE INFORMATION
+  // ============================================================
+
   @IsOptional()
   @IsString()
   issued_to?: string;
@@ -112,9 +148,17 @@ export class CreateInventoryTransactionDto {
   @IsUUID()
   issued_by?: string;
 
+  // ============================================================
+  // RECEIVING INFORMATION
+  // ============================================================
+
   @IsOptional()
   @IsUUID()
   received_by?: string;
+
+  // ============================================================
+  // REMARKS
+  // ============================================================
 
   @IsOptional()
   @IsString()
@@ -128,16 +172,21 @@ export class CreateInventoryTransactionDto {
  *
  * Used specifically for material issue operations.
  *
- * reference_type is intentionally NOT included here because
- * InventoryService.issue() sets it automatically to:
+ * transaction_type and reference_type are intentionally NOT
+ * included because InventoryService.issue() sets them:
  *
- *   InventoryReferenceType.ISSUE
+ * transaction_type = ISSUE
+ * reference_type   = ISSUE
  *
- * and transaction_type automatically to:
+ * Unit is also intentionally NOT accepted.
  *
- *   InventoryTransactionType.ISSUE
+ * It is derived from MaterialMaster.
  */
 export class IssueMaterialDto {
+  // ============================================================
+  // PROJECT / SITE
+  // ============================================================
+
   @IsUUID()
   project_id: string;
 
@@ -145,8 +194,16 @@ export class IssueMaterialDto {
   @IsUUID()
   site_id?: string;
 
+  // ============================================================
+  // MATERIAL
+  // ============================================================
+
   @IsUUID()
   material_id: string;
+
+  // ============================================================
+  // TRANSACTION
+  // ============================================================
 
   @IsDateString()
   transaction_date: string;
@@ -155,13 +212,17 @@ export class IssueMaterialDto {
   @Min(0.001)
   quantity: number;
 
-  @IsOptional()
-  @IsString()
-  unit?: string;
+  // ============================================================
+  // CONTRACTOR
+  // ============================================================
 
   @IsOptional()
   @IsUUID()
   contractor_id?: string;
+
+  // ============================================================
+  // ISSUE INFORMATION
+  // ============================================================
 
   @IsOptional()
   @IsString()
@@ -178,6 +239,10 @@ export class IssueMaterialDto {
   @IsOptional()
   @IsString()
   storage_location?: string;
+
+  // ============================================================
+  // REMARKS
+  // ============================================================
 
   @IsOptional()
   @IsString()

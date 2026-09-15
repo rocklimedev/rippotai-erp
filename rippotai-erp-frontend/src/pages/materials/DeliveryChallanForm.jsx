@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft,
   Check,
-  ChevronDown,
+  ChevronsUpDown,
   ClipboardList,
   FileText,
   Loader2,
@@ -17,10 +17,62 @@ import {
   X,
 } from "lucide-react";
 
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
 import {
   useCreateDeliveryChallanMutation,
   useUpdateDeliveryChallanMutation,
 } from "../../api/procuerment/delivery-challan.api";
+
+/* ------------------------------------------------------------------
+ * Brand — centralised until these live in the tailwind theme.
+ * ------------------------------------------------------------------ */
+const BRAND = "bg-[#1F453B] hover:bg-[#17372f] text-white";
+const BRAND_TEXT = "text-[#1F453B]";
+const BRAND_SOFT = "bg-[#D8E0DA] text-[#1F453B]";
+const NONE = "__none__";
 
 const EMPTY_ITEM = {
   material_id: "",
@@ -56,35 +108,24 @@ const EMPTY_FORM = {
 };
 
 const CONDITION_OPTIONS = [
-  {
-    value: "GOOD",
-    label: "Good",
-  },
-  {
-    value: "DAMAGED",
-    label: "Damaged",
-  },
-  {
-    value: "SHORT",
-    label: "Short",
-  },
-  {
-    value: "DAMAGED_AND_SHORT",
-    label: "Damaged & Short",
-  },
-  {
-    value: "REJECTED",
-    label: "Rejected",
-  },
+  { value: "GOOD", label: "Good" },
+  { value: "DAMAGED", label: "Damaged" },
+  { value: "SHORT", label: "Short" },
+  { value: "DAMAGED_AND_SHORT", label: "Damaged & Short" },
+  { value: "REJECTED", label: "Rejected" },
 ];
 
+const CONDITION_VARIANT = {
+  GOOD: "default",
+  DAMAGED: "destructive",
+  SHORT: "outline",
+  DAMAGED_AND_SHORT: "destructive",
+  REJECTED: "destructive",
+};
+
 function normalizeNumber(value) {
-  if (value === "" || value === null || value === undefined) {
-    return 0;
-  }
-
+  if (value === "" || value === null || value === undefined) return 0;
   const number = Number(value);
-
   return Number.isFinite(number) ? number : 0;
 }
 
@@ -125,9 +166,7 @@ function mapExistingItem(item) {
 }
 
 function buildInitialForm(initialData) {
-  if (!initialData) {
-    return EMPTY_FORM;
-  }
+  if (!initialData) return EMPTY_FORM;
 
   return {
     project_id: initialData.project_id || initialData.projectId || "",
@@ -159,40 +198,221 @@ function buildInitialForm(initialData) {
   };
 }
 
+const getId = (item) => item?.id ?? "";
+
+/* ------------------------------------------------------------------
+ * Small building blocks — module scope so they don't remount on
+ * every keystroke.
+ * ------------------------------------------------------------------ */
+
+function FieldError({ message }) {
+  if (!message) return null;
+  return <p className="mt-1.5 text-xs text-destructive">{message}</p>;
+}
+
+function Field({ label, htmlFor, required, error, className, children }) {
+  return (
+    <div className={cn("space-y-1.5", className)}>
+      {label && (
+        <Label
+          htmlFor={htmlFor}
+          className="text-xs font-medium text-muted-foreground"
+        >
+          {label}
+          {required && <span className="ml-0.5 text-destructive">*</span>}
+        </Label>
+      )}
+      {children}
+      <FieldError message={error} />
+    </div>
+  );
+}
+
+function SectionHeader({ icon: Icon, title, description, action }) {
+  return (
+    <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b py-4">
+      <div className="flex items-start gap-2.5">
+        {Icon && (
+          <Icon className={cn("mt-0.5 h-[18px] w-[18px]", BRAND_TEXT)} />
+        )}
+        <div className="space-y-0.5">
+          <CardTitle className="text-base">{title}</CardTitle>
+          {description && (
+            <CardDescription className="text-xs">{description}</CardDescription>
+          )}
+        </div>
+      </div>
+      {action}
+    </CardHeader>
+  );
+}
+
+/** Searchable single-select for long lookup lists (materials, POs...). */
+function Combobox({
+  options,
+  value,
+  onChange,
+  placeholder = "Select",
+  searchPlaceholder = "Search...",
+  emptyText = "No results.",
+  invalid,
+  className,
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find(
+    (option) => String(option.value) === String(value),
+  );
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn(
+            "w-full justify-between font-normal",
+            !selected && "text-muted-foreground",
+            invalid && "border-destructive focus-visible:ring-destructive",
+            className,
+          )}
+        >
+          <span className="truncate">
+            {selected ? selected.label : placeholder}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+
+      <PopoverContent
+        align="start"
+        className="w-[var(--radix-popover-trigger-width)] min-w-[220px] p-0"
+      >
+        <Command
+          filter={(itemValue, search) =>
+            itemValue.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+          }
+        >
+          <CommandInput placeholder={searchPlaceholder} />
+          <CommandList>
+            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem
+                  key={option.value}
+                  value={`${option.label} ${option.value}`}
+                  onSelect={() => {
+                    onChange(
+                      String(option.value) === String(value)
+                        ? ""
+                        : option.value,
+                    );
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      String(option.value) === String(value)
+                        ? "opacity-100"
+                        : "opacity-0",
+                    )}
+                  />
+                  <span className="truncate">{option.label}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function SummaryPill({ label, value }) {
+  return (
+    <div className="rounded-lg border bg-background px-3 py-2 text-center">
+      <div className="text-sm font-semibold tabular-nums">
+        {Number(value || 0).toFixed(3)}
+      </div>
+      <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b pb-3 text-xs last:border-0 last:pb-0">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="max-w-[180px] truncate text-right font-medium">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function MetricRow({ label, value }) {
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-semibold tabular-nums">
+        {Number(value || 0).toFixed(3)}
+      </span>
+    </div>
+  );
+}
+
+function StatusRow({ checked, label }) {
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span
+        className={cn(
+          "flex h-5 w-5 items-center justify-center rounded-full",
+          checked ? BRAND : "bg-muted text-muted-foreground",
+        )}
+      >
+        {checked && <Check className="h-3 w-3" />}
+      </span>
+      <span className={checked ? "" : "text-muted-foreground"}>{label}</span>
+    </div>
+  );
+}
+
+function ToggleCard({ checked, onChange, title, description }) {
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between gap-4 rounded-lg border p-4 transition",
+        checked && "border-[#1F453B]/30 bg-[#D8E0DA]/30",
+      )}
+    >
+      <div className="min-w-0 space-y-0.5">
+        <p className="text-sm font-medium">{title}</p>
+        <p className="text-xs leading-5 text-muted-foreground">{description}</p>
+      </div>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------
+ * Form
+ * ------------------------------------------------------------------ */
+
 export default function DeliveryChallanForm({
   initialData = null,
 
   /**
    * Optional lookup data.
    *
-   * Expected:
    * projects = [{ id, name }]
    * sites = [{ id, name, address, project_id }]
    * vendors = [{ id, name, agency_name }]
-   * materials = [{
-   *   id,
-   *   material_code,
-   *   name,
-   *   description,
-   *   unit,
-   *   brand,
-   *   specification
-   * }]
-   *
-   * purchaseOrders = [{
-   *   id,
-   *   po_number,
-   *   vendor_id,
-   *   project_id,
-   *   site_id,
-   *   items: [{
-   *     id,
-   *     material_id,
-   *     description,
-   *     unit,
-   *     quantity
-   *   }]
-   * }]
+   * materials = [{ id, material_code, name, description, unit, brand, specification }]
+   * purchaseOrders = [{ id, po_number, vendor_id, project_id, site_id, items: [...] }]
    */
   projects = [],
   sites = [],
@@ -200,11 +420,6 @@ export default function DeliveryChallanForm({
   materials = [],
   purchaseOrders = [],
 
-  /**
-   * Optional external PO items.
-   *
-   * If supplied, these are used when a PO is selected.
-   */
   purchaseOrderItems = [],
 
   onSuccess,
@@ -213,12 +428,10 @@ export default function DeliveryChallanForm({
   const isEditMode = Boolean(initialData?.id);
 
   const [form, setForm] = useState(() => buildInitialForm(initialData));
-
   const [errors, setErrors] = useState({});
 
   const [createDeliveryChallan, createState] =
     useCreateDeliveryChallanMutation();
-
   const [updateDeliveryChallan, updateState] =
     useUpdateDeliveryChallanMutation();
 
@@ -229,9 +442,9 @@ export default function DeliveryChallanForm({
     setErrors({});
   }, [initialData]);
 
-  // ============================================================
-  // DERIVED DATA
-  // ============================================================
+  /* ---------------------------------------------------------------
+   * Derived data
+   * --------------------------------------------------------------- */
 
   const selectedProject = useMemo(
     () =>
@@ -242,10 +455,7 @@ export default function DeliveryChallanForm({
   );
 
   const availableSites = useMemo(() => {
-    if (!form.project_id) {
-      return sites;
-    }
-
+    if (!form.project_id) return sites;
     return sites.filter(
       (site) =>
         !site.project_id || String(site.project_id) === String(form.project_id),
@@ -266,102 +476,105 @@ export default function DeliveryChallanForm({
     [vendors, form.vendor_id],
   );
 
-  const effectivePurchaseOrderItems = useMemo(() => {
-    if (form.purchase_order_id && selectedPurchaseOrder?.items?.length) {
-      return selectedPurchaseOrder.items;
-    }
+  const totals = useMemo(
+    () =>
+      form.items.reduce(
+        (acc, item) => {
+          acc.quantity += normalizeNumber(item.quantity);
+          acc.accepted += normalizeNumber(item.accepted_quantity);
+          acc.shortage += normalizeNumber(item.shortage_quantity);
+          acc.damaged += normalizeNumber(item.damaged_quantity);
+          acc.rejected += normalizeNumber(item.rejected_quantity);
+          return acc;
+        },
+        { quantity: 0, accepted: 0, shortage: 0, damaged: 0, rejected: 0 },
+      ),
+    [form.items],
+  );
 
-    return purchaseOrderItems;
-  }, [form.purchase_order_id, selectedPurchaseOrder, purchaseOrderItems]);
+  const projectOptions = useMemo(
+    () =>
+      projects.map((project) => ({
+        value: getId(project),
+        label:
+          project.name ||
+          project.project_name ||
+          project.code ||
+          getId(project),
+      })),
+    [projects],
+  );
 
-  const totals = useMemo(() => {
-    return form.items.reduce(
-      (acc, item) => {
-        acc.quantity += normalizeNumber(item.quantity);
-        acc.accepted += normalizeNumber(item.accepted_quantity);
-        acc.shortage += normalizeNumber(item.shortage_quantity);
-        acc.damaged += normalizeNumber(item.damaged_quantity);
-        acc.rejected += normalizeNumber(item.rejected_quantity);
+  const purchaseOrderOptions = useMemo(
+    () =>
+      purchaseOrders.map((po) => ({
+        value: getId(po),
+        label: po.po_number || po.poNumber || po.number || getId(po),
+      })),
+    [purchaseOrders],
+  );
 
-        return acc;
-      },
-      {
-        quantity: 0,
-        accepted: 0,
-        shortage: 0,
-        damaged: 0,
-        rejected: 0,
-      },
-    );
-  }, [form.items]);
+  const vendorOptions = useMemo(
+    () =>
+      vendors.map((vendor) => ({
+        value: getId(vendor),
+        label:
+          vendor.name ||
+          vendor.agency_name ||
+          vendor.vendor_name ||
+          getId(vendor),
+      })),
+    [vendors],
+  );
 
-  // ============================================================
-  // FORM HELPERS
-  // ============================================================
+  const materialOptions = useMemo(
+    () =>
+      materials.map((material) => ({
+        value: getId(material),
+        label: material.material_code
+          ? `${material.material_code} — ${material.name || material.material_name || getId(material)}`
+          : material.name || material.material_name || getId(material),
+      })),
+    [materials],
+  );
 
-  const updateField = (field, value) => {
-    setForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
+  /* ---------------------------------------------------------------
+   * Helpers
+   * --------------------------------------------------------------- */
 
+  const clearError = (key) =>
     setErrors((current) => {
-      if (!current[field]) {
-        return current;
-      }
-
+      if (!current[key]) return current;
       const next = { ...current };
-      delete next[field];
+      delete next[key];
       return next;
     });
+
+  const updateField = (field, value) => {
+    setForm((current) => ({ ...current, [field]: value }));
+    clearError(field);
   };
 
   const updateItem = (index, field, value) => {
     setForm((current) => {
       const items = [...current.items];
-
-      items[index] = {
-        ...items[index],
-        [field]: value,
-      };
-
-      return {
-        ...current,
-        items,
-      };
+      items[index] = { ...items[index], [field]: value };
+      return { ...current, items };
     });
-
-    setErrors((current) => {
-      const key = `items.${index}.${field}`;
-
-      if (!current[key]) {
-        return current;
-      }
-
-      const next = { ...current };
-      delete next[key];
-      return next;
-    });
+    clearError(`items.${index}.${field}`);
   };
 
-  const addItem = () => {
+  const addItem = () =>
     setForm((current) => ({
       ...current,
-      items: [
-        ...current.items,
-        {
-          ...EMPTY_ITEM,
-        },
-      ],
+      items: [...current.items, { ...EMPTY_ITEM }],
     }));
-  };
 
   const removeItem = (index) => {
     if (form.items.length === 1) {
-      toast.error("At least one material item is required.");
+      toast.error("Keep at least one material line.");
       return;
     }
-
     setForm((current) => ({
       ...current,
       items: current.items.filter((_, itemIndex) => itemIndex !== index),
@@ -394,43 +607,27 @@ export default function DeliveryChallanForm({
       if (po?.items?.length) {
         nextItems = po.items.map((item) => ({
           ...EMPTY_ITEM,
-
           material_id: item.material_id || item.materialId || "",
-
           purchase_order_item_id: item.id || "",
-
           quantity: "",
-
           accepted_quantity: "",
-
           shortage_quantity: "",
-
           damaged_quantity: "",
-
           rejected_quantity: "",
-
           description: item.description || item.material?.name || "",
-
           brand: item.brand || item.material?.brand || "",
-
           specification:
             item.specification || item.material?.specification || "",
-
           unit: item.unit || item.material?.unit || "",
         }));
       }
 
       return {
         ...current,
-
         purchase_order_id: purchaseOrderId,
-
         vendor_id: po?.vendor_id || po?.vendorId || current.vendor_id,
-
         project_id: po?.project_id || po?.projectId || current.project_id,
-
         site_id: po?.site_id || po?.siteId || current.site_id,
-
         items: nextItems,
       };
     });
@@ -448,250 +645,127 @@ export default function DeliveryChallanForm({
 
       items[index] = {
         ...items[index],
-
         material_id: materialId,
-
         description:
           items[index].description ||
           material?.description ||
           material?.name ||
           "",
-
         brand: items[index].brand || material?.brand || "",
-
         specification:
           items[index].specification || material?.specification || "",
-
         unit: items[index].unit || material?.unit || "",
       };
 
-      return {
-        ...current,
-        items,
-      };
+      return { ...current, items };
     });
+
+    clearError(`items.${index}.material_id`);
   };
 
-  // ============================================================
-  // VALIDATION
-  // ============================================================
+  /* ---------------------------------------------------------------
+   * Validation
+   * --------------------------------------------------------------- */
 
   const validate = () => {
     const nextErrors = {};
 
-    if (!form.project_id) {
-      nextErrors.project_id = "Project is required.";
-    }
-
-    if (!form.challan_date) {
-      nextErrors.challan_date = "Challan date is required.";
-    }
-
-    if (!form.items.length) {
-      nextErrors.items = "At least one material is required.";
-    }
+    if (!form.project_id) nextErrors.project_id = "Pick a project.";
+    if (!form.challan_date) nextErrors.challan_date = "Pick a challan date.";
+    if (!form.items.length) nextErrors.items = "Add at least one material.";
 
     form.items.forEach((item, index) => {
       if (!item.material_id) {
-        nextErrors[`items.${index}.material_id`] = "Material is required.";
+        nextErrors[`items.${index}.material_id`] = "Pick a material.";
       }
 
       const quantity = normalizeNumber(item.quantity);
-
       if (quantity <= 0) {
-        nextErrors[`items.${index}.quantity`] =
-          "Quantity must be greater than 0.";
+        nextErrors[`items.${index}.quantity`] = "Quantity must be above 0.";
       }
 
       const accepted = normalizeNumber(item.accepted_quantity);
-
       const shortage = normalizeNumber(item.shortage_quantity);
-
       const damaged = normalizeNumber(item.damaged_quantity);
-
       const rejected = normalizeNumber(item.rejected_quantity);
 
-      if (accepted < 0) {
-        nextErrors[`items.${index}.accepted_quantity`] =
-          "Invalid accepted quantity.";
-      }
-
-      if (shortage < 0) {
-        nextErrors[`items.${index}.shortage_quantity`] =
-          "Invalid shortage quantity.";
-      }
-
-      if (damaged < 0) {
-        nextErrors[`items.${index}.damaged_quantity`] =
-          "Invalid damaged quantity.";
-      }
-
-      if (rejected < 0) {
-        nextErrors[`items.${index}.rejected_quantity`] =
-          "Invalid rejected quantity.";
-      }
+      if (accepted < 0)
+        nextErrors[`items.${index}.accepted_quantity`] = "Can't be negative.";
+      if (shortage < 0)
+        nextErrors[`items.${index}.shortage_quantity`] = "Can't be negative.";
+      if (damaged < 0)
+        nextErrors[`items.${index}.damaged_quantity`] = "Can't be negative.";
+      if (rejected < 0)
+        nextErrors[`items.${index}.rejected_quantity`] = "Can't be negative.";
 
       const accountedFor = accepted + shortage + damaged + rejected;
-
       if (accountedFor > quantity + 0.0001) {
         nextErrors[`items.${index}.quantity_breakdown`] =
-          "Accepted + shortage + damaged + rejected cannot exceed delivered quantity.";
+          "Accepted + shortage + damaged + rejected can't exceed the delivered quantity.";
       }
     });
 
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) {
-      const firstError = Object.values(nextErrors)[0];
-
-      toast.error(firstError);
-
+      toast.error(Object.values(nextErrors)[0]);
       return false;
     }
 
     return true;
   };
 
-  // ============================================================
-  // PAYLOAD
-  // ============================================================
+  /* ---------------------------------------------------------------
+   * Payload + submit
+   * --------------------------------------------------------------- */
 
-  const buildPayload = () => {
-    return {
-      project_id: form.project_id,
-
-      ...(form.site_id
-        ? {
-            site_id: form.site_id,
-          }
+  const buildPayload = () => ({
+    project_id: form.project_id,
+    ...(form.site_id ? { site_id: form.site_id } : {}),
+    ...(form.purchase_order_id
+      ? { purchase_order_id: form.purchase_order_id }
+      : {}),
+    ...(form.vendor_id ? { vendor_id: form.vendor_id } : {}),
+    challan_date: form.challan_date,
+    ...(form.site_address ? { site_address: form.site_address } : {}),
+    gate_pass_received: Boolean(form.gate_pass_received),
+    material_checked: Boolean(form.material_checked),
+    ...(form.general_remarks ? { general_remarks: form.general_remarks } : {}),
+    ...(form.discrepancy_notes
+      ? { discrepancy_notes: form.discrepancy_notes }
+      : {}),
+    ...(form.attachment_url ? { attachment_url: form.attachment_url } : {}),
+    items: form.items.map((item) => ({
+      material_id: item.material_id,
+      ...(item.purchase_order_item_id
+        ? { purchase_order_item_id: item.purchase_order_item_id }
         : {}),
-
-      ...(form.purchase_order_id
-        ? {
-            purchase_order_id: form.purchase_order_id,
-          }
+      quantity: normalizeNumber(item.quantity),
+      accepted_quantity: normalizeNumber(item.accepted_quantity),
+      shortage_quantity: normalizeNumber(item.shortage_quantity),
+      damaged_quantity: normalizeNumber(item.damaged_quantity),
+      rejected_quantity: normalizeNumber(item.rejected_quantity),
+      condition_status: item.condition_status || "GOOD",
+      ...(item.condition_notes
+        ? { condition_notes: item.condition_notes }
         : {}),
-
-      ...(form.vendor_id
-        ? {
-            vendor_id: form.vendor_id,
-          }
-        : {}),
-
-      challan_date: form.challan_date,
-
-      ...(form.site_address
-        ? {
-            site_address: form.site_address,
-          }
-        : {}),
-
-      gate_pass_received: Boolean(form.gate_pass_received),
-
-      material_checked: Boolean(form.material_checked),
-
-      ...(form.general_remarks
-        ? {
-            general_remarks: form.general_remarks,
-          }
-        : {}),
-
-      ...(form.discrepancy_notes
-        ? {
-            discrepancy_notes: form.discrepancy_notes,
-          }
-        : {}),
-
-      ...(form.attachment_url
-        ? {
-            attachment_url: form.attachment_url,
-          }
-        : {}),
-
-      items: form.items.map((item) => ({
-        material_id: item.material_id,
-
-        ...(item.purchase_order_item_id
-          ? {
-              purchase_order_item_id: item.purchase_order_item_id,
-            }
-          : {}),
-
-        quantity: normalizeNumber(item.quantity),
-
-        accepted_quantity: normalizeNumber(item.accepted_quantity),
-
-        shortage_quantity: normalizeNumber(item.shortage_quantity),
-
-        damaged_quantity: normalizeNumber(item.damaged_quantity),
-
-        rejected_quantity: normalizeNumber(item.rejected_quantity),
-
-        condition_status: item.condition_status || "GOOD",
-
-        ...(item.condition_notes
-          ? {
-              condition_notes: item.condition_notes,
-            }
-          : {}),
-
-        ...(item.stored_at
-          ? {
-              stored_at: item.stored_at,
-            }
-          : {}),
-
-        ...(item.description
-          ? {
-              description: item.description,
-            }
-          : {}),
-
-        ...(item.brand
-          ? {
-              brand: item.brand,
-            }
-          : {}),
-
-        ...(item.specification
-          ? {
-              specification: item.specification,
-            }
-          : {}),
-
-        ...(item.unit
-          ? {
-              unit: item.unit,
-            }
-          : {}),
-
-        ...(item.remarks
-          ? {
-              remarks: item.remarks,
-            }
-          : {}),
-      })),
-    };
-  };
-
-  // ============================================================
-  // SUBMIT
-  // ============================================================
+      ...(item.stored_at ? { stored_at: item.stored_at } : {}),
+      ...(item.description ? { description: item.description } : {}),
+      ...(item.brand ? { brand: item.brand } : {}),
+      ...(item.specification ? { specification: item.specification } : {}),
+      ...(item.unit ? { unit: item.unit } : {}),
+      ...(item.remarks ? { remarks: item.remarks } : {}),
+    })),
+  });
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (isSubmitting) {
-      return;
-    }
-
-    if (!validate()) {
-      return;
-    }
+    if (isSubmitting) return;
+    if (!validate()) return;
 
     try {
       const payload = buildPayload();
-
       let response;
 
       if (isEditMode) {
@@ -704,85 +778,61 @@ export default function DeliveryChallanForm({
       }
 
       toast.success(
-        isEditMode
-          ? "Delivery challan updated successfully."
-          : "Delivery challan created successfully.",
+        isEditMode ? "Delivery challan updated." : "Delivery challan created.",
       );
 
-      if (onSuccess) {
-        onSuccess(response);
-      }
+      onSuccess?.(response);
     } catch (error) {
       const message =
         error?.data?.message ||
         error?.error ||
-        "Unable to save delivery challan.";
-
+        "The delivery challan could not be saved.";
       toast.error(Array.isArray(message) ? message.join(", ") : message);
     }
   };
 
-  // ============================================================
-  // INPUT COMPONENTS
-  // ============================================================
-
-  const inputClass = (hasError = false) =>
-    `w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition
-    placeholder:text-slate-400
-    focus:ring-2
-    ${
-      hasError
-        ? "border-red-400 focus:border-red-500 focus:ring-red-100"
-        : "border-slate-200 focus:border-[#1F453B] focus:ring-[#D8E0DA]"
-    }`;
-
-  const selectClass = (hasError = false) =>
-    `w-full appearance-none rounded-xl border bg-white px-3 py-2.5 pr-9 text-sm text-slate-900 outline-none transition
-    focus:ring-2
-    ${
-      hasError
-        ? "border-red-400 focus:border-red-500 focus:ring-red-100"
-        : "border-slate-200 focus:border-[#1F453B] focus:ring-[#D8E0DA]"
-    }`;
-
-  const labelClass =
-    "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500";
-
   const getError = (key) => errors[key];
+  const itemErrorCount = Object.keys(errors).filter((key) =>
+    key.startsWith("items."),
+  ).length;
 
-  // ============================================================
-  // RENDER
-  // ============================================================
+  /* ---------------------------------------------------------------
+   * Render
+   * --------------------------------------------------------------- */
 
   return (
-    <form onSubmit={handleSubmit} className="min-h-screen bg-slate-50">
-      {/* ======================================================
-          HEADER
-      ======================================================= */}
-
-      <div className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <form onSubmit={handleSubmit} className="min-h-screen bg-muted/30">
+      {/* Header */}
+      <div className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
             {onCancel && (
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="icon"
                 onClick={onCancel}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50"
+                aria-label="Back"
+                className="shrink-0"
               >
-                <ArrowLeft size={18} />
-              </button>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
             )}
 
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1F453B] text-white">
-              <Truck size={20} />
+            <div
+              className={cn(
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+                BRAND,
+              )}
+            >
+              <Truck className="h-5 w-5" />
             </div>
 
             <div className="min-w-0">
-              <h1 className="truncate text-lg font-bold text-slate-900">
-                {isEditMode ? "Edit Delivery Challan" : "New Delivery Challan"}
+              <h1 className="truncate text-lg font-semibold leading-none">
+                {isEditMode ? "Edit delivery challan" : "New delivery challan"}
               </h1>
-
-              <p className="hidden text-xs text-slate-500 sm:block">
+              <p className="mt-1 hidden text-xs text-muted-foreground sm:block">
                 Record incoming material delivery and receiving details
               </p>
             </div>
@@ -790,394 +840,560 @@ export default function DeliveryChallanForm({
 
           <div className="flex shrink-0 items-center gap-2">
             {onCancel && (
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={onCancel}
                 disabled={isSubmitting}
-                className="hidden rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:block"
+                className="hidden sm:inline-flex"
               >
                 Cancel
-              </button>
+              </Button>
             )}
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex items-center gap-2 rounded-xl bg-[#1F453B] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#16372f] disabled:cursor-not-allowed disabled:opacity-60"
-            >
+            <Button type="submit" disabled={isSubmitting} className={BRAND}>
               {isSubmitting ? (
-                <Loader2 size={17} className="animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <Save size={17} />
+                <Save className="mr-2 h-4 w-4" />
               )}
-
               {isSubmitting
-                ? "Saving..."
+                ? "Saving"
                 : isEditMode
-                  ? "Update Challan"
-                  : "Save Challan"}
-            </button>
+                  ? "Update challan"
+                  : "Save challan"}
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* ======================================================
-          CONTENT
-      ======================================================= */}
-
+      {/* Content */}
       <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-6">
-            {/* ==================================================
-                BASIC DETAILS
-            =================================================== */}
+            {/* ------------------------------------------------ Basic */}
+            <Card>
+              <SectionHeader
+                icon={FileText}
+                title="Challan details"
+                description="Project, site, vendor and delivery reference"
+              />
 
-            <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#D8E0DA] text-[#1F453B]">
-                  <FileText size={18} />
-                </div>
+              <CardContent className="grid gap-5 pt-5 md:grid-cols-2 xl:grid-cols-3">
+                <Field label="Project" required error={getError("project_id")}>
+                  <Combobox
+                    options={projectOptions}
+                    value={form.project_id}
+                    onChange={handleProjectChange}
+                    invalid={Boolean(getError("project_id"))}
+                    placeholder="Select project"
+                    searchPlaceholder="Search projects..."
+                    emptyText="No projects found."
+                  />
+                </Field>
 
-                <div>
-                  <h2 className="font-bold text-slate-900">Challan Details</h2>
-
-                  <p className="text-xs text-slate-500">
-                    Project, site, vendor and delivery reference
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-5 p-5 md:grid-cols-2 xl:grid-cols-3">
-                {/* Project */}
-
-                <div>
-                  <label className={labelClass}>
-                    Project <span className="text-red-500">*</span>
-                  </label>
-
-                  <div className="relative">
-                    <select
-                      value={form.project_id}
-                      onChange={(event) =>
-                        handleProjectChange(event.target.value)
-                      }
-                      className={selectClass(getError("project_id"))}
-                    >
-                      <option value="">Select project</option>
-
-                      {projects.map((project) => (
-                        <option key={project.id} value={project.id}>
-                          {project.name ||
-                            project.project_name ||
-                            project.code ||
-                            project.id}
-                        </option>
-                      ))}
-                    </select>
-
-                    <ChevronDown
-                      size={16}
-                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                  </div>
-
-                  {getError("project_id") && (
-                    <p className="mt-1 text-xs text-red-500">
-                      {getError("project_id")}
-                    </p>
-                  )}
-                </div>
-
-                {/* Site */}
-
-                <div>
-                  <label className={labelClass}>Site</label>
-
-                  <div className="relative">
-                    <select
-                      value={form.site_id}
-                      onChange={(event) =>
-                        updateField("site_id", event.target.value)
-                      }
-                      className={selectClass()}
-                    >
-                      <option value="">Select site</option>
-
+                <Field label="Site">
+                  <Select
+                    value={form.site_id || NONE}
+                    onValueChange={(value) =>
+                      updateField("site_id", value === NONE ? "" : value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select site" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE}>No site</SelectItem>
                       {availableSites.map((site) => (
-                        <option key={site.id} value={site.id}>
+                        <SelectItem key={site.id} value={String(site.id)}>
                           {site.name || site.site_name || site.id}
-                        </option>
+                        </SelectItem>
                       ))}
-                    </select>
+                    </SelectContent>
+                  </Select>
+                </Field>
 
-                    <ChevronDown
-                      size={16}
-                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                  </div>
-                </div>
+                <Field label="Purchase order">
+                  <Combobox
+                    options={purchaseOrderOptions}
+                    value={form.purchase_order_id}
+                    onChange={handlePurchaseOrderChange}
+                    placeholder="Select purchase order"
+                    searchPlaceholder="Search purchase orders..."
+                    emptyText="No purchase orders found."
+                  />
+                </Field>
 
-                {/* Purchase Order */}
+                <Field label="Vendor">
+                  <Combobox
+                    options={vendorOptions}
+                    value={form.vendor_id}
+                    onChange={(value) => updateField("vendor_id", value)}
+                    placeholder="Select vendor"
+                    searchPlaceholder="Search vendors..."
+                    emptyText="No vendors found."
+                  />
+                </Field>
 
-                <div>
-                  <label className={labelClass}>Purchase Order</label>
-
-                  <div className="relative">
-                    <select
-                      value={form.purchase_order_id}
-                      onChange={(event) =>
-                        handlePurchaseOrderChange(event.target.value)
-                      }
-                      className={selectClass()}
-                    >
-                      <option value="">Select purchase order</option>
-
-                      {purchaseOrders.map((po) => (
-                        <option key={po.id} value={po.id}>
-                          {po.po_number || po.poNumber || po.number || po.id}
-                        </option>
-                      ))}
-                    </select>
-
-                    <ChevronDown
-                      size={16}
-                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                  </div>
-                </div>
-
-                {/* Vendor */}
-
-                <div>
-                  <label className={labelClass}>Vendor</label>
-
-                  <div className="relative">
-                    <select
-                      value={form.vendor_id}
-                      onChange={(event) =>
-                        updateField("vendor_id", event.target.value)
-                      }
-                      className={selectClass()}
-                    >
-                      <option value="">Select vendor</option>
-
-                      {vendors.map((vendor) => (
-                        <option key={vendor.id} value={vendor.id}>
-                          {vendor.name ||
-                            vendor.agency_name ||
-                            vendor.vendor_name ||
-                            vendor.id}
-                        </option>
-                      ))}
-                    </select>
-
-                    <ChevronDown
-                      size={16}
-                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                  </div>
-                </div>
-
-                {/* Challan Date */}
-
-                <div>
-                  <label className={labelClass}>
-                    Challan Date <span className="text-red-500">*</span>
-                  </label>
-
-                  <input
+                <Field
+                  label="Challan date"
+                  htmlFor="challan_date"
+                  required
+                  error={getError("challan_date")}
+                >
+                  <Input
+                    id="challan_date"
                     type="date"
                     value={form.challan_date}
                     onChange={(event) =>
                       updateField("challan_date", event.target.value)
                     }
-                    className={inputClass(getError("challan_date"))}
+                    className={cn(
+                      getError("challan_date") &&
+                        "border-destructive focus-visible:ring-destructive",
+                    )}
                   />
+                </Field>
 
-                  {getError("challan_date") && (
-                    <p className="mt-1 text-xs text-red-500">
-                      {getError("challan_date")}
-                    </p>
-                  )}
-                </div>
-
-                {/* Site Address */}
-
-                <div className="md:col-span-2 xl:col-span-1">
-                  <label className={labelClass}>Delivery Address</label>
-
-                  <input
-                    type="text"
+                <Field
+                  label="Delivery address"
+                  htmlFor="site_address"
+                  className="md:col-span-2 xl:col-span-1"
+                >
+                  <Input
+                    id="site_address"
                     value={form.site_address}
                     onChange={(event) =>
                       updateField("site_address", event.target.value)
                     }
                     placeholder={
                       selectedProject
-                        ? "Enter delivery/site address"
+                        ? "Enter delivery / site address"
                         : "Delivery address"
                     }
-                    className={inputClass()}
                   />
+                </Field>
+              </CardContent>
+            </Card>
+
+            {/* ------------------------------------------------ Items */}
+            <Card className="overflow-hidden">
+              <SectionHeader
+                icon={Package}
+                title="Delivered materials"
+                description="Record every material received on this challan"
+                action={
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={addItem}
+                    className={BRAND}
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Add material
+                  </Button>
+                }
+              />
+
+              {(getError("items") || itemErrorCount > 0) && (
+                <div className="px-6 pt-4">
+                  <Alert variant="destructive">
+                    <AlertDescription>
+                      {getError("items") ||
+                        `${itemErrorCount} field${itemErrorCount === 1 ? "" : "s"} in the material lines need fixing.`}
+                    </AlertDescription>
+                  </Alert>
                 </div>
-              </div>
-            </section>
+              )}
 
-            {/* ==================================================
-                ITEMS
-            =================================================== */}
+              <CardContent className="p-0">
+                {/* Desktop table */}
+                <div className="hidden overflow-x-auto lg:block">
+                  <Table className="min-w-[1300px]">
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="w-10 text-center">#</TableHead>
+                        <TableHead className="min-w-[220px]">
+                          Material
+                        </TableHead>
+                        <TableHead className="min-w-[180px]">
+                          Description
+                        </TableHead>
+                        <TableHead className="w-28 text-right">Qty</TableHead>
+                        <TableHead className="w-28 text-right">
+                          Accepted
+                        </TableHead>
+                        <TableHead className="w-28 text-right">Short</TableHead>
+                        <TableHead className="w-28 text-right">
+                          Damaged
+                        </TableHead>
+                        <TableHead className="w-28 text-right">
+                          Rejected
+                        </TableHead>
+                        <TableHead className="min-w-[160px]">
+                          Condition
+                        </TableHead>
+                        <TableHead className="min-w-[160px]">
+                          Stored at
+                        </TableHead>
+                        <TableHead className="w-12" />
+                      </TableRow>
+                    </TableHeader>
 
-            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#D8E0DA] text-[#1F453B]">
-                    <Package size={18} />
-                  </div>
+                    <TableBody>
+                      {form.items.map((item, index) => {
+                        const materialError = getError(
+                          `items.${index}.material_id`,
+                        );
+                        const quantityError = getError(
+                          `items.${index}.quantity`,
+                        );
+                        const breakdownError = getError(
+                          `items.${index}.quantity_breakdown`,
+                        );
 
-                  <div>
-                    <h2 className="font-bold text-slate-900">
-                      Delivered Materials
-                    </h2>
+                        const hasSecondaryFields =
+                          breakdownError ||
+                          item.condition_notes ||
+                          item.specification ||
+                          item.brand ||
+                          item.remarks;
 
-                    <p className="text-xs text-slate-500">
-                      Record every material received on this challan
-                    </p>
-                  </div>
-                </div>
+                        return (
+                          <React.Fragment key={index}>
+                            <TableRow className="border-b-0 align-top hover:bg-transparent">
+                              <TableCell className="pt-6 text-center text-sm font-medium text-muted-foreground">
+                                {index + 1}
+                              </TableCell>
 
-                <button
-                  type="button"
-                  onClick={addItem}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-[#1F453B] px-3 py-2 text-sm font-semibold text-[#1F453B] transition hover:bg-[#D8E0DA]"
-                >
-                  <Plus size={16} />
-                  Add Material
-                </button>
-              </div>
-
-              {/* Desktop table */}
-
-              <div className="hidden overflow-x-auto lg:block">
-                <table className="w-full min-w-[1250px]">
-                  <thead>
-                    <tr className="border-b border-slate-100 bg-slate-50 text-left">
-                      <th className="w-10 px-3 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                        #
-                      </th>
-
-                      <th className="min-w-[210px] px-3 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                        Material
-                      </th>
-
-                      <th className="min-w-[180px] px-3 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                        Description
-                      </th>
-
-                      <th className="w-28 px-3 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                        Qty
-                      </th>
-
-                      <th className="w-28 px-3 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                        Accepted
-                      </th>
-
-                      <th className="w-28 px-3 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                        Short
-                      </th>
-
-                      <th className="w-28 px-3 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                        Damaged
-                      </th>
-
-                      <th className="w-28 px-3 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                        Rejected
-                      </th>
-
-                      <th className="min-w-[150px] px-3 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                        Condition
-                      </th>
-
-                      <th className="min-w-[160px] px-3 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                        Stored At
-                      </th>
-
-                      <th className="w-12 px-3 py-3" />
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {form.items.map((item, index) => {
-                      const material = materials.find(
-                        (materialItem) =>
-                          String(materialItem.id) === String(item.material_id),
-                      );
-
-                      const itemError = getError(`items.${index}.material_id`);
-
-                      const quantityError = getError(`items.${index}.quantity`);
-
-                      const breakdownError = getError(
-                        `items.${index}.quantity_breakdown`,
-                      );
-
-                      return (
-                        <React.Fragment key={index}>
-                          <tr className="border-b border-slate-100 align-top">
-                            <td className="px-3 py-4 text-sm font-semibold text-slate-500">
-                              {index + 1}
-                            </td>
-
-                            <td className="px-3 py-4">
-                              <div className="relative">
-                                <select
+                              <TableCell>
+                                <Combobox
+                                  options={materialOptions}
                                   value={item.material_id}
+                                  onChange={(value) =>
+                                    handleMaterialChange(index, value)
+                                  }
+                                  invalid={Boolean(materialError)}
+                                  placeholder="Select material"
+                                  searchPlaceholder="Search materials..."
+                                  emptyText="No materials found."
+                                />
+                                <FieldError message={materialError} />
+                                {item.purchase_order_item_id && (
+                                  <p className="mt-1 text-[11px] text-muted-foreground">
+                                    Linked to PO item
+                                  </p>
+                                )}
+                              </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  value={item.description}
                                   onChange={(event) =>
-                                    handleMaterialChange(
+                                    updateItem(
                                       index,
+                                      "description",
                                       event.target.value,
                                     )
                                   }
-                                  className={selectClass(itemError)}
-                                >
-                                  <option value="">Select material</option>
-
-                                  {materials.map((materialOption) => (
-                                    <option
-                                      key={materialOption.id}
-                                      value={materialOption.id}
-                                    >
-                                      {materialOption.material_code
-                                        ? `${materialOption.material_code} — `
-                                        : ""}
-                                      {materialOption.name ||
-                                        materialOption.material_name ||
-                                        materialOption.id}
-                                    </option>
-                                  ))}
-                                </select>
-
-                                <ChevronDown
-                                  size={15}
-                                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                                  placeholder="Description"
                                 />
-                              </div>
+                              </TableCell>
 
-                              {itemError && (
-                                <p className="mt-1 text-xs text-red-500">
-                                  {itemError}
-                                </p>
-                              )}
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  min="0.001"
+                                  step="0.001"
+                                  value={item.quantity}
+                                  onChange={(event) =>
+                                    updateItem(
+                                      index,
+                                      "quantity",
+                                      event.target.value,
+                                    )
+                                  }
+                                  placeholder="0.000"
+                                  className={cn(
+                                    "text-right tabular-nums",
+                                    quantityError &&
+                                      "border-destructive focus-visible:ring-destructive",
+                                  )}
+                                />
+                                {item.unit && (
+                                  <span className="mt-1 block text-right text-[11px] text-muted-foreground">
+                                    {item.unit}
+                                  </span>
+                                )}
+                                <FieldError message={quantityError} />
+                              </TableCell>
 
-                              {item.purchase_order_item_id && (
-                                <p className="mt-1 text-[11px] text-slate-400">
-                                  Linked to PO item
-                                </p>
-                              )}
-                            </td>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.001"
+                                  value={item.accepted_quantity}
+                                  onChange={(event) =>
+                                    updateItem(
+                                      index,
+                                      "accepted_quantity",
+                                      event.target.value,
+                                    )
+                                  }
+                                  placeholder="0.000"
+                                  className="text-right tabular-nums"
+                                />
+                              </TableCell>
 
-                            <td className="px-3 py-4">
-                              <input
-                                type="text"
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.001"
+                                  value={item.shortage_quantity}
+                                  onChange={(event) =>
+                                    updateItem(
+                                      index,
+                                      "shortage_quantity",
+                                      event.target.value,
+                                    )
+                                  }
+                                  placeholder="0.000"
+                                  className="text-right tabular-nums"
+                                />
+                              </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.001"
+                                  value={item.damaged_quantity}
+                                  onChange={(event) =>
+                                    updateItem(
+                                      index,
+                                      "damaged_quantity",
+                                      event.target.value,
+                                    )
+                                  }
+                                  placeholder="0.000"
+                                  className="text-right tabular-nums"
+                                />
+                              </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.001"
+                                  value={item.rejected_quantity}
+                                  onChange={(event) =>
+                                    updateItem(
+                                      index,
+                                      "rejected_quantity",
+                                      event.target.value,
+                                    )
+                                  }
+                                  placeholder="0.000"
+                                  className="text-right tabular-nums"
+                                />
+                              </TableCell>
+
+                              <TableCell>
+                                <Select
+                                  value={item.condition_status}
+                                  onValueChange={(value) =>
+                                    updateItem(index, "condition_status", value)
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {CONDITION_OPTIONS.map((option) => (
+                                      <SelectItem
+                                        key={option.value}
+                                        value={option.value}
+                                      >
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+
+                              <TableCell>
+                                <Input
+                                  value={item.stored_at}
+                                  onChange={(event) =>
+                                    updateItem(
+                                      index,
+                                      "stored_at",
+                                      event.target.value,
+                                    )
+                                  }
+                                  placeholder="Warehouse / room"
+                                />
+                              </TableCell>
+
+                              <TableCell className="pt-5 text-center">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => removeItem(index)}
+                                  aria-label={`Remove line ${index + 1}`}
+                                  className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+
+                            {hasSecondaryFields && (
+                              <TableRow className="bg-muted/30 hover:bg-muted/30">
+                                <TableCell />
+                                <TableCell colSpan={10} className="pb-4 pt-0">
+                                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                                    <Input
+                                      value={item.brand}
+                                      onChange={(event) =>
+                                        updateItem(
+                                          index,
+                                          "brand",
+                                          event.target.value,
+                                        )
+                                      }
+                                      placeholder="Brand"
+                                    />
+                                    <Input
+                                      value={item.specification}
+                                      onChange={(event) =>
+                                        updateItem(
+                                          index,
+                                          "specification",
+                                          event.target.value,
+                                        )
+                                      }
+                                      placeholder="Specification"
+                                    />
+                                    <Input
+                                      value={item.unit}
+                                      onChange={(event) =>
+                                        updateItem(
+                                          index,
+                                          "unit",
+                                          event.target.value,
+                                        )
+                                      }
+                                      placeholder="Unit"
+                                    />
+                                    <Input
+                                      value={item.condition_notes}
+                                      onChange={(event) =>
+                                        updateItem(
+                                          index,
+                                          "condition_notes",
+                                          event.target.value,
+                                        )
+                                      }
+                                      placeholder="Condition notes"
+                                    />
+                                    <Input
+                                      value={item.remarks}
+                                      onChange={(event) =>
+                                        updateItem(
+                                          index,
+                                          "remarks",
+                                          event.target.value,
+                                        )
+                                      }
+                                      placeholder="Item remarks"
+                                      className="md:col-span-2"
+                                    />
+                                    {breakdownError && (
+                                      <p className="text-xs font-medium text-destructive md:col-span-2 xl:col-span-4">
+                                        {breakdownError}
+                                      </p>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile / tablet cards */}
+                <div className="space-y-4 p-4 lg:hidden">
+                  {form.items.map((item, index) => {
+                    const materialError = getError(
+                      `items.${index}.material_id`,
+                    );
+                    const quantityError = getError(`items.${index}.quantity`);
+                    const breakdownError = getError(
+                      `items.${index}.quantity_breakdown`,
+                    );
+
+                    return (
+                      <Card key={index} className="bg-muted/30">
+                        <CardContent className="p-4">
+                          <div className="mb-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={cn(
+                                  "flex h-6 w-6 items-center justify-center rounded-md text-xs font-semibold",
+                                  BRAND,
+                                )}
+                              >
+                                {index + 1}
+                              </span>
+                              <span className="text-sm font-medium">
+                                Material item
+                              </span>
+                            </div>
+
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeItem(index)}
+                              aria-label={`Remove line ${index + 1}`}
+                              className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <Field
+                              label="Material"
+                              required
+                              error={materialError}
+                              className="sm:col-span-2"
+                            >
+                              <Combobox
+                                options={materialOptions}
+                                value={item.material_id}
+                                onChange={(value) =>
+                                  handleMaterialChange(index, value)
+                                }
+                                invalid={Boolean(materialError)}
+                                placeholder="Select material"
+                                searchPlaceholder="Search materials..."
+                                emptyText="No materials found."
+                              />
+                            </Field>
+
+                            <Field
+                              label="Description"
+                              className="sm:col-span-2"
+                            >
+                              <Input
                                 value={item.description}
                                 onChange={(event) =>
                                   updateItem(
@@ -1186,15 +1402,16 @@ export default function DeliveryChallanForm({
                                     event.target.value,
                                   )
                                 }
-                                placeholder={
-                                  material?.description || "Description"
-                                }
-                                className={inputClass()}
+                                placeholder="Material description"
                               />
-                            </td>
+                            </Field>
 
-                            <td className="px-3 py-4">
-                              <input
+                            <Field
+                              label="Quantity"
+                              required
+                              error={quantityError}
+                            >
+                              <Input
                                 type="number"
                                 min="0.001"
                                 step="0.001"
@@ -1207,24 +1424,25 @@ export default function DeliveryChallanForm({
                                   )
                                 }
                                 placeholder="0.000"
-                                className={inputClass(quantityError)}
+                                className={cn(
+                                  quantityError &&
+                                    "border-destructive focus-visible:ring-destructive",
+                                )}
                               />
+                            </Field>
 
-                              {item.unit && (
-                                <span className="mt-1 block text-[11px] text-slate-400">
-                                  {item.unit}
-                                </span>
-                              )}
+                            <Field label="Unit">
+                              <Input
+                                value={item.unit}
+                                onChange={(event) =>
+                                  updateItem(index, "unit", event.target.value)
+                                }
+                                placeholder="Nos / Kg / Sqft"
+                              />
+                            </Field>
 
-                              {quantityError && (
-                                <p className="mt-1 text-xs text-red-500">
-                                  {quantityError}
-                                </p>
-                              )}
-                            </td>
-
-                            <td className="px-3 py-4">
-                              <input
+                            <Field label="Accepted">
+                              <Input
                                 type="number"
                                 min="0"
                                 step="0.001"
@@ -1236,13 +1454,11 @@ export default function DeliveryChallanForm({
                                     event.target.value,
                                   )
                                 }
-                                placeholder="0.000"
-                                className={inputClass()}
                               />
-                            </td>
+                            </Field>
 
-                            <td className="px-3 py-4">
-                              <input
+                            <Field label="Shortage">
+                              <Input
                                 type="number"
                                 min="0"
                                 step="0.001"
@@ -1254,13 +1470,11 @@ export default function DeliveryChallanForm({
                                     event.target.value,
                                   )
                                 }
-                                placeholder="0.000"
-                                className={inputClass()}
                               />
-                            </td>
+                            </Field>
 
-                            <td className="px-3 py-4">
-                              <input
+                            <Field label="Damaged">
+                              <Input
                                 type="number"
                                 min="0"
                                 step="0.001"
@@ -1272,13 +1486,11 @@ export default function DeliveryChallanForm({
                                     event.target.value,
                                   )
                                 }
-                                placeholder="0.000"
-                                className={inputClass()}
                               />
-                            </td>
+                            </Field>
 
-                            <td className="px-3 py-4">
-                              <input
+                            <Field label="Rejected">
+                              <Input
                                 type="number"
                                 min="0"
                                 step="0.001"
@@ -1290,44 +1502,34 @@ export default function DeliveryChallanForm({
                                     event.target.value,
                                   )
                                 }
-                                placeholder="0.000"
-                                className={inputClass()}
                               />
-                            </td>
+                            </Field>
 
-                            <td className="px-3 py-4">
-                              <div className="relative">
-                                <select
-                                  value={item.condition_status}
-                                  onChange={(event) =>
-                                    updateItem(
-                                      index,
-                                      "condition_status",
-                                      event.target.value,
-                                    )
-                                  }
-                                  className={selectClass()}
-                                >
+                            <Field label="Condition">
+                              <Select
+                                value={item.condition_status}
+                                onValueChange={(value) =>
+                                  updateItem(index, "condition_status", value)
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
                                   {CONDITION_OPTIONS.map((option) => (
-                                    <option
+                                    <SelectItem
                                       key={option.value}
                                       value={option.value}
                                     >
                                       {option.label}
-                                    </option>
+                                    </SelectItem>
                                   ))}
-                                </select>
+                                </SelectContent>
+                              </Select>
+                            </Field>
 
-                                <ChevronDown
-                                  size={15}
-                                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-                                />
-                              </div>
-                            </td>
-
-                            <td className="px-3 py-4">
-                              <input
-                                type="text"
+                            <Field label="Stored at">
+                              <Input
                                 value={item.stored_at}
                                 onChange={(event) =>
                                   updateItem(
@@ -1336,771 +1538,279 @@ export default function DeliveryChallanForm({
                                     event.target.value,
                                   )
                                 }
-                                placeholder="Warehouse / room / location"
-                                className={inputClass()}
+                                placeholder="Storage location"
                               />
-                            </td>
+                            </Field>
 
-                            <td className="px-3 py-4 text-center">
-                              <button
-                                type="button"
-                                onClick={() => removeItem(index)}
-                                className="mt-1 flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"
-                                title="Remove item"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </td>
-                          </tr>
+                            <Field label="Brand">
+                              <Input
+                                value={item.brand}
+                                onChange={(event) =>
+                                  updateItem(index, "brand", event.target.value)
+                                }
+                              />
+                            </Field>
 
-                          {(breakdownError ||
-                            item.condition_notes ||
-                            item.specification ||
-                            item.brand ||
-                            item.remarks) && (
-                            <tr className="border-b border-slate-100 bg-slate-50/50">
-                              <td colSpan={11} className="px-6 py-3">
-                                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                                  <input
-                                    type="text"
-                                    value={item.brand}
-                                    onChange={(event) =>
-                                      updateItem(
-                                        index,
-                                        "brand",
-                                        event.target.value,
-                                      )
-                                    }
-                                    placeholder="Brand"
-                                    className={inputClass()}
-                                  />
+                            <Field label="Specification">
+                              <Input
+                                value={item.specification}
+                                onChange={(event) =>
+                                  updateItem(
+                                    index,
+                                    "specification",
+                                    event.target.value,
+                                  )
+                                }
+                              />
+                            </Field>
 
-                                  <input
-                                    type="text"
-                                    value={item.specification}
-                                    onChange={(event) =>
-                                      updateItem(
-                                        index,
-                                        "specification",
-                                        event.target.value,
-                                      )
-                                    }
-                                    placeholder="Specification"
-                                    className={inputClass()}
-                                  />
-
-                                  <input
-                                    type="text"
-                                    value={item.unit}
-                                    onChange={(event) =>
-                                      updateItem(
-                                        index,
-                                        "unit",
-                                        event.target.value,
-                                      )
-                                    }
-                                    placeholder="Unit"
-                                    className={inputClass()}
-                                  />
-
-                                  <input
-                                    type="text"
-                                    value={item.condition_notes}
-                                    onChange={(event) =>
-                                      updateItem(
-                                        index,
-                                        "condition_notes",
-                                        event.target.value,
-                                      )
-                                    }
-                                    placeholder="Condition notes"
-                                    className={inputClass()}
-                                  />
-
-                                  <input
-                                    type="text"
-                                    value={item.remarks}
-                                    onChange={(event) =>
-                                      updateItem(
-                                        index,
-                                        "remarks",
-                                        event.target.value,
-                                      )
-                                    }
-                                    placeholder="Item remarks"
-                                    className={`${inputClass()} md:col-span-2`}
-                                  />
-
-                                  {breakdownError && (
-                                    <p className="text-xs font-medium text-red-500 md:col-span-2 xl:col-span-4">
-                                      {breakdownError}
-                                    </p>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile / tablet cards */}
-
-              <div className="space-y-4 p-4 lg:hidden">
-                {form.items.map((item, index) => {
-                  const materialError = getError(`items.${index}.material_id`);
-
-                  const quantityError = getError(`items.${index}.quantity`);
-
-                  const breakdownError = getError(
-                    `items.${index}.quantity_breakdown`,
-                  );
-
-                  return (
-                    <div
-                      key={index}
-                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
-                    >
-                      <div className="mb-4 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1F453B] text-xs font-bold text-white">
-                            {index + 1}
-                          </span>
-
-                          <span className="text-sm font-bold text-slate-800">
-                            Material Item
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => removeItem(index)}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="sm:col-span-2">
-                          <label className={labelClass}>
-                            Material <span className="text-red-500">*</span>
-                          </label>
-
-                          <div className="relative">
-                            <select
-                              value={item.material_id}
-                              onChange={(event) =>
-                                handleMaterialChange(index, event.target.value)
-                              }
-                              className={selectClass(materialError)}
+                            <Field
+                              label="Condition notes"
+                              className="sm:col-span-2"
                             >
-                              <option value="">Select material</option>
+                              <Input
+                                value={item.condition_notes}
+                                onChange={(event) =>
+                                  updateItem(
+                                    index,
+                                    "condition_notes",
+                                    event.target.value,
+                                  )
+                                }
+                                placeholder="Describe condition or discrepancy"
+                              />
+                            </Field>
 
-                              {materials.map((material) => (
-                                <option key={material.id} value={material.id}>
-                                  {material.material_code
-                                    ? `${material.material_code} — `
-                                    : ""}
-                                  {material.name ||
-                                    material.material_name ||
-                                    material.id}
-                                </option>
-                              ))}
-                            </select>
-
-                            <ChevronDown
-                              size={15}
-                              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-                            />
-                          </div>
-
-                          {materialError && (
-                            <p className="mt-1 text-xs text-red-500">
-                              {materialError}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="sm:col-span-2">
-                          <label className={labelClass}>Description</label>
-
-                          <input
-                            type="text"
-                            value={item.description}
-                            onChange={(event) =>
-                              updateItem(
-                                index,
-                                "description",
-                                event.target.value,
-                              )
-                            }
-                            className={inputClass()}
-                            placeholder="Material description"
-                          />
-                        </div>
-
-                        <div>
-                          <label className={labelClass}>
-                            Quantity <span className="text-red-500">*</span>
-                          </label>
-
-                          <input
-                            type="number"
-                            min="0.001"
-                            step="0.001"
-                            value={item.quantity}
-                            onChange={(event) =>
-                              updateItem(index, "quantity", event.target.value)
-                            }
-                            className={inputClass(quantityError)}
-                            placeholder="0.000"
-                          />
-
-                          {quantityError && (
-                            <p className="mt-1 text-xs text-red-500">
-                              {quantityError}
-                            </p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className={labelClass}>Unit</label>
-
-                          <input
-                            type="text"
-                            value={item.unit}
-                            onChange={(event) =>
-                              updateItem(index, "unit", event.target.value)
-                            }
-                            className={inputClass()}
-                            placeholder="Nos / Kg / Sqft"
-                          />
-                        </div>
-
-                        <div>
-                          <label className={labelClass}>Accepted</label>
-
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.001"
-                            value={item.accepted_quantity}
-                            onChange={(event) =>
-                              updateItem(
-                                index,
-                                "accepted_quantity",
-                                event.target.value,
-                              )
-                            }
-                            className={inputClass()}
-                          />
-                        </div>
-
-                        <div>
-                          <label className={labelClass}>Shortage</label>
-
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.001"
-                            value={item.shortage_quantity}
-                            onChange={(event) =>
-                              updateItem(
-                                index,
-                                "shortage_quantity",
-                                event.target.value,
-                              )
-                            }
-                            className={inputClass()}
-                          />
-                        </div>
-
-                        <div>
-                          <label className={labelClass}>Damaged</label>
-
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.001"
-                            value={item.damaged_quantity}
-                            onChange={(event) =>
-                              updateItem(
-                                index,
-                                "damaged_quantity",
-                                event.target.value,
-                              )
-                            }
-                            className={inputClass()}
-                          />
-                        </div>
-
-                        <div>
-                          <label className={labelClass}>Rejected</label>
-
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.001"
-                            value={item.rejected_quantity}
-                            onChange={(event) =>
-                              updateItem(
-                                index,
-                                "rejected_quantity",
-                                event.target.value,
-                              )
-                            }
-                            className={inputClass()}
-                          />
-                        </div>
-
-                        <div>
-                          <label className={labelClass}>Condition</label>
-
-                          <div className="relative">
-                            <select
-                              value={item.condition_status}
-                              onChange={(event) =>
-                                updateItem(
-                                  index,
-                                  "condition_status",
-                                  event.target.value,
-                                )
-                              }
-                              className={selectClass()}
+                            <Field
+                              label="Item remarks"
+                              className="sm:col-span-2"
                             >
-                              {CONDITION_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
+                              <Textarea
+                                rows={2}
+                                value={item.remarks}
+                                onChange={(event) =>
+                                  updateItem(
+                                    index,
+                                    "remarks",
+                                    event.target.value,
+                                  )
+                                }
+                                className="resize-none"
+                              />
+                            </Field>
 
-                            <ChevronDown
-                              size={15}
-                              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-                            />
+                            {breakdownError && (
+                              <p className="text-xs font-medium text-destructive sm:col-span-2">
+                                {breakdownError}
+                              </p>
+                            )}
                           </div>
-                        </div>
-
-                        <div>
-                          <label className={labelClass}>Stored At</label>
-
-                          <input
-                            type="text"
-                            value={item.stored_at}
-                            onChange={(event) =>
-                              updateItem(index, "stored_at", event.target.value)
-                            }
-                            className={inputClass()}
-                            placeholder="Storage location"
-                          />
-                        </div>
-
-                        <div>
-                          <label className={labelClass}>Brand</label>
-
-                          <input
-                            type="text"
-                            value={item.brand}
-                            onChange={(event) =>
-                              updateItem(index, "brand", event.target.value)
-                            }
-                            className={inputClass()}
-                          />
-                        </div>
-
-                        <div>
-                          <label className={labelClass}>Specification</label>
-
-                          <input
-                            type="text"
-                            value={item.specification}
-                            onChange={(event) =>
-                              updateItem(
-                                index,
-                                "specification",
-                                event.target.value,
-                              )
-                            }
-                            className={inputClass()}
-                          />
-                        </div>
-
-                        <div className="sm:col-span-2">
-                          <label className={labelClass}>Condition Notes</label>
-
-                          <input
-                            type="text"
-                            value={item.condition_notes}
-                            onChange={(event) =>
-                              updateItem(
-                                index,
-                                "condition_notes",
-                                event.target.value,
-                              )
-                            }
-                            className={inputClass()}
-                            placeholder="Describe condition/discrepancy"
-                          />
-                        </div>
-
-                        <div className="sm:col-span-2">
-                          <label className={labelClass}>Item Remarks</label>
-
-                          <textarea
-                            rows={2}
-                            value={item.remarks}
-                            onChange={(event) =>
-                              updateItem(index, "remarks", event.target.value)
-                            }
-                            className={`${inputClass()} resize-none`}
-                          />
-                        </div>
-
-                        {breakdownError && (
-                          <p className="text-xs font-medium text-red-500 sm:col-span-2">
-                            {breakdownError}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Items footer */}
-
-              <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <button
-                  type="button"
-                  onClick={addItem}
-                  className="flex items-center gap-2 text-sm font-semibold text-[#1F453B]"
-                >
-                  <Plus size={16} />
-                  Add another material
-                </button>
-
-                <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-5">
-                  <SummaryPill label="Delivered" value={totals.quantity} />
-
-                  <SummaryPill label="Accepted" value={totals.accepted} />
-
-                  <SummaryPill label="Short" value={totals.shortage} />
-
-                  <SummaryPill label="Damaged" value={totals.damaged} />
-
-                  <SummaryPill label="Rejected" value={totals.rejected} />
-                </div>
-              </div>
-            </section>
-
-            {/* ==================================================
-                VERIFICATION
-            =================================================== */}
-
-            <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#D8E0DA] text-[#1F453B]">
-                  <Check size={18} />
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
 
-                <div>
-                  <h2 className="font-bold text-slate-900">
-                    Receiving Verification
-                  </h2>
+                <Separator />
 
-                  <p className="text-xs text-slate-500">
-                    Confirm gate-pass and material inspection
-                  </p>
+                <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={addItem}
+                    className={BRAND_TEXT}
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Add another material
+                  </Button>
+
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                    <SummaryPill label="Delivered" value={totals.quantity} />
+                    <SummaryPill label="Accepted" value={totals.accepted} />
+                    <SummaryPill label="Short" value={totals.shortage} />
+                    <SummaryPill label="Damaged" value={totals.damaged} />
+                    <SummaryPill label="Rejected" value={totals.rejected} />
+                  </div>
                 </div>
-              </div>
+              </CardContent>
+            </Card>
 
-              <div className="grid gap-4 p-5 md:grid-cols-2">
+            {/* ------------------------------------------------ Verification */}
+            <Card>
+              <SectionHeader
+                icon={Check}
+                title="Receiving verification"
+                description="Confirm gate pass and material inspection"
+              />
+
+              <CardContent className="grid gap-4 pt-5 md:grid-cols-2">
                 <ToggleCard
                   checked={form.gate_pass_received}
                   onChange={(value) => updateField("gate_pass_received", value)}
-                  title="Gate Pass Received"
-                  description="Gate/security documentation has been received."
+                  title="Gate pass received"
+                  description="Gate or security documentation has been received."
                 />
 
                 <ToggleCard
                   checked={form.material_checked}
                   onChange={(value) => updateField("material_checked", value)}
-                  title="Material Checked"
+                  title="Material checked"
                   description="Delivered materials have been physically checked."
                 />
-              </div>
-            </section>
+              </CardContent>
+            </Card>
 
-            {/* ==================================================
-                REMARKS
-            =================================================== */}
+            {/* ------------------------------------------------ Remarks */}
+            <Card>
+              <SectionHeader
+                title="Remarks and documentation"
+                description="Receiving notes, discrepancies and supporting documents"
+              />
 
-            <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="border-b border-slate-100 px-5 py-4">
-                <h2 className="font-bold text-slate-900">
-                  Remarks & Documentation
-                </h2>
-
-                <p className="text-xs text-slate-500">
-                  Add receiving notes, discrepancies and supporting documents
-                </p>
-              </div>
-
-              <div className="grid gap-5 p-5 md:grid-cols-2">
-                <div>
-                  <label className={labelClass}>General Remarks</label>
-
-                  <textarea
+              <CardContent className="grid gap-5 pt-5 md:grid-cols-2">
+                <Field label="General remarks" htmlFor="general_remarks">
+                  <Textarea
+                    id="general_remarks"
                     rows={4}
                     value={form.general_remarks}
                     onChange={(event) =>
                       updateField("general_remarks", event.target.value)
                     }
-                    placeholder="General notes about this delivery..."
-                    className={`${inputClass()} resize-none`}
+                    placeholder="General notes about this delivery"
+                    className="resize-none"
                   />
-                </div>
+                </Field>
 
-                <div>
-                  <label className={labelClass}>Discrepancy Notes</label>
-
-                  <textarea
+                <Field label="Discrepancy notes" htmlFor="discrepancy_notes">
+                  <Textarea
+                    id="discrepancy_notes"
                     rows={4}
                     value={form.discrepancy_notes}
                     onChange={(event) =>
                       updateField("discrepancy_notes", event.target.value)
                     }
-                    placeholder="Record shortages, damages, rejected items or other discrepancies..."
-                    className={`${inputClass()} resize-none`}
+                    placeholder="Shortages, damages, rejected items or other discrepancies"
+                    className="resize-none"
                   />
-                </div>
+                </Field>
 
-                <div className="md:col-span-2">
-                  <label className={labelClass}>Attachment URL</label>
-
-                  <input
+                <Field
+                  label="Attachment URL"
+                  htmlFor="attachment_url"
+                  className="md:col-span-2"
+                >
+                  <Input
+                    id="attachment_url"
                     type="url"
                     value={form.attachment_url}
                     onChange={(event) =>
                       updateField("attachment_url", event.target.value)
                     }
                     placeholder="https://..."
-                    className={inputClass()}
                   />
-                </div>
-              </div>
-            </section>
+                </Field>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* ====================================================
-              SIDEBAR
-          ===================================================== */}
-
+          {/* -------------------------------------------------- Sidebar */}
           <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
-            {/* PO Summary */}
-
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#D8E0DA] text-[#1F453B]">
-                  <ClipboardList size={18} />
+            <Card>
+              <CardContent className="space-y-4 pt-6">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className={cn(
+                      "flex h-9 w-9 items-center justify-center rounded-lg",
+                      BRAND_SOFT,
+                    )}
+                  >
+                    <ClipboardList className="h-[18px] w-[18px]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold leading-none">
+                      Delivery summary
+                    </h3>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Current challan overview
+                    </p>
+                  </div>
                 </div>
 
-                <div>
-                  <h3 className="font-bold text-slate-900">Delivery Summary</h3>
-
-                  <p className="text-xs text-slate-500">
-                    Current challan overview
-                  </p>
+                <div className="space-y-3">
+                  <InfoRow
+                    label="Project"
+                    value={
+                      selectedProject?.name ||
+                      selectedProject?.project_name ||
+                      form.project_id ||
+                      "Not selected"
+                    }
+                  />
+                  <InfoRow
+                    label="Purchase order"
+                    value={
+                      selectedPurchaseOrder?.po_number ||
+                      selectedPurchaseOrder?.poNumber ||
+                      "Not linked"
+                    }
+                  />
+                  <InfoRow
+                    label="Vendor"
+                    value={
+                      selectedVendor?.name ||
+                      selectedVendor?.agency_name ||
+                      "Not selected"
+                    }
+                  />
+                  <InfoRow
+                    label="Date"
+                    value={form.challan_date || "Not selected"}
+                  />
                 </div>
-              </div>
+              </CardContent>
+            </Card>
 
-              <div className="space-y-3">
-                <InfoRow
-                  label="Project"
-                  value={
-                    selectedProject?.name ||
-                    selectedProject?.project_name ||
-                    form.project_id ||
-                    "Not selected"
-                  }
-                />
-
-                <InfoRow
-                  label="Purchase Order"
-                  value={
-                    selectedPurchaseOrder?.po_number ||
-                    selectedPurchaseOrder?.poNumber ||
-                    "Not linked"
-                  }
-                />
-
-                <InfoRow
-                  label="Vendor"
-                  value={
-                    selectedVendor?.name ||
-                    selectedVendor?.agency_name ||
-                    "Not selected"
-                  }
-                />
-
-                <InfoRow
-                  label="Date"
-                  value={form.challan_date || "Not selected"}
-                />
-              </div>
-            </section>
-
-            {/* Quantity Summary */}
-
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h3 className="mb-4 font-bold text-slate-900">
-                Quantity Summary
-              </h3>
-
-              <div className="space-y-3">
-                <MetricRow label="Total Delivered" value={totals.quantity} />
-
+            <Card>
+              <CardContent className="space-y-3 pt-6">
+                <h3 className="text-sm font-semibold">Quantity summary</h3>
+                <MetricRow label="Total delivered" value={totals.quantity} />
                 <MetricRow label="Accepted" value={totals.accepted} />
-
                 <MetricRow label="Shortage" value={totals.shortage} />
-
                 <MetricRow label="Damaged" value={totals.damaged} />
-
                 <MetricRow label="Rejected" value={totals.rejected} />
-              </div>
-            </section>
+              </CardContent>
+            </Card>
 
-            {/* Status */}
-
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h3 className="mb-3 font-bold text-slate-900">Verification</h3>
-
-              <div className="space-y-2">
+            <Card>
+              <CardContent className="space-y-2.5 pt-6">
+                <h3 className="mb-1 text-sm font-semibold">Verification</h3>
                 <StatusRow
                   checked={form.gate_pass_received}
                   label="Gate pass received"
                 />
-
                 <StatusRow
                   checked={form.material_checked}
                   label="Material checked"
                 />
-              </div>
-            </section>
-
-            {/* Mobile cancel */}
+              </CardContent>
+            </Card>
 
             {onCancel && (
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={onCancel}
                 disabled={isSubmitting}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 sm:hidden"
+                className="w-full sm:hidden"
               >
-                <X size={17} />
+                <X className="mr-2 h-4 w-4" />
                 Cancel
-              </button>
+              </Button>
             )}
           </aside>
         </div>
       </div>
     </form>
-  );
-}
-
-// ============================================================
-// SMALL COMPONENTS
-// ============================================================
-
-function SummaryPill({ label, value }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-      <div className="text-sm font-bold text-slate-900">
-        {Number(value || 0).toFixed(3)}
-      </div>
-
-      <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-        {label}
-      </div>
-    </div>
-  );
-}
-
-function InfoRow({ label, value }) {
-  return (
-    <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-      <span className="text-xs font-medium text-slate-500">{label}</span>
-
-      <span className="max-w-[180px] truncate text-right text-xs font-semibold text-slate-800">
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function MetricRow({ label, value }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-slate-500">{label}</span>
-
-      <span className="text-sm font-bold text-slate-900">
-        {Number(value || 0).toFixed(3)}
-      </span>
-    </div>
-  );
-}
-
-function StatusRow({ checked, label }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span
-        className={`flex h-5 w-5 items-center justify-center rounded-full ${
-          checked ? "bg-[#1F453B] text-white" : "bg-slate-100 text-slate-300"
-        }`}
-      >
-        {checked && <Check size={12} />}
-      </span>
-
-      <span className="text-sm text-slate-600">{label}</span>
-    </div>
-  );
-}
-
-function ToggleCard({ checked, onChange, title, description }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className={`flex items-center justify-between gap-4 rounded-2xl border p-4 text-left transition ${
-        checked
-          ? "border-[#1F453B]/30 bg-[#D8E0DA]/40"
-          : "border-slate-200 bg-white hover:bg-slate-50"
-      }`}
-    >
-      <div className="min-w-0">
-        <div className="text-sm font-bold text-slate-900">{title}</div>
-
-        <div className="mt-1 text-xs leading-5 text-slate-500">
-          {description}
-        </div>
-      </div>
-
-      <span
-        className={`relative flex h-6 w-11 shrink-0 rounded-full transition ${
-          checked ? "bg-[#1F453B]" : "bg-slate-200"
-        }`}
-      >
-        <span
-          className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition ${
-            checked ? "left-6" : "left-1"
-          }`}
-        />
-      </span>
-    </button>
   );
 }

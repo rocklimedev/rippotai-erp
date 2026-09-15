@@ -45,7 +45,31 @@ import {
   UserRound,
   Users,
   X,
+  Clock,
 } from "lucide-react";
+
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // ⚠️ Adjust this import path to wherever onedriveApi.js actually lives
 // relative to this component (e.g. "../../features/onedrive/onedriveApi").
@@ -85,6 +109,13 @@ import {
 
 const ROOT = "root";
 
+/* ------------------------------------------------------------------
+ * Brand — centralised until these live in the tailwind theme.
+ * ------------------------------------------------------------------ */
+const BRAND = "bg-[#1F453B] hover:bg-[#17372f] text-white";
+const BRAND_TEXT = "text-[#1F453B]";
+const BRAND_SOFT = "bg-[#1F453B]/10 text-[#1F453B]";
+
 /* ============================================================
    ADAPTERS — turn raw API payloads into UI-shaped objects
 ============================================================ */
@@ -114,18 +145,13 @@ function formatDate(iso) {
   const now = new Date();
 
   if (date.toDateString() === now.toDateString()) {
-    return `Today, ${date.toLocaleTimeString([], {
-      hour: "numeric",
-      minute: "2-digit",
-    })}`;
+    return `Today, ${date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
   }
 
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
 
-  if (date.toDateString() === yesterday.toDateString()) {
-    return "Yesterday";
-  }
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
 
   return date.toLocaleDateString(undefined, {
     month: "short",
@@ -221,19 +247,14 @@ const getFileIcon = (type) => {
   switch (type) {
     case "pdf":
       return FileText;
-
     case "excel":
       return FileSpreadsheet;
-
     case "image":
       return FileImage;
-
     case "archive":
       return FileArchive;
-
     case "code":
       return FileCode2;
-
     default:
       return File;
   }
@@ -243,92 +264,18 @@ const getFileColor = (type) => {
   switch (type) {
     case "pdf":
       return "text-red-500";
-
     case "excel":
       return "text-emerald-600";
-
     case "image":
       return "text-purple-500";
-
     case "archive":
       return "text-amber-500";
-
     default:
       return "text-slate-500";
   }
 };
 
-/* ============================================================
-   BUTTON
-============================================================ */
-
-function Button({ children, variant = "default", className = "", ...props }) {
-  const variants = {
-    default: "bg-[#1F453B] text-white hover:bg-[#17372F]",
-
-    outline:
-      "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-
-    ghost: "text-slate-500 hover:bg-slate-100 hover:text-slate-800",
-
-    danger: "bg-red-50 text-red-600 hover:bg-red-100",
-  };
-
-  return (
-    <button
-      {...props}
-      className={`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${className}`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function IconButton({ children, active = false, className = "", ...props }) {
-  return (
-    <button
-      {...props}
-      className={`
-        flex h-9 w-9 items-center justify-center rounded-lg
-        transition disabled:cursor-not-allowed disabled:opacity-50
-        ${
-          active
-            ? "bg-[#1F453B]/10 text-[#1F453B]"
-            : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-        }
-        ${className}
-      `}
-    >
-      {children}
-    </button>
-  );
-}
-
-/* ============================================================
-   MODAL
-============================================================ */
-
-function Modal({ open, title, children, onClose, width = "max-w-md" }) {
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <div
-        className={`w-full ${width} overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl`}
-      >
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-          <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
-
-          <IconButton onClick={onClose}>
-            <X size={17} />
-          </IconButton>
-        </div>
-
-        {children}
-      </div>
-    </div>
-  );
-}
+const isFolderItem = (item) => item?.itemCount !== undefined;
 
 /* ============================================================
    CREATE FOLDER
@@ -340,7 +287,6 @@ function CreateFolderModal({ open, onClose, onCreate, isCreating }) {
 
   const submit = async () => {
     if (!name.trim()) return;
-
     setError("");
 
     try {
@@ -348,60 +294,68 @@ function CreateFolderModal({ open, onClose, onCreate, isCreating }) {
       setName("");
       onClose();
     } catch (err) {
-      setError(err?.data?.message || "Couldn't create folder. Try again.");
+      setError(err?.data?.message || "The folder could not be created.");
     }
   };
 
   return (
-    <Modal open={open} title="Create folder" onClose={onClose}>
-      <div className="p-5">
-        <div className="mb-4 flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1F453B]/10">
-            <FolderPlus size={20} className="text-[#1F453B]" />
+    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Create folder</DialogTitle>
+        </DialogHeader>
+
+        <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3">
+          <div
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-lg",
+              BRAND_SOFT,
+            )}
+          >
+            <FolderPlus className="h-5 w-5" />
           </div>
-
           <div>
-            <p className="text-sm font-medium text-slate-700">New folder</p>
-
-            <p className="text-xs text-slate-400">
+            <p className="text-sm font-medium">New folder</p>
+            <p className="text-xs text-muted-foreground">
               Create it inside the current location
             </p>
           </div>
         </div>
 
-        <label className="mb-2 block text-xs font-semibold text-slate-600">
-          Folder name
-        </label>
+        <div className="space-y-1.5">
+          <Label htmlFor="new_folder_name">Folder name</Label>
+          <Input
+            id="new_folder_name"
+            autoFocus
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") submit();
+            }}
+            placeholder="e.g. Drawings"
+          />
+          {error && <p className="text-xs text-destructive">{error}</p>}
+        </div>
 
-        <input
-          autoFocus
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") submit();
-          }}
-          placeholder="e.g. Drawings"
-          className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-[#1F453B] focus:ring-2 focus:ring-[#1F453B]/10"
-        />
-
-        {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
-
-        <div className="mt-5 flex justify-end gap-2">
+        <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-
-          <Button disabled={!name.trim() || isCreating} onClick={submit}>
+          <Button
+            disabled={!name.trim() || isCreating}
+            onClick={submit}
+            className={BRAND}
+          >
             {isCreating ? (
-              <Loader2 size={16} className="animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <FolderPlus size={16} />
+              <FolderPlus className="h-4 w-4" />
             )}
             Create folder
           </Button>
-        </div>
-      </div>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -414,13 +368,11 @@ function UploadModal({ open, onClose, onUpload, isUploading }) {
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState("");
 
-  const addFiles = (list) => {
+  const addFiles = (list) =>
     setFiles((prev) => [...prev, ...Array.from(list || [])]);
-  };
 
   const submit = async () => {
     if (!files.length) return;
-
     setError("");
 
     try {
@@ -428,142 +380,297 @@ function UploadModal({ open, onClose, onUpload, isUploading }) {
       setFiles([]);
       onClose();
     } catch (err) {
-      setError(err?.data?.message || "Some files failed to upload.");
+      setError(err?.data?.message || "Some files could not be uploaded.");
     }
   };
 
   return (
-    <Modal open={open} title="Upload files" onClose={onClose} width="max-w-xl">
-      <div className="p-5">
+    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Upload files</DialogTitle>
+        </DialogHeader>
+
         <div
-          onDragOver={(e) => {
-            e.preventDefault();
+          onDragOver={(event) => {
+            event.preventDefault();
             setDragging(true);
           }}
           onDragLeave={() => setDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
+          onDrop={(event) => {
+            event.preventDefault();
             setDragging(false);
-            addFiles(e.dataTransfer.files);
+            addFiles(event.dataTransfer.files);
           }}
-          className={`
-            cursor-pointer rounded-xl border-2 border-dashed
-            p-10 text-center transition
-            ${
-              dragging
-                ? "border-[#1F453B] bg-[#1F453B]/5"
-                : "border-slate-200 hover:border-[#1F453B]/40 hover:bg-slate-50"
-            }
-          `}
+          className={cn(
+            "cursor-pointer rounded-xl border-2 border-dashed p-10 text-center transition",
+            dragging
+              ? "border-[#1F453B] bg-[#1F453B]/5"
+              : "border-input hover:border-[#1F453B]/40 hover:bg-muted/40",
+          )}
         >
-          <Cloud size={32} className="mx-auto text-[#1F453B]" />
-
-          <p className="mt-3 text-sm font-semibold text-slate-800">
-            Drop files here
-          </p>
-
-          <p className="mt-1 text-xs text-slate-400">
+          <Cloud className={cn("mx-auto h-8 w-8", BRAND_TEXT)} />
+          <p className="mt-3 text-sm font-semibold">Drop files here</p>
+          <p className="mt-1 text-xs text-muted-foreground">
             or click to browse from your computer
           </p>
-
-          <input
+          <Input
             type="file"
             multiple
-            className="mt-5 block w-full text-xs"
-            onChange={(e) => addFiles(e.target.files)}
+            className="mt-5 text-xs"
+            onChange={(event) => addFiles(event.target.files)}
           />
         </div>
 
         {files.length > 0 && (
-          <div className="mt-4 space-y-2">
-            <p className="text-xs font-semibold text-slate-600">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground">
               Ready to upload
             </p>
-
             {files.map((file, index) => (
               <div
                 key={`${file.name}-${index}`}
-                className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2"
+                className="flex items-center gap-3 rounded-lg bg-muted/50 px-3 py-2"
               >
-                <File size={17} />
-
-                <p className="min-w-0 flex-1 truncate text-xs text-slate-700">
-                  {file.name}
-                </p>
-
-                <span className="text-[10px] text-slate-400">
+                <File className="h-[17px] w-[17px] shrink-0 text-muted-foreground" />
+                <p className="min-w-0 flex-1 truncate text-xs">{file.name}</p>
+                <span className="text-[10px] text-muted-foreground">
                   {formatBytes(file.size)}
                 </span>
-
                 <button
+                  type="button"
                   onClick={() =>
                     setFiles((prev) => prev.filter((_, i) => i !== index))
                   }
-                  className="text-slate-400 hover:text-red-500"
+                  className="text-muted-foreground hover:text-destructive"
                 >
-                  <X size={15} />
+                  <X className="h-[15px] w-[15px]" />
                 </button>
               </div>
             ))}
           </div>
         )}
 
-        {error && <p className="mt-3 text-xs text-red-500">{error}</p>}
+        {error && <p className="text-xs text-destructive">{error}</p>}
 
-        <div className="mt-5 flex justify-end gap-2">
+        <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-
-          <Button disabled={!files.length || isUploading} onClick={submit}>
+          <Button
+            disabled={!files.length || isUploading}
+            onClick={submit}
+            className={BRAND}
+          >
             {isUploading ? (
-              <Loader2 size={16} className="animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Upload size={16} />
+              <Upload className="h-4 w-4" />
             )}
             Upload
           </Button>
-        </div>
-      </div>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 /* ============================================================
-   USER WORKSPACE WIDGET
+   WORKSPACE CREATE MODAL
+============================================================ */
+
+function CreateWorkspaceModal({ open, onClose, onCreate }) {
+  const [name, setName] = useState("");
+
+  const submit = () => {
+    if (!name.trim()) return;
+    onCreate(name.trim());
+    setName("");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Create workspace</DialogTitle>
+        </DialogHeader>
+
+        <div className={cn("rounded-xl p-4", "bg-[#1F453B]/5")}>
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-lg",
+                BRAND_SOFT,
+              )}
+            >
+              <FolderTree className="h-[19px] w-[19px]" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Custom file workspace</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Create a personal view over your OneDrive files.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="workspace_name">Workspace name</Label>
+          <Input
+            id="workspace_name"
+            autoFocus
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            onKeyDown={(event) => event.key === "Enter" && submit()}
+            placeholder="Workspace name"
+          />
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={submit} className={BRAND}>
+            Create workspace
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ============================================================
+   ITEM ACTIONS MENU
+   Anchored on the item's own trigger button — replaces the old
+   fixed-position "context menu in the corner" pattern with a
+   normal anchored dropdown.
+============================================================ */
+
+function ItemActionsMenu({
+  item,
+  onDownload,
+  onRename,
+  onDelete,
+  isDownloading,
+  isDeleting,
+  triggerClassName,
+}) {
+  const folder = isFolderItem(item);
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className={cn("h-9 w-9 text-muted-foreground", triggerClassName)}
+          onClick={(event) => event.stopPropagation()}
+          aria-label={`Actions for ${item.name}`}
+        >
+          <MoreHorizontal className="h-[17px] w-[17px]" />
+        </Button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent
+        align="end"
+        className="w-48"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <DropdownMenuItem>
+          <FolderOpen className="mr-2 h-[14px] w-[14px]" />
+          Open
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          disabled={folder || isDownloading}
+          onSelect={() => onDownload(item)}
+        >
+          {isDownloading ? (
+            <Loader2 className="mr-2 h-[14px] w-[14px] animate-spin" />
+          ) : (
+            <Download className="mr-2 h-[14px] w-[14px]" />
+          )}
+          Download
+        </DropdownMenuItem>
+
+        <DropdownMenuItem>
+          <Share2 className="mr-2 h-[14px] w-[14px]" />
+          Share
+        </DropdownMenuItem>
+
+        <DropdownMenuItem>
+          <Copy className="mr-2 h-[14px] w-[14px]" />
+          Make a copy
+        </DropdownMenuItem>
+
+        <DropdownMenuItem>
+          <Move className="mr-2 h-[14px] w-[14px]" />
+          Move to
+        </DropdownMenuItem>
+
+        <DropdownMenuItem>
+          <Link2 className="mr-2 h-[14px] w-[14px]" />
+          Copy link
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem onSelect={() => onRename(item)}>
+          <Pencil className="mr-2 h-[14px] w-[14px]" />
+          Rename
+        </DropdownMenuItem>
+
+        <DropdownMenuItem>
+          <Pin className="mr-2 h-[14px] w-[14px]" />
+          Add to workspace
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem
+          onSelect={() => onDelete(item)}
+          disabled={isDeleting}
+          className="text-destructive focus:text-destructive"
+        >
+          {isDeleting ? (
+            <Loader2 className="mr-2 h-[14px] w-[14px] animate-spin" />
+          ) : (
+            <Trash2 className="mr-2 h-[14px] w-[14px]" />
+          )}
+          {isDeleting ? "Moving to trash..." : "Move to trash"}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/* ============================================================
+   WORKSPACE ITEM
 ============================================================ */
 
 function WorkspaceItem({ icon: Icon, label, count, active, onClick }) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className={`
-        group flex w-full items-center gap-3 rounded-lg
-        px-3 py-2 text-left transition
-        ${
-          active
-            ? "bg-[#1F453B]/10 text-[#1F453B]"
-            : "text-slate-600 hover:bg-slate-50"
-        }
-      `}
+      className={cn(
+        "group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition",
+        active ? BRAND_SOFT : "text-slate-600 hover:bg-slate-50",
+      )}
     >
-      <Icon size={16} />
-
+      <Icon className="h-4 w-4" />
       <span className="min-w-0 flex-1 truncate text-xs font-medium">
         {label}
       </span>
-
       {count !== undefined && (
         <span className="text-[10px] text-slate-400">{count}</span>
       )}
-
       <ChevronRight
-        size={13}
-        className={`
-          opacity-0 transition
-          group-hover:opacity-100
-          ${active ? "text-[#1F453B]" : "text-slate-300"}
-        `}
+        className={cn(
+          "h-[13px] w-[13px] opacity-0 transition group-hover:opacity-100",
+          active ? BRAND_TEXT : "text-slate-300",
+        )}
       />
     </button>
   );
@@ -585,54 +692,61 @@ function FileSidebar({
 }) {
   if (collapsed) {
     return (
-      <aside className="flex w-[68px] shrink-0 flex-col items-center border-r border-slate-200 bg-white py-4">
-        <div className="mb-5 flex h-9 w-9 items-center justify-center rounded-xl bg-[#1F453B] text-white">
-          <Cloud size={18} />
+      <aside className="flex w-[68px] shrink-0 flex-col items-center border-r bg-background py-4">
+        <div
+          className={cn(
+            "mb-5 flex h-9 w-9 items-center justify-center rounded-xl",
+            BRAND,
+          )}
+        >
+          <Cloud className="h-[18px] w-[18px]" />
         </div>
 
         <div className="space-y-2">
-          <IconButton active={currentFolder === ROOT} onClick={onNavigateRoot}>
-            <Home size={17} />
-          </IconButton>
-
-          <IconButton>
-            <ClockIcon />
-          </IconButton>
-
-          <IconButton>
-            <Star size={17} />
-          </IconButton>
-
-          <IconButton>
-            <Users size={17} />
-          </IconButton>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className={cn("h-9 w-9", currentFolder === ROOT && BRAND_SOFT)}
+            onClick={onNavigateRoot}
+          >
+            <Home className="h-[17px] w-[17px]" />
+          </Button>
+          <Button type="button" variant="ghost" size="icon" className="h-9 w-9">
+            <Clock className="h-[17px] w-[17px]" />
+          </Button>
+          <Button type="button" variant="ghost" size="icon" className="h-9 w-9">
+            <Star className="h-[17px] w-[17px]" />
+          </Button>
+          <Button type="button" variant="ghost" size="icon" className="h-9 w-9">
+            <Users className="h-[17px] w-[17px]" />
+          </Button>
         </div>
       </aside>
     );
   }
 
   return (
-    <aside className="flex w-[255px] shrink-0 flex-col border-r border-slate-200 bg-white">
-      {/* BRAND */}
-
-      <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1F453B] text-white">
-          <Cloud size={18} />
+    <aside className="flex w-[255px] shrink-0 flex-col border-r bg-background">
+      <div className="flex items-center gap-3 border-b px-4 py-4">
+        <div
+          className={cn(
+            "flex h-9 w-9 items-center justify-center rounded-xl",
+            BRAND,
+          )}
+        >
+          <Cloud className="h-[18px] w-[18px]" />
         </div>
-
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-900">INOS Files</p>
-
-          <p className="text-[10px] text-slate-400">OneDrive workspace</p>
+          <p className="text-sm font-semibold">INOS Files</p>
+          <p className="text-[10px] text-muted-foreground">
+            OneDrive workspace
+          </p>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-3">
-        {/* ====================================================
-            MAIN
-        ==================================================== */}
-
-        <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
           File system
         </p>
 
@@ -643,38 +757,29 @@ function FileSidebar({
             active={currentFolder === ROOT}
             onClick={onNavigateRoot}
           />
-
-          <WorkspaceItem icon={ClockIcon} label="Recent" onClick={() => {}} />
-
+          <WorkspaceItem icon={Clock} label="Recent" onClick={() => {}} />
           <WorkspaceItem icon={Star} label="Starred" onClick={() => {}} />
-
           <WorkspaceItem
             icon={Users}
             label="Shared with me"
             onClick={() => {}}
           />
-
           <WorkspaceItem icon={Trash2} label="Trash" onClick={() => {}} />
         </div>
 
-        {/* ====================================================
-            FOLDER TREE — top-level folders, fetched live
-        ==================================================== */}
-
         <div className="mt-7">
           <div className="mb-2 flex items-center justify-between px-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Folders
             </p>
-
             {rootFoldersLoading && (
-              <Loader2 size={12} className="animate-spin text-slate-300" />
+              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
             )}
           </div>
 
           <div className="space-y-0.5">
             {rootFolders.length === 0 && !rootFoldersLoading && (
-              <p className="px-3 py-2 text-[11px] text-slate-400">
+              <p className="px-3 py-2 text-[11px] text-muted-foreground">
                 No folders yet
               </p>
             )}
@@ -691,28 +796,26 @@ function FileSidebar({
           </div>
         </div>
 
-        {/* ====================================================
-            USER WORKSPACES
-        ==================================================== */}
-
         <div className="mt-7">
           <div className="mb-2 flex items-center justify-between px-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 My workspaces
               </p>
-
-              <p className="mt-0.5 text-[9px] text-slate-400">
+              <p className="mt-0.5 text-[9px] text-muted-foreground">
                 Custom file views
               </p>
             </div>
 
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground hover:text-[#1F453B]"
               onClick={onCreateWorkspace}
-              className="flex h-6 w-6 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-[#1F453B]"
             >
-              <Plus size={14} />
-            </button>
+              <Plus className="h-[14px] w-[14px]" />
+            </Button>
           </div>
 
           <div className="space-y-0.5">
@@ -729,87 +832,45 @@ function FileSidebar({
         </div>
       </div>
 
-      {/* STORAGE */}
-
-      <div className="border-t border-slate-100 p-3">
-        <div className="rounded-xl bg-slate-50 p-3">
+      <div className="border-t p-3">
+        <div className="rounded-xl bg-muted/50 p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <HardDrive size={15} className="text-[#1F453B]" />
-
-              <span className="text-xs font-medium text-slate-700">
-                Storage
-              </span>
+              <HardDrive className={cn("h-[15px] w-[15px]", BRAND_TEXT)} />
+              <span className="text-xs font-medium">Storage</span>
             </div>
-
-            <span className="text-[10px] text-slate-400">42.8 / 100 GB</span>
+            <span className="text-[10px] text-muted-foreground">
+              42.8 / 100 GB
+            </span>
           </div>
-
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
-            <div
-              className="h-full rounded-full bg-[#1F453B]"
-              style={{
-                width: "42.8%",
-              }}
-            />
-          </div>
+          <Progress value={42.8} className="mt-2 h-1.5" />
         </div>
       </div>
     </aside>
   );
 }
 
-/* ============================================================
-   SIDEBAR FOLDER
-============================================================ */
-
 function SidebarFolder({ id, label, currentFolder, onNavigate }) {
   const active = currentFolder === id;
 
   return (
     <button
+      type="button"
       onClick={onNavigate}
-      className={`
-        flex w-full items-center gap-2 rounded-lg px-3 py-2
-        text-left text-xs transition
-        ${
-          active
-            ? "bg-[#1F453B]/10 text-[#1F453B]"
-            : "text-slate-600 hover:bg-slate-50"
-        }
-      `}
+      className={cn(
+        "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition",
+        active ? BRAND_SOFT : "text-slate-600 hover:bg-slate-50",
+      )}
     >
       <Folder
-        size={15}
-        className={active ? "text-[#1F453B]" : "text-slate-400"}
+        className={cn(
+          "h-[15px] w-[15px]",
+          active ? BRAND_TEXT : "text-slate-400",
+        )}
       />
-
       <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
-
-      <ChevronRight size={13} className="text-slate-300" />
+      <ChevronRight className="h-[13px] w-[13px] text-slate-300" />
     </button>
-  );
-}
-
-/* ============================================================
-   CLOCK ICON
-============================================================ */
-
-function ClockIcon({ size = 17 }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" />
-    </svg>
   );
 }
 
@@ -824,27 +885,28 @@ function Breadcrumb({ trail, onNavigateRoot, onNavigateIndex }) {
   return (
     <div className="flex min-w-0 items-center gap-1 overflow-hidden">
       <button
+        type="button"
         onClick={onNavigateRoot}
-        className="shrink-0 text-sm font-semibold text-[#1F453B] hover:underline"
+        className={cn(
+          "shrink-0 text-sm font-semibold hover:underline",
+          BRAND_TEXT,
+        )}
       >
         My Files
       </button>
 
       {trail.map((crumb, index) => (
         <React.Fragment key={crumb.id}>
-          <ChevronRight size={14} className="shrink-0 text-slate-300" />
-
+          <ChevronRight className="h-[14px] w-[14px] shrink-0 text-slate-300" />
           <button
+            type="button"
             onClick={() => onNavigateIndex(index)}
-            className={`
-              min-w-0 max-w-[180px] truncate
-              text-sm
-              ${
-                index === trail.length - 1
-                  ? "font-semibold text-slate-800"
-                  : "text-slate-500 hover:text-slate-800"
-              }
-            `}
+            className={cn(
+              "min-w-0 max-w-[180px] truncate text-sm",
+              index === trail.length - 1
+                ? "font-semibold text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
           >
             {crumb.name}
           </button>
@@ -858,56 +920,58 @@ function Breadcrumb({ trail, onNavigateRoot, onNavigateIndex }) {
    FOLDER CARD
 ============================================================ */
 
-function FolderCard({ folder, selected, onSelect, onOpen, onMenu }) {
+function FolderCard({
+  folder,
+  selected,
+  onSelect,
+  onOpen,
+  onDownload,
+  onRename,
+  onDelete,
+  isDeleting,
+}) {
   return (
     <div
       onClick={() => onSelect(folder)}
       onDoubleClick={() => onOpen(folder)}
-      className={`
-        group relative cursor-pointer rounded-xl border
-        bg-white p-4 transition
-        ${
-          selected
-            ? "border-[#1F453B] bg-[#1F453B]/5 ring-2 ring-[#1F453B]/10"
-            : "border-slate-200 hover:-translate-y-[1px] hover:border-slate-300 hover:shadow-sm"
-        }
-      `}
+      className={cn(
+        "group relative cursor-pointer rounded-xl border bg-background p-4 transition",
+        selected
+          ? "border-[#1F453B] bg-[#1F453B]/5 ring-2 ring-[#1F453B]/10"
+          : "hover:-translate-y-[1px] hover:border-slate-300 hover:shadow-sm",
+      )}
     >
       <div className="flex items-start justify-between">
         <div
-          className={`
-            flex h-11 w-11 items-center justify-center
-            rounded-xl
-            ${selected ? "bg-[#1F453B]/10" : "bg-[#F1F5F3]"}
-          `}
+          className={cn(
+            "flex h-11 w-11 items-center justify-center rounded-xl",
+            selected ? BRAND_SOFT : "bg-[#F1F5F3]",
+          )}
         >
           <Folder
+            className={BRAND_TEXT}
             size={24}
-            className="text-[#1F453B]"
             fill="currentColor"
             fillOpacity={0.08}
           />
         </div>
 
-        <IconButton
-          onClick={(e) => {
-            e.stopPropagation();
-            onMenu(folder);
-          }}
-        >
-          <MoreHorizontal size={17} />
-        </IconButton>
+        <ItemActionsMenu
+          item={folder}
+          onDownload={onDownload}
+          onRename={onRename}
+          onDelete={onDelete}
+          isDeleting={isDeleting}
+        />
       </div>
 
       <div className="mt-5">
-        <p className="truncate text-sm font-semibold text-slate-800">
-          {folder.name}
-        </p>
-
+        <p className="truncate text-sm font-semibold">{folder.name}</p>
         <div className="mt-2 flex items-center justify-between">
-          <p className="text-xs text-slate-400">{folder.itemCount} items</p>
-
-          <p className="text-[10px] text-slate-400">{folder.modified}</p>
+          <p className="text-xs text-muted-foreground">
+            {folder.itemCount} items
+          </p>
+          <p className="text-[10px] text-muted-foreground">{folder.modified}</p>
         </div>
       </div>
     </div>
@@ -918,56 +982,55 @@ function FolderCard({ folder, selected, onSelect, onOpen, onMenu }) {
    FILE CARD
 ============================================================ */
 
-function FileCard({ file, selected, onSelect, onOpen, onMenu }) {
+function FileCard({
+  file,
+  selected,
+  onSelect,
+  onOpen,
+  onDownload,
+  onRename,
+  onDelete,
+  isDownloading,
+  isDeleting,
+}) {
   const Icon = getFileIcon(file.type);
 
   return (
     <div
       onClick={() => onSelect(file)}
       onDoubleClick={() => onOpen(file)}
-      className={`
-        group relative cursor-pointer rounded-xl border
-        bg-white p-4 transition
-        ${
-          selected
-            ? "border-[#1F453B] bg-[#1F453B]/5 ring-2 ring-[#1F453B]/10"
-            : "border-slate-200 hover:-translate-y-[1px] hover:border-slate-300 hover:shadow-sm"
-        }
-      `}
+      className={cn(
+        "group relative cursor-pointer rounded-xl border bg-background p-4 transition",
+        selected
+          ? "border-[#1F453B] bg-[#1F453B]/5 ring-2 ring-[#1F453B]/10"
+          : "hover:-translate-y-[1px] hover:border-slate-300 hover:shadow-sm",
+      )}
     >
       <div className="flex items-start justify-between">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-50">
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-muted/60">
           <Icon size={23} className={getFileColor(file.type)} />
         </div>
 
-        <IconButton
-          onClick={(e) => {
-            e.stopPropagation();
-            onMenu(file);
-          }}
-        >
-          <MoreHorizontal size={17} />
-        </IconButton>
+        <ItemActionsMenu
+          item={file}
+          onDownload={onDownload}
+          onRename={onRename}
+          onDelete={onDelete}
+          isDownloading={isDownloading}
+          isDeleting={isDeleting}
+        />
       </div>
 
       <div className="mt-5">
         <div className="flex items-center gap-1.5">
           {file.starred && (
-            <Star
-              size={12}
-              className="shrink-0 fill-amber-400 text-amber-400"
-            />
+            <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-400" />
           )}
-
-          <p className="truncate text-sm font-medium text-slate-800">
-            {file.name}
-          </p>
+          <p className="truncate text-sm font-medium">{file.name}</p>
         </div>
-
         <div className="mt-2 flex items-center justify-between">
-          <p className="text-xs text-slate-400">{file.size}</p>
-
-          <p className="text-[10px] text-slate-400">{file.modified}</p>
+          <p className="text-xs text-muted-foreground">{file.size}</p>
+          <p className="text-[10px] text-muted-foreground">{file.modified}</p>
         </div>
       </div>
     </div>
@@ -978,63 +1041,56 @@ function FileCard({ file, selected, onSelect, onOpen, onMenu }) {
    LIST VIEW
 ============================================================ */
 
-function ListView({ folders, files, selectedId, onSelect, onOpen, onMenu }) {
+function ListView({
+  folders,
+  files,
+  selectedId,
+  onSelect,
+  onOpen,
+  onDownload,
+  onRename,
+  onDelete,
+  downloadingId,
+  deletingId,
+}) {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-      <div className="grid grid-cols-[40px_minmax(300px,1fr)_180px_130px_45px] border-b border-slate-100 bg-slate-50 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+    <div className="overflow-hidden rounded-xl border bg-background">
+      <div className="grid grid-cols-[40px_minmax(300px,1fr)_180px_130px_45px] border-b bg-muted/40 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
         <div />
-
         <div>Name</div>
-
         <div>Modified</div>
-
         <div>Size</div>
-
         <div />
       </div>
-
-      {/* FOLDERS */}
 
       {folders.map((folder) => (
         <div
           key={folder.id}
           onClick={() => onSelect(folder)}
           onDoubleClick={() => onOpen(folder)}
-          className={`
-            grid cursor-pointer grid-cols-[40px_minmax(300px,1fr)_180px_130px_45px]
-            items-center border-b border-slate-100 px-4 py-3
-            transition hover:bg-slate-50
-            ${selectedId === folder.id ? "bg-[#1F453B]/5" : ""}
-          `}
+          className={cn(
+            "grid cursor-pointer grid-cols-[40px_minmax(300px,1fr)_180px_130px_45px] items-center border-b px-4 py-3 transition hover:bg-muted/40",
+            selectedId === folder.id && "bg-[#1F453B]/5",
+          )}
         >
-          <Folder size={19} className="text-[#1F453B]" />
-
+          <Folder className={cn("h-[19px] w-[19px]", BRAND_TEXT)} />
           <div className="flex min-w-0 items-center gap-3">
-            <p className="truncate text-sm font-medium text-slate-700">
-              {folder.name}
-            </p>
-
-            <span className="text-[10px] text-slate-400">
+            <p className="truncate text-sm font-medium">{folder.name}</p>
+            <span className="text-[10px] text-muted-foreground">
               {folder.itemCount} items
             </span>
           </div>
-
-          <p className="text-xs text-slate-500">{folder.modified}</p>
-
-          <p className="text-xs text-slate-400">Folder</p>
-
-          <IconButton
-            onClick={(e) => {
-              e.stopPropagation();
-              onMenu(folder);
-            }}
-          >
-            <MoreHorizontal size={16} />
-          </IconButton>
+          <p className="text-xs text-muted-foreground">{folder.modified}</p>
+          <p className="text-xs text-muted-foreground">Folder</p>
+          <ItemActionsMenu
+            item={folder}
+            onDownload={onDownload}
+            onRename={onRename}
+            onDelete={onDelete}
+            isDeleting={deletingId === folder.id}
+          />
         </div>
       ))}
-
-      {/* FILES */}
 
       {files.map((file) => {
         const Icon = getFileIcon(file.type);
@@ -1044,40 +1100,30 @@ function ListView({ folders, files, selectedId, onSelect, onOpen, onMenu }) {
             key={file.id}
             onClick={() => onSelect(file)}
             onDoubleClick={() => onOpen(file)}
-            className={`
-              grid cursor-pointer grid-cols-[40px_minmax(300px,1fr)_180px_130px_45px]
-              items-center border-b border-slate-100 px-4 py-3
-              transition hover:bg-slate-50
-              ${selectedId === file.id ? "bg-[#1F453B]/5" : ""}
-            `}
+            className={cn(
+              "grid cursor-pointer grid-cols-[40px_minmax(300px,1fr)_180px_130px_45px] items-center border-b px-4 py-3 transition hover:bg-muted/40",
+              selectedId === file.id && "bg-[#1F453B]/5",
+            )}
           >
-            <Icon size={19} className={getFileColor(file.type)} />
-
+            <Icon
+              className={cn("h-[19px] w-[19px]", getFileColor(file.type))}
+            />
             <div className="flex min-w-0 items-center gap-2">
               {file.starred && (
-                <Star
-                  size={12}
-                  className="shrink-0 fill-amber-400 text-amber-400"
-                />
+                <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-400" />
               )}
-
-              <p className="truncate text-sm font-medium text-slate-700">
-                {file.name}
-              </p>
+              <p className="truncate text-sm font-medium">{file.name}</p>
             </div>
-
-            <p className="text-xs text-slate-500">{file.modified}</p>
-
-            <p className="text-xs text-slate-400">{file.size}</p>
-
-            <IconButton
-              onClick={(e) => {
-                e.stopPropagation();
-                onMenu(file);
-              }}
-            >
-              <MoreHorizontal size={16} />
-            </IconButton>
+            <p className="text-xs text-muted-foreground">{file.modified}</p>
+            <p className="text-xs text-muted-foreground">{file.size}</p>
+            <ItemActionsMenu
+              item={file}
+              onDownload={onDownload}
+              onRename={onRename}
+              onDelete={onDelete}
+              isDownloading={downloadingId === file.id}
+              isDeleting={deletingId === file.id}
+            />
           </div>
         );
       })}
@@ -1098,90 +1144,81 @@ function DetailsPanel({
 }) {
   if (!item) return null;
 
-  const isFolder = item.itemCount !== undefined;
-
-  const Icon = isFolder ? Folder : getFileIcon(item.type);
+  const folder = isFolderItem(item);
+  const Icon = folder ? Folder : getFileIcon(item.type);
 
   return (
-    <aside className="hidden w-[310px] shrink-0 border-l border-slate-200 bg-white xl:block">
-      <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+    <aside className="hidden w-[310px] shrink-0 border-l bg-background xl:block">
+      <div className="flex items-center justify-between border-b px-5 py-4">
         <div className="flex items-center gap-2">
-          <Info size={16} className="text-[#1F453B]" />
-
-          <p className="text-sm font-semibold text-slate-800">Details</p>
+          <Info className={cn("h-4 w-4", BRAND_TEXT)} />
+          <p className="text-sm font-semibold">Details</p>
         </div>
-
-        <IconButton onClick={onClose}>
-          <X size={16} />
-        </IconButton>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9"
+          onClick={onClose}
+        >
+          <X className="h-4 w-4" />
+        </Button>
       </div>
 
       <div className="p-5">
         <div className="flex flex-col items-center text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-slate-50">
+          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-muted/50">
             <Icon
               size={38}
-              className={isFolder ? "text-[#1F453B]" : getFileColor(item.type)}
+              className={folder ? BRAND_TEXT : getFileColor(item.type)}
             />
           </div>
-
-          <p className="mt-4 break-all text-sm font-semibold text-slate-800">
-            {item.name}
-          </p>
-
-          <p className="mt-1 text-xs text-slate-400">
-            {isFolder ? `${item.itemCount} items` : item.size}
+          <p className="mt-4 break-all text-sm font-semibold">{item.name}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {folder ? `${item.itemCount} items` : item.size}
           </p>
         </div>
 
         <div className="mt-7 space-y-5">
           <DetailRow label="Location" value={locationLabel} icon={FolderOpen} />
-
           <DetailRow label="Modified" value={item.modified} />
-
-          {!isFolder && (
+          {!folder && (
             <>
               <DetailRow label="Owner" value={item.owner} icon={UserRound} />
-
               <DetailRow label="Size" value={item.size} />
-
               <DetailRow label="Type" value={item.type?.toUpperCase()} />
             </>
           )}
         </div>
 
-        <div className="mt-8 border-t border-slate-100 pt-5">
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <div className="mt-8 border-t pt-5">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
             Actions
           </p>
-
           <div className="grid grid-cols-2 gap-2">
             <Button variant="outline" className="justify-start">
-              <Share2 size={14} />
+              <Share2 className="h-[14px] w-[14px]" />
               Share
             </Button>
-
             <Button
               variant="outline"
               className="justify-start"
-              disabled={isFolder || isDownloading}
+              disabled={folder || isDownloading}
               onClick={() => onDownload(item)}
             >
               {isDownloading ? (
-                <Loader2 size={14} className="animate-spin" />
+                <Loader2 className="h-[14px] w-[14px] animate-spin" />
               ) : (
-                <Download size={14} />
+                <Download className="h-[14px] w-[14px]" />
               )}
               Download
             </Button>
-
             <Button variant="outline" className="justify-start">
-              <Move size={14} />
+              <Move className="h-[14px] w-[14px]" />
               Move
             </Button>
-
             <Button variant="outline" className="justify-start">
-              <Copy size={14} />
+              <Copy className="h-[14px] w-[14px]" />
               Copy
             </Button>
           </div>
@@ -1194,86 +1231,16 @@ function DetailsPanel({
 function DetailRow({ label, value, icon: Icon }) {
   return (
     <div>
-      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
         {label}
       </p>
-
-      <p className="mt-1 flex items-center gap-2 break-all text-xs text-slate-700">
-        {Icon && <Icon size={14} className="shrink-0 text-slate-400" />}
-
+      <p className="mt-1 flex items-center gap-2 break-all text-xs">
+        {Icon && (
+          <Icon className="h-[14px] w-[14px] shrink-0 text-muted-foreground" />
+        )}
         {value}
       </p>
     </div>
-  );
-}
-
-/* ============================================================
-   CONTEXT MENU
-============================================================ */
-
-function ContextMenu({
-  item,
-  onClose,
-  onRename,
-  onDelete,
-  onDownload,
-  isDeleting,
-}) {
-  if (!item) return null;
-
-  return (
-    <div className="absolute right-0 top-10 z-50 w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
-      <ContextButton icon={FolderOpen} label="Open" />
-
-      <ContextButton
-        icon={Download}
-        label="Download"
-        onClick={() => onDownload(item)}
-      />
-
-      <ContextButton icon={Share2} label="Share" />
-
-      <ContextButton icon={Copy} label="Make a copy" />
-
-      <ContextButton icon={Move} label="Move to" />
-
-      <ContextButton icon={Link2} label="Copy link" />
-
-      <div className="my-1 border-t border-slate-100" />
-
-      <ContextButton icon={Pencil} label="Rename" onClick={onRename} />
-
-      <ContextButton icon={Pin} label="Add to workspace" />
-
-      <div className="my-1 border-t border-slate-100" />
-
-      <ContextButton
-        icon={isDeleting ? Loader2 : Trash2}
-        label={isDeleting ? "Moving to trash..." : "Move to trash"}
-        danger
-        onClick={onDelete}
-      />
-    </div>
-  );
-}
-
-function ContextButton({ icon: Icon, label, danger, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`
-        flex w-full items-center gap-2 rounded-lg px-3 py-2
-        text-left text-xs transition
-        ${
-          danger
-            ? "text-red-500 hover:bg-red-50"
-            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-        }
-      `}
-    >
-      <Icon size={14} />
-      {label}
-    </button>
   );
 }
 
@@ -1291,7 +1258,6 @@ export default function OneDriveFileManager() {
     pathTrail.length > 0 ? pathTrail[pathTrail.length - 1].id : ROOT;
 
   const [selectedItem, setSelectedItem] = useState(null);
-  const [contextItem, setContextItem] = useState(null);
   const [view, setView] = useState("grid");
   const [search, setSearch] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -1301,6 +1267,7 @@ export default function OneDriveFileManager() {
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [sort] = useState("name");
   const [downloadingId, setDownloadingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const [workspaces, setWorkspaces] = useState([
     { id: "w1", name: "Active Projects", icon: FolderTree, count: 8 },
@@ -1309,9 +1276,7 @@ export default function OneDriveFileManager() {
     { id: "w4", name: "Contracts", icon: Archive, count: 12 },
   ]);
 
-  /* ==========================================================
-     DATA — current folder contents
-  ========================================================== */
+  /* -------------------------------------------------- Data — current folder */
 
   const {
     data: currentData,
@@ -1364,30 +1329,19 @@ export default function OneDriveFileManager() {
     );
   }, [allFiles, search, sort]);
 
-  /* ==========================================================
-     MUTATIONS
-  ========================================================== */
+  /* -------------------------------------------------- Mutations */
 
   const [createFolderMutation, { isLoading: isCreatingFolder }] =
     useCreateOneDriveFolderMutation();
-
   const [uploadFile] = useUploadOneDriveFileMutation();
   const [uploadLargeFile] = useUploadLargeOneDriveFileMutation();
   const [isUploading, setIsUploading] = useState(false);
-
-  const [deleteFile, { isLoading: isDeleting }] =
-    useDeleteOneDriveFileMutation();
-
+  const [deleteFile] = useDeleteOneDriveFileMutation();
   const [triggerDownload] = useLazyDownloadOneDriveFileQuery();
 
-  /* ==========================================================
-     NAVIGATION
-  ========================================================== */
+  /* -------------------------------------------------- Navigation */
 
-  const resetSelection = () => {
-    setSelectedItem(null);
-    setContextItem(null);
-  };
+  const resetSelection = () => setSelectedItem(null);
 
   const navigateToRoot = () => {
     setPathTrail([]);
@@ -1412,9 +1366,7 @@ export default function OneDriveFileManager() {
   };
 
   const openItem = (item) => {
-    const isFolder = item.itemCount !== undefined;
-
-    if (isFolder) {
+    if (isFolderItem(item)) {
       navigateInto(item);
       return;
     }
@@ -1423,9 +1375,7 @@ export default function OneDriveFileManager() {
     setDetailsOpen(true);
   };
 
-  /* ==========================================================
-     CREATE FOLDER
-  ========================================================== */
+  /* -------------------------------------------------- Create folder */
 
   const createFolder = async (name) => {
     await createFolderMutation({
@@ -1434,9 +1384,7 @@ export default function OneDriveFileManager() {
     }).unwrap();
   };
 
-  /* ==========================================================
-     UPLOAD
-  ========================================================== */
+  /* -------------------------------------------------- Upload */
 
   const LARGE_FILE_THRESHOLD = 4 * 1024 * 1024; // 4MB
 
@@ -1448,7 +1396,6 @@ export default function OneDriveFileManager() {
         incoming.map((file) => {
           const mutate =
             file.size > LARGE_FILE_THRESHOLD ? uploadLargeFile : uploadFile;
-
           return mutate({ file, folderPath: currentFolder }).unwrap();
         }),
       );
@@ -1457,12 +1404,10 @@ export default function OneDriveFileManager() {
     }
   };
 
-  /* ==========================================================
-     DOWNLOAD
-  ========================================================== */
+  /* -------------------------------------------------- Download */
 
   const downloadItem = async (item) => {
-    if (item.itemCount !== undefined) return; // folders aren't downloadable here
+    if (isFolderItem(item)) return; // folders aren't downloadable here
 
     setDownloadingId(item.id);
 
@@ -1485,48 +1430,41 @@ export default function OneDriveFileManager() {
     }
   };
 
-  /* ==========================================================
-     DELETE
-  ========================================================== */
+  /* -------------------------------------------------- Delete */
 
-  const deleteItem = async () => {
-    if (!contextItem) return;
+  const deleteItem = async (item) => {
+    if (!item) return;
+
+    setDeletingId(item.id);
 
     try {
-      await deleteFile(contextItem.id).unwrap();
+      await deleteFile(item.id).unwrap();
+      if (selectedItem?.id === item.id) setSelectedItem(null);
     } catch (err) {
       console.error("Delete failed", err);
     } finally {
-      if (selectedItem?.id === contextItem.id) setSelectedItem(null);
-      setContextItem(null);
+      setDeletingId(null);
     }
   };
 
-  /* ==========================================================
-     WORKSPACE (local only — no backend endpoint provided)
-  ========================================================== */
+  /* -------------------------------------------------- Rename (unwired) */
 
-  const createWorkspace = () => {
-    const name = prompt("Workspace name");
+  const renameItem = () => {
+    // No rename endpoint is exposed by onedriveApi yet —
+    // wire this up once one exists.
+  };
 
-    if (!name?.trim()) return;
+  /* -------------------------------------------------- Workspace (local only) */
 
+  const createWorkspace = (name) => {
     setWorkspaces((prev) => [
       ...prev,
-      {
-        id: `workspace-${Date.now()}`,
-        name: name.trim(),
-        icon: FolderTree,
-        count: 0,
-      },
+      { id: `workspace-${Date.now()}`, name, icon: FolderTree, count: 0 },
     ]);
-
     setWorkspaceOpen(false);
   };
 
-  /* ==========================================================
-     DERIVED LABELS
-  ========================================================== */
+  /* -------------------------------------------------- Derived labels */
 
   const currentTitle =
     pathTrail.length > 0 ? pathTrail[pathTrail.length - 1].name : "My Files";
@@ -1536,16 +1474,10 @@ export default function OneDriveFileManager() {
       ? `My Files / ${pathTrail.map((c) => c.name).join(" / ")}`
       : "My Files";
 
-  /* ==========================================================
-     RENDER
-  ========================================================== */
+  /* -------------------------------------------------- Render */
 
   return (
-    <div className="flex h-[calc(100vh-32px)] min-h-[700px] overflow-hidden rounded-2xl border border-slate-200 bg-[#F6F8F7]">
-      {/* ======================================================
-          SIDEBAR
-      ====================================================== */}
-
+    <div className="flex h-[calc(100vh-32px)] min-h-[700px] overflow-hidden rounded-2xl border bg-muted/20">
       <FileSidebar
         collapsed={sidebarCollapsed}
         currentFolder={currentFolder}
@@ -1557,28 +1489,25 @@ export default function OneDriveFileManager() {
         onCreateWorkspace={() => setWorkspaceOpen(true)}
       />
 
-      {/* ======================================================
-          MAIN AREA
-      ====================================================== */}
-
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* ====================================================
-            HEADER
-        ==================================================== */}
-
-        <header className="border-b border-slate-200 bg-white">
-          {/* TOP */}
-
+        {/* Header */}
+        <header className="border-b bg-background">
           <div className="flex items-center gap-3 px-5 py-3">
-            <IconButton onClick={() => setSidebarCollapsed((value) => !value)}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => setSidebarCollapsed((v) => !v)}
+            >
               {sidebarCollapsed ? (
-                <ChevronsRight size={18} />
+                <ChevronsRight className="h-[18px] w-[18px]" />
               ) : (
-                <ChevronsLeft size={18} />
+                <ChevronsLeft className="h-[18px] w-[18px]" />
               )}
-            </IconButton>
+            </Button>
 
-            <div className="h-5 w-px bg-slate-200" />
+            <Separator orientation="vertical" className="h-5" />
 
             <Breadcrumb
               trail={pathTrail}
@@ -1587,181 +1516,168 @@ export default function OneDriveFileManager() {
             />
 
             <div className="ml-auto flex items-center gap-1">
-              <IconButton
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
                 disabled={pathTrail.length === 0}
                 onClick={navigateToRoot}
               >
-                <ArrowLeft size={17} />
-              </IconButton>
-
-              <IconButton disabled>
-                <ArrowRight size={17} />
-              </IconButton>
-
-              <IconButton onClick={() => refetch()}>
+                <ArrowLeft className="h-[17px] w-[17px]" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                disabled
+              >
+                <ArrowRight className="h-[17px] w-[17px]" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => refetch()}
+              >
                 <RefreshCw
-                  size={16}
-                  className={isFetching ? "animate-spin" : ""}
+                  className={cn("h-4 w-4", isFetching && "animate-spin")}
                 />
-              </IconButton>
+              </Button>
             </div>
           </div>
 
-          {/* TOOLBAR */}
-
-          <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 px-5 py-3">
-            {/* SEARCH */}
-
+          <div className="flex flex-wrap items-center gap-2 border-t px-5 py-3">
             <div className="relative min-w-[250px] flex-1">
-              <Search
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-
-              <input
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search this location..."
-                className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs outline-none transition focus:border-[#1F453B] focus:bg-white focus:ring-2 focus:ring-[#1F453B]/10"
+                className="h-9 bg-muted/40 pl-9 text-xs"
               />
             </div>
 
-            {/* NEW */}
-
-            <Button onClick={() => setCreateFolderOpen(true)}>
-              <Plus size={15} />
+            <Button
+              type="button"
+              onClick={() => setCreateFolderOpen(true)}
+              className={BRAND}
+            >
+              <Plus className="h-[15px] w-[15px]" />
               New
             </Button>
 
-            {/* UPLOAD */}
-
-            <Button variant="outline" onClick={() => setUploadOpen(true)}>
-              <Upload size={15} />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setUploadOpen(true)}
+            >
+              <Upload className="h-[15px] w-[15px]" />
               Upload
             </Button>
 
-            <div className="h-7 w-px bg-slate-200" />
+            <Separator orientation="vertical" className="h-7" />
 
-            {/* SORT */}
-
-            <Button variant="outline">
-              <ArrowDownAZ size={15} />
+            <Button type="button" variant="outline">
+              <ArrowDownAZ className="h-[15px] w-[15px]" />
               Sort
-              <ChevronDown size={13} />
+              <ChevronDown className="h-[13px] w-[13px]" />
             </Button>
 
-            {/* FILTER */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+            >
+              <ListFilter className="h-[17px] w-[17px]" />
+            </Button>
 
-            <IconButton>
-              <ListFilter size={17} />
-            </IconButton>
-
-            {/* VIEW */}
-
-            <div className="flex rounded-lg border border-slate-200 bg-white p-0.5">
-              <IconButton
-                active={view === "grid"}
+            <div className="flex rounded-lg border bg-background p-0.5">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className={cn("h-8 w-8", view === "grid" && BRAND_SOFT)}
                 onClick={() => setView("grid")}
-                className="h-8 w-8"
               >
-                <LayoutGrid size={16} />
-              </IconButton>
-
-              <IconButton
-                active={view === "list"}
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className={cn("h-8 w-8", view === "list" && BRAND_SOFT)}
                 onClick={() => setView("list")}
-                className="h-8 w-8"
               >
-                <LayoutList size={16} />
-              </IconButton>
+                <LayoutList className="h-4 w-4" />
+              </Button>
             </div>
 
-            {/* DETAILS */}
-
-            <IconButton
-              active={detailsOpen}
-              onClick={() => setDetailsOpen((value) => !value)}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={cn("h-9 w-9", detailsOpen && BRAND_SOFT)}
+              onClick={() => setDetailsOpen((v) => !v)}
             >
-              <SidebarIcon size={17} />
-            </IconButton>
+              <SidebarIcon className="h-[17px] w-[17px]" />
+            </Button>
           </div>
         </header>
 
-        {/* ====================================================
-            CONTENT
-        ==================================================== */}
-
+        {/* Content */}
         <main className="min-h-0 flex-1 overflow-y-auto">
           <div className="p-5">
-            {/* LOCATION HEADER */}
-
             <div className="mb-5 flex items-end justify-between">
               <div>
-                <h1 className="text-lg font-semibold text-slate-900">
-                  {currentTitle}
-                </h1>
-
-                <p className="mt-1 text-xs text-slate-400">
+                <h1 className="text-lg font-semibold">{currentTitle}</h1>
+                <p className="mt-1 text-xs text-muted-foreground">
                   {isLoading
                     ? "Loading..."
                     : `${currentFolders.length + currentFiles.length} items`}
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-medium text-emerald-700">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  Synced with OneDrive
-                </span>
-              </div>
+              <Badge className="gap-1.5 rounded-full bg-emerald-50 text-[10px] font-medium text-emerald-700 hover:bg-emerald-50">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Synced with OneDrive
+              </Badge>
             </div>
-
-            {/* ==================================================
-                ERROR
-            ================================================== */}
 
             {error && (
               <div className="mb-5 flex items-center gap-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
-                <AlertCircle size={18} className="shrink-0 text-red-500" />
-
+                <AlertCircle className="h-[18px] w-[18px] shrink-0 text-red-500" />
                 <p className="flex-1 text-xs text-red-600">
-                  Couldn't load this folder. {error?.data?.message || ""}
+                  This folder could not be loaded. {error?.data?.message || ""}
                 </p>
-
-                <Button variant="outline" onClick={() => refetch()}>
+                <Button variant="outline" size="sm" onClick={() => refetch()}>
                   Retry
                 </Button>
               </div>
             )}
 
-            {/* ==================================================
-                LOADING
-            ================================================== */}
-
             {isLoading && (
-              <div className="flex min-h-[300px] items-center justify-center">
-                <Loader2 size={22} className="animate-spin text-[#1F453B]" />
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+                {Array.from({ length: 10 }).map((_, index) => (
+                  <Skeleton key={index} className="h-[120px] rounded-xl" />
+                ))}
               </div>
             )}
 
             {!isLoading && !error && (
               <>
-                {/* ==================================================
-                    GRID
-                ================================================== */}
-
                 {view === "grid" && (
                   <div>
-                    {/* FOLDERS */}
-
                     {currentFolders.length > 0 && (
                       <section>
                         <div className="mb-3 flex items-center justify-between">
-                          <p className="text-xs font-semibold text-slate-600">
+                          <p className="text-xs font-semibold text-muted-foreground">
                             Folders
                           </p>
-
-                          <p className="text-[10px] text-slate-400">
+                          <p className="text-[10px] text-muted-foreground">
                             {currentFolders.length}
                           </p>
                         </div>
@@ -1774,23 +1690,23 @@ export default function OneDriveFileManager() {
                               selected={selectedItem?.id === folder.id}
                               onSelect={setSelectedItem}
                               onOpen={openItem}
-                              onMenu={setContextItem}
+                              onDownload={downloadItem}
+                              onRename={renameItem}
+                              onDelete={deleteItem}
+                              isDeleting={deletingId === folder.id}
                             />
                           ))}
                         </div>
                       </section>
                     )}
 
-                    {/* FILES */}
-
                     {currentFiles.length > 0 && (
                       <section className={currentFolders.length ? "mt-8" : ""}>
                         <div className="mb-3 flex items-center justify-between">
-                          <p className="text-xs font-semibold text-slate-600">
+                          <p className="text-xs font-semibold text-muted-foreground">
                             Files
                           </p>
-
-                          <p className="text-[10px] text-slate-400">
+                          <p className="text-[10px] text-muted-foreground">
                             {currentFiles.length}
                           </p>
                         </div>
@@ -1803,7 +1719,11 @@ export default function OneDriveFileManager() {
                               selected={selectedItem?.id === file.id}
                               onSelect={setSelectedItem}
                               onOpen={openItem}
-                              onMenu={setContextItem}
+                              onDownload={downloadItem}
+                              onRename={renameItem}
+                              onDelete={deleteItem}
+                              isDownloading={downloadingId === file.id}
+                              isDeleting={deletingId === file.id}
                             />
                           ))}
                         </div>
@@ -1812,10 +1732,6 @@ export default function OneDriveFileManager() {
                   </div>
                 )}
 
-                {/* ==================================================
-                    LIST
-                ================================================== */}
-
                 {view === "list" && (
                   <ListView
                     folders={currentFolders}
@@ -1823,40 +1739,39 @@ export default function OneDriveFileManager() {
                     selectedId={selectedItem?.id}
                     onSelect={setSelectedItem}
                     onOpen={openItem}
-                    onMenu={setContextItem}
+                    onDownload={downloadItem}
+                    onRename={renameItem}
+                    onDelete={deleteItem}
+                    downloadingId={downloadingId}
+                    deletingId={deletingId}
                   />
                 )}
 
-                {/* ==================================================
-                    EMPTY
-                ================================================== */}
-
                 {!currentFolders.length && !currentFiles.length && (
-                  <div className="flex min-h-[440px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50">
-                      <FolderOpen size={30} className="text-slate-300" />
+                  <div className="flex min-h-[440px] flex-col items-center justify-center rounded-2xl border border-dashed bg-background">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50">
+                      <FolderOpen className="h-[30px] w-[30px] text-muted-foreground/60" />
                     </div>
-
-                    <h2 className="mt-4 text-sm font-semibold text-slate-800">
+                    <h2 className="mt-4 text-sm font-semibold">
                       This folder is empty
                     </h2>
-
-                    <p className="mt-1 max-w-sm text-center text-xs text-slate-400">
+                    <p className="mt-1 max-w-sm text-center text-xs text-muted-foreground">
                       Create a folder or upload files to start organizing this
                       workspace.
                     </p>
-
                     <div className="mt-5 flex gap-2">
                       <Button
                         variant="outline"
                         onClick={() => setCreateFolderOpen(true)}
                       >
-                        <FolderPlus size={15} />
+                        <FolderPlus className="h-[15px] w-[15px]" />
                         New folder
                       </Button>
-
-                      <Button onClick={() => setUploadOpen(true)}>
-                        <Upload size={15} />
+                      <Button
+                        onClick={() => setUploadOpen(true)}
+                        className={BRAND}
+                      >
+                        <Upload className="h-[15px] w-[15px]" />
                         Upload
                       </Button>
                     </div>
@@ -1868,10 +1783,6 @@ export default function OneDriveFileManager() {
         </main>
       </div>
 
-      {/* ======================================================
-          DETAILS
-      ====================================================== */}
-
       {detailsOpen && (
         <DetailsPanel
           item={selectedItem}
@@ -1881,31 +1792,6 @@ export default function OneDriveFileManager() {
           isDownloading={downloadingId === selectedItem?.id}
         />
       )}
-
-      {/* ======================================================
-          CONTEXT MENU
-      ====================================================== */}
-
-      {contextItem && (
-        <div className="fixed right-8 top-28 z-[90]">
-          <ContextMenu
-            item={contextItem}
-            onClose={() => setContextItem(null)}
-            onRename={() => {
-              setContextItem(null);
-              // No rename endpoint is exposed by onedriveApi yet —
-              // wire this up once one exists.
-            }}
-            onDelete={deleteItem}
-            onDownload={downloadItem}
-            isDeleting={isDeleting}
-          />
-        </div>
-      )}
-
-      {/* ======================================================
-          MODALS
-      ====================================================== */}
 
       <CreateFolderModal
         open={createFolderOpen}
@@ -1921,70 +1807,11 @@ export default function OneDriveFileManager() {
         isUploading={isUploading}
       />
 
-      {/* ======================================================
-          WORKSPACE CREATION
-      ====================================================== */}
-
-      {workspaceOpen && (
-        <Modal
-          open
-          title="Create workspace"
-          onClose={() => setWorkspaceOpen(false)}
-        >
-          <div className="p-5">
-            <div className="mb-4 rounded-xl bg-[#1F453B]/5 p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1F453B]/10">
-                  <FolderTree size={19} className="text-[#1F453B]" />
-                </div>
-
-                <div>
-                  <p className="text-sm font-semibold text-slate-800">
-                    Custom file workspace
-                  </p>
-
-                  <p className="mt-1 text-xs text-slate-400">
-                    Create a personal view over your OneDrive files.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <input
-              autoFocus
-              placeholder="Workspace name"
-              className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-[#1F453B]"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  const value = e.currentTarget.value.trim();
-
-                  if (!value) return;
-
-                  setWorkspaces((prev) => [
-                    ...prev,
-                    {
-                      id: `workspace-${Date.now()}`,
-                      name: value,
-                      icon: FolderTree,
-                      count: 0,
-                    },
-                  ]);
-
-                  setWorkspaceOpen(false);
-                }
-              }}
-            />
-
-            <div className="mt-5 flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setWorkspaceOpen(false)}>
-                Cancel
-              </Button>
-
-              <Button onClick={createWorkspace}>Create workspace</Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      <CreateWorkspaceModal
+        open={workspaceOpen}
+        onClose={() => setWorkspaceOpen(false)}
+        onCreate={createWorkspace}
+      />
     </div>
   );
 }

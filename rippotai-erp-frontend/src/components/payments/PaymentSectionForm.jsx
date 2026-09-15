@@ -1,6 +1,20 @@
 import React from "react";
 import { Save } from "lucide-react";
-import { Shell, Card, Input, TextArea } from "../../hooks/shared";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+import { Shell } from "../../hooks/shared"; // keep your layout Shell
 
 /**
  * Generic multi-section form shell.
@@ -49,8 +63,7 @@ export function PaymentSectionForm({
     return count;
   }, [values]);
 
-  // Renders the plain field grid for a given section. Parametrized so
-  // it can run once per section in the stacked list below.
+  // Renders the plain field grid for a given section
   const renderFields = (section) => (
     <div className="grid gap-4">
       {(section?.fields || []).map((field) => {
@@ -58,13 +71,11 @@ export function PaymentSectionForm({
         const fieldValue = sectionData?.[field.key] ?? "";
 
         return (
-          <div key={field.key}>
-            <label className="block text-[13px] font-semibold text-[#333333] mb-1">
-              {field.label}
-            </label>
+          <div key={field.key} className="space-y-2">
+            <Label className="text-[13px] font-semibold">{field.label}</Label>
 
             {field.type === "textarea" ? (
-              <TextArea
+              <Textarea
                 rows={field.rows || 4}
                 value={fieldValue}
                 onChange={(e) =>
@@ -88,20 +99,23 @@ export function PaymentSectionForm({
                 }
               />
             ) : field.type === "select" ? (
-              <select
-                className="bc-input h-10 w-full"
-                value={fieldValue}
-                onChange={(e) =>
-                  onFieldChange(section.title, field.key, e.target.value)
+              <Select
+                value={fieldValue || ""}
+                onValueChange={(value) =>
+                  onFieldChange(section.title, field.key, value)
                 }
               >
-                <option value="">Select...</option>
-                {(field.options || []).map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {(field.options || []).map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             ) : (
               <Input
                 type={field.type || "text"}
@@ -132,51 +146,50 @@ export function PaymentSectionForm({
       title={title}
       subtitle={subtitle}
       action={
-        <button
-          onClick={onSubmit}
-          disabled={isSubmitting}
-          className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-2 disabled:opacity-60"
-        >
-          <Save size={15} />
+        <Button onClick={onSubmit} disabled={isSubmitting}>
+          <Save className="mr-2 h-4 w-4" />
           {isSubmitting ? "Saving..." : submitLabel || "Save"}
-        </button>
+        </Button>
       }
     >
       {/* Project Selector */}
       {projects && (
         <Card>
-          <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-            Project
-          </label>
-          <select
-            className="bc-input h-10 max-w-lg"
-            value={projectId}
-            onChange={(e) => onProjectChange(e.target.value)}
-          >
-            <option value="">Select Project</option>
-            {projects?.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.name}
-              </option>
-            ))}
-          </select>
+          <CardContent className="pt-6">
+            <div className="space-y-2 max-w-lg">
+              <Label className="text-[13px] font-semibold">Project</Label>
+              <Select value={projectId || ""} onValueChange={onProjectChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects?.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
         </Card>
       )}
 
       {/* All sections, stacked — no tabs / no pager */}
-      <div className="space-y-5">
+      <div className="space-y-5 mt-5">
         {sections.map((section, index) => (
           <Card key={section.title}>
-            <div className="text-lg font-semibold text-[#333333] mb-4">
-              {index + 1}. {section.title}
-            </div>
-
-            {renderSectionBody(section)}
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg">
+                {index + 1}. {section.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>{renderSectionBody(section)}</CardContent>
           </Card>
         ))}
       </div>
 
-      <div className="mt-4 text-xs text-[#94A3A5] text-center">
+      <div className="mt-4 text-xs text-muted-foreground text-center">
         Draft autosaved locally • {filledCount} field
         {filledCount !== 1 ? "s" : ""} completed
       </div>
@@ -185,3 +198,5 @@ export function PaymentSectionForm({
     </Shell>
   );
 }
+
+export default PaymentSectionForm;

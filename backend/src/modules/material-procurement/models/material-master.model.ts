@@ -8,7 +8,12 @@ import {
   AllowNull,
   Unique,
   Index,
+  ForeignKey,
+  BelongsTo,
 } from 'sequelize-typescript';
+
+import { Vendor } from '@/modules/vendors/models/vendors.model';
+import { Unit } from '@/modules/metas/models/unit.model';
 
 import type {
   CreationOptional,
@@ -79,12 +84,46 @@ export class MaterialMaster extends Model<
   declare specification: string | null;
 
   // ============================================================
-  // UNIT / TAX
+  // VENDOR
   // ============================================================
 
+  @ForeignKey(() => Vendor)
+  @AllowNull(true)
+  @Index
+  @Column({
+    type: DataType.CHAR(36),
+    allowNull: true,
+  })
+  declare vendor_id: string | null;
+
+  @BelongsTo(() => Vendor, {
+    foreignKey: 'vendor_id',
+    as: 'vendor',
+  })
+  declare vendor: Vendor | null;
+
+  // ============================================================
+  // UNIT
+  // ============================================================
+
+  @ForeignKey(() => Unit)
   @AllowNull(false)
-  @Column(DataType.STRING(30))
-  declare default_unit: string;
+  @Index
+  @Column({
+    type: DataType.CHAR(36),
+    allowNull: false,
+  })
+  declare unit_id: string;
+
+  @BelongsTo(() => Unit, {
+    foreignKey: 'unit_id',
+    as: 'unit',
+  })
+  declare unit?: Unit;
+
+  // ============================================================
+  // TAX
+  // ============================================================
 
   @AllowNull(true)
   @Column(DataType.STRING(30))

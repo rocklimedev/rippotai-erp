@@ -7,19 +7,24 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 
 import { Op, WhereOptions } from 'sequelize';
+
 import {
   InventoryDirection,
   InventoryTransaction,
   InventoryTransactionType,
+  InventoryConditionStatus,
+  InventoryReferenceType,
 } from '../models/inventory-transaction.model';
-import { InventoryConditionStatus } from '../models/inventory-transaction.model';
+
 import { MaterialMaster } from '../models/material-master.model';
 
 import {
   CreateInventoryTransactionDto,
   IssueMaterialDto,
 } from '../dto/inventory.dto';
-import { InventoryReferenceType } from '../models/inventory-transaction.model';
+
+import { Unit } from '@/modules/metas/models/unit.model';
+
 @Injectable()
 export class InventoryService {
   constructor(
@@ -28,7 +33,14 @@ export class InventoryService {
 
     @InjectModel(MaterialMaster)
     private readonly materialModel: typeof MaterialMaster,
+
+    @InjectModel(Unit)
+    private readonly unitModel: typeof Unit,
   ) {}
+
+  // ============================================================
+  // GET DIRECTION
+  // ============================================================
 
   private getDirection(type: InventoryTransactionType): InventoryDirection {
     switch (type) {
@@ -49,8 +61,24 @@ export class InventoryService {
     }
   }
 
+  // ============================================================
+  // CREATE
+  // ============================================================
+
   async create(dto: CreateInventoryTransactionDto, userId?: string) {
-    const material = await this.materialModel.findByPk(dto.material_id);
+    // ----------------------------------------------------------
+    // Validate material
+    // ----------------------------------------------------------
+
+    const material = await this.materialModel.findByPk(dto.material_id, {
+      include: [
+        {
+          model: Unit,
+          as: 'unit',
+          required: true,
+        },
+      ],
+    });
 
     if (!material) {
       throw new NotFoundException('Material not found');
@@ -60,7 +88,23 @@ export class InventoryService {
       throw new BadRequestException('Material is inactive');
     }
 
+    // ----------------------------------------------------------
+    // Material must have a unit
+    // ----------------------------------------------------------
+
+    if (!material.unit_id) {
+      throw new BadRequestException('Material does not have a unit configured');
+    }
+
+    // ----------------------------------------------------------
+    // Validate direction
+    // ----------------------------------------------------------
+
     const direction = this.getDirection(dto.transaction_type);
+
+    // ----------------------------------------------------------
+    // Check stock before OUT transaction
+    // ----------------------------------------------------------
 
     if (direction === InventoryDirection.OUT) {
       const available = await this.getCurrentStock(
@@ -72,18 +116,24 @@ export class InventoryService {
       if (Number(dto.quantity) > Number(available)) {
         throw new BadRequestException(
           `Insufficient stock. Available: ${available} ${
-            dto.unit ?? material.default_unit
+            material.unit?.code ?? ''
           }`,
         );
       }
     }
 
-    return this.inventoryModel.create({
+    // ----------------------------------------------------------
+    // Create transaction
+    // ----------------------------------------------------------
+
+    const transaction = await this.inventoryModel.create({
       ...dto,
 
       site_id: dto.site_id ?? null,
 
-      unit: dto.unit ?? material.default_unit,
+      // Always derive unit from MaterialMaster.
+      // Do NOT trust free-text/unit supplied by frontend.
+      unit_id: material.unit_id,
 
       direction,
 
@@ -118,7 +168,13 @@ export class InventoryService {
 
       created_by: userId ?? null,
     });
+
+    return this.findOne(transaction.id);
   }
+
+  // ============================================================
+  // ISSUE MATERIAL
+  // ============================================================
 
   async issue(dto: IssueMaterialDto, userId?: string) {
     return this.create(
@@ -133,20 +189,28 @@ export class InventoryService {
     );
   }
 
+  // ============================================================
+  // RECEIVE FROM DELIVERY CHALLAN
+  // ============================================================
+
   async receiveFromDelivery(
     params: {
       project_id: string;
       site_id?: string;
       material_id: string;
       quantity: number;
-      unit: string;
+
       delivery_challan_id: string;
       delivery_challan_item_id: string;
+
       vendor_id?: string;
       storage_location?: string;
-      condition_status?: any;
+
+      condition_status?: InventoryConditionStatus;
       condition_notes?: string;
+
       received_by?: string;
+
       transaction_date: string;
       remarks?: string;
     },
@@ -165,8 +229,6 @@ export class InventoryService {
         transaction_type: InventoryTransactionType.RECEIPT,
 
         quantity: params.quantity,
-
-        unit: params.unit,
 
         reference_type: InventoryReferenceType.DELIVERY_CHALLAN,
 
@@ -189,6 +251,10 @@ export class InventoryService {
       userId,
     );
   }
+
+  // ============================================================
+  // FIND ALL
+  // ============================================================
 
   async findAll(params?: {
     projectId?: string;
@@ -230,11 +296,28 @@ export class InventoryService {
 
     return this.inventoryModel.findAll({
       where,
+
       include: [
         {
           model: MaterialMaster,
+          required: true,
+
+          include: [
+            {
+              model: Unit,
+              as: 'unit',
+              required: true,
+            },
+          ],
+        },
+
+        {
+          model: Unit,
+          as: 'unit',
+          required: true,
         },
       ],
+
       order: [
         ['transaction_date', 'DESC'],
         ['created_at', 'DESC'],
@@ -242,9 +325,32 @@ export class InventoryService {
     });
   }
 
+  // ============================================================
+  // FIND ONE
+  // ============================================================
+
   async findOne(id: string) {
     const transaction = await this.inventoryModel.findByPk(id, {
-      include: [MaterialMaster],
+      include: [
+        {
+          model: MaterialMaster,
+          required: true,
+
+          include: [
+            {
+              model: Unit,
+              as: 'unit',
+              required: true,
+            },
+          ],
+        },
+
+        {
+          model: Unit,
+          as: 'unit',
+          required: true,
+        },
+      ],
     });
 
     if (!transaction) {
@@ -253,6 +359,10 @@ export class InventoryService {
 
     return transaction;
   }
+
+  // ============================================================
+  // CURRENT STOCK
+  // ============================================================
 
   async getCurrentStock(
     projectId: string,
@@ -270,6 +380,7 @@ export class InventoryService {
 
     const transactions = await this.inventoryModel.findAll({
       where,
+
       attributes: ['direction', 'quantity'],
     });
 
@@ -288,6 +399,10 @@ export class InventoryService {
     return balance;
   }
 
+  // ============================================================
+  // PROJECT STOCK
+  // ============================================================
+
   async getProjectStock(projectId: string, siteId?: string) {
     const where: WhereOptions<InventoryTransaction> = {
       project_id: projectId,
@@ -299,12 +414,28 @@ export class InventoryService {
 
     const transactions = await this.inventoryModel.findAll({
       where,
+
       include: [
         {
           model: MaterialMaster,
           required: true,
+
+          include: [
+            {
+              model: Unit,
+              as: 'unit',
+              required: true,
+            },
+          ],
+        },
+
+        {
+          model: Unit,
+          as: 'unit',
+          required: true,
         },
       ],
+
       order: [
         ['transaction_date', 'ASC'],
         ['created_at', 'ASC'],
@@ -315,7 +446,7 @@ export class InventoryService {
       string,
       {
         material: MaterialMaster;
-        unit: string;
+        unit: Unit;
         quantity: number;
       }
     >();
@@ -323,14 +454,13 @@ export class InventoryService {
     for (const transaction of transactions) {
       const material = transaction.material;
 
-      /**
-       * Because this is a required association, a transaction without
-       * its MaterialMaster should never normally reach this point.
-       *
-       * Still guard it so the service remains safe if the association
-       * is ever changed or data becomes inconsistent.
-       */
       if (!material) {
+        continue;
+      }
+
+      const unit = transaction.unit ?? material.unit;
+
+      if (!unit) {
         continue;
       }
 
@@ -339,7 +469,7 @@ export class InventoryService {
       if (!balances.has(key)) {
         balances.set(key, {
           material,
-          unit: transaction.unit,
+          unit,
           quantity: 0,
         });
       }

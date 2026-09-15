@@ -12,16 +12,61 @@ import {
   RefreshCw,
   FolderOpen,
   Folder,
+  AlertTriangle,
+  X,
 } from "lucide-react";
 
-import { Shell, Card, Input, downloadDocument } from "../../hooks/shared";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+
+import { Shell, downloadDocument } from "../../hooks/shared";
 
 import {
   useGetProjectDocumentPhasesQuery,
   useGetProjectDocumentPhaseTreeQuery,
+  useGetDocumentTypesQuery,
+  useUpdateDocumentMutation,
+  useReplaceDocumentFileMutation,
 } from "../../api/documents/document.api";
 
 import { useGetProjectsQuery } from "../../api/projects/project.api";
+
+/* ------------------------------------------------------------------
+ * Brand — centralised until these live in the tailwind theme.
+ * ------------------------------------------------------------------ */
+const BRAND = "bg-[#1F453B] hover:bg-[#17372f] text-white";
+const BRAND_TEXT = "text-[#1F453B]";
+const BRAND_SOFT = "bg-[#E7F1EA] text-[#1F453B]";
+const ALL_PROJECTS = "__all__";
 
 /* ============================================================
    HELPERS
@@ -29,13 +74,8 @@ import { useGetProjectsQuery } from "../../api/projects/project.api";
 
 const formatDate = (value) => {
   if (!value) return "—";
-
   const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return String(value).slice(0, 10);
-  }
-
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
   return date.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -45,7 +85,6 @@ const formatDate = (value) => {
 
 const getProjectName = (project, fallback = "Project") => {
   if (!project) return fallback;
-
   return (
     project.name ||
     project.projectName ||
@@ -57,42 +96,29 @@ const getProjectName = (project, fallback = "Project") => {
   );
 };
 
-const getPhaseId = (phase, index = 0) => {
-  return (
-    phase?.id ||
-    phase?.projectPhaseId ||
-    phase?.phaseCode ||
-    phase?.phase_code ||
-    `phase-${index}`
-  );
-};
+const getPhaseId = (phase, index = 0) =>
+  phase?.id ||
+  phase?.projectPhaseId ||
+  phase?.phaseCode ||
+  phase?.phase_code ||
+  `phase-${index}`;
 
-const getProjectId = (project) => {
-  return project?.id || project?.projectId || project?.project_id || "";
-};
+const getProjectId = (project) =>
+  project?.id || project?.projectId || project?.project_id || "";
 
-const getDocumentTypeId = (documentType) => {
-  return (
-    documentType?.documentTypeId ||
-    documentType?.id ||
-    documentType?.document_type_id ||
-    ""
-  );
-};
+const getDocumentTypeId = (documentType) =>
+  documentType?.documentTypeId ||
+  documentType?.id ||
+  documentType?.document_type_id ||
+  "";
 
 const getUploadCount = (documentType) => {
-  if (typeof documentType?.uploadCount === "number") {
+  if (typeof documentType?.uploadCount === "number")
     return documentType.uploadCount;
-  }
-
-  if (Array.isArray(documentType?.documents)) {
+  if (Array.isArray(documentType?.documents))
     return documentType.documents.length;
-  }
-
-  if (Array.isArray(documentType?.documentIds)) {
+  if (Array.isArray(documentType?.documentIds))
     return documentType.documentIds.length;
-  }
-
   return documentType?.isUploaded ? 1 : 0;
 };
 
@@ -100,44 +126,62 @@ const getDocumentIds = (documentType) => {
   if (Array.isArray(documentType?.documentIds)) {
     return documentType.documentIds.filter(Boolean);
   }
-
   if (Array.isArray(documentType?.documents)) {
     return documentType.documents
       .map((document) => document?.id)
       .filter(Boolean);
   }
-
-  if (documentType?.latestDocumentId) {
-    return [documentType.latestDocumentId];
-  }
-
+  if (documentType?.latestDocumentId) return [documentType.latestDocumentId];
   return [];
 };
 
-const getLatestDocumentId = (documentType) => {
-  return (
-    documentType?.latestDocumentId || getDocumentIds(documentType)[0] || null
-  );
-};
+const getLatestDocumentId = (documentType) =>
+  documentType?.latestDocumentId || getDocumentIds(documentType)[0] || null;
 
-const isRequiredDocument = (documentType) => {
-  return (
-    String(documentType?.requirementType || "REQUIRED").toUpperCase() ===
-    "REQUIRED"
-  );
-};
+const isRequiredDocument = (documentType) =>
+  String(documentType?.requirementType || "REQUIRED").toUpperCase() ===
+  "REQUIRED";
 
 const getPhaseDocuments = (phase) => {
-  if (Array.isArray(phase?.documents)) {
-    return phase.documents;
-  }
-
-  if (Array.isArray(phase?.documentTypes)) {
-    return phase.documentTypes;
-  }
-
+  if (Array.isArray(phase?.documents)) return phase.documents;
+  if (Array.isArray(phase?.documentTypes)) return phase.documentTypes;
   return [];
 };
+
+const clampPercent = (value) => Math.min(Math.max(value, 0), 100);
+
+/* ============================================================
+   SHARED BITS
+============================================================ */
+
+function StatPill({ label, value, sub, tone }) {
+  return (
+    <div className="text-right">
+      <div
+        className={cn(
+          "text-xs font-semibold tabular-nums",
+          tone === "warning" ? "text-[#A34D27]" : "text-foreground",
+        )}
+      >
+        {value}
+      </div>
+      <div className="text-[10px] text-muted-foreground">{label}</div>
+      {sub}
+    </div>
+  );
+}
+
+function ProgressStat({ percentage, width = "w-[90px]" }) {
+  return (
+    <div className={width}>
+      <div className="mb-1 flex justify-between text-[10px] text-muted-foreground">
+        <span>Progress</span>
+        <span>{percentage}%</span>
+      </div>
+      <Progress value={clampPercent(percentage)} className="h-1.5" />
+    </div>
+  );
+}
 
 /* ============================================================
    DOCUMENT TYPE ROW
@@ -146,181 +190,171 @@ const getPhaseDocuments = (phase) => {
 function DocumentTypeRow({ documentType, projectId, onUpload, onDownload }) {
   const uploadCount = getUploadCount(documentType);
   const documentIds = getDocumentIds(documentType);
-
   const isUploaded = Boolean(documentType?.isUploaded) || uploadCount > 0;
-
   const isRequired = isRequiredDocument(documentType);
-
   const allowsMultiple = Boolean(documentType?.allowsMultiple);
-
   const latestDocumentId = getLatestDocumentId(documentType);
 
   return (
-    <div className="border-t border-[rgba(31,69,59,0.08)] px-4 py-3 hover:bg-[#F8FAF9] transition-colors">
+    <div className="border-t px-4 py-3 transition-colors hover:bg-muted/40">
       <div className="flex items-center gap-3">
-        {/* STATUS */}
-
         <div className="shrink-0">
           {isUploaded ? (
             <CheckCircle2
-              size={18}
-              className="text-[#4CAF50]"
-              title="Uploaded"
+              className="h-[18px] w-[18px] text-emerald-600"
+              aria-label="Uploaded"
             />
           ) : (
             <Circle
-              size={18}
-              className={isRequired ? "text-[#B04D26]" : "text-[#B5C4B6]"}
-              title={isRequired ? "Required — pending" : "Pending"}
+              className={cn(
+                "h-[18px] w-[18px]",
+                isRequired ? "text-[#B04D26]" : "text-muted-foreground",
+              )}
+              aria-label={isRequired ? "Required, pending" : "Pending"}
             />
           )}
         </div>
 
-        {/* DOCUMENT ICON */}
-
         <div
-          className={[
-            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-            isUploaded ? "bg-[#E7F1EA]" : "bg-[#F1F3F3]",
-          ].join(" ")}
+          className={cn(
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+            isUploaded ? "bg-[#E7F1EA]" : "bg-muted",
+          )}
         >
           <FileText
-            size={15}
-            className={isUploaded ? "text-[#1F453B]" : "text-[#8A9697]"}
+            className={cn(
+              "h-[15px] w-[15px]",
+              isUploaded ? BRAND_TEXT : "text-muted-foreground",
+            )}
           />
         </div>
 
-        {/* INFORMATION */}
-
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-[13.5px] text-[#333333]">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[13.5px] font-semibold">
               {documentType?.name || "Untitled document"}
             </span>
 
             {documentType?.code && (
-              <span className="text-[10.5px] text-[#8A9697]">
+              <span className="text-[10.5px] text-muted-foreground">
                 {documentType.code}
               </span>
             )}
 
             {isRequired ? (
-              <span className="px-1.5 py-0.5 rounded-full bg-[#F4E1D6] text-[#8A4B2A] text-[10px] font-bold">
-                REQUIRED
-              </span>
+              <Badge className="h-4 rounded-full bg-[#F4E1D6] px-1.5 text-[10px] font-bold text-[#8A4B2A] hover:bg-[#F4E1D6]">
+                Required
+              </Badge>
             ) : (
-              <span className="px-1.5 py-0.5 rounded-full bg-[#EAEEF0] text-[#6B7B7C] text-[10px] font-semibold">
-                OPTIONAL
-              </span>
+              <Badge
+                variant="secondary"
+                className="h-4 rounded-full px-1.5 text-[10px] font-semibold"
+              >
+                Optional
+              </Badge>
             )}
           </div>
 
           {documentType?.description && (
-            <div className="text-[11.5px] text-[#8A9697] mt-0.5 truncate">
+            <div className="mt-0.5 truncate text-[11.5px] text-muted-foreground">
               {documentType.description}
             </div>
           )}
 
-          <div className="flex items-center gap-3 mt-1 text-[11px] text-[#8A9697] flex-wrap">
+          <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
             <span>
               {isUploaded
                 ? `${uploadCount} upload${uploadCount !== 1 ? "s" : ""}`
                 : "Not uploaded"}
             </span>
-
             {documentType?.latestUploadedAt && (
               <span>Latest: {formatDate(documentType.latestUploadedAt)}</span>
             )}
-
             {allowsMultiple && <span>Multiple allowed</span>}
           </div>
         </div>
 
-        {/* STATUS */}
-
-        <div className="hidden md:block shrink-0 min-w-[90px]">
+        <div className="hidden min-w-[90px] shrink-0 md:block">
           {isUploaded ? (
-            <span className="inline-flex px-2 py-1 rounded-full bg-[#E7F1EA] text-[#2F6B3F] text-[11px] font-semibold">
+            <Badge className="rounded-full bg-[#E7F1EA] text-[11px] font-semibold text-[#2F6B3F] hover:bg-[#E7F1EA]">
               Uploaded
-            </span>
+            </Badge>
           ) : (
-            <span
-              className={[
-                "inline-flex px-2 py-1 rounded-full text-[11px] font-semibold",
+            <Badge
+              className={cn(
+                "rounded-full text-[11px] font-semibold",
                 isRequired
-                  ? "bg-[#F4E1D6] text-[#A34D27]"
-                  : "bg-[#EAEEF0] text-[#6B7B7C]",
-              ].join(" ")}
+                  ? "bg-[#F4E1D6] text-[#A34D27] hover:bg-[#F4E1D6]"
+                  : "bg-muted text-muted-foreground hover:bg-muted",
+              )}
             >
               Pending
-            </span>
+            </Badge>
           )}
         </div>
 
-        {/* ACTIONS */}
-
         <div className="shrink-0">
           {!isUploaded ? (
-            <button
+            <Button
               type="button"
+              size="sm"
               onClick={() => onUpload(documentType, projectId)}
-              className="h-8 px-3 rounded-lg bg-[#1F453B] text-white text-[12px] font-semibold inline-flex items-center gap-1.5 hover:opacity-90"
+              className={BRAND}
             >
-              <Upload size={13} />
-              <span className="hidden sm:inline">Make / Upload</span>
+              <Upload className="h-[13px] w-[13px]" />
+              <span className="hidden sm:inline">Make / upload</span>
               <span className="sm:hidden">Upload</span>
-            </button>
+            </Button>
           ) : (
             <div className="flex items-center gap-1">
-              <button
+              <Button
                 type="button"
+                size="sm"
+                variant="outline"
                 onClick={() => onUpload(documentType, projectId)}
-                className="h-8 px-2.5 rounded-lg border border-[#D8E0DA] text-[#1F453B] text-[12px] font-semibold inline-flex items-center gap-1.5 hover:bg-[#F0F4F1]"
                 title="Upload another file"
               >
-                <Upload size={13} />
-
+                <Upload className="h-[13px] w-[13px]" />
                 <span className="hidden lg:inline">
                   {allowsMultiple ? "Add" : "Replace"}
                 </span>
-              </button>
+              </Button>
 
               {latestDocumentId && (
-                <button
+                <Button
                   type="button"
+                  size="sm"
+                  variant="outline"
                   onClick={() => onDownload(latestDocumentId)}
-                  className="h-8 px-2.5 rounded-lg border text-[#333333] text-[12px] font-semibold inline-flex items-center gap-1.5 hover:bg-[#EAEEF0]"
                   title="Download latest document"
                 >
-                  <Download size={13} />
-
+                  <Download className="h-[13px] w-[13px]" />
                   <span className="hidden lg:inline">Download</span>
-                </button>
+                </Button>
               )}
             </div>
           )}
         </div>
       </div>
 
-      {/* MULTIPLE UPLOADS */}
-
       {allowsMultiple && documentIds.length > 1 && (
-        <div className="ml-[76px] mt-2 pl-3 border-l-2 border-[#D8E0DA]">
-          <div className="text-[10.5px] uppercase tracking-[0.12em] text-[#8A9697] mb-1.5">
+        <div className="ml-[76px] mt-2 border-l-2 pl-3">
+          <div className="mb-1.5 text-[10.5px] uppercase tracking-[0.12em] text-muted-foreground">
             Uploaded files
           </div>
-
           <div className="flex flex-wrap gap-1.5">
             {documentIds.map((documentId, index) => (
-              <button
+              <Button
                 key={documentId}
                 type="button"
+                variant="secondary"
+                size="sm"
+                className="h-7 gap-1.5 px-2 text-[11px]"
                 onClick={() => onDownload(documentId)}
-                className="px-2 py-1 rounded-md bg-[#F4F6F7] hover:bg-[#EAEEF0] text-[11px] text-[#333333] inline-flex items-center gap-1.5"
               >
-                <Download size={11} />
+                <Download className="h-[11px] w-[11px]" />
                 File {index + 1}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -342,7 +376,6 @@ function DocumentPhaseCard({
   onDownload,
 }) {
   const documents = getPhaseDocuments(phase);
-
   const summary = phase?.summary || {};
 
   const total =
@@ -387,135 +420,91 @@ function DocumentPhaseCard({
       : pendingRequired === 0;
 
   return (
-    <Card className="overflow-hidden">
-      {/* PHASE HEADER */}
-
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full text-left px-4 py-3 bg-[#F0F4F1] hover:bg-[#EAF0EB] transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          {/* CHEVRON */}
-
-          <div className="shrink-0 text-[#1F453B]">
-            {collapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
-          </div>
-
-          {/* PHASE NUMBER */}
-
-          <div className="w-9 h-9 rounded-lg bg-white border border-[#D8E0DA] flex items-center justify-center text-[12px] font-bold text-[#1F453B] shrink-0">
-            {phase?.phaseNumber || phase?.phase_number || "—"}
-          </div>
-
-          {/* PHASE INFO */}
-
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-[14px] text-[#333333]">
-                {phase?.title || "Untitled Phase"}
-              </span>
-
-              {(phase?.phaseCode || phase?.phase_code) && (
-                <span className="text-[10.5px] text-[#8A9697]">
-                  {phase?.phaseCode || phase?.phase_code}
-                </span>
-              )}
-
-              {isComplete ? (
-                <span className="px-1.5 py-0.5 rounded-full bg-[#E7F1EA] text-[#2F6B3F] text-[10px] font-bold">
-                  COMPLETE
-                </span>
-              ) : (
-                <span className="px-1.5 py-0.5 rounded-full bg-[#F4E1D6] text-[#A34D27] text-[10px] font-bold">
-                  PENDING
-                </span>
-              )}
-            </div>
-
-            {phase?.description && (
-              <div className="text-[11.5px] text-[#6B7B7C] mt-0.5 truncate">
-                {phase.description}
-              </div>
-            )}
-          </div>
-
-          {/* PHASE STATS */}
-
-          <div className="hidden sm:flex items-center gap-4 shrink-0">
-            <div className="text-right">
-              <div className="text-[12px] font-bold text-[#333333]">
-                {uploaded}/{total}
+    <Collapsible open={!collapsed} onOpenChange={onToggle} asChild>
+      <Card className="overflow-hidden py-0">
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="w-full bg-muted/60 px-4 py-3 text-left transition-colors hover:bg-muted"
+          >
+            <div className="flex items-center gap-3">
+              <div className={cn("shrink-0", BRAND_TEXT)}>
+                {collapsed ? (
+                  <ChevronRight className="h-[18px] w-[18px]" />
+                ) : (
+                  <ChevronDown className="h-[18px] w-[18px]" />
+                )}
               </div>
 
-              <div className="text-[10px] text-[#8A9697]">uploaded</div>
-            </div>
-
-            <div className="text-right">
               <div
-                className={[
-                  "text-[12px] font-bold",
-                  pendingRequired > 0 ? "text-[#A34D27]" : "text-[#2F6B3F]",
-                ].join(" ")}
+                className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-background text-xs font-bold",
+                  BRAND_TEXT,
+                )}
               >
-                {uploadedRequired}/{required}
+                {phase?.phaseNumber || phase?.phase_number || "—"}
               </div>
 
-              <div className="text-[10px] text-[#8A9697]">required</div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-bold">
+                    {phase?.title || "Untitled phase"}
+                  </span>
+
+                  {(phase?.phaseCode || phase?.phase_code) && (
+                    <span className="text-[10.5px] text-muted-foreground">
+                      {phase?.phaseCode || phase?.phase_code}
+                    </span>
+                  )}
+
+                  {isComplete ? (
+                    <Badge className="h-4 rounded-full bg-[#E7F1EA] px-1.5 text-[10px] font-bold text-[#2F6B3F] hover:bg-[#E7F1EA]">
+                      Complete
+                    </Badge>
+                  ) : (
+                    <Badge className="h-4 rounded-full bg-[#F4E1D6] px-1.5 text-[10px] font-bold text-[#A34D27] hover:bg-[#F4E1D6]">
+                      Pending
+                    </Badge>
+                  )}
+                </div>
+
+                {phase?.description && (
+                  <div className="mt-0.5 truncate text-[11.5px] text-muted-foreground">
+                    {phase.description}
+                  </div>
+                )}
+              </div>
+
+              <div className="hidden shrink-0 items-center gap-4 sm:flex">
+                <StatPill label="uploaded" value={`${uploaded}/${total}`} />
+                <StatPill
+                  label="required"
+                  value={`${uploadedRequired}/${required}`}
+                  tone={pendingRequired > 0 ? "warning" : "default"}
+                />
+                <ProgressStat percentage={completionPercentage} />
+              </div>
             </div>
 
-            <div className="w-[90px]">
-              <div className="flex justify-between text-[10px] text-[#8A9697] mb-1">
-                <span>Progress</span>
-
+            <div className="ml-12 mt-3 sm:hidden">
+              <div className="mb-1 flex items-center justify-between text-[10.5px] text-muted-foreground">
+                <span>
+                  {uploaded}/{total} uploaded
+                </span>
+                <span>
+                  Required: {uploadedRequired}/{required}
+                </span>
                 <span>{completionPercentage}%</span>
               </div>
-
-              <div className="h-1.5 rounded-full bg-[#D8E0DA] overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-[#1F453B]"
-                  style={{
-                    width: `${Math.min(
-                      Math.max(completionPercentage, 0),
-                      100,
-                    )}%`,
-                  }}
-                />
-              </div>
+              <Progress
+                value={clampPercent(completionPercentage)}
+                className="h-1.5"
+              />
             </div>
-          </div>
-        </div>
+          </button>
+        </CollapsibleTrigger>
 
-        {/* MOBILE STATS */}
-
-        <div className="sm:hidden mt-3 ml-12">
-          <div className="flex items-center justify-between text-[10.5px] text-[#6B7B7C] mb-1">
-            <span>
-              {uploaded}/{total} uploaded
-            </span>
-
-            <span>
-              Required: {uploadedRequired}/{required}
-            </span>
-
-            <span>{completionPercentage}%</span>
-          </div>
-
-          <div className="h-1.5 rounded-full bg-[#D8E0DA] overflow-hidden">
-            <div
-              className="h-full rounded-full bg-[#1F453B]"
-              style={{
-                width: `${Math.min(Math.max(completionPercentage, 0), 100)}%`,
-              }}
-            />
-          </div>
-        </div>
-      </button>
-
-      {/* DOCUMENT TYPES */}
-
-      {!collapsed && (
-        <div>
+        <CollapsibleContent>
           {documents.length ? (
             documents.map((documentType) => (
               <DocumentTypeRow
@@ -527,24 +516,20 @@ function DocumentPhaseCard({
               />
             ))
           ) : (
-            <div className="px-4 py-8 text-center text-[12px] text-[#8A9697]">
+            <div className="px-4 py-8 text-center text-xs text-muted-foreground">
               No document types configured for this phase.
             </div>
           )}
 
-          {/* PHASE FOOTER */}
-
-          <div className="px-4 py-2.5 bg-[#FAFBFA] border-t border-[rgba(31,69,59,0.08)] flex items-center justify-between text-[11px]">
-            <span className="text-[#8A9697]">
-              {pending} pending document
-              {pending !== 1 ? "s" : ""}
+          <div className="flex items-center justify-between border-t bg-muted/30 px-4 py-2.5 text-[11px]">
+            <span className="text-muted-foreground">
+              {pending} pending document{pending !== 1 ? "s" : ""}
             </span>
-
             <span
               className={
                 pendingRequired > 0
-                  ? "text-[#A34D27] font-semibold"
-                  : "text-[#2F6B3F] font-semibold"
+                  ? "font-semibold text-[#A34D27]"
+                  : "font-semibold text-[#2F6B3F]"
               }
             >
               {pendingRequired > 0
@@ -552,9 +537,9 @@ function DocumentPhaseCard({
                 : "All required documents uploaded"}
             </span>
           </div>
-        </div>
-      )}
-    </Card>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }
 
@@ -564,9 +549,7 @@ function DocumentPhaseCard({
 
 function ProjectTreeCard({ project, collapsed, onToggle, children }) {
   const projectId = getProjectId(project);
-
   const projectName = getProjectName(project, projectId || "Project");
-
   const summary = project?.summary || {};
 
   const totalPhases = summary.totalPhases ?? project?.phases?.length ?? 0;
@@ -603,92 +586,88 @@ function ProjectTreeCard({ project, collapsed, onToggle, children }) {
       : 100);
 
   return (
-    <Card className="overflow-hidden">
-      {/* PROJECT HEADER */}
-
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full text-left px-4 py-3 bg-white hover:bg-[#F8FAF9] transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <div className="shrink-0 text-[#1F453B]">
-            {collapsed ? <ChevronRight size={20} /> : <ChevronDown size={20} />}
-          </div>
-
-          <div className="w-10 h-10 rounded-xl bg-[#E7F1EA] flex items-center justify-center shrink-0">
-            {collapsed ? (
-              <Folder size={18} className="text-[#1F453B]" />
-            ) : (
-              <FolderOpen size={18} className="text-[#1F453B]" />
-            )}
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-[15px] text-[#333333]">
-                {projectName}
-              </span>
-
-              {project?.code && (
-                <span className="text-[10.5px] text-[#8A9697]">
-                  {project.code}
-                </span>
-              )}
-            </div>
-
-            <div className="text-[11.5px] text-[#8A9697] mt-0.5">
-              {projectId}
-            </div>
-          </div>
-
-          {/* PROJECT STATS */}
-
-          <div className="hidden md:flex items-center gap-5 shrink-0">
-            <div className="text-right">
-              <div className="text-[12px] font-bold text-[#333333]">
-                {completedPhases}/{totalPhases}
+    <Collapsible open={!collapsed} onOpenChange={onToggle} asChild>
+      <Card className="overflow-hidden py-0">
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="w-full bg-background px-4 py-3 text-left transition-colors hover:bg-muted/40"
+          >
+            <div className="flex items-center gap-3">
+              <div className={cn("shrink-0", BRAND_TEXT)}>
+                {collapsed ? (
+                  <ChevronRight className="h-5 w-5" />
+                ) : (
+                  <ChevronDown className="h-5 w-5" />
+                )}
               </div>
 
-              <div className="text-[10px] text-[#8A9697]">phases</div>
-            </div>
-
-            <div className="text-right">
-              <div className="text-[12px] font-bold text-[#333333]">
-                {uploadedDocuments}/{totalDocuments}
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E7F1EA]">
+                {collapsed ? (
+                  <Folder className={cn("h-[18px] w-[18px]", BRAND_TEXT)} />
+                ) : (
+                  <FolderOpen className={cn("h-[18px] w-[18px]", BRAND_TEXT)} />
+                )}
               </div>
 
-              <div className="text-[10px] text-[#8A9697]">documents</div>
-            </div>
-
-            <div className="w-[90px]">
-              <div className="flex justify-between text-[10px] text-[#8A9697] mb-1">
-                <span>Progress</span>
-
-                <span>{completionPercentage}%</span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[15px] font-bold">{projectName}</span>
+                  {project?.code && (
+                    <span className="text-[10.5px] text-muted-foreground">
+                      {project.code}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-0.5 text-[11.5px] text-muted-foreground">
+                  {projectId}
+                </div>
               </div>
 
-              <div className="h-1.5 rounded-full bg-[#D8E0DA] overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-[#1F453B]"
-                  style={{
-                    width: `${Math.min(
-                      Math.max(completionPercentage, 0),
-                      100,
-                    )}%`,
-                  }}
+              <div className="hidden shrink-0 items-center gap-5 md:flex">
+                <StatPill
+                  label="phases"
+                  value={`${completedPhases}/${totalPhases}`}
                 />
+                <StatPill
+                  label="documents"
+                  value={`${uploadedDocuments}/${totalDocuments}`}
+                />
+                <ProgressStat percentage={completionPercentage} />
               </div>
             </div>
-          </div>
-        </div>
-      </button>
+          </button>
+        </CollapsibleTrigger>
 
-      {!collapsed && (
-        <div className="border-t border-[rgba(31,69,59,0.08)] bg-[#FAFBFA] p-3 space-y-3">
-          {children}
-        </div>
-      )}
+        <CollapsibleContent>
+          <div className="space-y-3 border-t bg-muted/20 p-3">{children}</div>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
+  );
+}
+
+/* ============================================================
+   SUMMARY CARD
+============================================================ */
+
+function SummaryCard({
+  label,
+  value,
+  sub,
+  valueClassName,
+  subClassName,
+  className,
+}) {
+  return (
+    <Card className={cn("p-3", className)}>
+      <div className="text-[11px] text-muted-foreground">{label}</div>
+      <div className={cn("mt-1 text-xl font-bold", valueClassName)}>
+        {value}
+      </div>
+      <div className={cn("text-[10.5px] text-muted-foreground", subClassName)}>
+        {sub}
+      </div>
     </Card>
   );
 }
@@ -704,41 +683,23 @@ export function DocumentsAll() {
   const urlProjectId =
     searchParams.get("project_id") || searchParams.get("projectId") || "";
 
-  /*
-   * Empty string means ALL PROJECTS.
-   *
-   * If the page is opened with ?project_id=...
-   * we use that project as the initial selection.
-   */
-
   const [selectedProjectId, setSelectedProjectId] = useState(urlProjectId);
-
   const [q, setQ] = useState("");
-
   const [collapsedProjects, setCollapsedProjects] = useState({});
-
   const [collapsedPhases, setCollapsedPhases] = useState({});
-
   const [showCompleted, setShowCompleted] = useState(true);
 
-  /* ==========================================================
-     PROJECTS
-  ========================================================== */
+  /* -------------------------------------------------- Projects */
 
   const { data: projectsResponse, isLoading: projectsLoading } =
     useGetProjectsQuery({});
 
   const projects = useMemo(() => {
-    if (Array.isArray(projectsResponse)) {
-      return projectsResponse;
-    }
-
+    if (Array.isArray(projectsResponse)) return projectsResponse;
     return projectsResponse?.data || projectsResponse?.projects || [];
   }, [projectsResponse]);
 
-  /* ==========================================================
-     ALL PROJECT TREE
-  ========================================================== */
+  /* -------------------------------------------------- All-project tree */
 
   const {
     data: allProjectTreeResponse,
@@ -751,9 +712,7 @@ export function DocumentsAll() {
     skip: Boolean(selectedProjectId),
   });
 
-  /* ==========================================================
-     SELECTED PROJECT TREE
-  ========================================================== */
+  /* -------------------------------------------------- Selected project tree */
 
   const {
     data: selectedProjectResponse,
@@ -766,17 +725,10 @@ export function DocumentsAll() {
     skip: !selectedProjectId,
   });
 
-  /* ==========================================================
-     NORMALIZE ALL PROJECT TREE
-  ========================================================== */
+  /* -------------------------------------------------- Normalize */
 
   const allProjectData = useMemo(() => {
-    if (!allProjectTreeResponse) {
-      return {
-        projects: [],
-        summary: {},
-      };
-    }
+    if (!allProjectTreeResponse) return { projects: [], summary: {} };
 
     const projectsData = Array.isArray(allProjectTreeResponse)
       ? allProjectTreeResponse
@@ -795,17 +747,8 @@ export function DocumentsAll() {
     };
   }, [allProjectTreeResponse]);
 
-  /* ==========================================================
-     NORMALIZE SELECTED PROJECT
-  ========================================================== */
-
   const selectedProjectData = useMemo(() => {
-    if (!selectedProjectResponse) {
-      return {
-        phases: [],
-        summary: {},
-      };
-    }
+    if (!selectedProjectResponse) return { phases: [], summary: {} };
 
     const phases = Array.isArray(selectedProjectResponse)
       ? selectedProjectResponse
@@ -818,21 +761,11 @@ export function DocumentsAll() {
       selectedProjectResponse?.data?.summary ||
       {};
 
-    return {
-      phases: Array.isArray(phases) ? phases : [],
-      summary,
-    };
+    return { phases: Array.isArray(phases) ? phases : [], summary };
   }, [selectedProjectResponse]);
 
-  /* ==========================================================
-     SELECTED PROJECT
-  ========================================================== */
-
   const selectedProject = useMemo(() => {
-    if (!selectedProjectId) {
-      return null;
-    }
-
+    if (!selectedProjectId) return null;
     return projects.find(
       (project) => String(getProjectId(project)) === String(selectedProjectId),
     );
@@ -843,22 +776,13 @@ export function DocumentsAll() {
     selectedProjectId || "Project",
   );
 
-  /* ==========================================================
-     PROJECT SELECTION
-  ========================================================== */
+  /* -------------------------------------------------- Project selection */
 
-  const handleProjectChange = (event) => {
-    const projectId = event.target.value;
-
+  const handleProjectChange = (value) => {
+    const projectId = value === ALL_PROJECTS ? "" : value;
     setSelectedProjectId(projectId);
 
-    /*
-     * Keep URL in sync so opening/refreshing the page
-     * preserves the selected project.
-     */
-
     const params = new URLSearchParams(searchParams);
-
     if (projectId) {
       params.set("project_id", projectId);
     } else {
@@ -867,23 +791,18 @@ export function DocumentsAll() {
     }
 
     const query = params.toString();
-
     nav(query ? `/projects/documents?${query}` : "/projects/documents", {
       replace: true,
     });
   };
 
-  /* ==========================================================
-     SEARCH
-  ========================================================== */
+  /* -------------------------------------------------- Search */
 
   const searchProject = (project, search) => {
     const projectName = getProjectName(project, "").toLowerCase();
-
     const projectCode = String(
       project?.code || project?.project_code || "",
     ).toLowerCase();
-
     const projectId = String(getProjectId(project)).toLowerCase();
 
     return (
@@ -894,36 +813,25 @@ export function DocumentsAll() {
   };
 
   const filterPhases = (phases, search) => {
-    if (!Array.isArray(phases)) {
-      return [];
-    }
-
-    if (!search) {
-      return phases;
-    }
+    if (!Array.isArray(phases)) return [];
+    if (!search) return phases;
 
     return phases
       .map((phase) => {
         const documents = getPhaseDocuments(phase);
-
         const phaseTitle = String(phase?.title || "").toLowerCase();
-
         const phaseCode = String(
           phase?.phaseCode || phase?.phase_code || "",
         ).toLowerCase();
-
         const phaseMatches =
           phaseTitle.includes(search) || phaseCode.includes(search);
 
         const filteredDocuments = documents.filter((documentType) => {
           const name = String(documentType?.name || "").toLowerCase();
-
           const code = String(documentType?.code || "").toLowerCase();
-
           const description = String(
             documentType?.description || "",
           ).toLowerCase();
-
           return (
             name.includes(search) ||
             code.includes(search) ||
@@ -943,22 +851,15 @@ export function DocumentsAll() {
       .filter(Boolean);
   };
 
-  /* ==========================================================
-     ALL PROJECTS FILTERED TREE
-  ========================================================== */
-
   const visibleProjects = useMemo(() => {
     const search = q.trim().toLowerCase();
-
     let result = allProjectData.projects;
 
     if (search) {
       result = result
         .map((project) => {
           const projectMatches = searchProject(project, search);
-
           const phases = Array.isArray(project?.phases) ? project.phases : [];
-
           const filteredPhases = filterPhases(phases, search);
 
           if (projectMatches || filteredPhases.length) {
@@ -985,13 +886,8 @@ export function DocumentsAll() {
     return result;
   }, [allProjectData.projects, q, showCompleted]);
 
-  /* ==========================================================
-     SELECTED PROJECT FILTERED PHASES
-  ========================================================== */
-
   const visiblePhases = useMemo(() => {
     const search = q.trim().toLowerCase();
-
     let result = filterPhases(selectedProjectData.phases, search);
 
     if (!showCompleted) {
@@ -1001,9 +897,7 @@ export function DocumentsAll() {
     return result;
   }, [selectedProjectData.phases, q, showCompleted]);
 
-  /* ==========================================================
-     SUMMARY
-  ========================================================== */
+  /* -------------------------------------------------- Summary */
 
   const activeSummary = selectedProjectId
     ? selectedProjectData.summary || {}
@@ -1012,24 +906,6 @@ export function DocumentsAll() {
   const totalProjects = selectedProjectId
     ? 1
     : (activeSummary.totalProjects ?? allProjectData.projects.length);
-
-  const completedProjects = selectedProjectId
-    ? activeSummary.projectComplete
-      ? 1
-      : 0
-    : (activeSummary.completedProjects ??
-      allProjectData.projects.filter((project) => project?.isComplete).length);
-
-  const totalPhases =
-    activeSummary.totalPhases ??
-    (selectedProjectId
-      ? selectedProjectData.phases.length
-      : allProjectData.projects.reduce(
-          (total, project) =>
-            total +
-            (Array.isArray(project?.phases) ? project.phases.length : 0),
-          0,
-        ));
 
   const completedPhases =
     activeSummary.completedPhases ??
@@ -1041,6 +917,17 @@ export function DocumentsAll() {
             (Array.isArray(project?.phases)
               ? project.phases.filter((phase) => phase?.isComplete).length
               : 0),
+          0,
+        ));
+
+  const totalPhases =
+    activeSummary.totalPhases ??
+    (selectedProjectId
+      ? selectedProjectData.phases.length
+      : allProjectData.projects.reduce(
+          (total, project) =>
+            total +
+            (Array.isArray(project?.phases) ? project.phases.length : 0),
           0,
         ));
 
@@ -1163,22 +1050,20 @@ export function DocumentsAll() {
       ? Math.round((uploadedRequiredDocuments / requiredDocuments) * 100)
       : 100);
 
-  /* ==========================================================
-     UPLOAD
-  ========================================================== */
+  /* -------------------------------------------------- Upload / download */
 
   const handleUpload = (documentType, projectId) => {
     const resolvedProjectId = projectId || selectedProjectId;
 
     if (!resolvedProjectId) {
-      toast.error("Select a project first");
+      toast.error("Select a project first.");
       return;
     }
 
     const documentTypeId = getDocumentTypeId(documentType);
 
     if (!documentTypeId) {
-      toast.error("Document type is missing");
+      toast.error("Document type is missing.");
       return;
     }
 
@@ -1190,13 +1075,9 @@ export function DocumentsAll() {
     nav(`/projects/documents/upload?${params.toString()}`);
   };
 
-  /* ==========================================================
-     DOWNLOAD
-  ========================================================== */
-
   const handleDownload = async (documentId) => {
     if (!documentId) {
-      toast.error("Document is not available");
+      toast.error("Document is not available.");
       return;
     }
 
@@ -1206,37 +1087,31 @@ export function DocumentsAll() {
       toast.error(
         error?.data?.message ||
           error?.data?.detail ||
-          "Failed to download document",
+          "The document could not be downloaded.",
       );
     }
   };
 
-  /* ==========================================================
-     COLLAPSE
-  ========================================================== */
+  /* -------------------------------------------------- Collapse */
 
-  const toggleProject = (projectId) => {
+  const toggleProject = (projectId) =>
     setCollapsedProjects((current) => ({
       ...current,
       [projectId]: !current[projectId],
     }));
-  };
 
-  const togglePhase = (phaseKey) => {
+  const togglePhase = (phaseKey) =>
     setCollapsedPhases((current) => ({
       ...current,
       [phaseKey]: !current[phaseKey],
     }));
-  };
 
   const collapseAll = () => {
     if (selectedProjectId) {
       const next = {};
-
       visiblePhases.forEach((phase, index) => {
         next[getPhaseId(phase, index)] = true;
       });
-
       setCollapsedPhases(next);
     } else {
       const projectNext = {};
@@ -1244,10 +1119,7 @@ export function DocumentsAll() {
 
       visibleProjects.forEach((project) => {
         const projectId = getProjectId(project);
-
-        if (projectId) {
-          projectNext[projectId] = true;
-        }
+        if (projectId) projectNext[projectId] = true;
 
         (Array.isArray(project?.phases) ? project.phases : []).forEach(
           (phase, index) => {
@@ -1257,7 +1129,6 @@ export function DocumentsAll() {
       });
 
       setCollapsedProjects(projectNext);
-
       setCollapsedPhases(phaseNext);
     }
   };
@@ -1267,29 +1138,21 @@ export function DocumentsAll() {
     setCollapsedPhases({});
   };
 
-  /* ==========================================================
-     REFRESH
-  ========================================================== */
+  /* -------------------------------------------------- Query state */
 
   const isFetching = allTreeFetching || selectedProjectFetching;
-
   const isLoading =
     projectsLoading ||
     (selectedProjectId ? selectedProjectLoading : allTreeLoading);
-
   const isError = selectedProjectId ? selectedProjectError : allTreeError;
-
   const error = selectedProjectId ? selectedProjectErrorData : allTreeErrorData;
-
   const refetch = selectedProjectId ? refetchSelectedProject : refetchAllTree;
 
-  /* ==========================================================
-     RENDER
-  ========================================================== */
+  /* -------------------------------------------------- Render */
 
   return (
     <Shell
-      title="Project Documents"
+      title="Project documents"
       subtitle={
         selectedProjectId
           ? `${selectedProjectName} — document checklist`
@@ -1297,361 +1160,294 @@ export function DocumentsAll() {
       }
       action={
         <div className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="h-10 px-3 rounded-lg border text-[13px] font-semibold inline-flex items-center gap-1.5 hover:bg-[#F4F6F7] disabled:opacity-50"
-            title="Refresh checklist"
           >
-            <RefreshCw size={14} className={isFetching ? "animate-spin" : ""} />
+            <RefreshCw
+              className={cn("h-[14px] w-[14px]", isFetching && "animate-spin")}
+            />
             Refresh
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            className={BRAND}
             onClick={() => {
               if (!selectedProjectId) {
                 toast.info("Select a project before uploading a document.");
                 return;
               }
-
               nav(`/projects/documents/upload?project_id=${selectedProjectId}`);
             }}
-            className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-1.5"
           >
-            <Upload size={14} />
-            Upload Document
-          </button>
+            <Upload className="h-[14px] w-[14px]" />
+            Upload document
+          </Button>
         </div>
       }
     >
-      {/* ======================================================
-          PROJECT SELECTOR
-      ====================================================== */}
+      <div className="space-y-4">
+        {/* -------------------------------------------- Project selector */}
+        <Card className="p-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+            <div className="max-w-xl flex-1 space-y-1.5">
+              <Label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Project
+              </Label>
 
-      <Card className="p-4">
-        <div className="flex flex-col lg:flex-row lg:items-end gap-4">
-          <div className="flex-1 max-w-xl">
-            <label className="block text-[11px] uppercase tracking-[0.14em] font-semibold text-[#8A9697] mb-1.5">
-              Project
-            </label>
+              <Select
+                value={selectedProjectId || ALL_PROJECTS}
+                onValueChange={handleProjectChange}
+              >
+                <SelectTrigger className="h-11 font-semibold">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_PROJECTS}>All projects</SelectItem>
+                  {projects.map((project) => {
+                    const projectId = getProjectId(project);
+                    if (!projectId) return null;
+                    return (
+                      <SelectItem key={projectId} value={String(projectId)}>
+                        {getProjectName(project, projectId)}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
 
-            <select
-              value={selectedProjectId}
-              onChange={handleProjectChange}
-              className="w-full h-11 px-3 rounded-lg border border-[#D8E0DA] bg-white text-[13px] font-semibold text-[#333333] outline-none focus:border-[#1F453B] focus:ring-2 focus:ring-[rgba(31,69,59,0.08)]"
+            <p className="text-[11.5px] text-muted-foreground">
+              {selectedProjectId
+                ? "Showing document phases for the selected project."
+                : "Showing the document phase tree for every project."}
+            </p>
+          </div>
+        </Card>
+
+        {/* -------------------------------------------- Summary */}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+          <SummaryCard
+            label="Projects"
+            value={selectedProjectId ? 1 : totalProjects}
+            sub="in view"
+          />
+          <SummaryCard
+            label="Phases"
+            value={`${completedPhases}/${totalPhases}`}
+            sub="completed"
+          />
+          <SummaryCard
+            label="Documents"
+            value={`${uploadedDocuments}/${totalDocuments}`}
+            sub="uploaded"
+          />
+          <SummaryCard
+            label="Pending"
+            value={pendingDocuments}
+            valueClassName="text-[#A34D27]"
+            sub="document types"
+          />
+          <SummaryCard
+            label="Required"
+            value={`${uploadedRequiredDocuments}/${requiredDocuments}`}
+            sub="uploaded"
+          />
+          <SummaryCard
+            label="Required completion"
+            value={`${requiredCompletionPercentage}%`}
+            valueClassName={BRAND_TEXT}
+            sub={`${pendingRequiredDocuments} required pending`}
+            subClassName="text-[#A34D27]"
+            className="col-span-2 lg:col-span-1"
+          />
+        </div>
+
+        {/* -------------------------------------------- Filters */}
+        <div className="flex flex-wrap items-center gap-3">
+          <Input
+            placeholder="Search project, phase, document type, code..."
+            value={q}
+            onChange={(event) => setQ(event.target.value)}
+            className="max-w-md"
+          />
+
+          <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold">
+            <Checkbox
+              checked={showCompleted}
+              onCheckedChange={(checked) => setShowCompleted(Boolean(checked))}
+            />
+            Show completed phases
+          </label>
+
+          <div className="ml-auto flex items-center gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={expandAll}
             >
-              <option value="">All Projects</option>
+              Expand all
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={collapseAll}
+            >
+              Collapse all
+            </Button>
+          </div>
+        </div>
 
-              {projects.map((project) => {
+        {/* -------------------------------------------- Error */}
+        {isError && (
+          <Card>
+            <CardContent className="py-10 text-center">
+              <p className="text-sm font-semibold text-destructive">
+                Failed to load document checklist
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {error?.data?.message ||
+                  error?.data?.detail ||
+                  "Please try again."}
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                className={cn(BRAND, "mt-4")}
+                onClick={() => refetch()}
+              >
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* -------------------------------------------- Loading */}
+        {isLoading && (
+          <div className="space-y-3">
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+          </div>
+        )}
+
+        {/* -------------------------------------------- All projects */}
+        {!isLoading && !isError && !selectedProjectId && (
+          <div className="space-y-3">
+            {visibleProjects.length ? (
+              visibleProjects.map((project) => {
                 const projectId = getProjectId(project);
+                if (!projectId) return null;
 
-                if (!projectId) {
-                  return null;
-                }
+                const projectCollapsed = Boolean(collapsedProjects[projectId]);
+                const phases = Array.isArray(project?.phases)
+                  ? project.phases
+                  : [];
 
                 return (
-                  <option key={projectId} value={projectId}>
-                    {getProjectName(project, projectId)}
-                  </option>
+                  <ProjectTreeCard
+                    key={projectId}
+                    project={project}
+                    collapsed={projectCollapsed}
+                    onToggle={() => toggleProject(projectId)}
+                  >
+                    {phases.length ? (
+                      phases.map((phase, index) => {
+                        const phaseId = getPhaseId(phase, index);
+                        const phaseKey = `${projectId}:${phaseId}`;
+
+                        return (
+                          <DocumentPhaseCard
+                            key={phaseKey}
+                            phase={phase}
+                            projectId={projectId}
+                            collapsed={Boolean(collapsedPhases[phaseKey])}
+                            onToggle={() => togglePhase(phaseKey)}
+                            onUpload={handleUpload}
+                            onDownload={handleDownload}
+                          />
+                        );
+                      })
+                    ) : (
+                      <div className="px-4 py-10 text-center text-xs text-muted-foreground">
+                        No document phases configured for this project.
+                      </div>
+                    )}
+                  </ProjectTreeCard>
                 );
-              })}
-            </select>
+              })
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <FolderOpen className="mx-auto mb-3 h-9 w-9 text-muted-foreground/50" />
+                  <p className="text-sm font-semibold">No projects found</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {q
+                      ? "Try a different search."
+                      : "No projects are available."}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </div>
+        )}
 
-          <div className="text-[11.5px] text-[#8A9697]">
-            {selectedProjectId
-              ? "Showing document phases for the selected project."
-              : "Showing the document phase tree for every project."}
+        {/* -------------------------------------------- Selected project */}
+        {!isLoading && !isError && Boolean(selectedProjectId) && (
+          <div className="space-y-3">
+            {visiblePhases.length ? (
+              visiblePhases.map((phase, index) => {
+                const phaseId = getPhaseId(phase, index);
+                return (
+                  <DocumentPhaseCard
+                    key={phaseId}
+                    phase={phase}
+                    projectId={selectedProjectId}
+                    collapsed={Boolean(collapsedPhases[phaseId])}
+                    onToggle={() => togglePhase(phaseId)}
+                    onUpload={handleUpload}
+                    onDownload={handleDownload}
+                  />
+                );
+              })
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <FileText className="mx-auto mb-3 h-9 w-9 text-muted-foreground/50" />
+                  <p className="text-sm font-semibold">
+                    No document phases found
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {q
+                      ? "Try a different search."
+                      : "No document phases are configured for this project."}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </div>
-        </div>
-      </Card>
+        )}
 
-      {/* ======================================================
-          SUMMARY
-      ====================================================== */}
-
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
-        <Card className="p-3">
-          <div className="text-[11px] text-[#8A9697]">Projects</div>
-
-          <div className="text-[20px] font-bold text-[#333333] mt-1">
-            {selectedProjectId ? 1 : totalProjects}
-          </div>
-
-          <div className="text-[10.5px] text-[#6B7B7C]">in view</div>
-        </Card>
-
-        <Card className="p-3">
-          <div className="text-[11px] text-[#8A9697]">Phases</div>
-
-          <div className="text-[20px] font-bold text-[#333333] mt-1">
-            {completedPhases}/{totalPhases}
-          </div>
-
-          <div className="text-[10.5px] text-[#6B7B7C]">completed</div>
-        </Card>
-
-        <Card className="p-3">
-          <div className="text-[11px] text-[#8A9697]">Documents</div>
-
-          <div className="text-[20px] font-bold text-[#333333] mt-1">
-            {uploadedDocuments}/{totalDocuments}
-          </div>
-
-          <div className="text-[10.5px] text-[#6B7B7C]">uploaded</div>
-        </Card>
-
-        <Card className="p-3">
-          <div className="text-[11px] text-[#8A9697]">Pending</div>
-
-          <div className="text-[20px] font-bold text-[#A34D27] mt-1">
-            {pendingDocuments}
-          </div>
-
-          <div className="text-[10.5px] text-[#6B7B7C]">document types</div>
-        </Card>
-
-        <Card className="p-3">
-          <div className="text-[11px] text-[#8A9697]">Required</div>
-
-          <div className="text-[20px] font-bold text-[#333333] mt-1">
-            {uploadedRequiredDocuments}/{requiredDocuments}
-          </div>
-
-          <div className="text-[10.5px] text-[#6B7B7C]">uploaded</div>
-        </Card>
-
-        <Card className="p-3 col-span-2 lg:col-span-1">
-          <div className="text-[11px] text-[#8A9697]">Required completion</div>
-
-          <div className="text-[20px] font-bold text-[#1F453B] mt-1">
-            {requiredCompletionPercentage}%
-          </div>
-
-          <div className="text-[10.5px] text-[#A34D27]">
-            {pendingRequiredDocuments} required pending
-          </div>
-        </Card>
+        {/* -------------------------------------------- Required warning */}
+        {!isLoading && !isError && pendingRequiredDocuments > 0 && (
+          <Alert className="border-[rgba(176,77,38,0.18)] bg-[#FFF8F4]">
+            <AlertTriangle className="h-4 w-4 text-[#B04D26]" />
+            <AlertTitle className="text-[#7D3C22]">
+              Required documents are still pending
+            </AlertTitle>
+            <AlertDescription className="text-[#8A6B5D]">
+              {pendingRequiredDocuments} required document
+              {pendingRequiredDocuments !== 1 ? "s" : ""} must be uploaded
+              before the document checklist is complete.
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
-
-      {/* ======================================================
-          FILTERS
-      ====================================================== */}
-
-      <div className="flex gap-3 flex-wrap items-center">
-        <Input
-          placeholder="Search project, phase, document type, code…"
-          value={q}
-          onChange={(event) => setQ(event.target.value)}
-          className="max-w-md"
-        />
-
-        <label className="inline-flex items-center gap-2 text-[12px] font-semibold text-[#333333] cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showCompleted}
-            onChange={(event) => setShowCompleted(event.target.checked)}
-          />
-          Show completed phases
-        </label>
-
-        <div className="ml-auto flex items-center gap-1">
-          <button
-            type="button"
-            onClick={expandAll}
-            className="h-8 px-2.5 rounded-lg border text-[11px] font-semibold hover:bg-[#F4F6F7]"
-          >
-            Expand all
-          </button>
-
-          <button
-            type="button"
-            onClick={collapseAll}
-            className="h-8 px-2.5 rounded-lg border text-[11px] font-semibold hover:bg-[#F4F6F7]"
-          >
-            Collapse all
-          </button>
-        </div>
-      </div>
-
-      {/* ======================================================
-          ERROR
-      ====================================================== */}
-
-      {isError && (
-        <Card>
-          <div className="py-10 text-center">
-            <div className="text-[14px] font-semibold text-[#B04D26]">
-              Failed to load document checklist
-            </div>
-
-            <div className="text-[12px] text-[#8A9697] mt-1">
-              {error?.data?.message ||
-                error?.data?.detail ||
-                "Please try again."}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => refetch()}
-              className="mt-4 h-9 px-3 rounded-lg bg-[#1F453B] text-white text-[12px] font-semibold"
-            >
-              Retry
-            </button>
-          </div>
-        </Card>
-      )}
-
-      {/* ======================================================
-          LOADING
-      ====================================================== */}
-
-      {isLoading && (
-        <Card>
-          <div className="py-12 text-center text-[13px] text-[#6B7B7C]">
-            Loading document checklist…
-          </div>
-        </Card>
-      )}
-
-      {/* ======================================================
-          ALL PROJECTS TREE
-      ====================================================== */}
-
-      {!isLoading && !isError && !selectedProjectId && (
-        <div className="space-y-3">
-          {visibleProjects.length ? (
-            visibleProjects.map((project) => {
-              const projectId = getProjectId(project);
-
-              if (!projectId) {
-                return null;
-              }
-
-              const projectCollapsed = Boolean(collapsedProjects[projectId]);
-
-              const phases = Array.isArray(project?.phases)
-                ? project.phases
-                : [];
-
-              return (
-                <ProjectTreeCard
-                  key={projectId}
-                  project={project}
-                  collapsed={projectCollapsed}
-                  onToggle={() => toggleProject(projectId)}
-                >
-                  {phases.length ? (
-                    phases.map((phase, index) => {
-                      const phaseId = getPhaseId(phase, index);
-
-                      const phaseKey = `${projectId}:${phaseId}`;
-
-                      return (
-                        <DocumentPhaseCard
-                          key={phaseKey}
-                          phase={phase}
-                          projectId={projectId}
-                          collapsed={Boolean(collapsedPhases[phaseKey])}
-                          onToggle={() => togglePhase(phaseKey)}
-                          onUpload={handleUpload}
-                          onDownload={handleDownload}
-                        />
-                      );
-                    })
-                  ) : (
-                    <div className="px-4 py-10 text-center text-[12px] text-[#8A9697]">
-                      No document phases configured for this project.
-                    </div>
-                  )}
-                </ProjectTreeCard>
-              );
-            })
-          ) : (
-            <Card>
-              <div className="py-12 text-center">
-                <FolderOpen size={38} className="mx-auto mb-3 text-[#B5C4B6]" />
-
-                <div className="text-[14px] font-semibold text-[#333333]">
-                  No projects found
-                </div>
-
-                <div className="text-[12px] text-[#8A9697] mt-1">
-                  {q ? "Try a different search." : "No projects are available."}
-                </div>
-              </div>
-            </Card>
-          )}
-        </div>
-      )}
-
-      {/* ======================================================
-          SELECTED PROJECT TREE
-      ====================================================== */}
-
-      {!isLoading && !isError && Boolean(selectedProjectId) && (
-        <div className="space-y-3">
-          {visiblePhases.length ? (
-            visiblePhases.map((phase, index) => {
-              const phaseId = getPhaseId(phase, index);
-
-              return (
-                <DocumentPhaseCard
-                  key={phaseId}
-                  phase={phase}
-                  projectId={selectedProjectId}
-                  collapsed={Boolean(collapsedPhases[phaseId])}
-                  onToggle={() => togglePhase(phaseId)}
-                  onUpload={handleUpload}
-                  onDownload={handleDownload}
-                />
-              );
-            })
-          ) : (
-            <Card>
-              <div className="py-12 text-center">
-                <FileText size={38} className="mx-auto mb-3 text-[#B5C4B6]" />
-
-                <div className="text-[14px] font-semibold text-[#333333]">
-                  No document phases found
-                </div>
-
-                <div className="text-[12px] text-[#8A9697] mt-1">
-                  {q
-                    ? "Try a different search."
-                    : "No document phases are configured for this project."}
-                </div>
-              </div>
-            </Card>
-          )}
-        </div>
-      )}
-
-      {/* ======================================================
-          REQUIRED WARNING
-      ====================================================== */}
-
-      {!isLoading && !isError && pendingRequiredDocuments > 0 && (
-        <div className="rounded-xl border border-[rgba(176,77,38,0.18)] bg-[#FFF8F4] px-4 py-3">
-          <div className="flex items-start gap-3">
-            <Circle size={17} className="text-[#B04D26] mt-0.5 shrink-0" />
-
-            <div>
-              <div className="text-[13px] font-semibold text-[#7D3C22]">
-                Required documents are still pending
-              </div>
-
-              <div className="text-[11.5px] text-[#8A6B5D] mt-0.5">
-                {pendingRequiredDocuments} required document
-                {pendingRequiredDocuments !== 1 ? "s" : ""} must be uploaded
-                before the document checklist is complete.
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </Shell>
   );
 }
@@ -1663,86 +1459,42 @@ export function DocumentsAll() {
 export function EditDocumentModal({ doc, onClose }) {
   const [form, setForm] = useState({
     title: doc.title || "",
-
-    /*
-     * API now uses documentTypeId.
-     * Keep category only as fallback for older records.
-     */
     documentTypeId: doc.documentTypeId || doc.document_type_id || "",
-
     category: doc.category || doc.documentType?.name || "",
-
     remarks: doc.remarks || "",
-
     projectId: doc.projectId || doc.project_id || "",
   });
 
   const [file, setFile] = useState(null);
 
-  /* ==========================================================
-     PROJECTS
-  ========================================================== */
-
   const { data: projectsResponse } = useGetProjectsQuery({});
 
   const projects = useMemo(() => {
-    if (Array.isArray(projectsResponse)) {
-      return projectsResponse;
-    }
-
+    if (Array.isArray(projectsResponse)) return projectsResponse;
     return projectsResponse?.data || projectsResponse?.projects || [];
   }, [projectsResponse]);
-
-  /* ==========================================================
-     DOCUMENT TYPES
-  ========================================================== */
 
   const { data: documentTypesResponse, isLoading: documentTypesLoading } =
     useGetDocumentTypesQuery();
 
   const documentTypes = useMemo(() => {
-    if (Array.isArray(documentTypesResponse)) {
-      return documentTypesResponse;
-    }
-
+    if (Array.isArray(documentTypesResponse)) return documentTypesResponse;
     return (
       documentTypesResponse?.data || documentTypesResponse?.documentTypes || []
     );
   }, [documentTypesResponse]);
 
-  /* ==========================================================
-     MUTATIONS
-  ========================================================== */
-
   const [updateDocument, { isLoading: saving }] = useUpdateDocumentMutation();
-
   const [replaceDocumentFile, { isLoading: replacing }] =
     useReplaceDocumentFileMutation();
 
-  /* ==========================================================
-     FORM UPDATE
-  ========================================================== */
-
-  const updateForm = (field, value) => {
-    setForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
-  };
-
-  /* ==========================================================
-     SAVE
-  ========================================================== */
+  const updateForm = (field, value) =>
+    setForm((current) => ({ ...current, [field]: value }));
 
   const save = async (event) => {
     event.preventDefault();
 
     try {
-      /*
-       * Send documentTypeId rather than
-       * relying on category text.
-       */
-
       const payload = {
         title: form.title,
         documentTypeId: form.documentTypeId || undefined,
@@ -1750,96 +1502,69 @@ export function EditDocumentModal({ doc, onClose }) {
         remarks: form.remarks || "",
       };
 
-      await updateDocument({
-        id: doc.id,
-        data: payload,
-      }).unwrap();
+      await updateDocument({ id: doc.id, data: payload }).unwrap();
 
       if (file) {
-        await replaceDocumentFile({
-          id: doc.id,
-          file,
-        }).unwrap();
+        await replaceDocumentFile({ id: doc.id, file }).unwrap();
       }
 
-      toast.success("Document updated");
-
+      toast.success("Document updated.");
       onClose();
     } catch (error) {
-      toast.error(error?.data?.message || error?.data?.detail || "Save failed");
+      toast.error(
+        error?.data?.message ||
+          error?.data?.detail ||
+          "The document could not be saved.",
+      );
     }
   };
 
   const savingAny = saving || replacing;
 
-  /* ==========================================================
-     RENDER
-  ========================================================== */
-
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl w-[500px] max-w-full p-6"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="text-[18px] font-semibold mb-4">Edit Document</div>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Edit document</DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={save} className="grid gap-3">
-          {/* ==================================================
-              TITLE
-          ================================================== */}
-
-          <div>
-            <label className="text-[12px] font-semibold mb-1 block">
-              Title
-            </label>
-
+        <form onSubmit={save} className="grid gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="doc_title">Title</Label>
             <Input
+              id="doc_title"
               required
               value={form.title}
               onChange={(event) => updateForm("title", event.target.value)}
             />
           </div>
 
-          {/* ==================================================
-              DOCUMENT TYPE
-          ================================================== */}
-
-          <div>
-            <label className="text-[12px] font-semibold mb-1 block">
-              Document Type
-            </label>
-
-            <select
-              className="bc-input"
+          <div className="space-y-1.5">
+            <Label htmlFor="doc_type">Document type</Label>
+            <Select
               value={form.documentTypeId}
-              onChange={(event) =>
-                updateForm("documentTypeId", event.target.value)
-              }
+              onValueChange={(value) => updateForm("documentTypeId", value)}
               disabled={documentTypesLoading}
-              required
             >
-              <option value="">
-                {documentTypesLoading
-                  ? "Loading document types…"
-                  : "Select document type"}
-              </option>
-
-              {documentTypes.map((type) => (
-                <option key={type.id} value={type.id}>
-                  {type.name}
-                  {type.code ? ` (${type.code})` : ""}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id="doc_type">
+                <SelectValue
+                  placeholder={
+                    documentTypesLoading
+                      ? "Loading document types..."
+                      : "Select document type"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {documentTypes.map((type) => (
+                  <SelectItem key={type.id} value={String(type.id)}>
+                    {type.name}
+                    {type.code ? ` (${type.code})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-
-          {/* ==================================================
-              DOCUMENT PHASE / SECTION
-          ================================================== */}
 
           {form.documentTypeId && (
             <DocumentTypeInfo
@@ -1848,97 +1573,69 @@ export function EditDocumentModal({ doc, onClose }) {
             />
           )}
 
-          {/* ==================================================
-              PROJECT
-          ================================================== */}
-
-          <div>
-            <label className="text-[12px] font-semibold mb-1 block">
-              Project
-            </label>
-
-            <select
-              className="bc-input"
-              value={form.projectId}
-              onChange={(event) => updateForm("projectId", event.target.value)}
+          <div className="space-y-1.5">
+            <Label htmlFor="doc_project">Project</Label>
+            <Select
+              value={form.projectId || "__unassigned__"}
+              onValueChange={(value) =>
+                updateForm("projectId", value === "__unassigned__" ? "" : value)
+              }
             >
-              <option value="">— Unassigned —</option>
-
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name ||
-                    project.projectName ||
-                    project.title ||
-                    project.code ||
-                    project.id}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id="doc_project">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__unassigned__">Unassigned</SelectItem>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={String(project.id)}>
+                    {project.name ||
+                      project.projectName ||
+                      project.title ||
+                      project.code ||
+                      project.id}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* ==================================================
-              REMARKS
-          ================================================== */}
-
-          <div>
-            <label className="text-[12px] font-semibold mb-1 block">
-              Remarks
-            </label>
-
-            <textarea
+          <div className="space-y-1.5">
+            <Label htmlFor="doc_remarks">Remarks</Label>
+            <Textarea
+              id="doc_remarks"
               rows={3}
-              className="w-full px-3 py-2 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13.5px]"
               value={form.remarks}
               onChange={(event) => updateForm("remarks", event.target.value)}
+              className="resize-none"
             />
           </div>
 
-          {/* ==================================================
-              FILE
-          ================================================== */}
-
-          <div>
-            <label className="text-[12px] font-semibold mb-1 block">
-              Replace file
-            </label>
-
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor="doc_file">Replace file</Label>
+            <Input
+              id="doc_file"
               type="file"
               onChange={(event) => setFile(event.target.files?.[0] || null)}
-              className="text-[12px]"
+              className="text-xs"
             />
-
             {file && (
-              <div className="mt-1 text-[11px] text-[#6B7B7C]">
+              <p className="text-xs text-muted-foreground">
                 New file: {file.name}
-              </div>
+              </p>
             )}
           </div>
 
-          {/* ==================================================
-              ACTIONS
-          ================================================== */}
-
-          <div className="flex justify-end gap-2 mt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-10 px-4 rounded-lg border text-[13px] font-semibold"
-            >
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
-            </button>
-
-            <button
-              type="submit"
-              disabled={savingAny}
-              className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold disabled:opacity-60"
-            >
-              {savingAny ? "Saving…" : "Save"}
-            </button>
-          </div>
+            </Button>
+            <Button type="submit" disabled={savingAny} className={BRAND}>
+              {savingAny ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1947,28 +1644,26 @@ export function EditDocumentModal({ doc, onClose }) {
 ============================================================ */
 
 function DocumentTypeInfo({ documentTypes, documentTypeId }) {
-  const type = documentTypes.find((item) => item.id === documentTypeId);
+  const type = documentTypes.find(
+    (item) => String(item.id) === String(documentTypeId),
+  );
 
-  if (!type) {
-    return null;
-  }
+  if (!type) return null;
 
   return (
-    <div className="rounded-lg border border-[#DDE5DF] bg-[#F4F8F5] px-3 py-2.5">
+    <div className="rounded-lg border bg-[#F4F8F5] px-3 py-2.5">
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
         {type.phaseName && (
           <div>
-            <span className="text-[#6B7B7C]">Phase:</span>{" "}
-            <span className="font-semibold text-[#333333]">
-              {type.phaseName}
-            </span>
+            <span className="text-muted-foreground">Phase:</span>{" "}
+            <span className="font-semibold">{type.phaseName}</span>
           </div>
         )}
 
         {type.sectionCode && (
           <div>
-            <span className="text-[#6B7B7C]">Section:</span>{" "}
-            <span className="font-semibold text-[#333333]">
+            <span className="text-muted-foreground">Section:</span>{" "}
+            <span className="font-semibold">
               {type.sectionCode}
               {type.sectionName ? ` — ${type.sectionName}` : ""}
             </span>
@@ -1977,7 +1672,7 @@ function DocumentTypeInfo({ documentTypes, documentTypeId }) {
       </div>
 
       {type.description && (
-        <div className="text-[11px] text-[#6B7B7C] mt-1">
+        <div className="mt-1 text-[11px] text-muted-foreground">
           {type.description}
         </div>
       )}

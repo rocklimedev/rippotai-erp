@@ -22,6 +22,8 @@ import { MaterialEstimateService } from './services/material-estimate.service';
 import { MaterialQuotationService } from './services/material-quotation.service';
 import { PurchaseOrderService } from './services/purchase-order.service';
 import { DeliveryChallanService } from './services/delivery-challan.service';
+import { InventoryService } from './services/inventory.service';
+import { MaterialMasterService } from './services/material-master.service';
 
 import { MaterialRequirementController } from './controllers/material-requirement.controller';
 import { SampleBoardController } from './controllers/sample-board.controller';
@@ -30,7 +32,9 @@ import { MaterialEstimateController } from './controllers/material-estimate.cont
 import { MaterialQuotationController } from './controllers/material-quotation.controller';
 import { PurchaseOrderController } from './controllers/purchase-order.controller';
 import { DeliveryChallanController } from './controllers/delivery-challan.controller';
-import { InventoryService } from './services/inventory.service';
+import { MaterialMasterController } from './controllers/material-master.controller';
+import { Vendor } from '../vendors/models/vendors.model';
+import { Unit } from '../metas/models/unit.model';
 
 /**
  * Material & Procurement module — Sequelize (MySQL) edition.
@@ -38,13 +42,15 @@ import { InventoryService } from './services/inventory.service';
  * Covers the full lifecycle described by the spec:
  *  1. Material requirements captured from the design team.
  *  2. Sourcing & sample boards / rate sheets, each with approval status.
- *  3. Material estimate → approval → quotation (identical rule to trades).
+ *  3. Material estimate → approval → quotation.
  *  4. Purchase orders issued against approved quotations, with
  *     line-item ordered-vs-delivered tracking.
  *  5. Staged deliveries: delivery challans logged against a PO and
  *     tagged to the site stage that needs them.
  *  6. Site inventory register: live stock with inward / outward /
  *     adjustment / damage transactions, reconciled against POs.
+ *  7. Material Master: centralized catalogue of materials with
+ *     vendor, category, specification, unit and HSN information.
  */
 @Module({
   imports: [
@@ -58,11 +64,16 @@ import { InventoryService } from './services/inventory.service';
       PurchaseOrderItem,
       DeliveryChallan,
       DeliveryChallanItem,
+
       // Material Master
       MaterialMaster,
+      Vendor,
+      Unit,
+      // Inventory
       InventoryTransaction,
     ]),
   ],
+
   controllers: [
     MaterialRequirementController,
     SampleBoardController,
@@ -71,7 +82,11 @@ import { InventoryService } from './services/inventory.service';
     MaterialQuotationController,
     PurchaseOrderController,
     DeliveryChallanController,
+
+    // Material Master
+    MaterialMasterController,
   ],
+
   providers: [
     MaterialRequirementService,
     SampleBoardService,
@@ -81,7 +96,11 @@ import { InventoryService } from './services/inventory.service';
     DeliveryChallanService,
     PurchaseOrderService,
     InventoryService,
+
+    // Material Master
+    MaterialMasterService,
   ],
+
   exports: [
     MaterialRequirementService,
     SampleBoardService,
@@ -91,6 +110,9 @@ import { InventoryService } from './services/inventory.service';
     MaterialQuotationService,
     InventoryService,
     PurchaseOrderService,
+
+    // Material Master
+    MaterialMasterService,
   ],
 })
 export class MaterialProcurementModule {}

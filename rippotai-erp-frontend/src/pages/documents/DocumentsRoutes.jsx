@@ -3,7 +3,29 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Upload } from "lucide-react";
 
-import { Shell, Card, Input } from "../../hooks/shared";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+import { Shell } from "../../hooks/shared";
 import {
   useGetDrawingsQuery,
   useCreateDrawingMutation,
@@ -30,120 +52,108 @@ export function DrawingsAll() {
         rows.length !== 1 ? "s" : ""
       } · revisions preserved`}
       action={
-        <button
-          type="button"
-          onClick={() => nav("/design-studio/new")}
-          className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-1.5"
-        >
-          <Upload size={14} />
+        <Button onClick={() => nav("/design-studio/new")}>
+          <Upload className="mr-2 h-4 w-4" />
           Upload Drawing
-        </button>
+        </Button>
       }
     >
       <Card>
-        <div className="table-container overflow-x-auto">
-          <table className="w-full text-[14px]">
-            <thead className="bg-[#F4F6F7]">
-              <tr>
-                <th className="text-left px-3 py-3 text-[13px] uppercase tracking-[0.14em] text-[#6B7B7C]">
-                  Drawing No.
-                </th>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Drawing No.</TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Discipline</TableHead>
+                  <TableHead>Rev.</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Issued</TableHead>
+                </TableRow>
+              </TableHeader>
 
-                <th className="text-left px-3 py-3 text-[13px] uppercase tracking-[0.14em] text-[#6B7B7C]">
-                  Title
-                </th>
+              <TableBody>
+                {isLoading && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      Loading drawings...
+                    </TableCell>
+                  </TableRow>
+                )}
 
-                <th className="text-left px-3 py-3 text-[13px] uppercase tracking-[0.14em] text-[#6B7B7C]">
-                  Discipline
-                </th>
+                {isError && !isLoading && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="h-24 text-center text-destructive"
+                    >
+                      Failed to load drawings. Please try again.
+                    </TableCell>
+                  </TableRow>
+                )}
 
-                <th className="text-left px-3 py-3 text-[13px] uppercase tracking-[0.14em] text-[#6B7B7C]">
-                  Rev.
-                </th>
+                {!isLoading &&
+                  !isError &&
+                  rows.map((r) => (
+                    <TableRow
+                      key={r.id}
+                      onClick={() => nav(`/design-studio/${r.id}`)}
+                      className="cursor-pointer"
+                      data-testid={`drawing-row-${r.id}`}
+                    >
+                      <TableCell className="font-mono font-semibold">
+                        {r.drawingNumber}
+                      </TableCell>
 
-                <th className="text-left px-3 py-3 text-[13px] uppercase tracking-[0.14em] text-[#6B7B7C]">
-                  Status
-                </th>
+                      <TableCell>{r.title}</TableCell>
 
-                <th className="text-left px-3 py-3 text-[13px] uppercase tracking-[0.14em] text-[#6B7B7C]">
-                  Issued
-                </th>
-              </tr>
-            </thead>
+                      <TableCell>{r.discipline || "—"}</TableCell>
 
-            <tbody>
-              {isLoading && (
-                <tr>
-                  <td colSpan={6} className="text-center py-8 text-[#6B7B7C]">
-                    Loading drawings...
-                  </td>
-                </tr>
-              )}
+                      <TableCell>{r.revisions?.[0]?.revision || "—"}</TableCell>
 
-              {isError && !isLoading && (
-                <tr>
-                  <td colSpan={6} className="text-center py-8 text-red-500">
-                    Failed to load drawings. Please try again.
-                  </td>
-                </tr>
-              )}
+                      <TableCell>
+                        <Badge
+                          variant={
+                            r.status === "Superseded" ? "secondary" : "outline"
+                          }
+                        >
+                          {r.status || "Draft"}
+                        </Badge>
+                      </TableCell>
 
-              {!isLoading &&
-                !isError &&
-                rows.map((r) => (
-                  <tr
-                    key={r.id}
-                    onClick={() => nav(`/design-studio/${r.id}`)}
-                    className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F4F6F7] cursor-pointer"
-                    data-testid={`drawing-row-${r.id}`}
-                  >
-                    <td className="px-3 py-2.5 font-mono font-semibold text-[#333333]">
-                      {r.drawingNumber}
-                    </td>
+                      <TableCell className="text-muted-foreground">
+                        {(
+                          r.revisions?.[0]?.issueDate ||
+                          r.updatedAt ||
+                          ""
+                        ).slice(0, 10)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
 
-                    <td className="px-3 py-2.5">{r.title}</td>
-
-                    <td className="px-3 py-2.5">{r.discipline || "—"}</td>
-
-                    <td className="px-3 py-2.5">
-                      {r.revisions?.[0]?.revision || "—"}
-                    </td>
-
-                    <td className="px-3 py-2.5">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[11.5px] font-semibold ${
-                          r.status === "Superseded"
-                            ? "bg-[#EAEEF0] text-[#6B7B7C]"
-                            : "bg-[#D8E0DA] text-[#333333]"
-                        }`}
-                      >
-                        {r.status || "Draft"}
-                      </span>
-                    </td>
-
-                    <td className="px-3 py-2.5 text-[#6B7B7C]">
-                      {(r.revisions?.[0]?.issueDate || r.updatedAt || "").slice(
-                        0,
-                        10,
-                      )}
-                    </td>
-                  </tr>
-                ))}
-
-              {!isLoading && !isError && !rows.length && (
-                <tr>
-                  <td colSpan={6} className="text-center py-8 text-[#B5C4B6]">
-                    No drawings yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                {!isLoading && !isError && !rows.length && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      No drawings yet.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
       </Card>
     </Shell>
   );
 }
+
 /* =========================================================
    Drawing Upload
 ========================================================= */
@@ -280,201 +290,180 @@ export function DrawingUpload() {
       subtitle="Create a drawing and upload its first revision"
     >
       <Card>
-        <form onSubmit={submit} className="grid gap-3 max-w-2xl md:grid-cols-2">
-          {/* Project */}
-          <div className="md:col-span-2">
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Project
-            </label>
-
-            <select
-              required
-              className="bc-input h-10 w-full"
-              value={form.projectId}
-              onChange={(e) => updateForm("projectId", e.target.value)}
-            >
-              <option value="">Select project...</option>
-
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          {/* Document Type */}
-          <div className="md:col-span-2">
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Document Type
-            </label>
-
-            <select
-              required
-              className="bc-input h-10 w-full"
-              value={form.documentTypeId}
-              onChange={(e) => updateForm("documentTypeId", e.target.value)}
-              disabled={documentTypesLoading}
-            >
-              <option value="">
-                {documentTypesLoading
-                  ? "Loading document types..."
-                  : "Select document type..."}
-              </option>
-
-              {documentTypes.map((type) => (
-                <option key={type.id} value={type.id}>
-                  {type.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          {/* Title */}
-          <div>
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Title
-            </label>
-
-            <Input
-              required
-              type="text"
-              value={form.title}
-              onChange={(e) => updateForm("title", e.target.value)}
-            />
-          </div>
-
-          {/* Drawing Number */}
-          <div>
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Drawing Number
-            </label>
-
-            <Input
-              required
-              type="text"
-              value={form.drawingNumber}
-              onChange={(e) => updateForm("drawingNumber", e.target.value)}
-            />
-          </div>
-
-          {/* Discipline */}
-          <div>
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Discipline
-            </label>
-
-            <Input
-              type="text"
-              value={form.discipline}
-              onChange={(e) => updateForm("discipline", e.target.value)}
-            />
-          </div>
-
-          {/* Revision */}
-          <div>
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Revision
-            </label>
-
-            <Input
-              type="text"
-              value={revisionForm.revision}
-              onChange={(e) => updateRevisionForm("revision", e.target.value)}
-            />
-          </div>
-
-          {/* Issue Date */}
-          <div>
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Issue Date
-            </label>
-
-            <Input
-              type="date"
-              value={revisionForm.issueDate}
-              onChange={(e) => updateRevisionForm("issueDate", e.target.value)}
-            />
-          </div>
-
-          {/* Issue Purpose */}
-          <div>
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Issue Purpose
-            </label>
-
-            <Input
-              type="text"
-              value={form.issuePurpose}
-              onChange={(e) => updateForm("issuePurpose", e.target.value)}
-            />
-          </div>
-
-          {/* Status */}
-          <div>
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Status
-            </label>
-
-            <select
-              className="bc-input h-10 w-full"
-              value={form.status}
-              onChange={(e) => updateForm("status", e.target.value)}
-            >
-              <option value="Draft">Draft</option>
-              <option value="For Review">For Review</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-              <option value="Superseded">Superseded</option>
-            </select>
-          </div>
-
-          {/* Remarks */}
-          <div className="md:col-span-2">
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Remarks
-            </label>
-
-            <textarea
-              className="bc-input min-h-[90px] w-full"
-              value={form.remarks}
-              onChange={(e) => updateForm("remarks", e.target.value)}
-            />
-          </div>
-
-          {/* File */}
-          <div className="md:col-span-2">
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Drawing File
-            </label>
-
-            <input
-              type="file"
-              required
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-              className="text-[14px]"
-            />
-
-            {file && (
-              <p className="mt-1 text-xs text-[#6B7B7C]">
-                Selected: {file.name}
-              </p>
-            )}
-          </div>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="h-11 px-5 rounded-lg bg-[#1F453B] text-white font-semibold w-fit inline-flex items-center gap-2 md:col-span-2 disabled:opacity-60"
+        <CardContent className="pt-6">
+          <form
+            onSubmit={submit}
+            className="grid gap-4 max-w-2xl md:grid-cols-2"
           >
-            <Upload size={15} />
+            {/* Project */}
+            <div className="md:col-span-2 space-y-2">
+              <Label>Project</Label>
+              <Select
+                value={form.projectId}
+                onValueChange={(value) => updateForm("projectId", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select project..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            {creating
-              ? "Creating Drawing..."
-              : uploading
-                ? "Uploading Revision..."
-                : "Upload Drawing"}
-          </button>
-        </form>
+            {/* Document Type */}
+            <div className="md:col-span-2 space-y-2">
+              <Label>Document Type</Label>
+              <Select
+                value={form.documentTypeId}
+                onValueChange={(value) => updateForm("documentTypeId", value)}
+                disabled={documentTypesLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      documentTypesLoading
+                        ? "Loading document types..."
+                        : "Select document type..."
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {documentTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Title */}
+            <div className="space-y-2">
+              <Label>Title</Label>
+              <Input
+                required
+                type="text"
+                value={form.title}
+                onChange={(e) => updateForm("title", e.target.value)}
+              />
+            </div>
+
+            {/* Drawing Number */}
+            <div className="space-y-2">
+              <Label>Drawing Number</Label>
+              <Input
+                required
+                type="text"
+                value={form.drawingNumber}
+                onChange={(e) => updateForm("drawingNumber", e.target.value)}
+              />
+            </div>
+
+            {/* Discipline */}
+            <div className="space-y-2">
+              <Label>Discipline</Label>
+              <Input
+                type="text"
+                value={form.discipline}
+                onChange={(e) => updateForm("discipline", e.target.value)}
+              />
+            </div>
+
+            {/* Revision */}
+            <div className="space-y-2">
+              <Label>Revision</Label>
+              <Input
+                type="text"
+                value={revisionForm.revision}
+                onChange={(e) => updateRevisionForm("revision", e.target.value)}
+              />
+            </div>
+
+            {/* Issue Date */}
+            <div className="space-y-2">
+              <Label>Issue Date</Label>
+              <Input
+                type="date"
+                value={revisionForm.issueDate}
+                onChange={(e) =>
+                  updateRevisionForm("issueDate", e.target.value)
+                }
+              />
+            </div>
+
+            {/* Issue Purpose */}
+            <div className="space-y-2">
+              <Label>Issue Purpose</Label>
+              <Input
+                type="text"
+                value={form.issuePurpose}
+                onChange={(e) => updateForm("issuePurpose", e.target.value)}
+              />
+            </div>
+
+            {/* Status */}
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select
+                value={form.status}
+                onValueChange={(value) => updateForm("status", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Draft">Draft</SelectItem>
+                  <SelectItem value="For Review">For Review</SelectItem>
+                  <SelectItem value="Approved">Approved</SelectItem>
+                  <SelectItem value="Rejected">Rejected</SelectItem>
+                  <SelectItem value="Superseded">Superseded</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Remarks */}
+            <div className="md:col-span-2 space-y-2">
+              <Label>Remarks</Label>
+              <Textarea
+                value={form.remarks}
+                onChange={(e) => updateForm("remarks", e.target.value)}
+                rows={4}
+              />
+            </div>
+
+            {/* File */}
+            <div className="md:col-span-2 space-y-2">
+              <Label>Drawing File</Label>
+              <Input
+                type="file"
+                required
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+              />
+              {file && (
+                <p className="text-xs text-muted-foreground">
+                  Selected: {file.name}
+                </p>
+              )}
+            </div>
+
+            {/* Submit */}
+            <div className="md:col-span-2">
+              <Button type="submit" disabled={submitting}>
+                <Upload className="mr-2 h-4 w-4" />
+                {creating
+                  ? "Creating Drawing..."
+                  : uploading
+                    ? "Uploading Revision..."
+                    : "Upload Drawing"}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
       </Card>
     </Shell>
   );

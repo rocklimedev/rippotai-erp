@@ -15,7 +15,19 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-import { Shell, Card, Input } from "../../hooks/shared";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+import { Shell } from "../../hooks/shared";
 
 import {
   useGetSiteReccesQuery,
@@ -97,8 +109,6 @@ export default function SiteRecceList() {
       return rows;
     }
 
-    // Defensive handling in case backend later returns:
-    // { data: [...] }
     if (Array.isArray(rows?.data)) {
       return rows.data;
     }
@@ -131,7 +141,6 @@ export default function SiteRecceList() {
         .toLowerCase();
 
       const matchesSearch = !term || searchableText.includes(term);
-
       const matchesSiteType = !siteType || recce.site_type === siteType;
 
       return matchesSearch && matchesSiteType;
@@ -169,18 +178,15 @@ export default function SiteRecceList() {
       `Delete site recce for "${projectName}"?\n\nThis will remove the site recce and its rooms/photos.`,
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     try {
       await deleteSiteRecce(recce.id).unwrap();
-
       toast.success("Site recce deleted successfully");
-    } catch (error) {
+    } catch (err) {
       toast.error(
-        error?.data?.message ||
-          error?.data?.detail ||
+        err?.data?.message ||
+          err?.data?.detail ||
           "Failed to delete site recce",
       );
     }
@@ -204,36 +210,33 @@ export default function SiteRecceList() {
   if (error) {
     return (
       <Shell>
-        <div className="flex justify-between items-center mb-6">
+        <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-[#1F453B]">
+            <h1 className="text-2xl font-semibold text-foreground">
               Site Recces
             </h1>
-
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Manage site reconnaissance reports
             </p>
           </div>
 
-          <button
-            onClick={() => nav("/crm/forms/site-reki")}
-            className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-1.5 hover:bg-[#17372F]"
-          >
-            <Plus className="w-4 h-4" />
+          <Button onClick={() => nav("/crm/forms/site-reki")}>
+            <Plus className="mr-2 h-4 w-4" />
             New Site Recce
-          </button>
+          </Button>
         </div>
 
-        <Card className="p-12 text-center">
-          <div className="text-red-500 font-medium mb-2">
-            Failed to load site recces
-          </div>
-
-          <div className="text-sm text-gray-500">
-            {error?.data?.message ||
-              error?.data?.detail ||
-              "Something went wrong while loading the records."}
-          </div>
+        <Card>
+          <CardContent className="p-12 text-center">
+            <div className="mb-2 font-medium text-destructive">
+              Failed to load site recces
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {error?.data?.message ||
+                error?.data?.detail ||
+                "Something went wrong while loading the records."}
+            </div>
+          </CardContent>
         </Card>
       </Shell>
     );
@@ -245,117 +248,112 @@ export default function SiteRecceList() {
 
   return (
     <Shell>
-      {/* ======================================================
-          HEADER
-      ====================================================== */}
-
-      <div className="flex justify-between items-center mb-6">
+      {/* HEADER */}
+      <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-[#1F453B]">Site Recces</h1>
-
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-semibold text-foreground">
+            Site Recces
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Manage site reconnaissance reports, measurements and site
             photographs
           </p>
         </div>
 
-        <button
+        <Button
           onClick={() => nav("/crm/forms/site-reki")}
-          className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-1.5 hover:bg-[#17372F] transition-colors"
           data-testid="site-recce-new-btn"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="mr-2 h-4 w-4" />
           New Site Recce
-        </button>
+        </Button>
       </div>
 
-      {/* ======================================================
-          SUMMARY
-      ====================================================== */}
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs text-gray-500">Total Recces</div>
-
-              <div className="text-2xl font-semibold text-[#1F453B] mt-1">
-                {recces.length}
+      {/* SUMMARY */}
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs text-muted-foreground">
+                  Total Recces
+                </div>
+                <div className="mt-1 text-2xl font-semibold text-foreground">
+                  {recces.length}
+                </div>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                <ClipboardList className="h-5 w-5 text-primary" />
               </div>
             </div>
-
-            <div className="w-10 h-10 rounded-lg bg-[#E8F0ED] flex items-center justify-center">
-              <ClipboardList className="w-5 h-5 text-[#1F453B]" />
-            </div>
-          </div>
+          </CardContent>
         </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs text-gray-500">Projects</div>
-
-              <div className="text-2xl font-semibold text-[#1F453B] mt-1">
-                {groups.length}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs text-muted-foreground">Projects</div>
+                <div className="mt-1 text-2xl font-semibold text-foreground">
+                  {groups.length}
+                </div>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                <Home className="h-5 w-5 text-primary" />
               </div>
             </div>
-
-            <div className="w-10 h-10 rounded-lg bg-[#E8F0ED] flex items-center justify-center">
-              <Home className="w-5 h-5 text-[#1F453B]" />
-            </div>
-          </div>
+          </CardContent>
         </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs text-gray-500">Rooms Measured</div>
-
-              <div className="text-2xl font-semibold text-[#1F453B] mt-1">
-                {recces.reduce(
-                  (total, recce) => total + (recce.rooms?.length || 0),
-                  0,
-                )}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs text-muted-foreground">
+                  Rooms Measured
+                </div>
+                <div className="mt-1 text-2xl font-semibold text-foreground">
+                  {recces.reduce(
+                    (total, recce) => total + (recce.rooms?.length || 0),
+                    0,
+                  )}
+                </div>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                <Home className="h-5 w-5 text-primary" />
               </div>
             </div>
-
-            <div className="w-10 h-10 rounded-lg bg-[#E8F0ED] flex items-center justify-center">
-              <Home className="w-5 h-5 text-[#1F453B]" />
-            </div>
-          </div>
+          </CardContent>
         </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs text-gray-500">Photos</div>
-
-              <div className="text-2xl font-semibold text-[#1F453B] mt-1">
-                {recces.reduce(
-                  (total, recce) =>
-                    total +
-                    (recce.rooms || []).reduce(
-                      (roomTotal, room) =>
-                        roomTotal + (room.photos?.length || 0),
-                      0,
-                    ),
-                  0,
-                )}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs text-muted-foreground">Photos</div>
+                <div className="mt-1 text-2xl font-semibold text-foreground">
+                  {recces.reduce(
+                    (total, recce) =>
+                      total +
+                      (recce.rooms || []).reduce(
+                        (roomTotal, room) =>
+                          roomTotal + (room.photos?.length || 0),
+                        0,
+                      ),
+                    0,
+                  )}
+                </div>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                <ClipboardList className="h-5 w-5 text-primary" />
               </div>
             </div>
-
-            <div className="w-10 h-10 rounded-lg bg-[#E8F0ED] flex items-center justify-center">
-              <ClipboardList className="w-5 h-5 text-[#1F453B]" />
-            </div>
-          </div>
+          </CardContent>
         </Card>
       </div>
 
-      {/* ======================================================
-          FILTERS
-      ====================================================== */}
-
-      <div className="flex gap-3 mb-6 flex-wrap">
+      {/* FILTERS */}
+      <div className="mb-6 flex flex-wrap gap-3">
         <Input
           placeholder="Search project, client, address..."
           value={q}
@@ -363,106 +361,88 @@ export default function SiteRecceList() {
           className="max-w-sm"
         />
 
-        <select
-          value={siteType}
-          onChange={(e) => setSiteType(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-[#1F453B]/20"
+        <Select
+          value={siteType || "all"}
+          onValueChange={(v) => setSiteType(v === "all" ? "" : v)}
         >
-          <option value="">All site types</option>
-
-          <option value="FLAT">Flat</option>
-          <option value="FLOOR">Floor</option>
-          <option value="KOTHI">Kothi</option>
-          <option value="RAW">Raw</option>
-        </select>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="All site types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All site types</SelectItem>
+            <SelectItem value="FLAT">Flat</SelectItem>
+            <SelectItem value="FLOOR">Floor</SelectItem>
+            <SelectItem value="KOTHI">Kothi</SelectItem>
+            <SelectItem value="RAW">Raw</SelectItem>
+          </SelectContent>
+        </Select>
 
         {(q || siteType) && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => {
               setQ("");
               setSiteType("");
             }}
-            className="text-[13px] text-[#333333] font-semibold px-2"
           >
             Clear filters ×
-          </button>
+          </Button>
         )}
       </div>
 
-      {/* ======================================================
-          TABLE
-      ====================================================== */}
-
+      {/* TABLE */}
       <Card className="overflow-hidden">
         {/* TABLE HEADER */}
-
-        <div className="hidden md:grid grid-cols-12 bg-[#F8F9FA] border-b text-xs font-medium text-[#666666] py-3 px-6">
+        <div className="hidden grid-cols-12 border-b bg-muted/50 px-6 py-3 text-xs font-medium text-muted-foreground md:grid">
           <div className="col-span-4">Project / Site</div>
-
           <div className="col-span-2">Site Engineer</div>
-
           <div className="col-span-1">Type</div>
-
           <div className="col-span-1">Rooms</div>
-
           <div className="col-span-1">Floors</div>
-
           <div className="col-span-2">Recce Date</div>
-
           <div className="col-span-1 text-right">Actions</div>
         </div>
 
-        {/* ====================================================
-            LOADING
-        ==================================================== */}
-
+        {/* LOADING */}
         {isLoading || isFetching ? (
-          <div className="p-12 text-center text-gray-500">
+          <div className="p-12 text-center text-muted-foreground">
             Loading site recces...
           </div>
         ) : (
           <>
-            {/* ==================================================
-                PROJECT GROUPS
-            ================================================== */}
-
+            {/* PROJECT GROUPS */}
             {groups.map(([projectName, items]) => {
               const isCollapsed = !!collapsed[projectName];
 
               return (
                 <div key={projectName} className="border-b last:border-0">
                   {/* PROJECT HEADER */}
-
                   <div
                     onClick={() => toggleGroup(projectName)}
-                    className="px-6 py-4 flex items-center gap-3 bg-white hover:bg-[#F9FAFB] cursor-pointer"
+                    className="flex cursor-pointer items-center gap-3 bg-background px-6 py-4 hover:bg-muted/50"
                   >
                     {isCollapsed ? (
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
+                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
                     ) : (
-                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
                     )}
 
-                    <div className="font-semibold text-[#1F453B] flex-1">
+                    <div className="flex-1 font-semibold text-foreground">
                       {projectName}
-
-                      <span className="text-sm font-normal text-gray-500 ml-2">
+                      <span className="ml-2 text-sm font-normal text-muted-foreground">
                         · {items.length} recce
                         {items.length !== 1 ? "s" : ""}
                       </span>
                     </div>
 
-                    <ClipboardList className="w-5 h-5 text-gray-400" />
+                    <ClipboardList className="h-5 w-5 text-muted-foreground" />
                   </div>
 
-                  {/* ==================================================
-                      RECCE ROWS
-                  ================================================== */}
-
+                  {/* RECCE ROWS */}
                   {!isCollapsed &&
                     items.map((recce) => {
                       const rooms = recce.rooms || [];
-
                       const photoCount = rooms.reduce(
                         (total, room) => total + (room.photos?.length || 0),
                         0,
@@ -472,83 +452,71 @@ export default function SiteRecceList() {
                         <div
                           key={recce.id}
                           onClick={() => nav(`/crm/recce/${recce.id}`)}
-                          className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F4F6F7] cursor-pointer px-6 py-4 transition-colors"
+                          className="cursor-pointer border-t px-6 py-4 transition-colors hover:bg-muted/50"
                           data-testid={`site-recce-row-${recce.id}`}
                         >
                           {/* DESKTOP */}
-
-                          <div className="hidden md:grid grid-cols-12 items-center text-sm">
+                          <div className="hidden grid-cols-12 items-center text-sm md:grid">
                             {/* PROJECT / SITE */}
-
                             <div className="col-span-4 pr-4">
-                              <div className="font-medium text-[#222]">
+                              <div className="font-medium text-foreground">
                                 {recce.project_name ||
                                   recce.project?.name ||
                                   "Untitled Site Recce"}
                               </div>
-
-                              <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                                <MapPin className="w-3 h-3" />
-
+                              <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                                <MapPin className="h-3 w-3" />
                                 <span className="truncate">
                                   {recce.site_address ||
                                     recce.project?.site_location ||
                                     "No address"}
                                 </span>
                               </div>
-
                               {recce.client_name && (
-                                <div className="text-xs text-gray-500 mt-1">
+                                <div className="mt-1 text-xs text-muted-foreground">
                                   Client: {recce.client_name}
                                 </div>
                               )}
-
-                              <div className="text-[11px] text-gray-400 mt-1">
+                              <div className="mt-1 text-[11px] text-muted-foreground">
                                 ID: {recce.id?.slice(0, 8)}...
                               </div>
                             </div>
 
                             {/* SITE ENGINEER */}
-
                             <div className="col-span-2 pr-3">
                               {recce.site_engineer ? (
                                 <div>
-                                  <div className="flex items-center gap-1.5 text-gray-700">
-                                    <User className="w-3.5 h-3.5 text-gray-400" />
-
+                                  <div className="flex items-center gap-1.5 text-foreground">
+                                    <User className="h-3.5 w-3.5 text-muted-foreground" />
                                     <span>{recce.site_engineer.name}</span>
                                   </div>
-
                                   {recce.site_engineer.email && (
-                                    <div className="text-xs text-gray-400 mt-1 truncate">
+                                    <div className="mt-1 truncate text-xs text-muted-foreground">
                                       {recce.site_engineer.email}
                                     </div>
                                   )}
                                 </div>
                               ) : (
-                                <span className="text-gray-400">
+                                <span className="text-muted-foreground">
                                   Not assigned
                                 </span>
                               )}
                             </div>
 
                             {/* SITE TYPE */}
-
                             <div className="col-span-1">
-                              <span className="inline-block px-2.5 py-1 text-xs font-medium rounded-full bg-[#E8F0ED] text-[#1F453B]">
+                              <Badge variant="secondary">
                                 {formatSiteType(recce.site_type)}
-                              </span>
+                              </Badge>
                             </div>
 
                             {/* ROOMS */}
-
                             <div className="col-span-1">
                               <div className="font-medium">
                                 {recce.number_of_rooms ?? rooms.length ?? 0}
                               </div>
-
                               {photoCount > 0 && (
-                                <div className="text-[11px] text-gray-400 mt-0.5">
+                                <div className="mt-0.5 text-[11px] text-muted-foreground">
                                   {photoCount} photo
                                   {photoCount !== 1 ? "s" : ""}
                                 </div>
@@ -556,80 +524,72 @@ export default function SiteRecceList() {
                             </div>
 
                             {/* FLOORS */}
-
                             <div className="col-span-1 font-medium">
                               {recce.number_of_floors ?? "—"}
                             </div>
 
                             {/* DATE */}
-
-                            <div className="col-span-2 text-sm text-gray-600">
+                            <div className="col-span-2 text-sm text-muted-foreground">
                               <div className="flex items-center gap-1.5">
-                                <CalendarDays className="w-3.5 h-3.5 text-gray-400" />
-
+                                <CalendarDays className="h-3.5 w-3.5" />
                                 {formatDate(recce.recce_date)}
                               </div>
-
                               {recce.unit_floor_no && (
-                                <div className="text-xs text-gray-400 mt-1">
+                                <div className="mt-1 text-xs text-muted-foreground">
                                   Unit/Floor: {recce.unit_floor_no}
                                 </div>
                               )}
                             </div>
 
                             {/* ACTIONS */}
-
                             <div
                               className="col-span-1 flex justify-end gap-1"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <button
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => nav(`/crm/recce/${recce.id}`)}
-                                className="p-1.5 rounded hover:bg-[#EAEEF0] text-[#333333]"
                                 title="View"
                                 data-testid={`site-recce-view-${recce.id}`}
                               >
-                                <Eye className="w-4 h-4" />
-                              </button>
-
-                              <button
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() =>
                                   nav(`/crm/recce/${recce.id}/edit`)
                                 }
-                                className="p-1.5 rounded hover:bg-[#EAEEF0] text-[#333333]"
                                 title="Edit"
                                 data-testid={`site-recce-edit-${recce.id}`}
                               >
-                                <Edit3 className="w-4 h-4" />
-                              </button>
-
-                              <button
+                                <Edit3 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                                 onClick={() => removeRecce(recce)}
-                                className="p-1.5 rounded hover:bg-[#F4E1D6] text-[#B04D26]"
                                 title="Delete"
                                 data-testid={`site-recce-delete-${recce.id}`}
                               >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </div>
 
-                          {/* ==================================================
-                              MOBILE
-                          ================================================== */}
-
+                          {/* MOBILE */}
                           <div className="md:hidden">
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
-                                <div className="font-medium text-[#222]">
+                                <div className="font-medium text-foreground">
                                   {recce.project_name ||
                                     recce.project?.name ||
                                     "Untitled Site Recce"}
                                 </div>
-
-                                <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                                  <MapPin className="w-3 h-3 shrink-0" />
-
+                                <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                                  <MapPin className="h-3 w-3 shrink-0" />
                                   <span className="truncate">
                                     {recce.site_address ||
                                       recce.project?.site_location ||
@@ -637,77 +597,77 @@ export default function SiteRecceList() {
                                   </span>
                                 </div>
                               </div>
-
-                              <span className="shrink-0 inline-block px-2.5 py-1 text-xs font-medium rounded-full bg-[#E8F0ED] text-[#1F453B]">
+                              <Badge variant="secondary" className="shrink-0">
                                 {formatSiteType(recce.site_type)}
-                              </span>
+                              </Badge>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
+                            <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
                               <div>
-                                <div className="text-gray-400">
+                                <div className="text-muted-foreground">
                                   Site Engineer
                                 </div>
-
-                                <div className="text-gray-700 mt-1">
+                                <div className="mt-1 text-foreground">
                                   {recce.site_engineer?.name || "Not assigned"}
                                 </div>
                               </div>
-
                               <div>
-                                <div className="text-gray-400">Recce Date</div>
-
-                                <div className="text-gray-700 mt-1">
+                                <div className="text-muted-foreground">
+                                  Recce Date
+                                </div>
+                                <div className="mt-1 text-foreground">
                                   {formatDate(recce.recce_date)}
                                 </div>
                               </div>
-
                               <div>
-                                <div className="text-gray-400">Rooms</div>
-
-                                <div className="text-gray-700 mt-1">
+                                <div className="text-muted-foreground">
+                                  Rooms
+                                </div>
+                                <div className="mt-1 text-foreground">
                                   {recce.number_of_rooms ?? rooms.length ?? 0}
                                 </div>
                               </div>
-
                               <div>
-                                <div className="text-gray-400">Floors</div>
-
-                                <div className="text-gray-700 mt-1">
+                                <div className="text-muted-foreground">
+                                  Floors
+                                </div>
+                                <div className="mt-1 text-foreground">
                                   {recce.number_of_floors ?? "—"}
                                 </div>
                               </div>
                             </div>
 
                             <div
-                              className="flex justify-end gap-1 mt-4 pt-3 border-t"
+                              className="mt-4 flex justify-end gap-1 border-t pt-3"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <button
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => nav(`/crm/recce/${recce.id}`)}
-                                className="p-2 rounded hover:bg-[#EAEEF0] text-[#333333]"
                                 title="View"
                               >
-                                <Eye className="w-4 h-4" />
-                              </button>
-
-                              <button
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() =>
                                   nav(`/crm/recce/${recce.id}/edit`)
                                 }
-                                className="p-2 rounded hover:bg-[#EAEEF0] text-[#333333]"
                                 title="Edit"
                               >
-                                <Edit3 className="w-4 h-4" />
-                              </button>
-
-                              <button
+                                <Edit3 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                                 onClick={() => removeRecce(recce)}
-                                className="p-2 rounded hover:bg-[#F4E1D6] text-[#B04D26]"
                                 title="Delete"
                               >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -717,36 +677,30 @@ export default function SiteRecceList() {
               );
             })}
 
-            {/* ==================================================
-                EMPTY STATE
-            ================================================== */}
-
+            {/* EMPTY STATE */}
             {filteredRows.length === 0 && (
               <div className="p-12 text-center">
-                <div className="w-14 h-14 mx-auto rounded-full bg-[#E8F0ED] flex items-center justify-center mb-4">
-                  <ClipboardList className="w-7 h-7 text-[#1F453B]" />
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+                  <ClipboardList className="h-7 w-7 text-primary" />
                 </div>
-
-                <div className="font-medium text-gray-700">
+                <div className="font-medium text-foreground">
                   {q || siteType
                     ? "No site recces found"
                     : "No site recces yet"}
                 </div>
-
-                <div className="text-sm text-gray-500 mt-1">
+                <div className="mt-1 text-sm text-muted-foreground">
                   {q || siteType
                     ? "Try changing your search or filters."
                     : "Start a new site recce to record site measurements and photographs."}
                 </div>
-
                 {!q && !siteType && (
-                  <button
+                  <Button
+                    className="mt-5"
                     onClick={() => nav("/crm/forms/site-reki")}
-                    className="mt-5 h-10 px-4 rounded-lg bg-[#1F453B] text-white text-sm font-semibold inline-flex items-center gap-2"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="mr-2 h-4 w-4" />
                     New Site Recce
-                  </button>
+                  </Button>
                 )}
               </div>
             )}

@@ -12,6 +12,30 @@ import {
   XCircle,
 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+
 import {
   useGetDocumentTypesQuery,
   useCreateDocumentTypeMutation,
@@ -99,7 +123,8 @@ const DocumentTypes = () => {
   };
 
   const handleChange = (event) => {
-    const { name, value, type, checked } = event.target;
+    const { name, value, type } = event.target;
+    const checked = type === "checkbox" ? event.target.checked : undefined;
 
     setForm((prev) => ({
       ...prev,
@@ -169,349 +194,292 @@ const DocumentTypes = () => {
   };
 
   return (
-    <div className="min-h-full bg-slate-50 p-6">
+    <div className="min-h-full bg-muted/40 p-6">
       {/* Header */}
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#1F453B] text-white">
-              <FileText size={21} />
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <FileText className="h-5 w-5" />
+          </div>
 
-            <div>
-              <h1 className="text-2xl font-semibold text-slate-900">
-                Document Types
-              </h1>
-
-              <p className="text-sm text-slate-500">
-                Manage document categories and document type configuration.
-              </p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">
+              Document Types
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Manage document categories and document type configuration.
+            </p>
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={openCreate}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#1F453B] px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
-        >
-          <Plus size={17} />
+        <Button onClick={openCreate}>
+          <Plus className="mr-2 h-4 w-4" />
           Add Document Type
-        </button>
+        </Button>
       </div>
 
       {/* Toolbar */}
-      <div className="mb-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="relative w-full md:max-w-md">
-            <Search
-              size={17}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
+      <Card className="mb-5">
+        <CardContent className="p-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="relative w-full md:max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search document types..."
+                className="pl-10"
+              />
+            </div>
 
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search document types..."
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-[#1F453B] focus:bg-white"
-            />
+            <Button
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </Button>
           </div>
-
-          <button
-            type="button"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-          >
-            <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
-            Refresh
-          </button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <Card>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left">
-            <thead className="border-b border-slate-200 bg-slate-50">
-              <tr>
-                <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Document Type
-                </th>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Document Type</TableHead>
+                <TableHead>Code</TableHead>
+                <TableHead>Phase</TableHead>
+                <TableHead>Target Type</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
 
-                <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Code
-                </th>
-
-                <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Phase
-                </th>
-
-                <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Target Type
-                </th>
-
-                <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Status
-                </th>
-
-                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-slate-100">
+            <TableBody>
               {isLoading ? (
-                <tr>
-                  <td
+                <TableRow>
+                  <TableCell
                     colSpan={6}
-                    className="px-5 py-12 text-center text-sm text-slate-500"
+                    className="h-24 text-center text-muted-foreground"
                   >
                     Loading document types...
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : filteredDocumentTypes.length === 0 ? (
-                <tr>
-                  <td
+                <TableRow>
+                  <TableCell
                     colSpan={6}
-                    className="px-5 py-12 text-center text-sm text-slate-500"
+                    className="h-24 text-center text-muted-foreground"
                   >
                     No document types found.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 filteredDocumentTypes.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50">
-                    <td className="px-5 py-4">
-                      <div className="font-medium text-slate-900">
+                  <TableRow key={item.id}>
+                    <TableCell>
+                      <div className="font-medium text-foreground">
                         {item.name || "—"}
                       </div>
-
                       {item.description && (
-                        <div className="mt-1 max-w-md truncate text-xs text-slate-500">
+                        <div className="mt-1 max-w-md truncate text-xs text-muted-foreground">
                           {item.description}
                         </div>
                       )}
-                    </td>
+                    </TableCell>
 
-                    <td className="px-5 py-4">
-                      <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs text-slate-700">
+                    <TableCell>
+                      <Badge variant="secondary" className="font-mono">
                         {item.code || "—"}
-                      </span>
-                    </td>
+                      </Badge>
+                    </TableCell>
 
-                    <td className="px-5 py-4 text-sm text-slate-600">
+                    <TableCell className="text-muted-foreground">
                       {item.phaseCode || "—"}
-                    </td>
+                    </TableCell>
 
-                    <td className="px-5 py-4 text-sm text-slate-600">
+                    <TableCell className="text-muted-foreground">
                       {item.targetType || "—"}
-                    </td>
+                    </TableCell>
 
-                    <td className="px-5 py-4">
+                    <TableCell>
                       {item.isActive ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                          <CheckCircle2 size={14} />
+                        <Badge
+                          variant="outline"
+                          className="border-emerald-200 bg-emerald-50 text-emerald-700"
+                        >
+                          <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
                           Active
-                        </span>
+                        </Badge>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500">
-                          <XCircle size={14} />
+                        <Badge variant="secondary">
+                          <XCircle className="mr-1 h-3.5 w-3.5" />
                           Inactive
-                        </span>
+                        </Badge>
                       )}
-                    </td>
+                    </TableCell>
 
-                    <td className="px-5 py-4">
+                    <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
+                        <Button
+                          variant="outline"
+                          size="icon"
                           onClick={() => openEdit(item)}
-                          className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 hover:text-[#1F453B]"
                           title="Edit"
                         >
-                          <Pencil size={16} />
-                        </button>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
 
-                        <button
-                          type="button"
+                        <Button
+                          variant="outline"
+                          size="icon"
                           onClick={() => handleDelete(item)}
                           disabled={isDeleting}
-                          className="rounded-lg border border-red-100 p-2 text-red-500 hover:bg-red-50 disabled:opacity-50"
+                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                           title="Delete"
                         >
-                          <Trash2 size={16} />
-                        </button>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
-      </div>
+      </Card>
 
       {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">
-                  {editingId ? "Edit Document Type" : "Create Document Type"}
-                </h2>
+      <Dialog
+        open={showModal}
+        onOpenChange={(open) => {
+          if (!open) closeModal();
+        }}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingId ? "Edit Document Type" : "Create Document Type"}
+            </DialogTitle>
+            <DialogDescription>
+              Configure the document type used across INOS.
+            </DialogDescription>
+          </DialogHeader>
 
-                <p className="mt-1 text-xs text-slate-500">
-                  Configure the document type used across INOS.
-                </p>
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-5 py-4 md:grid-cols-2">
+              <div className="md:col-span-2 space-y-2">
+                <Label>
+                  Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  name="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  placeholder="e.g. Architectural Drawing"
+                />
               </div>
 
-              <button
-                type="button"
-                onClick={closeModal}
-                className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-              >
-                <X size={19} />
-              </button>
+              <div className="space-y-2">
+                <Label>Code</Label>
+                <Input
+                  name="code"
+                  value={form.code}
+                  onChange={handleChange}
+                  placeholder="e.g. ARCH_DRAWING"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Phase Code</Label>
+                <Input
+                  name="phaseCode"
+                  value={form.phaseCode}
+                  onChange={handleChange}
+                  placeholder="e.g. DESIGN"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Project Phase ID</Label>
+                <Input
+                  name="projectPhaseId"
+                  value={form.projectPhaseId}
+                  onChange={handleChange}
+                  placeholder="Project phase UUID"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Target Type</Label>
+                <Input
+                  name="targetType"
+                  value={form.targetType}
+                  onChange={handleChange}
+                  placeholder="e.g. PROJECT"
+                />
+              </div>
+
+              <div className="md:col-span-2 space-y-2">
+                <Label>Description</Label>
+                <Textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  rows={3}
+                  placeholder="Describe this document type..."
+                />
+              </div>
+
+              <div className="md:col-span-2 flex items-start gap-3 rounded-lg border bg-muted/40 p-3">
+                <Checkbox
+                  id="isActive"
+                  checked={form.isActive}
+                  onCheckedChange={(checked) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      isActive: Boolean(checked),
+                    }))
+                  }
+                />
+                <div className="grid gap-1.5 leading-none">
+                  <Label htmlFor="isActive" className="cursor-pointer">
+                    Active
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Allow this document type to be used in the system.
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit}>
-              <div className="grid gap-5 p-6 md:grid-cols-2">
-                <div className="md:col-span-2">
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                    Name <span className="text-red-500">*</span>
-                  </label>
-
-                  <input
-                    name="name"
-                    value={form.name}
-                    onChange={handleChange}
-                    placeholder="e.g. Architectural Drawing"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1F453B]"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                    Code
-                  </label>
-
-                  <input
-                    name="code"
-                    value={form.code}
-                    onChange={handleChange}
-                    placeholder="e.g. ARCH_DRAWING"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1F453B]"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                    Phase Code
-                  </label>
-
-                  <input
-                    name="phaseCode"
-                    value={form.phaseCode}
-                    onChange={handleChange}
-                    placeholder="e.g. DESIGN"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1F453B]"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                    Project Phase ID
-                  </label>
-
-                  <input
-                    name="projectPhaseId"
-                    value={form.projectPhaseId}
-                    onChange={handleChange}
-                    placeholder="Project phase UUID"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1F453B]"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                    Target Type
-                  </label>
-
-                  <input
-                    name="targetType"
-                    value={form.targetType}
-                    onChange={handleChange}
-                    placeholder="e.g. PROJECT"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1F453B]"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                    Description
-                  </label>
-
-                  <textarea
-                    name="description"
-                    value={form.description}
-                    onChange={handleChange}
-                    rows={3}
-                    placeholder="Describe this document type..."
-                    className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1F453B]"
-                  />
-                </div>
-
-                <label className="md:col-span-2 flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <input
-                    type="checkbox"
-                    name="isActive"
-                    checked={form.isActive}
-                    onChange={handleChange}
-                    className="h-4 w-4 accent-[#1F453B]"
-                  />
-
-                  <div>
-                    <div className="text-sm font-medium text-slate-700">
-                      Active
-                    </div>
-
-                    <div className="text-xs text-slate-500">
-                      Allow this document type to be used in the system.
-                    </div>
-                  </div>
-                </label>
-              </div>
-
-              <div className="flex justify-end gap-3 border-t border-slate-200 px-6 py-4">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  disabled={isCreating || isUpdating}
-                  className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={isCreating || isUpdating}
-                  className="rounded-lg bg-[#1F453B] px-5 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-                >
-                  {isCreating || isUpdating
-                    ? "Saving..."
-                    : editingId
-                      ? "Update Document Type"
-                      : "Create Document Type"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeModal}
+                disabled={isCreating || isUpdating}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isCreating || isUpdating}>
+                {isCreating || isUpdating
+                  ? "Saving..."
+                  : editingId
+                    ? "Update Document Type"
+                    : "Create Document Type"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
