@@ -11,8 +11,8 @@ import {
   PurchaseOrderItem,
   DeliveryChallan,
   DeliveryChallanItem,
-  SiteInventory,
   InventoryTransaction,
+  MaterialMaster,
 } from './models';
 
 import { MaterialRequirementService } from './services/material-requirement.service';
@@ -22,7 +22,6 @@ import { MaterialEstimateService } from './services/material-estimate.service';
 import { MaterialQuotationService } from './services/material-quotation.service';
 import { PurchaseOrderService } from './services/purchase-order.service';
 import { DeliveryChallanService } from './services/delivery-challan.service';
-import { SiteInventoryService } from './services/site-inventory.service';
 
 import { MaterialRequirementController } from './controllers/material-requirement.controller';
 import { SampleBoardController } from './controllers/sample-board.controller';
@@ -31,7 +30,7 @@ import { MaterialEstimateController } from './controllers/material-estimate.cont
 import { MaterialQuotationController } from './controllers/material-quotation.controller';
 import { PurchaseOrderController } from './controllers/purchase-order.controller';
 import { DeliveryChallanController } from './controllers/delivery-challan.controller';
-import { SiteInventoryController } from './controllers/site-inventory.controller';
+import { InventoryService } from './services/inventory.service';
 
 /**
  * Material & Procurement module — Sequelize (MySQL) edition.
@@ -59,7 +58,8 @@ import { SiteInventoryController } from './controllers/site-inventory.controller
       PurchaseOrderItem,
       DeliveryChallan,
       DeliveryChallanItem,
-      SiteInventory,
+      // Material Master
+      MaterialMaster,
       InventoryTransaction,
     ]),
   ],
@@ -71,7 +71,6 @@ import { SiteInventoryController } from './controllers/site-inventory.controller
     MaterialQuotationController,
     PurchaseOrderController,
     DeliveryChallanController,
-    SiteInventoryController,
   ],
   providers: [
     MaterialRequirementService,
@@ -79,19 +78,19 @@ import { SiteInventoryController } from './controllers/site-inventory.controller
     MaterialRateSheetService,
     MaterialEstimateService,
     MaterialQuotationService,
-    PurchaseOrderService,
     DeliveryChallanService,
-    SiteInventoryService,
+    PurchaseOrderService,
+    InventoryService,
   ],
   exports: [
     MaterialRequirementService,
     SampleBoardService,
     MaterialRateSheetService,
     MaterialEstimateService,
-    MaterialQuotationService,
-    PurchaseOrderService,
     DeliveryChallanService,
-    SiteInventoryService,
+    MaterialQuotationService,
+    InventoryService,
+    PurchaseOrderService,
   ],
 })
 export class MaterialProcurementModule {}

@@ -1,29 +1,27 @@
 import {
-  Table,
-  Column,
-  Model,
-  DataType,
-  PrimaryKey,
-  Default,
-  ForeignKey,
   BelongsTo,
-  IsUUID,
+  Column,
+  DataType,
+  ForeignKey,
+  Index,
+  Model,
+  Table,
 } from 'sequelize-typescript';
 
-import { Optional } from 'sequelize';
-
-import { User } from '@/modules/users/models/user.model';
+import { User } from '../../users/models/user.model';
+import { Team } from './team.model';
 import { TeamMemberOwnerType } from '@/common/enums/team.enums';
 
 export interface TeamMemberAttributes {
   id: string;
 
-  owner_type: TeamMemberOwnerType;
-  owner_id: string;
-
+  team_id: string;
   user_id: string;
 
-  role_label: string;
+  owner_type: TeamMemberOwnerType | null;
+  owner_id: string | null;
+
+  role_label: string | null;
 
   is_primary: boolean;
   sort_order: number;
@@ -31,81 +29,59 @@ export interface TeamMemberAttributes {
   created_by: string | null;
   updated_by: string | null;
 
-  created_at?: Date;
-  updated_at?: Date;
-  deleted_at?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
 }
 
-export interface TeamMemberCreationAttributes extends Optional<
-  TeamMemberAttributes,
-  | 'id'
-  | 'is_primary'
-  | 'sort_order'
-  | 'created_by'
-  | 'updated_by'
-  | 'created_at'
-  | 'updated_at'
-  | 'deleted_at'
-> {}
+export type TeamMemberCreationAttributes = Partial<
+  Pick<
+    TeamMemberAttributes,
+    | 'id'
+    | 'owner_type'
+    | 'owner_id'
+    | 'role_label'
+    | 'is_primary'
+    | 'sort_order'
+    | 'created_by'
+    | 'updated_by'
+  >
+> &
+  Pick<TeamMemberAttributes, 'team_id' | 'user_id'>;
 
 @Table({
   tableName: 'team_members',
-
   timestamps: true,
-
   paranoid: true,
-
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
-  deletedAt: 'deleted_at',
-
-  indexes: [
-    {
-      fields: ['owner_type', 'owner_id'],
-    },
-    {
-      fields: ['owner_type', 'owner_id', 'user_id', 'role_label'],
-      unique: true,
-    },
-  ],
+  underscored: true,
 })
-export class TeamMember extends Model<
-  TeamMemberAttributes,
-  TeamMemberCreationAttributes
-> {
-  // ============================================
-  // ID
-  // ============================================
-
-  @PrimaryKey
-  @IsUUID(4)
-  @Default(DataType.UUIDV4)
+export class TeamMember
+  extends Model<TeamMemberAttributes, TeamMemberCreationAttributes>
+  implements TeamMemberAttributes
+{
   @Column({
     type: DataType.CHAR(36),
+    primaryKey: true,
+    defaultValue: DataType.UUIDV4,
   })
   declare id: string;
 
-  // ============================================
-  // OWNER
-  // ============================================
-
-  @Column({
-    type: DataType.ENUM(...Object.values(TeamMemberOwnerType)),
-    allowNull: false,
-  })
-  declare owner_type: TeamMemberOwnerType;
-
+  @ForeignKey(() => Team)
+  @Index('idx_team_members_team_id')
   @Column({
     type: DataType.CHAR(36),
     allowNull: false,
   })
-  declare owner_id: string;
+  declare team_id: string;
 
-  // ============================================
-  // USER
-  // ============================================
+  @BelongsTo(() => Team, {
+    foreignKey: 'team_id',
+    as: 'team',
+  })
+  declare team: Team;
 
   @ForeignKey(() => User)
+  @Index('idx_team_members_user_id')
   @Column({
     type: DataType.CHAR(36),
     allowNull: false,
@@ -118,19 +94,25 @@ export class TeamMember extends Model<
   })
   declare user: User;
 
-  // ============================================
-  // PROJECT / DOCUMENT ROLE LABEL
-  // ============================================
+  @Index('idx_team_members_owner')
+  @Column({
+    type: DataType.ENUM(...Object.values(TeamMemberOwnerType)),
+    allowNull: true,
+  })
+  declare owner_type: TeamMemberOwnerType | null;
+
+  @Index('idx_team_members_owner')
+  @Column({
+    type: DataType.CHAR(36),
+    allowNull: true,
+  })
+  declare owner_id: string | null;
 
   @Column({
-    type: DataType.STRING(150),
-    allowNull: false,
+    type: DataType.STRING(100),
+    allowNull: true,
   })
-  declare role_label: string;
-
-  // ============================================
-  // PRIMARY
-  // ============================================
+  declare role_label: string | null;
 
   @Column({
     type: DataType.BOOLEAN,
@@ -139,10 +121,6 @@ export class TeamMember extends Model<
   })
   declare is_primary: boolean;
 
-  // ============================================
-  // SORT
-  // ============================================
-
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
@@ -150,16 +128,18 @@ export class TeamMember extends Model<
   })
   declare sort_order: number;
 
-  // ============================================
-  // AUDIT
-  // ============================================
-
   @ForeignKey(() => User)
   @Column({
     type: DataType.CHAR(36),
     allowNull: true,
   })
   declare created_by: string | null;
+
+  @BelongsTo(() => User, {
+    foreignKey: 'created_by',
+    as: 'creator',
+  })
+  declare creator: User;
 
   @ForeignKey(() => User)
   @Column({
@@ -169,24 +149,12 @@ export class TeamMember extends Model<
   declare updated_by: string | null;
 
   @BelongsTo(() => User, {
-    foreignKey: 'created_by',
-    as: 'creator',
-  })
-  declare creator: User;
-
-  @BelongsTo(() => User, {
     foreignKey: 'updated_by',
     as: 'updater',
   })
   declare updater: User;
 
-  // ============================================
-  // SOFT DELETE
-  // ============================================
-
-  @Column({
-    type: DataType.DATE,
-    allowNull: true,
-  })
-  declare deleted_at: Date | null;
+  declare readonly createdAt: Date;
+  declare readonly updatedAt: Date;
+  declare readonly deletedAt: Date | null;
 }

@@ -3,75 +3,216 @@ import {
   Column,
   Model,
   DataType,
-  Default,
   PrimaryKey,
-  ForeignKey,
+  Default,
+  AllowNull,
+  Index,
   BelongsTo,
+  ForeignKey,
 } from 'sequelize-typescript';
 
-import { InventoryTransactionType } from '../../../common/enums/inventory-transaction-type.enum';
-import { SiteInventory } from './site-inventory.model';
+import type {
+  CreationOptional,
+  InferAttributes,
+  InferCreationAttributes,
+} from 'sequelize';
 
-/**
- * 6b. Site inventory register — inward / outward / adjustment / damage
- * transactions, reconciled against purchase orders.
- */
+import { MaterialMaster } from './material-master.model';
+
+export enum InventoryTransactionType {
+  RECEIPT = 'RECEIPT',
+  ISSUE = 'ISSUE',
+  RETURN_FROM_CONTRACTOR = 'RETURN_FROM_CONTRACTOR',
+  RETURN_TO_VENDOR = 'RETURN_TO_VENDOR',
+  TRANSFER_IN = 'TRANSFER_IN',
+  TRANSFER_OUT = 'TRANSFER_OUT',
+  ADJUSTMENT_IN = 'ADJUSTMENT_IN',
+  ADJUSTMENT_OUT = 'ADJUSTMENT_OUT',
+}
+
+export enum InventoryDirection {
+  IN = 'IN',
+  OUT = 'OUT',
+}
+
+export enum InventoryReferenceType {
+  DELIVERY_CHALLAN = 'DELIVERY_CHALLAN',
+  PURCHASE_ORDER = 'PURCHASE_ORDER',
+  ISSUE = 'ISSUE',
+  TRANSFER = 'TRANSFER',
+  ADJUSTMENT = 'ADJUSTMENT',
+  RETURN = 'RETURN',
+}
+
+export enum InventoryConditionStatus {
+  GOOD = 'GOOD',
+  DAMAGED = 'DAMAGED',
+  SHORT = 'SHORT',
+  REJECTED = 'REJECTED',
+  NOT_APPLICABLE = 'NOT_APPLICABLE',
+}
+
 @Table({
   tableName: 'inventory_transactions',
   timestamps: true,
-  updatedAt: false,
 })
-export class InventoryTransaction extends Model {
+export class InventoryTransaction extends Model<
+  InferAttributes<InventoryTransaction>,
+  InferCreationAttributes<InventoryTransaction>
+> {
+  // ============================================================
+  // PRIMARY KEY
+  // ============================================================
+
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column(DataType.UUID)
-  declare id: string;
+  declare id: CreationOptional<string>;
 
-  @ForeignKey(() => SiteInventory)
+  // ============================================================
+  // PROJECT / SITE
+  // ============================================================
+
+  @AllowNull(false)
+  @Index
   @Column(DataType.UUID)
-  declare siteInventoryId: string;
+  declare project_id: string;
 
-  @BelongsTo(() => SiteInventory, { onDelete: 'CASCADE' })
-  declare siteInventory: SiteInventory;
+  @AllowNull(true)
+  @Index
+  @Column(DataType.UUID)
+  declare site_id: string | null;
 
-  // Present only for INWARD transactions that reconcile against a PO delivery
-  @Column({
-    type: DataType.UUID,
-    allowNull: true,
-  })
-  declare purchaseOrderId: string;
+  // ============================================================
+  // MATERIAL
+  // ============================================================
 
-  @Column({
-    type: DataType.UUID,
-    allowNull: true,
-  })
-  declare deliveryChallanId: string;
+  @ForeignKey(() => MaterialMaster)
+  @AllowNull(false)
+  @Index
+  @Column(DataType.UUID)
+  declare material_id: string;
 
+  @BelongsTo(() => MaterialMaster)
+  declare material?: MaterialMaster;
+
+  // ============================================================
+  // TRANSACTION
+  // ============================================================
+
+  @AllowNull(false)
+  @Index
+  @Column(DataType.DATEONLY)
+  declare transaction_date: string;
+
+  @AllowNull(false)
+  @Index
   @Column(DataType.ENUM(...Object.values(InventoryTransactionType)))
-  declare type: InventoryTransactionType;
+  declare transaction_type: InventoryTransactionType;
 
-  // Always stored as a positive magnitude; direction is derived from `type`
-  @Column(DataType.DECIMAL(14, 3))
+  @AllowNull(false)
+  @Column(DataType.DECIMAL(15, 3))
   declare quantity: number;
 
-  @Column(DataType.DECIMAL(14, 3))
-  declare balanceAfter: number;
+  @AllowNull(false)
+  @Column(DataType.STRING(30))
+  declare unit: string;
 
-  @Column({
-    type: DataType.STRING,
-    allowNull: true,
-  })
-  declare reference: string;
+  @AllowNull(false)
+  @Column(DataType.ENUM(...Object.values(InventoryDirection)))
+  declare direction: InventoryDirection;
 
-  @Column({
-    type: DataType.TEXT,
-    allowNull: true,
-  })
-  declare remarks: string;
+  // ============================================================
+  // REFERENCES
+  // ============================================================
 
-  @Column({
-    type: DataType.STRING,
-    allowNull: true,
-  })
-  declare transactedBy: string;
+  @AllowNull(true)
+  @Column(DataType.ENUM(...Object.values(InventoryReferenceType)))
+  declare reference_type: InventoryReferenceType | null;
+
+  @AllowNull(true)
+  @Index
+  @Column(DataType.UUID)
+  declare reference_id: string | null;
+
+  @AllowNull(true)
+  @Column(DataType.UUID)
+  declare reference_item_id: string | null;
+
+  // ============================================================
+  // VENDOR / CONTRACTOR
+  // ============================================================
+
+  @AllowNull(true)
+  @Column(DataType.UUID)
+  declare vendor_id: string | null;
+
+  @AllowNull(true)
+  @Column(DataType.UUID)
+  declare contractor_id: string | null;
+
+  @AllowNull(true)
+  @Column(DataType.STRING(100))
+  declare trade: string | null;
+
+  // ============================================================
+  // WORK / STORAGE
+  // ============================================================
+
+  @AllowNull(true)
+  @Column(DataType.STRING(255))
+  declare work_reference: string | null;
+
+  @AllowNull(true)
+  @Column(DataType.STRING(255))
+  declare storage_location: string | null;
+
+  // ============================================================
+  // CONDITION
+  // ============================================================
+
+  @AllowNull(false)
+  @Default(InventoryConditionStatus.NOT_APPLICABLE)
+  @Column(DataType.ENUM(...Object.values(InventoryConditionStatus)))
+  declare condition_status: CreationOptional<InventoryConditionStatus>;
+
+  @AllowNull(true)
+  @Column(DataType.TEXT)
+  declare condition_notes: string | null;
+
+  // ============================================================
+  // ISSUE INFORMATION
+  // ============================================================
+
+  @AllowNull(true)
+  @Column(DataType.STRING(255))
+  declare issued_to: string | null;
+
+  @AllowNull(true)
+  @Column(DataType.UUID)
+  declare issued_by: string | null;
+
+  // ============================================================
+  // RECEIVING INFORMATION
+  // ============================================================
+
+  @AllowNull(true)
+  @Column(DataType.UUID)
+  declare received_by: string | null;
+
+  // ============================================================
+  // REMARKS
+  // ============================================================
+
+  @AllowNull(true)
+  @Column(DataType.TEXT)
+  declare remarks: string | null;
+
+  // ============================================================
+  // AUDIT
+  // ============================================================
+
+  @AllowNull(true)
+  @Column(DataType.UUID)
+  declare created_by: string | null;
 }

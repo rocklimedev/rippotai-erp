@@ -6,6 +6,9 @@ import EstimateSignature from "@/pages/settings/EstimateSignature";
 import AppLayout from "@/layouts/AppLayout";
 import AdminDashboard from "../../pages/dashboard/AdminDashboard";
 import ClientSettings from "../../pages/settings/ClientSettings";
+import DocumentTypes from "../../pages/documents/DocumentTypes";
+import ProjectPhases from "../../pages/projects/ProjectPhases";
+import ProjectStructure from "../../pages/projects/ProjectStructure";
 export const adminConsoleRoutes = [
   {
     type: "layout",
@@ -46,6 +49,18 @@ export const adminConsoleRoutes = [
       {
         path: "terms-and-conditions",
         element: <TermsSettings />,
+      },
+      {
+        path: "document-types",
+        element: <DocumentTypes />,
+      },
+      {
+        path: "project-phases",
+        element: <ProjectPhases />,
+      },
+      {
+        path: "project-structure",
+        element: <ProjectStructure />,
       },
     ],
   },

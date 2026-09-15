@@ -21,6 +21,8 @@ import ShortlistDetail from "@/pages/vendors/ShortlistDetail";
 
 import VendorProfile from "@/pages/vendors/VendorProfile";
 import ComingSoon from "../../pages/ComingSoon";
+import DeliveryChallanForm from "../../pages/materials/DeliveryChallanForm";
+import PurchaseOrderForm from "../../pages/materials/PurchaseOrderForm";
 
 export const materialsRoutes = [
   {
@@ -122,7 +124,14 @@ export const materialsRoutes = [
         path: "delivery-challans",
         element: <DeliveryChallanList />,
       },
-
+      {
+        path: "delivery-challans/new",
+        element: <DeliveryChallanForm />,
+      },
+      {
+        path: "purchase-orders/new",
+        element: <PurchaseOrderForm />,
+      },
       // ------------------------------------------------------------
       // Site Inventory
       // ------------------------------------------------------------

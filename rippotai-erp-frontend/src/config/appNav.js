@@ -205,13 +205,17 @@ export const APP_MENUS = {
       ],
     },
   ],
+
   adminConsole: [
     {
       label: "Workspace",
       items: [
-        I("Users", "users"),
         I("Client", "clients"),
+        I("Users", "users"),
         I("Roles & Permissions", "roles-permissions"),
+        I("Project Phases", "project-phases"),
+        I("Document Types", "document-types"),
+        I("Project Structure", "project-structure"),
         I("Estimate Signature", "estimate-signature"),
       ],
     },
@@ -219,11 +223,12 @@ export const APP_MENUS = {
     {
       label: "Administration",
       items: [
-        I("Super Admin", "super-admin"),
         I("Terms & Conditions", "terms-and-conditions"),
+        I("Super Admin", "super-admin"),
       ],
     },
   ],
+
   materials: [
     {
       label: "Materials",
@@ -240,6 +245,7 @@ export const APP_MENUS = {
         I("Estimates", "estimates"),
         I("Quotations", "quotations"),
         I("Purchase Orders", "purchase-orders"),
+        I("Purchase Order Form", "purchase-orders/new"),
       ],
     },
 
@@ -248,6 +254,7 @@ export const APP_MENUS = {
       items: [
         I("Delivery Challans", "delivery-challans"),
         I("Site Inventory", "inventory"),
+        I("Delivery Challan Form", "delivery-challans/new"),
       ],
     },
     {

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, fn, col, literal, WhereOptions } from 'sequelize';
-
+import { ConflictException } from '@nestjs/common';
 import { Quotation } from '@/modules/quotations/models/quotations.model';
 import { Project } from './models/projects.model';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
@@ -61,17 +61,33 @@ export class ProjectsService {
   // CREATE PROJECT
   // =========================
   async create(dto: CreateProjectDto, user?: User): Promise<Project> {
+    // ============================================================
+    // VALIDATE CLIENT
+    // ============================================================
+
     if (dto.client_id) {
       const clientExists = await this.clientsService.exists(dto.client_id);
+
       if (!clientExists) {
         throw new NotFoundException(`Client ${dto.client_id} not found`);
       }
     }
 
+    // ============================================================
+    // GENERATE SLUG
+    // ============================================================
+
     const slug = await this.generateUniqueSlug(dto.name);
 
-    // Strip team_members so it is never passed to Project.create
+    // ============================================================
+    // STRIP TEAM MEMBERS FROM PROJECT PAYLOAD
+    // ============================================================
+
     const { team_members, ...projectData } = dto;
+
+    // ============================================================
+    // CREATE PROJECT
+    // ============================================================
 
     const project = await this.projectModel.create({
       ...projectData,
@@ -79,10 +95,39 @@ export class ProjectsService {
       created_by: user?.id ?? null,
     } as any);
 
-    // Create team members if provided
+    // ============================================================
+    // CREATE PROJECT TEAM ASSIGNMENTS
+    // ============================================================
+
     if (team_members?.length) {
       for (const [index, member] of team_members.entries()) {
-        // Reuse the same uniqueness / is_primary logic as addTeamMember
+        // --------------------------------------------------------
+        // Find the user's actual team membership
+        // --------------------------------------------------------
+
+        const teamMembership = await this.teamMemberModel.findOne({
+          where: {
+            user_id: member.user_id,
+
+            // Only look at actual team memberships
+            // rather than project assignments.
+            owner_type: TeamMemberOwnerType.TEAM,
+            owner_id: {
+              [Op.ne]: null,
+            },
+          },
+        });
+
+        if (!teamMembership) {
+          throw new NotFoundException(
+            `User ${member.user_id} is not assigned to a team`,
+          );
+        }
+
+        // --------------------------------------------------------
+        // Prevent duplicate project assignment
+        // --------------------------------------------------------
+
         const existing = await this.teamMemberModel.findOne({
           where: {
             owner_type: TeamMemberOwnerType.PROJECT,
@@ -92,11 +137,19 @@ export class ProjectsService {
           },
         });
 
-        if (existing) continue; // or throw if you prefer strict behaviour
+        if (existing) {
+          continue;
+        }
+
+        // --------------------------------------------------------
+        // Only one primary member per project + role
+        // --------------------------------------------------------
 
         if (member.is_primary) {
           await this.teamMemberModel.update(
-            { is_primary: false },
+            {
+              is_primary: false,
+            },
             {
               where: {
                 owner_type: TeamMemberOwnerType.PROJECT,
@@ -108,20 +161,39 @@ export class ProjectsService {
           );
         }
 
+        // --------------------------------------------------------
+        // Create project assignment
+        // --------------------------------------------------------
+
         await this.teamMemberModel.create({
+          team_id: teamMembership.team_id,
+
           owner_type: TeamMemberOwnerType.PROJECT,
           owner_id: project.id,
+
           user_id: member.user_id,
+
           role_label: member.role_label,
+
           is_primary: member.is_primary ?? false,
+
           sort_order: member.sort_order ?? index,
+
           created_by: user?.id ?? null,
         });
       }
     }
 
-    // Log Activity & Send Notification
+    // ============================================================
+    // ACTIVITY LOG
+    // ============================================================
+
     await this.activityLogForProjectService.logProjectCreated(project, user);
+
+    // ============================================================
+    // NOTIFICATION
+    // ============================================================
+
     await this.notificationForProjectService.notifyProjectCreated(
       project,
       user?.id,
@@ -573,11 +645,19 @@ export class ProjectsService {
     },
     currentUser?: User,
   ): Promise<TeamMember> {
+    // ============================================================
+    // VALIDATE PROJECT
+    // ============================================================
+
     const project = await this.projectModel.findByPk(projectId);
 
     if (!project) {
       throw new NotFoundException(`Project ${projectId} not found`);
     }
+
+    // ============================================================
+    // VALIDATE USER
+    // ============================================================
 
     const targetUser = await User.findByPk(dto.user_id);
 
@@ -585,7 +665,42 @@ export class ProjectsService {
       throw new NotFoundException(`User ${dto.user_id} not found`);
     }
 
-    // Check existing membership
+    // ============================================================
+    // FIND ACTUAL TEAM MEMBERSHIP
+    // ============================================================
+    //
+    // A PROJECT assignment must inherit the team_id from the
+    // user's actual TEAM membership.
+    //
+    // Do NOT create a project assignment without team_id because
+    // team_id is required by the TeamMember model/database.
+    //
+    // ============================================================
+
+    const teamMembership = await this.teamMemberModel.findOne({
+      where: {
+        user_id: dto.user_id,
+
+        // Only the user's real admin/team membership.
+        // Project assignments must NOT be used here.
+        owner_type: TeamMemberOwnerType.TEAM,
+
+        owner_id: {
+          [Op.ne]: null,
+        },
+      },
+    });
+
+    if (!teamMembership) {
+      throw new NotFoundException(
+        `${targetUser.name} is not assigned to an admin team`,
+      );
+    }
+
+    // ============================================================
+    // CHECK EXISTING PROJECT ASSIGNMENT
+    // ============================================================
+
     const existing = await this.teamMemberModel.findOne({
       where: {
         owner_type: TeamMemberOwnerType.PROJECT,
@@ -596,13 +711,15 @@ export class ProjectsService {
     });
 
     if (existing) {
-      throw new Error(
+      throw new ConflictException(
         `${targetUser.name} is already assigned to this project with the role "${dto.role_label}"`,
       );
     }
 
-    // If this member is primary, remove primary
-    // status from other members with the same label.
+    // ============================================================
+    // ONLY ONE PRIMARY MEMBER PER PROJECT + ROLE
+    // ============================================================
+
     if (dto.is_primary) {
       await this.teamMemberModel.update(
         {
@@ -619,13 +736,27 @@ export class ProjectsService {
       );
     }
 
+    // ============================================================
+    // CREATE PROJECT ASSIGNMENT
+    // ============================================================
+
     return this.teamMemberModel.create({
+      // IMPORTANT:
+      // Project member inherits team_id from the user's actual
+      // TEAM membership.
+      team_id: teamMembership.team_id,
+
       owner_type: TeamMemberOwnerType.PROJECT,
       owner_id: projectId,
+
       user_id: dto.user_id,
+
       role_label: dto.role_label,
+
       is_primary: dto.is_primary ?? false,
+
       sort_order: dto.sort_order ?? 0,
+
       created_by: currentUser?.id ?? null,
     });
   }
