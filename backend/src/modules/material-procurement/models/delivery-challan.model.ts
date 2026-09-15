@@ -3,63 +3,181 @@ import {
   Column,
   Model,
   DataType,
-  Default,
   PrimaryKey,
-  ForeignKey,
-  BelongsTo,
+  Default,
+  AllowNull,
+  Unique,
+  Index,
   HasMany,
 } from 'sequelize-typescript';
 
-import { SiteStage } from '../../../common/enums/site-stage.enum';
-import { PurchaseOrder } from './purchase-order.model';
+import type {
+  CreationOptional,
+  InferAttributes,
+  InferCreationAttributes,
+} from 'sequelize';
+
 import { DeliveryChallanItem } from './delivery-challan-item.model';
 
-/**
- * 5. Staged deliveries — delivery challans logged against each purchase
- * order and tagged to the site stage that needs them.
- */
+export enum DeliveryChallanStatus {
+  DRAFT = 'DRAFT',
+  IN_TRANSIT = 'IN_TRANSIT',
+  RECEIVED = 'RECEIVED',
+  PARTIALLY_ACCEPTED = 'PARTIALLY_ACCEPTED',
+  REJECTED = 'REJECTED',
+  CANCELLED = 'CANCELLED',
+}
+
 @Table({
   tableName: 'delivery_challans',
   timestamps: true,
-  updatedAt: false,
 })
-export class DeliveryChallan extends Model {
+export class DeliveryChallan extends Model<
+  InferAttributes<DeliveryChallan>,
+  InferCreationAttributes<DeliveryChallan>
+> {
+  // ============================================================
+  // PRIMARY KEY
+  // ============================================================
+
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column(DataType.UUID)
-  declare id: string;
+  declare id: CreationOptional<string>;
 
-  @ForeignKey(() => PurchaseOrder)
+  // ============================================================
+  // CHALLAN IDENTIFICATION
+  // ============================================================
+
+  @AllowNull(false)
+  @Unique
+  @Index
+  @Column(DataType.STRING(50))
+  declare challan_number: string;
+
+  // ============================================================
+  // PROJECT / SITE / PROCUREMENT REFERENCES
+  // ============================================================
+
+  @AllowNull(false)
+  @Index
   @Column(DataType.UUID)
-  declare purchaseOrderId: string;
+  declare project_id: string;
 
-  @BelongsTo(() => PurchaseOrder, { onDelete: 'CASCADE' })
-  declare purchaseOrder: PurchaseOrder;
+  @AllowNull(true)
+  @Index
+  @Column(DataType.UUID)
+  declare site_id: string | null;
 
-  @Column({
-    type: DataType.STRING,
-    unique: true,
-  })
-  declare challanNumber: string;
+  @AllowNull(true)
+  @Index
+  @Column(DataType.UUID)
+  declare purchase_order_id: string | null;
 
+  @AllowNull(true)
+  @Index
+  @Column(DataType.UUID)
+  declare vendor_id: string | null;
+
+  // ============================================================
+  // CHALLAN DATE
+  // ============================================================
+
+  @AllowNull(false)
   @Column(DataType.DATEONLY)
-  declare deliveryDate: string;
+  declare challan_date: string;
 
-  @Column(DataType.ENUM(...Object.values(SiteStage)))
-  declare siteStage: SiteStage;
+  // ============================================================
+  // DELIVERY LOCATION
+  // ============================================================
 
-  @Column({
-    type: DataType.STRING,
-    allowNull: true,
-  })
-  declare receivedBy: string;
+  @AllowNull(true)
+  @Column(DataType.TEXT)
+  declare site_address: string | null;
 
-  @Column({
-    type: DataType.TEXT,
-    allowNull: true,
-  })
-  declare notes: string;
+  // ============================================================
+  // STATUS
+  // ============================================================
+
+  @AllowNull(false)
+  @Default(DeliveryChallanStatus.DRAFT)
+  @Index
+  @Column(DataType.ENUM(...Object.values(DeliveryChallanStatus)))
+  declare status: CreationOptional<DeliveryChallanStatus>;
+
+  // ============================================================
+  // RECEIVING / VERIFICATION
+  // ============================================================
+
+  @AllowNull(false)
+  @Default(false)
+  @Column(DataType.BOOLEAN)
+  declare gate_pass_received: CreationOptional<boolean>;
+
+  @AllowNull(false)
+  @Default(false)
+  @Column(DataType.BOOLEAN)
+  declare material_checked: CreationOptional<boolean>;
+
+  // ============================================================
+  // REMARKS / DISCREPANCIES
+  // ============================================================
+
+  @AllowNull(true)
+  @Column(DataType.TEXT)
+  declare general_remarks: string | null;
+
+  @AllowNull(true)
+  @Column(DataType.TEXT)
+  declare discrepancy_notes: string | null;
+
+  // ============================================================
+  // DISPATCH INFORMATION
+  // ============================================================
+
+  @AllowNull(true)
+  @Index
+  @Column(DataType.UUID)
+  declare dispatched_by: string | null;
+
+  @AllowNull(true)
+  @Column(DataType.DATE)
+  declare dispatched_at: Date | null;
+
+  // ============================================================
+  // RECEIVING INFORMATION
+  // ============================================================
+
+  @AllowNull(true)
+  @Index
+  @Column(DataType.UUID)
+  declare received_by: string | null;
+
+  @AllowNull(true)
+  @Column(DataType.DATE)
+  declare received_at: Date | null;
+
+  // ============================================================
+  // ATTACHMENT
+  // ============================================================
+
+  @AllowNull(true)
+  @Column(DataType.TEXT)
+  declare attachment_url: string | null;
+
+  // ============================================================
+  // AUDIT
+  // ============================================================
+
+  @AllowNull(true)
+  @Index
+  @Column(DataType.UUID)
+  declare created_by: string | null;
+
+  // ============================================================
+  // RELATIONS
+  // ============================================================
 
   @HasMany(() => DeliveryChallanItem)
-  declare items: DeliveryChallanItem[];
+  declare items?: DeliveryChallanItem[];
 }

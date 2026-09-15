@@ -1,24 +1,64 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
-import { DeliveryChallanService } from '../services/delivery-challan.service';
-import { CreateDeliveryChallanDto } from '../dto/create-delivery-challan.dto';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
 
-/** 5. Staged deliveries — delivery challans tagged to a site stage. */
-@Controller('procurement/delivery-challans')
+import { DeliveryChallanService } from '../services/delivery-challan.service';
+
+import {
+  CreateDeliveryChallanDto,
+  UpdateDeliveryChallanDto,
+} from '../dto/delivery-challan.dto';
+
+@Controller('delivery-challans')
 export class DeliveryChallanController {
-  constructor(private readonly service: DeliveryChallanService) {}
+  constructor(
+    private readonly deliveryChallanService: DeliveryChallanService,
+  ) {}
 
   @Post()
-  create(@Body() dto: CreateDeliveryChallanDto) {
-    return this.service.create(dto);
+  create(
+    @Body()
+    dto: CreateDeliveryChallanDto,
+    @Req() req: any,
+  ) {
+    return this.deliveryChallanService.create(dto, req.user?.id);
   }
 
-  @Get('by-purchase-order/:purchaseOrderId')
-  findAllForPurchaseOrder(@Param('purchaseOrderId') purchaseOrderId: string) {
-    return this.service.findAllForPurchaseOrder(purchaseOrderId);
+  @Get()
+  findAll(
+    @Query('projectId') projectId?: string,
+    @Query('purchaseOrderId')
+    purchaseOrderId?: string,
+    @Query('vendorId') vendorId?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.deliveryChallanService.findAll({
+      projectId,
+      purchaseOrderId,
+      vendorId,
+      status,
+    });
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+    return this.deliveryChallanService.findOne(id);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateDeliveryChallanDto) {
+    return this.deliveryChallanService.update(id, dto);
+  }
+
+  @Post(':id/receive')
+  receive(@Param('id') id: string, @Req() req: any) {
+    return this.deliveryChallanService.receive(id, req.user?.id);
   }
 }

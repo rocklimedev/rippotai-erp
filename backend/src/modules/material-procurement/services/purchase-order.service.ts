@@ -1,166 +1,287 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { PurchaseOrder } from '../models/purchase-order.model';
-import { PurchaseOrderItem } from '../models/purchase-order-item.model';
-import { DeliveryChallan } from '../models/delivery-challan.model';
-import { MaterialQuotation } from '../models/material-quotation.model';
-import { MaterialEstimate } from '../models/material-estimate.model';
-import { CreatePurchaseOrderDto } from '../dto/create-purchase-order.dto';
-import { PurchaseOrderStatus } from '../../../common/enums/purchase-order-status.enum';
-import { QuotationStatus } from '../../../common/enums/quotation-status.enum';
-import { RequirementStatus } from '../../../common/enums/requirement-status.enum';
-import { MaterialQuotationService } from './material-quotation.service';
-import { MaterialRequirementService } from './material-requirement.service';
 
-/**
- * 4. Purchase orders — issued against approved (accepted) material
- * quotations, with line-item tracking of delivered vs. ordered quantity.
- */
+import { InjectModel } from '@nestjs/sequelize';
+
+import { PurchaseOrderItem } from '../models/purchase-order-item.model';
+import { MaterialMaster } from '../models/material-master.model';
+
+import {
+  CreatePurchaseOrderDto,
+  UpdatePurchaseOrderDto,
+} from '../dto/purchase-order.dto';
+import {
+  PurchaseOrder,
+  PurchaseOrderSourceType,
+  PurchaseOrderStatus,
+} from '../models/purchase-order.model';
 @Injectable()
 export class PurchaseOrderService {
   constructor(
     @InjectModel(PurchaseOrder)
-    private readonly model: typeof PurchaseOrder,
+    private readonly purchaseOrderModel: typeof PurchaseOrder,
+
     @InjectModel(PurchaseOrderItem)
-    private readonly itemModel: typeof PurchaseOrderItem,
-    private readonly quotationService: MaterialQuotationService,
-    private readonly requirementService: MaterialRequirementService,
+    private readonly purchaseOrderItemModel: typeof PurchaseOrderItem,
+
+    @InjectModel(MaterialMaster)
+    private readonly materialModel: typeof MaterialMaster,
   ) {}
 
-  async create(dto: CreatePurchaseOrderDto) {
-    const quotation = await this.quotationService.findOne(dto.quotationId);
-    if (quotation.status !== QuotationStatus.ACCEPTED) {
-      throw new BadRequestException(
-        'Purchase orders can only be issued against an accepted quotation',
-      );
-    }
-    if (!dto.items?.length) {
-      throw new BadRequestException('A purchase order needs at least one item');
-    }
-
-    const items = dto.items.map((item) => ({
-      materialRequirementId: item.materialRequirementId,
-      description: item.description,
-      unit: item.unit,
-      orderedQuantity: item.orderedQuantity,
-      deliveredQuantity: 0,
-      unitRate: item.unitRate,
-      lineTotal: Number((item.orderedQuantity * item.unitRate).toFixed(2)),
-    }));
-    const totalAmount = items.reduce((sum, i) => sum + Number(i.lineTotal), 0);
-
-    const po = await this.model.create(
-      {
-        quotationId: dto.quotationId,
-        poNumber: dto.poNumber,
-        vendorName: dto.vendorName,
-        orderDate: dto.orderDate,
-        expectedDeliveryDate: dto.expectedDeliveryDate,
-        status: PurchaseOrderStatus.OPEN,
-        totalAmount: Number(totalAmount.toFixed(2)),
-        items,
-      } as any,
-      { include: [PurchaseOrderItem] },
+  private calculateTotals(
+    items: CreatePurchaseOrderDto['items'],
+    discount = 0,
+    gstPercent = 0,
+    cartage = 0,
+  ) {
+    const subtotal = items.reduce(
+      (sum, item) => sum + Number(item.ordered_quantity) * Number(item.rate),
+      0,
     );
 
-    const estimate = quotation.estimate as MaterialEstimate | undefined;
-    if (estimate?.materialRequirementId) {
-      await this.requirementService.setStatus(
-        estimate.materialRequirementId,
-        RequirementStatus.ORDERED,
+    const taxableAmount = Math.max(subtotal - Number(discount || 0), 0);
+
+    const gstAmount = taxableAmount * (Number(gstPercent || 0) / 100);
+
+    const totalAmount = taxableAmount + gstAmount + Number(cartage || 0);
+
+    return {
+      subtotal,
+      discount: Number(discount || 0),
+      gst_percent: Number(gstPercent || 0),
+      gst_amount: gstAmount,
+      cartage: Number(cartage || 0),
+      total_amount: totalAmount,
+    };
+  }
+
+  async create(dto: CreatePurchaseOrderDto, userId?: string) {
+    if (!dto.items?.length) {
+      throw new BadRequestException(
+        'Purchase order must contain at least one item',
       );
     }
 
-    return po;
+    for (const item of dto.items) {
+      const material = await this.materialModel.findByPk(item.material_id);
+
+      if (!material) {
+        throw new NotFoundException(`Material ${item.material_id} not found`);
+      }
+
+      if (!material.is_active) {
+        throw new BadRequestException(`Material ${material.name} is inactive`);
+      }
+    }
+
+    const poNumber = await this.generatePoNumber();
+
+    const totals = this.calculateTotals(
+      dto.items,
+      dto.discount,
+      dto.gst_percent,
+      dto.cartage,
+    );
+
+    const po = await this.purchaseOrderModel.create({
+      po_number: poNumber,
+
+      project_id: dto.project_id,
+      site_id: dto.site_id ?? null,
+      vendor_id: dto.vendor_id ?? null,
+
+      po_date: dto.po_date,
+      target_delivery_date: dto.target_delivery_date ?? null,
+
+      agency_name: dto.agency_name ?? null,
+      contact_person: dto.contact_person ?? null,
+      phone: dto.phone ?? null,
+      email: dto.email ?? null,
+
+      vendor_gstin: dto.vendor_gstin ?? null,
+      vendor_pan: dto.vendor_pan ?? null,
+
+      ship_to_address: dto.ship_to_address ?? null,
+
+      source_type: dto.source_type ?? PurchaseOrderSourceType.MANUAL,
+      source_reference_id: dto.source_reference_id ?? null,
+
+      notes: dto.notes ?? null,
+
+      terms_and_conditions: dto.terms_and_conditions ?? null,
+
+      ...totals,
+
+      created_by: userId ?? null,
+    });
+
+    const itemRows = dto.items.map((item, index) => ({
+      purchase_order_id: po.id,
+      material_id: item.material_id,
+
+      line_number: index + 1,
+
+      description: item.description ?? `Material ${item.material_id}`,
+
+      specification: item.specification ?? null,
+
+      brand: item.brand ?? null,
+
+      unit: item.unit ?? 'Nos',
+
+      ordered_quantity: item.ordered_quantity,
+
+      rate: item.rate,
+
+      amount: Number(item.ordered_quantity) * Number(item.rate),
+
+      received_quantity: 0,
+
+      pending_quantity: item.ordered_quantity,
+
+      remarks: item.remarks ?? null,
+
+      source_reference_id: item.source_reference_id ?? null,
+    }));
+
+    await this.purchaseOrderItemModel.bulkCreate(itemRows);
+
+    return this.findOne(po.id);
   }
 
-  findAll() {
-    return this.model.findAll({
-      include: [PurchaseOrderItem],
-      order: [['createdAt', 'DESC']],
+  async findAll(params?: {
+    projectId?: string;
+    vendorId?: string;
+    status?: string;
+  }) {
+    const where: any = {};
+
+    if (params?.projectId) {
+      where.project_id = params.projectId;
+    }
+
+    if (params?.vendorId) {
+      where.vendor_id = params.vendorId;
+    }
+
+    if (params?.status) {
+      where.status = params.status;
+    }
+
+    return this.purchaseOrderModel.findAll({
+      where,
+      include: [
+        {
+          model: PurchaseOrderItem,
+          include: [MaterialMaster],
+        },
+      ],
+      order: [['po_date', 'DESC']],
     });
   }
 
   async findOne(id: string) {
-    const po = await this.model.findByPk(id, {
+    const po = await this.purchaseOrderModel.findByPk(id, {
       include: [
-        PurchaseOrderItem,
-        { model: DeliveryChallan, include: [] },
         {
-          model: MaterialQuotation,
-          include: [MaterialEstimate],
+          model: PurchaseOrderItem,
+          include: [MaterialMaster],
         },
       ],
     });
-    if (!po) throw new NotFoundException(`Purchase order ${id} not found`);
+
+    if (!po) {
+      throw new NotFoundException('Purchase order not found');
+    }
+
     return po;
   }
 
-  async findItem(itemId: string) {
-    const item = await this.itemModel.findByPk(itemId, {
-      include: [PurchaseOrder],
-    });
-    if (!item) throw new NotFoundException(`PO item ${itemId} not found`);
-    return item;
-  }
+  async update(id: string, dto: UpdatePurchaseOrderDto) {
+    const po = await this.findOne(id);
 
-  /**
-   * Applies a delivered quantity to a line item (called from
-   * DeliveryChallanService) and recomputes the parent PO's status
-   * from the aggregate of ordered vs. delivered quantities.
-   */
-  async applyDelivery(itemId: string, deliveredQty: number) {
-    const item = await this.findItem(itemId);
-    const remaining =
-      Number(item.orderedQuantity) - Number(item.deliveredQuantity);
-    if (deliveredQty > remaining) {
+    if (
+      ['PARTIALLY_RECEIVED', 'RECEIVED', 'CLOSED', 'CANCELLED'].includes(
+        po.status,
+      )
+    ) {
       throw new BadRequestException(
-        `Delivered quantity (${deliveredQty}) exceeds remaining ordered quantity (${remaining}) for item ${itemId}`,
+        `Purchase order cannot be edited in ${po.status} status`,
       );
     }
-    await item.update({
-      deliveredQuantity: Number(item.deliveredQuantity) + deliveredQty,
-    });
-    await this.recomputeStatus(item.purchaseOrderId);
-    return item;
+
+    await po.update(dto);
+
+    return this.findOne(id);
   }
 
-  private async recomputeStatus(purchaseOrderId: string) {
-    const po = await this.model.findByPk(purchaseOrderId, {
-      include: [PurchaseOrderItem],
+  async approve(id: string, userId?: string) {
+    const po = await this.findOne(id);
+
+    if (po.status !== PurchaseOrderStatus.DRAFT) {
+      throw new BadRequestException(
+        'Only draft purchase orders can be approved',
+      );
+    }
+
+    await po.update({
+      status: PurchaseOrderStatus.APPROVED,
+      approved_by: userId ?? null,
+      approved_at: new Date(),
     });
-    if (!po) return;
 
-    const fullyDelivered = po.items.every(
-      (i) => Number(i.deliveredQuantity) >= Number(i.orderedQuantity),
-    );
-    const anyDelivered = po.items.some((i) => Number(i.deliveredQuantity) > 0);
-
-    const status = fullyDelivered
-      ? PurchaseOrderStatus.FULLY_DELIVERED
-      : anyDelivered
-        ? PurchaseOrderStatus.PARTIALLY_DELIVERED
-        : PurchaseOrderStatus.OPEN;
-
-    await po.update({ status });
+    return this.findOne(id);
   }
 
   async cancel(id: string) {
     const po = await this.findOne(id);
-    if (po.status === PurchaseOrderStatus.FULLY_DELIVERED) {
+
+    if (
+      [PurchaseOrderStatus.RECEIVED, PurchaseOrderStatus.CLOSED].includes(
+        po.status,
+      )
+    ) {
       throw new BadRequestException(
-        'Cannot cancel a fully delivered purchase order',
+        'Received/closed purchase order cannot be cancelled',
       );
     }
-    return po.update({ status: PurchaseOrderStatus.CANCELLED });
-  }
 
-  async close(id: string) {
-    const po = await this.findOne(id);
-    return po.update({ status: PurchaseOrderStatus.CLOSED });
+    await po.update({
+      status: PurchaseOrderStatus.CANCELLED,
+    });
+
+    return po;
+  }
+  private async generatePoNumber(): Promise<string> {
+    const year = new Date().getFullYear();
+
+    const prefix = `PO-${year}-`;
+
+    const last = await this.purchaseOrderModel.findOne({
+      where: {
+        po_number: {
+          // Sequelize operator intentionally kept local
+          // to avoid coupling DTOs to Sequelize.
+          // @ts-ignore
+          [require('sequelize').Op.like]: `${prefix}%`,
+        },
+      },
+      order: [['created_at', 'DESC']],
+    });
+
+    let sequence = 1;
+
+    if (last?.po_number) {
+      const match = last.po_number.match(/-(\d+)$/);
+
+      if (match) {
+        sequence = Number(match[1]) + 1;
+      }
+    }
+
+    return `${prefix}${String(sequence).padStart(4, '0')}`;
   }
 }

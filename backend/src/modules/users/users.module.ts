@@ -1,19 +1,52 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 
-// Models
+// ============================================================
+// USER MODELS
+// ============================================================
+
 import { User } from './models/user.model';
 import { UserSignature } from './models/user-signature.model';
 
-// Services
+// ============================================================
+// TEAM MODELS
+// ============================================================
+
+import { Team } from './models/team.model';
+import { TeamMember } from './models/team-member.model';
+import { TeamSection } from './models/team-sections.model';
+import { TeamSectionAccess } from './models/team-section-access.model';
+
+// ============================================================
+// USER SERVICES
+// ============================================================
+
 import { UsersService } from './users.service';
 import { UserSignaturesService } from './user-signature.service';
 
-// Controllers
+// ============================================================
+// TEAM SERVICE
+// ============================================================
+
+import { TeamService } from './team.service';
+
+// ============================================================
+// USER CONTROLLERS
+// ============================================================
+
 import { UsersController } from './users.controller';
 import { UserSignatureController } from './user-signature.controller';
 
-// Modules
+// ============================================================
+// TEAM CONTROLLER
+// ============================================================
+
+import { TeamController } from './team.controller';
+
+// ============================================================
+// MODULES
+// ============================================================
+
 import { CdnModule } from '../cdn/cdn.module';
 import { NotificationsModule } from '../engagement/notifications.module';
 import { ActivityLogsModule } from '../engagement/activity-logs.module';
@@ -21,14 +54,60 @@ import { RolesModule } from '../rbac/rbac.module';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([User, UserSignature]),
+    // ==========================================================
+    // SEQUELIZE MODELS
+    // ==========================================================
+
+    SequelizeModule.forFeature([
+      // Users
+      User,
+      UserSignature,
+
+      // Teams
+      Team,
+      TeamMember,
+      TeamSection,
+      TeamSectionAccess,
+    ]),
+
+    // ==========================================================
+    // DEPENDENCY MODULES
+    // ==========================================================
+
     CdnModule,
     RolesModule,
     NotificationsModule,
     ActivityLogsModule,
   ],
-  controllers: [UsersController, UserSignatureController],
-  providers: [UsersService, UserSignaturesService],
-  exports: [UsersService],
+
+  // ============================================================
+  // CONTROLLERS
+  // ============================================================
+
+  controllers: [
+    UsersController,
+    UserSignatureController,
+
+    // Team Management
+    TeamController,
+  ],
+
+  // ============================================================
+  // SERVICES
+  // ============================================================
+
+  providers: [
+    UsersService,
+    UserSignaturesService,
+
+    // Team Management
+    TeamService,
+  ],
+
+  // ============================================================
+  // EXPORTS
+  // ============================================================
+
+  exports: [UsersService, TeamService],
 })
 export class UsersModule {}

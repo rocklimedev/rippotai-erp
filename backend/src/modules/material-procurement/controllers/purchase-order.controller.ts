@@ -1,34 +1,60 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
-import { PurchaseOrderService } from '../services/purchase-order.service';
-import { CreatePurchaseOrderDto } from '../dto/create-purchase-order.dto';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
 
-/** 4. Purchase orders — issued against accepted quotations. */
-@Controller('procurement/purchase-orders')
+import { PurchaseOrderService } from '../services/purchase-order.service';
+
+import {
+  CreatePurchaseOrderDto,
+  UpdatePurchaseOrderDto,
+} from '../dto/purchase-order.dto';
+
+@Controller('purchase-orders')
 export class PurchaseOrderController {
-  constructor(private readonly service: PurchaseOrderService) {}
+  constructor(private readonly purchaseOrderService: PurchaseOrderService) {}
 
   @Post()
-  create(@Body() dto: CreatePurchaseOrderDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CreatePurchaseOrderDto, @Req() req: any) {
+    return this.purchaseOrderService.create(dto, req.user?.id);
   }
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  findAll(
+    @Query('projectId') projectId?: string,
+    @Query('vendorId') vendorId?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.purchaseOrderService.findAll({
+      projectId,
+      vendorId,
+      status,
+    });
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+    return this.purchaseOrderService.findOne(id);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdatePurchaseOrderDto) {
+    return this.purchaseOrderService.update(id, dto);
+  }
+
+  @Post(':id/approve')
+  approve(@Param('id') id: string, @Req() req: any) {
+    return this.purchaseOrderService.approve(id, req.user?.id);
   }
 
   @Post(':id/cancel')
   cancel(@Param('id') id: string) {
-    return this.service.cancel(id);
-  }
-
-  @Post(':id/close')
-  close(@Param('id') id: string) {
-    return this.service.close(id);
+    return this.purchaseOrderService.cancel(id);
   }
 }
