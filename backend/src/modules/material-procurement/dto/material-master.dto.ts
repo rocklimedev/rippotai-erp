@@ -1,10 +1,12 @@
 import {
   IsBoolean,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
   MaxLength,
+  Min,
 } from 'class-validator';
 
 export class CreateMaterialMasterDto {
@@ -45,14 +47,6 @@ export class CreateMaterialMasterDto {
   @MaxLength(150)
   brand?: string;
 
-  // ============================================================
-  // VENDOR
-  // ============================================================
-
-  @IsOptional()
-  @IsUUID()
-  vendor_id?: string | null;
-
   @IsOptional()
   @IsString()
   @MaxLength(150)
@@ -63,12 +57,29 @@ export class CreateMaterialMasterDto {
   specification?: string;
 
   // ============================================================
+  // VENDOR
+  // ============================================================
+
+  @IsOptional()
+  @IsUUID()
+  vendor_id?: string | null;
+
+  // ============================================================
   // UNIT
   // ============================================================
 
   @IsUUID()
   @IsNotEmpty()
   unit_id: string;
+
+  // ============================================================
+  // PRICE
+  // ============================================================
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  price?: number | null;
 
   // ============================================================
   // TAX
@@ -138,14 +149,6 @@ export class UpdateMaterialMasterDto {
   @MaxLength(150)
   brand?: string;
 
-  // ============================================================
-  // VENDOR
-  // ============================================================
-
-  @IsOptional()
-  @IsUUID()
-  vendor_id?: string | null;
-
   @IsOptional()
   @IsString()
   @MaxLength(150)
@@ -156,12 +159,29 @@ export class UpdateMaterialMasterDto {
   specification?: string;
 
   // ============================================================
+  // VENDOR
+  // ============================================================
+
+  @IsOptional()
+  @IsUUID()
+  vendor_id?: string | null;
+
+  // ============================================================
   // UNIT
   // ============================================================
 
   @IsOptional()
   @IsUUID()
   unit_id?: string;
+
+  // ============================================================
+  // PRICE
+  // ============================================================
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  price?: number | null;
 
   // ============================================================
   // TAX

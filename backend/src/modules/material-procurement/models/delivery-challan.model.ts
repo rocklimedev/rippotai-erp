@@ -9,6 +9,8 @@ import {
   Unique,
   Index,
   HasMany,
+  CreatedAt,
+  UpdatedAt,
 } from 'sequelize-typescript';
 
 import type {
@@ -30,6 +32,13 @@ export enum DeliveryChallanStatus {
 
 @Table({
   tableName: 'delivery_challans',
+
+  // IMPORTANT:
+  // The database uses:
+  // createdAt
+  // updatedAt
+  //
+  // We explicitly declare and map these fields below.
   timestamps: true,
 })
 export class DeliveryChallan extends Model<
@@ -173,6 +182,37 @@ export class DeliveryChallan extends Model<
   @Index
   @Column(DataType.UUID)
   declare created_by: string | null;
+
+  // ============================================================
+  // TIMESTAMPS
+  // ============================================================
+  //
+  // DATABASE COLUMNS:
+  //
+  // createdAt
+  // updatedAt
+  //
+  // Explicit field mapping prevents Sequelize's global
+  // underscored configuration from converting them to:
+  //
+  // created_at
+  // updated_at
+  //
+  // ============================================================
+
+  @CreatedAt
+  @Column({
+    field: 'createdAt',
+    type: DataType.DATE,
+  })
+  declare createdAt: CreationOptional<Date>;
+
+  @UpdatedAt
+  @Column({
+    field: 'updatedAt',
+    type: DataType.DATE,
+  })
+  declare updatedAt: CreationOptional<Date>;
 
   // ============================================================
   // RELATIONS

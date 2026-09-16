@@ -6,8 +6,8 @@ import {
 
 import { InjectConnection, InjectModel } from '@nestjs/sequelize';
 
+import { Op } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
-
 import {
   DeliveryChallan,
   DeliveryChallanStatus,
@@ -798,7 +798,7 @@ export class DeliveryChallanService {
   // GENERATE CHALLAN NUMBER
   // ============================================================
 
-  private async generateChallanNumber() {
+  private async generateChallanNumber(): Promise<string> {
     const year = new Date().getFullYear();
 
     const prefix = `DC-${year}-`;
@@ -806,12 +806,13 @@ export class DeliveryChallanService {
     const last = await this.challanModel.findOne({
       where: {
         challan_number: {
-          // @ts-ignore
-          [require('sequelize').Op.like]: `${prefix}%`,
+          [Op.like]: `${prefix}%`,
         },
       },
 
-      order: [['created_at', 'DESC']],
+      // IMPORTANT:
+      // Database column is `createdAt`, NOT `created_at`.
+      order: [['createdAt', 'DESC']],
     });
 
     let sequence = 1;
