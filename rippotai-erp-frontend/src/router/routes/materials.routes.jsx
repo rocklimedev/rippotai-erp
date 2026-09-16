@@ -26,6 +26,7 @@ import CreatePurchaseOrderPage from "../../pages/materials/CreatePurchaseOrderPa
 import PurchaseOrderView from "../../pages/materials/PurchaseOrderView";
 import CreateDeliveryChallanPage from "../../pages/materials/CreateDeliveryChallanPage";
 import DeliveryChallanView from "../../pages/materials/DeliveryChallanView";
+import BoqVendorRateComparison from "../../pages/boq/BoqVendorRateComparison";
 
 export const materialsRoutes = [
   {
@@ -100,7 +101,10 @@ export const materialsRoutes = [
         path: "estimates",
         element: <MaterialEstimateList />,
       },
-
+      {
+        path: "vendors/rate-comparison",
+        element: <BoqVendorRateComparison />,
+      },
       // ------------------------------------------------------------
       // Material Quotations
       // ------------------------------------------------------------

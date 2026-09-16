@@ -35,6 +35,7 @@ import { DeliveryChallanController } from './controllers/delivery-challan.contro
 import { MaterialMasterController } from './controllers/material-master.controller';
 import { Vendor } from '../vendors/models/vendors.model';
 import { Unit } from '../metas/models/unit.model';
+import { MaterialVendor } from './models/material-vendor.model';
 
 /**
  * Material & Procurement module — Sequelize (MySQL) edition.
@@ -69,6 +70,7 @@ import { Unit } from '../metas/models/unit.model';
       MaterialMaster,
       Vendor,
       Unit,
+      MaterialVendor,
       // Inventory
       InventoryTransaction,
     ]),
