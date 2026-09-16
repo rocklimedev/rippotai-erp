@@ -270,6 +270,7 @@ export const APP_MENUS = {
       items: [
         I("All Vendors", "vendors/directory"),
         I("Add Vendor", "vendors/new"),
+        I("Rate Comparison", "vendors/rate-comparison"),
       ],
     },
     {

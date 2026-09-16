@@ -6,15 +6,14 @@ import {
   PrimaryKey,
   Default,
   AllowNull,
-  Unique,
   Index,
+  Unique,
   ForeignKey,
   BelongsTo,
-  HasMany,
 } from 'sequelize-typescript';
 
-import { Unit } from '@/modules/metas/models/unit.model';
-import { MaterialVendor } from './material-vendor.model';
+import { MaterialMaster } from './material-master.model';
+import { Vendor } from '@/modules/vendors/models/vendors.model';
 
 import type {
   CreationOptional,
@@ -23,12 +22,12 @@ import type {
 } from 'sequelize';
 
 @Table({
-  tableName: 'material_masters',
+  tableName: 'material_vendors',
   timestamps: true,
 })
-export class MaterialMaster extends Model<
-  InferAttributes<MaterialMaster>,
-  InferCreationAttributes<MaterialMaster>
+export class MaterialVendor extends Model<
+  InferAttributes<MaterialVendor>,
+  InferCreationAttributes<MaterialVendor>
 > {
   // ============================================================
   // PRIMARY KEY
@@ -40,84 +39,79 @@ export class MaterialMaster extends Model<
   declare id: CreationOptional<string>;
 
   // ============================================================
-  // MATERIAL IDENTIFICATION
+  // MATERIAL
   // ============================================================
 
-  @AllowNull(false)
-  @Unique
-  @Index
-  @Column(DataType.STRING(50))
-  declare material_code: string;
-
-  @AllowNull(false)
-  @Index
-  @Column(DataType.STRING(255))
-  declare name: string;
-
-  // ============================================================
-  // CLASSIFICATION
-  // ============================================================
-
-  @AllowNull(true)
-  @Index
-  @Column(DataType.STRING(100))
-  declare category: string | null;
-
-  @AllowNull(true)
-  @Column(DataType.STRING(100))
-  declare sub_category: string | null;
-
-  // ============================================================
-  // BRAND / PRODUCT INFORMATION
-  // ============================================================
-
-  @AllowNull(true)
-  @Index
-  @Column(DataType.STRING(150))
-  declare brand: string | null;
-
-  @AllowNull(true)
-  @Column(DataType.STRING(150))
-  declare model: string | null;
-
-  @AllowNull(true)
-  @Column(DataType.TEXT)
-  declare specification: string | null;
-
-  // ============================================================
-  // UNIT
-  // ============================================================
-
-  @ForeignKey(() => Unit)
+  @ForeignKey(() => MaterialMaster)
   @AllowNull(false)
   @Index
   @Column({
     type: DataType.CHAR(36),
     allowNull: false,
   })
-  declare unit_id: string;
+  declare material_id: string;
 
-  @BelongsTo(() => Unit, {
-    foreignKey: 'unit_id',
-    as: 'unit',
+  @BelongsTo(() => MaterialMaster, {
+    foreignKey: 'material_id',
+    as: 'material',
   })
-  declare unit?: Unit;
+  declare material?: MaterialMaster;
 
   // ============================================================
-  // TAX
+  // VENDOR
+  // ============================================================
+
+  @ForeignKey(() => Vendor)
+  @AllowNull(false)
+  @Index
+  @Column({
+    type: DataType.CHAR(36),
+    allowNull: false,
+  })
+  declare vendor_id: string;
+
+  @BelongsTo(() => Vendor, {
+    foreignKey: 'vendor_id',
+    as: 'vendor',
+  })
+  declare vendor?: Vendor;
+
+  // ============================================================
+  // VENDOR-SPECIFIC PRODUCT CODE
   // ============================================================
 
   @AllowNull(true)
-  @Column(DataType.STRING(30))
-  declare hsn_code: string | null;
+  @Column(DataType.STRING(100))
+  declare vendor_material_code: string | null;
 
   // ============================================================
-  // DESCRIPTION
+  // PRICE
   // ============================================================
 
   @AllowNull(true)
-  @Column(DataType.TEXT)
-  declare description: string | null;
+  @Column(DataType.DECIMAL(15, 2))
+  declare price: number | null;
+
+  // ============================================================
+  // OPTIONAL COMMERCIAL INFORMATION
+  // ============================================================
+
+  @AllowNull(true)
+  @Column(DataType.DECIMAL(5, 2))
+  declare discount_percent: number | null;
+
+  @AllowNull(true)
+  @Column(DataType.INTEGER)
+  declare lead_time_days: number | null;
+
+  // ============================================================
+  // PREFERRED VENDOR
+  // ============================================================
+
+  @AllowNull(false)
+  @Default(false)
+  @Column(DataType.BOOLEAN)
+  declare is_preferred: CreationOptional<boolean>;
 
   // ============================================================
   // STATUS
@@ -139,14 +133,4 @@ export class MaterialMaster extends Model<
   @AllowNull(true)
   @Column(DataType.UUID)
   declare updated_by: string | null;
-
-  // ============================================================
-  // VENDORS
-  // ============================================================
-
-  @HasMany(() => MaterialVendor, {
-    foreignKey: 'material_id',
-    as: 'vendors',
-  })
-  declare vendors?: MaterialVendor[];
 }
