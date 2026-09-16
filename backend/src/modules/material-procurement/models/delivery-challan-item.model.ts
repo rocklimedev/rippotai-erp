@@ -9,6 +9,8 @@ import {
   Index,
   BelongsTo,
   ForeignKey,
+  CreatedAt,
+  UpdatedAt,
 } from 'sequelize-typescript';
 
 import type {
@@ -31,6 +33,8 @@ export enum MaterialConditionStatus {
 
 @Table({
   tableName: 'delivery_challan_items',
+
+  // Timestamps are explicitly mapped below.
   timestamps: true,
 })
 export class DeliveryChallanItem extends Model<
@@ -115,22 +119,6 @@ export class DeliveryChallanItem extends Model<
   declare specification: string | null;
 
   // ============================================================
-  // IMPORTANT
-  // ============================================================
-  //
-  // DO NOT store unit here.
-  //
-  // Unit is derived through:
-  //
-  // delivery_challan_item.material_id
-  //             ↓
-  // material_masters.unit_id
-  //             ↓
-  // units.id
-  //
-  // ============================================================
-
-  // ============================================================
   // QUANTITIES
   // ============================================================
 
@@ -186,4 +174,35 @@ export class DeliveryChallanItem extends Model<
   @AllowNull(true)
   @Column(DataType.TEXT)
   declare remarks: string | null;
+
+  // ============================================================
+  // TIMESTAMPS
+  // ============================================================
+  //
+  // DATABASE COLUMNS:
+  //
+  // createdAt
+  // updatedAt
+  //
+  // Explicit field mapping prevents the global Sequelize
+  // `underscored: true` configuration from generating:
+  //
+  // created_at
+  // updated_at
+  //
+  // ============================================================
+
+  @CreatedAt
+  @Column({
+    field: 'createdAt',
+    type: DataType.DATE,
+  })
+  declare createdAt: CreationOptional<Date>;
+
+  @UpdatedAt
+  @Column({
+    field: 'updatedAt',
+    type: DataType.DATE,
+  })
+  declare updatedAt: CreationOptional<Date>;
 }

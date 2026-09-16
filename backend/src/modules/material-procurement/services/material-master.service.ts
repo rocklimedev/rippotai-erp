@@ -61,6 +61,12 @@ export class MaterialMasterService {
     await this.validateUnit(dto.unit_id);
 
     // ----------------------------------------------------------
+    // Validate price
+    // ----------------------------------------------------------
+
+    this.validatePrice(dto.price);
+
+    // ----------------------------------------------------------
     // Create material
     // ----------------------------------------------------------
 
@@ -248,6 +254,14 @@ export class MaterialMasterService {
     }
 
     // ----------------------------------------------------------
+    // Validate price if being changed
+    // ----------------------------------------------------------
+
+    if (dto.price !== undefined) {
+      this.validatePrice(dto.price);
+    }
+
+    // ----------------------------------------------------------
     // Update material
     // ----------------------------------------------------------
 
@@ -318,6 +332,30 @@ export class MaterialMasterService {
 
     if (!unit.is_active) {
       throw new ConflictException('Unit is inactive');
+    }
+  }
+
+  // ============================================================
+  // VALIDATE PRICE
+  // ============================================================
+
+  private validatePrice(price: number | null | undefined): void {
+    // Price is optional
+    if (price === null || price === undefined) {
+      return;
+    }
+
+    if (typeof price !== 'number' || Number.isNaN(price)) {
+      throw new ConflictException('Price must be a valid number');
+    }
+
+    if (price < 0) {
+      throw new ConflictException('Price cannot be negative');
+    }
+
+    // Maximum supported by DECIMAL(15,2)
+    if (price > 9999999999999.99) {
+      throw new ConflictException('Price exceeds the maximum allowed value');
     }
   }
 }

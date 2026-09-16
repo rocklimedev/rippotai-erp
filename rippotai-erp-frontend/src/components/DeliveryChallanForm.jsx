@@ -1,5 +1,3 @@
-// src/components/materials/DeliveryChallanForm.jsx
-
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -24,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+
 import {
   Card,
   CardContent,
@@ -31,6 +30,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
 import {
   Select,
   SelectContent,
@@ -38,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import {
   Table,
   TableBody,
@@ -46,6 +47,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import {
   Command,
   CommandEmpty,
@@ -54,41 +56,53 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import {
   useCreateDeliveryChallanMutation,
   useUpdateDeliveryChallanMutation,
-} from "../../api/procuerment/delivery-challan.api";
+} from "../api/procuerment/delivery-challan.api";
 
 /* ------------------------------------------------------------------
- * Brand — centralised until these live in the tailwind theme.
+ * Brand
  * ------------------------------------------------------------------ */
+
 const BRAND = "bg-[#1F453B] hover:bg-[#17372f] text-white";
 const BRAND_TEXT = "text-[#1F453B]";
 const BRAND_SOFT = "bg-[#D8E0DA] text-[#1F453B]";
 const NONE = "__none__";
 
+/* ------------------------------------------------------------------
+ * Empty structures
+ * ------------------------------------------------------------------ */
+
 const EMPTY_ITEM = {
   material_id: "",
   purchase_order_item_id: "",
+
   quantity: "",
   accepted_quantity: "",
   shortage_quantity: "",
   damaged_quantity: "",
   rejected_quantity: "",
+
   condition_status: "GOOD",
   condition_notes: "",
+
   stored_at: "",
+
   description: "",
   brand: "",
   specification: "",
   unit: "",
+
   remarks: "",
 };
 
@@ -97,13 +111,18 @@ const EMPTY_FORM = {
   site_id: "",
   purchase_order_id: "",
   vendor_id: "",
+
   challan_date: new Date().toISOString().split("T")[0],
+
   site_address: "",
+
   gate_pass_received: false,
   material_checked: false,
+
   general_remarks: "",
   discrepancy_notes: "",
   attachment_url: "",
+
   items: [{ ...EMPTY_ITEM }],
 };
 
@@ -115,82 +134,119 @@ const CONDITION_OPTIONS = [
   { value: "REJECTED", label: "Rejected" },
 ];
 
-const CONDITION_VARIANT = {
-  GOOD: "default",
-  DAMAGED: "destructive",
-  SHORT: "outline",
-  DAMAGED_AND_SHORT: "destructive",
-  REJECTED: "destructive",
-};
-
 function normalizeNumber(value) {
   if (value === "" || value === null || value === undefined) return 0;
+
   const number = Number(value);
+
   return Number.isFinite(number) ? number : 0;
 }
+
+function toStringValue(value) {
+  if (value === null || value === undefined) return "";
+  return String(value);
+}
+
+function getId(item) {
+  return item?.id ?? "";
+}
+
+/* ------------------------------------------------------------------
+ * Existing challan mapping
+ * ------------------------------------------------------------------ */
 
 function mapExistingItem(item) {
   return {
     material_id: item?.material_id || item?.materialId || "",
+
     purchase_order_item_id:
       item?.purchase_order_item_id || item?.purchaseOrderItemId || "",
+
     quantity:
       item?.quantity !== undefined && item?.quantity !== null
         ? String(item.quantity)
         : "",
+
     accepted_quantity:
       item?.accepted_quantity !== undefined && item?.accepted_quantity !== null
         ? String(item.accepted_quantity)
         : "",
+
     shortage_quantity:
       item?.shortage_quantity !== undefined && item?.shortage_quantity !== null
         ? String(item.shortage_quantity)
         : "",
+
     damaged_quantity:
       item?.damaged_quantity !== undefined && item?.damaged_quantity !== null
         ? String(item.damaged_quantity)
         : "",
+
     rejected_quantity:
       item?.rejected_quantity !== undefined && item?.rejected_quantity !== null
         ? String(item.rejected_quantity)
         : "",
+
     condition_status: item?.condition_status || "GOOD",
+
     condition_notes: item?.condition_notes || "",
+
     stored_at: item?.stored_at || "",
+
     description: item?.description || "",
+
     brand: item?.brand || "",
+
     specification: item?.specification || "",
+
     unit: item?.unit || "",
+
     remarks: item?.remarks || "",
   };
 }
 
 function buildInitialForm(initialData) {
-  if (!initialData) return EMPTY_FORM;
+  if (!initialData) {
+    return {
+      ...EMPTY_FORM,
+      items: [{ ...EMPTY_ITEM }],
+    };
+  }
 
   return {
     project_id: initialData.project_id || initialData.projectId || "",
+
     site_id: initialData.site_id || initialData.siteId || "",
+
     purchase_order_id:
       initialData.purchase_order_id || initialData.purchaseOrderId || "",
+
     vendor_id: initialData.vendor_id || initialData.vendorId || "",
+
     challan_date:
       initialData.challan_date ||
       initialData.challanDate ||
       new Date().toISOString().split("T")[0],
+
     site_address: initialData.site_address || initialData.siteAddress || "",
+
     gate_pass_received: Boolean(
       initialData.gate_pass_received ?? initialData.gatePassReceived ?? false,
     ),
+
     material_checked: Boolean(
       initialData.material_checked ?? initialData.materialChecked ?? false,
     ),
+
     general_remarks:
       initialData.general_remarks || initialData.generalRemarks || "",
+
     discrepancy_notes:
       initialData.discrepancy_notes || initialData.discrepancyNotes || "",
+
     attachment_url:
       initialData.attachment_url || initialData.attachmentUrl || "",
+
     items:
       Array.isArray(initialData.items) && initialData.items.length > 0
         ? initialData.items.map(mapExistingItem)
@@ -198,15 +254,90 @@ function buildInitialForm(initialData) {
   };
 }
 
-const getId = (item) => item?.id ?? "";
+/* ------------------------------------------------------------------
+ * PO item → Delivery Challan item
+ *
+ * IMPORTANT:
+ * Your PO response looks like:
+ *
+ * {
+ *   ordered_quantity: "1.000",
+ *   pending_quantity: "1.000",
+ *   material: {...}
+ * }
+ *
+ * Therefore pending_quantity becomes the default quantity
+ * to receive.
+ * ------------------------------------------------------------------ */
+
+function mapPurchaseOrderItem(item) {
+  const material = item?.material || {};
+
+  const pendingQuantity =
+    item?.pending_quantity !== undefined && item?.pending_quantity !== null
+      ? normalizeNumber(item.pending_quantity)
+      : normalizeNumber(item?.ordered_quantity);
+
+  const materialId =
+    item?.material_id || item?.materialId || material?.id || "";
+
+  return {
+    ...EMPTY_ITEM,
+
+    material_id: materialId,
+
+    purchase_order_item_id: item?.id || "",
+
+    /*
+     * Default received quantity to PO pending quantity.
+     *
+     * Example:
+     * ordered_quantity = 1
+     * received_quantity = 0
+     * pending_quantity = 1
+     *
+     * → quantity = 1
+     */
+    quantity: pendingQuantity > 0 ? pendingQuantity.toFixed(3) : "",
+
+    /*
+     * Do NOT mark it accepted automatically.
+     * User confirms acceptance after physical inspection.
+     */
+    accepted_quantity: "",
+
+    shortage_quantity: "",
+
+    damaged_quantity: "",
+
+    rejected_quantity: "",
+
+    condition_status: "GOOD",
+
+    condition_notes: "",
+
+    stored_at: "",
+
+    description:
+      item?.description || material?.description || material?.name || "",
+
+    brand: item?.brand || material?.brand || "",
+
+    specification: item?.specification || material?.specification || "",
+
+    unit: item?.unit || material?.unit || "",
+
+    remarks: "",
+  };
+}
 
 /* ------------------------------------------------------------------
- * Small building blocks — module scope so they don't remount on
- * every keystroke.
+ * UI helpers
  * ------------------------------------------------------------------ */
 
 function FieldError({ message }) {
   if (!message) return null;
+
   return <p className="mt-1.5 text-xs text-destructive">{message}</p>;
 }
 
@@ -219,10 +350,13 @@ function Field({ label, htmlFor, required, error, className, children }) {
           className="text-xs font-medium text-muted-foreground"
         >
           {label}
+
           {required && <span className="ml-0.5 text-destructive">*</span>}
         </Label>
       )}
+
       {children}
+
       <FieldError message={error} />
     </div>
   );
@@ -235,19 +369,25 @@ function SectionHeader({ icon: Icon, title, description, action }) {
         {Icon && (
           <Icon className={cn("mt-0.5 h-[18px] w-[18px]", BRAND_TEXT)} />
         )}
+
         <div className="space-y-0.5">
           <CardTitle className="text-base">{title}</CardTitle>
+
           {description && (
             <CardDescription className="text-xs">{description}</CardDescription>
           )}
         </div>
       </div>
+
       {action}
     </CardHeader>
   );
 }
 
-/** Searchable single-select for long lookup lists (materials, POs...). */
+/* ------------------------------------------------------------------
+ * Combobox
+ * ------------------------------------------------------------------ */
+
 function Combobox({
   options,
   value,
@@ -259,6 +399,7 @@ function Combobox({
   className,
 }) {
   const [open, setOpen] = useState(false);
+
   const selected = options.find(
     (option) => String(option.value) === String(value),
   );
@@ -281,6 +422,7 @@ function Combobox({
           <span className="truncate">
             {selected ? selected.label : placeholder}
           </span>
+
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -295,8 +437,10 @@ function Combobox({
           }
         >
           <CommandInput placeholder={searchPlaceholder} />
+
           <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>
+
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
@@ -308,6 +452,7 @@ function Combobox({
                         ? ""
                         : option.value,
                     );
+
                     setOpen(false);
                   }}
                 >
@@ -319,6 +464,7 @@ function Combobox({
                         : "opacity-0",
                     )}
                   />
+
                   <span className="truncate">{option.label}</span>
                 </CommandItem>
               ))}
@@ -336,6 +482,7 @@ function SummaryPill({ label, value }) {
       <div className="text-sm font-semibold tabular-nums">
         {Number(value || 0).toFixed(3)}
       </div>
+
       <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </div>
@@ -347,6 +494,7 @@ function InfoRow({ label, value }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b pb-3 text-xs last:border-0 last:pb-0">
       <span className="text-muted-foreground">{label}</span>
+
       <span className="max-w-[180px] truncate text-right font-medium">
         {value}
       </span>
@@ -358,6 +506,7 @@ function MetricRow({ label, value }) {
   return (
     <div className="flex items-center justify-between text-sm">
       <span className="text-muted-foreground">{label}</span>
+
       <span className="font-semibold tabular-nums">
         {Number(value || 0).toFixed(3)}
       </span>
@@ -376,6 +525,7 @@ function StatusRow({ checked, label }) {
       >
         {checked && <Check className="h-3 w-3" />}
       </span>
+
       <span className={checked ? "" : "text-muted-foreground"}>{label}</span>
     </div>
   );
@@ -391,29 +541,22 @@ function ToggleCard({ checked, onChange, title, description }) {
     >
       <div className="min-w-0 space-y-0.5">
         <p className="text-sm font-medium">{title}</p>
+
         <p className="text-xs leading-5 text-muted-foreground">{description}</p>
       </div>
+
       <Switch checked={checked} onCheckedChange={onChange} />
     </div>
   );
 }
 
 /* ------------------------------------------------------------------
- * Form
+ * Main form
  * ------------------------------------------------------------------ */
 
 export default function DeliveryChallanForm({
   initialData = null,
 
-  /**
-   * Optional lookup data.
-   *
-   * projects = [{ id, name }]
-   * sites = [{ id, name, address, project_id }]
-   * vendors = [{ id, name, agency_name }]
-   * materials = [{ id, material_code, name, description, unit, brand, specification }]
-   * purchaseOrders = [{ id, po_number, vendor_id, project_id, site_id, items: [...] }]
-   */
   projects = [],
   sites = [],
   vendors = [],
@@ -428,14 +571,20 @@ export default function DeliveryChallanForm({
   const isEditMode = Boolean(initialData?.id);
 
   const [form, setForm] = useState(() => buildInitialForm(initialData));
+
   const [errors, setErrors] = useState({});
 
   const [createDeliveryChallan, createState] =
     useCreateDeliveryChallanMutation();
+
   const [updateDeliveryChallan, updateState] =
     useUpdateDeliveryChallanMutation();
 
   const isSubmitting = createState.isLoading || updateState.isLoading;
+
+  /* ---------------------------------------------------------------
+   * Reset form when edit data changes
+   * --------------------------------------------------------------- */
 
   useEffect(() => {
     setForm(buildInitialForm(initialData));
@@ -443,7 +592,7 @@ export default function DeliveryChallanForm({
   }, [initialData]);
 
   /* ---------------------------------------------------------------
-   * Derived data
+   * Selected lookups
    * --------------------------------------------------------------- */
 
   const selectedProject = useMemo(
@@ -453,14 +602,6 @@ export default function DeliveryChallanForm({
       ),
     [projects, form.project_id],
   );
-
-  const availableSites = useMemo(() => {
-    if (!form.project_id) return sites;
-    return sites.filter(
-      (site) =>
-        !site.project_id || String(site.project_id) === String(form.project_id),
-    );
-  }, [sites, form.project_id]);
 
   const selectedPurchaseOrder = useMemo(
     () =>
@@ -476,26 +617,30 @@ export default function DeliveryChallanForm({
     [vendors, form.vendor_id],
   );
 
-  const totals = useMemo(
-    () =>
-      form.items.reduce(
-        (acc, item) => {
-          acc.quantity += normalizeNumber(item.quantity);
-          acc.accepted += normalizeNumber(item.accepted_quantity);
-          acc.shortage += normalizeNumber(item.shortage_quantity);
-          acc.damaged += normalizeNumber(item.damaged_quantity);
-          acc.rejected += normalizeNumber(item.rejected_quantity);
-          return acc;
-        },
-        { quantity: 0, accepted: 0, shortage: 0, damaged: 0, rejected: 0 },
-      ),
-    [form.items],
-  );
+  /* ---------------------------------------------------------------
+   * Sites
+   * --------------------------------------------------------------- */
+
+  const availableSites = useMemo(() => {
+    if (!form.project_id) {
+      return sites;
+    }
+
+    return sites.filter(
+      (site) =>
+        !site.project_id || String(site.project_id) === String(form.project_id),
+    );
+  }, [sites, form.project_id]);
+
+  /* ---------------------------------------------------------------
+   * Options
+   * --------------------------------------------------------------- */
 
   const projectOptions = useMemo(
     () =>
       projects.map((project) => ({
         value: getId(project),
+
         label:
           project.name ||
           project.project_name ||
@@ -505,19 +650,40 @@ export default function DeliveryChallanForm({
     [projects],
   );
 
+  /*
+   * Only show useful PO records.
+   *
+   * We do NOT remove APPROVED POs.
+   * Your supplied PO is:
+   *
+   * status: APPROVED
+   */
+  const filteredPurchaseOrders = useMemo(() => {
+    if (!form.project_id) {
+      return purchaseOrders;
+    }
+
+    return purchaseOrders.filter(
+      (po) =>
+        !po.project_id || String(po.project_id) === String(form.project_id),
+    );
+  }, [purchaseOrders, form.project_id]);
+
   const purchaseOrderOptions = useMemo(
     () =>
-      purchaseOrders.map((po) => ({
+      filteredPurchaseOrders.map((po) => ({
         value: getId(po),
+
         label: po.po_number || po.poNumber || po.number || getId(po),
       })),
-    [purchaseOrders],
+    [filteredPurchaseOrders],
   );
 
   const vendorOptions = useMemo(
     () =>
       vendors.map((vendor) => ({
         value: getId(vendor),
+
         label:
           vendor.name ||
           vendor.agency_name ||
@@ -531,11 +697,45 @@ export default function DeliveryChallanForm({
     () =>
       materials.map((material) => ({
         value: getId(material),
+
         label: material.material_code
-          ? `${material.material_code} — ${material.name || material.material_name || getId(material)}`
+          ? `${material.material_code} — ${
+              material.name || material.material_name || getId(material)
+            }`
           : material.name || material.material_name || getId(material),
       })),
     [materials],
+  );
+
+  /* ---------------------------------------------------------------
+   * Totals
+   * --------------------------------------------------------------- */
+
+  const totals = useMemo(
+    () =>
+      form.items.reduce(
+        (acc, item) => {
+          acc.quantity += normalizeNumber(item.quantity);
+
+          acc.accepted += normalizeNumber(item.accepted_quantity);
+
+          acc.shortage += normalizeNumber(item.shortage_quantity);
+
+          acc.damaged += normalizeNumber(item.damaged_quantity);
+
+          acc.rejected += normalizeNumber(item.rejected_quantity);
+
+          return acc;
+        },
+        {
+          quantity: 0,
+          accepted: 0,
+          shortage: 0,
+          damaged: 0,
+          rejected: 0,
+        },
+      ),
+    [form.items],
   );
 
   /* ---------------------------------------------------------------
@@ -544,96 +744,191 @@ export default function DeliveryChallanForm({
 
   const clearError = (key) =>
     setErrors((current) => {
-      if (!current[key]) return current;
-      const next = { ...current };
+      if (!current[key]) {
+        return current;
+      }
+
+      const next = {
+        ...current,
+      };
+
       delete next[key];
+
       return next;
     });
 
   const updateField = (field, value) => {
-    setForm((current) => ({ ...current, [field]: value }));
+    setForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+
     clearError(field);
   };
 
   const updateItem = (index, field, value) => {
     setForm((current) => {
       const items = [...current.items];
-      items[index] = { ...items[index], [field]: value };
-      return { ...current, items };
+
+      items[index] = {
+        ...items[index],
+        [field]: value,
+      };
+
+      return {
+        ...current,
+        items,
+      };
     });
+
     clearError(`items.${index}.${field}`);
+
+    clearError(`items.${index}.quantity_breakdown`);
   };
 
-  const addItem = () =>
+  const addItem = () => {
     setForm((current) => ({
       ...current,
-      items: [...current.items, { ...EMPTY_ITEM }],
+
+      items: [
+        ...current.items,
+        {
+          ...EMPTY_ITEM,
+        },
+      ],
     }));
+  };
 
   const removeItem = (index) => {
     if (form.items.length === 1) {
       toast.error("Keep at least one material line.");
+
       return;
     }
+
     setForm((current) => ({
       ...current,
+
       items: current.items.filter((_, itemIndex) => itemIndex !== index),
     }));
   };
 
+  /* ---------------------------------------------------------------
+   * Project change
+   * --------------------------------------------------------------- */
+
   const handleProjectChange = (projectId) => {
-    updateField("project_id", projectId);
+    setForm((current) => ({
+      ...current,
 
-    const projectSites = sites.filter(
-      (site) => String(site.project_id) === String(projectId),
-    );
+      project_id: projectId,
 
-    if (
-      form.site_id &&
-      !projectSites.some((site) => String(site.id) === String(form.site_id))
-    ) {
-      updateField("site_id", "");
-    }
+      /*
+       * Clear site if it belongs to another project.
+       */
+      site_id:
+        current.site_id &&
+        sites.some(
+          (site) =>
+            String(site.id) === String(current.site_id) &&
+            site.project_id &&
+            String(site.project_id) !== String(projectId),
+        )
+          ? ""
+          : current.site_id,
+    }));
+
+    clearError("project_id");
   };
+
+  /* ---------------------------------------------------------------
+   * PURCHASE ORDER CHANGE
+   *
+   * This is the important part.
+   * --------------------------------------------------------------- */
 
   const handlePurchaseOrderChange = (purchaseOrderId) => {
     const po = purchaseOrders.find(
       (item) => String(item.id) === String(purchaseOrderId),
     );
 
-    setForm((current) => {
-      let nextItems = current.items;
-
-      if (po?.items?.length) {
-        nextItems = po.items.map((item) => ({
-          ...EMPTY_ITEM,
-          material_id: item.material_id || item.materialId || "",
-          purchase_order_item_id: item.id || "",
-          quantity: "",
-          accepted_quantity: "",
-          shortage_quantity: "",
-          damaged_quantity: "",
-          rejected_quantity: "",
-          description: item.description || item.material?.name || "",
-          brand: item.brand || item.material?.brand || "",
-          specification:
-            item.specification || item.material?.specification || "",
-          unit: item.unit || item.material?.unit || "",
-        }));
-      }
-
-      return {
+    if (!po) {
+      setForm((current) => ({
         ...current,
-        purchase_order_id: purchaseOrderId,
-        vendor_id: po?.vendor_id || po?.vendorId || current.vendor_id,
-        project_id: po?.project_id || po?.projectId || current.project_id,
-        site_id: po?.site_id || po?.siteId || current.site_id,
-        items: nextItems,
-      };
-    });
+
+        purchase_order_id: "",
+
+        /*
+         * Do not destroy manually entered lines
+         * when PO is cleared.
+         */
+      }));
+
+      return;
+    }
+
+    /*
+     * PO items can come directly from:
+     *
+     * po.items
+     *
+     * or, if the API ever supplies them separately,
+     * purchaseOrderItems.
+     */
+    const poItems =
+      Array.isArray(po.items) && po.items.length > 0
+        ? po.items
+        : purchaseOrderItems.filter(
+            (item) =>
+              String(item.purchase_order_id || item.purchaseOrderId) ===
+              String(po.id),
+          );
+
+    const mappedItems =
+      poItems.length > 0 ? poItems.map(mapPurchaseOrderItem) : [];
+
+    setForm((current) => ({
+      ...current,
+
+      purchase_order_id: purchaseOrderId,
+
+      /*
+       * PO is the source of truth.
+       */
+      vendor_id: po.vendor_id || po.vendorId || current.vendor_id || "",
+
+      project_id: po.project_id || po.projectId || current.project_id || "",
+
+      site_id: po.site_id || po.siteId || current.site_id || "",
+
+      /*
+       * Use PO shipping address when available.
+       */
+      site_address:
+        po.ship_to_address || po.shipToAddress || current.site_address || "",
+
+      /*
+       * Populate all PO material lines.
+       */
+      items: mappedItems.length > 0 ? mappedItems : current.items,
+    }));
 
     setErrors({});
+
+    if (mappedItems.length > 0) {
+      toast.success(
+        `${mappedItems.length} material ${
+          mappedItems.length === 1 ? "line" : "lines"
+        } loaded from ${po.po_number || "purchase order"}.`,
+      );
+    } else {
+      toast.warning("Purchase order selected, but it has no material items.");
+    }
   };
+
+  /* ---------------------------------------------------------------
+   * Material change
+   * --------------------------------------------------------------- */
 
   const handleMaterialChange = (index, materialId) => {
     const material = materials.find(
@@ -643,21 +938,32 @@ export default function DeliveryChallanForm({
     setForm((current) => {
       const items = [...current.items];
 
+      const existingItem = items[index];
+
       items[index] = {
-        ...items[index],
+        ...existingItem,
+
         material_id: materialId,
+
         description:
-          items[index].description ||
+          existingItem.description ||
           material?.description ||
           material?.name ||
+          material?.material_name ||
           "",
-        brand: items[index].brand || material?.brand || "",
+
+        brand: existingItem.brand || material?.brand || "",
+
         specification:
-          items[index].specification || material?.specification || "",
-        unit: items[index].unit || material?.unit || "",
+          existingItem.specification || material?.specification || "",
+
+        unit: existingItem.unit || material?.unit || "",
       };
 
-      return { ...current, items };
+      return {
+        ...current,
+        items,
+      };
     });
 
     clearError(`items.${index}.material_id`);
@@ -670,9 +976,17 @@ export default function DeliveryChallanForm({
   const validate = () => {
     const nextErrors = {};
 
-    if (!form.project_id) nextErrors.project_id = "Pick a project.";
-    if (!form.challan_date) nextErrors.challan_date = "Pick a challan date.";
-    if (!form.items.length) nextErrors.items = "Add at least one material.";
+    if (!form.project_id) {
+      nextErrors.project_id = "Pick a project.";
+    }
+
+    if (!form.challan_date) {
+      nextErrors.challan_date = "Pick a challan date.";
+    }
+
+    if (!form.items.length) {
+      nextErrors.items = "Add at least one material.";
+    }
 
     form.items.forEach((item, index) => {
       if (!item.material_id) {
@@ -680,25 +994,37 @@ export default function DeliveryChallanForm({
       }
 
       const quantity = normalizeNumber(item.quantity);
+
       if (quantity <= 0) {
         nextErrors[`items.${index}.quantity`] = "Quantity must be above 0.";
       }
 
       const accepted = normalizeNumber(item.accepted_quantity);
+
       const shortage = normalizeNumber(item.shortage_quantity);
+
       const damaged = normalizeNumber(item.damaged_quantity);
+
       const rejected = normalizeNumber(item.rejected_quantity);
 
-      if (accepted < 0)
+      if (accepted < 0) {
         nextErrors[`items.${index}.accepted_quantity`] = "Can't be negative.";
-      if (shortage < 0)
+      }
+
+      if (shortage < 0) {
         nextErrors[`items.${index}.shortage_quantity`] = "Can't be negative.";
-      if (damaged < 0)
+      }
+
+      if (damaged < 0) {
         nextErrors[`items.${index}.damaged_quantity`] = "Can't be negative.";
-      if (rejected < 0)
+      }
+
+      if (rejected < 0) {
         nextErrors[`items.${index}.rejected_quantity`] = "Can't be negative.";
+      }
 
       const accountedFor = accepted + shortage + damaged + rejected;
+
       if (accountedFor > quantity + 0.0001) {
         nextErrors[`items.${index}.quantity_breakdown`] =
           "Accepted + shortage + damaged + rejected can't exceed the delivered quantity.";
@@ -709,6 +1035,7 @@ export default function DeliveryChallanForm({
 
     if (Object.keys(nextErrors).length > 0) {
       toast.error(Object.values(nextErrors)[0]);
+
       return false;
     }
 
@@ -716,56 +1043,139 @@ export default function DeliveryChallanForm({
   };
 
   /* ---------------------------------------------------------------
-   * Payload + submit
+   * Payload
    * --------------------------------------------------------------- */
 
   const buildPayload = () => ({
     project_id: form.project_id,
-    ...(form.site_id ? { site_id: form.site_id } : {}),
+
+    ...(form.site_id
+      ? {
+          site_id: form.site_id,
+        }
+      : {}),
+
     ...(form.purchase_order_id
-      ? { purchase_order_id: form.purchase_order_id }
+      ? {
+          purchase_order_id: form.purchase_order_id,
+        }
       : {}),
-    ...(form.vendor_id ? { vendor_id: form.vendor_id } : {}),
+
+    ...(form.vendor_id
+      ? {
+          vendor_id: form.vendor_id,
+        }
+      : {}),
+
     challan_date: form.challan_date,
-    ...(form.site_address ? { site_address: form.site_address } : {}),
-    gate_pass_received: Boolean(form.gate_pass_received),
-    material_checked: Boolean(form.material_checked),
-    ...(form.general_remarks ? { general_remarks: form.general_remarks } : {}),
-    ...(form.discrepancy_notes
-      ? { discrepancy_notes: form.discrepancy_notes }
+
+    ...(form.site_address
+      ? {
+          site_address: form.site_address,
+        }
       : {}),
-    ...(form.attachment_url ? { attachment_url: form.attachment_url } : {}),
+
+    gate_pass_received: Boolean(form.gate_pass_received),
+
+    material_checked: Boolean(form.material_checked),
+
+    ...(form.general_remarks
+      ? {
+          general_remarks: form.general_remarks,
+        }
+      : {}),
+
+    ...(form.discrepancy_notes
+      ? {
+          discrepancy_notes: form.discrepancy_notes,
+        }
+      : {}),
+
+    ...(form.attachment_url
+      ? {
+          attachment_url: form.attachment_url,
+        }
+      : {}),
+
     items: form.items.map((item) => ({
       material_id: item.material_id,
+
       ...(item.purchase_order_item_id
-        ? { purchase_order_item_id: item.purchase_order_item_id }
+        ? {
+            purchase_order_item_id: item.purchase_order_item_id,
+          }
         : {}),
+
       quantity: normalizeNumber(item.quantity),
+
       accepted_quantity: normalizeNumber(item.accepted_quantity),
+
       shortage_quantity: normalizeNumber(item.shortage_quantity),
+
       damaged_quantity: normalizeNumber(item.damaged_quantity),
+
       rejected_quantity: normalizeNumber(item.rejected_quantity),
+
       condition_status: item.condition_status || "GOOD",
+
       ...(item.condition_notes
-        ? { condition_notes: item.condition_notes }
+        ? {
+            condition_notes: item.condition_notes,
+          }
         : {}),
-      ...(item.stored_at ? { stored_at: item.stored_at } : {}),
-      ...(item.description ? { description: item.description } : {}),
-      ...(item.brand ? { brand: item.brand } : {}),
-      ...(item.specification ? { specification: item.specification } : {}),
-      ...(item.unit ? { unit: item.unit } : {}),
-      ...(item.remarks ? { remarks: item.remarks } : {}),
+
+      ...(item.stored_at
+        ? {
+            stored_at: item.stored_at,
+          }
+        : {}),
+
+      ...(item.description
+        ? {
+            description: item.description,
+          }
+        : {}),
+
+      ...(item.brand
+        ? {
+            brand: item.brand,
+          }
+        : {}),
+
+      ...(item.specification
+        ? {
+            specification: item.specification,
+          }
+        : {}),
+
+      ...(item.unit
+        ? {
+            unit: item.unit,
+          }
+        : {}),
+
+      ...(item.remarks
+        ? {
+            remarks: item.remarks,
+          }
+        : {}),
     })),
   });
+
+  /* ---------------------------------------------------------------
+   * Submit
+   * --------------------------------------------------------------- */
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (isSubmitting) return;
+
     if (!validate()) return;
 
     try {
       const payload = buildPayload();
+
       let response;
 
       if (isEditMode) {
@@ -787,11 +1197,13 @@ export default function DeliveryChallanForm({
         error?.data?.message ||
         error?.error ||
         "The delivery challan could not be saved.";
+
       toast.error(Array.isArray(message) ? message.join(", ") : message);
     }
   };
 
   const getError = (key) => errors[key];
+
   const itemErrorCount = Object.keys(errors).filter((key) =>
     key.startsWith("items."),
   ).length;
@@ -803,6 +1215,7 @@ export default function DeliveryChallanForm({
   return (
     <form onSubmit={handleSubmit} className="min-h-screen bg-muted/30">
       {/* Header */}
+
       <div className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
@@ -832,6 +1245,7 @@ export default function DeliveryChallanForm({
               <h1 className="truncate text-lg font-semibold leading-none">
                 {isEditMode ? "Edit delivery challan" : "New delivery challan"}
               </h1>
+
               <p className="mt-1 hidden text-xs text-muted-foreground sm:block">
                 Record incoming material delivery and receiving details
               </p>
@@ -857,6 +1271,7 @@ export default function DeliveryChallanForm({
               ) : (
                 <Save className="mr-2 h-4 w-4" />
               )}
+
               {isSubmitting
                 ? "Saving"
                 : isEditMode
@@ -868,10 +1283,14 @@ export default function DeliveryChallanForm({
       </div>
 
       {/* Content */}
+
       <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-6">
-            {/* ------------------------------------------------ Basic */}
+            {/* ------------------------------------------------
+             * Challan details
+             * ------------------------------------------------ */}
+
             <Card>
               <SectionHeader
                 icon={FileText}
@@ -902,8 +1321,10 @@ export default function DeliveryChallanForm({
                     <SelectTrigger>
                       <SelectValue placeholder="Select site" />
                     </SelectTrigger>
+
                     <SelectContent>
                       <SelectItem value={NONE}>No site</SelectItem>
+
                       {availableSites.map((site) => (
                         <SelectItem key={site.id} value={String(site.id)}>
                           {site.name || site.site_name || site.id}
@@ -955,28 +1376,52 @@ export default function DeliveryChallanForm({
                   />
                 </Field>
 
-                <Field
-                  label="Delivery address"
-                  htmlFor="site_address"
-                  className="md:col-span-2 xl:col-span-1"
-                >
+                <Field label="Delivery address" htmlFor="site_address">
                   <Input
                     id="site_address"
                     value={form.site_address}
                     onChange={(event) =>
                       updateField("site_address", event.target.value)
                     }
-                    placeholder={
-                      selectedProject
-                        ? "Enter delivery / site address"
-                        : "Delivery address"
-                    }
+                    placeholder="Delivery / site address"
                   />
                 </Field>
               </CardContent>
             </Card>
 
-            {/* ------------------------------------------------ Items */}
+            {/* ------------------------------------------------
+             * PO summary
+             * ------------------------------------------------ */}
+
+            {selectedPurchaseOrder && (
+              <Alert>
+                <ClipboardList className="h-4 w-4" />
+
+                <AlertDescription>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <span>
+                      <strong>{selectedPurchaseOrder.po_number}</strong>
+                    </span>
+
+                    <span>
+                      Vendor:{" "}
+                      {selectedPurchaseOrder.agency_name ||
+                        selectedVendor?.name ||
+                        "—"}
+                    </span>
+
+                    <span>PO date: {selectedPurchaseOrder.po_date}</span>
+
+                    <span>Status: {selectedPurchaseOrder.status}</span>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* ------------------------------------------------
+             * Materials
+             * ------------------------------------------------ */}
+
             <Card className="overflow-hidden">
               <SectionHeader
                 icon={Package}
@@ -1000,42 +1445,55 @@ export default function DeliveryChallanForm({
                   <Alert variant="destructive">
                     <AlertDescription>
                       {getError("items") ||
-                        `${itemErrorCount} field${itemErrorCount === 1 ? "" : "s"} in the material lines need fixing.`}
+                        `${itemErrorCount} field${
+                          itemErrorCount === 1 ? "" : "s"
+                        } in the material lines need fixing.`}
                     </AlertDescription>
                   </Alert>
                 </div>
               )}
 
               <CardContent className="p-0">
-                {/* Desktop table */}
+                {/* Desktop */}
+
                 <div className="hidden overflow-x-auto lg:block">
                   <Table className="min-w-[1300px]">
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
                         <TableHead className="w-10 text-center">#</TableHead>
+
                         <TableHead className="min-w-[220px]">
                           Material
                         </TableHead>
+
                         <TableHead className="min-w-[180px]">
                           Description
                         </TableHead>
+
                         <TableHead className="w-28 text-right">Qty</TableHead>
+
                         <TableHead className="w-28 text-right">
                           Accepted
                         </TableHead>
+
                         <TableHead className="w-28 text-right">Short</TableHead>
+
                         <TableHead className="w-28 text-right">
                           Damaged
                         </TableHead>
+
                         <TableHead className="w-28 text-right">
                           Rejected
                         </TableHead>
+
                         <TableHead className="min-w-[160px]">
                           Condition
                         </TableHead>
+
                         <TableHead className="min-w-[160px]">
                           Stored at
                         </TableHead>
+
                         <TableHead className="w-12" />
                       </TableRow>
                     </TableHeader>
@@ -1045,22 +1503,22 @@ export default function DeliveryChallanForm({
                         const materialError = getError(
                           `items.${index}.material_id`,
                         );
+
                         const quantityError = getError(
                           `items.${index}.quantity`,
                         );
+
                         const breakdownError = getError(
                           `items.${index}.quantity_breakdown`,
                         );
 
-                        const hasSecondaryFields =
-                          breakdownError ||
-                          item.condition_notes ||
-                          item.specification ||
-                          item.brand ||
-                          item.remarks;
-
                         return (
-                          <React.Fragment key={index}>
+                          <React.Fragment
+                            key={
+                              item.purchase_order_item_id ||
+                              `${item.material_id}-${index}`
+                            }
+                          >
                             <TableRow className="border-b-0 align-top hover:bg-transparent">
                               <TableCell className="pt-6 text-center text-sm font-medium text-muted-foreground">
                                 {index + 1}
@@ -1078,7 +1536,9 @@ export default function DeliveryChallanForm({
                                   searchPlaceholder="Search materials..."
                                   emptyText="No materials found."
                                 />
+
                                 <FieldError message={materialError} />
+
                                 {item.purchase_order_item_id && (
                                   <p className="mt-1 text-[11px] text-muted-foreground">
                                     Linked to PO item
@@ -1120,11 +1580,13 @@ export default function DeliveryChallanForm({
                                       "border-destructive focus-visible:ring-destructive",
                                   )}
                                 />
+
                                 {item.unit && (
                                   <span className="mt-1 block text-right text-[11px] text-muted-foreground">
                                     {item.unit}
                                   </span>
                                 )}
+
                                 <FieldError message={quantityError} />
                               </TableCell>
 
@@ -1210,6 +1672,7 @@ export default function DeliveryChallanForm({
                                   <SelectTrigger>
                                     <SelectValue />
                                   </SelectTrigger>
+
                                   <SelectContent>
                                     {CONDITION_OPTIONS.map((option) => (
                                       <SelectItem
@@ -1251,76 +1714,80 @@ export default function DeliveryChallanForm({
                               </TableCell>
                             </TableRow>
 
-                            {hasSecondaryFields && (
-                              <TableRow className="bg-muted/30 hover:bg-muted/30">
-                                <TableCell />
-                                <TableCell colSpan={10} className="pb-4 pt-0">
-                                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                                    <Input
-                                      value={item.brand}
-                                      onChange={(event) =>
-                                        updateItem(
-                                          index,
-                                          "brand",
-                                          event.target.value,
-                                        )
-                                      }
-                                      placeholder="Brand"
-                                    />
-                                    <Input
-                                      value={item.specification}
-                                      onChange={(event) =>
-                                        updateItem(
-                                          index,
-                                          "specification",
-                                          event.target.value,
-                                        )
-                                      }
-                                      placeholder="Specification"
-                                    />
-                                    <Input
-                                      value={item.unit}
-                                      onChange={(event) =>
-                                        updateItem(
-                                          index,
-                                          "unit",
-                                          event.target.value,
-                                        )
-                                      }
-                                      placeholder="Unit"
-                                    />
-                                    <Input
-                                      value={item.condition_notes}
-                                      onChange={(event) =>
-                                        updateItem(
-                                          index,
-                                          "condition_notes",
-                                          event.target.value,
-                                        )
-                                      }
-                                      placeholder="Condition notes"
-                                    />
-                                    <Input
-                                      value={item.remarks}
-                                      onChange={(event) =>
-                                        updateItem(
-                                          index,
-                                          "remarks",
-                                          event.target.value,
-                                        )
-                                      }
-                                      placeholder="Item remarks"
-                                      className="md:col-span-2"
-                                    />
-                                    {breakdownError && (
-                                      <p className="text-xs font-medium text-destructive md:col-span-2 xl:col-span-4">
-                                        {breakdownError}
-                                      </p>
-                                    )}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            )}
+                            <TableRow className="bg-muted/30 hover:bg-muted/30">
+                              <TableCell />
+
+                              <TableCell colSpan={10} className="pb-4 pt-0">
+                                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                                  <Input
+                                    value={item.brand}
+                                    onChange={(event) =>
+                                      updateItem(
+                                        index,
+                                        "brand",
+                                        event.target.value,
+                                      )
+                                    }
+                                    placeholder="Brand"
+                                  />
+
+                                  <Input
+                                    value={item.specification}
+                                    onChange={(event) =>
+                                      updateItem(
+                                        index,
+                                        "specification",
+                                        event.target.value,
+                                      )
+                                    }
+                                    placeholder="Specification"
+                                  />
+
+                                  <Input
+                                    value={item.unit}
+                                    onChange={(event) =>
+                                      updateItem(
+                                        index,
+                                        "unit",
+                                        event.target.value,
+                                      )
+                                    }
+                                    placeholder="Unit"
+                                  />
+
+                                  <Input
+                                    value={item.condition_notes}
+                                    onChange={(event) =>
+                                      updateItem(
+                                        index,
+                                        "condition_notes",
+                                        event.target.value,
+                                      )
+                                    }
+                                    placeholder="Condition notes"
+                                  />
+
+                                  <Input
+                                    value={item.remarks}
+                                    onChange={(event) =>
+                                      updateItem(
+                                        index,
+                                        "remarks",
+                                        event.target.value,
+                                      )
+                                    }
+                                    placeholder="Item remarks"
+                                    className="md:col-span-2"
+                                  />
+
+                                  {breakdownError && (
+                                    <p className="text-xs font-medium text-destructive md:col-span-2 xl:col-span-4">
+                                      {breakdownError}
+                                    </p>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
                           </React.Fragment>
                         );
                       })}
@@ -1328,19 +1795,28 @@ export default function DeliveryChallanForm({
                   </Table>
                 </div>
 
-                {/* Mobile / tablet cards */}
+                {/* Mobile */}
+
                 <div className="space-y-4 p-4 lg:hidden">
                   {form.items.map((item, index) => {
                     const materialError = getError(
                       `items.${index}.material_id`,
                     );
+
                     const quantityError = getError(`items.${index}.quantity`);
+
                     const breakdownError = getError(
                       `items.${index}.quantity_breakdown`,
                     );
 
                     return (
-                      <Card key={index} className="bg-muted/30">
+                      <Card
+                        key={
+                          item.purchase_order_item_id ||
+                          `${item.material_id}-${index}`
+                        }
+                        className="bg-muted/30"
+                      >
                         <CardContent className="p-4">
                           <div className="mb-4 flex items-center justify-between">
                             <div className="flex items-center gap-2">
@@ -1352,6 +1828,7 @@ export default function DeliveryChallanForm({
                               >
                                 {index + 1}
                               </span>
+
                               <span className="text-sm font-medium">
                                 Material item
                               </span>
@@ -1362,8 +1839,6 @@ export default function DeliveryChallanForm({
                               variant="ghost"
                               size="icon"
                               onClick={() => removeItem(index)}
-                              aria-label={`Remove line ${index + 1}`}
-                              className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -1402,7 +1877,6 @@ export default function DeliveryChallanForm({
                                     event.target.value,
                                   )
                                 }
-                                placeholder="Material description"
                               />
                             </Field>
 
@@ -1423,11 +1897,6 @@ export default function DeliveryChallanForm({
                                     event.target.value,
                                   )
                                 }
-                                placeholder="0.000"
-                                className={cn(
-                                  quantityError &&
-                                    "border-destructive focus-visible:ring-destructive",
-                                )}
                               />
                             </Field>
 
@@ -1437,7 +1906,6 @@ export default function DeliveryChallanForm({
                                 onChange={(event) =>
                                   updateItem(index, "unit", event.target.value)
                                 }
-                                placeholder="Nos / Kg / Sqft"
                               />
                             </Field>
 
@@ -1515,6 +1983,7 @@ export default function DeliveryChallanForm({
                                 <SelectTrigger>
                                   <SelectValue />
                                 </SelectTrigger>
+
                                 <SelectContent>
                                   {CONDITION_OPTIONS.map((option) => (
                                     <SelectItem
@@ -1538,7 +2007,6 @@ export default function DeliveryChallanForm({
                                     event.target.value,
                                   )
                                 }
-                                placeholder="Storage location"
                               />
                             </Field>
 
@@ -1577,7 +2045,6 @@ export default function DeliveryChallanForm({
                                     event.target.value,
                                   )
                                 }
-                                placeholder="Describe condition or discrepancy"
                               />
                             </Field>
 
@@ -1627,16 +2094,23 @@ export default function DeliveryChallanForm({
 
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                     <SummaryPill label="Delivered" value={totals.quantity} />
+
                     <SummaryPill label="Accepted" value={totals.accepted} />
+
                     <SummaryPill label="Short" value={totals.shortage} />
+
                     <SummaryPill label="Damaged" value={totals.damaged} />
+
                     <SummaryPill label="Rejected" value={totals.rejected} />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* ------------------------------------------------ Verification */}
+            {/* ------------------------------------------------
+             * Verification
+             * ------------------------------------------------ */}
+
             <Card>
               <SectionHeader
                 icon={Check}
@@ -1661,7 +2135,10 @@ export default function DeliveryChallanForm({
               </CardContent>
             </Card>
 
-            {/* ------------------------------------------------ Remarks */}
+            {/* ------------------------------------------------
+             * Remarks
+             * ------------------------------------------------ */}
+
             <Card>
               <SectionHeader
                 title="Remarks and documentation"
@@ -1669,9 +2146,8 @@ export default function DeliveryChallanForm({
               />
 
               <CardContent className="grid gap-5 pt-5 md:grid-cols-2">
-                <Field label="General remarks" htmlFor="general_remarks">
+                <Field label="General remarks">
                   <Textarea
-                    id="general_remarks"
                     rows={4}
                     value={form.general_remarks}
                     onChange={(event) =>
@@ -1682,9 +2158,8 @@ export default function DeliveryChallanForm({
                   />
                 </Field>
 
-                <Field label="Discrepancy notes" htmlFor="discrepancy_notes">
+                <Field label="Discrepancy notes">
                   <Textarea
-                    id="discrepancy_notes"
                     rows={4}
                     value={form.discrepancy_notes}
                     onChange={(event) =>
@@ -1695,13 +2170,8 @@ export default function DeliveryChallanForm({
                   />
                 </Field>
 
-                <Field
-                  label="Attachment URL"
-                  htmlFor="attachment_url"
-                  className="md:col-span-2"
-                >
+                <Field label="Attachment URL" className="md:col-span-2">
                   <Input
-                    id="attachment_url"
                     type="url"
                     value={form.attachment_url}
                     onChange={(event) =>
@@ -1714,7 +2184,10 @@ export default function DeliveryChallanForm({
             </Card>
           </div>
 
-          {/* -------------------------------------------------- Sidebar */}
+          {/* --------------------------------------------------
+           * Sidebar
+           * -------------------------------------------------- */}
+
           <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
             <Card>
               <CardContent className="space-y-4 pt-6">
@@ -1727,10 +2200,12 @@ export default function DeliveryChallanForm({
                   >
                     <ClipboardList className="h-[18px] w-[18px]" />
                   </div>
+
                   <div>
                     <h3 className="text-sm font-semibold leading-none">
                       Delivery summary
                     </h3>
+
                     <p className="mt-1 text-xs text-muted-foreground">
                       Current challan overview
                     </p>
@@ -1747,22 +2222,22 @@ export default function DeliveryChallanForm({
                       "Not selected"
                     }
                   />
+
                   <InfoRow
                     label="Purchase order"
-                    value={
-                      selectedPurchaseOrder?.po_number ||
-                      selectedPurchaseOrder?.poNumber ||
-                      "Not linked"
-                    }
+                    value={selectedPurchaseOrder?.po_number || "Not linked"}
                   />
+
                   <InfoRow
                     label="Vendor"
                     value={
+                      selectedPurchaseOrder?.agency_name ||
                       selectedVendor?.name ||
                       selectedVendor?.agency_name ||
                       "Not selected"
                     }
                   />
+
                   <InfoRow
                     label="Date"
                     value={form.challan_date || "Not selected"}
@@ -1774,10 +2249,15 @@ export default function DeliveryChallanForm({
             <Card>
               <CardContent className="space-y-3 pt-6">
                 <h3 className="text-sm font-semibold">Quantity summary</h3>
+
                 <MetricRow label="Total delivered" value={totals.quantity} />
+
                 <MetricRow label="Accepted" value={totals.accepted} />
+
                 <MetricRow label="Shortage" value={totals.shortage} />
+
                 <MetricRow label="Damaged" value={totals.damaged} />
+
                 <MetricRow label="Rejected" value={totals.rejected} />
               </CardContent>
             </Card>
@@ -1785,10 +2265,12 @@ export default function DeliveryChallanForm({
             <Card>
               <CardContent className="space-y-2.5 pt-6">
                 <h3 className="mb-1 text-sm font-semibold">Verification</h3>
+
                 <StatusRow
                   checked={form.gate_pass_received}
                   label="Gate pass received"
                 />
+
                 <StatusRow
                   checked={form.material_checked}
                   label="Material checked"

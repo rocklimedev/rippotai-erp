@@ -235,69 +235,6 @@ export const procurementApi = baseApi.injectEndpoints({
     }),
 
     // =====================================================
-    // PURCHASE ORDERS
-    // =====================================================
-
-    createPurchaseOrder: builder.mutation({
-      query: (body) => ({
-        url: "/procurement/purchase-orders",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["PurchaseOrder"],
-    }),
-
-    getPurchaseOrders: builder.query({
-      query: () => "/procurement/purchase-orders",
-      providesTags: ["PurchaseOrder"],
-    }),
-
-    getPurchaseOrder: builder.query({
-      query: (id) => `/procurement/purchase-orders/${id}`,
-      providesTags: ["PurchaseOrder"],
-    }),
-
-    cancelPurchaseOrder: builder.mutation({
-      query: (id) => ({
-        url: `/procurement/purchase-orders/${id}/cancel`,
-        method: "POST",
-      }),
-      invalidatesTags: ["PurchaseOrder"],
-    }),
-
-    closePurchaseOrder: builder.mutation({
-      query: (id) => ({
-        url: `/procurement/purchase-orders/${id}/close`,
-        method: "POST",
-      }),
-      invalidatesTags: ["PurchaseOrder"],
-    }),
-
-    // =====================================================
-    // DELIVERY CHALLANS
-    // =====================================================
-
-    createDeliveryChallan: builder.mutation({
-      query: (body) => ({
-        url: "/procurement/delivery-challans",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["DeliveryChallan"],
-    }),
-
-    getDeliveryChallansForPurchaseOrder: builder.query({
-      query: (purchaseOrderId) =>
-        `/procurement/delivery-challans/by-purchase-order/${purchaseOrderId}`,
-      providesTags: ["DeliveryChallan"],
-    }),
-
-    getDeliveryChallan: builder.query({
-      query: (id) => `/procurement/delivery-challans/${id}`,
-      providesTags: ["DeliveryChallan"],
-    }),
-
-    // =====================================================
     // SITE INVENTORY
     // =====================================================
 
@@ -395,24 +332,6 @@ export const {
   useSendMaterialQuotationMutation,
   useAcceptMaterialQuotationMutation,
   useRejectMaterialQuotationMutation,
-
-  // =====================================================
-  // PURCHASE ORDERS
-  // =====================================================
-
-  useCreatePurchaseOrderMutation,
-  useGetPurchaseOrdersQuery,
-  useGetPurchaseOrderQuery,
-  useCancelPurchaseOrderMutation,
-  useClosePurchaseOrderMutation,
-
-  // =====================================================
-  // DELIVERY CHALLANS
-  // =====================================================
-
-  useCreateDeliveryChallanMutation,
-  useGetDeliveryChallansForPurchaseOrderQuery,
-  useGetDeliveryChallanQuery,
 
   // =====================================================
   // SITE INVENTORY

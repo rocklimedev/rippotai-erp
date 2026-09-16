@@ -21,8 +21,11 @@ import ShortlistDetail from "@/pages/vendors/ShortlistDetail";
 
 import VendorProfile from "@/pages/vendors/VendorProfile";
 import ComingSoon from "../../pages/ComingSoon";
-import DeliveryChallanForm from "../../pages/materials/DeliveryChallanForm";
-import PurchaseOrderForm from "../../pages/materials/PurchaseOrderForm";
+
+import CreatePurchaseOrderPage from "../../pages/materials/CreatePurchaseOrderPage";
+import PurchaseOrderView from "../../pages/materials/PurchaseOrderView";
+import CreateDeliveryChallanPage from "../../pages/materials/CreateDeliveryChallanPage";
+import DeliveryChallanView from "../../pages/materials/DeliveryChallanView";
 
 export const materialsRoutes = [
   {
@@ -115,7 +118,10 @@ export const materialsRoutes = [
         path: "purchase-orders",
         element: <PurchaseOrderList />,
       },
-
+      {
+        path: "purchase-orders/:id",
+        element: <PurchaseOrderView />,
+      },
       // ------------------------------------------------------------
       // Delivery Challans
       // ------------------------------------------------------------
@@ -126,11 +132,15 @@ export const materialsRoutes = [
       },
       {
         path: "delivery-challans/new",
-        element: <DeliveryChallanForm />,
+        element: <CreateDeliveryChallanPage />,
+      },
+      {
+        path: "delivery-challans/:id",
+        element: <DeliveryChallanView />,
       },
       {
         path: "purchase-orders/new",
-        element: <PurchaseOrderForm />,
+        element: <CreatePurchaseOrderPage />,
       },
       // ------------------------------------------------------------
       // Site Inventory
