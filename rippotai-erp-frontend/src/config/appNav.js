@@ -230,49 +230,52 @@ export const APP_MENUS = {
   ],
 
   materials: [
+    // ------------------------------------------------------------
+    // Materials
+    // ------------------------------------------------------------
     {
       label: "Materials",
       items: [
         I("Requirements", "requirements"),
-        I("Sample Boards", "sample-boards"),
+        I("All Vendors", "vendors/directory"),
+        I("Add Vendor", "vendors/new"),
+        I("Rate Comparison", "vendors/rate-comparison"),
         I("Rate Sheets", "rate-sheets"),
       ],
     },
 
+    // ------------------------------------------------------------
+    // Procurement
+    // ------------------------------------------------------------
     {
       label: "Procurement",
       items: [
-        I("Estimates", "estimates"),
-        I("Quotations", "quotations"),
+        I("Estimates", "estimates/all"),
+        I("Create Estimate", "estimates/new"),
+
         I("Purchase Orders", "purchase-orders"),
         I("Purchase Order Form", "purchase-orders/new"),
       ],
     },
 
+    // ------------------------------------------------------------
+    // Delivery & Inventory
+    // ------------------------------------------------------------
     {
       label: "Delivery & Inventory",
       items: [
         I("Delivery Challans", "delivery-challans"),
-        I("Site Inventory", "inventory"),
         I("Delivery Challan Form", "delivery-challans/new"),
+
+        I("Site Inventory", "inventory"),
+        I("Inventory Transactions", "inventory/transactions"),
+        I("Record Transaction", "inventory/transactions/new"),
       ],
     },
-    {
-      label: "Estimates",
-      items: [
-        I("All Estimates", "estimates/all"),
-        I("Create Estimate", "estimates/new"),
-        I("Projects", "/projects/all"),
-      ],
-    },
-    {
-      label: "Vendors",
-      items: [
-        I("All Vendors", "vendors/directory"),
-        I("Add Vendor", "vendors/new"),
-        I("Rate Comparison", "vendors/rate-comparison"),
-      ],
-    },
+
+    // ------------------------------------------------------------
+    // Management
+    // ------------------------------------------------------------
     {
       label: "Management",
       items: [
