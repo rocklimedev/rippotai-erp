@@ -458,22 +458,9 @@ export function BriefSectionForm({
   return (
     <div className="space-y-5">
       {/* HEADER */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold text-[#333333]">{title}</h1>
-          {subtitle && (
-            <p className="mt-1 text-sm text-[#6B7B7C]">{subtitle}</p>
-          )}
-        </div>
-        <Button
-          type="button"
-          onClick={onSubmit}
-          disabled={isSubmitting}
-          className="bg-[#1F453B] hover:bg-[#1F453B]/90"
-        >
-          <Save size={15} className="mr-2" />
-          {isSubmitting ? "Saving..." : submitLabel}
-        </Button>
+      <div>
+        <h1 className="text-xl font-semibold text-[#333333]">{title}</h1>
+        {subtitle && <p className="mt-1 text-sm text-[#6B7B7C]">{subtitle}</p>}
       </div>
 
       {/* PROJECT SELECTOR */}
@@ -535,9 +522,21 @@ export function BriefSectionForm({
         })}
       </div>
 
-      <div className="text-center text-xs text-muted-foreground">
-        Draft autosaved locally • {filledCount} field
-        {filledCount !== 1 ? "s" : ""} completed
+      {/* FOOTER: status + Save button (bottom right) */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="text-xs text-muted-foreground">
+          {filledCount} field{filledCount !== 1 ? "s" : ""} completed
+        </div>
+
+        <Button
+          type="button"
+          onClick={onSubmit}
+          disabled={isSubmitting}
+          className="bg-[#1F453B] hover:bg-[#1F453B]/90"
+        >
+          <Save size={15} className="mr-2" />
+          {isSubmitting ? "Saving..." : submitLabel}
+        </Button>
       </div>
 
       {children}

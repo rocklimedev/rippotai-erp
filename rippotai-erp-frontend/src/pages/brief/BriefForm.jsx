@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-
+import { useAuth } from "../../context/AuthContext";
 import { BriefSectionForm } from "../../components/BriefSectionForm";
-import { useAutoSave } from "../../hooks/use-autosave";
 
 import { useGetProjectsQuery } from "../../api/projects/project.api";
 import {
@@ -22,8 +21,6 @@ import {
   todayISO,
 } from "../../hooks/brief-form-helpers"; // adjust import path
 
-const SAVE_KEY = "bc.project-brief.draft";
-
 // ============================================================
 // COMPONENT
 // ============================================================
@@ -31,7 +28,7 @@ const SAVE_KEY = "bc.project-brief.draft";
 export function BriefForm() {
   const nav = useNavigate();
   const { id } = useParams();
-
+  const { user } = useAuth();
   const isEditMode = Boolean(id);
 
   // ==========================================================
@@ -93,7 +90,7 @@ export function BriefForm() {
 
   const [projectId, setProjectId] = useState("");
 
-  const [values, setValues] = useAutoSave(SAVE_KEY, {});
+  const [values, setValues] = useState({});
 
   const [initialized, setInitialized] = useState(false);
 
@@ -102,18 +99,17 @@ export function BriefForm() {
   // ==========================================================
 
   useEffect(() => {
-    if (isEditMode) return;
-    if (initialized) return;
+    if (isEditMode || initialized) return;
 
-    setValues((current) => {
-      if (current.briefDate) return current; // already set (draft or user)
-      return {
-        ...current,
-        briefDate: todayISO(),
-      };
-    });
-  }, [isEditMode, initialized, setValues]);
+    const currentDate = todayISO();
 
+    setValues((current) => ({
+      ...current,
+      briefDate: current.briefDate || currentDate,
+      briefTakenDate: current.briefTakenDate || currentDate,
+      briefTakenBy: current.briefTakenBy || user?.id || "",
+    }));
+  }, [isEditMode, initialized, user?.id]);
   // ==========================================================
   // LOAD EXISTING BRIEF INTO FORM
   // ==========================================================
@@ -136,7 +132,7 @@ export function BriefForm() {
     setProjectId(existingBrief.projectId ?? "");
     setValues(normalized);
     setInitialized(true);
-  }, [isEditMode, existingBrief, initialized, setValues]);
+  }, [isEditMode, existingBrief, initialized]);
 
   // ==========================================================
   // ERROR LOADING BRIEF
@@ -199,7 +195,6 @@ export function BriefForm() {
           } updated successfully`,
         );
 
-        localStorage.removeItem(SAVE_KEY);
         nav(`/documents/brief/${data?.id ?? id}`);
         return;
       }
@@ -214,7 +209,6 @@ export function BriefForm() {
         `Project brief v${data?.version ?? 1} created successfully`,
       );
 
-      localStorage.removeItem(SAVE_KEY);
       nav(`/documents/brief/${data.id}`);
     } catch (error) {
       console.error(

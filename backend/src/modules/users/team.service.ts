@@ -9,9 +9,11 @@ import { InjectModel } from '@nestjs/sequelize';
 
 import { Op, Transaction } from 'sequelize';
 
-import { TeamMember } from '../users/models/team-member.model';
 import { User } from '../users/models/user.model';
-
+import {
+  TeamMember,
+  TeamMemberCreationAttributes,
+} from './models/team-member.model';
 import { Team } from './models/team.model';
 import { TeamSection } from './models/team-sections.model';
 import { TeamSectionAccess } from './models/team-section-access.model';
@@ -171,20 +173,91 @@ export class TeamService {
     const ownTransaction = !transaction;
 
     try {
-      for (const member of members) {
-        await this.ensureUserExists(member.user_id, trx);
+      // ============================================================
+      // VALIDATE USERS + RESOLVE ADMIN TEAMS
+      // ============================================================
+
+      const rows: TeamMemberCreationAttributes[] = [];
+
+      for (let index = 0; index < members.length; index++) {
+        const member = members[index];
+
+        const user = await this.ensureUserExists(member.user_id, trx);
+
+        // ----------------------------------------------------------
+        // Find the user's Admin Team membership.
+        //
+        // IMPORTANT:
+        // An Admin Team membership row is one where team_id is set
+        // and owner_type / owner_id are BOTH null. That is the only
+        // shape the `team_members.owner_type` ENUM in the DB allows
+        // for a non-owner-scoped row — the enum only contains
+        // 'PROJECT' | 'PLAN_OF_ACTION' | 'QUOTATION' | 'BOQ', it has
+        // no 'TEAM' member. Do NOT filter on owner_type: 'TEAM' —
+        // that value cannot exist in this column and the lookup will
+        // never match anything.
+        //
+        // PROJECT / PLAN_OF_ACTION / BOQ / QUOTATION memberships are
+        // owner-scoped (owner_type/owner_id set) and must NOT be
+        // used as the Admin Team.
+        // ----------------------------------------------------------
+
+        const adminTeamMembership = await this.teamMemberModel.findOne({
+          where: {
+            user_id: member.user_id,
+            owner_type: null,
+            owner_id: null,
+          },
+          order: [
+            ['is_primary', 'DESC'],
+            ['sort_order', 'ASC'],
+            ['created_at', 'ASC'],
+          ],
+          transaction: trx,
+        });
+
+        if (!adminTeamMembership?.team_id) {
+          throw new BadRequestException(
+            `User "${user.id}" is not assigned to an Admin Team`,
+          );
+        }
+
+        rows.push({
+          owner_type: ownerType,
+          owner_id: ownerId,
+
+          // Required by team_members
+          team_id: adminTeamMembership.team_id,
+
+          user_id: member.user_id,
+
+          role_label: member.role_label ?? null,
+
+          is_primary: member.is_primary ?? false,
+
+          sort_order: member.sort_order ?? index,
+
+          created_by: actingUserId ?? null,
+        });
       }
+
+      // ============================================================
+      // REMOVE EXISTING OWNER-SCOPED MEMBERS
+      // ============================================================
 
       await this.teamMemberModel.destroy({
         where: {
           owner_type: ownerType,
           owner_id: ownerId,
         },
-
         transaction: trx,
       });
 
-      if (!members.length) {
+      // ============================================================
+      // NOTHING TO INSERT
+      // ============================================================
+
+      if (!rows.length) {
         if (ownTransaction) {
           await trx.commit();
         }
@@ -192,7 +265,11 @@ export class TeamService {
         return [];
       }
 
-      const primaryCount = members.filter(
+      // ============================================================
+      // PRIMARY VALIDATION
+      // ============================================================
+
+      const primaryCount = rows.filter(
         (member) => member.is_primary === true,
       ).length;
 
@@ -200,24 +277,11 @@ export class TeamService {
         throw new BadRequestException('Only one primary member is allowed');
       }
 
-      const rows = members.map((member, index) => ({
-        owner_type: ownerType,
-        owner_id: ownerId,
+      // ============================================================
+      // CREATE OWNER-SCOPED MEMBERS
+      // ============================================================
 
-        team_id: null,
-
-        user_id: member.user_id,
-
-        role_label: member.role_label ?? null,
-
-        is_primary: member.is_primary ?? false,
-
-        sort_order: member.sort_order ?? index,
-
-        created_by: actingUserId ?? null,
-      }));
-
-      const result = await this.teamMemberModel.bulkCreate(rows as any, {
+      const result = await this.teamMemberModel.bulkCreate(rows, {
         transaction: trx,
       });
 
@@ -234,7 +298,6 @@ export class TeamService {
       throw error;
     }
   }
-
   async update(id: string, dto: UpdateTeamMemberDto) {
     const member = await this.teamMemberModel.findByPk(id);
 
@@ -410,6 +473,12 @@ export class TeamService {
     return this.teamMemberModel.findAll({
       where: {
         team_id: teamId,
+
+        // Only the canonical Admin Team roster rows, not
+        // owner-scoped POA/PROJECT/etc. rows that happen to
+        // carry the same team_id.
+        owner_type: null,
+        owner_id: null,
       },
 
       order: [
@@ -439,6 +508,8 @@ export class TeamService {
       where: {
         team_id: teamId,
         user_id: dto.user_id,
+        owner_type: null,
+        owner_id: null,
       },
     });
 
@@ -458,6 +529,8 @@ export class TeamService {
           {
             where: {
               team_id: teamId,
+              owner_type: null,
+              owner_id: null,
             },
 
             transaction,
@@ -469,10 +542,14 @@ export class TeamService {
         {
           team_id: teamId,
 
-          // Admin Team membership is not
-          // project-owner membership.
-          owner_type: TeamMemberOwnerType.TEAM,
-          owner_id: teamId,
+          // IMPORTANT:
+          // Admin Team membership = team_id set, owner_type/owner_id
+          // both null. The DB's owner_type ENUM does not contain a
+          // 'TEAM' value ('PROJECT' | 'PLAN_OF_ACTION' | 'QUOTATION'
+          // | 'BOQ' only), so this must NOT be written as
+          // TeamMemberOwnerType.TEAM.
+          owner_type: null,
+          owner_id: null,
 
           user_id: dto.user_id,
 
@@ -532,6 +609,8 @@ export class TeamService {
         where: {
           team_id: member.team_id,
           user_id: dto.user_id,
+          owner_type: null,
+          owner_id: null,
 
           id: {
             [Op.ne]: memberId,
@@ -556,6 +635,8 @@ export class TeamService {
           {
             where: {
               team_id: member.team_id,
+              owner_type: null,
+              owner_id: null,
 
               id: {
                 [Op.ne]: memberId,
@@ -604,6 +685,8 @@ export class TeamService {
         {
           where: {
             team_id: member.team_id,
+            owner_type: null,
+            owner_id: null,
           },
 
           transaction,
@@ -1030,6 +1113,15 @@ export class TeamService {
     return this.teamMemberModel.findAll({
       where: {
         user_id: userId,
+
+        // Only the canonical Admin Team roster rows. Owner-scoped
+        // rows (PROJECT / PLAN_OF_ACTION / QUOTATION / BOQ) also
+        // carry team_id (inherited from the resolved Admin Team in
+        // replaceAll) but are NOT Admin Team memberships, and must
+        // be excluded here or a user in N owner-scoped contexts
+        // would appear to belong to their team N+1 times.
+        owner_type: null,
+        owner_id: null,
       },
 
       include: [
@@ -1076,10 +1168,16 @@ export class TeamService {
     // ============================================================
     // GET USER TEAM MEMBERSHIPS
     // ============================================================
+    //
+    // Restricted to canonical Admin Team rows (owner_type/owner_id
+    // null) — see getUserTeams() for why owner-scoped rows must be
+    // excluded here too.
 
     const memberships = await this.teamMemberModel.findAll({
       where: {
         user_id: userId,
+        owner_type: null,
+        owner_id: null,
       },
 
       attributes: ['id', 'team_id'],

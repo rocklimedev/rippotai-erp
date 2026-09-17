@@ -155,11 +155,6 @@ export const BRIEF_SECTIONS = [
         key: "referredBySource",
         label: "Referred By / Source",
       },
-      {
-        key: "briefDate",
-        label: "Brief Date",
-        type: "date",
-      },
     ],
   },
 
@@ -431,9 +426,28 @@ export const BRIEF_SECTIONS = [
         type: "table",
         showWhen: { field: "phasingRequired", value: "Yes" },
         columns: [
-          { key: "phaseName", label: "Phase", type: "text" },
-          { key: "startDate", label: "Start Date", type: "date" },
-          { key: "endDate", label: "End Date", type: "date" },
+          {
+            key: "phaseName",
+            label: "Phase",
+            type: "text",
+            placeholder: "e.g. Design Development",
+          },
+          {
+            key: "description",
+            label: "Description",
+            type: "text",
+            placeholder: "Describe the phase",
+          },
+          {
+            key: "startDate",
+            label: "Start Date",
+            type: "date",
+          },
+          {
+            key: "endDate",
+            label: "End Date",
+            type: "date",
+          },
           {
             key: "expectedTime",
             label: "Expected Time",
@@ -445,7 +459,6 @@ export const BRIEF_SECTIONS = [
       },
     ],
   },
-
   // =========================================================
   // BUDGET  (GST status & Funding Stage removed)
   // =========================================================
@@ -458,17 +471,12 @@ export const BRIEF_SECTIONS = [
         label: "Initial Client Budget",
         type: "number",
       },
-      {
-        key: "budgetCurrency",
-        label: "Budget Currency",
-      },
+
       // budgetGstStatus REMOVED
       // fundingStage REMOVED
       {
         key: "budgetFlexibility",
         label: "Budget Flexibility",
-        type: "textarea",
-        rows: 3,
       },
     ],
   },
@@ -491,11 +499,7 @@ export const BRIEF_SECTIONS = [
         label: "Site Handover Date",
         type: "date",
       },
-      {
-        key: "targetCompletionDate",
-        label: "Target Completion Date",
-        type: "date",
-      },
+
       {
         key: "deadlineReason",
         label: "Deadline Reason",
@@ -569,25 +573,6 @@ export const BRIEF_SECTIONS = [
         label: "Open Points to Close",
         type: "textarea",
         rows: 6,
-      },
-    ],
-  },
-
-  // =========================================================
-  // BRIEF ADMINISTRATION
-  // =========================================================
-  {
-    title: "Brief Administration",
-    key: "admin",
-    fields: [
-      {
-        key: "briefTakenBy",
-        label: "Brief Taken By",
-      },
-      {
-        key: "briefTakenDate",
-        label: "Brief Taken Date",
-        type: "date",
       },
     ],
   },

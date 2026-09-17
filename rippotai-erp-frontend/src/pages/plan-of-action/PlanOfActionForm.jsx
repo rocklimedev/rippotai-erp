@@ -22,7 +22,10 @@ import { Search, Plus, Trash2, CheckCircle2 } from "lucide-react";
 
 import { useGetUsersQuery } from "../../api/users/user.api";
 import { useGetTermsTemplatesQuery } from "../../api/meta/terms.api";
-
+import {
+  useGetTeamsQuery,
+  useGetTeamMembersQuery,
+} from "../../api/users/team.api";
 /* ============================================================
    ROLE SUGGESTIONS
 ============================================================ */
@@ -39,8 +42,45 @@ const ROLE_SUGGESTIONS = [
    HELPERS
 ============================================================ */
 
-const toNumberOrUndefined = (v) =>
-  v === "" || v === null || v === undefined ? undefined : Number(v);
+const toNumberOrUndefined = (value) => {
+  if (value === "" || value === null || value === undefined) {
+    return undefined;
+  }
+
+  const number = Number(value);
+
+  return Number.isNaN(number) ? undefined : number;
+};
+
+const calculateDurationLabel = (minDays, maxDays) => {
+  const min =
+    minDays !== "" && minDays !== null && minDays !== undefined
+      ? Number(minDays)
+      : null;
+
+  const max =
+    maxDays !== "" && maxDays !== null && maxDays !== undefined
+      ? Number(maxDays)
+      : null;
+
+  if (min === null && max === null) {
+    return "";
+  }
+
+  if (min !== null && max !== null) {
+    if (min === max) {
+      return `${min} days`;
+    }
+
+    return `${min}-${max} days`;
+  }
+
+  if (min !== null) {
+    return `${min}+ days`;
+  }
+
+  return `Up to ${max} days`;
+};
 
 /**
  * Convert API Plan of Action response
@@ -58,8 +98,13 @@ const mapPlanOfActionToForm = (plan) => {
           total_duration_max_days: "",
           total_duration_label: "",
         },
+
         phases: [],
+
+        team_id: "",
+
         team_members: [],
+
         terms_template_id: "",
       },
     };
@@ -69,10 +114,6 @@ const mapPlanOfActionToForm = (plan) => {
     projectId: plan.project_id || "",
 
     values: {
-      /* ======================================================
-         OVERVIEW
-      ====================================================== */
-
       Overview: {
         title: plan.title || "Plan of Action",
 
@@ -85,28 +126,14 @@ const mapPlanOfActionToForm = (plan) => {
         total_duration_label: plan.total_duration_label || "",
       },
 
-      /* ======================================================
-         PHASES
-      ====================================================== */
-
       phases: (plan.phases || []).map((phase, index) => {
         const poaPhase = phase.PlanOfActionPhase || {};
 
         return {
-          /*
-           * Local frontend ID.
-           * Do not send this to backend.
-           */
           id: crypto.randomUUID(),
 
-          /*
-           * ProjectPhase reference
-           */
           project_phase_id: phase.id,
 
-          /*
-           * Master phase data
-           */
           phase_number: phase.phase_number ?? index + 1,
 
           phase_code: phase.phase_code || "",
@@ -115,9 +142,6 @@ const mapPlanOfActionToForm = (plan) => {
 
           description: phase.description || "",
 
-          /*
-           * POA-specific configuration
-           */
           duration_min_days: poaPhase.duration_min_days ?? "",
 
           duration_max_days: poaPhase.duration_max_days ?? "",
@@ -130,22 +154,27 @@ const mapPlanOfActionToForm = (plan) => {
 
           gantt_duration_days: poaPhase.gantt_duration_days ?? 0,
 
-          /*
-           * Ordering
-           */
-          sort_order: poaPhase.sort_order ?? index,
+          sort_order: poaPhase.sort_order ?? index + 1,
         };
       }),
+
+      /* ======================================================
+         ADMIN TEAM
+      ====================================================== */
+
+      team_id:
+        plan.team_id ||
+        plan.team_members?.find((member) => member.team_id)?.team_id ||
+        "",
 
       /* ======================================================
          TEAM MEMBERS
       ====================================================== */
 
       team_members: (plan.team_members || []).map((member) => ({
-        /*
-         * Local frontend ID
-         */
         id: crypto.randomUUID(),
+
+        team_id: member.team_id || "",
 
         user_id: member.user_id || "",
 
@@ -153,10 +182,6 @@ const mapPlanOfActionToForm = (plan) => {
 
         is_primary: Boolean(member.is_primary),
       })),
-
-      /* ======================================================
-         TERMS
-      ====================================================== */
 
       terms_template_id: plan.terms_template_id || "",
     },
@@ -214,7 +239,21 @@ export function PlanOfActionForm() {
     });
 
   const { data: users = [] } = useGetUsersQuery();
+  const { data: teams = [], isLoading: isLoadingTeams } = useGetTeamsQuery();
 
+  const [selectedTeamId, setSelectedTeamId] = useState("");
+
+  const {
+    data: teamMembersResponse,
+    isLoading: isLoadingTeamMembers,
+    isFetching: isFetchingTeamMembers,
+  } = useGetTeamMembersQuery(selectedTeamId, {
+    skip: !selectedTeamId,
+  });
+
+  const teamMembers = Array.isArray(teamMembersResponse)
+    ? teamMembersResponse
+    : teamMembersResponse?.data || teamMembersResponse?.items || [];
   const { data: termsTemplates = [] } = useGetTermsTemplatesQuery();
 
   /* ============================================================
@@ -249,6 +288,7 @@ export function PlanOfActionForm() {
     },
 
     phases: [],
+    team_id: "",
 
     team_members: [],
 
@@ -272,9 +312,10 @@ export function PlanOfActionForm() {
 
     setProjectId(mapped.projectId);
 
+    setSelectedTeamId(mapped.values.team_id || "");
+
     setValues(mapped.values);
   }, [isEditMode, existingPlanOfAction, setValues]);
-
   /* ============================================================
      ERROR LOADING POA
   ============================================================ */
@@ -292,14 +333,31 @@ export function PlanOfActionForm() {
   ============================================================ */
 
   const handleFieldChange = (section, key, value) => {
-    setValues((prev) => ({
-      ...prev,
-
-      [section]: {
+    setValues((prev) => {
+      const nextSection = {
         ...(prev[section] || {}),
         [key]: value,
-      },
-    }));
+      };
+
+      /*
+       * Automatically calculate total duration label
+       * whenever minimum or maximum duration changes.
+       */
+      if (
+        section === "Overview" &&
+        (key === "total_duration_min_days" || key === "total_duration_max_days")
+      ) {
+        nextSection.total_duration_label = calculateDurationLabel(
+          nextSection.total_duration_min_days,
+          nextSection.total_duration_max_days,
+        );
+      }
+
+      return {
+        ...prev,
+        [section]: nextSection,
+      };
+    });
   };
 
   /* ============================================================
@@ -322,6 +380,10 @@ export function PlanOfActionForm() {
     ======================================================== */
 
     const addPhase = (phase) => {
+      if (!phase?.id) {
+        return;
+      }
+
       if (isSelected(phase.id)) {
         return;
       }
@@ -335,10 +397,14 @@ export function PlanOfActionForm() {
           ...(prev.phases || []),
 
           {
+            /*
+             * Local UI ID only.
+             */
             id: crypto.randomUUID(),
 
             /*
-             * ProjectPhase reference
+             * IMPORTANT:
+             * Existing reusable ProjectPhase ID.
              */
             project_phase_id: phase.id,
 
@@ -347,14 +413,14 @@ export function PlanOfActionForm() {
              */
             phase_number: nextOrder,
 
-            phase_code: phase.phase_code,
+            phase_code: phase.phase_code || "",
 
-            title: phase.title,
+            title: phase.title || "",
 
             description: phase.description ?? "",
 
             /*
-             * POA configuration
+             * POA-specific configuration
              */
             duration_min_days: "",
 
@@ -811,14 +877,44 @@ export function PlanOfActionForm() {
      TEAM SECTION
   ============================================================ */
 
+  /* ============================================================
+   TEAM SECTION
+============================================================ */
+
   const renderTeamSection = () => {
     const members = values.team_members || [];
 
     /* ========================================================
-       ADD
-    ======================================================== */
+     TEAM CHANGE
+  ======================================================== */
+
+    const handleTeamChange = (teamId) => {
+      setSelectedTeamId(teamId);
+
+      setValues((prev) => ({
+        ...prev,
+
+        team_id: teamId,
+
+        /*
+         * Members belong to the selected Admin Team.
+         * Changing the team therefore clears the old
+         * member selection.
+         */
+        team_members: [],
+      }));
+    };
+
+    /* ========================================================
+     ADD
+  ======================================================== */
 
     const addMember = () => {
+      if (!selectedTeamId) {
+        toast.error("Please select an Admin Team first.");
+        return;
+      }
+
       setValues((prev) => ({
         ...prev,
 
@@ -827,6 +923,8 @@ export function PlanOfActionForm() {
 
           {
             id: crypto.randomUUID(),
+
+            team_id: selectedTeamId,
 
             user_id: "",
 
@@ -839,8 +937,8 @@ export function PlanOfActionForm() {
     };
 
     /* ========================================================
-       UPDATE
-    ======================================================== */
+     UPDATE
+  ======================================================== */
 
     const updateMember = (index, field, value) => {
       setValues((prev) => {
@@ -851,16 +949,31 @@ export function PlanOfActionForm() {
           [field]: value,
         };
 
+        /*
+         * Only one primary contact is allowed.
+         */
+        if (field === "is_primary" && value === true) {
+          return {
+            ...prev,
+
+            team_members: newMembers.map((member, memberIndex) => ({
+              ...member,
+              is_primary: memberIndex === index,
+            })),
+          };
+        }
+
         return {
           ...prev,
+
           team_members: newMembers,
         };
       });
     };
 
     /* ========================================================
-       REMOVE
-    ======================================================== */
+     REMOVE
+  ======================================================== */
 
     const removeMember = (index) => {
       setValues((prev) => ({
@@ -871,23 +984,99 @@ export function PlanOfActionForm() {
     };
 
     /* ========================================================
-       RENDER
-    ======================================================== */
+     TEAM MEMBER USER HELPERS
+  ======================================================== */
+
+    const getMemberUser = (teamMember) => {
+      return teamMember?.user || teamMember?.User || null;
+    };
+
+    const getMemberUserName = (teamMember) => {
+      const user = getMemberUser(teamMember);
+
+      return (
+        user?.name ||
+        user?.full_name ||
+        user?.display_name ||
+        user?.email ||
+        teamMember?.user_id ||
+        "Unknown User"
+      );
+    };
+
+    /* ========================================================
+     RENDER
+  ======================================================== */
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-5">
+        {/* ==================================================
+          HEADER
+      ================================================== */}
+
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">Team</h3>
+          <div>
+            <h3 className="text-lg font-semibold">Team</h3>
+
+            <p className="text-sm text-[#6B7B7C] mt-1">
+              Select an Admin Team and assign members from that team to this
+              Plan of Action.
+            </p>
+          </div>
 
           <button
             type="button"
             onClick={addMember}
-            className="flex items-center gap-2 bg-[#1F453B] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#1a3a32]"
+            disabled={!selectedTeamId}
+            className="flex items-center gap-2 bg-[#1F453B] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#1a3a32] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus size={16} />
             Add Member
           </button>
         </div>
+
+        {/* ==================================================
+          ADMIN TEAM
+      ================================================== */}
+
+        <div className="border border-gray-200 rounded-xl bg-white p-5">
+          <div className="mb-2">
+            <label className="bc-label">Admin Team</label>
+
+            <p className="text-xs text-[#94A3A5] mt-1">
+              Only members of this Admin Team can be assigned to the Plan of
+              Action.
+            </p>
+          </div>
+
+          {isLoadingTeams ? (
+            <div className="text-sm text-[#6B7B7C]">Loading teams...</div>
+          ) : (
+            <select
+              value={selectedTeamId}
+              onChange={(e) => handleTeamChange(e.target.value)}
+              className="bc-input h-10 w-full"
+            >
+              <option value="">Select Admin Team</option>
+
+              {teams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {!selectedTeamId && (
+            <p className="text-xs text-amber-600 mt-2">
+              Select an Admin Team before adding team members.
+            </p>
+          )}
+        </div>
+
+        {/* ==================================================
+          ROLE SUGGESTIONS
+      ================================================== */}
 
         <datalist id="role-options">
           {ROLE_SUGGESTIONS.map((role) => (
@@ -895,107 +1084,211 @@ export function PlanOfActionForm() {
           ))}
         </datalist>
 
-        {members.length === 0 ? (
-          <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl">
-            <p className="text-gray-500">No team members added yet.</p>
+        {/* ==================================================
+          NO TEAM SELECTED
+      ================================================== */}
 
-            <button
-              type="button"
-              onClick={addMember}
-              className="mt-4 text-[#1F453B] hover:underline"
-            >
-              Add the first member
-            </button>
+        {!selectedTeamId ? (
+          <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl">
+            <p className="text-gray-500">
+              Select an Admin Team to assign team members.
+            </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {members.map((member, index) => {
-              const missingUser = !member.user_id;
+          <>
+            {/* ==================================================
+              TEAM MEMBER COUNT
+          ================================================== */}
 
-              const missingRole = !member.role_label;
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-semibold text-[#333333]">Team Members</h4>
 
-              return (
-                <div
-                  key={member.id}
-                  className="flex flex-wrap items-center gap-3 border border-gray-200 rounded-lg p-4 bg-white"
+                <p className="text-xs text-[#94A3A5] mt-1">
+                  Select people from the selected Admin Team.
+                </p>
+              </div>
+
+              <span className="text-sm text-[#6B7B7C]">
+                {members.length} assigned
+              </span>
+            </div>
+
+            {/* ==================================================
+              LOADING MEMBERS
+          ================================================== */}
+
+            {isLoadingTeamMembers ? (
+              <div className="text-sm text-[#6B7B7C] border border-gray-200 rounded-xl p-6 bg-white">
+                Loading team members...
+              </div>
+            ) : teamMembers.length === 0 ? (
+              <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl">
+                <p className="text-gray-500">
+                  No members found in this Admin Team.
+                </p>
+
+                <p className="text-xs text-[#94A3A5] mt-1">
+                  Add members to the Admin Team before assigning them to this
+                  Plan of Action.
+                </p>
+              </div>
+            ) : members.length === 0 ? (
+              <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl">
+                <p className="text-gray-500">No team members assigned yet.</p>
+
+                <button
+                  type="button"
+                  onClick={addMember}
+                  className="mt-4 text-[#1F453B] hover:underline"
                 >
-                  {/* USER */}
+                  Add the first member
+                </button>
+              </div>
+            ) : (
+              /* ==================================================
+               MEMBER ROWS
+            ================================================== */
 
-                  <div className="flex-1 min-w-[200px]">
-                    <select
-                      value={member.user_id}
-                      onChange={(e) =>
-                        updateMember(index, "user_id", e.target.value)
-                      }
-                      className={`bc-input h-10 w-full ${
-                        missingUser ? "border-red-400" : ""
-                      }`}
+              <div className="space-y-3">
+                {members.map((member, index) => {
+                  const missingUser = !member.user_id;
+                  const missingRole = !member.role_label;
+
+                  /*
+                   * Prevent selecting the same Admin Team member
+                   * twice in the POA.
+                   */
+                  const alreadySelectedUserIds = members
+                    .filter((_, memberIndex) => memberIndex !== index)
+                    .map((item) => item.user_id)
+                    .filter(Boolean);
+
+                  return (
+                    <div
+                      key={member.id}
+                      className="flex flex-wrap items-center gap-3 border border-gray-200 rounded-lg p-4 bg-white"
                     >
-                      <option value="">Select person</option>
+                      {/* ======================================
+                        USER
+                    ====================================== */}
 
-                      {users.map((user) => (
-                        <option key={user.id} value={user.id}>
-                          {user.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                      <div className="flex-1 min-w-[220px]">
+                        <label className="bc-label">Team Member</label>
 
-                  {/* ROLE */}
+                        <select
+                          value={member.user_id}
+                          onChange={(e) =>
+                            updateMember(index, "user_id", e.target.value)
+                          }
+                          className={`bc-input h-10 w-full ${
+                            missingUser ? "border-red-400" : ""
+                          }`}
+                        >
+                          <option value="">Select team member</option>
 
-                  <div className="flex-1 min-w-[180px]">
-                    <input
-                      type="text"
-                      list="role-options"
-                      value={member.role_label}
-                      onChange={(e) =>
-                        updateMember(index, "role_label", e.target.value)
-                      }
-                      placeholder="Role, e.g. Project Lead"
-                      className={`bc-input h-10 w-full ${
-                        missingRole ? "border-red-400" : ""
-                      }`}
-                    />
-                  </div>
+                          {teamMembers.map((teamMember) => {
+                            const userId = teamMember.user_id;
 
-                  {/* PRIMARY */}
+                            const isAlreadySelected =
+                              alreadySelectedUserIds.includes(userId);
 
-                  <label className="flex items-center gap-2 text-sm text-[#333333] whitespace-nowrap">
-                    <input
-                      type="checkbox"
-                      checked={member.is_primary}
-                      onChange={(e) =>
-                        updateMember(index, "is_primary", e.target.checked)
-                      }
-                    />
-                    Primary contact
-                  </label>
+                            return (
+                              <option
+                                key={teamMember.id}
+                                value={userId}
+                                disabled={isAlreadySelected}
+                              >
+                                {getMemberUserName(teamMember)}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
 
-                  {/* DELETE */}
+                      {/* ======================================
+                        ROLE
+                    ====================================== */}
 
-                  <button
-                    type="button"
-                    onClick={() => removeMember(index)}
-                    className="text-red-500 hover:text-red-700 p-2 ml-auto"
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                      <div className="flex-1 min-w-[180px]">
+                        <label className="bc-label">Role</label>
 
-                  {/* VALIDATION */}
+                        <input
+                          type="text"
+                          list="role-options"
+                          value={member.role_label}
+                          onChange={(e) =>
+                            updateMember(index, "role_label", e.target.value)
+                          }
+                          placeholder="Role, e.g. Project Lead"
+                          className={`bc-input h-10 w-full ${
+                            missingRole ? "border-red-400" : ""
+                          }`}
+                        />
+                      </div>
 
-                  {(missingUser || missingRole) && (
-                    <p className="w-full text-xs text-red-500">
-                      {missingUser && missingRole
-                        ? "Select a person and enter a role."
-                        : missingUser
-                          ? "Select a person."
-                          : "Enter a role."}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                      {/* ======================================
+                        PRIMARY
+                    ====================================== */}
+
+                      <label className="flex items-center gap-2 text-sm text-[#333333] whitespace-nowrap pt-5">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(member.is_primary)}
+                          onChange={(e) =>
+                            updateMember(index, "is_primary", e.target.checked)
+                          }
+                        />
+                        Primary contact
+                      </label>
+
+                      {/* ======================================
+                        DELETE
+                    ====================================== */}
+
+                      <button
+                        type="button"
+                        onClick={() => removeMember(index)}
+                        className="text-red-500 hover:text-red-700 p-2 ml-auto mt-5"
+                        title="Remove member"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+
+                      {/* ======================================
+                        VALIDATION
+                    ====================================== */}
+
+                      {(missingUser || missingRole) && (
+                        <p className="w-full text-xs text-red-500">
+                          {missingUser && missingRole
+                            ? "Select a team member and enter a role."
+                            : missingUser
+                              ? "Select a team member."
+                              : "Enter a role."}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ==================================================
+              ADD MEMBER
+          ================================================== */}
+
+            {teamMembers.length > members.length && (
+              <button
+                type="button"
+                onClick={addMember}
+                className="flex items-center gap-2 text-sm text-[#1F453B] hover:underline"
+              >
+                <Plus size={16} />
+                Add another member
+              </button>
+            )}
+          </>
         )}
       </div>
     );
@@ -1095,26 +1388,56 @@ export function PlanOfActionForm() {
 
   const handleSubmit = async () => {
     /* ======================================================
-         PROJECT VALIDATION
-      ====================================================== */
+       PROJECT VALIDATION
+    ====================================================== */
 
     if (!projectId) {
       return toast.error("Please select a project.");
     }
 
     /* ======================================================
-         PHASE VALIDATION
-      ====================================================== */
+       UUID VALIDATION
+    ====================================================== */
+
+    const UUID_REGEX =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    if (!UUID_REGEX.test(projectId)) {
+      console.error("Invalid projectId:", projectId);
+
+      return toast.error("Selected project has an invalid ID.");
+    }
+
+    /* ======================================================
+       PHASE VALIDATION
+    ====================================================== */
 
     if (!values.phases?.length) {
       return toast.error("Add at least one phase.");
     }
 
+    /*
+     * Every phase must reference an existing
+     * reusable ProjectPhase.
+     */
+    const invalidPhase = values.phases.find(
+      (phase) =>
+        !phase.project_phase_id || !UUID_REGEX.test(phase.project_phase_id),
+    );
+
+    if (invalidPhase) {
+      console.error("Invalid phase:", invalidPhase);
+
+      return toast.error(
+        "One or more selected phases have an invalid Project Phase ID.",
+      );
+    }
+
     const overview = values.Overview || {};
 
     /* ======================================================
-         TEAM VALIDATION
-      ====================================================== */
+       TEAM VALIDATION
+    ====================================================== */
 
     const rawMembers = values.team_members || [];
 
@@ -1130,11 +1453,31 @@ export function PlanOfActionForm() {
       );
     }
 
+    /*
+     * Prevent the same user from being added
+     * more than once to the POA.
+     */
+    const memberUserIds = rawMembers.map((member) => member.user_id);
+
+    const uniqueMemberUserIds = new Set(memberUserIds);
+
+    if (uniqueMemberUserIds.size !== memberUserIds.length) {
+      return toast.error("A team member cannot be added more than once.");
+    }
+
     /* ======================================================
-         PAYLOAD
-      ====================================================== */
+       PAYLOAD
+    ====================================================== */
 
     const payload = {
+      /*
+       * Backend DTO expects project_id.
+       */
+      project_id: projectId,
+
+      /*
+       * OVERVIEW
+       */
       title: overview.title || "Plan of Action",
 
       execution_description: overview.execution_description || undefined,
@@ -1149,6 +1492,9 @@ export function PlanOfActionForm() {
 
       total_duration_label: overview.total_duration_label || undefined,
 
+      /*
+       * TERMS
+       */
       ...(values.terms_template_id
         ? {
             terms_template_id: values.terms_template_id,
@@ -1156,42 +1502,87 @@ export function PlanOfActionForm() {
         : {}),
 
       /* ====================================================
-           PHASES
-        ==================================================== */
+         PHASES
+      ==================================================== */
 
-      phases: values.phases.map(({ id: localId, ...phase }) => ({
-        ...phase,
+      phases: values.phases.map(
+        ({ id: localId, project_phase_id, ...phase }) => ({
+          /*
+           * IMPORTANT:
+           * Send the reusable ProjectPhase UUID.
+           */
+          project_phase_id,
 
-        phase_number: Number(phase.phase_number),
+          /*
+           * Existing master phase information.
+           */
+          phase_number: Number(phase.phase_number),
 
-        duration_min_days: toNumberOrUndefined(phase.duration_min_days),
+          phase_code: phase.phase_code,
 
-        duration_max_days: toNumberOrUndefined(phase.duration_max_days),
+          title: phase.title,
 
-        gantt_start_offset_days: toNumberOrUndefined(
-          phase.gantt_start_offset_days,
-        ),
+          description: phase.description || undefined,
 
-        gantt_duration_days: toNumberOrUndefined(phase.gantt_duration_days),
-      })),
+          /*
+           * POA configuration.
+           */
+          duration_min_days: toNumberOrUndefined(phase.duration_min_days),
+
+          duration_max_days: toNumberOrUndefined(phase.duration_max_days),
+
+          parallel_work_note: phase.parallel_work_note || undefined,
+
+          inclusion_note: phase.inclusion_note || undefined,
+
+          gantt_start_offset_days:
+            toNumberOrUndefined(phase.gantt_start_offset_days) ?? 0,
+
+          gantt_duration_days:
+            toNumberOrUndefined(phase.gantt_duration_days) ?? 0,
+        }),
+      ),
 
       /* ====================================================
-           TEAM
-        ==================================================== */
+         TEAM
+      ==================================================== */
 
-      team_members: rawMembers.map(({ id: localId, ...member }) => member),
+      /*
+       * IMPORTANT:
+       *
+       * Do NOT send team_id here.
+       *
+       * Backend TeamService resolves the user's
+       * Admin Team automatically and stores that
+       * team_id on the owner-scoped team_members row.
+       */
+      team_members: rawMembers.map(
+        ({ id: localId, user_id, role_label, is_primary }) => ({
+          user_id,
+
+          role_label,
+
+          is_primary: Boolean(is_primary),
+        }),
+      ),
     };
 
     /* ======================================================
-         SAVE
-      ====================================================== */
+       DEBUG
+    ====================================================== */
+
+    console.log("Plan of Action payload:", payload);
+
+    /* ======================================================
+       SAVE
+    ====================================================== */
 
     try {
       let plan;
 
       /* ====================================================
-           EDIT
-        ==================================================== */
+         EDIT
+      ==================================================== */
 
       if (isEditMode) {
         plan = await updatePlanOfAction({
@@ -1201,33 +1592,45 @@ export function PlanOfActionForm() {
 
         toast.success("Plan of Action updated successfully.");
       } else {
-        /* ====================================================
+        /* ==================================================
            CREATE
-        ==================================================== */
+        ================================================== */
+
         plan = await createPlanOfAction(payload).unwrap();
 
         toast.success("Plan of Action created successfully.");
       }
 
-      /* ====================================================
-           CLEAR AUTOSAVE
-        ==================================================== */
+      /* ======================================================
+         CLEAR AUTOSAVE
+      ====================================================== */
 
       localStorage.removeItem(SAVE_KEY);
 
-      /* ====================================================
-           REDIRECT
-        ==================================================== */
+      /* ======================================================
+         REDIRECT
+      ====================================================== */
 
       navigate(`/plan-of-actions/${plan?.id || id}`);
     } catch (error) {
       console.error("Plan of Action save failed:", error);
 
-      toast.error(
-        isEditMode
-          ? "Failed to update Plan of Action."
-          : "Failed to create Plan of Action.",
-      );
+      /*
+       * Show backend validation message
+       * when available.
+       */
+      const backendMessage = error?.data?.message || error?.error || null;
+
+      if (Array.isArray(backendMessage)) {
+        toast.error(backendMessage.join(", "));
+      } else {
+        toast.error(
+          backendMessage ||
+            (isEditMode
+              ? "Failed to update Plan of Action."
+              : "Failed to create Plan of Action."),
+        );
+      }
     }
   };
 

@@ -449,7 +449,6 @@ export class PlanOfActionsService {
   // ============================================================
   // Create Phases For Plan
   // ============================================================
-
   private async createPhasesForPlan(
     planId: string,
     phases: UpsertPhaseDto[],
@@ -458,32 +457,16 @@ export class PlanOfActionsService {
     for (let index = 0; index < phases.length; index++) {
       const phase = phases[index];
 
-      // --------------------------------------------------------
-      // Create independent ProjectPhase
-      // --------------------------------------------------------
-
-      const projectPhase = await this.phaseModel.create(
-        {
-          phase_number: phase.phase_number,
-          phase_code: phase.phase_code,
-          title: phase.title,
-          description: phase.description ?? null,
-          sort_order: index,
-        } as ProjectPhase,
-        {
-          transaction,
-        },
-      );
-
-      // --------------------------------------------------------
-      // Create Plan of Action Phase
-      // POA-specific timing / notes / Gantt configuration
-      // --------------------------------------------------------
+      if (!phase.project_phase_id) {
+        throw new Error(
+          `Phase at position ${index + 1} is missing project_phase_id`,
+        );
+      }
 
       await this.planPhaseModel.create(
         {
           plan_of_action_id: planId,
-          project_phase_id: projectPhase.id,
+          project_phase_id: phase.project_phase_id,
 
           duration_min_days: phase.duration_min_days ?? null,
           duration_max_days: phase.duration_max_days ?? null,
@@ -492,7 +475,6 @@ export class PlanOfActionsService {
           inclusion_note: phase.inclusion_note ?? null,
 
           gantt_start_offset_days: phase.gantt_start_offset_days ?? 0,
-
           gantt_duration_days: phase.gantt_duration_days ?? 0,
 
           sort_order: index,
