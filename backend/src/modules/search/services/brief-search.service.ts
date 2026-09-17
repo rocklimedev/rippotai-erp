@@ -396,6 +396,8 @@ export class BriefSearchService {
   // =========================================================
 
   async reindexAll() {
+    await this.searchService.createIndex(this.INDEX);
+
     const briefs = await this.briefModel.findAll({
       include: this.getIncludes(),
     });
