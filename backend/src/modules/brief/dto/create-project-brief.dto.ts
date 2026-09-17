@@ -169,6 +169,10 @@ export class ProjectBriefPhaseDto {
   phaseName: string;
 
   @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
   @IsDateString()
   startDate?: string;
 

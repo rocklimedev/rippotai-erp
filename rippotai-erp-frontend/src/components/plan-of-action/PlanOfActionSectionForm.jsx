@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { Shell } from "../../hooks/shared"; // keep your layout Shell
+import { Shell } from "../../hooks/shared";
 
 export function PlanOfActionSectionForm({
   title,
@@ -34,6 +34,7 @@ export function PlanOfActionSectionForm({
   // Improved filled count for both simple and complex forms
   const filledCount = React.useMemo(() => {
     let count = 0;
+
     Object.values(values || {}).forEach((val) => {
       if (Array.isArray(val)) {
         count += val.length > 0 ? 1 : 0;
@@ -49,6 +50,7 @@ export function PlanOfActionSectionForm({
         count++;
       }
     });
+
     return count;
   }, [values]);
 
@@ -98,6 +100,7 @@ export function PlanOfActionSectionForm({
                 <SelectTrigger>
                   <SelectValue placeholder="Select..." />
                 </SelectTrigger>
+
                 <SelectContent>
                   {(field.options || []).map((option) => (
                     <SelectItem key={option} value={option}>
@@ -132,28 +135,18 @@ export function PlanOfActionSectionForm({
   };
 
   return (
-    <Shell
-      title={title}
-      subtitle={subtitle}
-      action={
-        <Button onClick={onSubmit} disabled={isSubmitting}>
-          <Save className="mr-2 h-4 w-4" />
-          {isSubmitting
-            ? "Saving..."
-            : submitLabel ||
-              (title?.includes("Recce") ? "Save Site Recce" : "Generate Brief")}
-        </Button>
-      }
-    >
+    <Shell title={title} subtitle={subtitle}>
       {/* Project Selector */}
       <Card>
         <CardContent className="pt-6">
           <div className="space-y-2 max-w-lg">
             <Label className="text-[13px] font-semibold">Project</Label>
+
             <Select value={projectId || ""} onValueChange={onProjectChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Select Project" />
               </SelectTrigger>
+
               <SelectContent>
                 {projects?.map((project) => (
                   <SelectItem key={project.id} value={project.id}>
@@ -175,11 +168,27 @@ export function PlanOfActionSectionForm({
                 {index + 1}. {section.title}
               </CardTitle>
             </CardHeader>
+
             <CardContent>{renderSectionBody(section)}</CardContent>
           </Card>
         ))}
       </div>
 
+      {/* Save Plan of Action */}
+      <div className="mt-6">
+        <Button
+          type="button"
+          onClick={onSubmit}
+          disabled={isSubmitting}
+          className="w-full h-11"
+        >
+          <Save className="mr-2 h-4 w-4" />
+
+          {isSubmitting ? "Saving..." : submitLabel || "Save Plan of Action"}
+        </Button>
+      </div>
+
+      {/* Autosave / completion status */}
       <div className="mt-4 text-xs text-muted-foreground text-center">
         Draft autosaved locally • {filledCount} field
         {filledCount !== 1 ? "s" : ""} completed

@@ -45,6 +45,10 @@ export class ProjectBriefPhase extends Model<ProjectBriefPhase> {
   @Column(DataType.STRING)
   declare phaseName: string;
 
+  @AllowNull(true)
+  @Column(DataType.TEXT)
+  declare description: string | null;
+
   @Column(DataType.DATEONLY)
   declare startDate: string | null;
 

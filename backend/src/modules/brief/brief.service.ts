@@ -709,7 +709,12 @@ export class ProjectBriefsService {
           id: randomUUID(),
           projectBriefId,
           sortOrder: item.sortOrder ?? index,
-          ...item,
+          phaseName: item.phaseName,
+          description: item.description ?? null,
+          startDate: item.startDate ?? null,
+          endDate: item.endDate ?? null,
+          expectedTime: item.expectedTime ?? null,
+          notes: item.notes ?? null,
         })),
         { transaction },
       );
@@ -812,7 +817,15 @@ export class ProjectBriefsService {
     await this.replaceChildCollection(
       this.phaseModel,
       projectBriefId,
-      children.phases,
+      children.phases?.map((phase: any, index: number) => ({
+        ...phase,
+        sortOrder: phase.sortOrder ?? index,
+        description: phase.description ?? null,
+        startDate: phase.startDate ?? null,
+        endDate: phase.endDate ?? null,
+        expectedTime: phase.expectedTime ?? null,
+        notes: phase.notes ?? null,
+      })),
       transaction,
     );
 

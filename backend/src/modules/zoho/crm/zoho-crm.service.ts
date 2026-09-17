@@ -1,25 +1,53 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
+
 import { ZohoHttpService } from '../services/zoho-http.service';
 
 const ZOHO_BIGIN_BASE_URL = 'https://www.zohoapis.in/bigin/v2';
 
-// Unlike Zoho CRM, Bigin's GET endpoints require an explicit `fields`
-// query parameter on every request — it returns 400
-// REQUIRED_PARAM_MISSING (param_name: "fields") if it's omitted.
-// These are used as a fallback whenever the caller doesn't pass their
-// own `fields` param. Callers can always override by passing
-// `params.fields` themselves (comma-separated field API names).
+/**
+ * ============================================================
+ * DEFAULT FIELDS
+ * ============================================================
+ *
+ * Bigin GET APIs require the `fields` query parameter.
+ *
+ * If the caller provides:
+ *
+ * ?fields=id,Deal_Name,Stage
+ *
+ * that value is preserved.
+ *
+ * Otherwise we use the module-specific defaults below.
+ */
 const DEFAULT_FIELDS: Record<string, string> = {
   Contacts: 'id,First_Name,Last_Name,Email,Phone,Account_Name',
+
   Companies: 'id,Company_Name,Phone,Website',
-  Pipelines: 'id,Deal_Name,Stage,Amount,Closing_Date,Contact_Name',
+
+  Pipelines: [
+    'id',
+    'Deal_Name',
+    'Sub_Pipeline',
+    'Stage',
+    'Amount',
+    'Closing_Date',
+    'Contact_Name',
+    'Phone',
+    'Email',
+  ].join(','),
+
   Tasks: 'id,Subject,Status,Due_Date',
+
   Events: 'id,Event_Title,Start_DateTime,End_DateTime,Venue',
+
   Calls: 'id,Subject,Call_Type,Call_Start_Time',
+
   Products: 'id,Product_Name,Unit_Price',
 };
 
-// Bare-minimum fallback for any module not listed above.
+/**
+ * Bare minimum fallback for unknown modules.
+ */
 const FALLBACK_FIELDS = 'id';
 
 @Injectable()
@@ -27,12 +55,18 @@ export class ZohoCrmService {
   constructor(private readonly zohoHttpService: ZohoHttpService) {}
 
   // ============================================================
-  // RESOLVE FIELDS PARAM
-  // Ensures every GET request Bigin requires a `fields` param for
-  // actually has one, without clobbering a caller-supplied value.
+  // INTERNAL HELPERS
   // ============================================================
 
-  private withFields(module: string, params?: Record<string, any>) {
+  /**
+   * Bigin GET endpoints require `fields`.
+   *
+   * Do not overwrite fields supplied by the caller.
+   */
+  private withFields(
+    module: string,
+    params?: Record<string, any>,
+  ): Record<string, any> {
     if (params?.fields) {
       return params;
     }
@@ -41,6 +75,185 @@ export class ZohoCrmService {
       ...(params || {}),
       fields: DEFAULT_FIELDS[module] || FALLBACK_FIELDS,
     };
+  }
+
+  /**
+   * Normalize module name for comparisons.
+   *
+   * We still send the original module name to Zoho.
+   */
+  private normalizeModule(module: string): string {
+    return String(module || '')
+      .trim()
+      .toLowerCase();
+  }
+
+  /**
+   * Validate Bigin Pipeline/Deal payload.
+   *
+   * Bigin currently requires:
+   *
+   * - Deal_Name
+   * - Sub_Pipeline
+   * - Stage
+   *
+   * The most important one from your current Zoho error is:
+   *
+   *     Sub_Pipeline
+   *
+   * Without it Bigin returns:
+   *
+   *     MANDATORY_NOT_FOUND
+   */
+  private validatePipelineData(data: Record<string, any>): Record<string, any> {
+    if (!data || typeof data !== 'object') {
+      throw new BadRequestException(
+        'Bigin Pipeline data must be a valid object.',
+      );
+    }
+
+    const payload = {
+      ...data,
+    };
+
+    // ----------------------------------------------------------
+    // Deal Name
+    // ----------------------------------------------------------
+
+    if (
+      payload.Deal_Name === undefined ||
+      payload.Deal_Name === null ||
+      String(payload.Deal_Name).trim() === ''
+    ) {
+      throw new BadRequestException('Bigin Pipelines requires Deal_Name.');
+    }
+
+    // ----------------------------------------------------------
+    // Sub Pipeline
+    // ----------------------------------------------------------
+
+    if (
+      payload.Sub_Pipeline === undefined ||
+      payload.Sub_Pipeline === null ||
+      String(payload.Sub_Pipeline).trim() === ''
+    ) {
+      throw new BadRequestException(
+        'Bigin Pipelines requires Sub_Pipeline. ' +
+          'Fetch the available Sub_Pipeline values from ' +
+          '/settings/fields?module=Pipelines and provide a valid value.',
+      );
+    }
+
+    // ----------------------------------------------------------
+    // Stage
+    // ----------------------------------------------------------
+
+    if (
+      payload.Stage === undefined ||
+      payload.Stage === null ||
+      String(payload.Stage).trim() === ''
+    ) {
+      throw new BadRequestException('Bigin Pipelines requires Stage.');
+    }
+
+    return payload;
+  }
+
+  /**
+   * Prepare data before create.
+   *
+   * Only Pipelines receives special Bigin validation.
+   */
+  private prepareCreateData(
+    module: string,
+    data: Record<string, any>,
+  ): Record<string, any> {
+    if (this.normalizeModule(module) === 'pipelines') {
+      return this.validatePipelineData(data);
+    }
+
+    return {
+      ...data,
+    };
+  }
+
+  /**
+   * Prepare data before update.
+   *
+   * We validate Pipeline fields only when they are supplied.
+   *
+   * This allows partial updates while still preventing an
+   * explicitly empty Sub_Pipeline / Stage / Deal_Name.
+   */
+  private prepareUpdateData(
+    module: string,
+    data: Record<string, any>,
+  ): Record<string, any> {
+    if (!data || typeof data !== 'object') {
+      throw new BadRequestException(
+        'Bigin update data must be a valid object.',
+      );
+    }
+
+    if (this.normalizeModule(module) !== 'pipelines') {
+      return {
+        ...data,
+      };
+    }
+
+    const payload = {
+      ...data,
+    };
+
+    if (
+      payload.Deal_Name !== undefined &&
+      (payload.Deal_Name === null || String(payload.Deal_Name).trim() === '')
+    ) {
+      throw new BadRequestException('Deal_Name cannot be empty.');
+    }
+
+    if (
+      payload.Sub_Pipeline !== undefined &&
+      (payload.Sub_Pipeline === null ||
+        String(payload.Sub_Pipeline).trim() === '')
+    ) {
+      throw new BadRequestException('Sub_Pipeline cannot be empty.');
+    }
+
+    if (
+      payload.Stage !== undefined &&
+      (payload.Stage === null || String(payload.Stage).trim() === '')
+    ) {
+      throw new BadRequestException('Stage cannot be empty.');
+    }
+
+    return payload;
+  }
+
+  /**
+   * Prepare multiple create records.
+   */
+  private prepareCreateRecords(
+    module: string,
+    data: Record<string, any>[],
+  ): Record<string, any>[] {
+    if (!Array.isArray(data) || data.length === 0) {
+      throw new BadRequestException('Data must be a non-empty array.');
+    }
+
+    return data.map((record, index) => {
+      try {
+        return this.prepareCreateData(module, record);
+      } catch (error) {
+        if (error instanceof BadRequestException) {
+          throw new BadRequestException(
+            `Record ${index + 1}: ${error.message}`,
+          );
+        }
+
+        throw error;
+      }
+    });
   }
 
   // ============================================================
@@ -57,9 +270,11 @@ export class ZohoCrmService {
       `/${encodeURIComponent(module)}`,
       {
         baseURL: ZOHO_BIGIN_BASE_URL,
+
         headers: {
           Accept: 'application/json',
         },
+
         params: this.withFields(module, params),
       },
     );
@@ -75,14 +290,20 @@ export class ZohoCrmService {
     recordId: string,
     params?: Record<string, any>,
   ) {
+    if (!recordId) {
+      throw new BadRequestException('Record ID is required.');
+    }
+
     return this.zohoHttpService.get(
       ownerKey,
       `/${encodeURIComponent(module)}/${encodeURIComponent(recordId)}`,
       {
         baseURL: ZOHO_BIGIN_BASE_URL,
+
         headers: {
           Accept: 'application/json',
         },
+
         params: this.withFields(module, params),
       },
     );
@@ -97,17 +318,21 @@ export class ZohoCrmService {
     module: string,
     data: Record<string, any>,
   ) {
+    const payload = this.prepareCreateData(module, data);
+
     return this.zohoHttpService.post(
       ownerKey,
       `/${encodeURIComponent(module)}`,
       {
         baseURL: ZOHO_BIGIN_BASE_URL,
+
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
+
         data: {
-          data: [data],
+          data: [payload],
         },
       },
     );
@@ -122,17 +347,21 @@ export class ZohoCrmService {
     module: string,
     data: Record<string, any>[],
   ) {
+    const payload = this.prepareCreateRecords(module, data);
+
     return this.zohoHttpService.post(
       ownerKey,
       `/${encodeURIComponent(module)}`,
       {
         baseURL: ZOHO_BIGIN_BASE_URL,
+
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
+
         data: {
-          data,
+          data: payload,
         },
       },
     );
@@ -148,17 +377,25 @@ export class ZohoCrmService {
     recordId: string,
     data: Record<string, any>,
   ) {
+    if (!recordId) {
+      throw new BadRequestException('Record ID is required.');
+    }
+
+    const payload = this.prepareUpdateData(module, data);
+
     return this.zohoHttpService.put(
       ownerKey,
       `/${encodeURIComponent(module)}/${encodeURIComponent(recordId)}`,
       {
         baseURL: ZOHO_BIGIN_BASE_URL,
+
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
+
         data: {
-          data: [data],
+          data: [payload],
         },
       },
     );
@@ -169,11 +406,16 @@ export class ZohoCrmService {
   // ============================================================
 
   async deleteRecord(ownerKey: string, module: string, recordId: string) {
+    if (!recordId) {
+      throw new BadRequestException('Record ID is required.');
+    }
+
     return this.zohoHttpService.delete(
       ownerKey,
       `/${encodeURIComponent(module)}/${encodeURIComponent(recordId)}`,
       {
         baseURL: ZOHO_BIGIN_BASE_URL,
+
         headers: {
           Accept: 'application/json',
         },
@@ -195,9 +437,11 @@ export class ZohoCrmService {
       `/${encodeURIComponent(module)}/search`,
       {
         baseURL: ZOHO_BIGIN_BASE_URL,
+
         headers: {
           Accept: 'application/json',
         },
+
         params: this.withFields(module, params),
       },
     );
@@ -210,6 +454,7 @@ export class ZohoCrmService {
   async getModules(ownerKey: string) {
     return this.zohoHttpService.get(ownerKey, '/settings/modules', {
       baseURL: ZOHO_BIGIN_BASE_URL,
+
       headers: {
         Accept: 'application/json',
       },
@@ -227,6 +472,7 @@ export class ZohoCrmService {
 
     return this.zohoHttpService.get(ownerKey, url, {
       baseURL: ZOHO_BIGIN_BASE_URL,
+
       headers: {
         Accept: 'application/json',
       },
@@ -240,9 +486,11 @@ export class ZohoCrmService {
   async getUsers(ownerKey: string, params?: Record<string, any>) {
     return this.zohoHttpService.get(ownerKey, '/users', {
       baseURL: ZOHO_BIGIN_BASE_URL,
+
       headers: {
         Accept: 'application/json',
       },
+
       params,
     });
   }
@@ -254,6 +502,7 @@ export class ZohoCrmService {
   async getOrg(ownerKey: string) {
     return this.zohoHttpService.get(ownerKey, '/org', {
       baseURL: ZOHO_BIGIN_BASE_URL,
+
       headers: {
         Accept: 'application/json',
       },
@@ -285,7 +534,8 @@ export class ZohoCrmService {
   }
 
   // ============================================================
-  // COMPANIES (Bigin's equivalent of CRM "Accounts")
+  // COMPANIES
+  // Bigin equivalent of CRM Accounts
   // ============================================================
 
   async getCompanies(ownerKey: string, params?: Record<string, any>) {
@@ -309,7 +559,8 @@ export class ZohoCrmService {
   }
 
   // ============================================================
-  // PIPELINES (Bigin's equivalent of CRM "Deals")
+  // PIPELINES
+  // Bigin Deals/Pipelines
   // ============================================================
 
   async getPipelines(ownerKey: string, params?: Record<string, any>) {
@@ -319,7 +570,61 @@ export class ZohoCrmService {
   async getPipeline(ownerKey: string, id: string) {
     return this.getRecord(ownerKey, 'Pipelines', id);
   }
+  // Add near getFields()
 
+  /**
+   * Returns Sub_Pipeline -> Stage[] mapping for the Pipelines module.
+   *
+   * The flat /settings/fields endpoint does NOT carry this relationship
+   * (Stage and Sub_Pipeline picklists come back completely unlinked).
+   * The relationship only appears in the Layouts Metadata API, where
+   * dependent picklist values carry a `maps` array.
+   */
+  async getPipelineStageMap(ownerKey: string) {
+    const res = await this.zohoHttpService.get(ownerKey, '/settings/layouts', {
+      baseURL: ZOHO_BIGIN_BASE_URL,
+      headers: { Accept: 'application/json' },
+      params: { module: 'Pipelines' },
+    });
+
+    const layouts = res?.data?.layouts ?? res?.layouts ?? [];
+
+    const result: Record<
+      string,
+      { display_value: string; actual_value: string; id: string }[]
+    > = {};
+
+    for (const layout of layouts) {
+      const sections = layout?.sections ?? [];
+      const fields = sections.flatMap((s: any) => s?.fields ?? []);
+
+      const subPipelineField = fields.find((f: any) =>
+        ['sub_pipeline', 'pipeline'].includes(
+          String(f?.api_name).toLowerCase(),
+        ),
+      );
+
+      // Each Sub_Pipeline picklist value carries `maps`: an array of field
+      // references (here, the Stage field) whose OWN pick_list_values are
+      // the stages scoped to that particular sub-pipeline. The map entry
+      // itself is metadata about the Stage field, not a stage.
+      for (const spVal of subPipelineField?.pick_list_values ?? []) {
+        const maps = spVal?.maps;
+        if (!Array.isArray(maps) || !maps.length) continue;
+
+        const stageValues = maps.flatMap((m: any) => m?.pick_list_values ?? []);
+        if (!stageValues.length) continue;
+
+        result[spVal.display_value] = stageValues.map((s: any) => ({
+          display_value: s.display_value,
+          actual_value: s.actual_value ?? s.display_value,
+          id: s.id,
+        }));
+      }
+    }
+
+    return result;
+  }
   async createPipeline(ownerKey: string, data: Record<string, any>) {
     return this.createRecord(ownerKey, 'Pipelines', data);
   }

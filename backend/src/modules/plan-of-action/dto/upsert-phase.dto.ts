@@ -1,14 +1,27 @@
-import { IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+} from 'class-validator';
 
 export class UpsertPhaseDto {
+  @IsUUID()
+  @IsNotEmpty()
+  project_phase_id: string;
+
   @IsInt()
   @Min(1)
   phase_number: number;
 
   @IsString()
+  @IsNotEmpty()
   phase_code: string;
 
   @IsString()
+  @IsNotEmpty()
   title: string;
 
   @IsOptional()
