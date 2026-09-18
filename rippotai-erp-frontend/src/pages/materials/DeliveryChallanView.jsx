@@ -712,7 +712,7 @@ export default function DeliveryChallanView() {
             <Button
               variant="outline"
               className="mt-5"
-              onClick={() => nav("/materials/delivery-challans")}
+              onClick={() => nav("/procurement/delivery-challans")}
             >
               <ArrowLeft size={16} />
               Back to Delivery Challans
@@ -736,7 +736,7 @@ export default function DeliveryChallanView() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => nav("/materials/delivery-challans")}
+                onClick={() => nav("/procurement/delivery-challans")}
               >
                 <ArrowLeft size={18} />
               </Button>
@@ -782,7 +782,7 @@ export default function DeliveryChallanView() {
 
               <Button
                 variant="outline"
-                onClick={() => nav(`/materials/delivery-challans/${id}/edit`)}
+                onClick={() => nav(`/procurement/delivery-challans/${id}/edit`)}
               >
                 <Edit3 size={16} />
                 Edit

@@ -258,8 +258,8 @@ export default function DeliveryChallanList() {
           onClick={() =>
             nav(
               purchaseOrderId
-                ? `/materials/delivery-challans/new?purchase_order_id=${purchaseOrderId}`
-                : "/materials/delivery-challans/new",
+                ? `/procurement/delivery-challans/new?purchase_order_id=${purchaseOrderId}`
+                : "/procurement/delivery-challans/new",
             )
           }
           className="h-10 bg-[#1F453B] hover:bg-[#16372F]"
@@ -402,7 +402,7 @@ export default function DeliveryChallanList() {
                         <tr
                           key={r.id}
                           onClick={() =>
-                            nav(`/materials/delivery-challans/${r.id}`)
+                            nav(`/procurement/delivery-challans/${r.id}`)
                           }
                           className="border-b last:border-b-0 hover:bg-[#F8FAF9] cursor-pointer transition-colors"
                         >
@@ -442,7 +442,7 @@ export default function DeliveryChallanList() {
                                     e.stopPropagation();
 
                                     nav(
-                                      `/materials/purchase-orders/${r.purchase_order_id}`,
+                                      `/procurement/purchase-orders/${r.purchase_order_id}`,
                                     );
                                   }}
                                   className="text-[#1F453B] hover:underline font-mono text-xs"
@@ -594,7 +594,7 @@ export default function DeliveryChallanList() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() =>
-                                  nav(`/materials/delivery-challans/${r.id}`)
+                                  nav(`/procurement/delivery-challans/${r.id}`)
                                 }
                                 title="View"
                               >
@@ -606,7 +606,7 @@ export default function DeliveryChallanList() {
                                 size="icon"
                                 onClick={() =>
                                   nav(
-                                    `/materials/delivery-challans/${r.id}/edit`,
+                                    `/procurement/delivery-challans/${r.id}/edit`,
                                   )
                                 }
                                 title="Edit"
@@ -647,8 +647,8 @@ export default function DeliveryChallanList() {
                               onClick={() =>
                                 nav(
                                   purchaseOrderId
-                                    ? `/materials/delivery-challans/new?purchase_order_id=${purchaseOrderId}`
-                                    : "/materials/delivery-challans/new",
+                                    ? `/procurement/delivery-challans/new?purchase_order_id=${purchaseOrderId}`
+                                    : "/procurement/delivery-challans/new",
                                 )
                               }
                               className="mt-1 bg-[#1F453B] hover:bg-[#16372F]"

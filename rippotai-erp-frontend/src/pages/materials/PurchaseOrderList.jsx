@@ -100,7 +100,7 @@ export default function PurchaseOrderList() {
     if (!purchaseOrderId) return;
 
     nav(
-      `/materials/delivery-challans/new?purchase-order=${encodeURIComponent(
+      `/procurement/delivery-challans/new?purchase-order=${encodeURIComponent(
         purchaseOrderId,
       )}`,
     );
@@ -115,7 +115,7 @@ export default function PurchaseOrderList() {
         }`}
         action={
           <button
-            onClick={() => nav("/materials/purchase-orders/new")}
+            onClick={() => nav("/procurement/purchase-orders/new")}
             className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-1.5 hover:bg-[#17382F] transition-colors"
           >
             <Plus size={14} />
@@ -178,7 +178,7 @@ export default function PurchaseOrderList() {
                       <tr
                         key={r.id}
                         onClick={() =>
-                          nav(`/materials/purchase-orders/${r.id}`)
+                          nav(`/procurement/purchase-orders/${r.id}`)
                         }
                         className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F8FAF9] cursor-pointer transition-colors"
                       >
@@ -267,7 +267,7 @@ export default function PurchaseOrderList() {
                             <button
                               type="button"
                               onClick={() =>
-                                nav(`/materials/purchase-orders/${r.id}`)
+                                nav(`/procurement/purchase-orders/${r.id}`)
                               }
                               className="p-1.5 rounded hover:bg-[#EAEEF0] transition-colors"
                               title="View purchase order"
@@ -280,7 +280,7 @@ export default function PurchaseOrderList() {
                             <button
                               type="button"
                               onClick={() =>
-                                nav(`/materials/purchase-orders/${r.id}/edit`)
+                                nav(`/procurement/purchase-orders/${r.id}/edit`)
                               }
                               className="p-1.5 rounded hover:bg-[#EAEEF0] transition-colors"
                               title="Edit purchase order"

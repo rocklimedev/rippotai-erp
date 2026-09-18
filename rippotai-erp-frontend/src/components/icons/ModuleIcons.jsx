@@ -551,7 +551,7 @@ export const MODULE_ICONS = {
   automation: IconAutomation,
   documents: IconDocuments,
   designStudio: IconDesignStudio,
-  materials: IconMaterials,
+  procurement: IconMaterials,
   siteOperations: IconSiteOperations,
   tasks: IconTasks,
   notes: IconNotes,

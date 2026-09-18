@@ -29,7 +29,7 @@ export const siteOperationsRoutes = [
 
       {
         index: true,
-        element: <SiteOperationsDashboard />,
+        element: <AppDashboard appKey="siteOperations" />,
       },
 
       // =========================================================

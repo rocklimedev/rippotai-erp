@@ -9,6 +9,7 @@ import ClientSettings from "../../pages/settings/ClientSettings";
 import DocumentTypes from "../../pages/documents/DocumentTypes";
 import ProjectPhases from "../../pages/projects/ProjectPhases";
 import ProjectStructure from "../../pages/projects/ProjectStructure";
+import AppDashboard from "@/components/dashboard/AppDashboard";
 export const adminConsoleRoutes = [
   {
     type: "layout",
@@ -23,7 +24,7 @@ export const adminConsoleRoutes = [
       // =========================================================
       // WORKSPACE
       // =========================================================
-      { index: true, element: <AdminDashboard /> },
+      { index: true, element: <AppDashboard appKey="admin" /> },
       {
         path: "users",
         element: <UsersSettings />,

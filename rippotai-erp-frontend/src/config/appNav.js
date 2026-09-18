@@ -41,9 +41,9 @@ export const APP_META = {
     base: "/console",
     searchPh: "Search users, roles, permissions, settings",
   },
-  materials: {
-    name: "Materials",
-    base: "/materials",
+  procurement: {
+    name: "Procurement",
+    base: "/procurement",
     searchPh: "Search materials, requirements, orders",
   },
 
@@ -85,7 +85,7 @@ export const LANDING_ORDER = [
   "crm",
   "ledger",
   "siteOperations",
-  "materials",
+  "procurement",
   "tasks",
   "calendar",
   "commandCenter",
@@ -101,15 +101,13 @@ export const APP_MENUS = {
   projects: [
     {
       label: "Projects",
-      items: [I("All Projects", "all"), I("Create Project", "new")],
+      slug: "all",
     },
     {
       label: "Documents",
-      items: [
-        I("All Documents", "documents/all"),
-        I("Upload Document", "documents/upload"),
-      ],
+      slug: "documents/all",
     },
+
     {
       label: "Settings",
       items: [
@@ -123,17 +121,14 @@ export const APP_MENUS = {
   designStudio: [
     {
       label: "Drawings",
-      items: [I("All Drawings", "all"), I("Create Drawing", "new")],
+      slug: "all",
     },
 
     {
       label: "Management",
-      items: [I("Projects", "/projects/all"), I("Activity", "activity")],
-    },
-
-    {
-      label: "Administration",
       items: [
+        I("Projects", "/projects/all"),
+        I("Activity", "activity"),
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles & Permissions", "roles"),
       ],
@@ -165,8 +160,8 @@ export const APP_MENUS = {
       slug: "pipeline",
     },
     {
-      label: "Leads",
-      items: [I("Create Lead", "leads/new"), I("Sources", "leads/sources")],
+      label: "Sources",
+      slug: "leads/sources",
     },
     {
       label: "Documents",
@@ -179,26 +174,13 @@ export const APP_MENUS = {
         I("Scope Of Approval", "scope-of-approval/all"),
         I("Pitch Deck", "pitch-deck/all"),
         I("Business Proposal", "business-proposal/all"),
-        I("Projects", "/projects/all"),
       ],
     },
 
-    {
-      label: "Forms",
-      items: [
-        I("Project Brief", "forms/project-brief"),
-        I("Site Recce", "forms/site-reki"),
-        I("Plan of Action", "forms/plan-of-action"),
-
-        I("Scope Of Work", "forms/scope-of-work"),
-        I("Scope Of Approval", "forms/scope-of-approval"),
-        I("Pitch Deck", "forms/pitch-deck"),
-        I("Business Proposal", "forms/business-proposal"),
-      ],
-    },
     {
       label: "Settings",
       items: [
+        I("Projects", "/projects/all"),
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles and Permissions", "roles"),
         I("Activity", "activity"),
@@ -229,7 +211,7 @@ export const APP_MENUS = {
     },
   ],
 
-  materials: [
+  procurement: [
     // ------------------------------------------------------------
     // Materials
     // ------------------------------------------------------------
@@ -237,8 +219,8 @@ export const APP_MENUS = {
       label: "Materials",
       items: [
         I("Requirements", "requirements"),
-        I("All Vendors", "vendors/directory"),
-        I("Add Vendor", "vendors/new"),
+        I("Vendors", "vendors/directory"),
+
         I("Rate Comparison", "vendors/rate-comparison"),
         I("Rate Sheets", "rate-sheets"),
       ],
@@ -251,10 +233,9 @@ export const APP_MENUS = {
       label: "Procurement",
       items: [
         I("Estimates", "estimates/all"),
-        I("Create Estimate", "estimates/new"),
 
         I("Purchase Orders", "purchase-orders"),
-        I("Purchase Order Form", "purchase-orders/new"),
+        I("Work Order", "work-order/all"),
       ],
     },
 
@@ -265,11 +246,10 @@ export const APP_MENUS = {
       label: "Delivery & Inventory",
       items: [
         I("Delivery Challans", "delivery-challans"),
-        I("Delivery Challan Form", "delivery-challans/new"),
 
         I("Site Inventory", "inventory"),
-        I("Inventory Transactions", "inventory/transactions"),
-        I("Record Transaction", "inventory/transactions/new"),
+        // I("Inventory Transactions", "inventory/transactions"),
+        // I("Record Transaction", "inventory/transactions/new"),
       ],
     },
 
@@ -318,33 +298,32 @@ export const APP_MENUS = {
   ledger: [
     {
       label: "Ledger",
-      items: [I("Ledger", "all")],
+      slug: "all",
     },
     {
       label: "BOQ",
-      items: [I("All BOQs", "boq/all"), I("Create BOQ", "boq/new")],
+      slug: "boq/all",
     },
+
     {
       label: "Management",
       items: [
         I("Rate and Item Library", "boq/rate-and-item-library"),
         I("BOQ Templates", "boq/templates"),
-        I("Projects", "/projects/all"),
       ],
     },
     {
       label: "Documents",
       items: [
         I("Payment Schedules", "payment-schedule/all"),
-        I("Create Payment Schedule", "forms/payment-schedule"),
+
         I("Budget Estimates", "budget-estimates/all"),
-        I("Create Budget Estimates", "forms/budget-estimate"),
-        I("Aggrements", "aggrements/all"),
       ],
     },
     {
       label: "Settings",
       items: [
+        I("Projects", "/projects/all"),
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles and Permissions", "roles"),
         I("Activity", "activity"),
@@ -380,10 +359,6 @@ export const APP_MENUS = {
     },
   ],
   commandCenter: [
-    {
-      label: "Center",
-      items: [I("Pipeline", "pipeline")],
-    },
     {
       label: "File Manager",
       slug: "file-manager",

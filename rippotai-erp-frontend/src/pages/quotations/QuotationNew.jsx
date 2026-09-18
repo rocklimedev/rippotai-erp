@@ -240,7 +240,7 @@ const emptyItem = () => ({
 
 export default function EstimateForm() {
   const nav = useNavigate();
-  const { id } = useParams(); // present on /quotations/:id/edit, undefined on /materials/estimates/new
+  const { id } = useParams(); // present on /quotations/:id/edit, undefined on /procurement/estimates/new
   const isEdit = !!id;
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
@@ -539,7 +539,7 @@ export default function EstimateForm() {
       }
 
       toast.success(isEdit ? "Estimate updated" : "Estimate saved");
-      nav(`/materials/estimates/${qid}`);
+      nav(`/procurement/estimates/${qid}`);
     } catch (e) {
       toast.error(e?.data?.message || e?.error || "Failed to save estimate");
     } finally {
@@ -576,7 +576,11 @@ export default function EstimateForm() {
         </h1>
         <button
           onClick={() =>
-            nav(isEdit ? `/materials/estimates/${id}` : "/materials/estimates/")
+            nav(
+              isEdit
+                ? `/procurement/estimates/${id}`
+                : "/procurement/estimates/",
+            )
           }
           className="text-[13px] text-[#6B7B7C] hover:text-[#333333] inline-flex items-center gap-1"
           data-testid="cancel-btn"

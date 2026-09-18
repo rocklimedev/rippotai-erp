@@ -47,8 +47,8 @@ export default function SampleBoardList() {
           onClick={() =>
             nav(
               requirementId
-                ? `/materials/sample-boards/new?material_requirement_id=${requirementId}`
-                : "/materials/sample-boards/new",
+                ? `/procurement/sample-boards/new?material_requirement_id=${requirementId}`
+                : "/procurement/sample-boards/new",
             )
           }
           className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-1.5"
@@ -102,7 +102,7 @@ export default function SampleBoardList() {
                 filteredRows.map((r) => (
                   <tr
                     key={r.id}
-                    onClick={() => nav(`/materials/sample-boards/${r.id}`)}
+                    onClick={() => nav(`/procurement/sample-boards/${r.id}`)}
                     className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F4F6F7] cursor-pointer"
                   >
                     <td className="px-3 py-2.5 font-semibold">
@@ -143,7 +143,7 @@ export default function SampleBoardList() {
                       <div className="inline-flex">
                         <button
                           onClick={() =>
-                            nav(`/materials/sample-boards/${r.id}`)
+                            nav(`/procurement/sample-boards/${r.id}`)
                           }
                           className="p-1.5 rounded hover:bg-[#EAEEF0]"
                         >
@@ -152,7 +152,7 @@ export default function SampleBoardList() {
 
                         <button
                           onClick={() =>
-                            nav(`/materials/sample-boards/${r.id}/edit`)
+                            nav(`/procurement/sample-boards/${r.id}/edit`)
                           }
                           className="p-1.5 rounded hover:bg-[#EAEEF0]"
                         >

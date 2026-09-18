@@ -72,7 +72,7 @@ export default function SiteInventoryTransactions() {
 
   const openTransaction = () => {
     nav(
-      `/materials/site-inventory/transactions/new?project_id=${projectId}&material_id=${materialId}`,
+      `/procurement/site-inventory/transactions/new?project_id=${projectId}&material_id=${materialId}`,
     );
   };
 
@@ -244,7 +244,7 @@ export default function SiteInventoryTransactions() {
                         <button
                           onClick={() =>
                             nav(
-                              `/materials/site-inventory/transactions/${row.id}?project_id=${projectId}`,
+                              `/procurement/site-inventory/transactions/${row.id}?project_id=${projectId}`,
                             )
                           }
                           className="p-1.5 rounded hover:bg-[#EAEEF0]"

@@ -239,26 +239,6 @@ function CheckOption({ label, checked }) {
 }
 
 // ---------------------------------------------------------------------------
-// FOOTER
-// ---------------------------------------------------------------------------
-
-function PageFooter({ address }) {
-  return (
-    <div
-      className="absolute bottom-8 left-14 right-14 px-0 py-3 flex justify-between text-[9px] uppercase tracking-[0.12em]"
-      style={{
-        color: BRAND.muted,
-        borderTop: `1px solid ${BRAND.line}`,
-      }}
-    >
-      <span>RIPPŌTAI · SCOPE OF WORK</span>
-
-      <span>{address || ""}</span>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // PAGE 1 — COVER
 // ---------------------------------------------------------------------------
 
@@ -266,19 +246,29 @@ function CoverPage({ project, addressLine, pageNumber, totalPages }) {
   return (
     <SowPdfPage pageNumber={pageNumber} totalPages={totalPages}>
       <div className="px-14 pt-20 pb-20 flex flex-col items-center text-center h-full">
-        <img
-          src={LOGO_SRC}
-          alt="Rippotai"
-          className="w-24 h-24 object-contain mb-6"
-          crossOrigin="anonymous"
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-
-            if (e.currentTarget.nextSibling) {
-              e.currentTarget.nextSibling.style.display = "flex";
-            }
-          }}
-        />
+        <div
+          className="mb-6 flex items-center justify-center shrink-0"
+          style={{ height: "112px" }} // controls the logo size directly
+        >
+          <img
+            src={LOGO_SRC}
+            alt="Rippotai"
+            crossOrigin="anonymous"
+            style={{
+              height: "100%",
+              width: "auto",
+              maxWidth: "240px", // safety cap so a very wide logo doesn't run off, adjust as needed
+              display: "block",
+            }}
+            onError={(e) => {
+              e.currentTarget.parentElement.style.display = "none";
+              const fallback = e.currentTarget.parentElement.nextSibling;
+              if (fallback) {
+                fallback.style.display = "flex";
+              }
+            }}
+          />
+        </div>
 
         <div
           className="w-24 h-24 rounded-full mb-6 items-center justify-center text-2xl font-semibold text-white"
@@ -357,8 +347,6 @@ function CoverPage({ project, addressLine, pageNumber, totalPages }) {
           </div>
         </div>
       </div>
-
-      <PageFooter address={addressLine} />
     </SowPdfPage>
   );
 }
@@ -420,8 +408,6 @@ function ProjectDetailsPage({
           </div>
         </div>
       </div>
-
-      <PageFooter address={addressLine} />
     </SowPdfPage>
   );
 }
@@ -467,13 +453,7 @@ function ProjectTypePage({ sow, addressLine, pageNumber, totalPages }) {
             Scope Summary
           </span>
 
-          <div
-            className="p-5 rounded-lg min-h-[180px]"
-            style={{
-              backgroundColor: "#FAF9F5",
-              border: `1px solid ${BRAND.line}`,
-            }}
-          >
+          <div className="p-5 rounded-lg min-h-[180px]">
             <p
               className="text-sm leading-relaxed whitespace-pre-line"
               style={{
@@ -503,13 +483,7 @@ function ProjectTypePage({ sow, addressLine, pageNumber, totalPages }) {
             Specific Exclusions Agreed
           </span>
 
-          <div
-            className="p-5 rounded-lg min-h-[150px]"
-            style={{
-              backgroundColor: "#FAF9F5",
-              border: `1px solid ${BRAND.line}`,
-            }}
-          >
+          <div className="p-5 rounded-lg min-h-[150px]">
             <p
               className="text-sm leading-relaxed whitespace-pre-line"
               style={{
@@ -529,8 +503,6 @@ function ProjectTypePage({ sow, addressLine, pageNumber, totalPages }) {
           </div>
         </div>
       </div>
-
-      <PageFooter address={addressLine} />
     </SowPdfPage>
   );
 }
@@ -748,8 +720,6 @@ function ScopeMatrixPages({
             </p>
           </div>
         </div>
-
-        <PageFooter address={addressLine} />
       </SowPdfPage>,
     ];
   }
@@ -798,8 +768,6 @@ function ScopeMatrixPages({
           ))}
         </div>
       </div>
-
-      <PageFooter address={addressLine} />
     </SowPdfPage>
   ));
 }
@@ -824,13 +792,7 @@ function AcceptancePage({ sow, addressLine, pageNumber, totalPages }) {
             Notes
           </span>
 
-          <div
-            className="p-5 rounded-lg min-h-[150px]"
-            style={{
-              backgroundColor: "#FAF9F5",
-              border: `1px solid ${BRAND.line}`,
-            }}
-          >
+          <div className="p-5 rounded-lg min-h-[150px]">
             <p
               className="text-sm leading-relaxed whitespace-pre-line"
               style={{
@@ -945,8 +907,6 @@ function AcceptancePage({ sow, addressLine, pageNumber, totalPages }) {
           </div>
         </div>
       </div>
-
-      <PageFooter address={addressLine} />
     </SowPdfPage>
   );
 }

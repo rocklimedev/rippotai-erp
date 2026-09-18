@@ -47,7 +47,7 @@ export const ledgerRoutes = [
 
       {
         index: true,
-        element: <LedgerDashboard />,
+        element: <AppDashboard appKey="ledger" />,
       },
       {
         path: "/ledger/all",

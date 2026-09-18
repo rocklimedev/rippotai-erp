@@ -47,8 +47,8 @@ export default function MaterialEstimateList() {
           onClick={() =>
             nav(
               requirementId
-                ? `/materials/estimates/new?material_requirement_id=${requirementId}`
-                : "/materials/estimates/new",
+                ? `/procurement/estimates/new?material_requirement_id=${requirementId}`
+                : "/procurement/estimates/new",
             )
           }
           className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-1.5"
@@ -85,7 +85,7 @@ export default function MaterialEstimateList() {
                 filteredRows.map((r) => (
                   <tr
                     key={r.id}
-                    onClick={() => nav(`/materials/estimates/${r.id}`)}
+                    onClick={() => nav(`/procurement/estimates/${r.id}`)}
                     className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F4F6F7] cursor-pointer"
                   >
                     <td className="px-3 py-2.5">{r.quantity ?? "—"}</td>
@@ -119,14 +119,16 @@ export default function MaterialEstimateList() {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
-                        onClick={() => nav(`/materials/estimates/${r.id}`)}
+                        onClick={() => nav(`/procurement/estimates/${r.id}`)}
                         className="p-1.5 rounded hover:bg-[#EAEEF0]"
                       >
                         <Eye size={15} />
                       </button>
 
                       <button
-                        onClick={() => nav(`/materials/estimates/${r.id}/edit`)}
+                        onClick={() =>
+                          nav(`/procurement/estimates/${r.id}/edit`)
+                        }
                         className="p-1.5 rounded hover:bg-[#EAEEF0]"
                       >
                         <Edit3 size={15} />

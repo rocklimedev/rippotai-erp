@@ -42,14 +42,14 @@ export default function MaterialRequirementList() {
   }, [rows, q]);
 
   const clearProjectFilter = () => {
-    nav("/materials/requirements");
+    nav("/procurement/requirements");
   };
 
   const handleCreate = () => {
     if (projectFilter) {
-      nav(`/materials/requirements/new?project_id=${projectFilter}`);
+      nav(`/procurement/requirements/new?project_id=${projectFilter}`);
     } else {
-      nav("/materials/requirements/new");
+      nav("/procurement/requirements/new");
     }
   };
 
@@ -119,7 +119,7 @@ export default function MaterialRequirementList() {
                 filteredRows.map((r) => (
                   <tr
                     key={r.id}
-                    onClick={() => nav(`/materials/requirements/${r.id}`)}
+                    onClick={() => nav(`/procurement/requirements/${r.id}`)}
                     className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F4F6F7] cursor-pointer"
                   >
                     <td className="px-3 py-2.5 font-semibold text-[#333333]">
@@ -167,7 +167,9 @@ export default function MaterialRequirementList() {
                     >
                       <div className="inline-flex items-center gap-0.5">
                         <button
-                          onClick={() => nav(`/materials/requirements/${r.id}`)}
+                          onClick={() =>
+                            nav(`/procurement/requirements/${r.id}`)
+                          }
                           className="p-1.5 rounded hover:bg-[#EAEEF0]"
                           title="View"
                         >
@@ -176,7 +178,7 @@ export default function MaterialRequirementList() {
 
                         <button
                           onClick={() =>
-                            nav(`/materials/requirements/${r.id}/edit`)
+                            nav(`/procurement/requirements/${r.id}/edit`)
                           }
                           className="p-1.5 rounded hover:bg-[#EAEEF0]"
                           title="Edit"

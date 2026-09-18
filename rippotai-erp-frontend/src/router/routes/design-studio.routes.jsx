@@ -25,7 +25,7 @@ export const designStudioRoutes = [
 
       {
         index: true,
-        element: <DesignStudioDashboard />,
+        element: <AppDashboard appKey="design_studio" />,
       },
 
       // =========================================================

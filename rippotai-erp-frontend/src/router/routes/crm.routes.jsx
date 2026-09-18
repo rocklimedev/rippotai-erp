@@ -58,7 +58,7 @@ export const crmRoutes = [
 
       {
         index: true,
-        element: <CRMDashboard />,
+        element: <AppDashboard appKey="crm" />,
       },
 
       // ============================================================

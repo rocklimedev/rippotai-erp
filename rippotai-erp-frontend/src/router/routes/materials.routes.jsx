@@ -1,5 +1,5 @@
 import AppLayout from "@/layouts/AppLayout";
-
+import AppDashboard from "@/components/dashboard/AppDashboard";
 import MaterialRequirementList from "@/pages/materials/MaterialRequirementList";
 import SampleBoardList from "@/pages/materials/SampleBoardList";
 import MaterialRateSheetList from "@/pages/materials/MaterialRateSheetList";
@@ -38,15 +38,18 @@ import CreateDeliveryChallanPage from "../../pages/materials/CreateDeliveryChall
 import DeliveryChallanView from "../../pages/materials/DeliveryChallanView";
 
 import BoqVendorRateComparison from "../../pages/boq/BoqVendorRateComparison";
+import WorkOrderList from "../../pages/materials/WorkOrderList";
+import CreateWorkOrder from "../../pages/materials/CreateWorkOrder";
+import WorkOrderView from "../../pages/materials/WorkOrderView";
 
 export const materialsRoutes = [
   {
     type: "layout",
-    path: "/materials",
+    path: "/procurement",
     layout: AppLayout,
 
     layoutProps: {
-      app: "materials",
+      app: "procurement",
     },
 
     dynamicSections: {
@@ -73,7 +76,7 @@ export const materialsRoutes = [
 
       {
         index: true,
-        element: <MaterialsDashboard />,
+        element: <AppDashboard appKey="materials" />,
       },
 
       // ------------------------------------------------------------
@@ -168,7 +171,18 @@ export const materialsRoutes = [
         path: "delivery-challans/:id",
         element: <DeliveryChallanView />,
       },
-
+      {
+        path: "work-order/all",
+        element: <WorkOrderList />,
+      },
+      {
+        path: "work-order/new",
+        element: <CreateWorkOrder />,
+      },
+      {
+        path: "work-order/:id",
+        element: <WorkOrderView />,
+      },
       // ------------------------------------------------------------
       // SITE INVENTORY
       // ------------------------------------------------------------
