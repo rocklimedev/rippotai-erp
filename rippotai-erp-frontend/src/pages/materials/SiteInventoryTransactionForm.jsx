@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -9,6 +9,8 @@ import {
   SlidersHorizontal,
   PackageOpen,
   Save,
+  ChevronDown,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -22,6 +24,13 @@ import {
   useAdjustInventoryMutation,
   useAddOpeningStockMutation,
 } from "../../api/procuerment/inventory.api";
+
+// NOTE: adjust these three import paths to match where these slices
+// actually live in your api/ folder — they were provided separately
+// and injected onto the same `baseApi`.
+import { useGetMaterialsQuery } from "../../api/procuerment/material-master.api";
+import { useGetVendorsQuery } from "../../api/vendors/vendor.api";
+import { useGetProjectByIdQuery } from "../../api/projects/project.api";
 
 const OPERATIONS = [
   {
@@ -75,7 +84,7 @@ export default function SiteInventoryTransactionForm() {
 
   const [form, setForm] = useState({
     project_id: projectId,
-    site_id: searchParams.get("site_id") || "",
+    site_id: "",
     material_id: initialMaterialId,
     transaction_date: new Date().toISOString().slice(0, 10),
     quantity: "",
@@ -100,6 +109,24 @@ export default function SiteInventoryTransactionForm() {
     received_by: "",
     issued_by: "",
   });
+
+  // ============================================================
+  // PROJECT (site is not its own model — it's a field on Project)
+  // ============================================================
+
+  const { data: projectResponse, isFetching: loadingProject } =
+    useGetProjectByIdQuery(projectId, { skip: !projectId });
+
+  const project = projectResponse?.data || projectResponse || null;
+
+  useEffect(() => {
+    if (!project) return;
+
+    setForm((current) => ({
+      ...current,
+      site_id: project.site ?? project.site_id ?? "",
+    }));
+  }, [project]);
 
   const [receiveInventory, { isLoading: receiving }] =
     useReceiveInventoryMutation();
@@ -368,10 +395,10 @@ export default function SiteInventoryTransactionForm() {
 
       if (createdId) {
         nav(
-          `/materials/site-inventory/transactions/${createdId}?project_id=${form.project_id}`,
+          `/procurement/site-inventory/transactions/${createdId}?project_id=${form.project_id}`,
         );
       } else {
-        nav(`/materials/site-inventory?project_id=${form.project_id}`);
+        nav(`/procurement/site-inventory?project_id=${form.project_id}`);
       }
     } catch (error) {
       const message =
@@ -396,7 +423,7 @@ export default function SiteInventoryTransactionForm() {
             </p>
 
             <button
-              onClick={() => nav("/materials/site-inventory")}
+              onClick={() => nav("/procurement/site-inventory")}
               className="h-9 px-4 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold"
             >
               Back to Inventory
@@ -474,20 +501,24 @@ export default function SiteInventoryTransactionForm() {
 
             <Section title="Basic Information">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field
+                <MaterialSelect
                   label="Material"
                   required
                   value={form.material_id}
                   onChange={(value) => set("material_id", value)}
-                  placeholder="Material UUID"
                   disabled={Boolean(initialMaterialId)}
                 />
 
-                <Field
+                <ReadOnlyField
                   label="Site"
-                  value={form.site_id}
-                  onChange={(value) => set("site_id", value)}
-                  placeholder="Site UUID"
+                  value={
+                    loadingProject
+                      ? "Loading…"
+                      : project?.site ||
+                        project?.site_id ||
+                        "— (no site on project)"
+                  }
+                  hint="Pulled from the selected project"
                 />
 
                 <Field
@@ -548,11 +579,10 @@ export default function SiteInventoryTransactionForm() {
                     placeholder="Optional item UUID"
                   />
 
-                  <Field
-                    label="Vendor ID"
+                  <VendorSelect
+                    label="Vendor"
                     value={form.vendor_id}
                     onChange={(value) => set("vendor_id", value)}
-                    placeholder="Vendor UUID"
                   />
 
                   <Field
@@ -577,11 +607,10 @@ export default function SiteInventoryTransactionForm() {
                     placeholder="Person / team"
                   />
 
-                  <Field
-                    label="Contractor ID"
+                  <VendorSelect
+                    label="Contractor"
                     value={form.contractor_id}
                     onChange={(value) => set("contractor_id", value)}
-                    placeholder="Contractor UUID"
                   />
 
                   <Field
@@ -630,18 +659,16 @@ export default function SiteInventoryTransactionForm() {
                     ]}
                   />
 
-                  <Field
-                    label="Contractor ID"
+                  <VendorSelect
+                    label="Contractor"
                     value={form.contractor_id}
                     onChange={(value) => set("contractor_id", value)}
-                    placeholder="Contractor UUID"
                   />
 
-                  <Field
-                    label="Vendor ID"
+                  <VendorSelect
+                    label="Vendor"
                     value={form.vendor_id}
                     onChange={(value) => set("vendor_id", value)}
-                    placeholder="Vendor UUID"
                   />
 
                   <Field
@@ -669,7 +696,7 @@ export default function SiteInventoryTransactionForm() {
                     required
                     value={form.from_site_id}
                     onChange={(value) => set("from_site_id", value)}
-                    placeholder="Source site UUID"
+                    placeholder="Source site"
                   />
 
                   <Field
@@ -677,7 +704,7 @@ export default function SiteInventoryTransactionForm() {
                     required
                     value={form.to_site_id}
                     onChange={(value) => set("to_site_id", value)}
-                    placeholder="Destination site UUID"
+                    placeholder="Destination site"
                   />
 
                   <Field
@@ -867,6 +894,22 @@ function Field({
   );
 }
 
+function ReadOnlyField({ label, value, hint }) {
+  return (
+    <div>
+      <label className="block text-[12px] font-semibold text-[#4D5B5C] mb-1.5">
+        {label}
+      </label>
+
+      <div className="h-10 rounded-lg border border-[#D8E0DA] bg-[#F4F6F7] px-3 flex items-center text-[13px] text-[#333333]">
+        {value}
+      </div>
+
+      {hint && <p className="mt-1 text-[11px] text-[#8A9695]">{hint}</p>}
+    </div>
+  );
+}
+
 function TextField({ label, value, onChange }) {
   return (
     <div>
@@ -904,5 +947,239 @@ function SelectField({ label, value, onChange, options, required = false }) {
         ))}
       </select>
     </div>
+  );
+}
+
+/* ================================================================
+   ASYNC SEARCH-SELECT (shared shell for Material / Vendor lookups)
+================================================================ */
+
+function useDebouncedValue(value, delay = 300) {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return debounced;
+}
+
+/**
+ * Generic search-as-you-type dropdown. Renders a text input; while
+ * open it shows a list built from `useResults(debouncedQuery)`.
+ * `getOptionLabel` / `getOptionSublabel` format each row,
+ * `resolveSelectedLabel` formats the closed-state input once a
+ * value is chosen (so we don't need a live lookup-by-id endpoint).
+ */
+function AsyncSearchSelect({
+  label,
+  value,
+  onChange,
+  required = false,
+  disabled = false,
+  placeholder = "Search…",
+  useResults,
+  getOptionLabel,
+  getOptionSublabel,
+  selectedLabel,
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(query, 300);
+  const blurTimeout = useRef(null);
+
+  const { options, isFetching } = useResults(open ? debouncedQuery : "", {
+    skip: disabled || !open,
+  });
+
+  const handleFocus = () => {
+    if (disabled) return;
+    setOpen(true);
+    setQuery("");
+  };
+
+  const handleBlur = () => {
+    // delay close so the click on an option registers first
+    blurTimeout.current = setTimeout(() => setOpen(false), 150);
+  };
+
+  useEffect(() => () => clearTimeout(blurTimeout.current), []);
+
+  const displayValue = open ? query : value ? selectedLabel || "" : "";
+
+  return (
+    <div className="relative">
+      <label className="block text-[12px] font-semibold text-[#4D5B5C] mb-1.5">
+        {label}
+        {required && <span className="text-red-500 ml-0.5">*</span>}
+      </label>
+
+      <div className="relative">
+        <Input
+          value={displayValue}
+          placeholder={value && !open ? undefined : placeholder}
+          disabled={disabled}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+
+        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#8A9695]">
+          {isFetching ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <ChevronDown size={14} />
+          )}
+        </div>
+      </div>
+
+      {open && (
+        <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-lg border border-[#D8E0DA] bg-white shadow-lg">
+          {isFetching && options.length === 0 && (
+            <div className="px-3 py-2 text-[12px] text-[#8A9695]">
+              Searching…
+            </div>
+          )}
+
+          {!isFetching && options.length === 0 && (
+            <div className="px-3 py-2 text-[12px] text-[#8A9695]">
+              No results found.
+            </div>
+          )}
+
+          {options.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                onChange(option.id);
+                setOpen(false);
+              }}
+              className="w-full text-left px-3 py-2 text-[13px] hover:bg-[#F4F6F7] flex flex-col"
+            >
+              <span className="font-medium text-[#333333]">
+                {getOptionLabel(option)}
+              </span>
+
+              {getOptionSublabel && (
+                <span className="text-[11px] text-[#8A9695]">
+                  {getOptionSublabel(option)}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ================================================================
+   MATERIAL SELECT — backed by materialMasterApi.getMaterials
+================================================================ */
+
+function MaterialSelect({ label, value, onChange, required, disabled }) {
+  const [selectedLabel, setSelectedLabel] = useState("");
+
+  function useResults(search, options) {
+    const { data, isFetching } = useGetMaterialsQuery(
+      { search, isActive: true },
+      options,
+    );
+
+    const list = data?.data || data || [];
+
+    return { options: list, isFetching };
+  }
+
+  // Keep the closed-state label in sync once we've seen the material
+  // in a search result (cheap alternative to a get-by-id round trip).
+  const { options: currentPageOptions } = useResults("", { skip: !value });
+
+  useEffect(() => {
+    if (!value) {
+      setSelectedLabel("");
+      return;
+    }
+
+    const match = currentPageOptions.find((m) => m.id === value);
+
+    if (match) {
+      setSelectedLabel(
+        `${match.name}${match.unit?.code ? ` (${match.unit.code})` : ""}`,
+      );
+    }
+  }, [value, currentPageOptions]);
+
+  return (
+    <AsyncSearchSelect
+      label={label}
+      value={value}
+      onChange={onChange}
+      required={required}
+      disabled={disabled}
+      placeholder="Search materials…"
+      useResults={useResults}
+      getOptionLabel={(m) => m.name}
+      getOptionSublabel={(m) =>
+        [m.category, m.unit?.code].filter(Boolean).join(" · ")
+      }
+      selectedLabel={selectedLabel || value}
+    />
+  );
+}
+
+/* ================================================================
+   VENDOR / CONTRACTOR SELECT — backed by vendorsApi.getVendors
+   (Contractors are sourced from the vendors table, per business
+   rule: there is no separate contractor model.)
+================================================================ */
+
+function VendorSelect({ label, value, onChange, required, disabled }) {
+  const [selectedLabel, setSelectedLabel] = useState("");
+
+  function useResults(search, options) {
+    const { data, isFetching } = useGetVendorsQuery(
+      { q: search, status: "ACTIVE" },
+      options,
+    );
+
+    const list = data?.data || data || [];
+
+    return { options: list, isFetching };
+  }
+
+  const { options: currentPageOptions } = useResults("", { skip: !value });
+
+  useEffect(() => {
+    if (!value) {
+      setSelectedLabel("");
+      return;
+    }
+
+    const match = currentPageOptions.find((v) => v.id === value);
+
+    if (match) {
+      setSelectedLabel(match.name || match.company_name || "");
+    }
+  }, [value, currentPageOptions]);
+
+  return (
+    <AsyncSearchSelect
+      label={label}
+      value={value}
+      onChange={onChange}
+      required={required}
+      disabled={disabled}
+      placeholder={`Search ${label.toLowerCase()}s…`}
+      useResults={useResults}
+      getOptionLabel={(v) => v.name || v.company_name}
+      getOptionSublabel={(v) =>
+        [v.category?.name, v.business_type?.name].filter(Boolean).join(" · ")
+      }
+      selectedLabel={selectedLabel || value}
+    />
   );
 }

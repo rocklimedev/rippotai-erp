@@ -36,6 +36,15 @@ import { MaterialMasterController } from './controllers/material-master.controll
 import { Vendor } from '../vendors/models/vendors.model';
 import { Unit } from '../metas/models/unit.model';
 import { MaterialVendor } from './models/material-vendor.model';
+import { WorkOrdersController } from './controllers/work-orders.controller';
+import { WorkOrdersService } from './services/work-orders.service';
+
+import { WorkOrder } from './models/work-order.model';
+import { WorkOrderItem } from './models/work-order-item.model';
+import { WorkOrderPaymentStage } from './models/work-order-payment-stage.model';
+import { WorkOrderTerm } from './models/work-order-term.model';
+import { Project } from '../projects/models/projects.model';
+import { TermsTemplate } from '../metas/models/terms-templates.model';
 
 /**
  * Material & Procurement module — Sequelize (MySQL) edition.
@@ -70,9 +79,15 @@ import { MaterialVendor } from './models/material-vendor.model';
       MaterialMaster,
       Vendor,
       Unit,
+      Project,
       MaterialVendor,
       // Inventory
       InventoryTransaction,
+      WorkOrder,
+      WorkOrderItem,
+      WorkOrderPaymentStage,
+      WorkOrderTerm,
+      TermsTemplate,
     ]),
   ],
 
@@ -84,6 +99,7 @@ import { MaterialVendor } from './models/material-vendor.model';
     MaterialQuotationController,
     PurchaseOrderController,
     DeliveryChallanController,
+    WorkOrdersController,
 
     // Material Master
     MaterialMasterController,
@@ -94,6 +110,7 @@ import { MaterialVendor } from './models/material-vendor.model';
     SampleBoardService,
     MaterialRateSheetService,
     MaterialEstimateService,
+    WorkOrdersService,
     MaterialQuotationService,
     DeliveryChallanService,
     PurchaseOrderService,
@@ -110,6 +127,7 @@ import { MaterialVendor } from './models/material-vendor.model';
     MaterialEstimateService,
     DeliveryChallanService,
     MaterialQuotationService,
+    WorkOrdersService,
     InventoryService,
     PurchaseOrderService,
 

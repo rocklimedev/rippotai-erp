@@ -132,7 +132,7 @@ export default function SiteInventoryList() {
   };
 
   const clearProjectFilter = () => {
-    nav("/materials/site-inventory");
+    nav("/procurement/site-inventory");
   };
 
   const openTransactionPage = (type) => {
@@ -140,7 +140,7 @@ export default function SiteInventoryList() {
       ? `?project_id=${projectFilter}&type=${type}`
       : `?type=${type}`;
 
-    nav(`/materials/site-inventory/transactions/new${query}`);
+    nav(`/procurement/site-inventory/transactions/new${query}`);
   };
 
   return (
@@ -321,7 +321,7 @@ export default function SiteInventoryList() {
                       key={materialId}
                       onClick={() =>
                         nav(
-                          `/materials/site-inventory/${materialId}${
+                          `/procurement/site-inventory/${materialId}${
                             projectFilter ? `?project_id=${projectFilter}` : ""
                           }`,
                         )
@@ -357,7 +357,7 @@ export default function SiteInventoryList() {
                         <button
                           onClick={() =>
                             nav(
-                              `/materials/site-inventory/${materialId}${
+                              `/procurement/site-inventory/${materialId}${
                                 projectFilter
                                   ? `?project_id=${projectFilter}`
                                   : ""
@@ -373,7 +373,7 @@ export default function SiteInventoryList() {
                         <button
                           onClick={() =>
                             nav(
-                              `/materials/site-inventory/${materialId}/transactions${
+                              `/procurement/site-inventory/${materialId}/transactions${
                                 projectFilter
                                   ? `?project_id=${projectFilter}`
                                   : ""

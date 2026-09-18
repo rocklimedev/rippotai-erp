@@ -87,6 +87,99 @@ import {
   DocumentsPending,
 } from "./calendar";
 
+import {
+  MatTotalMaterials,
+  MatStockValue,
+  MatLowStock,
+  MatOutOfStock,
+  MatPendingRequests,
+  MatActivePurchaseOrders,
+  MatPendingGRN,
+  MatInwardToday,
+  MatOutwardToday,
+  MatLowStockList,
+  MatRequestsList,
+  MatPurchaseOrdersList,
+  MatRecentMovements,
+  MatCategoryWise,
+  MatRecentActivity,
+} from "./materials";
+
+import {
+  SiteOpsTodayReport,
+  SiteOpsOpenRfis,
+  SiteOpsHandoffBlocked,
+  SiteOpsTodayVisits,
+  SiteOpsQcPassRate,
+  SiteOpsFailedQc,
+  SiteOpsPendingMockups,
+  SiteOpsTotalReports,
+  SiteOpsRecentReports,
+  SiteOpsRecentVisits,
+  SiteOpsRfiQueue,
+  SiteOpsMockupApprovals,
+  SiteOpsRecentActivity,
+} from "./siteops";
+
+import {
+  LedgerTotalContractValue,
+  LedgerTotalPayable,
+  LedgerTotalCollected,
+  LedgerOutstanding,
+  LedgerActiveSchedules,
+  LedgerPendingMilestones,
+  LedgerCompletedSchedules,
+  LedgerCollectionRate,
+  LedgerPaymentSchedulesList,
+  LedgerUpcomingPaymentsList,
+  LedgerOverduePaymentsList,
+  LedgerRecentPaymentsList,
+  LedgerRecentActivity,
+} from "./ledger";
+
+import {
+  DesignActiveProjects,
+  DesignDesignTasks,
+  DesignPendingApprovals,
+  DesignTeamUtilization,
+  DesignPipelineStages,
+  DesignProjectsList,
+  DesignApprovalsList,
+  DesignTasksList,
+  DesignUpcomingDeadlines,
+  DesignTeamWorkload,
+  DesignRecentActivity,
+} from "./design-studio";
+
+import {
+  CrmTotalLeads,
+  CrmActiveProjects,
+  CrmActivePlans,
+  CrmPayableAmount,
+  CrmLeadsBreakdown,
+  CrmProjectsBreakdown,
+  CrmProjectBriefs,
+  CrmSiteRecce,
+  CrmPlansOfAction,
+  CrmScopeOfWork,
+  CrmPaymentSchedules,
+  CrmUpcomingDeadlines,
+  CrmRecentActivity,
+} from "./crm";
+
+import {
+  AdminActiveProjects,
+  AdminOpenLeads,
+  AdminPendingApprovals,
+  AdminTeamMembers,
+  AdminProjectsList,
+  AdminApprovalsList,
+  AdminLeadPipeline,
+  AdminRecentActivity,
+  AdminTeamList,
+  AdminWorkflowSnapshot,
+} from "./admin";
+
 /* -------- Registry --------
  * Same keys as the original monolithic registry.jsx, just sourced from
  * per-domain modules now. Nothing that reads WIDGETS[key] needs to change.
@@ -161,6 +254,93 @@ export const WIDGETS = {
   "quot.returned": QuotReturned,
   // legacy
   "quot.awaiting_review": QuotAwaitingReview,
+
+  // Materials
+  "materials.total_materials": MatTotalMaterials,
+  "materials.stock_value": MatStockValue,
+  "materials.low_stock": MatLowStock,
+  "materials.out_of_stock": MatOutOfStock,
+  "materials.pending_requests": MatPendingRequests,
+  "materials.active_purchase_orders": MatActivePurchaseOrders,
+  "materials.pending_grn": MatPendingGRN,
+  "materials.inward_today": MatInwardToday,
+  "materials.outward_today": MatOutwardToday,
+  "materials.low_stock_list": MatLowStockList,
+  "materials.requests_list": MatRequestsList,
+  "materials.purchase_orders_list": MatPurchaseOrdersList,
+  "materials.recent_movements": MatRecentMovements,
+  "materials.category_wise": MatCategoryWise,
+  "materials.recent_activity": MatRecentActivity,
+
+  // Site Operations
+  "siteops.today_report": SiteOpsTodayReport,
+  "siteops.open_rfis": SiteOpsOpenRfis,
+  "siteops.handoff_blocked": SiteOpsHandoffBlocked,
+  "siteops.today_visits": SiteOpsTodayVisits,
+  "siteops.qc_pass_rate": SiteOpsQcPassRate,
+  "siteops.failed_qc": SiteOpsFailedQc,
+  "siteops.pending_mockups": SiteOpsPendingMockups,
+  "siteops.total_reports": SiteOpsTotalReports,
+  "siteops.recent_reports": SiteOpsRecentReports,
+  "siteops.recent_visits": SiteOpsRecentVisits,
+  "siteops.rfi_queue": SiteOpsRfiQueue,
+  "siteops.mockup_approvals": SiteOpsMockupApprovals,
+  "siteops.recent_activity": SiteOpsRecentActivity,
+
+  // Ledger
+  "ledger.total_contract_value": LedgerTotalContractValue,
+  "ledger.total_payable": LedgerTotalPayable,
+  "ledger.total_collected": LedgerTotalCollected,
+  "ledger.outstanding": LedgerOutstanding,
+  "ledger.active_schedules": LedgerActiveSchedules,
+  "ledger.pending_milestones": LedgerPendingMilestones,
+  "ledger.completed_schedules": LedgerCompletedSchedules,
+  "ledger.collection_rate": LedgerCollectionRate,
+  "ledger.payment_schedules": LedgerPaymentSchedulesList,
+  "ledger.upcoming_payments": LedgerUpcomingPaymentsList,
+  "ledger.overdue_payments": LedgerOverduePaymentsList,
+  "ledger.recent_payments": LedgerRecentPaymentsList,
+  "ledger.recent_activity": LedgerRecentActivity,
+
+  // Design Studio
+  "design_studio.active_projects": DesignActiveProjects,
+  "design_studio.design_tasks": DesignDesignTasks,
+  "design_studio.pending_approvals": DesignPendingApprovals,
+  "design_studio.team_utilization": DesignTeamUtilization,
+  "design_studio.pipeline_stages": DesignPipelineStages,
+  "design_studio.projects_list": DesignProjectsList,
+  "design_studio.approvals_list": DesignApprovalsList,
+  "design_studio.tasks_list": DesignTasksList,
+  "design_studio.upcoming_deadlines": DesignUpcomingDeadlines,
+  "design_studio.team_workload": DesignTeamWorkload,
+  "design_studio.recent_activity": DesignRecentActivity,
+
+  // CRM
+  "crm.total_leads": CrmTotalLeads,
+  "crm.active_projects": CrmActiveProjects,
+  "crm.active_plans": CrmActivePlans,
+  "crm.payable_amount": CrmPayableAmount,
+  "crm.leads_breakdown": CrmLeadsBreakdown,
+  "crm.projects_breakdown": CrmProjectsBreakdown,
+  "crm.project_briefs": CrmProjectBriefs,
+  "crm.site_recce": CrmSiteRecce,
+  "crm.plans_of_action": CrmPlansOfAction,
+  "crm.scope_of_work": CrmScopeOfWork,
+  "crm.payment_schedules": CrmPaymentSchedules,
+  "crm.upcoming_deadlines": CrmUpcomingDeadlines,
+  "crm.recent_activity": CrmRecentActivity,
+
+  // Admin
+  "admin.active_projects": AdminActiveProjects,
+  "admin.open_leads": AdminOpenLeads,
+  "admin.pending_approvals": AdminPendingApprovals,
+  "admin.team_members": AdminTeamMembers,
+  "admin.projects_list": AdminProjectsList,
+  "admin.approvals_list": AdminApprovalsList,
+  "admin.lead_pipeline": AdminLeadPipeline,
+  "admin.recent_activity": AdminRecentActivity,
+  "admin.team_list": AdminTeamList,
+  "admin.workflow_snapshot": AdminWorkflowSnapshot,
 
   // Placeholder app stubs
   "clients.total": () => (

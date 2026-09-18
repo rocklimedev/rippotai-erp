@@ -1,0 +1,24 @@
+export enum WorkOrderStatus {
+  DRAFT = 'DRAFT',
+  PENDING_APPROVAL = 'PENDING_APPROVAL',
+  APPROVED = 'APPROVED',
+  ISSUED = 'ISSUED',
+  ACKNOWLEDGED = 'ACKNOWLEDGED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+  CLOSED = 'CLOSED',
+}
+
+export enum WorkOrderItemType {
+  SERVICE = 'SERVICE',
+  DELIVERABLE = 'DELIVERABLE',
+}
+
+export enum WorkOrderPaymentStageStatus {
+  PENDING = 'PENDING',
+  DUE = 'DUE',
+  PARTIALLY_PAID = 'PARTIALLY_PAID',
+  PAID = 'PAID',
+  CANCELLED = 'CANCELLED',
+}

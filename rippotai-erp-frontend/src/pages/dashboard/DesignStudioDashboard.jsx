@@ -603,53 +603,6 @@ export default function DesignStudioDashboard() {
       </div>
 
       {/* ========================================================
-          QUICK ACTIONS
-      ======================================================== */}
-
-      <div className="mt-6">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-[15px] font-bold text-[#25302F]">
-              Quick Actions
-            </h2>
-
-            <p className="text-[12px] text-[#8A9697] mt-0.5">
-              Start common design studio workflows
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-
-            return (
-              <button
-                key={action.label}
-                onClick={() => nav(action.path)}
-                className="bg-white border border-[rgba(31,69,59,0.10)] rounded-xl p-4 text-left hover:bg-[#F8FAF9] hover:border-[rgba(31,69,59,0.18)] transition-all group"
-              >
-                <div className="w-9 h-9 rounded-lg bg-[#EEF3F0] flex items-center justify-center">
-                  <Icon size={16} className="text-[#1F453B]" />
-                </div>
-
-                <div className="mt-3 flex items-center justify-between">
-                  <span className="text-[13px] font-semibold text-[#333333]">
-                    {action.label}
-                  </span>
-
-                  <ArrowUpRight
-                    size={14}
-                    className="text-[#A0AAAA] group-hover:text-[#1F453B]"
-                  />
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ========================================================
           PROJECT PIPELINE
       ======================================================== */}
 
@@ -1149,65 +1102,6 @@ export default function DesignStudioDashboard() {
       ======================================================== */}
 
       <div className="mt-6 grid grid-cols-1 xl:grid-cols-[1fr_1.3fr] gap-4">
-        {/* TEAM */}
-
-        <Card>
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="text-[15px] font-bold text-[#25302F]">
-                Studio Team
-              </h2>
-
-              <p className="text-[12px] text-[#8A9697] mt-0.5">
-                Current workload by team member
-              </p>
-            </div>
-
-            <Users size={17} className="text-[#8A9697]" />
-          </div>
-
-          <div className="space-y-4">
-            {MOCK_DATA.team.map((member) => (
-              <div key={member.id}>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-[#EEF3F0] flex items-center justify-center text-[11px] font-bold text-[#1F453B]">
-                    {member.name
-                      .split(" ")
-                      .map((x) => x[0])
-                      .join("")
-                      .slice(0, 2)}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[12px] font-semibold text-[#333333] truncate">
-                        {member.name}
-                      </span>
-
-                      <span className="text-[10px] font-bold text-[#1F453B]">
-                        {member.utilization}%
-                      </span>
-                    </div>
-
-                    <div className="text-[10px] text-[#8A9697] mt-0.5">
-                      {member.role} · {member.activeTasks} active tasks
-                    </div>
-
-                    <div className="mt-2 h-1.5 rounded-full bg-[#F1F3F4] overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-[#1F453B]"
-                        style={{
-                          width: `${member.utilization}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
         {/* ACTIVITY */}
 
         <Card>

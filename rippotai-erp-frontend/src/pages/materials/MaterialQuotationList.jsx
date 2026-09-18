@@ -36,7 +36,7 @@ export default function MaterialQuotationList() {
       subtitle={`${rows.length} quotation${rows.length !== 1 ? "s" : ""}`}
       action={
         <button
-          onClick={() => nav("/materials/quotations/new")}
+          onClick={() => nav("/procurement/quotations/new")}
           className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-1.5"
         >
           <Plus size={14} />
@@ -70,7 +70,7 @@ export default function MaterialQuotationList() {
                 filteredRows.map((r) => (
                   <tr
                     key={r.id}
-                    onClick={() => nav(`/materials/quotations/${r.id}`)}
+                    onClick={() => nav(`/procurement/quotations/${r.id}`)}
                     className="border-t border-[rgba(31,69,59,0.08)] hover:bg-[#F4F6F7] cursor-pointer"
                   >
                     <td className="px-3 py-2.5 font-semibold">
@@ -105,7 +105,7 @@ export default function MaterialQuotationList() {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
-                        onClick={() => nav(`/materials/quotations/${r.id}`)}
+                        onClick={() => nav(`/procurement/quotations/${r.id}`)}
                         className="p-1.5 rounded hover:bg-[#EAEEF0]"
                       >
                         <Eye size={15} />
@@ -113,7 +113,7 @@ export default function MaterialQuotationList() {
 
                       <button
                         onClick={() =>
-                          nav(`/materials/quotations/${r.id}/edit`)
+                          nav(`/procurement/quotations/${r.id}/edit`)
                         }
                         className="p-1.5 rounded hover:bg-[#EAEEF0]"
                       >

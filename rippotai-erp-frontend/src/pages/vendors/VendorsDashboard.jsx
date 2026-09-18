@@ -287,14 +287,14 @@ export default function VendorsDashboard() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => nav("/materials/vendors/shortlists")}
+            onClick={() => nav("/procurement/vendors/shortlists")}
             className="h-10 px-4 rounded-xl border border-[#B5C4B6] bg-white hover:bg-[#EAEEF0] text-[13px] font-semibold text-[#6B7B7C] flex items-center gap-2"
             data-testid="shortlists-link"
           >
             <Bookmark size={15} /> Shortlists
           </button>
           <button
-            onClick={() => nav("/materials/vendors/new")}
+            onClick={() => nav("/procurement/vendors/new")}
             className="h-10 px-4 rounded-xl bg-[#1F453B] hover:bg-[#1F453B] text-white text-[13px] font-semibold flex items-center gap-2 shadow-sm"
             data-testid="add-vendor-btn"
           >
@@ -483,7 +483,7 @@ export default function VendorsDashboard() {
                   <tr
                     key={v.id}
                     className="border-b border-[#B5C4B6] hover:bg-[#EAEEF0] cursor-pointer"
-                    onClick={() => nav(`/vendors/${v.id}`)}
+                    onClick={() => nav(`/procurement/vendors/${v.id}`)}
                     data-testid={`vendor-row-${v.id}`}
                   >
                     <td className="px-4 py-3">
@@ -545,12 +545,14 @@ export default function VendorsDashboard() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            onClick={() => nav(`/vendors/${v.id}`)}
+                            onClick={() => nav(`/procurement/vendors/${v.id}`)}
                           >
                             View Profile
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => nav(`/vendors/${v.id}/edit`)}
+                            onClick={() =>
+                              nav(`/procurement/vendors/${v.id}/edit`)
+                            }
                           >
                             <Edit size={16} className="mr-2" />
                             Edit Vendor
@@ -587,7 +589,7 @@ export default function VendorsDashboard() {
               <div className="p-10 text-center text-[13px] text-[#6B7B7C]">
                 No vendors match. Adjust filters or{" "}
                 <button
-                  onClick={() => nav("/materials/vendors/new")}
+                  onClick={() => nav("/procurement/vendors/new")}
                   className="text-[#333333] font-semibold"
                 >
                   add a vendor
@@ -601,7 +603,7 @@ export default function VendorsDashboard() {
             {(rows || []).map((v) => (
               <button
                 key={v.id}
-                onClick={() => nav(`/vendors/${v.id}`)}
+                onClick={() => nav(`/procurement/vendors/${v.id}`)}
                 className="app-card bc-card p-4 text-left"
                 data-testid={`vendor-card-${v.id}`}
               >

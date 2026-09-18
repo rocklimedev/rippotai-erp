@@ -1,3 +1,5 @@
+import { useDispatch } from "react-redux";
+import "./CommandCenter.css";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import GateChecklist from "@/components/command-center/GateChecklist";
@@ -48,6 +50,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 // used by projectsApi.js).
 // ------------------------------------------------------------
 import {
+  commandCenterApi,
   useGetCommandCenterKpisQuery,
   useGetCommandCenterPortfolioQuery,
   useGetProjectPhaseDetailQuery,
@@ -78,6 +81,13 @@ const ROUTES = {
   calendar: "/calendar",
   reports: "/reports",
 };
+
+const REFRESH_TAGS = [
+  "CommandCenterKpis", "CommandCenterPortfolio", "CommandCenterProjectPhases",
+  "CommandCenterActions", "CommandCenterDocuments", "CommandCenterTasks",
+  "CommandCenterCommercial", "CommandCenterTeamWorkload", "CommandCenterActivity",
+  "CommandCenterGates",
+];
 
 // ------------------------------------------------------------
 // PEOPLE — the backend's team-workload rollup only returns
@@ -253,61 +263,34 @@ function SectionHeader({ eyebrow, title, action, onAction }) {
 }
 
 function ProgressBar({ value, tone = "brand" }) {
-  const toneClass =
-    tone === "danger"
-      ? "bg-red-500"
-      : tone === "warn"
-        ? "bg-amber-500"
-        : tone === "gate"
-          ? "bg-blue-500"
-          : "bg-[#2f6655]";
   return (
     <Progress
       value={Math.min(Math.max(value || 0, 0), 100)}
       className={cn(
-        "h-1.5 bg-slate-100 [&>div]:transition-all",
-        "[&>div]:" + toneClass,
+        "cc-progress",
+        `cc-progress-${tone}`,
       )}
     />
   );
 }
 
-function KPI({ label, value, meta, icon: Icon, tone, onClick, loading }) {
-  return (
-    <Card
-      onClick={onClick}
-      role="button"
-      className="text-left w-full group bg-white border border-[#e4e8e5] rounded-xl p-4 hover:border-[#b9c9c1] hover:shadow-sm transition cursor-pointer shadow-none"
-    >
-      <div
-        className={cn(
-          "w-8 h-8 rounded-lg flex items-center justify-center",
-          tone === "danger"
-            ? "bg-red-50 text-red-600"
-            : tone === "gate"
-              ? "bg-blue-50 text-blue-600"
-              : "bg-[#f0f5f2] text-[#2f6655]",
-        )}
-      >
-        <Icon size={16} strokeWidth={1.8} />
-      </div>
-      <div className="mt-4">
-        <div className="text-[24px] font-semibold tracking-[-0.04em] text-[#19352d]">
-          {loading ? "—" : value}
-        </div>
-        <div className="text-[11px] font-medium text-slate-500 mt-0.5">
-          {label}
-        </div>
-        {meta && <div className="text-[10px] text-slate-400 mt-2">{meta}</div>}
-      </div>
-    </Card>
-  );
+function KPI({
+  label,
+  value,
+  meta,
+  tone,
+  onClick,
+  loading
+}) {
+  return <button type="button" className={cn("cc-kpi", tone && `cc-kpi-${tone}`)} onClick={onClick} title={meta}>
+    <strong>{loading ? "—" : value}</strong><span>{label}</span>
+  </button>;
 }
 
 function Toast({ message }) {
   if (!message) return null;
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#19352d] text-white text-[12px] px-5 py-3 rounded-lg shadow-lg z-[200]">
+    <div role="status" className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#19352d] text-white text-[12px] px-5 py-3 rounded-lg shadow-lg z-[200]">
       {message}
     </div>
   );
@@ -345,28 +328,29 @@ function ErrorRow({ error, onRetry }) {
 // PROJECT BOARD — expandable rows with a per-project gate ladder
 // ------------------------------------------------------------
 
-function PhaseLadder({ phases, activeSeq }) {
-  return (
-    <div className="flex items-center gap-[3px]">
-      {phases.map((ph) => {
-        const meta = stateMeta(ph.state);
-        return (
-          <div
-            key={ph.id}
-            title={`${ph.gate?.code ?? ""} · ${ph.name} — ${stateLabel(ph.state)}`}
-            className={cn(
-              "w-3 h-3 rotate-45 flex-shrink-0 border",
-              meta.dot,
-              ph.phaseNumber === activeSeq
-                ? "ring-2 ring-offset-1 ring-[#19352d]"
-                : "",
-            )}
-            style={{ borderColor: "transparent" }}
-          />
-        );
-      })}
-    </div>
-  );
+// ------------------------------------------------------------
+// PROJECT BOARD — expandable rows with a per-project gate ladder
+// ------------------------------------------------------------
+
+function PhaseLadder({
+  phases,
+  activeSeq
+}) {
+  return <div className="cc-ladder" aria-label="Project phase status">
+    {phases.map((phase, index) => <div key={phase.id} className={cn("cc-rung", `cc-state-${normalizeKey(phase.state).toLowerCase()}`)} title={`${phase.gate?.code || ""} · ${phase.name} — ${stateLabel(phase.state)}`}>
+      <span className={cn("cc-diamond", phase.phaseNumber === activeSeq && "cc-current")} />
+      {index < phases.length - 1 && <span className="cc-link" />}
+    </div>)}
+  </div>;
+}
+
+function PhaseLegend() {
+  return <div className="cc-legend" aria-label="Phase status legend">
+    {[["complete", "Gate cleared"], ["awaiting_gate", "Awaiting approval"], ["in_progress", "In progress"], ["stalled", "Stalled"], ["qc_failed", "QC failed"], ["not_started", "Not started"]].map(([state, label]) => <span className={`cc-state-${state}`} key={state}>
+    <i className="cc-diamond" />
+    {label}
+  </span>)}
+  </div>;
 }
 
 function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlash }) {
@@ -384,7 +368,6 @@ function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlash }) {
   const [completeTask, { isLoading: completingTask }] =
     useCompleteCommandCenterTaskMutation();
 
-  const meta = stateMeta(phase.state);
   const handleTaskStatus = async (taskDefinitionId, status) => {
     try {
       await completeTask({
@@ -399,54 +382,7 @@ function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlash }) {
   };
 
   return (
-    <Card className="bg-[#fafbfa] border border-[#edf0ee] rounded-lg p-4 mt-3 shadow-none">
-      <div className="flex items-start justify-between gap-4 mb-3">
-        <div>
-          <div className="text-[9px] uppercase tracking-[0.1em] text-slate-400 font-semibold">
-            Phase {phase.phaseNumber} · {phase.gate?.code ?? "—"}
-          </div>
-          <div className="text-[13px] font-semibold text-[#19352d] mt-0.5">
-            {phase.name}
-          </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">
-            {phase.gate?.name ?? ""}
-          </div>
-        </div>
-        <Badge
-          variant="outline"
-          className={cn(
-            "px-2 py-1 rounded-full text-[9px] font-semibold whitespace-nowrap",
-            meta.badge,
-          )}
-        >
-          {stateLabel(phase.state)}
-        </Badge>
-      </div>
-
-      <div className="mb-3">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] font-semibold text-slate-600">
-            {phase.pct}% complete
-          </span>
-          <span className="text-[9px] text-slate-400">
-            {phase.docsDone}/{phase.docsTotal} docs · {phase.tasksDone}/
-            {phase.tasksTotal} checks
-          </span>
-        </div>
-        <ProgressBar
-          value={phase.pct}
-          tone={
-            normalizeKey(phase.state) === "QC_FAILED"
-              ? "danger"
-              : normalizeKey(phase.state) === "STALLED"
-                ? "warn"
-                : normalizeKey(phase.state) === "AWAITING_GATE"
-                  ? "gate"
-                  : "brand"
-          }
-        />
-      </div>
-
+    <Card className="cc-phase-detail shadow-none">
       {isLoading && <LoadingRow label="Loading documents & checks…" />}
       {isError && <ErrorRow error={error} onRetry={refetch} />}
 
@@ -654,122 +590,68 @@ function ProjectExecutionBoard({
   onOpenProject,
   canUpdateTasks,
   onOpen,
-  onFlash,
+  onFlash
 }) {
-  return (
-    <Card className="bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
-      {rows.map((row) => {
-        const isOpen = expanded === row.code;
-        const activePhase = row.phases.find(
-          (p) => p.phaseNumber === row.currentPhaseSeq,
-        );
-        return (
-          <div
-            key={row.code}
-            className="border-b last:border-b-0 border-[#edf0ee]"
-          >
-            <div
-              className="px-4 py-3.5 hover:bg-[#fbfcfb] cursor-pointer transition"
-              onClick={() => onToggle(row.code)}
-            >
-              <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_170px_120px_90px] gap-4 items-center">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-[#f1f5f2] flex items-center justify-center text-[#2f6655] flex-shrink-0">
-                    <BriefcaseBusiness size={15} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[12px] font-semibold text-[#19352d] truncate">
-                      {row.name}
-                    </div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">
-                      {row.code} · {row.location}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="min-w-0">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[11px] font-medium text-slate-700 truncate">
-                      {activePhase?.name}{" "}
-                      <span className="text-slate-400">
-                        ({activePhase?.gate?.code ?? "—"})
-                      </span>
-                    </span>
-                    <span className="text-[10px] font-semibold text-slate-600">
-                      {row.pct}%
-                    </span>
-                  </div>
-                  <PhaseLadder
-                    phases={row.phases}
-                    activeSeq={row.currentPhaseSeq}
-                  />
-                </div>
-
-                <div>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[9px] font-semibold",
-                      healthMeta(row.health?.key),
-                    )}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                    {row.health?.label}
-                  </Badge>
-                </div>
-
-                <div className="text-[10px] text-slate-600">
-                  {timeAgo(row.lastActivity) || "—"}
-                  {row.daysIdle != null && row.daysIdle > 0 && (
-                    <div className="text-[9px] text-amber-600 mt-0.5">
-                      {row.daysIdle}d idle
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenProject(row.code);
-                    }}
-                    className="h-auto p-0 text-[9px] font-semibold text-slate-400 hover:text-[#19352d] hover:bg-transparent"
-                  >
-                    Open
-                  </Button>
-                  <ArrowRight
-                    size={14}
-                    className={cn(
-                      "text-slate-300 transition-transform",
-                      isOpen && "rotate-90",
-                    )}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {isOpen && (
-              <div className="px-4 pb-4">
-                {activePhase && (
-                  <PhaseDetailCard
-                    project={row}
-                    phase={activePhase}
-                    canUpdateTasks={canUpdateTasks}
-                    onOpen={onOpen}
-                    onFlash={onFlash}
-                  />
-                )}
-              </div>
-            )}
+  const [selectedPhases, setSelectedPhases] = useState({});
+  return <div className="cc-project-board">
+    {rows.map(row => {
+      const isOpen = expanded === row.code;
+      const activePhase = row.phases.find(phase => phase.phaseNumber === row.currentPhaseSeq);
+      const selected = selectedPhases[row.code] === undefined ? activePhase?.id : selectedPhases[row.code];
+      const completed = row.phases.filter(phase => normalizeKey(phase.state) === "COMPLETE").length;
+      return <article className="cc-project" key={row.code}>
+        <div className="cc-project-header">
+          <button type="button" className="cc-project-toggle" aria-expanded={isOpen} aria-controls={`cc-project-${row.id}`} onClick={() => onToggle(row.code)}>
+            <div className="cc-project-info">
+          <span className="cc-project-code">{row.code}</span>
+          <h3>{row.name}</h3>
+          <p>
+            {row.location || "Location not set"}
+            {row.lastActivity ? ` · ${timeAgo(row.lastActivity)}` : ""}
+            {row.daysIdle > 0 ? ` · ${row.daysIdle}d idle` : ""}
+          </p>
+        </div>
+            <PhaseLadder phases={row.phases} activeSeq={row.currentPhaseSeq} />
+            <div className="cc-project-percent">
+          <strong>{row.pct}%</strong>
+          <small>{completed}/{row.phases.length} phases</small>
+        </div>
+          </button>
+          <div className="cc-project-links">
+        <Badge variant="outline" className={cn("cc-health", healthMeta(row.health?.key))}>{row.health?.label}</Badge>
+        <Button type="button" variant="ghost" onClick={() => onOpenProject(row.code)} className="cc-open-project">Open <ArrowRight size={12} /></Button>
+      </div>
+        </div>
+        {isOpen && <div className="cc-project-detail" id={`cc-project-${row.id}`}>
+          {row.phases.map(phase => <div className="cc-phase-group" key={phase.id}>
+            <div className="cc-phase-row">
+              <span className="cc-phase-number">{String(phase.phaseNumber).padStart(2, "0")}</span>
+              <div>
+            <h4>{phase.name}</h4>
+            <p>docs {phase.docsDone}/{phase.docsTotal} · checks {phase.tasksDone}/{phase.tasksTotal}{phase.gate?.code ? ` · ${phase.gate.code}` : ""}</p>
           </div>
-        );
-      })}
-      {rows.length === 0 && <LoadingRow label="No projects match this view." />}
-    </Card>
-  );
+              <div className="cc-phase-progress">
+            <ProgressBar value={phase.pct} />
+            <small>{phase.pct}%</small>
+          </div>
+              <Badge variant="outline" className={`cc-state-tag cc-state-${normalizeKey(phase.state).toLowerCase()}`}>{stateLabel(phase.state)}</Badge>
+              <Button type="button" variant="outline" className="cc-phase-button" aria-expanded={selected === phase.id} aria-controls={`cc-phase-${row.id}-${phase.id}`} onClick={() => setSelectedPhases(previous => ({
+                ...previous,
+                [row.code]: selected === phase.id ? null : phase.id
+              }))}>{selected === phase.id ? "Hide details" : "View details"}</Button>
+            </div>
+            {selected === phase.id && <div id={`cc-phase-${row.id}-${phase.id}`}><PhaseDetailCard project={row} phase={phase} canUpdateTasks={canUpdateTasks} onOpen={onOpen} onFlash={onFlash} /></div>}
+          </div>)}
+        </div>}
+      </article>;
+    })}
+    {rows.length === 0 && <Card className="cc-empty"><LoadingRow label="No projects match this view." /></Card>}
+  </div>;
 }
+
+// ------------------------------------------------------------
+// ACTION REQUIRED — GET /command-center/actions
+// ------------------------------------------------------------
 
 // ------------------------------------------------------------
 // ACTION REQUIRED — GET /command-center/actions
@@ -787,7 +669,7 @@ function ActionRequired({ onOpen }) {
   const routeFor = (item) => ROUTES.project(item.projectCode);
 
   return (
-    <Card className="bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
+    <Card className="cc-panel bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
       <div className="px-4 py-3 border-b border-[#edf0ee] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
@@ -864,7 +746,7 @@ function DocumentControl({ onOpen, onUploadDoc }) {
   const missingDocs = data?.missingDocs || [];
 
   return (
-    <Card className="bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
+    <Card className="cc-panel bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
       <div className="px-4 py-3 border-b border-[#edf0ee] flex items-center justify-between">
         <div>
           <div className="text-[12px] font-semibold text-[#19352d]">
@@ -989,7 +871,7 @@ function TaskQCPanel({ onOpen }) {
   const openTasks = data || [];
 
   return (
-    <Card className="bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
+    <Card className="cc-panel bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
       <div className="px-4 py-3 border-b border-[#edf0ee] flex items-center justify-between">
         <div>
           <div className="text-[12px] font-semibold text-[#19352d]">
@@ -1074,7 +956,7 @@ function CommercialPanel({ onOpen }) {
     useGetCommandCenterCommercialQuery();
 
   return (
-    <Card className="bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
+    <Card className="cc-panel bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
       <div className="px-4 py-3 border-b border-[#edf0ee] flex items-center justify-between">
         <div>
           <div className="text-[12px] font-semibold text-[#19352d]">
@@ -1175,7 +1057,7 @@ function SiteExecution({ rows, isLoading, isError, error, refetch, onOpen }) {
   );
 
   return (
-    <Card className="bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
+    <Card className="cc-panel bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
       <div className="px-4 py-3 border-b border-[#edf0ee] flex items-center justify-between">
         <div>
           <div className="text-[12px] font-semibold text-[#19352d]">
@@ -1291,7 +1173,7 @@ function TeamWorkload({ onOpen }) {
   const maxCount = Math.max(1, ...roleLoad.map((r) => r.count));
 
   return (
-    <Card className="bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
+    <Card className="cc-panel bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
       <div className="px-4 py-3 border-b border-[#edf0ee] flex items-center justify-between">
         <div>
           <div className="text-[12px] font-semibold text-[#19352d]">
@@ -1369,7 +1251,7 @@ function ActivityTimeline() {
   };
 
   return (
-    <Card className="bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
+    <Card className="cc-panel bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
       <div className="px-4 py-3 border-b border-[#edf0ee] flex items-center justify-between">
         <div>
           <div className="text-[12px] font-semibold text-[#19352d]">
@@ -1478,7 +1360,7 @@ function UploadDocumentModal({ target, onClose, onUploaded, onFlash }) {
 
   return (
     <Dialog open={!!target} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden rounded-2xl border-[#dfe5e1]">
+      <DialogContent className="cc-upload-modal sm:max-w-lg p-0 gap-0 overflow-hidden rounded-none border-[#e4dfd6]">
         <DialogHeader className="px-5 py-4 border-b border-[#edf0ee]">
           <DialogTitle className="text-[15px] font-semibold text-[#19352d]">
             Upload document
@@ -1607,7 +1489,7 @@ const TABS = [
 
 function TabNav({ active, onChange, counts }) {
   return (
-    <Tabs value={active} onValueChange={onChange} className="mb-6">
+    <Tabs value={active} onValueChange={onChange} className="cc-tabs">
       <TabsList className="w-full justify-start h-auto bg-transparent p-0 border-b border-[#e4e8e5] rounded-none overflow-x-auto">
         {TABS.map((tab) => {
           const Icon = tab.icon;
@@ -1651,6 +1533,8 @@ function TabNav({ active, onChange, counts }) {
 // ------------------------------------------------------------
 
 export default function CommandCenter() {
+  const dispatch = useDispatch();
+  const [live, setLive] = useState(true);
   const [healthFilter, setHealthFilter] = useState("all");
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 300);
@@ -1679,6 +1563,7 @@ export default function CommandCenter() {
     },
     isFetching: kpiLoading,
     refetch: refetchKpis,
+    fulfilledTimeStamp: updatedAt,
   } = useGetCommandCenterKpisQuery();
 
   // ---- Portfolio, filtered (drives the Portfolio tab board) ----
@@ -1704,6 +1589,14 @@ export default function CommandCenter() {
   const { data: documentsData } = useGetCommandCenterDocumentsQuery();
   const { data: tasksData } = useGetCommandCenterTasksQuery();
 
+  useEffect(() => {
+    if (!live) return;
+    const timer = setInterval(() => {
+      if (!document.hidden) dispatch(commandCenterApi.util.invalidateTags(REFRESH_TAGS));
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [live, dispatch]);
+
   const handleRescan = () => {
     // No dedicated rescan endpoint is exposed yet — this refreshes
     // every live query on the page. Wire a real POST /command-center/rescan
@@ -1711,7 +1604,8 @@ export default function CommandCenter() {
     refetchKpis();
     refetchPortfolio();
     refetchAllRows();
-    flashToast("Refreshed.");
+    dispatch(commandCenterApi.util.invalidateTags(REFRESH_TAGS.filter(tag => !["CommandCenterKpis", "CommandCenterPortfolio"].includes(tag))));
+    flashToast("Refreshing records…");
   };
 
   const handleUploaded = (target) => {
@@ -1729,38 +1623,18 @@ export default function CommandCenter() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f5f7f5] text-[#19352d]">
-      <main className="px-5 lg:px-7 py-6 max-w-[1700px] mx-auto">
-        {/* INTRO */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-5 mb-6">
-          <div>
-            <h1 className="text-[28px] lg:text-[32px] font-semibold tracking-[-0.04em] text-[#19352d]">
-              Command Centre
-            </h1>
-            <p className="text-[11px] text-slate-400 mt-1 max-w-xl">
-              One operational view across projects, phases, gates, documents,
-              checks and site execution — sourced live from your project
-              records.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleRescan}
-              className="h-auto inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white border-[#dfe5e1] text-[10px] font-semibold text-slate-600 hover:border-[#aebfb5] hover:bg-white"
-            >
-              <RefreshCw
-                size={13}
-                className={kpiLoading ? "animate-spin" : ""}
-              />
-              Refresh
-            </Button>
-          </div>
+    <div className="command-center">
+      <header className="cc-topbar">
+        <h1>Command <span>Centre</span></h1>
+        <div className="cc-header-actions">
+          <span className="cc-stamp">RIPPOTAI · {updatedAt ? `UPDATED ${new Date(updatedAt).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})}` : "LOADING RECORDS"}{user?.email ? ` · ${user.email}` : ""}</span>
+          <Button type="button" className="cc-header-button" aria-pressed={live} onClick={() => setLive(value => !value)}><span className={cn("cc-pulse",live && "cc-pulse-on")}/>{live ? "Live" : "Paused"}</Button>
+          <Button type="button" className="cc-header-button" onClick={handleRescan} disabled={kpiLoading}><RefreshCw size={12} className={kpiLoading ? "animate-spin" : ""}/>{kpiLoading ? "Refreshing" : "Rescan"}</Button>
+          {user?.permissions?.includes("projects:create") && <Button type="button" className="cc-header-button cc-header-solid" onClick={() => navigate("/projects/new")}><Plus size={12}/>New project</Button>}
         </div>
-
+      </header>
         {/* KPI STRIP */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
+        <div className="cc-kpis">
           <KPI
             label="Live Projects"
             value={kpi.live}
@@ -1818,6 +1692,7 @@ export default function CommandCenter() {
           />
         </div>
 
+      <main className="cc-main">
         {/* TABS */}
         <TabNav active={activeTab} onChange={setActiveTab} counts={tabCounts} />
 
@@ -1831,7 +1706,7 @@ export default function CommandCenter() {
               onAction={() => navigate(ROUTES.projects)}
             />
 
-            <Card className="bg-white border border-[#e4e8e5] rounded-xl px-3 py-2.5 mb-4 flex flex-col md:flex-row gap-2 shadow-none">
+            <Card className="cc-filters">
               <div className="relative flex-1 max-w-[360px]">
                 <Search
                   size={13}
@@ -1840,11 +1715,12 @@ export default function CommandCenter() {
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Filter command centre..."
+                  aria-label="Search projects"
+                  placeholder="Search projects..."
                   className="w-full h-8 pl-8 pr-3 rounded-lg bg-[#fafbfa] border-[#edf0ee] text-[10px] text-slate-700 placeholder:text-slate-400 focus-visible:border-[#b9c9c1] focus-visible:ring-0"
                 />
               </div>
-              <div className="flex items-center gap-1.5 overflow-x-auto">
+              <div className="cc-filter-buttons">
                 {[
                   ["all", "All Projects"],
                   ["progress", "On Track"],
@@ -1869,18 +1745,19 @@ export default function CommandCenter() {
             </Card>
 
             {portfolioLoading && (
-              <Card className="bg-white border border-[#e4e8e5] rounded-xl shadow-none p-0">
+              <Card className="cc-panel bg-white border border-[#e4e8e5] rounded-xl shadow-none p-0">
                 <LoadingRow label="Loading portfolio…" />
               </Card>
             )}
             {portfolioError && (
-              <Card className="bg-white border border-[#e4e8e5] rounded-xl shadow-none p-0">
+              <Card className="cc-panel bg-white border border-[#e4e8e5] rounded-xl shadow-none p-0">
                 <ErrorRow
                   error={portfolioErrorObj}
                   onRetry={refetchPortfolio}
                 />
               </Card>
             )}
+            <PhaseLegend />
             {!portfolioLoading && !portfolioError && (
               <ProjectExecutionBoard
                 rows={filteredRows}

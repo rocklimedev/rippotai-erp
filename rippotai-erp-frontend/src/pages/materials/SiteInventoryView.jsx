@@ -107,7 +107,7 @@ export default function SiteInventoryView() {
 
   const openTransaction = (type) => {
     nav(
-      `/materials/site-inventory/transactions/new?project_id=${projectId}&material_id=${materialId}&type=${type}`,
+      `/procurement/site-inventory/transactions/new?project_id=${projectId}&material_id=${materialId}&type=${type}`,
     );
   };
 
@@ -301,7 +301,7 @@ export default function SiteInventoryView() {
             <button
               onClick={() =>
                 nav(
-                  `/materials/site-inventory/${materialId}/transactions?project_id=${projectId}`,
+                  `/procurement/site-inventory/${materialId}/transactions?project_id=${projectId}`,
                 )
               }
               className="text-[12px] font-semibold text-[#1F453B] inline-flex items-center gap-1"

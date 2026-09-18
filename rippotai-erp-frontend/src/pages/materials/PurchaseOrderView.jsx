@@ -575,7 +575,7 @@ export default function PurchaseOrderView() {
 
             <button
               type="button"
-              onClick={() => nav("/materials/purchase-orders")}
+              onClick={() => nav("/procurement/purchase-orders")}
               className="mt-5 h-9 px-4 rounded-lg bg-[#1F453B] text-white text-sm font-semibold"
             >
               Back to Purchase Orders
@@ -963,7 +963,7 @@ export default function PurchaseOrderView() {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => nav("/materials/purchase-orders")}
+                onClick={() => nav("/procurement/purchase-orders")}
                 className="h-9 w-9 rounded-lg border border-[#DCE3E1] bg-white flex items-center justify-center text-[#1F453B] hover:bg-[#F4F6F7]"
                 title="Back"
               >
@@ -1000,7 +1000,9 @@ export default function PurchaseOrderView() {
 
               <button
                 type="button"
-                onClick={() => nav(`/materials/purchase-orders/${po.id}/edit`)}
+                onClick={() =>
+                  nav(`/procurement/purchase-orders/${po.id}/edit`)
+                }
                 disabled={actionLoading}
                 className="h-9 px-3 rounded-lg border border-[#DCE3E1] bg-white text-[#1F453B] text-sm font-semibold inline-flex items-center gap-1.5 hover:bg-[#F4F6F7] disabled:opacity-50"
               >

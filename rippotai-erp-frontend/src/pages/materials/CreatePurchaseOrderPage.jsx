@@ -212,7 +212,7 @@ export default function CreatePurchaseOrderPage() {
    * --------------------------------------------------------------- */
 
   const handleCancel = () => {
-    navigate("/materials/purchase-orders");
+    navigate("/procurement/purchase-orders");
   };
 
   const handleSuccess = (response) => {
@@ -223,7 +223,7 @@ export default function CreatePurchaseOrderPage() {
      * this can instead navigate using response.id.
      */
 
-    navigate("/materials/purchase-orders");
+    navigate("/procurement/purchase-orders");
   };
 
   /* ---------------------------------------------------------------

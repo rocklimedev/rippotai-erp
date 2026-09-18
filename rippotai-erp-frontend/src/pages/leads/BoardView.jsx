@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import {
   useGetBoardQuery,
   useMoveStageMutation,
@@ -22,6 +24,8 @@ const formatCurrency = (value) => {
 };
 
 export default function BoardView({ onOpenLead, onEditLead }) {
+  const navigate = useNavigate();
+
   // ------------------------------------------------------------
   // ZOHO CONNECTION STATUS
   // ------------------------------------------------------------
@@ -34,15 +38,6 @@ export default function BoardView({ onOpenLead, onEditLead }) {
     pollingInterval: 5000,
   });
 
-  /*
-   * Keep this flexible because your backend response may be:
-   *
-   * { connected: true }
-   * { isConnected: true }
-   * { connected: false }
-   *
-   * Adjust this once you know the exact backend response.
-   */
   const zohoConnected =
     zohoStatus?.connected === true ||
     zohoStatus?.isConnected === true ||
@@ -95,6 +90,18 @@ export default function BoardView({ onOpenLead, onEditLead }) {
 
   const closeModal = () => {
     setModal(null);
+  };
+
+  // ------------------------------------------------------------
+  // ADD LEAD
+  // ------------------------------------------------------------
+
+  const handleAddLead = (stageId) => {
+    navigate("/crm/leads/new", {
+      state: {
+        stage: stageId,
+      },
+    });
   };
 
   // ------------------------------------------------------------
@@ -162,10 +169,7 @@ export default function BoardView({ onOpenLead, onEditLead }) {
   const totalLeads = data.activeCount ?? 0;
 
   // Reconcile whatever the API sent back with the canonical Bigin
-  // stage list, in the fixed pipeline order shown in Zoho — Bigin
-  // itself always renders every stage as a column even when it's
-  // empty (see "Needs Analysis · 0 Deal" in the screenshot), so we
-  // do the same instead of only drawing columns that have leads.
+  // stage list, in the fixed pipeline order shown in Zoho.
   const columnsById = new Map((data.columns || []).map((c) => [c.id, c]));
 
   const knownColumns = STAGES.map((stage) => {
@@ -180,10 +184,8 @@ export default function BoardView({ onOpenLead, onEditLead }) {
     );
   });
 
-  // Any stage the backend returns that isn't in our known list (e.g.
-  // a stage added in Bigin after STAGES was last updated) still gets
-  // shown, appended after the canonical columns, so nothing silently
-  // disappears from the board.
+  // Any stage returned by the backend that isn't in our known list
+  // still gets shown after the canonical columns.
   const extraColumns = (data.columns || []).filter(
     (c) => !STAGES.some((s) => s.id === c.id),
   );
@@ -193,7 +195,7 @@ export default function BoardView({ onOpenLead, onEditLead }) {
   return (
     <div className="flex flex-col min-w-0 h-full">
       {/* ---------------------------------------------------------- */}
-      {/* BOARD HEADER                                                */}
+      {/* BOARD HEADER                                               */}
       {/* ---------------------------------------------------------- */}
 
       <div className="px-7 pt-6 pb-5">
@@ -208,7 +210,6 @@ export default function BoardView({ onOpenLead, onEditLead }) {
                 {totalLeads} active
               </span>
 
-              {/* ZOHO CONNECTION INDICATOR */}
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[#eef7f1] px-2.5 py-1 text-[10px] font-semibold text-[#3f6d5f]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#3f6d5f]" />
                 Zoho connected
@@ -229,7 +230,7 @@ export default function BoardView({ onOpenLead, onEditLead }) {
       </div>
 
       {/* ---------------------------------------------------------- */}
-      {/* BOARD                                                       */}
+      {/* BOARD                                                      */}
       {/* ---------------------------------------------------------- */}
 
       <div className="flex-1 min-w-0 overflow-x-auto px-7 pb-8">
@@ -369,6 +370,20 @@ export default function BoardView({ onOpenLead, onEditLead }) {
                       />
                     ))
                   )}
+
+                  {/* ADD LEAD CARD */}
+
+                  <button
+                    type="button"
+                    onClick={() => handleAddLead(col.id)}
+                    className="group flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--stroke)] bg-paper/50 px-3 py-3 text-[11px] font-semibold text-[var(--muted)] transition-all duration-150 hover:border-[var(--ink-green)] hover:bg-paper hover:text-[var(--ink-green)]"
+                  >
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full border border-current text-[14px] leading-none transition-transform duration-150 group-hover:scale-110">
+                      +
+                    </span>
+
+                    <span>Add Lead</span>
+                  </button>
                 </div>
               </section>
             );
