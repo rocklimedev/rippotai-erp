@@ -1,6 +1,7 @@
 // common/enums/project-planner.enum.ts
 
 export enum ProjectPlannerType {
+  PROJECT = 'PROJECT',
   CONSULTANCY = 'CONSULTANCY',
   VENDOR_PROCUREMENT = 'VENDOR_PROCUREMENT',
   PMC = 'PMC',

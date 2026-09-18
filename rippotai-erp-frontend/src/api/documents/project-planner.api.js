@@ -2,6 +2,24 @@ import { baseApi } from "../../store/baseApi";
 
 export const projectPlannerApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    downloadPlannerWorkbook: builder.mutation({
+      query: (projectId) => ({
+        url: `/projects/${projectId}/planners/workbook.xlsx`,
+        responseHandler: async (response) => {
+          if (!response.ok) return { message: "Workbook export failed" };
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "project-planner.xlsx";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          return { success: true };
+        },
+      }),
+    }),
     // =========================================================
     // PROJECT PLANNERS
     // =========================================================
@@ -503,6 +521,7 @@ export const projectPlannerApi = baseApi.injectEndpoints({
 });
 
 export const {
+  useDownloadPlannerWorkbookMutation,
   // Project planners
   useInitializeProjectPlannersMutation,
   useCreatePlannerMutation,

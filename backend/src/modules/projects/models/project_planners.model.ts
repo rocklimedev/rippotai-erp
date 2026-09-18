@@ -40,8 +40,7 @@ export interface ProjectPlannerCreationAttributes {
   deletedAt: 'deleted_at',
   indexes: [
     {
-      unique: true,
-      fields: ['project_id', 'type'],
+      fields: ['project_id'],
     },
   ],
 })

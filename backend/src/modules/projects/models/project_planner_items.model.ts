@@ -29,6 +29,7 @@ export interface ProjectPlannerItemCreationAttributes {
   id?: string;
 
   planner_id: string;
+  task_template_id?: string | null;
   phase_id: string;
 
   work_name?: string | null;
@@ -104,6 +105,9 @@ export class ProjectPlannerItem extends Model<
     allowNull: false,
   })
   declare planner_id: string;
+
+  @Column({ type: DataType.CHAR(36), allowNull: true })
+  declare task_template_id: string | null;
 
   // ============================================================
   // PHASE

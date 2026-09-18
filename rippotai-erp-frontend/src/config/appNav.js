@@ -100,14 +100,13 @@ export const APP_MENUS = {
 
   projects: [
     {
-      label: "Projects",
-      slug: "all",
-    },
-    {
       label: "Documents",
       slug: "documents/all",
     },
-
+    {
+      label: "Documents",
+      items: [I("Project Planner", "planner/list")],
+    },
     {
       label: "Settings",
       items: [
@@ -127,7 +126,7 @@ export const APP_MENUS = {
     {
       label: "Management",
       items: [
-        I("Projects", "/projects/all"),
+        I("Projects", "/projects"),
         I("Activity", "activity"),
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles & Permissions", "roles"),
@@ -180,7 +179,7 @@ export const APP_MENUS = {
     {
       label: "Settings",
       items: [
-        I("Projects", "/projects/all"),
+        I("Projects", "/projects"),
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles and Permissions", "roles"),
         I("Activity", "activity"),
@@ -259,7 +258,7 @@ export const APP_MENUS = {
     {
       label: "Management",
       items: [
-        I("Projects", "/projects/all"),
+        I("Projects", "/projects"),
         I("Activity", "activity"),
         I("Settings", "edit-dashboard"),
       ],
@@ -289,7 +288,7 @@ export const APP_MENUS = {
       label: "Administration",
       items: [
         I("Activity", "activity"),
-        I("Projects", "/projects/all"),
+        I("Projects", "/projects"),
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles & Permissions", "roles"),
       ],
@@ -323,7 +322,7 @@ export const APP_MENUS = {
     {
       label: "Settings",
       items: [
-        I("Projects", "/projects/all"),
+        I("Projects", "/projects"),
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles and Permissions", "roles"),
         I("Activity", "activity"),

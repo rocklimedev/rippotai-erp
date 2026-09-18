@@ -20,8 +20,8 @@ export const projectsRoutes = [
     blockRoles: ["client"],
     dynamicSections: { appKey: "projects", exclude: ["new", "all"] },
     children: [
-      { index: true, element: <AppDashboard appKey="projects" /> },
-      { path: "all", element: <ProjectsDashboard /> },
+      { index: true, element: <ProjectsDashboard /> },
+
       { path: "activity", element: <ProjectActivity /> },
       { path: "new", element: <ProjectNew /> },
       { path: ":id/handover", element: <ProjectHandover /> },

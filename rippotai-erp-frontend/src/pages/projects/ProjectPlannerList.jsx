@@ -26,6 +26,7 @@ import {
 // ============================================================
 
 const PLANNER_TYPES = [
+  { value: 'PROJECT', label: 'Project planner' },
   {
     value: "CONSULTANCY",
     label: "Consultancy",

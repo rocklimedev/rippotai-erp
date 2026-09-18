@@ -10,8 +10,9 @@ import {
 import { ProjectPlannerType } from '@/common/enums/project-planner.enum';
 
 export class CreateProjectPlannerDto {
+  @IsOptional()
   @IsEnum(ProjectPlannerType)
-  type: ProjectPlannerType;
+  type?: ProjectPlannerType;
 
   @IsOptional()
   @IsString()

@@ -10,6 +10,15 @@ import {
 } from 'sequelize-typescript';
 import { ProjectPhaseModule } from '@/common/enums/project-planner.enum';
 
+export interface ProjectPhaseCreationAttributes {
+  module: ProjectPhaseModule;
+  phase_number: number;
+  phase_code: string;
+  title: string;
+  sort_order?: number;
+  description?: string | null;
+}
+
 @Table({
   tableName: 'project_phases',
   timestamps: true,
@@ -22,7 +31,10 @@ import { ProjectPhaseModule } from '@/common/enums/project-planner.enum';
     { unique: true, fields: ['module', 'phase_number'] },
   ],
 })
-export class ProjectPhase extends Model<ProjectPhase> {
+export class ProjectPhase extends Model<
+  ProjectPhase,
+  ProjectPhaseCreationAttributes
+> {
   // ===================== Primary Key =====================
 
   @PrimaryKey

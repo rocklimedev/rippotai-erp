@@ -29,6 +29,7 @@ export interface ProjectProcurementItemCreationAttributes {
   id?: string;
 
   planner_id: string;
+  template_key?: string | null;
 
   item_type: ProcurementItemType;
 
@@ -101,6 +102,9 @@ export class ProjectProcurementItem extends Model<
     allowNull: false,
   })
   declare planner_id: string;
+
+  @Column({ type: DataType.STRING(64), allowNull: true })
+  declare template_key: string | null;
 
   // ============================================================
   // ITEM TYPE
