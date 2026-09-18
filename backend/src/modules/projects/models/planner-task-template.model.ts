@@ -15,6 +15,18 @@ import {
 import { ProjectPhase } from './project-phase.model';
 import { DocumentType } from '@/modules/documents/models/document-type.model';
 
+export interface PlannerTaskTemplateCreationAttributes {
+  phase_id: string;
+  work_name: string;
+  details?: string | null;
+  sort_order?: number;
+  applies_to_locations?: boolean;
+  is_required?: boolean;
+  is_active?: boolean;
+  document_type_id?: string | null;
+  default_remarks?: string | null;
+}
+
 @Table({
   tableName: 'planner_task_templates',
   timestamps: true,
@@ -35,7 +47,10 @@ import { DocumentType } from '@/modules/documents/models/document-type.model';
     },
   ],
 })
-export class PlannerTaskTemplate extends Model<PlannerTaskTemplate> {
+export class PlannerTaskTemplate extends Model<
+  PlannerTaskTemplate,
+  PlannerTaskTemplateCreationAttributes
+> {
   // ===================== Primary Key =====================
 
   @PrimaryKey

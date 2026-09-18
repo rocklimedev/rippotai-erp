@@ -10,7 +10,9 @@ import {
   Patch,
   Post,
   Query,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 
 import { ProjectPlannerService } from './project-planner.service';
 
@@ -34,6 +36,24 @@ import {
 @Controller()
 export class ProjectPlannerController {
   constructor(private readonly projectPlannerService: ProjectPlannerService) {}
+
+  @Get('projects/:projectId/planners/workbook.xlsx')
+  async downloadWorkbook(
+    @Param('projectId', new ParseUUIDPipe()) projectId: string,
+    @Res() response: Response,
+  ) {
+    const buffer =
+      await this.projectPlannerService.exportProjectWorkbook(projectId);
+    response.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    response.setHeader(
+      'Content-Disposition',
+      'attachment; filename="project-planner.xlsx"',
+    );
+    response.send(Buffer.from(buffer));
+  }
 
   // ============================================================
   // PROJECT PLANNERS

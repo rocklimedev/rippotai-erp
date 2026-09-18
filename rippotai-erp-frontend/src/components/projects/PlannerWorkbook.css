@@ -1,0 +1,197 @@
+.planner-sheet-scroll {
+  width: 100%;
+  overflow: auto;
+  border: 1px solid #bbc2b7;
+  background: white;
+  color: #222;
+}
+.planner-sheet {
+  min-width: 1100px;
+  font-family: Arial, sans-serif;
+  background: white;
+  color: #222;
+  padding: 16px;
+}
+.planner-sheet header {
+  text-align: center;
+  padding: 8px 0 16px;
+}
+.planner-sheet header strong {
+  font-size: 30px;
+  letter-spacing: 5px;
+}
+.planner-sheet header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 8px 0;
+  color: #222;
+}
+.planner-sheet header p {
+  font-size: 13px;
+  color: #555;
+  margin: 0;
+}
+.planner-sheet table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 11px;
+  table-layout: fixed;
+}
+.planner-sheet th,
+.planner-sheet td {
+  border: 1px solid #9fa995;
+  padding: 7px;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+  height: 38px;
+}
+.planner-sheet th {
+  background: #d9e2d0;
+  font-weight: 700;
+  text-align: center;
+}
+.planner-sheet th:first-child {
+  width: 54px;
+}
+.planner-sheet th:nth-child(2) {
+  width: 150px;
+}
+.planner-sheet th:nth-child(3) {
+  width: 205px;
+}
+.planner-sheet th:nth-child(4) {
+  width: 190px;
+}
+.planner-sheet .planner-phase {
+  font-weight: 700;
+  background: #f0f2e9;
+  text-align: center;
+}
+.planner-sheet .planner-superhead th {
+  background: #f0f2e9;
+}
+.planner-sheet input,
+.planner-sheet select {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: #222;
+  font: inherit;
+  padding: 4px 0;
+}
+.planner-sheet input:focus,
+.planner-sheet select:focus {
+  outline: 2px solid #536c36;
+  background: #fff;
+}
+.planner-sheet select {
+  font-size: 10px;
+}
+.planner-empty {
+  padding: 24px;
+  text-align: center;
+}
+.planner-workspace {
+  min-width: 0;
+}
+.planner-toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.planner-toolbar select,
+.planner-toolbar input {
+  border: 1px solid #b8c1ad;
+  border-radius: 4px;
+  padding: 8px;
+  background: var(--background, #fff);
+  max-width: 100%;
+}
+.planner-view-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.planner-view-tabs button {
+  padding: 10px 15px;
+  border: 1px solid #bbc2b7;
+  background: #f0f2e9;
+  color: #26371e;
+}
+.planner-view-tabs button[aria-selected="true"] {
+  background: #344829;
+  color: white;
+}
+.planner-toolbar button:disabled {
+  opacity: 0.5;
+}
+@media print {
+  .planner-sheet-scroll {
+    overflow: visible;
+    border: 0;
+  }
+  .planner-sheet {
+    min-width: 0;
+    padding: 0;
+  }
+  .planner-sheet input,
+  .planner-sheet select {
+    appearance: none;
+  }
+  .planner-sheet thead {
+    display: table-header-group;
+  }
+  .planner-sheet tr {
+    break-inside: avoid;
+  }
+}
+.planner-sheet {
+  font-family: Lato, Arial, sans-serif;
+}
+.planner-sheet header strong,
+.planner-sheet header h2 {
+  color: #0d3d2f;
+}
+.planner-sheet th {
+  background: #0d3d2f;
+  color: white;
+}
+.planner-sheet .planner-phase {
+  background: white;
+  color: #0d3d2f;
+}
+.planner-sheet .planner-superhead th {
+  background: white;
+  color: #0d3d2f;
+}
+.planner-sheet textarea {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: #222;
+  font: inherit;
+  resize: vertical;
+  min-height: 38px;
+}
+.planner-sheet textarea:focus {
+  outline: 2px solid #0d3d2f;
+  background: white;
+}
+.planner-sheet th {
+  width: auto !important;
+}
+.planner-sheet th:first-child {
+  overflow-wrap: normal;
+}
+.planner-sheet header {
+  position: sticky;
+  left: 0;
+  width: min(100%, calc(100vw - 64px));
+}
+.planner-sheet textarea {
+  resize: none;
+  overflow: hidden;
+}
