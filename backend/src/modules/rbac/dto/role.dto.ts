@@ -1,9 +1,15 @@
 // dto/role.dto.ts
-import { IsString, IsOptional, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsIn, IsNotEmpty, MaxLength } from 'class-validator';
 
 export class CreateRoleDto {
   @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
   name: string;
+
+  @IsOptional()
+  @IsIn(['INTERNAL', 'PROJECT'])
+  scope?: 'INTERNAL' | 'PROJECT';
 
   @IsString()
   @IsOptional()
@@ -18,6 +24,8 @@ export class CreateRoleDto {
 export class UpdateRoleDto {
   @IsString()
   @IsOptional()
+  @IsNotEmpty()
+  @MaxLength(50)
   name?: string;
 
   @IsString()

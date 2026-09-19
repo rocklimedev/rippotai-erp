@@ -35,6 +35,7 @@ import {
 
 import { ConditionRegistry } from './conditions/condition-registry';
 import { ActivityLogsService } from '@/modules/engagement/activity-logs.service';
+import { AccessService } from '../rbac/access.service';
 
 /**
  * Plain-object projection of a GateCondition, used for the Redis-cached gate
@@ -103,6 +104,7 @@ export class GateEngineService {
     private readonly conditionRegistry: ConditionRegistry,
     private readonly activityLog: ActivityLogsService,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    private readonly access: AccessService,
   ) {}
 
   // ---- Redis helpers -----------------------------------------------------
@@ -544,11 +546,10 @@ export class GateEngineService {
     user: CurrentUserPayload,
     opts: { remarks?: string; override?: boolean } = {},
   ): Promise<GateReadiness> {
-    if (!user.permissions?.includes('gates:clear'))
-      throw new ForbiddenException('Missing gates:clear permission');
+    await this.access.require(user, 'gates', 'clear', projectId);
     if (
       opts.override &&
-      (!user.permissions?.includes('gates:override') || !opts.remarks?.trim())
+      (!await this.access.check(user, 'gates', 'override', projectId) || !opts.remarks?.trim())
     ) {
       throw new ForbiddenException(
         'Override requires gates:override permission and a reason',
@@ -719,8 +720,7 @@ export class GateEngineService {
     user: CurrentUserPayload,
     remarks: string,
   ): Promise<void> {
-    if (!user.permissions?.includes('gates:reopen'))
-      throw new ForbiddenException('Missing gates:reopen permission');
+    await this.access.require(user, 'gates', 'reopen', projectId);
     if (!remarks?.trim())
       throw new BadRequestException('A reopening reason is required');
     await this.ensureInitialized(projectId);
@@ -848,8 +848,7 @@ export class GateEngineService {
     ticked: boolean,
     remarks?: string,
   ): Promise<void> {
-    if (!user.permissions?.includes('gates:clear'))
-      throw new ForbiddenException('Missing gates:clear permission');
+    await this.access.require(user, 'gates', 'clear', projectId);
     await this.ensureInitialized(projectId);
     const condition = await this.gateConditionModel.findByPk(conditionId);
     if (!condition) throw new Error(`Condition "${conditionId}" not found.`);

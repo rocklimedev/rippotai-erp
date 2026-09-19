@@ -16,6 +16,7 @@ import { RolePermission } from './role_permission.model';
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
+  indexes: [{ unique: true, fields: ['scope', 'name'], name: 'uk_roles_scope_name' }],
 })
 export class Role extends Model<Role> {
   @PrimaryKey
@@ -28,9 +29,11 @@ export class Role extends Model<Role> {
   @Column({
     type: DataType.STRING(50),
     allowNull: false,
-    unique: true,
   })
   declare name: string;
+
+  @Column({ type: DataType.ENUM('INTERNAL', 'PROJECT'), allowNull: false, defaultValue: 'INTERNAL' })
+  declare scope: 'INTERNAL' | 'PROJECT';
 
   @Column({
     type: DataType.TEXT,

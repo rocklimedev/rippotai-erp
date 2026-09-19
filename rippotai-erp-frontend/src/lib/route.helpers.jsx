@@ -2,6 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { allSlugsFor } from "@/config/appNav";
 import SectionPage from "@/pages/SectionPage";
+import RouteAccess from '@/components/RouteAccess';
 
 /**
  * Wraps a route element so it requires auth.
@@ -23,7 +24,7 @@ export function Protected({ children, blockRoles }) {
   if (blockRoles && blockRoles.includes(user.role))
     return <Navigate to="/dashboard" replace />;
 
-  return children;
+  return <RouteAccess>{children}</RouteAccess>;
 }
 
 /** Wraps a route element so it's only reachable when logged out (login/register/signup). */

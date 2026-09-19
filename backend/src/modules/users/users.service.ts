@@ -37,10 +37,18 @@ export class UsersService {
     private readonly notificationForUserService: NotificationForUserService,
   ) {}
 
+  private async validateInternalRole(roleId?: string | null) {
+    if (!roleId) return;
+    const role = await this.roleModel.findByPk(roleId);
+    if (!role || role.scope !== 'INTERNAL')
+      throw new BadRequestException('User accounts require an internal role');
+  }
+
   // =========================
   // CREATE USER
   // =========================
   async create(dto: CreateUserDto, actor?: any): Promise<User> {
+    await this.validateInternalRole(dto.role_id);
     const password_hash = await bcrypt.hash(dto.password, SALT_ROUNDS);
 
     try {
@@ -125,6 +133,7 @@ export class UsersService {
   // UPDATE USER (Admin)
   // =========================
   async update(id: string, dto: UpdateUserDto, actor?: any): Promise<User> {
+    await this.validateInternalRole(dto.role_id);
     const user = await this.userModel.findByPk(id);
     if (!user) throw new NotFoundException(`User ${id} not found`);
 
@@ -285,7 +294,7 @@ export class UsersService {
   // =========================
   async findUsersByRoleName(roleName: string): Promise<User[]> {
     const role = await this.roleModel.findOne({
-      where: { name: roleName },
+      where: { name: roleName, scope: 'INTERNAL' },
     });
 
     if (!role) {

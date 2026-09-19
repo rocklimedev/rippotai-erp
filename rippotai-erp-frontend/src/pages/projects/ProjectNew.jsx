@@ -1,3 +1,4 @@
+import { useGetAccessRolesQuery } from '@/api/users/access.api';
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -111,6 +112,7 @@ const getTeamMemberRole = (member) => {
 // ============================================================
 
 export default function ProjectNew() {
+  const { data: projectRoles = [] } = useGetAccessRolesQuery('PROJECT');
   const nav = useNavigate();
   const { id: projectId } = useParams();
 
@@ -535,7 +537,7 @@ export default function ProjectNew() {
             role_label: getTeamMemberRole(member),
             is_primary: Boolean(member?.is_primary),
             sort_order: index,
-            team_id: selectedTeamId,
+            team_id: selectedTeamId || undefined,
           };
         })
         .filter(Boolean);
@@ -593,7 +595,7 @@ export default function ProjectNew() {
              * Backend can validate that this is an actual team
              * membership.
              */
-            team_id: selectedTeamId,
+            team_id: selectedTeamId || undefined,
           }).unwrap();
 
           addedCount += 1;
@@ -656,7 +658,7 @@ export default function ProjectNew() {
 
   const availableUsers = useMemo(() => {
     if (!selectedTeamId) {
-      return [];
+      return users.filter(user => user.is_active !== false && !(isEdit ? existingTeamUserIds : stagedTeamUserIds).has(user.id));
     }
 
     return selectedTeamMembers
@@ -694,11 +696,6 @@ export default function ProjectNew() {
   // ============================================================
 
   const saveTeamMember = async () => {
-    if (!selectedTeamId) {
-      toast.error("Select a team first");
-      return;
-    }
-
     if (!memberDraft.user_id) {
       toast.error("Select a user");
       return;
@@ -733,7 +730,7 @@ export default function ProjectNew() {
 
           sort_order: existingTeam.length,
 
-          team_id: selectedTeamId,
+          team_id: selectedTeamId || undefined,
         }).unwrap();
 
         toast.success(`${getUserName(user)} added to project team`);
@@ -769,7 +766,7 @@ export default function ProjectNew() {
 
         is_primary: memberDraft.is_primary,
 
-        team_id: selectedTeamId,
+        team_id: selectedTeamId || undefined,
       },
     ]);
 
@@ -816,10 +813,6 @@ export default function ProjectNew() {
       return toast.error("Location required");
     }
 
-    if (!selectedTeamId) {
-      return toast.error("Select a team");
-    }
-
     const payload = {
       name: form.name.trim(),
 
@@ -833,7 +826,7 @@ export default function ProjectNew() {
        * Keep this if CreateProjectDto / UpdateProjectDto
        * supports team_id.
        */
-      team_id: selectedTeamId,
+      team_id: selectedTeamId || undefined,
 
       ...(form.client_id
         ? {
@@ -870,7 +863,7 @@ export default function ProjectNew() {
 
               sort_order: index,
 
-              team_id: selectedTeamId,
+              team_id: selectedTeamId || undefined,
             })),
           }
         : {}),
@@ -1281,7 +1274,7 @@ export default function ProjectNew() {
           <button
             type="button"
             onClick={() => setShowAddMember(true)}
-            disabled={!selectedTeamId}
+            disabled={usersLoading}
             className="h-9 px-3 rounded-lg border border-[#1F453B] text-[#333333] text-[13px] font-semibold flex items-center gap-1 hover:bg-[#EAEEF0] disabled:opacity-40 disabled:cursor-not-allowed"
             data-testid="add-team-member-btn"
           >
@@ -1406,7 +1399,7 @@ export default function ProjectNew() {
 
         <button
           onClick={submit}
-          disabled={busy || teamSyncing || !selectedTeamId}
+          disabled={busy || teamSyncing}
           className="px-4 py-2 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold disabled:opacity-50"
           data-testid="btn-create-project-confirm"
         >
@@ -1595,7 +1588,7 @@ export default function ProjectNew() {
                 })
               }
               disabled={
-                usersLoading || selectedTeamMembersLoading || !selectedTeamId
+                usersLoading || selectedTeamMembersLoading
               }
               className="w-full h-10 px-3 mt-1 rounded-lg border border-[#B5C4B6] bg-[#EAEEF0] text-[13.5px]"
               data-testid="team-member-user-select"
@@ -1633,19 +1626,15 @@ export default function ProjectNew() {
               Project Role *
             </label>
 
-            <input
+            <select
               value={memberDraft.role_label}
-              onChange={(e) =>
-                setMemberDraft({
-                  ...memberDraft,
-                  role_label: e.target.value,
-                })
-              }
-              placeholder="e.g. Site Engineer"
+              onChange={event => setMemberDraft({ ...memberDraft, role_label: event.target.value })}
               className="w-full h-10 px-3 mt-1 rounded-lg border border-[#B5C4B6] bg-[#EAEEF0] text-[13.5px]"
               data-testid="team-member-role-label"
-              onKeyDown={(e) => e.key === "Enter" && saveTeamMember()}
-            />
+            >
+              <option value="">Select project role</option>
+              {projectRoles.map(role => <option key={role.id} value={role.name}>{role.name}</option>)}
+            </select>
 
             {/* PRIMARY */}
 
@@ -1679,7 +1668,6 @@ export default function ProjectNew() {
                 onClick={saveTeamMember}
                 disabled={
                   addingMember ||
-                  !selectedTeamId ||
                   !memberDraft.user_id ||
                   !memberDraft.role_label.trim()
                 }

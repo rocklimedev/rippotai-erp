@@ -22,6 +22,13 @@ describe('gate transition rules', () => {
       sequelize as any,
       {} as any,
       {} as any,
+      {} as any,
+      {
+        require: async (actor: any, resource: string, action: string) => {
+          if (!actor.permissions.includes(`${resource}:${action}`)) throw new Error(`Missing ${resource}:${action}`);
+        },
+        check: async (actor: any, resource: string, action: string) => actor.permissions.includes(`${resource}:${action}`),
+      } as any,
     );
     jest.spyOn(service, 'ensureInitialized').mockResolvedValue();
     jest

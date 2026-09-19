@@ -43,17 +43,18 @@ export class AuthService {
         'phone',
         'job_title',
         'avatar_url',
+        'is_active',
       ],
       include: [
         {
           model: Role,
           as: 'role',
-          attributes: ['id', 'name'],
+          attributes: ['id', 'name', 'scope'],
         },
       ],
     });
 
-    if (!user) {
+    if (!user?.is_active || user.role?.scope === 'PROJECT') {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -127,6 +128,9 @@ export class AuthService {
       throw new UnauthorizedException('Token expired');
     }
 
+    if (!authToken.user?.is_active || authToken.user.id !== payload.sub || authToken.user.role?.scope === 'PROJECT') {
+      throw new UnauthorizedException('User account is inactive or token subject is invalid');
+    }
     await this.authTokensService.touchLastUsed(authToken.id);
 
     const grants = authToken.user?.role_id
@@ -195,6 +199,7 @@ export class AuthService {
     const defaultRole = await Role.findOne({
       where: {
         name: 'USER',
+        scope: 'INTERNAL',
       },
     });
 

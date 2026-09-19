@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import {
   BadRequestException,
   Injectable,
@@ -115,9 +116,9 @@ export class BoqService {
     private readonly termsService: TermsService,
   ) {}
 
-  async findAll(project_id?: string) {
+  async findAll(project_id?: string, allowedProjectIds?: string[]) {
     return this.boqModel.findAll({
-      where: project_id ? { project_id } : undefined,
+      where: allowedProjectIds ? { project_id: { [Op.in]: project_id ? allowedProjectIds.filter(id => id === project_id) : allowedProjectIds } } : project_id ? { project_id } : undefined,
       include: [
         {
           model: Project,

@@ -1,3 +1,4 @@
+import { TeamModule } from '../users/team.module';
 import { GateEngineModule } from '../gates/gate-engine.module';
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
@@ -49,6 +50,7 @@ import { CdnModule } from '@/modules/cdn/cdn.module';
 
 @Module({
   imports: [
+    TeamModule,
     GateEngineModule,
     SequelizeModule.forFeature([
       // --------------------------------------------------------

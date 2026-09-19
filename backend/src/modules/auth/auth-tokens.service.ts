@@ -42,10 +42,9 @@ export class AuthTokensService {
         {
           model: User,
           as: 'user',
-          include: [{ model: Role, as: 'role', attributes: ['id', 'name'] }],
+          include: [{ model: Role, as: 'role', attributes: ['id', 'name', 'scope'] }],
         },
       ],
-      logging: console.log, // shows the actual SQL + JOINs executed
     });
 
     return result;

@@ -62,7 +62,7 @@ export class AddTeamMemberDto {
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(150)
+  @MaxLength(50)
   role_label: string;
 
   @IsOptional()
@@ -83,7 +83,7 @@ export class UpdateTeamMemberDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  @MaxLength(150)
+  @MaxLength(50)
   role_label?: string;
 
   @IsOptional()

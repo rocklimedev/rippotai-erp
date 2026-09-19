@@ -1,3 +1,4 @@
+import { TeamService } from '../users/team.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, fn, col, literal, WhereOptions } from 'sequelize';
@@ -19,6 +20,7 @@ import { TeamMemberOwnerType } from '@/common/enums/team.enums';
 @Injectable()
 export class ProjectsService {
   constructor(
+    private readonly teams: TeamService,
     @InjectModel(Project)
     private readonly projectModel: typeof Project,
 
@@ -89,100 +91,23 @@ export class ProjectsService {
     // CREATE PROJECT
     // ============================================================
 
-    const project = await this.projectModel.create({
-      ...projectData,
-      slug,
-      created_by: user?.id ?? null,
-    } as any);
-
-    // ============================================================
-    // CREATE PROJECT TEAM ASSIGNMENTS
-    // ============================================================
-
-    if (team_members?.length) {
-      for (const [index, member] of team_members.entries()) {
-        // --------------------------------------------------------
-        // Find the user's actual team membership
-        // --------------------------------------------------------
-
-        const teamMembership = await this.teamMemberModel.findOne({
-          where: {
-            user_id: member.user_id,
-
-            // Only look at actual team memberships
-            // rather than project assignments.
-            owner_type: TeamMemberOwnerType.TEAM,
-            owner_id: {
-              [Op.ne]: null,
-            },
-          },
-        });
-
-        if (!teamMembership) {
-          throw new NotFoundException(
-            `User ${member.user_id} is not assigned to a team`,
+    const project = await this.projectModel.sequelize!.transaction(
+      async (transaction) => {
+        const created = await this.projectModel.create(
+          { ...projectData, slug, created_by: user?.id ?? null } as any,
+          { transaction },
+        );
+        if (team_members?.length)
+          await this.teams.replaceAll(
+            TeamMemberOwnerType.PROJECT,
+            created.id,
+            team_members,
+            user?.id,
+            transaction,
           );
-        }
-
-        // --------------------------------------------------------
-        // Prevent duplicate project assignment
-        // --------------------------------------------------------
-
-        const existing = await this.teamMemberModel.findOne({
-          where: {
-            owner_type: TeamMemberOwnerType.PROJECT,
-            owner_id: project.id,
-            user_id: member.user_id,
-            role_label: member.role_label,
-          },
-        });
-
-        if (existing) {
-          continue;
-        }
-
-        // --------------------------------------------------------
-        // Only one primary member per project + role
-        // --------------------------------------------------------
-
-        if (member.is_primary) {
-          await this.teamMemberModel.update(
-            {
-              is_primary: false,
-            },
-            {
-              where: {
-                owner_type: TeamMemberOwnerType.PROJECT,
-                owner_id: project.id,
-                role_label: member.role_label,
-                is_primary: true,
-              },
-            },
-          );
-        }
-
-        // --------------------------------------------------------
-        // Create project assignment
-        // --------------------------------------------------------
-
-        await this.teamMemberModel.create({
-          team_id: teamMembership.team_id,
-
-          owner_type: TeamMemberOwnerType.PROJECT,
-          owner_id: project.id,
-
-          user_id: member.user_id,
-
-          role_label: member.role_label,
-
-          is_primary: member.is_primary ?? false,
-
-          sort_order: member.sort_order ?? index,
-
-          created_by: user?.id ?? null,
-        });
-      }
-    }
+        return created;
+      },
+    );
 
     // ============================================================
     // ACTIVITY LOG
@@ -211,9 +136,12 @@ export class ProjectsService {
       includeArchived?: boolean;
       includeDeleted?: boolean;
       client_id?: string;
+      allowedProjectIds?: string[];
     } = {},
   ) {
     const where: WhereOptions<Project> = {};
+    if (filters.allowedProjectIds)
+      where.id = { [Op.in]: filters.allowedProjectIds };
 
     if (filters.status) {
       where.status = filters.status;
@@ -645,120 +573,12 @@ export class ProjectsService {
     },
     currentUser?: User,
   ): Promise<TeamMember> {
-    // ============================================================
-    // VALIDATE PROJECT
-    // ============================================================
-
-    const project = await this.projectModel.findByPk(projectId);
-
-    if (!project) {
-      throw new NotFoundException(`Project ${projectId} not found`);
-    }
-
-    // ============================================================
-    // VALIDATE USER
-    // ============================================================
-
-    const targetUser = await User.findByPk(dto.user_id);
-
-    if (!targetUser) {
-      throw new NotFoundException(`User ${dto.user_id} not found`);
-    }
-
-    // ============================================================
-    // FIND ACTUAL TEAM MEMBERSHIP
-    // ============================================================
-    //
-    // A PROJECT assignment must inherit the team_id from the
-    // user's actual TEAM membership.
-    //
-    // Do NOT create a project assignment without team_id because
-    // team_id is required by the TeamMember model/database.
-    //
-    // ============================================================
-
-    const teamMembership = await this.teamMemberModel.findOne({
-      where: {
-        user_id: dto.user_id,
-
-        // Only the user's real admin/team membership.
-        // Project assignments must NOT be used here.
-        owner_type: TeamMemberOwnerType.TEAM,
-
-        owner_id: {
-          [Op.ne]: null,
-        },
-      },
-    });
-
-    if (!teamMembership) {
-      throw new NotFoundException(
-        `${targetUser.name} is not assigned to an admin team`,
-      );
-    }
-
-    // ============================================================
-    // CHECK EXISTING PROJECT ASSIGNMENT
-    // ============================================================
-
-    const existing = await this.teamMemberModel.findOne({
-      where: {
-        owner_type: TeamMemberOwnerType.PROJECT,
-        owner_id: projectId,
-        user_id: dto.user_id,
-        role_label: dto.role_label,
-      },
-    });
-
-    if (existing) {
-      throw new ConflictException(
-        `${targetUser.name} is already assigned to this project with the role "${dto.role_label}"`,
-      );
-    }
-
-    // ============================================================
-    // ONLY ONE PRIMARY MEMBER PER PROJECT + ROLE
-    // ============================================================
-
-    if (dto.is_primary) {
-      await this.teamMemberModel.update(
-        {
-          is_primary: false,
-        },
-        {
-          where: {
-            owner_type: TeamMemberOwnerType.PROJECT,
-            owner_id: projectId,
-            role_label: dto.role_label,
-            is_primary: true,
-          },
-        },
-      );
-    }
-
-    // ============================================================
-    // CREATE PROJECT ASSIGNMENT
-    // ============================================================
-
-    return this.teamMemberModel.create({
-      // IMPORTANT:
-      // Project member inherits team_id from the user's actual
-      // TEAM membership.
-      team_id: teamMembership.team_id,
-
-      owner_type: TeamMemberOwnerType.PROJECT,
-      owner_id: projectId,
-
-      user_id: dto.user_id,
-
-      role_label: dto.role_label,
-
-      is_primary: dto.is_primary ?? false,
-
-      sort_order: dto.sort_order ?? 0,
-
-      created_by: currentUser?.id ?? null,
-    });
+    return this.teams.add(
+      TeamMemberOwnerType.PROJECT,
+      projectId,
+      dto,
+      currentUser?.id,
+    );
   }
 
   // =========================
@@ -787,32 +607,7 @@ export class ProjectsService {
       );
     }
 
-    const newRoleLabel = dto.role_label ?? member.role_label;
-
-    if (dto.is_primary === true) {
-      await this.teamMemberModel.update(
-        {
-          is_primary: false,
-        },
-        {
-          where: {
-            owner_type: TeamMemberOwnerType.PROJECT,
-            owner_id: projectId,
-            role_label: newRoleLabel,
-            is_primary: true,
-            id: {
-              [Op.ne]: teamMemberId,
-            },
-          },
-        },
-      );
-    }
-
-    await member.update({
-      ...dto,
-    });
-
-    return member;
+    return this.teams.update(member.id, dto);
   }
 
   // =========================

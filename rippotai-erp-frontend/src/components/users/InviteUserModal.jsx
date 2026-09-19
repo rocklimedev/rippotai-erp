@@ -219,7 +219,7 @@ export default function InviteUserModal({ onClose, user }) {
               >
                 <option value="">Select Role</option>
 
-                {roles.map((role) => (
+                {roles.filter(role => role.scope !== "PROJECT").map((role) => (
                   <option key={role.id} value={role.id}>
                     {role.name}
                   </option>

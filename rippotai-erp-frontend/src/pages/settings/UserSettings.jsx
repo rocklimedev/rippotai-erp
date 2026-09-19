@@ -13,7 +13,7 @@ import UserActionsMenu from "../../components/users/UserActionsMenu";
 
 export default function UsersSettings() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = (user?.roleName ?? user?.role ?? "").toUpperCase() === "SUPERADMIN";
 
   const {
     data: users = [],

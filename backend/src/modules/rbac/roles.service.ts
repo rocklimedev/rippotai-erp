@@ -8,6 +8,8 @@ import { UniqueConstraintError } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
 import { Role } from './models/role.model';
 import { RoleApp } from './models/role-app.model';
+import { TeamMember } from '../users/models/team-member.model';
+import { Op } from 'sequelize';
 import { CreateRoleDto, UpdateRoleDto } from './dto/role.dto';
 
 @Injectable()
@@ -78,6 +80,8 @@ export class RolesService {
 
   async update(id: string, dto: UpdateRoleDto): Promise<Role> {
     const role = await this.findOne(id);
+    if (dto.name !== undefined && dto.name !== role.name)
+      await this.assertUnassigned(role);
     const { app_codes, ...roleFields } = dto;
 
     try {
@@ -113,6 +117,24 @@ export class RolesService {
 
   async remove(id: string): Promise<void> {
     const role = await this.findOne(id);
+    await this.assertUnassigned(role);
     await role.destroy(); // FK CASCADE on role_apps/role_permissions handles cleanup
+  }
+
+  private async assertUnassigned(role: Role) {
+    if (role.name.toUpperCase() === 'SUPERADMIN')
+      throw new ConflictException(
+        'The Superadmin role cannot be renamed or deleted',
+      );
+    const memberships = await TeamMember.count({
+      where: {
+        role_label: role.name,
+        owner_type: role.scope === 'INTERNAL' ? null : { [Op.ne]: null },
+      },
+    });
+    if (memberships)
+      throw new ConflictException(
+        'Reassign team members before renaming or deleting their role',
+      );
   }
 }

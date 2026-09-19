@@ -20,6 +20,7 @@ export class PermissionsGuard implements CanActivate {
     if (!required) return true;
 
     const request = context.switchToHttp().getRequest();
+    if (request.accessChecked || request.user?.roleName?.toUpperCase() === 'SUPERADMIN') return true;
     const user: CurrentUserPayload | undefined = request.user;
     if (!user) {
       throw new ForbiddenException('No authenticated user on request.');

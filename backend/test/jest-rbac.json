@@ -1,0 +1,7 @@
+{
+  "rootDir": "../src",
+  "testRegex": "(access-policy|access.service|project-scope.service|team-assignment|backend-access.guard|auth-access|gate-engine)\\.spec\\.ts$",
+  "moduleNameMapper": { "^@/(.*)$": "<rootDir>/$1" },
+  "transform": { "^.+\\.ts$": "ts-jest" },
+  "testEnvironment": "node"
+}

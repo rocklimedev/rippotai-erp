@@ -12,7 +12,7 @@ export class UpdateProjectTeamMemberDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  @MaxLength(150)
+  @MaxLength(50)
   role_label?: string;
 
   @IsOptional()

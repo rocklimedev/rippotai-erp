@@ -1,3 +1,4 @@
+import AccessRules from "./AccessRules";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -16,7 +17,9 @@ import {
 import { useGetAppsQuery } from "../../api/meta/app.api";
 export default function RolesPermissions() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "ADMIN";
+  const isSuperadmin =
+    (user?.roleName ?? user?.role ?? "").toUpperCase() === "SUPERADMIN";
+  const isAdmin = isSuperadmin || user?.permissions?.includes("access:manage");
 
   const { data: roles = [], isFetching: loadingRoles } = useGetRolesQuery(
     undefined,
@@ -54,6 +57,7 @@ export default function RolesPermissions() {
   const [setRoleApps, { isLoading: savingApps }] = useSetRoleAppsMutation();
 
   const [newRoleName, setNewRoleName] = useState("");
+  const [newRoleScope, setNewRoleScope] = useState("INTERNAL");
   const [permissionToGrant, setPermissionToGrant] = useState("");
 
   // Local checkbox state for the apps panel, seeded from the server and
@@ -84,7 +88,10 @@ export default function RolesPermissions() {
     e.preventDefault();
     if (!newRoleName.trim()) return toast.error("Role name is required");
     try {
-      const data = await createRole({ name: newRoleName.trim() }).unwrap();
+      const data = await createRole({
+        name: newRoleName.trim(),
+        scope: newRoleScope,
+      }).unwrap();
       toast.success(`Role "${data.name || newRoleName}" created`);
       setNewRoleName("");
       setSelectedRoleId(data.id);
@@ -181,6 +188,16 @@ export default function RolesPermissions() {
       <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
         {/* Roles list */}
         <div className="bg-white border border-[#E8EAF0] rounded-2xl p-3">
+          <label>
+            Role scope
+            <select
+              value={newRoleScope}
+              onChange={(event) => setNewRoleScope(event.target.value)}
+            >
+              <option value="INTERNAL">Internal</option>
+              <option value="PROJECT">Project</option>
+            </select>
+          </label>
           <form onSubmit={handleCreateRole} className="flex gap-2 mb-3">
             <input
               value={newRoleName}
@@ -370,6 +387,7 @@ export default function RolesPermissions() {
           )}
         </div>
       </div>
+      <AccessRules roles={roles} superadmin={isSuperadmin} />
     </div>
   );
 }

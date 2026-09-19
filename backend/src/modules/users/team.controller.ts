@@ -1,3 +1,4 @@
+import { CurrentUser } from '@/common/decorator/current-user.decorator';
 import {
   Body,
   Controller,
@@ -64,8 +65,9 @@ export class TeamController {
     ownerId: string,
 
     @Body() dto: AddTeamMemberDto,
+    @CurrentUser() actor: { id: string },
   ) {
-    return this.teamService.add(ownerType, ownerId, dto);
+    return this.teamService.add(ownerType, ownerId, dto, actor.id);
   }
 
   /**
@@ -82,8 +84,9 @@ export class TeamController {
     ownerId: string,
 
     @Body() dto: AddTeamMemberDto[],
+    @CurrentUser() actor: { id: string },
   ) {
-    return this.teamService.replaceAll(ownerType, ownerId, dto);
+    return this.teamService.replaceAll(ownerType, ownerId, dto, actor.id);
   }
 
   /**
@@ -211,8 +214,9 @@ export class TeamController {
     teamId: string,
 
     @Body() dto: AddTeamMemberDto,
+    @CurrentUser() actor: { id: string },
   ) {
-    return this.teamService.addTeamMember(teamId, dto);
+    return this.teamService.addTeamMember(teamId, dto, actor.id);
   }
 
   /**

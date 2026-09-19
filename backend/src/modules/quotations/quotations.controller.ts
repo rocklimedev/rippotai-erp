@@ -1,3 +1,5 @@
+import { AccessService } from '../rbac/access.service';
+import { isSuperadmin } from '../rbac/access-policy';
 import {
   Controller,
   Get,
@@ -30,7 +32,7 @@ import { CurrentUser } from '@/common/decorator/current-user.decorator';
 @Controller('quotations')
 @UseGuards(JwtAuthGuard)
 export class QuotationsController {
-  constructor(
+  constructor(private readonly access: AccessService, 
     private readonly quotationsService: QuotationsService,
     private readonly quotationDashboardService: QuotationDashboardService,
   ) {}
@@ -47,7 +49,8 @@ export class QuotationsController {
   // GET ALL
   // =========================
   @Get()
-  findAll(
+  async findAll(
+    @CurrentUser() user: any,
     @Query('status') status?: QuotationStatus,
     @Query('project_id') project_id?: string,
     @Query('vendor_id') vendor_id?: string,
@@ -58,6 +61,7 @@ export class QuotationsController {
       project_id,
       vendor_id,
       includeDeleted: includeDeleted === 'true',
+      allowedProjectIds: isSuperadmin(user) ? undefined : await this.access.projectIds(user, 'quotations', 'view'),
     });
   }
 

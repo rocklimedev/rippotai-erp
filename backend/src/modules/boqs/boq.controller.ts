@@ -1,3 +1,5 @@
+import { AccessService } from '../rbac/access.service';
+import { isSuperadmin } from '../rbac/access-policy';
 import {
   Body,
   Controller,
@@ -55,7 +57,7 @@ function parsePdfVariant(value: string | undefined): PdfVariant {
 
 @Controller('boqs')
 export class BoqController {
-  constructor(
+  constructor(private readonly access: AccessService, 
     private readonly boqService: BoqService,
     private readonly exportService: BoqExportService,
     private readonly dashboardService: BoqDashboardService,
@@ -99,8 +101,8 @@ export class BoqController {
 
   // ==================== LIST & CRUD ====================
   @Get()
-  findAll(@Query('project_id') projectId?: string) {
-    return this.boqService.findAll(projectId);
+  async findAll(@CurrentUser() user: any, @Query('project_id') projectId?: string) {
+    return this.boqService.findAll(projectId, isSuperadmin(user) ? undefined : await this.access.projectIds(user, 'boqs', 'view'));
   }
 
   // ==================== VERSION & WORKFLOW ROUTES (more specific first) ====================

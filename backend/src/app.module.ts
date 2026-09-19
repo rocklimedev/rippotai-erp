@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AccessModule } from './modules/rbac/access.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { SequelizeModuleOptions } from '@nestjs/sequelize';
@@ -89,6 +90,7 @@ import { ProjectPlannerModule } from './modules/projects/project-planner.module'
     // Authentication / RBAC
     // ============================================================
     AuthModule,
+    AccessModule,
     RolesModule,
     AppsModule,
 

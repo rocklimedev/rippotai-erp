@@ -24,14 +24,8 @@ export enum TeamMemberOwnerType {
 
   BOQ = 'BOQ',
 
-  /**
-   * Company/Admin Team.
-   *
-   * For this type:
-   *
-   * owner_type = TEAM
-   * owner_id   = team.id
-   * team_id    = team.id
+  /** Legacy enum value. Internal memberships use owner_type/owner_id = null.
+   * New owner-scoped assignment APIs reject TEAM; use internal team endpoints.
    */
   TEAM = 'TEAM',
 }

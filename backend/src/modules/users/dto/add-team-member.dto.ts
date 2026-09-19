@@ -13,7 +13,7 @@ export class AddTeamMemberDto {
   user_id: string;
 
   @IsString()
-  @MaxLength(150)
+  @MaxLength(50)
   role_label: string;
 
   @IsOptional()

@@ -14,6 +14,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 
+import { AccessService } from '../rbac/access.service';
+import { isSuperadmin } from '../rbac/access-policy';
 import { ProjectsService } from './projects.service';
 import { ProjectDashboardService } from './project-dashboard.service';
 
@@ -30,6 +32,7 @@ import { AddProjectTeamMemberDto } from './dto/project-team-member.dto';
 export class ProjectsController {
   constructor(
     private readonly projectsService: ProjectsService,
+    private readonly access: AccessService,
     private readonly dashboardService: ProjectDashboardService,
   ) {}
 
@@ -45,7 +48,8 @@ export class ProjectsController {
   // GET ALL
   // =========================
   @Get()
-  findAll(
+  async findAll(
+    @CurrentUser() user: any,
     @Query('status') status?: string,
     @Query('includeArchived') includeArchived?: string,
     @Query('includeDeleted') includeDeleted?: string,
@@ -67,6 +71,7 @@ export class ProjectsController {
       includeArchived: includeArchived === 'true',
       includeDeleted: includeDeleted === 'true',
       client_id: clientId,
+      allowedProjectIds: isSuperadmin(user) ? undefined : await this.access.projectIds(user, "projects", "view"),
     });
   }
 

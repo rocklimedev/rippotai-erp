@@ -226,12 +226,14 @@ export class QuotationsService {
       project_id?: string;
       vendor_id?: string;
       includeDeleted?: boolean;
+      allowedProjectIds?: string[];
     } = {},
   ): Promise<Quotation[]> {
     const where: Record<string, any> = {};
 
+    if (filters.allowedProjectIds) where.projectId = { [Op.in]: filters.project_id ? filters.allowedProjectIds.filter(id => id === filters.project_id) : filters.allowedProjectIds };
     if (filters.status) where.status = filters.status;
-    if (filters.project_id) where.projectId = filters.project_id;
+    if (filters.project_id && !filters.allowedProjectIds) where.projectId = filters.project_id;
     if (filters.vendor_id) where.vendorId = filters.vendor_id;
     if (!filters.includeDeleted) where.deletedAt = { [Op.is]: null };
 

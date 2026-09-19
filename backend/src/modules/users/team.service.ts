@@ -1,3 +1,4 @@
+import { validateAssignment } from './team-assignment';
 import {
   BadRequestException,
   ConflictException,
@@ -88,6 +89,14 @@ export class TeamService {
       include: [
         {
           association: 'user',
+          attributes: [
+            'id',
+            'name',
+            'email',
+            'avatar_url',
+            'job_title',
+            'is_active',
+          ],
         },
       ],
     });
@@ -100,63 +109,43 @@ export class TeamService {
     actingUserId?: string,
     transaction?: Transaction,
   ) {
-    await this.ensureUserExists(dto.user_id, transaction);
-
+    if (!transaction)
+      return this.teamMemberModel.sequelize!.transaction((trx) =>
+        this.add(ownerType, ownerId, dto, actingUserId, trx),
+      );
+    await this.lockOwner(ownerType, ownerId, transaction);
+    const role_label = await validateAssignment(
+      dto.user_id,
+      dto.role_label,
+      'PROJECT',
+      transaction,
+    );
+    const where = { owner_type: ownerType, owner_id: ownerId };
     const existing = await this.teamMemberModel.findOne({
-      where: {
-        owner_type: ownerType,
-        owner_id: ownerId,
-        user_id: dto.user_id,
-      },
-
+      where: { ...where, user_id: dto.user_id, role_label },
       transaction,
     });
-
-    if (existing) {
-      throw new ConflictException('User is already a member of this team');
-    }
-
-    if (dto.is_primary) {
+    if (existing)
+      throw new ConflictException('User already has this role in this team');
+    if (dto.is_primary)
       await this.teamMemberModel.update(
+        { is_primary: false },
         {
-          is_primary: false,
-        },
-
-        {
-          where: {
-            owner_type: ownerType,
-            owner_id: ownerId,
-          },
-
+          where: { ...where, role_label },
           transaction,
         },
       );
-    }
-
     return this.teamMemberModel.create(
       {
-        owner_type: ownerType,
-        owner_id: ownerId,
-
-        // This is null for old owner-scoped memberships
-        // unless the caller explicitly connects it to an
-        // Admin Team.
+        ...where,
         team_id: null,
-
         user_id: dto.user_id,
-
-        role_label: dto.role_label ?? null,
-
+        role_label,
         is_primary: dto.is_primary ?? false,
-
         sort_order: dto.sort_order ?? 0,
-
         created_by: actingUserId ?? null,
-      } as any,
-
-      {
-        transaction,
       },
+      { transaction },
     );
   }
 
@@ -167,14 +156,20 @@ export class TeamService {
     actingUserId?: string,
     transaction?: Transaction,
   ) {
+    if (ownerType === TeamMemberOwnerType.TEAM)
+      throw new BadRequestException('Use internal team endpoints');
+    const keys = members.map((m) => `${m.user_id}:${m.role_label?.trim()}`);
+    if (new Set(keys).size !== keys.length)
+      throw new BadRequestException('Duplicate team member role');
     const trx =
       transaction ?? (await this.teamMemberModel.sequelize!.transaction());
 
     const ownTransaction = !transaction;
 
     try {
+      await this.lockOwner(ownerType, ownerId, trx);
       // ============================================================
-      // VALIDATE USERS + RESOLVE ADMIN TEAMS
+      // VALIDATE OWNER-SCOPED ASSIGNMENTS
       // ============================================================
 
       const rows: TeamMemberCreationAttributes[] = [];
@@ -182,52 +177,19 @@ export class TeamService {
       for (let index = 0; index < members.length; index++) {
         const member = members[index];
 
-        const user = await this.ensureUserExists(member.user_id, trx);
-
-        // ----------------------------------------------------------
-        // Find the user's Admin Team membership.
-        //
-        // IMPORTANT:
-        // An Admin Team membership row is one where team_id is set
-        // and owner_type / owner_id are BOTH null. That is the only
-        // shape the `team_members.owner_type` ENUM in the DB allows
-        // for a non-owner-scoped row — the enum only contains
-        // 'PROJECT' | 'PLAN_OF_ACTION' | 'QUOTATION' | 'BOQ', it has
-        // no 'TEAM' member. Do NOT filter on owner_type: 'TEAM' —
-        // that value cannot exist in this column and the lookup will
-        // never match anything.
-        //
-        // PROJECT / PLAN_OF_ACTION / BOQ / QUOTATION memberships are
-        // owner-scoped (owner_type/owner_id set) and must NOT be
-        // used as the Admin Team.
-        // ----------------------------------------------------------
-
-        const adminTeamMembership = await this.teamMemberModel.findOne({
-          where: {
-            user_id: member.user_id,
-            owner_type: null,
-            owner_id: null,
-          },
-          order: [
-            ['is_primary', 'DESC'],
-            ['sort_order', 'ASC'],
-            ['created_at', 'ASC'],
-          ],
-          transaction: trx,
-        });
-
-        if (!adminTeamMembership?.team_id) {
-          throw new BadRequestException(
-            `User "${user.id}" is not assigned to an Admin Team`,
-          );
-        }
+        member.role_label = await validateAssignment(
+          member.user_id,
+          member.role_label,
+          'PROJECT',
+          trx,
+        );
 
         rows.push({
           owner_type: ownerType,
           owner_id: ownerId,
 
-          // Required by team_members
-          team_id: adminTeamMembership.team_id,
+          // Owner-scoped membership is independent of internal teams.
+          team_id: null,
 
           user_id: member.user_id,
 
@@ -269,12 +231,13 @@ export class TeamService {
       // PRIMARY VALIDATION
       // ============================================================
 
-      const primaryCount = rows.filter(
-        (member) => member.is_primary === true,
-      ).length;
-
-      if (primaryCount > 1) {
-        throw new BadRequestException('Only one primary member is allowed');
+      const primaryRoles = rows
+        .filter((member) => member.is_primary)
+        .map((member) => member.role_label);
+      if (new Set(primaryRoles).size !== primaryRoles.length) {
+        throw new BadRequestException(
+          'Only one primary member per role is allowed',
+        );
       }
 
       // ============================================================
@@ -299,19 +262,48 @@ export class TeamService {
     }
   }
   async update(id: string, dto: UpdateTeamMemberDto) {
-    const member = await this.teamMemberModel.findByPk(id);
-
-    if (!member) {
-      throw new NotFoundException('Team member not found');
-    }
-
-    return member.update(dto as any);
+    return this.teamMemberModel.sequelize!.transaction(async (transaction) => {
+      const member = await this.teamMemberModel.findByPk(id, { transaction });
+      if (!member?.owner_type || !member.owner_id)
+        throw new NotFoundException('Owner-scoped member not found');
+      await this.lockOwner(member.owner_type, member.owner_id, transaction);
+      const role_label = await validateAssignment(
+        dto.user_id ?? member.user_id,
+        dto.role_label ?? member.role_label,
+        'PROJECT',
+        transaction,
+      );
+      const where = {
+        owner_type: member.owner_type,
+        owner_id: member.owner_id,
+      };
+      const duplicate = await this.teamMemberModel.findOne({
+        where: {
+          ...where,
+          user_id: dto.user_id ?? member.user_id,
+          role_label,
+          id: { [Op.ne]: id },
+        },
+        transaction,
+      });
+      if (duplicate)
+        throw new ConflictException('User already has this role in this team');
+      if (dto.is_primary ?? member.is_primary)
+        await this.teamMemberModel.update(
+          { is_primary: false },
+          {
+            where: { ...where, role_label, id: { [Op.ne]: id } },
+            transaction,
+          },
+        );
+      return member.update({ ...dto, role_label }, { transaction });
+    });
   }
 
   async remove(id: string) {
     const member = await this.teamMemberModel.findByPk(id);
 
-    if (!member) {
+    if (!member?.owner_type || !member.owner_id) {
       throw new NotFoundException('Team member not found');
     }
 
@@ -364,9 +356,19 @@ export class TeamService {
       include: [
         {
           association: 'members',
+          where: { owner_type: null, owner_id: null },
+          required: false,
           include: [
             {
               association: 'user',
+              attributes: [
+                'id',
+                'name',
+                'email',
+                'avatar_url',
+                'job_title',
+                'is_active',
+              ],
             },
           ],
         },
@@ -413,7 +415,7 @@ export class TeamService {
     const team = await this.ensureTeamExists(teamId);
 
     return team.update({
-      is_active: true,
+      status: 'ACTIVE',
     } as any);
   }
 
@@ -421,7 +423,7 @@ export class TeamService {
     const team = await this.ensureTeamExists(teamId);
 
     return team.update({
-      is_active: false,
+      status: 'INACTIVE',
     } as any);
   }
 
@@ -490,6 +492,14 @@ export class TeamService {
       include: [
         {
           association: 'user',
+          attributes: [
+            'id',
+            'name',
+            'email',
+            'avatar_url',
+            'job_title',
+            'is_active',
+          ],
         },
       ],
     });
@@ -502,7 +512,11 @@ export class TeamService {
   ) {
     await this.ensureTeamExists(teamId);
 
-    await this.ensureUserExists(dto.user_id);
+    dto.role_label = await validateAssignment(
+      dto.user_id,
+      dto.role_label,
+      'INTERNAL',
+    );
 
     const existing = await this.teamMemberModel.findOne({
       where: {
@@ -581,6 +595,14 @@ export class TeamService {
       include: [
         {
           association: 'user',
+          attributes: [
+            'id',
+            'name',
+            'email',
+            'avatar_url',
+            'job_title',
+            'is_active',
+          ],
         },
         {
           association: 'team',
@@ -588,6 +610,8 @@ export class TeamService {
       ],
     });
 
+    if (member?.owner_type || member?.owner_id)
+      throw new BadRequestException('Use owner-scoped membership endpoints');
     if (!member) {
       throw new NotFoundException('Team member not found');
     }
@@ -598,10 +622,17 @@ export class TeamService {
   async updateTeamMember(memberId: string, dto: UpdateTeamMemberDto) {
     const member = await this.teamMemberModel.findByPk(memberId);
 
+    if (member?.owner_type || member?.owner_id)
+      throw new BadRequestException('Use owner-scoped membership endpoints');
     if (!member) {
       throw new NotFoundException('Team member not found');
     }
 
+    dto.role_label = await validateAssignment(
+      dto.user_id ?? member.user_id,
+      dto.role_label ?? member.role_label,
+      'INTERNAL',
+    );
     if (dto.user_id && dto.user_id !== member.user_id) {
       await this.ensureUserExists(dto.user_id);
 
@@ -664,6 +695,8 @@ export class TeamService {
   async makeMemberPrimary(memberId: string) {
     const member = await this.teamMemberModel.findByPk(memberId);
 
+    if (member?.owner_type || member?.owner_id)
+      throw new BadRequestException('Use owner-scoped membership endpoints');
     if (!member) {
       throw new NotFoundException('Team member not found');
     }
@@ -715,6 +748,8 @@ export class TeamService {
   async removeTeamMember(memberId: string) {
     const member = await this.teamMemberModel.findByPk(memberId);
 
+    if (member?.owner_type || member?.owner_id)
+      throw new BadRequestException('Use owner-scoped membership endpoints');
     if (!member) {
       throw new NotFoundException('Team member not found');
     }
@@ -791,7 +826,7 @@ export class TeamService {
     const section = await this.teamSectionModel.findByPk(sectionId, {
       include: [
         {
-          association: 'access',
+          association: 'teamAccess',
         },
       ],
     });
@@ -1163,7 +1198,9 @@ export class TeamService {
   async getUserSectionAccess(userId: string, sectionId: string) {
     await this.ensureUserExists(userId);
 
-    await this.ensureSectionExists(sectionId);
+    const section = await this.ensureSectionExists(sectionId);
+    if (section.status !== 'ACTIVE')
+      throw new BadRequestException('Team section is inactive');
 
     // ============================================================
     // GET USER TEAM MEMBERSHIPS
@@ -1208,7 +1245,9 @@ export class TeamService {
 
     // team_id is guaranteed to be a string because TeamMember
     // defines it as allowNull: false.
-    const teamIds = memberships.map((member) => member.team_id);
+    const teamIds = memberships
+      .map((member) => member.team_id)
+      .filter((id): id is string => Boolean(id));
 
     // ============================================================
     // GET SECTION ACCESS FOR ALL USER TEAMS
@@ -1226,6 +1265,8 @@ export class TeamService {
       include: [
         {
           association: 'team',
+          required: true,
+          where: { status: 'ACTIVE' },
         },
       ],
     });
@@ -1281,6 +1322,7 @@ export class TeamService {
     // ============================================================
 
     for (const access of accessRecords) {
+      if (access.scope && Object.keys(access.scope).length) continue;
       const level = access.access_level;
 
       // Strongest access level wins
@@ -1289,15 +1331,31 @@ export class TeamService {
       }
 
       // Any team granting a permission gives the user that permission
-      canView = canView || Boolean(access.can_view);
+      canView =
+        canView ||
+        level === TeamAccessLevel.FULL ||
+        level === TeamAccessLevel.VIEW_ONLY ||
+        (level === TeamAccessLevel.LIMITED && Boolean(access.can_view));
 
-      canCreate = canCreate || Boolean(access.can_create);
+      canCreate =
+        canCreate ||
+        level === TeamAccessLevel.FULL ||
+        (level === TeamAccessLevel.LIMITED && Boolean(access.can_create));
 
-      canEdit = canEdit || Boolean(access.can_edit);
+      canEdit =
+        canEdit ||
+        level === TeamAccessLevel.FULL ||
+        (level === TeamAccessLevel.LIMITED && Boolean(access.can_edit));
 
-      canDelete = canDelete || Boolean(access.can_delete);
+      canDelete =
+        canDelete ||
+        level === TeamAccessLevel.FULL ||
+        (level === TeamAccessLevel.LIMITED && Boolean(access.can_delete));
 
-      canApprove = canApprove || Boolean(access.can_approve);
+      canApprove =
+        canApprove ||
+        level === TeamAccessLevel.FULL ||
+        (level === TeamAccessLevel.LIMITED && Boolean(access.can_approve));
     }
 
     // ============================================================
@@ -1325,6 +1383,34 @@ export class TeamService {
   // ============================================================
   // HELPERS
   // ============================================================
+
+  private async lockOwner(
+    ownerType: TeamMemberOwnerType,
+    ownerId: string,
+    transaction: Transaction,
+  ) {
+    const table = {
+      PROJECT: 'projects',
+      BOQ: 'boqs',
+      QUOTATION: 'quotations',
+      PLAN_OF_ACTION: 'plan_of_actions',
+    }[ownerType];
+    if (!table)
+      throw new BadRequestException('Use internal team membership endpoints');
+    const model = Object.values(this.teamMemberModel.sequelize!.models).find(
+      (model) => {
+        const name = model.getTableName();
+        return (typeof name === 'string' ? name : name.tableName) === table;
+      },
+    );
+    const owner =
+      model &&
+      (await model.findByPk(ownerId, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      }));
+    if (!owner) throw new NotFoundException('Team owner not found');
+  }
 
   private async ensureTeamExists(teamId: string, transaction?: Transaction) {
     const team = await this.teamModel.findByPk(teamId, {
