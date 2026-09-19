@@ -18,14 +18,28 @@ import {
 
 import { POA_SECTIONS } from "../../hooks/plan-of-action-sections";
 
-import { Search, Plus, Trash2, CheckCircle2 } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Trash2,
+  CheckCircle2,
+  Pencil,
+  Eye,
+  Code,
+  Loader2,
+} from "lucide-react";
 
 import { useGetUsersQuery } from "../../api/users/user.api";
-import { useGetTermsTemplatesQuery } from "../../api/meta/terms.api";
+import {
+  useGetTermsTemplatesQuery,
+  useCreateTermsTemplateMutation,
+  useUpdateTermsTemplateContentMutation,
+} from "../../api/meta/terms.api";
 import {
   useGetTeamsQuery,
   useGetTeamMembersQuery,
 } from "../../api/users/team.api";
+
 /* ============================================================
    ROLE SUGGESTIONS
 ============================================================ */
@@ -254,7 +268,14 @@ export function PlanOfActionForm() {
   const teamMembers = Array.isArray(teamMembersResponse)
     ? teamMembersResponse
     : teamMembersResponse?.data || teamMembersResponse?.items || [];
-  const { data: termsTemplates = [] } = useGetTermsTemplatesQuery();
+
+  const { data: termsTemplates = [], refetch: refetchTermsTemplates } =
+    useGetTermsTemplatesQuery();
+
+  const [createTermsTemplate, { isLoading: isCreatingTerms }] =
+    useCreateTermsTemplateMutation();
+  const [updateTermsContent, { isLoading: isSavingTermsContent }] =
+    useUpdateTermsTemplateContentMutation();
 
   /* ============================================================
      MUTATIONS
@@ -296,6 +317,23 @@ export function PlanOfActionForm() {
   });
 
   /* ============================================================
+     TERMS CREATE / EDIT STATE
+  ============================================================ */
+
+  const [termsCreateOpen, setTermsCreateOpen] = useState(false);
+  const [termsCreateForm, setTermsCreateForm] = useState({
+    name: "",
+    scope: "PROJECT",
+    content_html: "",
+  });
+  const [termsCreatePreview, setTermsCreatePreview] = useState(false);
+
+  const [editingTermsTemplate, setEditingTermsTemplate] = useState(null);
+  const [termsEditContent, setTermsEditContent] = useState("");
+  const [termsChangeNote, setTermsChangeNote] = useState("");
+  const [termsEditPreview, setTermsEditPreview] = useState(false);
+
+  /* ============================================================
      LOAD EXISTING POA FOR EDIT
   ============================================================ */
 
@@ -316,6 +354,7 @@ export function PlanOfActionForm() {
 
     setValues(mapped.values);
   }, [isEditMode, existingPlanOfAction, setValues]);
+
   /* ============================================================
      ERROR LOADING POA
   ============================================================ */
@@ -877,10 +916,6 @@ export function PlanOfActionForm() {
      TEAM SECTION
   ============================================================ */
 
-  /* ============================================================
-   TEAM SECTION
-============================================================ */
-
   const renderTeamSection = () => {
     const members = values.team_members || [];
 
@@ -1295,24 +1330,327 @@ export function PlanOfActionForm() {
   };
 
   /* ============================================================
-     TERMS SECTION
+     TERMS SECTION — select + add + edit
   ============================================================ */
+
+  const resetTermsCreateForm = () => {
+    setTermsCreateForm({
+      name: "",
+      scope: "PROJECT",
+      content_html: "",
+    });
+    setTermsCreatePreview(false);
+  };
+
+  const handleCreateTermsTemplate = async () => {
+    if (!termsCreateForm.name.trim() || !termsCreateForm.content_html.trim()) {
+      toast.error("Name and content are required");
+      return;
+    }
+
+    try {
+      const created = await createTermsTemplate(termsCreateForm).unwrap();
+      toast.success("Terms template created");
+      setTermsCreateOpen(false);
+      resetTermsCreateForm();
+      await refetchTermsTemplates();
+
+      if (created?.id) {
+        setValues((prev) => ({
+          ...prev,
+          terms_template_id: created.id,
+        }));
+      }
+    } catch {
+      toast.error("Failed to create terms template");
+    }
+  };
+
+  const openEditTermsContent = (template) => {
+    setEditingTermsTemplate(template);
+    setTermsEditContent(template.content_html || "");
+    setTermsChangeNote("");
+    setTermsEditPreview(false);
+  };
+
+  const handleSaveTermsContent = async () => {
+    if (!editingTermsTemplate) return;
+
+    if (!termsEditContent.trim()) {
+      toast.error("Content can't be empty");
+      return;
+    }
+
+    try {
+      await updateTermsContent({
+        id: editingTermsTemplate.id,
+        content_html: termsEditContent,
+        change_note: termsChangeNote || undefined,
+      }).unwrap();
+
+      toast.success(
+        `Saved as v${(editingTermsTemplate.current_version || 1) + 1}`,
+      );
+      setEditingTermsTemplate(null);
+      await refetchTermsTemplates();
+    } catch {
+      toast.error("Failed to save terms changes");
+    }
+  };
 
   const renderTermsSection = () => {
     const selectedId = values.terms_template_id;
 
     return (
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Terms & Conditions</h3>
+      <div className="space-y-5">
+        {/* Header */}
+        <div className="flex justify-between items-start gap-4">
+          <div>
+            <h3 className="text-lg font-semibold">Terms & Conditions</h3>
+            <p className="text-sm text-[#6B7B7C] mt-1">
+              Pick a template to attach, or create / edit one. Templates are
+              versioned — documents keep the wording that was current when they
+              were saved.
+            </p>
+          </div>
 
-        <p className="text-sm text-[#6B7B7C]">
-          Pick the template to attach. It's applied when the plan is created and
-          can be swapped later without losing this document's history.
-        </p>
+          <button
+            type="button"
+            onClick={() => {
+              resetTermsCreateForm();
+              setTermsCreateOpen(true);
+              setEditingTermsTemplate(null);
+            }}
+            className="flex items-center gap-2 bg-[#1F453B] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#1a3a32] shrink-0"
+          >
+            <Plus size={16} />
+            Add Terms & Condition
+          </button>
+        </div>
 
-        {termsTemplates.length === 0 ? (
+        {/* Create panel */}
+        {termsCreateOpen && (
+          <div className="border border-[#1F453B]/30 rounded-xl bg-white p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold text-[#333333]">
+                New Terms Template
+              </h4>
+              <button
+                type="button"
+                onClick={() => {
+                  setTermsCreateOpen(false);
+                  resetTermsCreateForm();
+                }}
+                className="text-sm text-[#6B7B7C] hover:text-[#333333]"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <div>
+              <label className="bc-label">Template Name</label>
+              <input
+                type="text"
+                className="bc-input w-full"
+                placeholder="e.g. Standard Residential Terms"
+                value={termsCreateForm.name}
+                onChange={(e) =>
+                  setTermsCreateForm((f) => ({ ...f, name: e.target.value }))
+                }
+              />
+            </div>
+
+            <div>
+              <label className="bc-label">Scope</label>
+              <select
+                className="bc-input h-10 w-full"
+                value={termsCreateForm.scope}
+                onChange={(e) =>
+                  setTermsCreateForm((f) => ({ ...f, scope: e.target.value }))
+                }
+              >
+                <option value="GLOBAL">Global</option>
+                <option value="PROJECT">Projects</option>
+                <option value="CLIENT">Clients</option>
+                <option value="BOQ">Bill of Quantities</option>
+                <option value="ESTIMATE">Estimates</option>
+              </select>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="bc-label">Terms Content</label>
+                <button
+                  type="button"
+                  onClick={() => setTermsCreatePreview((v) => !v)}
+                  className="text-xs text-[#1F453B] hover:underline flex items-center gap-1"
+                >
+                  {termsCreatePreview ? <Code size={14} /> : <Eye size={14} />}
+                  {termsCreatePreview ? "Edit" : "Preview"}
+                </button>
+              </div>
+
+              {termsCreatePreview ? (
+                <div className="w-full min-h-[140px] p-3 rounded-lg border border-gray-200 bg-gray-50 text-sm prose prose-sm max-w-none">
+                  {termsCreateForm.content_html.trim() ? (
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: termsCreateForm.content_html,
+                      }}
+                    />
+                  ) : (
+                    <p className="text-[#6B7B7C] italic">
+                      Enter content to see preview…
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <textarea
+                  className="bc-input w-full min-h-[140px] font-mono text-xs"
+                  placeholder={`<ol>
+  <li>All quantities are approximate and subject to site verification.</li>
+  <li>Rates include labour, material, tools, and equipment unless otherwise specified.</li>
+  <li>Any variation in scope shall be treated as extra work.</li>
+</ol>`}
+                  value={termsCreateForm.content_html}
+                  onChange={(e) =>
+                    setTermsCreateForm((f) => ({
+                      ...f,
+                      content_html: e.target.value,
+                    }))
+                  }
+                />
+              )}
+              <p className="text-[11px] text-[#94A3A5] mt-1">
+                Paste HTML list format or plain text with line breaks
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setTermsCreateOpen(false);
+                  resetTermsCreateForm();
+                }}
+                className="px-4 py-2 rounded-lg border border-gray-200 text-sm hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateTermsTemplate}
+                disabled={isCreatingTerms}
+                className="px-4 py-2 rounded-lg bg-[#1F453B] text-white text-sm hover:bg-[#1a3a32] disabled:opacity-50 flex items-center gap-2"
+              >
+                {isCreatingTerms && (
+                  <Loader2 size={14} className="animate-spin" />
+                )}
+                {isCreatingTerms ? "Creating…" : "Create Template"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Edit panel */}
+        {editingTermsTemplate && (
+          <div className="border border-[#1F453B]/30 rounded-xl bg-white p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold text-[#333333]">
+                Edit &ldquo;{editingTermsTemplate.name}&rdquo;
+              </h4>
+              <button
+                type="button"
+                onClick={() => setEditingTermsTemplate(null)}
+                className="text-sm text-[#6B7B7C] hover:text-[#333333]"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <p className="text-xs text-[#6B7B7C]">
+              Saving creates v{(editingTermsTemplate.current_version || 1) + 1}.
+              Documents that already used an earlier version keep their original
+              text.
+            </p>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="bc-label">Content</label>
+                <button
+                  type="button"
+                  onClick={() => setTermsEditPreview((v) => !v)}
+                  className="text-xs text-[#1F453B] hover:underline flex items-center gap-1"
+                >
+                  {termsEditPreview ? <Code size={14} /> : <Eye size={14} />}
+                  {termsEditPreview ? "Edit" : "Preview"}
+                </button>
+              </div>
+
+              {termsEditPreview ? (
+                <div className="w-full min-h-[180px] p-3 rounded-lg border border-gray-200 bg-gray-50 text-sm overflow-y-auto max-h-[320px]">
+                  <div dangerouslySetInnerHTML={{ __html: termsEditContent }} />
+                </div>
+              ) : (
+                <textarea
+                  className="bc-input w-full min-h-[180px] font-mono text-xs"
+                  value={termsEditContent}
+                  onChange={(e) => setTermsEditContent(e.target.value)}
+                />
+              )}
+            </div>
+
+            <div>
+              <label className="bc-label">Change Note (optional)</label>
+              <input
+                type="text"
+                className="bc-input w-full"
+                placeholder="e.g. Updated payment terms clause"
+                value={termsChangeNote}
+                onChange={(e) => setTermsChangeNote(e.target.value)}
+              />
+              <p className="text-[11px] text-[#94A3A5] mt-1">
+                Describe what changed for version history
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setEditingTermsTemplate(null)}
+                className="px-4 py-2 rounded-lg border border-gray-200 text-sm hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveTermsContent}
+                disabled={isSavingTermsContent}
+                className="px-4 py-2 rounded-lg bg-[#1F453B] text-white text-sm hover:bg-[#1a3a32] disabled:opacity-50 flex items-center gap-2"
+              >
+                {isSavingTermsContent && (
+                  <Loader2 size={14} className="animate-spin" />
+                )}
+                {isSavingTermsContent ? "Saving…" : "Save as new version"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Template list */}
+        {termsTemplates.length === 0 && !termsCreateOpen ? (
           <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl">
             <p className="text-gray-500">No terms templates available.</p>
+            <button
+              type="button"
+              onClick={() => {
+                resetTermsCreateForm();
+                setTermsCreateOpen(true);
+              }}
+              className="mt-4 text-[#1F453B] hover:underline text-sm"
+            >
+              Add the first terms template
+            </button>
           </div>
         ) : (
           <div className="grid gap-3">
@@ -1320,40 +1658,56 @@ export function PlanOfActionForm() {
               const isSelected = selectedId === template.id;
 
               return (
-                <button
+                <div
                   key={template.id}
-                  type="button"
-                  onClick={() =>
-                    setValues((prev) => ({
-                      ...prev,
-
-                      terms_template_id: template.id,
-                    }))
-                  }
-                  className={`text-left border rounded-lg p-4 flex items-start justify-between gap-3 transition ${
+                  className={`border rounded-lg p-4 flex items-start justify-between gap-3 transition ${
                     isSelected
                       ? "border-[#1F453B] bg-[#F4F6F7]"
                       : "border-gray-200 bg-white hover:border-gray-300"
                   }`}
                 >
-                  <div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setValues((prev) => ({
+                        ...prev,
+                        terms_template_id: template.id,
+                      }))
+                    }
+                    className="text-left flex-1 min-w-0"
+                  >
                     <div className="font-semibold text-[#333333]">
                       {template.name}
                     </div>
-
                     <div className="text-xs text-[#94A3A5] mt-1">
                       {template.scope}
                       {" • "}v{template.current_version}
                     </div>
-                  </div>
+                  </button>
 
-                  {isSelected && (
-                    <CheckCircle2
-                      size={20}
-                      className="text-[#1F453B] shrink-0"
-                    />
-                  )}
-                </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTermsCreateOpen(false);
+                        openEditTermsContent(template);
+                      }}
+                      title="Edit content"
+                      className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-[#6B7B7C]"
+                    >
+                      <Pencil size={16} />
+                    </button>
+
+                    {isSelected ? (
+                      <CheckCircle2
+                        size={20}
+                        className="text-[#1F453B] shrink-0"
+                      />
+                    ) : (
+                      <span className="w-5" />
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>

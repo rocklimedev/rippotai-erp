@@ -290,6 +290,28 @@ function CheckGroup({
   otherValue,
   otherLabel = "Other",
 }) {
+  const selectedOptions = options.filter((opt) => activeSet.has(opt.value));
+  const hasOther = otherValue !== undefined && !!otherValue;
+
+  if (selectedOptions.length === 0 && !hasOther) {
+    return (
+      <div>
+        {label && (
+          <span
+            className="text-[11px] uppercase tracking-wide block mb-3"
+            style={{ color: BRAND.muted }}
+          >
+            {label}
+          </span>
+        )}
+
+        <p className="text-sm" style={{ color: BRAND.muted }}>
+          None selected.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div>
       {label && (
@@ -302,19 +324,12 @@ function CheckGroup({
       )}
 
       <div className="flex flex-wrap gap-x-8 gap-y-3">
-        {options.map((opt) => (
-          <CheckOption
-            key={opt.value}
-            label={opt.label}
-            checked={activeSet.has(opt.value)}
-          />
+        {selectedOptions.map((opt) => (
+          <CheckOption key={opt.value} label={opt.label} checked />
         ))}
 
-        {otherValue !== undefined && (
-          <CheckOption
-            label={`${otherLabel}${otherValue ? `: ${otherValue}` : ""}`}
-            checked={!!otherValue}
-          />
+        {hasOther && (
+          <CheckOption label={`${otherLabel}: ${otherValue}`} checked />
         )}
       </div>
     </div>

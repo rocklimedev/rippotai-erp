@@ -14,19 +14,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { Shell } from "../../hooks/shared"; // keep your layout Shell
+import { Shell } from "../../hooks/shared";
 
 /**
  * Generic multi-section form shell.
  *
- * This is a direct extraction of PlanOfActionSectionForm — it never
- * referenced anything POA-specific, so it's pulled out here and reused
- * by both the Plan of Action form and the Payment Schedule / Scope of
- * Work forms (and any future section-based form) instead of being
- * duplicated.
- *
- * Renders every section stacked vertically as one continuous form
- * rather than behind a sidebar + Prev/Next pager.
+ * Renders every section stacked vertically as one continuous form.
  */
 export function PaymentSectionForm({
   title,
@@ -45,6 +38,7 @@ export function PaymentSectionForm({
 }) {
   const filledCount = React.useMemo(() => {
     let count = 0;
+
     Object.values(values || {}).forEach((val) => {
       if (Array.isArray(val)) {
         count += val.length > 0 ? 1 : 0;
@@ -60,6 +54,7 @@ export function PaymentSectionForm({
         count++;
       }
     });
+
     return count;
   }, [values]);
 
@@ -108,6 +103,7 @@ export function PaymentSectionForm({
                 <SelectTrigger>
                   <SelectValue placeholder="Select..." />
                 </SelectTrigger>
+
                 <SelectContent>
                   {(field.options || []).map((option) => (
                     <SelectItem key={option} value={option}>
@@ -132,36 +128,29 @@ export function PaymentSectionForm({
   );
 
   const renderSectionBody = (section) => {
-    // === CUSTOM RENDERER ===
+    // Custom renderer
     if (section?.type && renderSection) {
       return renderSection(section);
     }
 
-    // === SIMPLE FIELDS ===
+    // Simple fields
     return renderFields(section);
   };
 
   return (
-    <Shell
-      title={title}
-      subtitle={subtitle}
-      action={
-        <Button onClick={onSubmit} disabled={isSubmitting}>
-          <Save className="mr-2 h-4 w-4" />
-          {isSubmitting ? "Saving..." : submitLabel || "Save"}
-        </Button>
-      }
-    >
+    <Shell title={title} subtitle={subtitle}>
       {/* Project Selector */}
       {projects && (
         <Card>
           <CardContent className="pt-6">
             <div className="space-y-2 max-w-lg">
               <Label className="text-[13px] font-semibold">Project</Label>
+
               <Select value={projectId || ""} onValueChange={onProjectChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select Project" />
                 </SelectTrigger>
+
                 <SelectContent>
                   {projects?.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
@@ -175,7 +164,7 @@ export function PaymentSectionForm({
         </Card>
       )}
 
-      {/* All sections, stacked — no tabs / no pager */}
+      {/* All sections */}
       <div className="space-y-5 mt-5">
         {sections.map((section, index) => (
           <Card key={section.title}>
@@ -184,14 +173,25 @@ export function PaymentSectionForm({
                 {index + 1}. {section.title}
               </CardTitle>
             </CardHeader>
+
             <CardContent>{renderSectionBody(section)}</CardContent>
           </Card>
         ))}
       </div>
 
+      {/* Autosave info */}
       <div className="mt-4 text-xs text-muted-foreground text-center">
         Draft autosaved locally • {filledCount} field
         {filledCount !== 1 ? "s" : ""} completed
+      </div>
+
+      {/* Bottom Save Button */}
+      <div className="flex justify-end mt-6 pb-6">
+        <Button onClick={onSubmit} disabled={isSubmitting} size="lg">
+          <Save className="mr-2 h-4 w-4" />
+
+          {isSubmitting ? "Saving..." : submitLabel || "Save"}
+        </Button>
       </div>
 
       {children}

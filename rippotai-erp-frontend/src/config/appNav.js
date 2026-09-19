@@ -101,11 +101,10 @@ export const APP_MENUS = {
   projects: [
     {
       label: "Documents",
-      slug: "documents/all",
-    },
-    {
-      label: "Documents",
-      items: [I("Project Planner", "planner/list")],
+      items: [
+        I("All Documents", "documents/all"),
+        I("Project Planner", "planner/list"),
+      ],
     },
     {
       label: "Settings",
@@ -170,9 +169,9 @@ export const APP_MENUS = {
         I("Plan Of Action", "plan-of-action/all"),
 
         I("Scope of Work", "scope-of-work/all"),
-        I("Scope Of Approval", "scope-of-approval/all"),
-        I("Pitch Deck", "pitch-deck/all"),
-        I("Business Proposal", "business-proposal/all"),
+        // I("Scope Of Approval", "scope-of-approval/all"),
+        // I("Pitch Deck", "pitch-deck/all"),
+        // I("Business Proposal", "business-proposal/all"),
       ],
     },
 

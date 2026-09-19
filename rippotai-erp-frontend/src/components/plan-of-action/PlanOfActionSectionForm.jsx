@@ -16,6 +16,13 @@ import {
 
 import { Shell } from "../../hooks/shared";
 
+/**
+ * Shared multi-section form shell used by Plan of Action (and similar docs).
+ *
+ * - Simple sections (e.g. Overview) render a field grid from `section.fields`.
+ * - Typed sections (phases / team / terms) are delegated to `renderSection`
+ *   so they can own their full UI (including headers, add/edit panels, etc.).
+ */
 export function PlanOfActionSectionForm({
   title,
   subtitle,
@@ -58,7 +65,7 @@ export function PlanOfActionSectionForm({
   const renderFields = (section) => (
     <div className="grid gap-4">
       {(section?.fields || []).map((field) => {
-        // Support nested structure used by BriefForm
+        // Support nested structure used by BriefForm / POA Overview
         const sectionData = values?.[section.title] || {};
         const fieldValue = sectionData?.[field.key] ?? "";
 
@@ -124,9 +131,12 @@ export function PlanOfActionSectionForm({
     </div>
   );
 
+  const isCustomSection = (section) => Boolean(section?.type && renderSection);
+
   const renderSectionBody = (section) => {
     // === CUSTOM RENDERER (Phases / Team / Terms etc.) ===
-    if (section?.type && renderSection) {
+    // These sections own their full UI (headers, lists, add/edit panels).
+    if (isCustomSection(section)) {
       return renderSection(section);
     }
 
@@ -161,17 +171,32 @@ export function PlanOfActionSectionForm({
 
       {/* All sections, stacked — no tabs / no pager */}
       <div className="space-y-5 mt-5">
-        {sections.map((section, index) => (
-          <Card key={section.title}>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg">
-                {index + 1}. {section.title}
-              </CardTitle>
-            </CardHeader>
+        {sections.map((section, index) => {
+          const custom = isCustomSection(section);
 
-            <CardContent>{renderSectionBody(section)}</CardContent>
-          </Card>
-        ))}
+          return (
+            <Card key={section.title || section.type || index}>
+              {/*
+                For custom sections (phases / team / terms), the child
+                renderer already provides its own title + description +
+                action buttons. Skip the CardTitle to avoid duplicate
+                headings like "4. Terms & Conditions" above the section's
+                own "Terms & Conditions".
+              */}
+              {!custom && (
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg">
+                    {index + 1}. {section.title}
+                  </CardTitle>
+                </CardHeader>
+              )}
+
+              <CardContent className={custom ? "pt-6" : undefined}>
+                {renderSectionBody(section)}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Save Plan of Action */}

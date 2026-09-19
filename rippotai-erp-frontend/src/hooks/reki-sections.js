@@ -23,22 +23,6 @@ export const REKI_SECTIONS = [
         label: "Accompanied By",
         type: "text",
       },
-      {
-        key: "project_name",
-        label: "Project Name",
-        type: "text",
-      },
-      {
-        key: "client_name",
-        label: "Client Name",
-        type: "text",
-      },
-      {
-        key: "site_address",
-        label: "Site Address",
-        type: "textarea",
-        rows: 4,
-      },
     ],
   },
 

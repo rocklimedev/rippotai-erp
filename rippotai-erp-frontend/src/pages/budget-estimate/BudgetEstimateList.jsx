@@ -166,9 +166,9 @@ const BudgetEstimateList = ({ projectId }) => {
 
   const handleCreate = () => {
     if (projectId) {
-      navigate(`/budget-estimates/create?projectId=${projectId}`);
+      navigate(`/ledger/forms/budget-estimate?projectId=${projectId}`);
     } else {
-      navigate("/budget-estimates/create");
+      navigate("/ledger/forms/budget-estimate");
     }
   };
 
