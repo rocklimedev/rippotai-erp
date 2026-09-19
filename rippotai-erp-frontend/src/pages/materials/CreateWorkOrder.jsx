@@ -822,37 +822,6 @@ export default function CreateWorkOrder() {
                 />
               </Field>
 
-              <Field label="Site Phone">
-                <input
-                  value={form.site_phone}
-                  onChange={(event) =>
-                    updateField("site_phone", event.target.value)
-                  }
-                  className="input"
-                />
-              </Field>
-
-              <Field label="Site Email">
-                <input
-                  type="email"
-                  value={form.site_email}
-                  onChange={(event) =>
-                    updateField("site_email", event.target.value)
-                  }
-                  className="input"
-                />
-              </Field>
-
-              <Field label="Site GSTIN">
-                <input
-                  value={form.site_gstin}
-                  onChange={(event) =>
-                    updateField("site_gstin", event.target.value)
-                  }
-                  className="input"
-                />
-              </Field>
-
               <Field label="Site Address" className="lg:col-span-3">
                 <textarea
                   value={form.site_address}

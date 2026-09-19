@@ -27,7 +27,6 @@ const SCOPE_OF_WORK_SECTIONS = [
   { title: "Overview", type: "overview" },
   { title: "Spaces", type: "spaces" },
   { title: "Scope Items", type: "items" },
-  { title: "Review", type: "review" },
 ];
 
 export function ScopeOfWorkForm() {
@@ -61,7 +60,7 @@ export function ScopeOfWorkForm() {
       specific_exclusions: "",
       notes: "",
       project_mode: "",
-      version: "1",
+
       status: "DRAFT",
     },
 
@@ -163,8 +162,6 @@ export function ScopeOfWorkForm() {
 
           name: space.name || "",
 
-          slug: space.slug || "",
-
           description: space.description || "",
 
           sort_order: space.sortOrder || 1,
@@ -189,8 +186,6 @@ export function ScopeOfWorkForm() {
 
           name: category.name || "",
 
-          slug: category.slug || "",
-
           description: category.description || "",
 
           sort_order: category.sortOrder || 1,
@@ -211,8 +206,6 @@ export function ScopeOfWorkForm() {
         notes: existingScopeOfWork.notes || "",
 
         project_mode: existingScopeOfWork.projectMode || "",
-
-        version: String(existingScopeOfWork.version || 1),
 
         status: existingScopeOfWork.status || "DRAFT",
       },
@@ -314,22 +307,6 @@ export function ScopeOfWorkForm() {
           </select>
         </div>
 
-        {/* VERSION */}
-
-        <div>
-          <label className="bc-label">Version</label>
-
-          <input
-            type="number"
-            min="1"
-            value={overview.version || "1"}
-            onChange={(e) =>
-              handleFieldChange("Overview", "version", e.target.value)
-            }
-            className="bc-input w-full"
-          />
-        </div>
-
         {/* STATUS */}
 
         <div>
@@ -423,8 +400,6 @@ export function ScopeOfWorkForm() {
             id: crypto.randomUUID(),
 
             name: "",
-
-            slug: "",
 
             description: "",
 
@@ -531,22 +506,6 @@ export function ScopeOfWorkForm() {
                         updateSpace(index, "name", e.target.value)
                       }
                       placeholder="e.g. Living Room"
-                      className="bc-input w-full"
-                    />
-                  </div>
-
-                  {/* SLUG */}
-
-                  <div>
-                    <label className="bc-label">Slug</label>
-
-                    <input
-                      type="text"
-                      value={space.slug || ""}
-                      onChange={(e) =>
-                        updateSpace(index, "slug", e.target.value)
-                      }
-                      placeholder="living-room"
                       className="bc-input w-full"
                     />
                   </div>
@@ -850,117 +809,6 @@ export function ScopeOfWorkForm() {
   };
 
   // ============================================================
-  // REVIEW SECTION
-  // ============================================================
-
-  const renderReviewSection = () => (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold">Review Scope of Work</h3>
-
-        <p className="text-sm text-[#6B7B7C] mt-1">
-          Review the information before {isEditMode ? "updating" : "creating"}{" "}
-          the Scope of Work document.
-        </p>
-      </div>
-
-      {/* PROJECT */}
-
-      <div className="border rounded-xl p-4">
-        <div className="text-xs uppercase tracking-widest text-[#6B7B7C] mb-2">
-          Project
-        </div>
-
-        <div className="font-semibold">
-          {projects.find((p) => p.id === projectId)?.name ||
-            existingScopeOfWork?.project?.name ||
-            "No project selected"}
-        </div>
-      </div>
-
-      {/* OVERVIEW */}
-
-      <div className="border rounded-xl p-4">
-        <div className="text-xs uppercase tracking-widest text-[#6B7B7C] mb-3">
-          Overview
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <div className="text-xs text-[#94A3A5]">Project Mode</div>
-
-            <div className="font-medium">{overview.project_mode || "—"}</div>
-          </div>
-
-          <div>
-            <div className="text-xs text-[#94A3A5]">Version</div>
-
-            <div className="font-medium">v{overview.version || 1}</div>
-          </div>
-
-          <div>
-            <div className="text-xs text-[#94A3A5]">Status</div>
-
-            <div className="font-medium">{overview.status || "DRAFT"}</div>
-          </div>
-        </div>
-
-        {/* SUMMARY */}
-
-        <div className="mt-4">
-          <div className="text-xs text-[#94A3A5]">Scope Summary</div>
-
-          <div className="mt-1 whitespace-pre-wrap text-sm">
-            {overview.scope_summary || "—"}
-          </div>
-        </div>
-
-        {/* EXCLUSIONS */}
-
-        <div className="mt-4">
-          <div className="text-xs text-[#94A3A5]">Specific Exclusions</div>
-
-          <div className="mt-1 whitespace-pre-wrap text-sm">
-            {overview.specific_exclusions || "—"}
-          </div>
-        </div>
-
-        {/* NOTES */}
-
-        <div className="mt-4">
-          <div className="text-xs text-[#94A3A5]">Notes</div>
-
-          <div className="mt-1 whitespace-pre-wrap text-sm">
-            {overview.notes || "—"}
-          </div>
-        </div>
-      </div>
-
-      {/* COUNTS */}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="border rounded-xl p-4">
-          <div className="text-xs text-[#94A3A5]">Spaces</div>
-
-          <div className="text-2xl font-semibold mt-1">{spaces.length}</div>
-        </div>
-
-        <div className="border rounded-xl p-4">
-          <div className="text-xs text-[#94A3A5]">Categories</div>
-
-          <div className="text-2xl font-semibold mt-1">{categories.length}</div>
-        </div>
-
-        <div className="border rounded-xl p-4">
-          <div className="text-xs text-[#94A3A5]">Scope Items</div>
-
-          <div className="text-2xl font-semibold mt-1">{items.length}</div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // ============================================================
   // SECTION ROUTER
   // ============================================================
 
@@ -975,10 +823,6 @@ export function ScopeOfWorkForm() {
 
     if (section.type === "items") {
       return renderItemsSection();
-    }
-
-    if (section.type === "review") {
-      return renderReviewSection();
     }
 
     return null;
@@ -1059,8 +903,6 @@ export function ScopeOfWorkForm() {
 
             projectMode: overview.project_mode || undefined,
 
-            version: Number(overview.version) || 1,
-
             status: overview.status || "DRAFT",
           },
         }).unwrap();
@@ -1081,8 +923,6 @@ export function ScopeOfWorkForm() {
             notes: overview.notes?.trim() || undefined,
 
             projectMode: overview.project_mode || undefined,
-
-            version: Number(overview.version) || 1,
 
             status: overview.status || "DRAFT",
           },
@@ -1136,19 +976,11 @@ export function ScopeOfWorkForm() {
         // New frontend-only space
         // ------------------------------------------------------
 
-        const generatedSlug = space.name
-          .trim()
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/(^-|-$)/g, "");
-
         const createdSpace = await createProjectSpace({
           projectId,
 
           body: {
             name: space.name.trim(),
-
-            slug: space.slug?.trim() || generatedSlug,
 
             description: space.description?.trim() || undefined,
 

@@ -151,6 +151,34 @@ function getId(item) {
   return item?.id ?? "";
 }
 
+/**
+ * Safely turn any value (string, number, or relation object) into a
+ * display string. Prevents "Objects are not valid as a React child"
+ * when material.unit / brand / etc. come back as full entities.
+ */
+function getDisplayString(value, fallback = "") {
+  if (value == null || value === "") return fallback;
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+  if (typeof value === "object") {
+    return (
+      value.name ||
+      value.code ||
+      value.unit ||
+      value.symbol ||
+      value.label ||
+      value.material_name ||
+      fallback
+    );
+  }
+  return fallback;
+}
+
+function normalizeUnit(unit) {
+  return getDisplayString(unit);
+}
+
 /* ------------------------------------------------------------------
  * Existing challan mapping
  * ------------------------------------------------------------------ */
@@ -189,19 +217,19 @@ function mapExistingItem(item) {
 
     condition_status: item?.condition_status || "GOOD",
 
-    condition_notes: item?.condition_notes || "",
+    condition_notes: getDisplayString(item?.condition_notes),
 
-    stored_at: item?.stored_at || "",
+    stored_at: getDisplayString(item?.stored_at),
 
-    description: item?.description || "",
+    description: getDisplayString(item?.description),
 
-    brand: item?.brand || "",
+    brand: getDisplayString(item?.brand),
 
-    specification: item?.specification || "",
+    specification: getDisplayString(item?.specification),
 
-    unit: item?.unit || "",
+    unit: normalizeUnit(item?.unit),
 
-    remarks: item?.remarks || "",
+    remarks: getDisplayString(item?.remarks),
   };
 }
 
@@ -319,13 +347,21 @@ function mapPurchaseOrderItem(item) {
     stored_at: "",
 
     description:
-      item?.description || material?.description || material?.name || "",
+      getDisplayString(item?.description) ||
+      getDisplayString(material?.description) ||
+      getDisplayString(material?.name) ||
+      getDisplayString(material?.material_name) ||
+      "",
 
-    brand: item?.brand || material?.brand || "",
+    brand:
+      getDisplayString(item?.brand) || getDisplayString(material?.brand) || "",
 
-    specification: item?.specification || material?.specification || "",
+    specification:
+      getDisplayString(item?.specification) ||
+      getDisplayString(material?.specification) ||
+      "",
 
-    unit: item?.unit || material?.unit || "",
+    unit: normalizeUnit(item?.unit) || normalizeUnit(material?.unit) || "",
 
     remarks: "",
   };
@@ -642,9 +678,9 @@ export default function DeliveryChallanForm({
         value: getId(project),
 
         label:
-          project.name ||
-          project.project_name ||
-          project.code ||
+          getDisplayString(project.name) ||
+          getDisplayString(project.project_name) ||
+          getDisplayString(project.code) ||
           getId(project),
       })),
     [projects],
@@ -674,7 +710,11 @@ export default function DeliveryChallanForm({
       filteredPurchaseOrders.map((po) => ({
         value: getId(po),
 
-        label: po.po_number || po.poNumber || po.number || getId(po),
+        label:
+          getDisplayString(po.po_number) ||
+          getDisplayString(po.poNumber) ||
+          getDisplayString(po.number) ||
+          getId(po),
       })),
     [filteredPurchaseOrders],
   );
@@ -685,9 +725,9 @@ export default function DeliveryChallanForm({
         value: getId(vendor),
 
         label:
-          vendor.name ||
-          vendor.agency_name ||
-          vendor.vendor_name ||
+          getDisplayString(vendor.name) ||
+          getDisplayString(vendor.agency_name) ||
+          getDisplayString(vendor.vendor_name) ||
           getId(vendor),
       })),
     [vendors],
@@ -699,10 +739,14 @@ export default function DeliveryChallanForm({
         value: getId(material),
 
         label: material.material_code
-          ? `${material.material_code} — ${
-              material.name || material.material_name || getId(material)
+          ? `${getDisplayString(material.material_code)} — ${
+              getDisplayString(material.name) ||
+              getDisplayString(material.material_name) ||
+              getId(material)
             }`
-          : material.name || material.material_name || getId(material),
+          : getDisplayString(material.name) ||
+            getDisplayString(material.material_name) ||
+            getId(material),
       })),
     [materials],
   );
@@ -947,17 +991,19 @@ export default function DeliveryChallanForm({
 
         description:
           existingItem.description ||
-          material?.description ||
-          material?.name ||
-          material?.material_name ||
+          getDisplayString(material?.description) ||
+          getDisplayString(material?.name) ||
+          getDisplayString(material?.material_name) ||
           "",
 
-        brand: existingItem.brand || material?.brand || "",
+        brand: existingItem.brand || getDisplayString(material?.brand) || "",
 
         specification:
-          existingItem.specification || material?.specification || "",
+          existingItem.specification ||
+          getDisplayString(material?.specification) ||
+          "",
 
-        unit: existingItem.unit || material?.unit || "",
+        unit: existingItem.unit || normalizeUnit(material?.unit) || "",
       };
 
       return {
@@ -1327,7 +1373,9 @@ export default function DeliveryChallanForm({
 
                       {availableSites.map((site) => (
                         <SelectItem key={site.id} value={String(site.id)}>
-                          {site.name || site.site_name || site.id}
+                          {getDisplayString(site.name) ||
+                            getDisplayString(site.site_name) ||
+                            site.id}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1400,19 +1448,25 @@ export default function DeliveryChallanForm({
                 <AlertDescription>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                     <span>
-                      <strong>{selectedPurchaseOrder.po_number}</strong>
+                      <strong>
+                        {getDisplayString(selectedPurchaseOrder.po_number)}
+                      </strong>
                     </span>
 
                     <span>
                       Vendor:{" "}
-                      {selectedPurchaseOrder.agency_name ||
-                        selectedVendor?.name ||
+                      {getDisplayString(selectedPurchaseOrder.agency_name) ||
+                        getDisplayString(selectedVendor?.name) ||
                         "—"}
                     </span>
 
-                    <span>PO date: {selectedPurchaseOrder.po_date}</span>
+                    <span>
+                      PO date: {getDisplayString(selectedPurchaseOrder.po_date)}
+                    </span>
 
-                    <span>Status: {selectedPurchaseOrder.status}</span>
+                    <span>
+                      Status: {getDisplayString(selectedPurchaseOrder.status)}
+                    </span>
                   </div>
                 </AlertDescription>
               </Alert>
@@ -2108,34 +2162,6 @@ export default function DeliveryChallanForm({
             </Card>
 
             {/* ------------------------------------------------
-             * Verification
-             * ------------------------------------------------ */}
-
-            <Card>
-              <SectionHeader
-                icon={Check}
-                title="Receiving verification"
-                description="Confirm gate pass and material inspection"
-              />
-
-              <CardContent className="grid gap-4 pt-5 md:grid-cols-2">
-                <ToggleCard
-                  checked={form.gate_pass_received}
-                  onChange={(value) => updateField("gate_pass_received", value)}
-                  title="Gate pass received"
-                  description="Gate or security documentation has been received."
-                />
-
-                <ToggleCard
-                  checked={form.material_checked}
-                  onChange={(value) => updateField("material_checked", value)}
-                  title="Material checked"
-                  description="Delivered materials have been physically checked."
-                />
-              </CardContent>
-            </Card>
-
-            {/* ------------------------------------------------
              * Remarks
              * ------------------------------------------------ */}
 
@@ -2216,8 +2242,8 @@ export default function DeliveryChallanForm({
                   <InfoRow
                     label="Project"
                     value={
-                      selectedProject?.name ||
-                      selectedProject?.project_name ||
+                      getDisplayString(selectedProject?.name) ||
+                      getDisplayString(selectedProject?.project_name) ||
                       form.project_id ||
                       "Not selected"
                     }
@@ -2225,15 +2251,18 @@ export default function DeliveryChallanForm({
 
                   <InfoRow
                     label="Purchase order"
-                    value={selectedPurchaseOrder?.po_number || "Not linked"}
+                    value={
+                      getDisplayString(selectedPurchaseOrder?.po_number) ||
+                      "Not linked"
+                    }
                   />
 
                   <InfoRow
                     label="Vendor"
                     value={
-                      selectedPurchaseOrder?.agency_name ||
-                      selectedVendor?.name ||
-                      selectedVendor?.agency_name ||
+                      getDisplayString(selectedPurchaseOrder?.agency_name) ||
+                      getDisplayString(selectedVendor?.name) ||
+                      getDisplayString(selectedVendor?.agency_name) ||
                       "Not selected"
                     }
                   />
@@ -2243,22 +2272,6 @@ export default function DeliveryChallanForm({
                     value={form.challan_date || "Not selected"}
                   />
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="space-y-3 pt-6">
-                <h3 className="text-sm font-semibold">Quantity summary</h3>
-
-                <MetricRow label="Total delivered" value={totals.quantity} />
-
-                <MetricRow label="Accepted" value={totals.accepted} />
-
-                <MetricRow label="Shortage" value={totals.shortage} />
-
-                <MetricRow label="Damaged" value={totals.damaged} />
-
-                <MetricRow label="Rejected" value={totals.rejected} />
               </CardContent>
             </Card>
 
