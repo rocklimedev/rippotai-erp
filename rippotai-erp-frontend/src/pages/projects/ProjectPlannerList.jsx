@@ -9,6 +9,10 @@ import {
   ClipboardList,
   Truck,
   Building2,
+  MoreHorizontal,
+  Pencil,
+  Download,
+  Trash2,
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
@@ -19,14 +23,30 @@ import {
   useGetProjectPlannersQuery,
   useGetProjectLocationsQuery,
   useGetPlannerByIdQuery,
+  useDeletePlannerMutation,
+  useDownloadPlannerWorkbookMutation,
 } from "../../api/documents/project-planner.api";
+
+import { Button } from "@/components/ui/button";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // ============================================================
 // PLANNER TYPES
 // ============================================================
 
 const PLANNER_TYPES = [
-  { value: 'PROJECT', label: 'Project planner' },
+  {
+    value: "PROJECT",
+    label: "Project planner",
+  },
   {
     value: "CONSULTANCY",
     label: "Consultancy",
@@ -182,9 +202,7 @@ const computeProcurementStats = (items) => {
 
   return {
     totalItems: list.length,
-
     completedItems,
-
     progress,
   };
 };
@@ -196,7 +214,6 @@ const computeProcurementStats = (items) => {
 function PlannerInstanceProbe({ planner, project, floorCount, onStats }) {
   const {
     data: plannerResponse,
-
     isLoading,
     isFetching,
   } = useGetPlannerByIdQuery(planner.id, {
@@ -226,26 +243,17 @@ function PlannerInstanceProbe({ planner, project, floorCount, onStats }) {
   React.useEffect(() => {
     onStats(key, {
       key,
-
       project,
-
       planner: {
         ...planner,
         ...(plannerData || {}),
       },
-
       plannerType: planner.type,
-
       plannerLabel: getPlannerLabel(planner.type),
-
       floorCount,
-
       totalItems: stats.totalItems,
-
       completedItems: stats.completedItems,
-
       percent: stats.progress,
-
       isLoading: isLoading || isFetching,
     });
   }, [
@@ -272,9 +280,7 @@ function PlannerInstanceProbe({ planner, project, floorCount, onStats }) {
 function ProjectPlannerProbe({ project, onStats, onProjectStatus }) {
   const {
     data: plannersResponse,
-
     isLoading: isLoadingPlanners,
-
     isFetching: isFetchingPlanners,
   } = useGetProjectPlannersQuery(project.id, {
     skip: !project?.id,
@@ -282,9 +288,7 @@ function ProjectPlannerProbe({ project, onStats, onProjectStatus }) {
 
   const {
     data: locationsResponse,
-
     isLoading: isLoadingLocations,
-
     isFetching: isFetchingLocations,
   } = useGetProjectLocationsQuery(project.id, {
     skip: !project?.id,
@@ -305,7 +309,6 @@ function ProjectPlannerProbe({ project, onStats, onProjectStatus }) {
   React.useEffect(() => {
     onProjectStatus(project.id, {
       isLoading,
-
       plannerIds: planners.map((planner) => planner.id),
     });
   }, [project.id, planners, isLoading, onProjectStatus]);
@@ -340,19 +343,23 @@ const ProjectPlannerList = () => {
 
   const [projectProbeStatus, setProjectProbeStatus] = useState({});
 
+  const [deletingPlannerId, setDeletingPlannerId] = useState(null);
+
   // ============================================================
   // API
   // ============================================================
 
   const {
     data: projectsResponse,
-
     isLoading: isLoadingProjects,
-
     isFetching: isFetchingProjects,
   } = useGetProjectsQuery();
 
   const projects = unwrapArray(projectsResponse);
+
+  const [deletePlanner] = useDeletePlannerMutation();
+
+  const [downloadPlannerWorkbook] = useDownloadPlannerWorkbookMutation();
 
   // ============================================================
   // PROBE CALLBACKS
@@ -361,7 +368,6 @@ const ProjectPlannerList = () => {
   const handleStats = useCallback((key, stats) => {
     setStatsByKey((current) => ({
       ...current,
-
       [key]: stats,
     }));
   }, []);
@@ -369,14 +375,9 @@ const ProjectPlannerList = () => {
   const handleProjectStatus = useCallback((projectId, status) => {
     setProjectProbeStatus((current) => ({
       ...current,
-
       [projectId]: status,
     }));
 
-    /**
-     * Remove stale planner rows if a planner
-     * was deleted from a project.
-     */
     setStatsByKey((current) => {
       const next = {
         ...current,
@@ -500,15 +501,80 @@ const ProjectPlannerList = () => {
   // ============================================================
 
   const handleView = (instance) => {
-    /**
-     * Workspace uses projectId and then selects
-     * Consultancy / PMC internally.
-     *
-     * Adding ?planner= allows us to initialize
-     * support for direct planner selection later
-     * without changing this route again.
-     */
-    navigate(`/projects/planner/${instance?.planner?.id}`);
+    if (!instance?.planner?.id) {
+      return;
+    }
+
+    navigate(`/projects/planner/${instance.planner.id}`);
+  };
+
+  const handleEdit = (instance) => {
+    if (!instance?.planner?.id) {
+      return;
+    }
+
+    navigate(`/projects/planner/${instance.planner.id}?mode=edit`);
+  };
+
+  const handleDownload = async (instance) => {
+    const projectId = instance?.project?.id;
+
+    if (!projectId) {
+      return;
+    }
+
+    try {
+      await downloadPlannerWorkbook(projectId).unwrap();
+    } catch (error) {
+      console.error("Failed to download planner workbook:", error);
+    }
+  };
+
+  const handleDelete = async (instance) => {
+    const plannerId = instance?.planner?.id;
+
+    if (!plannerId) {
+      return;
+    }
+
+    const plannerName =
+      instance?.plannerLabel ||
+      getPlannerLabel(instance?.plannerType) ||
+      "this planner";
+
+    const projectName = instance?.project?.name || "this project";
+
+    const confirmed = window.confirm(
+      `Delete ${plannerName} from ${projectName}?\n\nThis action cannot be undone.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingPlannerId(plannerId);
+
+      await deletePlanner(plannerId).unwrap();
+
+      setStatsByKey((current) => {
+        const next = {
+          ...current,
+        };
+
+        Object.keys(next).forEach((key) => {
+          if (next[key]?.planner?.id === plannerId) {
+            delete next[key];
+          }
+        });
+
+        return next;
+      });
+    } catch (error) {
+      console.error("Failed to delete planner:", error);
+    } finally {
+      setDeletingPlannerId(null);
+    }
   };
 
   const handleCreate = () => {
@@ -739,6 +805,10 @@ const ProjectPlannerList = () => {
                   const isProcurement =
                     instance.plannerType === "VENDOR_PROCUREMENT";
 
+                  const plannerId = instance?.planner?.id;
+
+                  const isDeleting = deletingPlannerId === plannerId;
+
                   return (
                     <tr
                       key={instance.key}
@@ -746,7 +816,7 @@ const ProjectPlannerList = () => {
                     >
                       {/* =======================================
                             PROJECT
-                        ======================================= */}
+                      ======================================= */}
 
                       <td className="px-5 py-4">
                         <button
@@ -766,7 +836,7 @@ const ProjectPlannerList = () => {
 
                       {/* =======================================
                             PLANNER TYPE
-                        ======================================= */}
+                      ======================================= */}
 
                       <td className="px-5 py-4">
                         <PlannerTypeBadge
@@ -777,7 +847,7 @@ const ProjectPlannerList = () => {
 
                       {/* =======================================
                             FLOORS
-                        ======================================= */}
+                      ======================================= */}
 
                       <td className="px-5 py-4 text-sm text-gray-700">
                         <div className="flex items-center gap-1.5">
@@ -793,7 +863,7 @@ const ProjectPlannerList = () => {
 
                       {/* =======================================
                             ITEMS
-                        ======================================= */}
+                      ======================================= */}
 
                       <td className="px-5 py-4 text-sm text-gray-700">
                         {instance.totalItems}
@@ -805,7 +875,7 @@ const ProjectPlannerList = () => {
 
                       {/* =======================================
                             COMPLETED ITEMS
-                        ======================================= */}
+                      ======================================= */}
 
                       <td className="px-5 py-4 text-sm">
                         <span className="font-medium text-gray-700">
@@ -820,7 +890,7 @@ const ProjectPlannerList = () => {
 
                       {/* =======================================
                             PROGRESS
-                        ======================================= */}
+                      ======================================= */}
 
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
@@ -844,7 +914,7 @@ const ProjectPlannerList = () => {
 
                       {/* =======================================
                             STATUS
-                        ======================================= */}
+                      ======================================= */}
 
                       <td className="px-5 py-4">
                         <ProgressStatusBadge
@@ -854,18 +924,66 @@ const ProjectPlannerList = () => {
                       </td>
 
                       {/* =======================================
-                            ACTION
-                        ======================================= */}
+                            ACTIONS
+                      ======================================= */}
 
                       <td className="px-5 py-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleView(instance)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          Open
-                        </button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              disabled={isDeleting}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+
+                              <span className="sr-only">Open actions</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+
+                          <DropdownMenuContent align="end" className="w-52">
+                            <DropdownMenuLabel>
+                              Planner Actions
+                            </DropdownMenuLabel>
+
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuItem
+                              onClick={() => handleView(instance)}
+                            >
+                              <Eye className="mr-2 h-4 w-4" />
+                              Open Planner
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem
+                              onClick={() => handleEdit(instance)}
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit Planner
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem
+                              onClick={() => handleDownload(instance)}
+                            >
+                              <Download className="mr-2 h-4 w-4" />
+                              Download Workbook
+                            </DropdownMenuItem>
+
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuItem
+                              variant="destructive"
+                              disabled={isDeleting}
+                              onClick={() => handleDelete(instance)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+
+                              {isDeleting ? "Deleting..." : "Delete Planner"}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </td>
                     </tr>
                   );

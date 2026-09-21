@@ -1,12 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+
 import { MaterialRequirement } from '../models/material-requirement.model';
 import { SampleBoard } from '../models/sample-board.model';
-import { MaterialRateSheet } from '../models/material-rate-sheet.model';
-import { MaterialEstimate } from '../models/material-estimate.model';
-import { MaterialQuotation } from '../models/material-quotation.model';
+import { MaterialMaster } from '../models';
+import { MaterialVendor } from '../models/material-vendor.model';
+import { Quotation } from '@/modules/quotations/models/quotations.model';
+
 import { CreateMaterialRequirementDto } from '../dto/create-material-requirement.dto';
 import { UpdateMaterialRequirementDto } from '../dto/update-material-requirement.dto';
+
 import { RequirementStatus } from '../../../common/enums/requirement-status.enum';
 
 @Injectable()
@@ -16,48 +19,157 @@ export class MaterialRequirementService {
     private readonly model: typeof MaterialRequirement,
   ) {}
 
-  create(dto: CreateMaterialRequirementDto) {
-    return this.model.create({
+  // ============================================================
+  // INCLUDE CONFIGURATION
+  // ============================================================
+
+  /**
+   * All related procurement/design information belonging
+   * to a material requirement.
+   *
+   * MaterialMaster is the source of truth for material data.
+   *
+   * MaterialMaster
+   *   └── MaterialVendor[]
+   *
+   * Vendor-specific pricing is maintained in MaterialVendor.
+   *
+   * Quotation contains vendor quotation information generated
+   * against the requirement.
+   */
+  private readonly includes = [
+    {
+      model: SampleBoard,
+    },
+    {
+      model: MaterialMaster,
+      as: 'material',
+      include: [
+        {
+          model: MaterialVendor,
+          as: 'vendors',
+        },
+      ],
+    },
+    {
+      model: Quotation,
+    },
+  ];
+
+  // ============================================================
+  // CREATE
+  // ============================================================
+
+  async create(dto: CreateMaterialRequirementDto) {
+    const requirement = await this.model.create({
       ...dto,
       status: RequirementStatus.DRAFT,
     } as any);
+
+    return this.findOne(requirement.id);
   }
 
-  findAll(projectId?: string) {
+  // ============================================================
+  // FIND ALL
+  // ============================================================
+
+  async findAll(projectId?: string) {
     return this.model.findAll({
-      where: projectId ? { projectId } : {},
-      include: [SampleBoard, MaterialRateSheet, MaterialEstimate],
+      where: projectId
+        ? {
+            projectId,
+          }
+        : {},
+      include: this.includes,
       order: [['createdAt', 'DESC']],
     });
   }
 
+  // ============================================================
+  // GET MATERIAL REQUIREMENTS BY PROJECT
+  // ============================================================
+
+  async getMaterialRequirementsByProject(projectId: string) {
+    return this.model.findAll({
+      where: {
+        projectId,
+      },
+      include: this.includes,
+      order: [['createdAt', 'DESC']],
+    });
+  }
+
+  // ============================================================
+  // FIND ONE
+  // ============================================================
+
   async findOne(id: string) {
     const requirement = await this.model.findByPk(id, {
-      include: [
-        SampleBoard,
-        MaterialRateSheet,
-        { model: MaterialEstimate, include: [MaterialQuotation] },
-      ],
+      include: this.includes,
     });
+
     if (!requirement) {
       throw new NotFoundException(`Material requirement ${id} not found`);
     }
+
     return requirement;
   }
 
+  // ============================================================
+  // UPDATE
+  // ============================================================
+
   async update(id: string, dto: UpdateMaterialRequirementDto) {
     const requirement = await this.findOne(id);
-    return requirement.update(dto as any);
+
+    await requirement.update(dto as any);
+
+    return this.findOne(id);
   }
+
+  // ============================================================
+  // DELETE
+  // ============================================================
 
   async remove(id: string) {
     const requirement = await this.findOne(id);
+
     await requirement.destroy();
-    return { id, deleted: true };
+
+    return {
+      id,
+      deleted: true,
+    };
   }
 
-  /** Convenience used by downstream services to advance the workflow status. */
+  // ============================================================
+  // STATUS
+  // ============================================================
+
+  /**
+   * Update material requirement workflow status.
+   *
+   * Example:
+   *
+   * DRAFT
+   *   ↓
+   * READY_FOR_SOURCING
+   *   ↓
+   * SOURCING
+   *   ↓
+   * COMPLETED
+   */
   async setStatus(id: string, status: RequirementStatus) {
-    await this.model.update({ status }, { where: { id } });
+    const requirement = await this.model.findByPk(id);
+
+    if (!requirement) {
+      throw new NotFoundException(`Material requirement ${id} not found`);
+    }
+
+    await requirement.update({
+      status,
+    });
+
+    return this.findOne(id);
   }
 }

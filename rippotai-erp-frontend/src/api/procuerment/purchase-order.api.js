@@ -8,14 +8,6 @@ export const purchaseOrderApi = baseApi.injectEndpoints({
     // PURCHASE ORDERS
     // ============================================================
 
-    /**
-     * GET /purchase-orders
-     *
-     * Optional:
-     * ?projectId=<uuid>
-     * ?vendorId=<uuid>
-     * ?status=<status>
-     */
     getPurchaseOrders: builder.query({
       query: ({ projectId, vendorId, status } = {}) => ({
         url: "/purchase-orders",
@@ -29,9 +21,6 @@ export const purchaseOrderApi = baseApi.injectEndpoints({
       providesTags: ["PurchaseOrders"],
     }),
 
-    /**
-     * GET /purchase-orders/:id
-     */
     getPurchaseOrder: builder.query({
       query: (id) => ({
         url: `/purchase-orders/${id}`,
@@ -40,9 +29,6 @@ export const purchaseOrderApi = baseApi.injectEndpoints({
       providesTags: (result, error, id) => [{ type: "PurchaseOrders", id }],
     }),
 
-    /**
-     * POST /purchase-orders
-     */
     createPurchaseOrder: builder.mutation({
       query: (body) => ({
         url: "/purchase-orders",
@@ -52,9 +38,6 @@ export const purchaseOrderApi = baseApi.injectEndpoints({
       invalidatesTags: ["PurchaseOrders"],
     }),
 
-    /**
-     * PATCH /purchase-orders/:id
-     */
     updatePurchaseOrder: builder.mutation({
       query: ({ id, ...body }) => ({
         url: `/purchase-orders/${id}`,
@@ -67,9 +50,6 @@ export const purchaseOrderApi = baseApi.injectEndpoints({
       ],
     }),
 
-    /**
-     * POST /purchase-orders/:id/approve
-     */
     approvePurchaseOrder: builder.mutation({
       query: (id) => ({
         url: `/purchase-orders/${id}/approve`,
@@ -81,13 +61,26 @@ export const purchaseOrderApi = baseApi.injectEndpoints({
       ],
     }),
 
-    /**
-     * POST /purchase-orders/:id/cancel
-     */
     cancelPurchaseOrder: builder.mutation({
       query: (id) => ({
         url: `/purchase-orders/${id}/cancel`,
         method: "POST",
+      }),
+      invalidatesTags: (result, error, id) => [
+        "PurchaseOrders",
+        { type: "PurchaseOrders", id },
+      ],
+    }),
+
+    // ============================================================
+    // DELETE PURCHASE ORDER
+    // DELETE /purchase-orders/:id
+    // ============================================================
+
+    deletePurchaseOrder: builder.mutation({
+      query: (id) => ({
+        url: `/purchase-orders/${id}`,
+        method: "DELETE",
       }),
       invalidatesTags: (result, error, id) => [
         "PurchaseOrders",
@@ -104,4 +97,5 @@ export const {
   useUpdatePurchaseOrderMutation,
   useApprovePurchaseOrderMutation,
   useCancelPurchaseOrderMutation,
+  useDeletePurchaseOrderMutation,
 } = purchaseOrderApi;

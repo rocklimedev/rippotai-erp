@@ -45,6 +45,7 @@ import { WorkOrderPaymentStage } from './models/work-order-payment-stage.model';
 import { WorkOrderTerm } from './models/work-order-term.model';
 import { Project } from '../projects/models/projects.model';
 import { TermsTemplate } from '../metas/models/terms-templates.model';
+import { Quotation } from '../quotations/models/quotations.model';
 
 /**
  * Material & Procurement module — Sequelize (MySQL) edition.
@@ -87,6 +88,7 @@ import { TermsTemplate } from '../metas/models/terms-templates.model';
       WorkOrderItem,
       WorkOrderPaymentStage,
       WorkOrderTerm,
+      Quotation,
       TermsTemplate,
     ]),
   ],

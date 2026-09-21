@@ -45,6 +45,7 @@ export const baseApi = createApi({
     "Quotation",
     "QuotationItems",
     "QuotationVersions",
+    "MaterialRequirement",
     "QuotationDashboard",
     // users
     "Users",
@@ -53,7 +54,9 @@ export const baseApi = createApi({
     "VendorCategories",
     "BusinessTypes",
     "VendorSummary",
+    "ProjectPlanner",
     "SavedSearches",
+    "ProjectLocation",
     "Shortlists",
     "VendorQuotations",
     "VendorDashboard",

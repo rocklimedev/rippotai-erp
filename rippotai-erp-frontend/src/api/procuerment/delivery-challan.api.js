@@ -416,6 +416,11 @@ export const deliveryChallanApi = baseApi.injectEndpoints({
         "DeliveryChallans",
       ],
     }),
+
+    deleteDeliveryChallan: builder.mutation({
+      query: (id) => ({ url: `/delivery-challans/${id}`, method: "DELETE" }),
+      invalidatesTags: ["DeliveryChallans", "PurchaseOrders", "Inventory"],
+    }),
   }),
 });
 
@@ -426,7 +431,7 @@ export const deliveryChallanApi = baseApi.injectEndpoints({
 export const {
   // List
   useGetDeliveryChallansQuery,
-
+  useDeleteDeliveryChallanMutation,
   // Single
   useGetDeliveryChallanQuery,
 

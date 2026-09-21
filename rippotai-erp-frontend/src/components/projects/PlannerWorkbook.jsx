@@ -1,13 +1,23 @@
 import { useState } from "react";
 import { toast } from "sonner";
+
 import {
   useAttachPlannerLocationsMutation,
   useUpdateItemLocationMutation,
   useUpdatePlannerItemMutation,
   useUpdateProcurementItemMutation,
 } from "../../api/documents/project-planner.api";
+
 import "./PlannerWorkbook.css";
 import { workbookRows } from "./plannerWorkbookFormat";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const STATUSES = [
   "NOT_STARTED",
@@ -16,11 +26,15 @@ const STATUSES = [
   "COMPLETED",
   "NOT_APPLICABLE",
 ];
+
 const label = (value) => value?.toLowerCase().replaceAll("_", " ") || "";
+
 function EditCell({ value, type = "text", title, save }) {
   const [draft, setDraft] = useState(value || "");
   const [busy, setBusy] = useState(false);
+
   const Control = type === "date" ? "input" : "textarea";
+
   return (
     <Control
       rows={2}
@@ -36,6 +50,7 @@ function EditCell({ value, type = "text", title, save }) {
       }}
       onChange={(e) => {
         setDraft(e.target.value);
+
         if (type !== "date") {
           e.target.style.height = "auto";
           e.target.style.height = `${e.target.scrollHeight}px`;
@@ -43,11 +58,14 @@ function EditCell({ value, type = "text", title, save }) {
       }}
       onBlur={async () => {
         if (draft === (value || "")) return;
+
         setBusy(true);
+
         try {
           await save(draft || null);
         } catch (error) {
           setDraft(value || "");
+
           toast.error(error?.data?.message || "Could not save this cell");
         } finally {
           setBusy(false);
@@ -56,106 +74,166 @@ function EditCell({ value, type = "text", title, save }) {
     />
   );
 }
+
 export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
   const [updateLocation] = useUpdateItemLocationMutation();
   const [attachLocation] = useAttachPlannerLocationsMutation();
   const [updateItem] = useUpdatePlannerItemMutation();
   const [updateProcurement] = useUpdateProcurementItemMutation();
+
   const [saving, setSaving] = useState("");
-  const floors = (overview?.locations || []).filter((l) => l.type === "FLOOR");
+
+  const floors = (overview?.locations || []).filter(
+    (location) => location.type === "FLOOR",
+  );
+
   const columns =
     view === "Overview"
-      ? floors.flatMap((f) => (f.children?.length ? f.children : [f]))
+      ? floors.flatMap((floor) =>
+          floor.children?.length ? floor.children : [floor],
+        )
       : floors;
+
   const allRows = workbookRows(overview?.planners);
+
   const rows =
     view === "Overview"
       ? allRows
       : allRows.filter(
-          (i) =>
-            i.phase?.module ===
+          (item) =>
+            item.phase?.module ===
             (view === "Consultancy" ? "CONSULTANCY" : "PMC"),
         );
+
   const procurement = (overview?.planners || [])
-    .flatMap((p) => p.procurement_items || [])
+    .flatMap((planner) => planner.procurement_items || [])
     .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
+
   const isVendor = view === "Vendor & Procurement";
+
   const saveItem = async (item, key, value) => {
-    await updateItem({ id: item.id, data: { [key]: value } }).unwrap();
+    await updateItem({
+      id: item.id,
+      data: {
+        [key]: value,
+      },
+    }).unwrap();
+
     await refresh();
   };
+
   const saveVendor = async (item, key, value) => {
-    await updateProcurement({ id: item.id, data: { [key]: value } }).unwrap();
+    await updateProcurement({
+      id: item.id,
+      data: {
+        [key]: value,
+      },
+    }).unwrap();
+
     await refresh();
   };
+
   const statusCell = (item, location) => {
-    const relation = item.locations?.find((l) => l.location_id === location.id);
+    const relation = item.locations?.find(
+      (locationItem) => locationItem.location_id === location.id,
+    );
+
     const key = `${item.id}:${location.id}`;
-    if (!editable) return label(relation?.status);
+
+    if (!editable) {
+      return label(relation?.status);
+    }
+
     return (
-      <select
-        aria-label={`${item.work_name || item.details} — ${location.name}`}
-        value={relation?.status || ""}
-        disabled={saving === key}
-        onChange={async (e) => {
-          const status = e.target.value;
-          if (!status) return;
-          setSaving(key);
-          try {
-            let id = relation?.id;
-            if (!id) {
-              await attachLocation({
-                itemId: item.id,
-                location_ids: [location.id],
+      <div className="min-w-[130px]">
+        <Select
+          value={relation?.status || ""}
+          disabled={saving === key}
+          onValueChange={async (status) => {
+            if (!status) return;
+
+            setSaving(key);
+
+            try {
+              let id = relation?.id;
+
+              if (!id) {
+                await attachLocation({
+                  itemId: item.id,
+                  location_ids: [location.id],
+                }).unwrap();
+
+                const result = await refresh();
+
+                const data = result?.data?.data || result?.data;
+
+                id = workbookRows(data?.planners)
+                  .find((plannerItem) => plannerItem.id === item.id)
+                  ?.locations?.find(
+                    (locationItem) => locationItem.location_id === location.id,
+                  )?.id;
+              }
+
+              if (!id) {
+                throw new Error("Location relation could not be resolved");
+              }
+
+              await updateLocation({
+                id,
+                data: {
+                  status,
+                  progress_pct:
+                    status === "COMPLETED"
+                      ? 100
+                      : status === "IN_PROGRESS"
+                        ? Math.max(
+                            1,
+                            Math.min(99, Number(relation?.progress_pct || 1)),
+                          )
+                        : 0,
+                },
               }).unwrap();
-              const result = await refresh();
-              const data = result?.data?.data || result?.data;
-              id = workbookRows(data?.planners)
-                .find((i) => i.id === item.id)
-                ?.locations?.find((l) => l.location_id === location.id)?.id;
+
+              await refresh();
+            } catch (error) {
+              toast.error(
+                error?.data?.message ||
+                  error.message ||
+                  "Could not save status",
+              );
+            } finally {
+              setSaving("");
             }
-            if (!id) throw new Error("Location relation could not be resolved");
-            await updateLocation({
-              id,
-              data: {
-                status,
-                progress_pct:
-                  status === "COMPLETED"
-                    ? 100
-                    : status === "IN_PROGRESS"
-                      ? Math.max(
-                          1,
-                          Math.min(99, Number(relation?.progress_pct || 1)),
-                        )
-                      : 0,
-              },
-            }).unwrap();
-            await refresh();
-          } catch (error) {
-            toast.error(
-              error?.data?.message || error.message || "Could not save status",
-            );
-          } finally {
-            setSaving("");
-          }
-        }}
-      >
-        <option value="">—</option>
-        {STATUSES.map((s) => (
-          <option key={s} value={s}>
-            {label(s)}
-          </option>
-        ))}
-      </select>
+          }}
+        >
+          <SelectTrigger
+            className="h-9 w-full min-w-[125px] border-0 bg-transparent shadow-none focus:ring-1"
+            aria-label={`${item.work_name || item.details} — ${location.name}`}
+          >
+            <SelectValue placeholder="—" />
+          </SelectTrigger>
+
+          <SelectContent>
+            {STATUSES.map((status) => (
+              <SelectItem key={status} value={status}>
+                {label(status)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
     );
   };
+
   const field = (item, key, type = "text", vendor = false) =>
     editable ? (
       <EditCell
         key={`${item.id}:${key}:${item[key] || ""}`}
         value={item[key]}
         type={type}
-        title={`${key.replaceAll("_", " ")} — ${item.work_name || item.category_name || item.details}`}
+        title={`${key.replaceAll("_", " ")} — ${
+          item.work_name || item.category_name || item.details
+        }`}
         save={(value) =>
           vendor ? saveVendor(item, key, value) : saveItem(item, key, value)
         }
@@ -163,6 +241,7 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
     ) : (
       item[key] || ""
     );
+
   return (
     <div className="planner-sheet-scroll">
       <section
@@ -176,13 +255,16 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
       >
         <header>
           <strong>RIPPŌTAI</strong>
+
           <h2>
             {view === "Overview"
               ? "PROJECT PLANNER"
               : `${view.toUpperCase()} — PROJECT PLANNER`}
           </h2>
+
           <p>{overview?.project?.name}</p>
         </header>
+
         <table>
           <colgroup>
             {(isVendor
@@ -196,18 +278,28 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
                   ...(view !== "Overview" ? [220] : []),
                 ]
             ).map((width, index) => (
-              <col key={index} style={{ width }} />
+              <col
+                key={index}
+                style={{
+                  width,
+                }}
+              />
             ))}
           </colgroup>
+
           <thead>
             {isVendor ? (
               <>
                 <tr className="planner-superhead">
                   <th colSpan={6} />
+
                   <th colSpan={2}>TIMELINE (LABOUR WORK)</th>
+
                   <th colSpan={2}>STATUS (MATERIAL)</th>
+
                   <th />
                 </tr>
+
                 <tr>
                   {[
                     "Sr. No.",
@@ -221,8 +313,8 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
                     "PURCHASE",
                     "RECEIVED AT SITE",
                     "REMARKS",
-                  ].map((h) => (
-                    <th key={h}>{h}</th>
+                  ].map((heading) => (
+                    <th key={heading}>{heading}</th>
                   ))}
                 </tr>
               </>
@@ -230,9 +322,11 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
               <>
                 <tr>
                   <th rowSpan={view === "Overview" ? 2 : 1}>S.no</th>
+
                   <th rowSpan={view === "Overview" ? 2 : 1}>
                     {view === "Overview" ? "EXECUTION" : "PHASE"}
                   </th>
+
                   <th rowSpan={view === "Overview" ? 2 : 1}>
                     {view === "Consultancy"
                       ? "DRAWINGS & DESIGN"
@@ -240,42 +334,56 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
                         ? "DOCUMENTS"
                         : "WORK"}
                   </th>
+
                   <th rowSpan={view === "Overview" ? 2 : 1}>DETAILS</th>
+
                   {view === "Overview"
-                    ? floors.map((f) => (
-                        <th key={f.id} colSpan={f.children?.length || 1}>
-                          {f.name}
+                    ? floors.map((floor) => (
+                        <th
+                          key={floor.id}
+                          colSpan={floor.children?.length || 1}
+                        >
+                          {floor.name}
                         </th>
                       ))
-                    : columns.map((l) => <th key={l.id}>{l.name}</th>)}
+                    : columns.map((location) => (
+                        <th key={location.id}>{location.name}</th>
+                      ))}
+
                   {view !== "Overview" && <th>REMARKS</th>}
                 </tr>
+
                 {view === "Overview" && (
                   <tr>
-                    {columns.map((l) => (
-                      <th key={l.id}>{l.name}</th>
+                    {columns.map((location) => (
+                      <th key={location.id}>{location.name}</th>
                     ))}
                   </tr>
                 )}
               </>
             )}
           </thead>
+
           <tbody>
             {isVendor
               ? procurement.map((item, index) => (
                   <tr key={item.id}>
                     <td>{index + 1}.0</td>
+
                     <td>
                       {item.item_type === "LABOUR"
                         ? field(item, "category_name", "text", true)
                         : ""}
                     </td>
+
                     <td>
                       {item.item_type === "MATERIAL"
                         ? field(item, "category_name", "text", true)
                         : ""}
                     </td>
+
                     <td>{field(item, "vendor_name", "text", true)}</td>
+
                     {[
                       "estimate_finalised_at",
                       "quotation_finalised_at",
@@ -286,38 +394,51 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
                     ].map((key) => (
                       <td key={key}>{field(item, key, "date", true)}</td>
                     ))}
+
                     <td>{field(item, "remarks", "text", true)}</td>
                   </tr>
                 ))
               : rows.map((item, index) => {
                   const start =
                     index === 0 || rows[index - 1].phase_id !== item.phase_id;
+
                   let span = 1;
-                  while (rows[index + span]?.phase_id === item.phase_id) span++;
+
+                  while (rows[index + span]?.phase_id === item.phase_id) {
+                    span++;
+                  }
+
                   return (
                     <tr key={item.id}>
                       <td>{index + 1}.0</td>
+
                       {start && (
                         <td rowSpan={span} className="planner-phase">
                           {item.phase?.title}
                         </td>
                       )}
+
                       <td>{field(item, "work_name")}</td>
+
                       <td>{field(item, "details")}</td>
-                      {columns.map((l) => (
-                        <td key={l.id}>{statusCell(item, l)}</td>
+
+                      {columns.map((location) => (
+                        <td key={location.id}>{statusCell(item, location)}</td>
                       ))}
+
                       {view !== "Overview" && <td>{field(item, "remarks")}</td>}
                     </tr>
                   );
                 })}
           </tbody>
         </table>
+
         {!rows.length && !isVendor && (
           <p className="planner-empty">
             Initialize the project planner to populate this sheet.
           </p>
         )}
+
         {isVendor && !procurement.length && (
           <p className="planner-empty">
             Initialize the project planner to populate procurement categories.
@@ -327,3 +448,5 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
     </div>
   );
 }
+
+export default PlannerWorkbook;

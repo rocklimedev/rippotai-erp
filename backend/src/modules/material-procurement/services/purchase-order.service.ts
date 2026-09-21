@@ -13,11 +13,13 @@ import {
   CreatePurchaseOrderDto,
   UpdatePurchaseOrderDto,
 } from '../dto/purchase-order.dto';
+
 import {
   PurchaseOrder,
   PurchaseOrderSourceType,
   PurchaseOrderStatus,
 } from '../models/purchase-order.model';
+
 @Injectable()
 export class PurchaseOrderService {
   constructor(
@@ -30,6 +32,10 @@ export class PurchaseOrderService {
     @InjectModel(MaterialMaster)
     private readonly materialModel: typeof MaterialMaster,
   ) {}
+
+  // ============================================================
+  // TOTALS
+  // ============================================================
 
   private calculateTotals(
     items: CreatePurchaseOrderDto['items'],
@@ -57,6 +63,10 @@ export class PurchaseOrderService {
       total_amount: totalAmount,
     };
   }
+
+  // ============================================================
+  // CREATE
+  // ============================================================
 
   async create(dto: CreatePurchaseOrderDto, userId?: string) {
     if (!dto.items?.length) {
@@ -107,6 +117,7 @@ export class PurchaseOrderService {
       ship_to_address: dto.ship_to_address ?? null,
 
       source_type: dto.source_type ?? PurchaseOrderSourceType.MANUAL,
+
       source_reference_id: dto.source_reference_id ?? null,
 
       notes: dto.notes ?? null,
@@ -152,6 +163,10 @@ export class PurchaseOrderService {
     return this.findOne(po.id);
   }
 
+  // ============================================================
+  // FIND ALL
+  // ============================================================
+
   async findAll(params?: {
     projectId?: string;
     vendorId?: string;
@@ -173,15 +188,21 @@ export class PurchaseOrderService {
 
     return this.purchaseOrderModel.findAll({
       where,
+
       include: [
         {
           model: PurchaseOrderItem,
           include: [MaterialMaster],
         },
       ],
+
       order: [['po_date', 'DESC']],
     });
   }
+
+  // ============================================================
+  // FIND ONE
+  // ============================================================
 
   async findOne(id: string) {
     const po = await this.purchaseOrderModel.findByPk(id, {
@@ -199,6 +220,10 @@ export class PurchaseOrderService {
 
     return po;
   }
+
+  // ============================================================
+  // UPDATE
+  // ============================================================
 
   async update(id: string, dto: UpdatePurchaseOrderDto) {
     const po = await this.findOne(id);
@@ -218,6 +243,10 @@ export class PurchaseOrderService {
     return this.findOne(id);
   }
 
+  // ============================================================
+  // APPROVE
+  // ============================================================
+
   async approve(id: string, userId?: string) {
     const po = await this.findOne(id);
 
@@ -229,12 +258,18 @@ export class PurchaseOrderService {
 
     await po.update({
       status: PurchaseOrderStatus.APPROVED,
+
       approved_by: userId ?? null,
+
       approved_at: new Date(),
     });
 
     return this.findOne(id);
   }
+
+  // ============================================================
+  // CANCEL
+  // ============================================================
 
   async cancel(id: string) {
     const po = await this.findOne(id);
@@ -253,8 +288,61 @@ export class PurchaseOrderService {
       status: PurchaseOrderStatus.CANCELLED,
     });
 
-    return po;
+    return this.findOne(id);
   }
+
+  // ============================================================
+  // DELETE
+  // ============================================================
+
+  async delete(id: string) {
+    const po = await this.purchaseOrderModel.findByPk(id);
+
+    if (!po) {
+      throw new NotFoundException('Purchase order not found');
+    }
+
+    // ----------------------------------------------------------
+    // Only draft POs can be permanently deleted.
+    // Approved/sent/received/cancelled POs should remain
+    // in the system for procurement/audit history.
+    // ----------------------------------------------------------
+
+    if (po.status !== PurchaseOrderStatus.DRAFT) {
+      throw new BadRequestException(
+        `Only draft purchase orders can be deleted. Current status is ${po.status}`,
+      );
+    }
+
+    // ----------------------------------------------------------
+    // Delete child items first.
+    // This prevents FK constraint errors when the database
+    // relationship does not use ON DELETE CASCADE.
+    // ----------------------------------------------------------
+
+    await this.purchaseOrderItemModel.destroy({
+      where: {
+        purchase_order_id: id,
+      },
+    });
+
+    // ----------------------------------------------------------
+    // Delete purchase order
+    // ----------------------------------------------------------
+
+    await po.destroy();
+
+    return {
+      success: true,
+      message: 'Purchase order deleted successfully',
+      id,
+    };
+  }
+
+  // ============================================================
+  // GENERATE PO NUMBER
+  // ============================================================
+
   private async generatePoNumber(): Promise<string> {
     const year = new Date().getFullYear();
 
@@ -269,6 +357,7 @@ export class PurchaseOrderService {
           [require('sequelize').Op.like]: `${prefix}%`,
         },
       },
+
       order: [['created_at', 'DESC']],
     });
 

@@ -12,11 +12,17 @@ import {
   XCircle,
   Clock,
   ClipboardCheck,
+  Trash2,
 } from "lucide-react";
+
+import { toast } from "sonner";
 
 import { Shell } from "../../hooks/shared";
 
-import { useGetDeliveryChallansQuery } from "../../api/procuerment/delivery-challan.api";
+import {
+  useDeleteDeliveryChallanMutation,
+  useGetDeliveryChallansQuery,
+} from "../../api/procuerment/delivery-challan.api";
 
 // shadcn/ui
 import { Button } from "@/components/ui/button";
@@ -26,6 +32,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default function DeliveryChallanList() {
   const nav = useNavigate();
+
   const [q, setQ] = useState("");
 
   // Used only to pre-fill the New Delivery Challan form.
@@ -41,35 +48,29 @@ export default function DeliveryChallanList() {
     error,
   } = useGetDeliveryChallansQuery();
 
+  const [deleteDeliveryChallan, { isLoading: deleting }] =
+    useDeleteDeliveryChallanMutation();
+
   /**
-   * API response is currently:
+   * API response can be:
    *
    * [
-   *   {
-   *     id,
-   *     challan_number,
-   *     project_id,
-   *     site_id,
-   *     purchase_order_id,
-   *     vendor_id,
-   *     challan_date,
-   *     site_address,
-   *     status,
-   *     gate_pass_received,
-   *     material_checked,
-   *     general_remarks,
-   *     discrepancy_notes,
-   *     dispatched_by,
-   *     dispatched_at,
-   *     received_by,
-   *     received_at,
-   *     attachment_url,
-   *     created_by,
-   *     items: [...]
-   *   }
+   *   {...}
    * ]
    *
-   * Handle both a direct array and an API response wrapper.
+   * or:
+   *
+   * {
+   *   data: [...]
+   * }
+   *
+   * {
+   *   rows: [...]
+   * }
+   *
+   * {
+   *   items: [...]
+   * }
    */
   const rows = useMemo(() => {
     if (Array.isArray(response)) {
@@ -92,7 +93,7 @@ export default function DeliveryChallanList() {
   }, [response]);
 
   /**
-   * Search across the actual fields returned by the API.
+   * Search across challan + PO + vendor + material information.
    */
   const filteredRows = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -116,7 +117,6 @@ export default function DeliveryChallanList() {
         r.dispatched_by,
         r.received_by,
 
-        // Search item information as well.
         ...(r.items || []).flatMap((item) => [
           item.description,
           item.brand,
@@ -175,6 +175,27 @@ export default function DeliveryChallanList() {
           className: "border-slate-200 bg-slate-50 text-slate-700",
         };
 
+      case "RECEIVED":
+        return {
+          label: "Received",
+          icon: CheckCircle2,
+          className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+        };
+
+      case "CANCELLED":
+        return {
+          label: "Cancelled",
+          icon: XCircle,
+          className: "border-red-200 bg-red-50 text-red-700",
+        };
+
+      case "DRAFT":
+        return {
+          label: "Draft",
+          icon: ClipboardCheck,
+          className: "border-slate-200 bg-slate-50 text-slate-700",
+        };
+
       default:
         return {
           label: String(status || "Unknown")
@@ -189,11 +210,13 @@ export default function DeliveryChallanList() {
   /**
    * Format date without timezone shifting.
    *
-   * API returns:
+   * API example:
    * 2026-09-16
    */
   const formatDate = (value) => {
-    if (!value) return "—";
+    if (!value) {
+      return "—";
+    }
 
     const dateString = String(value).slice(0, 10);
 
@@ -245,6 +268,46 @@ export default function DeliveryChallanList() {
       damaged,
       rejected,
     };
+  };
+
+  /**
+   * Delete delivery challan.
+   *
+   * RECEIVED and CANCELLED are protected in the UI as well as
+   * on the backend.
+   */
+  const handleDelete = async (id, challanNumber, status) => {
+    if (!id) {
+      toast.error("Delivery challan ID is missing");
+      return;
+    }
+
+    if (status === "RECEIVED" || status === "CANCELLED") {
+      toast.error(`Cannot delete a ${status.toLowerCase()} delivery challan`);
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete delivery challan ${
+        challanNumber || id.slice(0, 8)
+      }?\n\nThis action cannot be undone.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deleteDeliveryChallan(id).unwrap();
+
+      toast.success("Delivery challan deleted successfully");
+    } catch (deleteError) {
+      toast.error(
+        deleteError?.data?.message ||
+          deleteError?.error ||
+          "Could not delete delivery challan",
+      );
+    }
   };
 
   return (
@@ -370,7 +433,9 @@ export default function DeliveryChallanList() {
                 </thead>
 
                 <tbody>
-                  {/* Loading */}
+                  {/* ==================================================
+                      LOADING
+                  ================================================== */}
                   {isLoading && (
                     <tr>
                       <td
@@ -389,7 +454,9 @@ export default function DeliveryChallanList() {
                     </tr>
                   )}
 
-                  {/* Rows */}
+                  {/* ==================================================
+                      ROWS
+                  ================================================== */}
                   {!isLoading &&
                     filteredRows.map((r) => {
                       const summary = getItemSummary(r.items);
@@ -397,6 +464,9 @@ export default function DeliveryChallanList() {
                       const statusConfig = getStatusConfig(r.status);
 
                       const StatusIcon = statusConfig.icon;
+
+                      const isProtected =
+                        r.status === "RECEIVED" || r.status === "CANCELLED";
 
                       return (
                         <tr
@@ -406,7 +476,9 @@ export default function DeliveryChallanList() {
                           }
                           className="border-b last:border-b-0 hover:bg-[#F8FAF9] cursor-pointer transition-colors"
                         >
-                          {/* CHALLAN */}
+                          {/* ==================================================
+                              CHALLAN
+                          ================================================== */}
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E8EFEB]">
@@ -425,14 +497,18 @@ export default function DeliveryChallanList() {
                             </div>
                           </td>
 
-                          {/* DATE */}
+                          {/* ==================================================
+                              DATE
+                          ================================================== */}
                           <td className="px-4 py-3 whitespace-nowrap">
                             <span className="text-muted-foreground">
                               {formatDate(r.challan_date)}
                             </span>
                           </td>
 
-                          {/* PO */}
+                          {/* ==================================================
+                              PO
+                          ================================================== */}
                           <td className="px-4 py-3">
                             <div className="font-medium">
                               {r.purchase_order_id ? (
@@ -456,7 +532,9 @@ export default function DeliveryChallanList() {
                             </div>
                           </td>
 
-                          {/* VENDOR */}
+                          {/* ==================================================
+                              VENDOR
+                          ================================================== */}
                           <td className="px-4 py-3">
                             {r.vendor_id ? (
                               <span className="font-mono text-xs text-muted-foreground">
@@ -468,7 +546,9 @@ export default function DeliveryChallanList() {
                             )}
                           </td>
 
-                          {/* ITEMS */}
+                          {/* ==================================================
+                              ITEMS
+                          ================================================== */}
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <Package size={15} className="text-[#6B7B7C]" />
@@ -486,7 +566,9 @@ export default function DeliveryChallanList() {
                             </div>
                           </td>
 
-                          {/* ACCEPTANCE */}
+                          {/* ==================================================
+                              ACCEPTANCE
+                          ================================================== */}
                           <td className="px-4 py-3">
                             <div className="space-y-1 min-w-[130px]">
                               <div className="flex items-center justify-between text-xs">
@@ -537,7 +619,9 @@ export default function DeliveryChallanList() {
                             </div>
                           </td>
 
-                          {/* STATUS */}
+                          {/* ==================================================
+                              STATUS
+                          ================================================== */}
                           <td className="px-4 py-3">
                             <Badge
                               variant="outline"
@@ -549,7 +633,9 @@ export default function DeliveryChallanList() {
                             </Badge>
                           </td>
 
-                          {/* CHECKS */}
+                          {/* ==================================================
+                              CHECKS
+                          ================================================== */}
                           <td className="px-4 py-3">
                             <div className="flex flex-col gap-1">
                               <div
@@ -584,12 +670,15 @@ export default function DeliveryChallanList() {
                             </div>
                           </td>
 
-                          {/* ACTIONS */}
+                          {/* ==================================================
+                              ACTIONS
+                          ================================================== */}
                           <td
                             className="px-4 py-3 text-right"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <div className="inline-flex items-center gap-1">
+                              {/* VIEW */}
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -601,6 +690,7 @@ export default function DeliveryChallanList() {
                                 <Eye size={16} />
                               </Button>
 
+                              {/* EDIT */}
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -609,9 +699,32 @@ export default function DeliveryChallanList() {
                                     `/procurement/delivery-challans/${r.id}/edit`,
                                   )
                                 }
-                                title="Edit"
+                                title={
+                                  isProtected
+                                    ? `Cannot edit ${r.status.toLowerCase()} challan`
+                                    : "Edit"
+                                }
+                                disabled={isProtected}
                               >
                                 <Edit3 size={16} />
+                              </Button>
+
+                              {/* DELETE */}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                                onClick={() =>
+                                  handleDelete(r.id, r.challan_number, r.status)
+                                }
+                                title={
+                                  isProtected
+                                    ? `Cannot delete ${r.status.toLowerCase()} challan`
+                                    : "Delete"
+                                }
+                                disabled={deleting || isProtected}
+                              >
+                                <Trash2 size={16} />
                               </Button>
                             </div>
                           </td>
@@ -619,7 +732,9 @@ export default function DeliveryChallanList() {
                       );
                     })}
 
-                  {/* Empty */}
+                  {/* ==================================================
+                      EMPTY
+                  ================================================== */}
                   {!isLoading && !filteredRows.length && (
                     <tr>
                       <td colSpan={9} className="py-14 text-center">

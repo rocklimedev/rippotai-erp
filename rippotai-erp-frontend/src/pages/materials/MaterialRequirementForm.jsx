@@ -9,11 +9,14 @@ import {
   ChevronUp,
   Save,
   Package,
+  Search,
 } from "lucide-react";
 
 import { useAutoSave } from "../../hooks/use-autosave";
 
-import { useCreateMaterialRequirementMutation } from "../../api/procuerment/procurent.api";
+import { useCreateMaterialRequirementMutation } from "../../api/procuerment/material-requirement.api";
+
+import { useGetMaterialsQuery } from "../../api/procuerment/material-master.api";
 
 import { useGetProjectsQuery } from "../../api/projects/project.api";
 import { useGetUsersQuery } from "../../api/users/user.api";
@@ -22,12 +25,23 @@ const SAVE_KEY = "bc.material-requirement";
 
 const createEmptyRequirement = () => ({
   id: crypto.randomUUID(),
+
+  // Material Master reference.
+  // This is currently UI-only because MaterialRequirement
+  // does not have materialId in the backend model.
+  materialId: "",
+
   itemName: "",
   category: "",
   selection: "",
   budgetAmount: "",
   style: "",
   functionalNeeds: "",
+
+  // Useful Material Master display information.
+  brand: "",
+  unit: "",
+
   expanded: false,
 });
 
@@ -36,6 +50,11 @@ export function MaterialRequirementForm() {
 
   const { data: projects = [] } = useGetProjectsQuery();
   const { data: users = [] } = useGetUsersQuery();
+
+  const { data: materials = [], isLoading: materialsLoading } =
+    useGetMaterialsQuery({
+      isActive: true,
+    });
 
   const [createMaterialRequirement, { isLoading }] =
     useCreateMaterialRequirementMutation();
@@ -49,9 +68,73 @@ export function MaterialRequirementForm() {
 
   const requirements = values.requirements || [];
 
-  // =========================================================
+  // ============================================================
+  // MATERIAL MASTER HELPERS
+  // ============================================================
+
+  const getMaterialName = (material) =>
+    material?.name || material?.materialName || material?.itemName || "";
+
+  const getMaterialCategory = (material) =>
+    material?.category || material?.subCategory || material?.sub_category || "";
+
+  const getMaterialSelection = (material) => {
+    const parts = [
+      material?.brand,
+      material?.model,
+      material?.spec,
+      material?.description,
+    ].filter(Boolean);
+
+    return parts.join(" • ");
+  };
+
+  const getMaterialUnit = (material) =>
+    material?.unit?.name ||
+    material?.unit?.code ||
+    material?.unitName ||
+    material?.unit ||
+    "";
+
+  // ============================================================
+  // MATERIAL MASTER SELECT
+  // ============================================================
+
+  const handleMaterialChange = (index, materialId) => {
+    const material = materials.find((item) => item.id === materialId);
+
+    if (!material) {
+      updateRequirement(index, "materialId", "");
+      return;
+    }
+
+    setValues((prev) => ({
+      ...prev,
+      requirements: (prev.requirements || []).map((item, i) =>
+        i === index
+          ? {
+              ...item,
+
+              materialId: material.id,
+
+              itemName: getMaterialName(material),
+
+              category: getMaterialCategory(material),
+
+              selection: getMaterialSelection(material),
+
+              brand: material.brand || "",
+
+              unit: getMaterialUnit(material),
+            }
+          : item,
+      ),
+    }));
+  };
+
+  // ============================================================
   // UPDATE ROW
-  // =========================================================
+  // ============================================================
 
   const updateRequirement = (index, field, value) => {
     setValues((prev) => ({
@@ -67,9 +150,9 @@ export function MaterialRequirementForm() {
     }));
   };
 
-  // =========================================================
+  // ============================================================
   // ADD ROW
-  // =========================================================
+  // ============================================================
 
   const addRequirement = () => {
     setValues((prev) => ({
@@ -78,9 +161,9 @@ export function MaterialRequirementForm() {
     }));
   };
 
-  // =========================================================
+  // ============================================================
   // DUPLICATE ROW
-  // =========================================================
+  // ============================================================
 
   const duplicateRequirement = (index) => {
     setValues((prev) => {
@@ -104,9 +187,9 @@ export function MaterialRequirementForm() {
     });
   };
 
-  // =========================================================
+  // ============================================================
   // REMOVE ROW
-  // =========================================================
+  // ============================================================
 
   const removeRequirement = (index) => {
     setValues((prev) => {
@@ -128,9 +211,9 @@ export function MaterialRequirementForm() {
     });
   };
 
-  // =========================================================
+  // ============================================================
   // TOGGLE DETAILS
-  // =========================================================
+  // ============================================================
 
   const toggleExpanded = (index) => {
     setValues((prev) => ({
@@ -146,9 +229,9 @@ export function MaterialRequirementForm() {
     }));
   };
 
-  // =========================================================
+  // ============================================================
   // SUBMIT
-  // =========================================================
+  // ============================================================
 
   const handleSubmit = async () => {
     if (!projectId) {
@@ -175,16 +258,23 @@ export function MaterialRequirementForm() {
       return toast.error(
         `${incompleteRows.length} material ${
           incompleteRows.length === 1 ? "row is" : "rows are"
-        } incomplete. Add an item name and selection.`,
+        } incomplete. Select a material and add a selection/specification.`,
       );
     }
 
     try {
       /*
-       * Create all material requirements.
+       * Each table row becomes one MaterialRequirement.
        *
-       * The backend currently exposes one create endpoint,
-       * therefore each table row becomes one requirement.
+       * Material Master supplies:
+       * - itemName
+       * - category
+       * - brand
+       * - model/specification
+       * - unit
+       *
+       * The current MaterialRequirement backend does not
+       * persist materialId yet, so materialId is UI-only.
        */
       await Promise.all(
         validRows.map((item) =>
@@ -220,11 +310,6 @@ export function MaterialRequirementForm() {
 
       localStorage.removeItem(SAVE_KEY);
 
-      /*
-       * Go back to the requirement list.
-       *
-       * Change this route if your actual list route differs.
-       */
       navigate("/procurement/requirements");
     } catch (error) {
       console.error(error);
@@ -260,8 +345,8 @@ export function MaterialRequirementForm() {
                   </h1>
 
                   <p className="text-sm text-[#6B7B7C] mt-0.5">
-                    Capture material selections and requirements for
-                    procurement.
+                    Select materials from the Material Master and capture design
+                    requirements for procurement.
                   </p>
                 </div>
               </div>
@@ -286,9 +371,9 @@ export function MaterialRequirementForm() {
       ===================================================== */}
 
       <div className="p-6 space-y-5">
-        {/* =====================================================
+        {/* =================================================
             CONTEXT
-        ===================================================== */}
+        ================================================= */}
 
         <div className="bg-white border border-gray-200 rounded-xl p-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -355,19 +440,20 @@ export function MaterialRequirementForm() {
           )}
         </div>
 
-        {/* =====================================================
+        {/* =================================================
             MATERIAL TABLE
-        ===================================================== */}
+        ================================================= */}
 
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          {/* Table header */}
+          {/* Header */}
 
           <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between gap-4">
             <div>
               <h2 className="font-semibold text-[#333333]">Material Items</h2>
 
               <p className="text-xs text-[#94A3A5] mt-1">
-                Add each material as a separate requirement.
+                Select materials from the Material Master. Vendor pricing is
+                maintained through Rate Sheets.
               </p>
             </div>
 
@@ -377,20 +463,30 @@ export function MaterialRequirementForm() {
             </div>
           </div>
 
+          {/* Material Master status */}
+
+          <div className="px-5 py-3 bg-[#F8FAF9] border-b border-gray-100 flex items-center gap-2 text-xs text-[#6B7B7C]">
+            <Search size={14} />
+
+            {materialsLoading
+              ? "Loading Material Master..."
+              : `${materials.length} active materials available`}
+          </div>
+
           {/* =================================================
               TABLE
           ================================================= */}
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px] border-collapse">
+            <table className="w-full min-w-[1250px] border-collapse">
               <thead>
                 <tr className="bg-[#F8FAF9] border-b border-gray-200">
                   <th className="w-12 px-3 py-3 text-center text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
                     #
                   </th>
 
-                  <th className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
-                    Item
+                  <th className="min-w-[260px] px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
+                    Material Master
                   </th>
 
                   <th className="w-[150px] px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
@@ -409,6 +505,10 @@ export function MaterialRequirementForm() {
                     Style
                   </th>
 
+                  <th className="w-[130px] px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
+                    Unit
+                  </th>
+
                   <th className="w-[120px] px-3 py-3 text-center text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
                     Actions
                   </th>
@@ -425,18 +525,48 @@ export function MaterialRequirementForm() {
                         {index + 1}
                       </td>
 
-                      {/* Item */}
+                      {/* Material Master */}
 
                       <td className="px-3 py-3 align-top">
-                        <input
-                          type="text"
-                          value={item.itemName}
+                        <select
+                          value={item.materialId || ""}
                           onChange={(e) =>
-                            updateRequirement(index, "itemName", e.target.value)
+                            handleMaterialChange(index, e.target.value)
                           }
-                          placeholder="e.g. Wall Mixer"
-                          className="bc-input h-9 w-full min-w-[180px]"
-                        />
+                          disabled={materialsLoading}
+                          className="bc-input h-9 w-full min-w-[240px]"
+                        >
+                          <option value="">
+                            {materialsLoading
+                              ? "Loading materials..."
+                              : "Select material"}
+                          </option>
+
+                          {materials.map((material) => (
+                            <option key={material.id} value={material.id}>
+                              {getMaterialName(material)}
+                              {material.materialCode
+                                ? ` — ${material.materialCode}`
+                                : ""}
+                            </option>
+                          ))}
+                        </select>
+
+                        {(item.brand || item.unit) && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {item.brand && (
+                              <span className="px-2 py-1 rounded-md bg-[#F1F5F3] text-[10px] font-medium text-[#1F453B]">
+                                {item.brand}
+                              </span>
+                            )}
+
+                            {item.unit && (
+                              <span className="px-2 py-1 rounded-md bg-gray-100 text-[10px] font-medium text-[#6B7B7C]">
+                                {item.unit}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
 
                       {/* Category */}
@@ -448,7 +578,7 @@ export function MaterialRequirementForm() {
                           onChange={(e) =>
                             updateRequirement(index, "category", e.target.value)
                           }
-                          placeholder="Bath"
+                          placeholder="Category"
                           className="bc-input h-9 w-full"
                         />
                       </td>
@@ -510,6 +640,14 @@ export function MaterialRequirementForm() {
                         />
                       </td>
 
+                      {/* Unit */}
+
+                      <td className="px-3 py-3 align-top">
+                        <div className="h-9 flex items-center px-3 rounded-md bg-[#F8FAF9] border border-gray-200 text-sm text-[#6B7B7C]">
+                          {item.unit || "—"}
+                        </div>
+                      </td>
+
                       {/* Actions */}
 
                       <td className="px-3 py-3 align-top">
@@ -548,29 +686,61 @@ export function MaterialRequirementForm() {
                       </td>
                     </tr>
 
-                    {/* =================================================
-                        EXPANDED DETAILS
-                    ================================================= */}
+                    {/* Expanded details */}
 
                     {item.expanded && (
                       <tr className="border-b border-gray-200 bg-[#FAFBFB]">
-                        <td colSpan={7} className="px-6 py-4">
-                          <div className="max-w-4xl">
-                            <label className="bc-label">Functional Needs</label>
+                        <td colSpan={8} className="px-6 py-4">
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-5xl">
+                            <div>
+                              <label className="bc-label">
+                                Functional Needs
+                              </label>
 
-                            <textarea
-                              rows={3}
-                              value={item.functionalNeeds}
-                              onChange={(e) =>
-                                updateRequirement(
-                                  index,
-                                  "functionalNeeds",
-                                  e.target.value,
-                                )
-                              }
-                              placeholder="Describe functional requirements, installation constraints, compatibility requirements, performance requirements, etc."
-                              className="bc-input w-full resize-y"
-                            />
+                              <textarea
+                                rows={3}
+                                value={item.functionalNeeds}
+                                onChange={(e) =>
+                                  updateRequirement(
+                                    index,
+                                    "functionalNeeds",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="Describe functional requirements, installation constraints, compatibility requirements, performance requirements, etc."
+                                className="bc-input w-full resize-y"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="bc-label">
+                                Material Specification
+                              </label>
+
+                              <div className="rounded-lg border border-gray-200 bg-white p-3 min-h-[90px]">
+                                <div className="text-sm font-medium text-[#333333]">
+                                  {item.itemName || "No material selected"}
+                                </div>
+
+                                {item.selection && (
+                                  <div className="text-xs text-[#6B7B7C] mt-1">
+                                    {item.selection}
+                                  </div>
+                                )}
+
+                                {item.brand && (
+                                  <div className="text-xs text-[#94A3A5] mt-2">
+                                    Brand: {item.brand}
+                                  </div>
+                                )}
+
+                                {item.unit && (
+                                  <div className="text-xs text-[#94A3A5] mt-1">
+                                    Unit: {item.unit}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </td>
                       </tr>

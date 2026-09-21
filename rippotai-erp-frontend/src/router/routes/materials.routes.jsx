@@ -41,6 +41,7 @@ import BoqVendorRateComparison from "../../pages/boq/BoqVendorRateComparison";
 import WorkOrderList from "../../pages/materials/WorkOrderList";
 import CreateWorkOrder from "../../pages/materials/CreateWorkOrder";
 import WorkOrderView from "../../pages/materials/WorkOrderView";
+import SingleProjectMaterialRequirements from "../../pages/materials/SingleProjectMaterialRequirements";
 
 export const materialsRoutes = [
   {
@@ -89,10 +90,13 @@ export const materialsRoutes = [
       },
 
       {
-        path: "add",
+        path: "requirements/add",
         element: <MaterialRequirementForm />,
       },
-
+      {
+        path: ":projectId/material-requirements",
+        element: <SingleProjectMaterialRequirements />,
+      },
       // ------------------------------------------------------------
       // Sample Boards
       // ------------------------------------------------------------
