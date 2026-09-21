@@ -46,7 +46,11 @@ export const APP_META = {
     base: "/procurement",
     searchPh: "Search materials, requirements, orders",
   },
-
+  inventory: {
+    name: "Inventory",
+    base: "/inventory",
+    searchPh: "Search inventory",
+  },
   tasks: {
     name: "Tasks",
     base: "/tasks",
@@ -86,6 +90,7 @@ export const LANDING_ORDER = [
   "ledger",
   "siteOperations",
   "procurement",
+  "inventory",
   "tasks",
   "calendar",
   "commandCenter",
@@ -245,7 +250,6 @@ export const APP_MENUS = {
       items: [
         I("Delivery Challans", "delivery-challans"),
 
-        I("Site Inventory", "inventory"),
         // I("Inventory Transactions", "inventory/transactions"),
         // I("Record Transaction", "inventory/transactions/new"),
       ],
@@ -260,6 +264,20 @@ export const APP_MENUS = {
         I("Projects", "/projects"),
         I("Activity", "activity"),
         I("Settings", "edit-dashboard"),
+      ],
+    },
+  ],
+  inventory: [
+    {
+      label: "Documents",
+      items: [I("Site Inventory", "site-inventory/all")],
+    },
+    {
+      label: "Settings",
+      items: [
+        I("Edit Dashboard", "edit-dashboard"),
+        I("Roles and Permissions", "roles"),
+        I("Activity", "activity"),
       ],
     },
   ],
