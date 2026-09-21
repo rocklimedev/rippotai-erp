@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Delete,
   Query,
   Req,
 } from '@nestjs/common';
@@ -46,7 +47,10 @@ export class DeliveryChallanController {
       status,
     });
   }
-
+  // ============================================================ // DELETE // ============================================================
+  @Delete(':id') remove(@Param('id') id: string) {
+    return this.deliveryChallanService.remove(id);
+  }
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.deliveryChallanService.findOne(id);

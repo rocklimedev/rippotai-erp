@@ -759,7 +759,54 @@ export class DeliveryChallanService {
       throw error;
     }
   }
-
+  // ============================================================ // DELETE DELIVERY CHALLAN // ============================================================
+  async remove(id: string) {
+    const transaction = await this.sequelize.transaction();
+    try {
+      const challan = await this.challanModel.findByPk(id, {
+        include: [{ model: DeliveryChallanItem, as: 'items' }],
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!challan) {
+        throw new NotFoundException('Delivery challan not found');
+      }
+      // ============================================================ // PROTECT PROCESSED CHALLANS // ============================================================
+      if (
+        [
+          DeliveryChallanStatus.RECEIVED,
+          DeliveryChallanStatus.CANCELLED,
+        ].includes(challan.status)
+      ) {
+        throw new BadRequestException(
+          `Cannot delete challan in ${challan.status} status`,
+        );
+      }
+      // ============================================================ // INVENTORY SAFETY // ============================================================ //
+      // A received challan may have already created inventory // transactions. Those must never be silently orphaned. // // RECEIVED is already blocked above, but this also protects // against inconsistent data where received_at / received_by // exists while status has not been updated correctly. //
+      if (challan.received_at || challan.received_by) {
+        throw new BadRequestException(
+          'Cannot delete a delivery challan that has already been received',
+        );
+      }
+      // ============================================================ // DELETE ITEMS FIRST // ============================================================
+      await this.challanItemModel.destroy({
+        where: { delivery_challan_id: id },
+        transaction,
+      }); // ============================================================ // DELETE CHALLAN // ============================================================
+      await challan.destroy({ transaction });
+      // ============================================================ // COMMIT // ============================================================
+      await transaction.commit();
+      return {
+        success: true,
+        message: 'Delivery challan deleted successfully',
+        id,
+      };
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  }
   // ============================================================
   // MAP DELIVERY CONDITION → INVENTORY CONDITION
   // ============================================================

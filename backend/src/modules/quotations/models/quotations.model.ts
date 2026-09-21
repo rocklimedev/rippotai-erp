@@ -14,6 +14,7 @@ import { Vendor } from '@/modules/vendors/models/vendors.model';
 import { User } from '@/modules/users/models/user.model';
 import { QuotationItem } from './quotation-items.model';
 import { QuotationVersion } from './quotation-versions.model';
+import { MaterialRequirement } from '@/modules/material-procurement/models';
 
 export enum QuotationStatus {
   DRAFT = 'draft',
@@ -376,4 +377,19 @@ export class Quotation extends Model<Quotation> {
     allowNull: true,
   })
   declare latest_status: string;
+
+  @ForeignKey(() => MaterialRequirement)
+  @Column({
+    field: 'material_requirement_id',
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  declare materialRequirementId: string | null;
+
+  @BelongsTo(() => MaterialRequirement, {
+    foreignKey: 'materialRequirementId',
+    targetKey: 'id',
+    as: 'materialRequirement',
+  })
+  declare materialRequirement?: MaterialRequirement;
 }

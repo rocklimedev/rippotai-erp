@@ -629,10 +629,6 @@ export class WorkOrdersService {
       throw new NotFoundException('Work order not found');
     }
 
-    if (workOrder.status !== WorkOrderStatus.DRAFT) {
-      throw new BadRequestException('Only draft work orders can be deleted');
-    }
-
     await this.workOrderModel.destroy({
       where: {
         id,
