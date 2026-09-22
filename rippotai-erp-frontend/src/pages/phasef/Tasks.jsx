@@ -1,6 +1,13 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, CheckCircle2, XCircle } from "lucide-react";
+import {
+  Plus,
+  CheckCircle2,
+  XCircle,
+  RefreshCw,
+  ArrowLeft,
+} from "lucide-react";
+
 import {
   Shell,
   Card,
@@ -11,184 +18,726 @@ import {
   PRIORITY_COLOURS,
   STATUS_COLOURS,
   fmtDate,
-  useProjects,
 } from "../../components/Shared";
+
 import {
-  useGetTasksQuery,
-  useGetMyTasksQuery,
-  useCreateTaskMutation,
-  useUpdateTaskMutation,
+  useGetZohoPortalsQuery,
+  useGetZohoProjectsQuery,
+  useGetZohoTasksQuery,
+  useCreateZohoTaskMutation,
+  useUpdateZohoTaskMutation,
 } from "../../api/connectors/task.api";
 
-const TaskCard = ({ t, onStatus }) => (
-  <Card>
-    <div className="flex items-start gap-2">
-      <span
-        className={`text-[10.5px] px-2 py-0.5 rounded-full font-semibold uppercase ${PRIORITY_COLOURS[t.priority] || PRIORITY_COLOURS.medium}`}
-      >
-        {t.priority}
-      </span>
-      <span
-        className={`text-[10.5px] px-2 py-0.5 rounded-full font-semibold ${STATUS_COLOURS[t.status] || STATUS_COLOURS.todo}`}
-      >
-        {t.status.replace(/_/g, " ")}
-      </span>
-    </div>
-    <div className="text-[15px] font-semibold text-[#333333] mt-2">
-      {t.title}
-    </div>
-    <div className="text-[12.5px] text-[#6B7B7C] mt-1">
-      {t.project_name || "General"} · {t.assignee_name || "Unassigned"} · Due{" "}
-      {fmtDate(t.due_date)}
-    </div>
-    {t.blocked_reason && (
-      <div className="text-[12px] text-[#7A2E1A] mt-2">
-        Blocked: {t.blocked_reason}
+// ============================================================
+// HELPERS
+// ============================================================
+
+const getTaskId = (task) =>
+  String(task?.id ?? task?.task_id ?? task?.taskId ?? "");
+
+const getTaskTitle = (task) =>
+  task?.title ??
+  task?.task_name ??
+  task?.taskName ??
+  task?.name ??
+  "Untitled Task";
+
+const getTaskStatus = (task) =>
+  String(
+    task?.status ??
+      task?.status_name ??
+      task?.statusName ??
+      task?.task_status ??
+      task?.taskStatus ??
+      "todo",
+  )
+    .trim()
+    .toLowerCase();
+
+const getTaskPriority = (task) =>
+  String(
+    task?.priority ?? task?.priority_name ?? task?.priorityName ?? "medium",
+  )
+    .trim()
+    .toLowerCase();
+
+const getTaskDueDate = (task) =>
+  task?.due_date ??
+  task?.dueDate ??
+  task?.due_time ??
+  task?.dueTime ??
+  task?.due ??
+  null;
+
+const getProjectName = (task) =>
+  task?.project?.name ??
+  task?.project?.title ??
+  task?.project_name ??
+  task?.projectName ??
+  "General";
+
+const getAssigneeName = (task) =>
+  task?.assignee?.name ??
+  task?.assignee?.full_name ??
+  task?.assignee?.fullName ??
+  task?.assignee_name ??
+  task?.assigneeName ??
+  task?.owner?.name ??
+  task?.owner_name ??
+  "Unassigned";
+
+const isCompleted = (task) => {
+  const status = getTaskStatus(task);
+
+  return ["completed", "complete", "done", "closed", "finished"].includes(
+    status,
+  );
+};
+
+const getRecords = (response) => {
+  if (Array.isArray(response)) {
+    return response;
+  }
+
+  if (Array.isArray(response?.data)) {
+    return response.data;
+  }
+
+  if (Array.isArray(response?.projects)) {
+    return response.projects;
+  }
+
+  if (Array.isArray(response?.portals)) {
+    return response.portals;
+  }
+
+  if (Array.isArray(response?.tasks)) {
+    return response.tasks;
+  }
+
+  if (Array.isArray(response?.items)) {
+    return response.items;
+  }
+
+  if (Array.isArray(response?.records)) {
+    return response.records;
+  }
+
+  if (Array.isArray(response?.data?.projects)) {
+    return response.data.projects;
+  }
+
+  if (Array.isArray(response?.data?.tasks)) {
+    return response.data.tasks;
+  }
+
+  if (Array.isArray(response?.data?.items)) {
+    return response.data.items;
+  }
+
+  return [];
+};
+
+// ============================================================
+// TASK CARD
+// ============================================================
+
+const TaskCard = ({ task, onStatus, updating }) => {
+  const status = getTaskStatus(task);
+  const priority = getTaskPriority(task);
+
+  const title = getTaskTitle(task);
+  const projectName = getProjectName(task);
+  const assigneeName = getAssigneeName(task);
+  const dueDate = getTaskDueDate(task);
+
+  const completed = isCompleted(task);
+
+  return (
+    <Card>
+      <div className="flex items-start gap-2 flex-wrap">
+        <span
+          className={`text-[10.5px] px-2 py-0.5 rounded-full font-semibold uppercase ${
+            PRIORITY_COLOURS[priority] || PRIORITY_COLOURS.medium
+          }`}
+        >
+          {priority}
+        </span>
+
+        <span
+          className={`text-[10.5px] px-2 py-0.5 rounded-full font-semibold ${
+            STATUS_COLOURS[status] || STATUS_COLOURS.todo
+          }`}
+        >
+          {status.replace(/_/g, " ")}
+        </span>
       </div>
-    )}
-    <div className="flex gap-2 mt-3 flex-wrap">
-      {t.status !== "completed" && (
-        <BtnGhost onClick={() => onStatus(t, "completed")}>
-          <CheckCircle2 size={13} /> Complete
-        </BtnGhost>
+
+      <div className="text-[15px] font-semibold text-[#333333] mt-2">
+        {title}
+      </div>
+
+      <div className="text-[12.5px] text-[#6B7B7C] mt-1">
+        {projectName} · {assigneeName} · Due {dueDate ? fmtDate(dueDate) : "—"}
+      </div>
+
+      {task?.description && (
+        <div className="text-[12.5px] text-[#6B7B7C] mt-2 line-clamp-3">
+          {task.description}
+        </div>
       )}
-      {t.status === "todo" && (
-        <BtnGhost onClick={() => onStatus(t, "in_progress")}>Start</BtnGhost>
+
+      {task?.blocked_reason && (
+        <div className="text-[12px] text-[#7A2E1A] mt-2">
+          Blocked: {task.blocked_reason}
+        </div>
       )}
-      {t.status !== "blocked" && (
-        <BtnGhost onClick={() => onStatus(t, "blocked")}>
-          <XCircle size={13} /> Block
-        </BtnGhost>
-      )}
-    </div>
-  </Card>
-);
+
+      <div className="flex gap-2 mt-3 flex-wrap">
+        {!completed && (
+          <BtnGhost
+            disabled={updating}
+            onClick={() => onStatus(task, "completed")}
+          >
+            <CheckCircle2 size={13} />
+            Complete
+          </BtnGhost>
+        )}
+
+        {status === "todo" && (
+          <BtnGhost
+            disabled={updating}
+            onClick={() => onStatus(task, "in_progress")}
+          >
+            Start
+          </BtnGhost>
+        )}
+
+        {status !== "blocked" && !completed && (
+          <BtnGhost
+            disabled={updating}
+            onClick={() => onStatus(task, "blocked")}
+          >
+            <XCircle size={13} />
+            Block
+          </BtnGhost>
+        )}
+
+        {status === "blocked" && (
+          <BtnGhost
+            disabled={updating}
+            onClick={() => onStatus(task, "in_progress")}
+          >
+            Resume
+          </BtnGhost>
+        )}
+      </div>
+    </Card>
+  );
+};
+
+// ============================================================
+// PROJECT SELECTOR
+// ============================================================
+
+const ProjectSelector = ({
+  portals,
+  projects,
+  portalId,
+  projectId,
+  onPortalChange,
+  onProjectChange,
+}) => {
+  return (
+    <Card>
+      <div className="grid md:grid-cols-2 gap-3">
+        {/* PORTAL */}
+
+        <div>
+          <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
+            Portal
+          </label>
+
+          <select
+            className="bc-input h-10 w-full"
+            value={portalId}
+            onChange={(event) => onPortalChange(event.target.value)}
+          >
+            <option value="">Select portal</option>
+
+            {portals.map((portal) => (
+              <option key={portal.id} value={portal.id}>
+                {portal.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* PROJECT */}
+
+        <div>
+          <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
+            Project
+          </label>
+
+          <select
+            className="bc-input h-10 w-full"
+            value={projectId}
+            disabled={!portalId}
+            onChange={(event) => onProjectChange(event.target.value)}
+          >
+            <option value="">
+              {portalId ? "Select project" : "Select portal first"}
+            </option>
+
+            {projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+// ============================================================
+// TASK LIST
+// ============================================================
 
 export function TasksList({ view = "all" }) {
-  // "mine" has its own endpoint; every other view pulls the full list
-  // and filters client-side, since the tasksApi endpoints don't take
-  // query params for due_before/status.
-  const { data: allTasks = [], isLoading: isLoadingAll } = useGetTasksQuery(
-    undefined,
-    { skip: view === "mine" },
+  const [portalId, setPortalId] = useState("");
+  const [projectId, setProjectId] = useState("");
+
+  // ==========================================================
+  // PORTALS
+  // ==========================================================
+
+  const { data: portalsResponse, isLoading: portalsLoading } =
+    useGetZohoPortalsQuery();
+
+  const portals = useMemo(() => getRecords(portalsResponse), [portalsResponse]);
+
+  // Automatically select first portal.
+  React.useEffect(() => {
+    if (!portalId && portals.length > 0) {
+      setPortalId(String(portals[0].id));
+    }
+  }, [portals, portalId]);
+
+  // ==========================================================
+  // PROJECTS
+  // ==========================================================
+
+  const { data: projectsResponse, isLoading: projectsLoading } =
+    useGetZohoProjectsQuery(
+      {
+        portalId,
+      },
+      {
+        skip: !portalId,
+      },
+    );
+
+  const projects = useMemo(
+    () => getRecords(projectsResponse),
+    [projectsResponse],
   );
 
-  const { data: myTasks = [], isLoading: isLoadingMine } = useGetMyTasksQuery(
-    undefined,
-    { skip: view !== "mine" },
+  // Automatically select first project.
+  React.useEffect(() => {
+    if (!portalId) {
+      setProjectId("");
+      return;
+    }
+
+    if (
+      projectId &&
+      projects.some((project) => String(project.id) === String(projectId))
+    ) {
+      return;
+    }
+
+    if (projects.length > 0) {
+      setProjectId(String(projects[0].id));
+    } else {
+      setProjectId("");
+    }
+  }, [portalId, projects, projectId]);
+
+  // ==========================================================
+  // TASKS
+  // ==========================================================
+
+  const {
+    data: tasksResponse,
+    isLoading: tasksLoading,
+    isFetching,
+    refetch,
+  } = useGetZohoTasksQuery(
+    {
+      portalId,
+      projectId,
+      limit: 1000,
+    },
+    {
+      skip: !portalId || !projectId,
+    },
   );
 
-  const [updateTask] = useUpdateTaskMutation();
+  const [updateZohoTask, { isLoading: updating }] = useUpdateZohoTaskMutation();
 
-  const isLoading = view === "mine" ? isLoadingMine : isLoadingAll;
-  const source = view === "mine" ? myTasks : allTasks;
+  const tasks = useMemo(() => getRecords(tasksResponse), [tasksResponse]);
 
-  const tasks = React.useMemo(() => {
+  // ==========================================================
+  // FILTER
+  // ==========================================================
+
+  const filteredTasks = useMemo(() => {
     switch (view) {
       case "overdue": {
         const now = new Date();
-        return source.filter(
-          (t) =>
-            t.due_date &&
-            new Date(t.due_date) < now &&
-            t.status !== "completed",
-        );
-      }
-      case "blocked":
-        return source.filter((t) => t.status === "blocked");
-      case "completed":
-        return source.filter((t) => t.status === "completed");
-      default:
-        return source;
-    }
-  }, [source, view]);
 
-  const changeStatus = async (t, status) => {
+        return tasks.filter((task) => {
+          const dueDate = getTaskDueDate(task);
+
+          if (!dueDate || isCompleted(task)) {
+            return false;
+          }
+
+          const due = new Date(dueDate);
+
+          return !Number.isNaN(due.getTime()) && due < now;
+        });
+      }
+
+      case "blocked":
+        return tasks.filter((task) => getTaskStatus(task) === "blocked");
+
+      case "completed":
+        return tasks.filter((task) => isCompleted(task));
+
+      case "mine":
+      case "all":
+      default:
+        return tasks;
+    }
+  }, [tasks, view]);
+
+  // ==========================================================
+  // STATUS UPDATE
+  // ==========================================================
+
+  const changeStatus = async (task, status) => {
+    const taskId = getTaskId(task);
+
+    if (!taskId) {
+      toast.error("Task ID is missing");
+      return;
+    }
+
+    if (!portalId || !projectId) {
+      toast.error("Portal and project are required");
+      return;
+    }
+
     try {
-      await updateTask({ id: t.id, status }).unwrap();
+      await updateZohoTask({
+        portalId,
+        projectId,
+        taskId,
+        status,
+      }).unwrap();
+
       toast.success(`Marked ${status.replace(/_/g, " ")}`);
-    } catch {
-      toast.error("Update failed");
+
+      await refetch();
+    } catch (error) {
+      console.error("Failed to update Zoho task:", error);
+
+      toast.error(
+        error?.data?.message ||
+          error?.data?.error ||
+          error?.error ||
+          "Update failed",
+      );
     }
   };
 
-  const label = {
-    mine: "My Tasks",
-    all: "All Tasks",
-    overdue: "Overdue Tasks",
-    blocked: "Blocked Tasks",
-    completed: "Completed Tasks",
-  }[view];
+  // ==========================================================
+  // LABEL
+  // ==========================================================
+
+  const label =
+    {
+      mine: "My Tasks",
+      all: "All Tasks",
+      overdue: "Overdue Tasks",
+      blocked: "Blocked Tasks",
+      completed: "Completed Tasks",
+    }[view] || "Tasks";
+
+  // ==========================================================
+  // RENDER
+  // ==========================================================
 
   return (
     <Shell
       label="Tasks"
       title={label}
-      subtitle={`${tasks.length} task${tasks.length !== 1 ? "s" : ""}`}
+      subtitle={`${filteredTasks.length} task${
+        filteredTasks.length !== 1 ? "s" : ""
+      }`}
       action={
-        <Btn
-          onClick={() => window.location.assign("/tasks/new")}
-          data-testid="new-task-btn"
-        >
-          <Plus size={14} /> Create Task
-        </Btn>
+        <div className="flex gap-2">
+          <Btn
+            onClick={() => refetch()}
+            disabled={isFetching || !projectId}
+            type="button"
+          >
+            <RefreshCw size={14} className={isFetching ? "animate-spin" : ""} />
+            Refresh
+          </Btn>
+
+          <Btn
+            onClick={() => window.location.assign("/tasks/new")}
+            data-testid="new-task-btn"
+          >
+            <Plus size={14} />
+            Create Task
+          </Btn>
+        </div>
       }
     >
-      {isLoading ? (
-        <Card>
-          <div className="text-center py-8 text-[#B5C4B6]">Loading…</div>
-        </Card>
-      ) : tasks.length === 0 ? (
-        <Card>
-          <div className="text-center py-8 text-[#B5C4B6]">Nothing here.</div>
-        </Card>
-      ) : (
-        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {tasks.map((t) => (
-            <TaskCard key={t.id} t={t} onStatus={changeStatus} />
-          ))}
-        </div>
-      )}
+      <div className="grid gap-4">
+        <ProjectSelector
+          portals={portals}
+          projects={projects}
+          portalId={portalId}
+          projectId={projectId}
+          onPortalChange={(value) => {
+            setPortalId(value);
+            setProjectId("");
+          }}
+          onProjectChange={setProjectId}
+        />
+
+        {portalsLoading || projectsLoading || tasksLoading ? (
+          <Card>
+            <div className="text-center py-8 text-[#B5C4B6]">Loading…</div>
+          </Card>
+        ) : !portalId ? (
+          <Card>
+            <div className="text-center py-8 text-[#B5C4B6]">
+              Select a portal.
+            </div>
+          </Card>
+        ) : !projectId ? (
+          <Card>
+            <div className="text-center py-8 text-[#B5C4B6]">
+              Select a project.
+            </div>
+          </Card>
+        ) : filteredTasks.length === 0 ? (
+          <Card>
+            <div className="text-center py-8 text-[#B5C4B6]">Nothing here.</div>
+          </Card>
+        ) : (
+          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {filteredTasks.map((task, index) => (
+              <TaskCard
+                key={getTaskId(task) || `task-${index}`}
+                task={task}
+                onStatus={changeStatus}
+                updating={updating}
+              />
+            ))}
+          </div>
+        )}
+
+        {isFetching && !tasksLoading && (
+          <div className="text-center text-[11px] text-[#B5C4B6]">
+            Refreshing tasks…
+          </div>
+        )}
+
+        {updating && (
+          <div className="text-center text-[11px] text-[#B5C4B6]">
+            Updating task…
+          </div>
+        )}
+      </div>
     </Shell>
   );
 }
 
+// ============================================================
+// CREATE TASK
+// ============================================================
+
 export function TaskNew() {
-  const projects = useProjects();
-  const [createTask, { isLoading: busy }] = useCreateTaskMutation();
+  const [portalId, setPortalId] = useState("");
+  const [projectId, setProjectId] = useState("");
+
+  // ==========================================================
+  // PORTALS
+  // ==========================================================
+
+  const { data: portalsResponse } = useGetZohoPortalsQuery();
+
+  const portals = useMemo(() => getRecords(portalsResponse), [portalsResponse]);
+
+  React.useEffect(() => {
+    if (!portalId && portals.length > 0) {
+      setPortalId(String(portals[0].id));
+    }
+  }, [portals, portalId]);
+
+  // ==========================================================
+  // PROJECTS
+  // ==========================================================
+
+  const { data: projectsResponse } = useGetZohoProjectsQuery(
+    {
+      portalId,
+    },
+    {
+      skip: !portalId,
+    },
+  );
+
+  const projects = useMemo(
+    () => getRecords(projectsResponse),
+    [projectsResponse],
+  );
+
+  React.useEffect(() => {
+    if (!portalId) {
+      setProjectId("");
+      return;
+    }
+
+    if (
+      projectId &&
+      projects.some((project) => String(project.id) === String(projectId))
+    ) {
+      return;
+    }
+
+    if (projects.length > 0) {
+      setProjectId(String(projects[0].id));
+    }
+  }, [portalId, projects, projectId]);
+
+  // ==========================================================
+  // CREATE
+  // ==========================================================
+
+  const [createZohoTask, { isLoading: busy }] = useCreateZohoTaskMutation();
+
   const [form, setForm] = useState({
     title: "",
     description: "",
+
     assignee_id: "",
     assignee_name: "",
-    project_id: "",
+
     priority: "medium",
     status: "todo",
+
     due_date: "",
-    workload_estimate_hours: 1,
+
     recurring_interval: "",
-    requires_approval: false,
   });
 
-  const submit = async (e) => {
-    e.preventDefault();
+  // ==========================================================
+  // FIELD UPDATE
+  // ==========================================================
+
+  const updateField = (field, value) => {
+    setForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  // ==========================================================
+  // SUBMIT
+  // ==========================================================
+
+  const submit = async (event) => {
+    event.preventDefault();
+
+    const title = form.title.trim();
+
+    if (!title) {
+      toast.error("Task title is required");
+      return;
+    }
+
+    if (!portalId) {
+      toast.error("Please select a portal");
+      return;
+    }
+
+    if (!projectId) {
+      toast.error("Please select a project");
+      return;
+    }
+
     try {
       const payload = {
-        ...form,
-        workload_estimate_hours: Number(form.workload_estimate_hours) || 0,
-        project_id: form.project_id || null,
-        recurring: form.recurring_interval
-          ? { interval: form.recurring_interval }
-          : null,
+        portalId,
+        projectId,
+
+        title,
+        priority: form.priority || "medium",
+        status: form.status || "todo",
       };
-      delete payload.recurring_interval;
-      await createTask(payload).unwrap();
+
+      if (form.description.trim()) {
+        payload.description = form.description.trim();
+      }
+
+      if (form.assignee_id.trim()) {
+        payload.assignee_id = form.assignee_id.trim();
+      }
+
+      if (form.assignee_name.trim()) {
+        payload.assignee_name = form.assignee_name.trim();
+      }
+
+      if (form.due_date) {
+        payload.due_date = form.due_date;
+      }
+
+      if (form.recurring_interval) {
+        payload.recurring = {
+          interval: form.recurring_interval,
+        };
+      }
+
+      await createZohoTask(payload).unwrap();
+
       toast.success("Task created");
+
       window.location.assign("/tasks/all");
-    } catch {
-      toast.error("Create failed");
+    } catch (error) {
+      console.error("Failed to create Zoho task:", error);
+
+      toast.error(
+        error?.data?.message ||
+          error?.data?.error ||
+          error?.error ||
+          "Create failed",
+      );
     }
   };
+
+  // ==========================================================
+  // RENDER
+  // ==========================================================
 
   return (
     <Shell
@@ -197,157 +746,241 @@ export function TaskNew() {
       subtitle="Assign, prioritise, and track work"
     >
       <Card>
-        <form onSubmit={submit} className="grid gap-3 max-w-2xl">
-          <div>
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Title
-            </label>
-            <Input
-              required
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Description
-            </label>
-            <TextArea
-              rows={3}
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-            />
-          </div>
+        <form onSubmit={submit} className="grid gap-4 max-w-3xl">
+          {/* =================================================
+              PORTAL / PROJECT
+          ================================================= */}
+
           <div className="grid md:grid-cols-2 gap-3">
             <div>
               <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-                Assignee email
+                Portal
               </label>
-              <Input
-                placeholder="user@inos.com"
-                value={form.assignee_id}
-                onChange={(e) =>
-                  setForm({ ...form, assignee_id: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-                Assignee name
-              </label>
-              <Input
-                value={form.assignee_name}
-                onChange={(e) =>
-                  setForm({ ...form, assignee_name: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-                Project
-              </label>
+
               <select
                 className="bc-input h-10 w-full"
-                value={form.project_id}
-                onChange={(e) =>
-                  setForm({ ...form, project_id: e.target.value })
-                }
+                value={portalId}
+                onChange={(event) => {
+                  setPortalId(event.target.value);
+                  setProjectId("");
+                }}
               >
-                <option value="">— General —</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
+                <option value="">Select portal</option>
+
+                {portals.map((portal) => (
+                  <option key={portal.id} value={portal.id}>
+                    {portal.name}
                   </option>
                 ))}
               </select>
             </div>
+
+            <div>
+              <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
+                Project
+              </label>
+
+              <select
+                className="bc-input h-10 w-full"
+                value={projectId}
+                disabled={!portalId}
+                onChange={(event) => setProjectId(event.target.value)}
+              >
+                <option value="">
+                  {portalId ? "Select project" : "Select portal first"}
+                </option>
+
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* =================================================
+              TITLE
+          ================================================= */}
+
+          <div>
+            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
+              Title
+            </label>
+
+            <Input
+              required
+              value={form.title}
+              onChange={(event) => updateField("title", event.target.value)}
+              placeholder="Enter task title"
+            />
+          </div>
+
+          {/* =================================================
+              DESCRIPTION
+          ================================================= */}
+
+          <div>
+            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
+              Description
+            </label>
+
+            <TextArea
+              rows={4}
+              value={form.description}
+              onChange={(event) =>
+                updateField("description", event.target.value)
+              }
+              placeholder="Add task details..."
+            />
+          </div>
+
+          {/* =================================================
+              ASSIGNEE
+          ================================================= */}
+
+          <div className="grid md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
+                Assignee ID / Email
+              </label>
+
+              <Input
+                type="text"
+                placeholder="Zoho user ID or email"
+                value={form.assignee_id}
+                onChange={(event) =>
+                  updateField("assignee_id", event.target.value)
+                }
+              />
+            </div>
+
+            <div>
+              <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
+                Assignee name
+              </label>
+
+              <Input
+                value={form.assignee_name}
+                onChange={(event) =>
+                  updateField("assignee_name", event.target.value)
+                }
+                placeholder="Assignee name"
+              />
+            </div>
+          </div>
+
+          {/* =================================================
+              PRIORITY / STATUS
+          ================================================= */}
+
+          <div className="grid md:grid-cols-2 gap-3">
             <div>
               <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
                 Priority
               </label>
+
               <select
                 className="bc-input h-10 w-full"
                 value={form.priority}
-                onChange={(e) => setForm({ ...form, priority: e.target.value })}
+                onChange={(event) =>
+                  updateField("priority", event.target.value)
+                }
               >
-                {["low", "medium", "high", "critical"].map((p) => (
-                  <option key={p}>{p}</option>
+                {["low", "medium", "high", "critical"].map((priority) => (
+                  <option key={priority} value={priority}>
+                    {priority}
+                  </option>
                 ))}
               </select>
             </div>
+
+            <div>
+              <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
+                Status
+              </label>
+
+              <select
+                className="bc-input h-10 w-full"
+                value={form.status}
+                onChange={(event) => updateField("status", event.target.value)}
+              >
+                <option value="todo">To Do</option>
+                <option value="in_progress">In Progress</option>
+                <option value="blocked">Blocked</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+          </div>
+
+          {/* =================================================
+              DUE / RECURRING
+          ================================================= */}
+
+          <div className="grid md:grid-cols-2 gap-3">
             <div>
               <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
                 Due date
               </label>
+
               <Input
                 type="date"
-                value={form.due_date}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    due_date: e.target.value
-                      ? new Date(e.target.value).toISOString()
-                      : "",
-                  })
-                }
+                value={form.due_date ? form.due_date.slice(0, 10) : ""}
+                onChange={(event) => {
+                  const value = event.target.value;
+
+                  updateField(
+                    "due_date",
+                    value ? new Date(`${value}T23:59:00`).toISOString() : "",
+                  );
+                }}
               />
             </div>
-            <div>
-              <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-                Estimate (hours)
-              </label>
-              <Input
-                type="number"
-                min="0"
-                step="0.5"
-                value={form.workload_estimate_hours}
-                onChange={(e) =>
-                  setForm({ ...form, workload_estimate_hours: e.target.value })
-                }
-              />
-            </div>
+
             <div>
               <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
                 Recurring
               </label>
+
               <select
                 className="bc-input h-10 w-full"
                 value={form.recurring_interval}
-                onChange={(e) =>
-                  setForm({ ...form, recurring_interval: e.target.value })
+                onChange={(event) =>
+                  updateField("recurring_interval", event.target.value)
                 }
               >
                 <option value="">Not recurring</option>
-                {["daily", "weekly", "monthly"].map((k) => (
-                  <option key={k}>{k}</option>
+
+                {["daily", "weekly", "monthly"].map((interval) => (
+                  <option key={interval} value={interval}>
+                    {interval}
+                  </option>
                 ))}
               </select>
             </div>
-            <div className="flex items-end">
-              <label className="flex items-center gap-2 text-[13px] text-[#333333]">
-                <input
-                  type="checkbox"
-                  checked={form.requires_approval}
-                  onChange={(e) =>
-                    setForm({ ...form, requires_approval: e.target.checked })
-                  }
-                />{" "}
-                Requires approval on completion
-              </label>
-            </div>
           </div>
-          <div>
-            <Btn disabled={busy} type="submit">
-              <Plus size={14} /> {busy ? "Creating…" : "Create Task"}
+
+          {/* =================================================
+              ACTIONS
+          ================================================= */}
+
+          <div className="flex gap-2 pt-2">
+            <Btn type="submit" disabled={busy || !portalId || !projectId}>
+              <Plus size={14} />
+
+              {busy ? "Creating…" : "Create Task"}
             </Btn>
+
+            <BtnGhost
+              type="button"
+              onClick={() => window.location.assign("/tasks/all")}
+            >
+              <ArrowLeft size={14} />
+              Cancel
+            </BtnGhost>
           </div>
         </form>
       </Card>
     </Shell>
   );
 }
-
-export const TasksMine = () => <TasksList view="mine" />;
-export const TasksAll = () => <TasksList view="all" />;

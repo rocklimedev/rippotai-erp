@@ -247,18 +247,10 @@ export const APP_MENUS = {
       label: "Procurement",
       items: [
         I("Estimates", "estimates/all"),
-
+        I("Delivery Challans", "delivery-challans"),
         I("Purchase Orders", "purchase-orders"),
         I("Work Order", "work-order/all"),
       ],
-    },
-
-    // ------------------------------------------------------------
-    // Delivery & Inventory
-    // ------------------------------------------------------------
-    {
-      label: "Delivery & Inventory",
-      items: [I("Delivery Challans", "delivery-challans")],
     },
 
     // ------------------------------------------------------------

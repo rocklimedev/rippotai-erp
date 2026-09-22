@@ -34,9 +34,9 @@ const createEmptyRequirement = () => ({
   itemName: "",
   category: "",
   selection: "",
-  budgetAmount: "",
   style: "",
   functionalNeeds: "",
+  requirementDate: "",
 
   // Useful Material Master display information.
   brand: "",
@@ -275,6 +275,9 @@ export function MaterialRequirementForm() {
        *
        * The current MaterialRequirement backend does not
        * persist materialId yet, so materialId is UI-only.
+       *
+       * Budget/price is intentionally not part of a requirement —
+       * pricing lives on quotations, raised later by procurement.
        */
       await Promise.all(
         validRows.map((item) =>
@@ -288,16 +291,11 @@ export function MaterialRequirementForm() {
 
             selection: item.selection.trim(),
 
-            budgetAmount:
-              item.budgetAmount === "" ||
-              item.budgetAmount === null ||
-              item.budgetAmount === undefined
-                ? undefined
-                : Number(item.budgetAmount),
-
             style: item.style?.trim() || undefined,
 
             functionalNeeds: item.functionalNeeds?.trim() || undefined,
+
+            requirementDate: item.requirementDate || undefined,
           }).unwrap(),
         ),
       );
@@ -478,7 +476,7 @@ export function MaterialRequirementForm() {
           ================================================= */}
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1250px] border-collapse">
+            <table className="w-full min-w-[1100px] border-collapse">
               <thead>
                 <tr className="bg-[#F8FAF9] border-b border-gray-200">
                   <th className="w-12 px-3 py-3 text-center text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
@@ -493,18 +491,17 @@ export function MaterialRequirementForm() {
                     Category
                   </th>
 
-                  <th className="min-w-[280px] px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
+                  <th className="min-w-[320px] px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
                     Selection / Specification
-                  </th>
-
-                  <th className="w-[150px] px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
-                    Budget
                   </th>
 
                   <th className="w-[150px] px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
                     Style
                   </th>
 
+                  <th className="w-[150px] px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
+                    Required By
+                  </th>
                   <th className="w-[130px] px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
                     Unit
                   </th>
@@ -601,31 +598,6 @@ export function MaterialRequirementForm() {
                         />
                       </td>
 
-                      {/* Budget */}
-
-                      <td className="px-3 py-3 align-top">
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#94A3A5]">
-                            ₹
-                          </span>
-
-                          <input
-                            type="number"
-                            min="0"
-                            value={item.budgetAmount}
-                            onChange={(e) =>
-                              updateRequirement(
-                                index,
-                                "budgetAmount",
-                                e.target.value,
-                              )
-                            }
-                            placeholder="0"
-                            className="bc-input h-9 w-full pl-7"
-                          />
-                        </div>
-                      </td>
-
                       {/* Style */}
 
                       <td className="px-3 py-3 align-top">
@@ -639,7 +611,22 @@ export function MaterialRequirementForm() {
                           className="bc-input h-9 w-full"
                         />
                       </td>
+                      {/* Required By */}
 
+                      <td className="px-3 py-3 align-top">
+                        <input
+                          type="date"
+                          value={item.requirementDate}
+                          onChange={(e) =>
+                            updateRequirement(
+                              index,
+                              "requirementDate",
+                              e.target.value,
+                            )
+                          }
+                          className="bc-input h-9 w-full"
+                        />
+                      </td>
                       {/* Unit */}
 
                       <td className="px-3 py-3 align-top">
@@ -690,7 +677,7 @@ export function MaterialRequirementForm() {
 
                     {item.expanded && (
                       <tr className="border-b border-gray-200 bg-[#FAFBFB]">
-                        <td colSpan={8} className="px-6 py-4">
+                        <td colSpan={7} className="px-6 py-4">
                           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-5xl">
                             <div>
                               <label className="bc-label">

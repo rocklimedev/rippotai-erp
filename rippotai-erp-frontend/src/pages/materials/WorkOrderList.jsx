@@ -434,7 +434,7 @@ export default function WorkOrderList() {
                                 type="button"
                                 title="Edit"
                                 onClick={() =>
-                                  navigate(`/work-orders/${id}/edit`)
+                                  navigate(`/procurement/work-order/${id}/edit`)
                                 }
                                 className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-[#1F453B]"
                               >

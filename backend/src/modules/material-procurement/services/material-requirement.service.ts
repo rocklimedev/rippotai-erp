@@ -6,7 +6,7 @@ import { SampleBoard } from '../models/sample-board.model';
 import { MaterialMaster } from '../models';
 import { MaterialVendor } from '../models/material-vendor.model';
 import { Quotation } from '@/modules/quotations/models/quotations.model';
-
+import { DeliveryChallan } from '../models';
 import { CreateMaterialRequirementDto } from '../dto/create-material-requirement.dto';
 import { UpdateMaterialRequirementDto } from '../dto/update-material-requirement.dto';
 
@@ -21,22 +21,13 @@ export class MaterialRequirementService {
 
   // ============================================================
   // INCLUDE CONFIGURATION
+  //
+  // MaterialMaster
+  //   └── MaterialVendor[]
+  //
+  // Quotation and DeliveryChallan are generated against the
+  // requirement once it's finalized by the procurement team.
   // ============================================================
-
-  /**
-   * All related procurement/design information belonging
-   * to a material requirement.
-   *
-   * MaterialMaster is the source of truth for material data.
-   *
-   * MaterialMaster
-   *   └── MaterialVendor[]
-   *
-   * Vendor-specific pricing is maintained in MaterialVendor.
-   *
-   * Quotation contains vendor quotation information generated
-   * against the requirement.
-   */
   private readonly includes = [
     {
       model: SampleBoard,
@@ -54,11 +45,11 @@ export class MaterialRequirementService {
     {
       model: Quotation,
     },
+    {
+      model: DeliveryChallan,
+      as: 'deliveryChallans',
+    },
   ];
-
-  // ============================================================
-  // CREATE
-  // ============================================================
 
   async create(dto: CreateMaterialRequirementDto) {
     const requirement = await this.model.create({
@@ -69,39 +60,21 @@ export class MaterialRequirementService {
     return this.findOne(requirement.id);
   }
 
-  // ============================================================
-  // FIND ALL
-  // ============================================================
-
   async findAll(projectId?: string) {
     return this.model.findAll({
-      where: projectId
-        ? {
-            projectId,
-          }
-        : {},
+      where: projectId ? { projectId } : {},
       include: this.includes,
       order: [['createdAt', 'DESC']],
     });
   }
-
-  // ============================================================
-  // GET MATERIAL REQUIREMENTS BY PROJECT
-  // ============================================================
 
   async getMaterialRequirementsByProject(projectId: string) {
     return this.model.findAll({
-      where: {
-        projectId,
-      },
+      where: { projectId },
       include: this.includes,
       order: [['createdAt', 'DESC']],
     });
   }
-
-  // ============================================================
-  // FIND ONE
-  // ============================================================
 
   async findOne(id: string) {
     const requirement = await this.model.findByPk(id, {
@@ -115,50 +88,18 @@ export class MaterialRequirementService {
     return requirement;
   }
 
-  // ============================================================
-  // UPDATE
-  // ============================================================
-
   async update(id: string, dto: UpdateMaterialRequirementDto) {
     const requirement = await this.findOne(id);
-
     await requirement.update(dto as any);
-
     return this.findOne(id);
   }
 
-  // ============================================================
-  // DELETE
-  // ============================================================
-
   async remove(id: string) {
     const requirement = await this.findOne(id);
-
     await requirement.destroy();
-
-    return {
-      id,
-      deleted: true,
-    };
+    return { id, deleted: true };
   }
 
-  // ============================================================
-  // STATUS
-  // ============================================================
-
-  /**
-   * Update material requirement workflow status.
-   *
-   * Example:
-   *
-   * DRAFT
-   *   ↓
-   * READY_FOR_SOURCING
-   *   ↓
-   * SOURCING
-   *   ↓
-   * COMPLETED
-   */
   async setStatus(id: string, status: RequirementStatus) {
     const requirement = await this.model.findByPk(id);
 
@@ -166,10 +107,7 @@ export class MaterialRequirementService {
       throw new NotFoundException(`Material requirement ${id} not found`);
     }
 
-    await requirement.update({
-      status,
-    });
-
+    await requirement.update({ status });
     return this.findOne(id);
   }
 }
