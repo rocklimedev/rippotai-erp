@@ -3,31 +3,44 @@ import {
   IsOptional,
   IsNumber,
   Min,
+  IsDateString,
   IsNotEmpty,
 } from 'class-validator';
 
 export class CreateMaterialRequirementDto {
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   projectId: string;
 
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   designerId: string;
 
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   itemName: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   category?: string;
 
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   selection: string;
 
-  @IsOptional() @IsNumber() @Min(0)
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
   budgetAmount?: number;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   style?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   functionalNeeds?: string;
+  @IsOptional()
+  @IsDateString()
+  requirementDate?: string;
 }

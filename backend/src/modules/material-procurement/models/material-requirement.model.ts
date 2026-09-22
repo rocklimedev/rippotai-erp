@@ -16,6 +16,7 @@ import { SampleBoard } from './sample-board.model';
 import { MaterialMaster } from './material-master.model';
 
 import { Quotation } from '@/modules/quotations/models/quotations.model';
+import { DeliveryChallan } from './delivery-challan.model';
 
 @Table({
   tableName: 'material_requirements',
@@ -37,7 +38,6 @@ export class MaterialRequirement extends Model<MaterialRequirement> {
 
   // ============================================================
   // PROJECT
-  // IMPORTANT:
   // DB column is `projectId`, NOT `project_id`
   // ============================================================
 
@@ -49,7 +49,7 @@ export class MaterialRequirement extends Model<MaterialRequirement> {
   declare projectId: string;
 
   // ============================================================
-  // DESIGNER
+  // DESIGNER (site engineer who raised the request)
   // DB column is `designerId`
   // ============================================================
 
@@ -90,9 +90,6 @@ export class MaterialRequirement extends Model<MaterialRequirement> {
   //
   // JS property: materialId
   // DB column:   materialMasterId
-  //
-  // This lets the frontend/backend continue using materialId
-  // while Sequelize writes to the existing DB column.
   // ============================================================
 
   @ForeignKey(() => MaterialMaster)
@@ -111,16 +108,10 @@ export class MaterialRequirement extends Model<MaterialRequirement> {
   declare material?: MaterialMaster;
 
   // ============================================================
-  // BUDGET
-  // DB column is `budgetAmount`
+  // BUDGET — REMOVED
+  // Pricing/budget is not part of a raw requirement; it belongs
+  // to the quotation / rate-sheet stage further down the flow.
   // ============================================================
-
-  @Column({
-    type: DataType.DECIMAL(12, 2),
-    field: 'budgetAmount',
-    allowNull: true,
-  })
-  declare budgetAmount: number | null;
 
   // ============================================================
   // DESIGN INFORMATION
@@ -139,10 +130,20 @@ export class MaterialRequirement extends Model<MaterialRequirement> {
     allowNull: true,
   })
   declare functionalNeeds: string | null;
+  // ============================================================
+  // REQUIREMENT DATE
+  // Date by which the site engineer needs the material on site.
+  // DB column is `requirementDate`
+  // ============================================================
 
+  @Column({
+    type: DataType.DATEONLY,
+    field: 'requirementDate',
+    allowNull: true,
+  })
+  declare requirementDate: string | null;
   // ============================================================
   // STATUS
-  // DB column is `status`
   // ============================================================
 
   @Default(RequirementStatus.DRAFT)
@@ -155,8 +156,6 @@ export class MaterialRequirement extends Model<MaterialRequirement> {
 
   // ============================================================
   // TIMESTAMPS
-  //
-  // DB columns are `createdAt` and `updatedAt`
   // ============================================================
 
   @Default(DataType.NOW)
@@ -191,4 +190,13 @@ export class MaterialRequirement extends Model<MaterialRequirement> {
     as: 'quotations',
   })
   declare quotations: Quotation[];
+
+  // Once the requirement is finalized, procurement raises one or
+  // more delivery challans against it to actually supply the material.
+  @HasMany(() => DeliveryChallan, {
+    foreignKey: 'material_requirement_id',
+    sourceKey: 'id',
+    as: 'deliveryChallans',
+  })
+  declare deliveryChallans: DeliveryChallan[];
 }

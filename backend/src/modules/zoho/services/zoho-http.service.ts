@@ -1,19 +1,15 @@
-// zoho/services/zoho-http.service.ts
-import { BadRequestException, Injectable } from '@nestjs/common';
-
-import axios, { AxiosRequestConfig, Method } from 'axios';
-
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+  ForbiddenException,
+  HttpException,
+  InternalServerErrorException,
+} from '@nestjs/common';
+import axios, { AxiosRequestConfig, Method, AxiosError } from 'axios';
 import { ZohoAuthService } from '@/modules/auth/zoho-auth.service';
-/**
- * Thin, service-agnostic wrapper around axios that:
- *
- * - resolves a valid (auto-refreshed) access token
- * - attaches the Zoho auth header
- * - defaults the base URL to the token's own api_domain
- *
- * Future Zoho product modules (CRM, Books, Mail, Projects, etc.)
- * should use this service instead of talking to axios directly.
- */
+
 @Injectable()
 export class ZohoHttpService {
   constructor(private readonly zohoAuthService: ZohoAuthService) {}
@@ -26,19 +22,9 @@ export class ZohoHttpService {
   ): Promise<T> {
     const accessToken = await this.zohoAuthService.getValidAccessToken(userId);
 
-    /**
-     * Priority:
-     *
-     * 1. Explicit baseURL supplied by the caller
-     * 2. apiDomain returned by Zoho during OAuth
-     */
     const baseURL =
       options.baseURL ?? (await this.zohoAuthService.getApiDomain(userId));
 
-    /**
-     * apiDomain is nullable in the database, so make sure
-     * we have a valid URL before passing it to Axios.
-     */
     if (!baseURL) {
       throw new BadRequestException(
         `Zoho API domain is missing for this user. ` +
@@ -46,18 +32,71 @@ export class ZohoHttpService {
       );
     }
 
-    const response = await axios.request<T>({
-      ...options,
-      method,
-      url: path,
-      baseURL,
-      headers: {
-        ...options.headers,
-        Authorization: `Zoho-oauthtoken ${accessToken}`,
-      },
-    });
+    try {
+      const response = await axios.request<T>({
+        ...options,
+        method,
+        url: path,
+        baseURL,
+        headers: {
+          ...options.headers,
+          Authorization: `Zoho-oauthtoken ${accessToken}`,
+        },
+      });
 
-    return response.data;
+      return response.data;
+    } catch (err) {
+      this.rethrowZohoError(err);
+    }
+  }
+
+  private rethrowZohoError(err: unknown): never {
+    if (!axios.isAxiosError(err)) {
+      throw err;
+    }
+
+    const axiosErr = err as AxiosError<any>;
+    const status = axiosErr.response?.status ?? 500;
+    const data = axiosErr.response?.data;
+
+    // Zoho classic: { error: { code, message } }
+    // Zoho V3 often: { error_code, message } or similar
+    const zohoCode = data?.error?.code ?? data?.error_code ?? data?.code;
+    const zohoMessage =
+      data?.error?.message ??
+      data?.message ??
+      data?.error ??
+      axiosErr.message ??
+      'Zoho API request failed';
+
+    const message =
+      typeof zohoMessage === 'string'
+        ? zohoMessage
+        : JSON.stringify(zohoMessage);
+
+    const body = {
+      message,
+      zohoCode,
+      zohoResponse: data,
+      path: axiosErr.config?.url,
+      baseURL: axiosErr.config?.baseURL,
+    };
+
+    switch (status) {
+      case 400:
+        throw new BadRequestException(body);
+      case 401:
+        throw new UnauthorizedException(body);
+      case 403:
+        throw new ForbiddenException(body);
+      case 404:
+        throw new NotFoundException(body);
+      default:
+        if (status >= 400 && status < 500) {
+          throw new HttpException(body, status);
+        }
+        throw new InternalServerErrorException(body);
+    }
   }
 
   get<T = any>(userId: string, path: string, options?: AxiosRequestConfig) {

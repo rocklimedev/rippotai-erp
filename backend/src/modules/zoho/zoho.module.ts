@@ -20,6 +20,10 @@ import { ZohoCrmController } from './crm/zoho-crm.controller';
 
 import { ZohoCliqService } from './cliq/zoho-cliq.service';
 import { ZohoCliqController } from './cliq/zoho-cliq.controller';
+import { ZohoTasksController } from './tasks/zoho-tasks.controller';
+import { ZohoTasksService } from './tasks/zoho-tasks.service';
+import { ZohoCalendarController } from './calendar/zoho-calendar.controller';
+import { ZohoCalendarService } from './calendar/zoho-calendar.service';
 
 @Module({
   imports: [
@@ -36,15 +40,19 @@ import { ZohoCliqController } from './cliq/zoho-cliq.controller';
     ZohoOAuthController,
     WorkDriveController,
     ZohoCrmController,
+    ZohoTasksController,
     ZohoCliqController,
+    ZohoCalendarController,
   ],
 
   providers: [
     ZohoAuthService,
     ZohoHttpService,
     OAuthStateService,
+    ZohoCalendarService,
     WorkDriveService,
     ZohoCrmService,
+    ZohoTasksService,
     ZohoCliqService,
   ],
 
@@ -53,8 +61,10 @@ import { ZohoCliqController } from './cliq/zoho-cliq.controller';
     ZohoHttpService,
     OAuthStateService,
     WorkDriveService,
+    ZohoCalendarService,
     ZohoCrmService,
     ZohoCliqService,
+    ZohoTasksService,
   ],
 })
 export class ZohoModule {}

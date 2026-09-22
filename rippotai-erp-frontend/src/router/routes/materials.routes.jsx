@@ -141,7 +141,10 @@ export const materialsRoutes = [
         path: "purchase-orders/new",
         element: <CreatePurchaseOrderPage />,
       },
-
+      {
+        path: "purchase-orders/:id/edit",
+        element: <CreatePurchaseOrderPage />,
+      },
       {
         path: "purchase-orders/:id",
         element: <PurchaseOrderView />,
@@ -171,6 +174,10 @@ export const materialsRoutes = [
       },
       {
         path: "work-order/new",
+        element: <CreateWorkOrder />,
+      },
+      {
+        path: "work-order/:id/edit",
         element: <CreateWorkOrder />,
       },
       {

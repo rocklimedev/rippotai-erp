@@ -9,6 +9,8 @@ import {
   Unique,
   Index,
   HasMany,
+  ForeignKey,
+  BelongsTo,
   CreatedAt,
   UpdatedAt,
 } from 'sequelize-typescript';
@@ -20,6 +22,7 @@ import type {
 } from 'sequelize';
 
 import { DeliveryChallanItem } from './delivery-challan-item.model';
+import { MaterialRequirement } from './material-requirement.model';
 
 export enum DeliveryChallanStatus {
   DRAFT = 'DRAFT',
@@ -32,13 +35,6 @@ export enum DeliveryChallanStatus {
 
 @Table({
   tableName: 'delivery_challans',
-
-  // IMPORTANT:
-  // The database uses:
-  // createdAt
-  // updatedAt
-  //
-  // We explicitly declare and map these fields below.
   timestamps: true,
 })
 export class DeliveryChallan extends Model<
@@ -55,7 +51,7 @@ export class DeliveryChallan extends Model<
   declare id: CreationOptional<string>;
 
   // ============================================================
-  // CHALLAN IDENTIFICATION
+  // CHALLAN NUMBER
   // ============================================================
 
   @AllowNull(false)
@@ -89,6 +85,23 @@ export class DeliveryChallan extends Model<
   declare vendor_id: string | null;
 
   // ============================================================
+  // MATERIAL REQUIREMENT
+  // ============================================================
+
+  @ForeignKey(() => MaterialRequirement)
+  @AllowNull(true)
+  @Index
+  @Column(DataType.UUID)
+  declare material_requirement_id: string | null;
+
+  @BelongsTo(() => MaterialRequirement, {
+    foreignKey: 'material_requirement_id',
+    targetKey: 'id',
+    as: 'materialRequirement',
+  })
+  declare materialRequirement?: MaterialRequirement;
+
+  // ============================================================
   // CHALLAN DATE
   // ============================================================
 
@@ -97,7 +110,7 @@ export class DeliveryChallan extends Model<
   declare challan_date: string;
 
   // ============================================================
-  // DELIVERY LOCATION
+  // SITE
   // ============================================================
 
   @AllowNull(true)
@@ -115,7 +128,7 @@ export class DeliveryChallan extends Model<
   declare status: CreationOptional<DeliveryChallanStatus>;
 
   // ============================================================
-  // RECEIVING / VERIFICATION
+  // MATERIAL / GATE CHECKS
   // ============================================================
 
   @AllowNull(false)
@@ -129,7 +142,7 @@ export class DeliveryChallan extends Model<
   declare material_checked: CreationOptional<boolean>;
 
   // ============================================================
-  // REMARKS / DISCREPANCIES
+  // REMARKS
   // ============================================================
 
   @AllowNull(true)
@@ -141,7 +154,7 @@ export class DeliveryChallan extends Model<
   declare discrepancy_notes: string | null;
 
   // ============================================================
-  // DISPATCH INFORMATION
+  // DISPATCH
   // ============================================================
 
   @AllowNull(true)
@@ -154,7 +167,7 @@ export class DeliveryChallan extends Model<
   declare dispatched_at: Date | null;
 
   // ============================================================
-  // RECEIVING INFORMATION
+  // RECEIVING
   // ============================================================
 
   @AllowNull(true)
@@ -185,19 +198,6 @@ export class DeliveryChallan extends Model<
 
   // ============================================================
   // TIMESTAMPS
-  // ============================================================
-  //
-  // DATABASE COLUMNS:
-  //
-  // createdAt
-  // updatedAt
-  //
-  // Explicit field mapping prevents Sequelize's global
-  // underscored configuration from converting them to:
-  //
-  // created_at
-  // updated_at
-  //
   // ============================================================
 
   @CreatedAt

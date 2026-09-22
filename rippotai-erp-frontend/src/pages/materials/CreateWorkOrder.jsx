@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Plus,
@@ -12,14 +12,19 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { useCreateWorkOrderMutation } from "../../api/procuerment/work-order.api";
+import {
+  useCreateWorkOrderMutation,
+  useGetWorkOrderQuery,
+  useUpdateWorkOrderMutation,
+} from "../../api/procuerment/work-order.api";
+
 import { useGetProjectsQuery } from "../../api/projects/project.api";
 import { useGetVendorsQuery } from "../../api/vendors/vendor.api";
 import { useGetUnitsQuery } from "../../api/meta/unit.api";
 import { useGetTermsTemplatesQuery } from "../../api/meta/terms.api";
 
 /* =========================================================
-   DEFAULT ROWS
+   DEFAULTS
 ========================================================= */
 
 const emptyItem = {
@@ -54,6 +59,7 @@ const getRows = (response) => {
   if (Array.isArray(response?.data)) return response.data;
   if (Array.isArray(response?.items)) return response.items;
   if (Array.isArray(response?.rows)) return response.rows;
+
   return [];
 };
 
@@ -85,33 +91,110 @@ const currency = (value) =>
   }).format(Number(value || 0));
 
 const calculateItemAmount = (item) => {
-  const quantity = Number(item.quantity || 0);
-  const rate = Number(item.rate || 0);
+  const quantity = Number(item?.quantity || 0);
+  const rate = Number(item?.rate || 0);
 
   return quantity * rate;
 };
 
-const stripHtml = (html = "") => {
-  if (!html) return "";
+/*
+ * Handles API responses such as:
+ *
+ * {
+ *   id: "...",
+ *   project_id: "...",
+ *   items: [...]
+ * }
+ *
+ * or:
+ *
+ * {
+ *   data: {
+ *      id: "...",
+ *      ...
+ *   }
+ * }
+ */
+const getWorkOrderObject = (response) => {
+  if (!response) return null;
 
-  const div = document.createElement("div");
-  div.innerHTML = html;
+  if (response?.data && !Array.isArray(response.data)) {
+    return response.data;
+  }
 
-  return div.textContent || div.innerText || "";
+  if (response?.workOrder) {
+    return response.workOrder;
+  }
+
+  return response;
 };
+
+const normalizeItem = (item) => ({
+  item_type: item?.item_type || "SERVICE",
+  description: item?.description || "",
+  unit_id: item?.unit_id || item?.unit?.id || "",
+  quantity:
+    item?.quantity !== undefined && item?.quantity !== null ? item.quantity : 1,
+  rate: item?.rate !== undefined && item?.rate !== null ? item.rate : 0,
+  amount:
+    item?.amount !== undefined && item?.amount !== null
+      ? item.amount
+      : calculateItemAmount(item),
+  remarks: item?.remarks || "",
+});
+
+const normalizePaymentStage = (stage) => ({
+  stage_name: stage?.stage_name || "",
+  due_date: stage?.due_date ? String(stage.due_date).slice(0, 10) : "",
+  percentage:
+    stage?.percentage !== undefined && stage?.percentage !== null
+      ? stage.percentage
+      : 0,
+  amount:
+    stage?.amount !== undefined && stage?.amount !== null ? stage.amount : 0,
+  remarks: stage?.remarks || "",
+});
+
+const normalizeTerm = (term) => ({
+  description: term?.description || "",
+  is_mandatory: term?.is_mandatory !== false,
+});
 
 /* =========================================================
    COMPONENT
 ========================================================= */
 
-export default function CreateWorkOrder() {
+export default function WorkOrderForm() {
   const navigate = useNavigate();
+  const { id } = useParams();
 
-  const [createWorkOrder, { isLoading }] = useCreateWorkOrderMutation();
+  /*
+   * If id exists:
+   * UPDATE MODE
+   *
+   * If no id:
+   * CREATE MODE
+   */
+  const isEditMode = Boolean(id);
 
   /* -------------------------------------------------------
-     MASTER DATA
+     API
   ------------------------------------------------------- */
+
+  const [createWorkOrder, { isLoading: isCreating }] =
+    useCreateWorkOrderMutation();
+
+  const [updateWorkOrder, { isLoading: isUpdating }] =
+    useUpdateWorkOrderMutation();
+
+  const {
+    data: workOrderResponse,
+    isLoading: workOrderLoading,
+    isFetching: workOrderFetching,
+    isError: workOrderError,
+  } = useGetWorkOrderQuery(id, {
+    skip: !isEditMode,
+  });
 
   const { data: projectsData, isLoading: projectsLoading } =
     useGetProjectsQuery();
@@ -122,6 +205,10 @@ export default function CreateWorkOrder() {
 
   const { data: termsTemplatesData, isLoading: termsTemplatesLoading } =
     useGetTermsTemplatesQuery();
+
+  /* -------------------------------------------------------
+     MASTER DATA
+  ------------------------------------------------------- */
 
   const projects = getRows(projectsData);
   const vendors = getRows(vendorsData);
@@ -145,12 +232,11 @@ export default function CreateWorkOrder() {
      FORM
   ------------------------------------------------------- */
 
-  const [form, setForm] = useState({
+  const getInitialForm = () => ({
     project_id: "",
     vendor_id: "",
 
     work_order_date: new Date().toISOString().slice(0, 10),
-
     target_completion_date: "",
 
     agency: "",
@@ -173,6 +259,91 @@ export default function CreateWorkOrder() {
     payment_stages: [{ ...emptyPaymentStage }],
     terms: [],
   });
+
+  const [form, setForm] = useState(getInitialForm);
+
+  const [isFormLoaded, setIsFormLoaded] = useState(!isEditMode);
+
+  /* -------------------------------------------------------
+     LOAD EXISTING WORK ORDER
+  ------------------------------------------------------- */
+
+  useEffect(() => {
+    if (!isEditMode) {
+      setIsFormLoaded(true);
+      return;
+    }
+
+    const workOrder = getWorkOrderObject(workOrderResponse);
+
+    if (!workOrder) return;
+
+    const normalizedItems =
+      Array.isArray(workOrder.items) && workOrder.items.length
+        ? workOrder.items.map(normalizeItem)
+        : [{ ...emptyItem }];
+
+    const normalizedPaymentStages =
+      Array.isArray(workOrder.payment_stages) && workOrder.payment_stages.length
+        ? workOrder.payment_stages.map(normalizePaymentStage)
+        : [{ ...emptyPaymentStage }];
+
+    const normalizedTerms = Array.isArray(workOrder.terms)
+      ? workOrder.terms.map(normalizeTerm)
+      : [];
+
+    setForm({
+      project_id: workOrder.project_id || workOrder.project?.id || "",
+
+      vendor_id: workOrder.vendor_id || workOrder.vendor?.id || "",
+
+      work_order_date: workOrder.work_order_date
+        ? String(workOrder.work_order_date).slice(0, 10)
+        : new Date().toISOString().slice(0, 10),
+
+      target_completion_date: workOrder.target_completion_date
+        ? String(workOrder.target_completion_date).slice(0, 10)
+        : "",
+
+      agency: workOrder.agency || "",
+      site_address: workOrder.site_address || "",
+      site_contact_person: workOrder.site_contact_person || "",
+      site_lead: workOrder.site_lead || "",
+      site_phone: workOrder.site_phone || "",
+      site_email: workOrder.site_email || "",
+      site_gstin: workOrder.site_gstin || "",
+      working_hours: workOrder.working_hours || "",
+
+      discount:
+        workOrder.discount !== undefined && workOrder.discount !== null
+          ? workOrder.discount
+          : 0,
+
+      gst_percentage:
+        workOrder.gst_percentage !== undefined &&
+        workOrder.gst_percentage !== null
+          ? workOrder.gst_percentage
+          : 18,
+
+      cartage:
+        workOrder.cartage !== undefined && workOrder.cartage !== null
+          ? workOrder.cartage
+          : 0,
+
+      payment_terms: workOrder.payment_terms || "",
+
+      terms_template_id:
+        workOrder.terms_template_id || workOrder.termsTemplate?.id || "",
+
+      items: normalizedItems,
+
+      payment_stages: normalizedPaymentStages,
+
+      terms: normalizedTerms,
+    });
+
+    setIsFormLoaded(true);
+  }, [isEditMode, workOrderResponse]);
 
   /* -------------------------------------------------------
      CALCULATIONS
@@ -223,6 +394,9 @@ export default function CreateWorkOrder() {
       ),
     [activeTermsTemplates, form.terms_template_id],
   );
+
+  const isLoading =
+    isCreating || isUpdating || workOrderLoading || workOrderFetching;
 
   /* -------------------------------------------------------
      GENERAL FIELD
@@ -381,7 +555,18 @@ export default function CreateWorkOrder() {
 
     setForm((current) => ({
       ...current,
+
       terms_template_id: templateId || "",
+
+      /*
+       * IMPORTANT:
+       *
+       * Do not replace existing manual terms when
+       * editing an existing work order.
+       *
+       * If a template is selected manually, add
+       * the template snapshot as the first term.
+       */
       terms: templateId
         ? [
             {
@@ -442,13 +627,33 @@ export default function CreateWorkOrder() {
       return;
     }
 
-    if (form.terms_template_id && !selectedTemplate) {
-      toast.error("Selected terms template is no longer active");
+    if (Number(form.discount || 0) > Number(itemsTotal || 0)) {
+      toast.error("Discount cannot exceed the item subtotal");
       return;
+    }
+
+    if (Number(form.gst_percentage || 0) < 0) {
+      toast.error("GST percentage cannot be negative");
+      return;
+    }
+
+    if (form.terms_template_id && !selectedTemplate) {
+      /*
+       * During edit, an old template may no longer
+       * be present in the active template list.
+       *
+       * Do not block update if the work order already
+       * contains the template snapshot.
+       */
+      if (!isEditMode) {
+        toast.error("Selected terms template is no longer active");
+        return;
+      }
     }
 
     const payload = {
       project_id: form.project_id,
+
       vendor_id: form.vendor_id,
 
       work_order_date: form.work_order_date,
@@ -507,23 +712,11 @@ export default function CreateWorkOrder() {
           }
         : {}),
 
-      ...(Number(form.discount) > 0
-        ? {
-            discount: Number(form.discount),
-          }
-        : {}),
+      discount: Number(form.discount || 0),
 
-      ...(Number(form.gst_percentage) >= 0
-        ? {
-            gst_percentage: Number(form.gst_percentage),
-          }
-        : {}),
+      gst_percentage: Number(form.gst_percentage || 0),
 
-      ...(Number(form.cartage) > 0
-        ? {
-            cartage: Number(form.cartage),
-          }
-        : {}),
+      cartage: Number(form.cartage || 0),
 
       ...(form.payment_terms.trim()
         ? {
@@ -572,6 +765,12 @@ export default function CreateWorkOrder() {
               }
             : {}),
 
+          /*
+           * Send percentage too if your backend
+           * supports it.
+           */
+          percentage: Number(stage.percentage || 0),
+
           amount: Number(stage.amount || 0),
 
           ...(stage.remarks?.trim()
@@ -599,12 +798,33 @@ export default function CreateWorkOrder() {
     };
 
     try {
-      const response = await createWorkOrder(payload).unwrap();
+      let response;
+
+      if (isEditMode) {
+        /*
+         * UPDATE
+         */
+        response = await updateWorkOrder({
+          id,
+          body: payload,
+        }).unwrap();
+      } else {
+        /*
+         * CREATE
+         */
+        response = await createWorkOrder(payload).unwrap();
+      }
+
+      const responseObject = getWorkOrderObject(response);
 
       const createdId =
-        response?.id || response?.data?.id || response?.workOrder?.id;
+        responseObject?.id || response?.id || response?.data?.id || id;
 
-      toast.success("Work order created successfully");
+      toast.success(
+        isEditMode
+          ? "Work order updated successfully"
+          : "Work order created successfully",
+      );
 
       if (createdId) {
         navigate(`/work-orders/${createdId}`);
@@ -612,12 +832,62 @@ export default function CreateWorkOrder() {
         navigate("/work-orders");
       }
     } catch (error) {
+      console.error("Work order save error:", error);
+
       const message =
-        error?.data?.message || error?.message || "Unable to create work order";
+        error?.data?.message ||
+        error?.error ||
+        error?.message ||
+        "Unable to save work order";
 
       toast.error(Array.isArray(message) ? message.join(", ") : message);
     }
   };
+
+  /* =========================================================
+     LOADING STATE
+  ========================================================= */
+
+  if (isEditMode && (workOrderLoading || workOrderFetching || !isFormLoaded)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#EAEEF0]">
+        <div className="flex items-center gap-3 rounded-2xl bg-white px-6 py-5 shadow-sm">
+          <Loader2 size={20} className="animate-spin text-[#1F453B]" />
+
+          <span className="text-sm font-medium text-slate-600">
+            Loading work order...
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  if (isEditMode && workOrderError && !workOrderResponse) {
+    return (
+      <div className="min-h-screen bg-[#EAEEF0] p-6">
+        <div className="mx-auto max-w-xl rounded-2xl bg-white p-8 text-center shadow-sm">
+          <FileText size={32} className="mx-auto mb-4 text-red-500" />
+
+          <h2 className="text-lg font-semibold text-slate-900">
+            Unable to load work order
+          </h2>
+
+          <p className="mt-2 text-sm text-slate-500">
+            The work order may have been deleted or you may not have permission
+            to access it.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => navigate("/work-orders")}
+            className="mt-5 rounded-xl bg-[#1F453B] px-5 py-2.5 text-sm font-medium text-white"
+          >
+            Back to Work Orders
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   /* =========================================================
      RENDER
@@ -647,11 +917,13 @@ export default function CreateWorkOrder() {
 
               <div>
                 <h1 className="text-xl font-semibold text-slate-900">
-                  Create Work Order
+                  {isEditMode ? "Edit Work Order" : "Create Work Order"}
                 </h1>
 
                 <p className="text-sm text-slate-500">
-                  Create a vendor work order for a project.
+                  {isEditMode
+                    ? "Update the vendor work order details."
+                    : "Create a vendor work order for a project."}
                 </p>
               </div>
             </div>
@@ -676,7 +948,13 @@ export default function CreateWorkOrder() {
                   <Save size={17} />
                 )}
 
-                {isLoading ? "Creating..." : "Create Work Order"}
+                {isLoading
+                  ? isEditMode
+                    ? "Updating..."
+                    : "Creating..."
+                  : isEditMode
+                    ? "Update Work Order"
+                    : "Create Work Order"}
               </button>
             </div>
           </div>
@@ -822,7 +1100,41 @@ export default function CreateWorkOrder() {
                 />
               </Field>
 
-              <Field label="Site Address" className="lg:col-span-3">
+              <Field label="Site Phone">
+                <input
+                  value={form.site_phone}
+                  onChange={(event) =>
+                    updateField("site_phone", event.target.value)
+                  }
+                  className="input"
+                />
+              </Field>
+
+              <Field label="Site Email">
+                <input
+                  type="email"
+                  value={form.site_email}
+                  onChange={(event) =>
+                    updateField("site_email", event.target.value)
+                  }
+                  className="input"
+                />
+              </Field>
+
+              <Field label="Site GSTIN">
+                <input
+                  value={form.site_gstin}
+                  onChange={(event) =>
+                    updateField("site_gstin", event.target.value)
+                  }
+                  className="input"
+                />
+              </Field>
+
+              <Field
+                label="Site Address"
+                className="md:col-span-2 lg:col-span-3"
+              >
                 <textarea
                   value={form.site_address}
                   onChange={(event) =>
@@ -1100,6 +1412,7 @@ export default function CreateWorkOrder() {
 
               <div className="flex justify-between border-t border-slate-200 pt-3 text-base font-bold text-[#1F453B]">
                 <span>Total</span>
+
                 <span>{currency(grandTotal)}</span>
               </div>
             </div>
@@ -1214,7 +1527,7 @@ export default function CreateWorkOrder() {
           </section>
 
           {/* =================================================
-              TERMS TEMPLATE
+              TERMS
           ================================================= */}
 
           <section className="rounded-2xl bg-white shadow-sm">
@@ -1224,8 +1537,7 @@ export default function CreateWorkOrder() {
               </h2>
 
               <p className="mt-1 text-sm text-slate-500">
-                Select a Terms Template. The selected content is stored as a
-                snapshot on the work order.
+                Select a Terms Template and add additional terms if required.
               </p>
             </div>
 
@@ -1296,7 +1608,6 @@ export default function CreateWorkOrder() {
                 </div>
               )}
 
-              {/* Manual additional terms */}
               <div className="mt-6 border-t border-slate-100 pt-5">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
@@ -1378,7 +1689,13 @@ export default function CreateWorkOrder() {
                 <Save size={17} />
               )}
 
-              {isLoading ? "Creating..." : "Create Work Order"}
+              {isLoading
+                ? isEditMode
+                  ? "Updating..."
+                  : "Creating..."
+                : isEditMode
+                  ? "Update Work Order"
+                  : "Create Work Order"}
             </button>
           </div>
         </form>
