@@ -29,13 +29,6 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -280,51 +273,6 @@ const getCurrentDocumentName = (project) => {
     "No document currently being prepared"
   );
 };
-
-/*
- * ============================================================
- * PHASE TREE (getProjectDocumentPhaseTree)
- *
- * GET /document-types/project-phase-tree returns:
- *
- *   {
- *     "projects": [
- *       {
- *         "id": "<project uuid>",
- *         "name": "<project name>",
- *         "phases": [
- *           {
- *             "id": "...",
- *             "phaseNumber": 1,
- *             "phaseCode": "01_BRIEF",
- *             "title": "01 BRIEF",
- *             "sortOrder": 1,
- *             "isComplete": false,
- *             "summary": {
- *               "total": 2, "uploaded": 0, "pending": 2,
- *               "required": 2, "uploadedRequired": 0, "pendingRequired": 2,
- *               "completionPercentage": 0, "requiredCompletionPercentage": 0
- *             },
- *             "documents": [
- *               {
- *                 "name": "Client Brief",
- *                 "sequence": 1,
- *                 "requirementType": "REQUIRED",
- *                 "isUploaded": false,
- *                 ...
- *               }
- *             ]
- *           }
- *         ]
- *       }
- *     ]
- *   }
- *
- * This is the source of truth for phase order, completion, and which
- * document should be worked on next within a phase. It's matched to a
- * project from useGetProjectsQuery by id (falling back to name).
- * ============================================================
- */
 
 const normalizePhaseTreeProjects = (tree) => {
   if (Array.isArray(tree?.projects)) return tree.projects;
@@ -1013,12 +961,27 @@ function DocumentsView() {
 }
 
 /* ============================================================
-   SUMMARY CARD
+   SUMMARY CARD (clickable status filter)
 ============================================================ */
 
-function SummaryCard({ label, value, sub, valueClassName }) {
+function SummaryCard({ label, value, sub, valueClassName, active, onClick }) {
   return (
-    <Card className="p-3">
+    <Card
+      role="button"
+      tabIndex={0}
+      aria-pressed={active}
+      onClick={onClick}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick?.();
+        }
+      }}
+      className={cn(
+        "cursor-pointer p-3 transition-all hover:border-[#1F453B]/40 hover:shadow-sm",
+        active && "border-[#1F453B] bg-[#E7F1EA]/50 ring-1 ring-[#1F453B]",
+      )}
+    >
       <div className="text-[10.5px] uppercase tracking-[0.12em] text-muted-foreground">
         {label}
       </div>
@@ -1036,10 +999,6 @@ function SummaryCard({ label, value, sub, valueClassName }) {
 
 const TABS = [
   ["all", "Projects"],
-  ["active", "Active"],
-  ["completed", "Completed"],
-  ["on_hold", "On Hold"],
-  ["archived", "Archived"],
   ["documents", "Documents"],
 ];
 
@@ -1139,6 +1098,12 @@ export default function ProjectsDashboard() {
 
   /* -------------------------------------------------- Actions */
 
+  const handleStatusCardClick = (status) => {
+    setTab("all"); // make sure the Projects tab is visible
+    // clicking the active card again clears the filter
+    setStatusFilter((prev) => (prev === status ? "all" : status));
+  };
+
   const handleArchive = async (id, name) => {
     if (!window.confirm(`Archive project "${name}"?`)) return;
 
@@ -1202,6 +1167,38 @@ export default function ProjectsDashboard() {
     projects.filter((project) => getProjectStatus(project) === "archived")
       .length;
 
+  const summaryCards = [
+    { key: "all", label: "Total projects", value: total, sub: "in workspace" },
+    {
+      key: "active",
+      label: "Active",
+      value: active,
+      sub: "currently running",
+      cls: BRAND_TEXT,
+    },
+    {
+      key: "on_hold",
+      label: "On hold",
+      value: onHold,
+      sub: "require attention",
+      cls: "text-[#A34D27]",
+    },
+    {
+      key: "completed",
+      label: "Completed",
+      value: completed,
+      sub: "handed over",
+      cls: "text-[#2F6B3F]",
+    },
+    {
+      key: "archived",
+      label: "Archived",
+      value: archived,
+      sub: "archived projects",
+      cls: "text-muted-foreground",
+    },
+  ];
+
   /* -------------------------------------------------- Render */
 
   return (
@@ -1234,37 +1231,19 @@ export default function ProjectsDashboard() {
       }
     >
       <div className="space-y-4">
-        {/* -------------------------------------------- Summary */}
+        {/* -------------------------------------------- Summary (click to filter) */}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-          <SummaryCard
-            label="Total projects"
-            value={total}
-            sub="in workspace"
-          />
-          <SummaryCard
-            label="Active"
-            value={active}
-            valueClassName={BRAND_TEXT}
-            sub="currently running"
-          />
-          <SummaryCard
-            label="On hold"
-            value={onHold}
-            valueClassName="text-[#A34D27]"
-            sub="require attention"
-          />
-          <SummaryCard
-            label="Completed"
-            value={completed}
-            valueClassName="text-[#2F6B3F]"
-            sub="handed over"
-          />
-          <SummaryCard
-            label="Archived"
-            value={archived}
-            valueClassName="text-muted-foreground"
-            sub="archived projects"
-          />
+          {summaryCards.map((card) => (
+            <SummaryCard
+              key={card.key}
+              label={card.label}
+              value={card.value}
+              sub={card.sub}
+              valueClassName={card.cls}
+              active={tab === "all" && statusFilter === card.key}
+              onClick={() => handleStatusCardClick(card.key)}
+            />
+          ))}
         </div>
 
         {/* -------------------------------------------- Tabs */}
@@ -1303,19 +1282,6 @@ export default function ProjectsDashboard() {
                   />
                 </div>
 
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full font-semibold lg:w-[170px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="on_hold">On hold</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-
                 <div className="flex items-center rounded-lg border bg-muted/30 p-1 lg:ml-auto">
                   <Button
                     type="button"
@@ -1352,9 +1318,9 @@ export default function ProjectsDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-[13px] font-semibold">
-                  {tab === "all"
+                  {statusFilter === "all"
                     ? "Project workspace"
-                    : `${STATUS_LABEL[tab] || tab} projects`}
+                    : `${STATUS_LABEL[statusFilter] || statusFilter} projects`}
                 </div>
                 <div className="mt-0.5 text-[11px] text-muted-foreground">
                   {filteredProjects.length} project
@@ -1397,7 +1363,9 @@ export default function ProjectsDashboard() {
                   <div className="mt-1 text-[11.5px] text-muted-foreground">
                     {q
                       ? "Try a different search."
-                      : "No projects are available."}
+                      : statusFilter !== "all"
+                        ? "No projects match the selected status."
+                        : "No projects are available."}
                   </div>
                   {q && (
                     <Button
@@ -1407,6 +1375,16 @@ export default function ProjectsDashboard() {
                       onClick={() => setQ("")}
                     >
                       Clear search
+                    </Button>
+                  )}
+                  {!q && statusFilter !== "all" && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className={cn(BRAND, "mt-4")}
+                      onClick={() => setStatusFilter("all")}
+                    >
+                      Show all projects
                     </Button>
                   )}
                 </CardContent>

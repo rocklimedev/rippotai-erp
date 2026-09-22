@@ -10,11 +10,11 @@ export const designStudioRoutes = [
     type: "layout",
     path: "/design-studio",
     layout: AppLayout,
-    layoutProps: { app: "designStudio" },
+    layoutProps: { app: "design_studio" },
     blockRoles: ["client"],
 
     dynamicSections: {
-      appKey: "designStudio",
+      appKey: "design_studio",
       exclude: ["all", "new"],
     },
 

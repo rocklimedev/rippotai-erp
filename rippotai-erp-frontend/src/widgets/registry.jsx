@@ -39,7 +39,25 @@ import {
   ProjTimelineVariance,
   ProjRecentActivity,
 } from "./projects";
-
+import {
+  InventoryTotal,
+  InventoryReceived,
+  InventoryIssued,
+  InventoryLowStock,
+  InventoryByCategory,
+  InventoryRecentlyAdded,
+  InventoryPerformance,
+  InventorySiteWise,
+  InventoryAttention,
+  InventoryLowStockList,
+  InventoryMovementTrend,
+  InventoryStockMix,
+  InventoryCategoryBar,
+  InventorySiteBar,
+  InventoryRecentTransactions,
+  InventoryCategoryWise,
+  InventoryTransactionsSummary,
+} from "./inventory";
 import {
   VendorsTotal,
   VendorsVerified,
@@ -256,21 +274,21 @@ export const WIDGETS = {
   "quot.awaiting_review": QuotAwaitingReview,
 
   // Materials
-  "materials.total_materials": MatTotalMaterials,
-  "materials.stock_value": MatStockValue,
-  "materials.low_stock": MatLowStock,
-  "materials.out_of_stock": MatOutOfStock,
-  "materials.pending_requests": MatPendingRequests,
-  "materials.active_purchase_orders": MatActivePurchaseOrders,
-  "materials.pending_grn": MatPendingGRN,
-  "materials.inward_today": MatInwardToday,
-  "materials.outward_today": MatOutwardToday,
-  "materials.low_stock_list": MatLowStockList,
-  "materials.requests_list": MatRequestsList,
-  "materials.purchase_orders_list": MatPurchaseOrdersList,
-  "materials.recent_movements": MatRecentMovements,
-  "materials.category_wise": MatCategoryWise,
-  "materials.recent_activity": MatRecentActivity,
+  "procurement.total_procurement": MatTotalMaterials,
+  "procurement.stock_value": MatStockValue,
+  "procurement.low_stock": MatLowStock,
+  "procurement.out_of_stock": MatOutOfStock,
+  "procurement.pending_requests": MatPendingRequests,
+  "procurement.active_purchase_orders": MatActivePurchaseOrders,
+  "procurement.pending_grn": MatPendingGRN,
+  "procurement.inward_today": MatInwardToday,
+  "procurement.outward_today": MatOutwardToday,
+  "procurement.low_stock_list": MatLowStockList,
+  "procurement.requests_list": MatRequestsList,
+  "procurement.purchase_orders_list": MatPurchaseOrdersList,
+  "procurement.recent_movements": MatRecentMovements,
+  "procurement.category_wise": MatCategoryWise,
+  "procurement.recent_activity": MatRecentActivity,
 
   // Site Operations
   "siteops.today_report": SiteOpsTodayReport,
@@ -331,16 +349,16 @@ export const WIDGETS = {
   "crm.recent_activity": CrmRecentActivity,
 
   // Admin
-  "admin.active_projects": AdminActiveProjects,
-  "admin.open_leads": AdminOpenLeads,
-  "admin.pending_approvals": AdminPendingApprovals,
-  "admin.team_members": AdminTeamMembers,
-  "admin.projects_list": AdminProjectsList,
-  "admin.approvals_list": AdminApprovalsList,
-  "admin.lead_pipeline": AdminLeadPipeline,
-  "admin.recent_activity": AdminRecentActivity,
-  "admin.team_list": AdminTeamList,
-  "admin.workflow_snapshot": AdminWorkflowSnapshot,
+  "adminConsole.active_projects": AdminActiveProjects,
+  "adminConsole.open_leads": AdminOpenLeads,
+  "adminConsole.pending_approvals": AdminPendingApprovals,
+  "adminConsole.team_members": AdminTeamMembers,
+  "adminConsole.projects_list": AdminProjectsList,
+  "adminConsole.approvals_list": AdminApprovalsList,
+  "adminConsole.lead_pipeline": AdminLeadPipeline,
+  "adminConsole.recent_activity": AdminRecentActivity,
+  "adminConsole.team_list": AdminTeamList,
+  "adminConsole.workflow_snapshot": AdminWorkflowSnapshot,
 
   // Placeholder app stubs
   "clients.total": () => (
@@ -382,15 +400,27 @@ export const WIDGETS = {
       message="Activates when Activity launches"
     />
   ),
-  "inventory.total_items": () => (
-    <StubWidget
-      title="Total Items"
-      message="Activates when Inventory launches"
-    />
-  ),
-  "inventory.low_stock": () => (
-    <StubWidget title="Low Stock" message="Activates when Inventory launches" />
-  ),
+  // Inventory
+  "inventory.total": InventoryTotal,
+  "inventory.received": InventoryReceived,
+  "inventory.issued": InventoryIssued,
+  "inventory.low_stock": InventoryLowStock,
+  "inventory.by_category": InventoryByCategory,
+  "inventory.recently_added": InventoryRecentlyAdded,
+  "inventory.performance": InventoryPerformance,
+  "inventory.site_wise": InventorySiteWise,
+  "inventory.attention": InventoryAttention,
+  "inventory.low_stock_list": InventoryLowStockList,
+  "inventory.movement_trend": InventoryMovementTrend,
+  "inventory.stock_mix": InventoryStockMix,
+  "inventory.category_bar": InventoryCategoryBar,
+  "inventory.site_bar": InventorySiteBar,
+  "inventory.recent_transactions": InventoryRecentTransactions,
+  "inventory.category_wise": InventoryCategoryWise,
+  "inventory.transactions_summary": InventoryTransactionsSummary,
+
+  // Legacy Inventory key
+  "inventory.total_items": InventoryTotal,
 };
 
 export default WIDGETS;

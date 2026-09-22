@@ -16,6 +16,7 @@ import { crmRoutes } from "./routes/crm.routes";
 import ledgerRoutes from "./routes/ledger.routes";
 import { commandCenterRoutes } from "./routes/command-center.routes";
 import { automationRoutes } from "./routes/automation.routes";
+import inventoryRoutes from "./routes/inventory.routes";
 
 // Order matters only for readability here — react-router matches on
 // specificity, not array order, so new domains can be added anywhere.
@@ -34,6 +35,7 @@ const masterRoutes = [
   ...clientRoutes,
   ...materialsRoutes,
   ...siteOperationsRoutes,
+  ...inventoryRoutes,
   ...designStudioRoutes,
   ...ledgerRoutes,
   ...crmRoutes,

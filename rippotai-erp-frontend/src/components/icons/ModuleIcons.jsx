@@ -536,8 +536,10 @@ export const IconCommandCenter = () =>
       />
     </>,
   );
+
 export const MODULE_ICONS = {
   dashboard: IconDashboard,
+
   boq: IconBoq,
   projects: IconProjects,
   quotations: IconQuotations,
@@ -550,7 +552,14 @@ export const MODULE_ICONS = {
   commandCenter: IconCommandCenter,
   automation: IconAutomation,
   documents: IconDocuments,
+
+  // Design Studio
+  // Keep BOTH naming conventions because:
+  // - APP_META / APP_MENUS / AppLayout use "designStudio"
+  // - DASHBOARD_CONFIG / WIDGETS use "design_studio"
   designStudio: IconDesignStudio,
+  design_studio: IconDesignStudio,
+
   procurement: IconMaterials,
   siteOperations: IconSiteOperations,
   tasks: IconTasks,
@@ -560,5 +569,7 @@ export const MODULE_ICONS = {
   settings: IconSettings,
   adminConsole: IconAdminConsole,
 };
+
 export const APP_ICONS = MODULE_ICONS;
+
 export default MODULE_ICONS;
