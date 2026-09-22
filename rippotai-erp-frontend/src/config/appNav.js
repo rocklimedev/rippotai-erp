@@ -15,7 +15,7 @@ export const APP_META = {
     searchPh: "Search projects, clients, milestones",
   },
 
-  designStudio: {
+  design_studio: {
     name: "Design Studio",
     base: "/design-studio",
     searchPh: "Search drawings, projects, revisions",
@@ -84,7 +84,7 @@ export const APP_META = {
 // just a registered entry so TopHeader/AppSwitcher config lookups work.
 export const LANDING_ORDER = [
   "projects",
-  "designStudio",
+  "design_studio",
 
   "crm",
   "ledger",
@@ -121,7 +121,7 @@ export const APP_MENUS = {
     },
   ],
 
-  designStudio: [
+  design_studio: [
     {
       label: "Drawings",
       slug: "all",
@@ -212,6 +212,17 @@ export const APP_MENUS = {
         I("Super Admin", "super-admin"),
       ],
     },
+    // ------------------------------------------------------------
+    // Management
+    // ------------------------------------------------------------
+    {
+      label: "Management",
+      items: [
+        I("Projects", "/projects"),
+        I("Activity", "activity"),
+        I("Edit Dashboard", "edit-dashboard"),
+      ],
+    },
   ],
 
   procurement: [
@@ -247,12 +258,7 @@ export const APP_MENUS = {
     // ------------------------------------------------------------
     {
       label: "Delivery & Inventory",
-      items: [
-        I("Delivery Challans", "delivery-challans"),
-
-        // I("Inventory Transactions", "inventory/transactions"),
-        // I("Record Transaction", "inventory/transactions/new"),
-      ],
+      items: [I("Delivery Challans", "delivery-challans")],
     },
 
     // ------------------------------------------------------------
@@ -263,14 +269,18 @@ export const APP_MENUS = {
       items: [
         I("Projects", "/projects"),
         I("Activity", "activity"),
-        I("Settings", "edit-dashboard"),
+        I("Edit Dashboard", "edit-dashboard"),
       ],
     },
   ],
   inventory: [
     {
       label: "Documents",
-      items: [I("Site Inventory", "site-inventory/all")],
+      items: [
+        I("Site Inventory", "site-inventory/all"),
+        I("Inventory Transactions", "transactions"),
+        I("Record Transaction", "transactions/new"),
+      ],
     },
     {
       label: "Settings",

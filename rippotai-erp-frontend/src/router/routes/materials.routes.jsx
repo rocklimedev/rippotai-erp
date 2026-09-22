@@ -8,21 +8,12 @@ import MaterialQuotationList from "@/pages/materials/MaterialQuotationList";
 import PurchaseOrderList from "@/pages/materials/PurchaseOrderList";
 import DeliveryChallanList from "@/pages/materials/DeliveryChallanList";
 
-import SiteInventoryList from "@/pages/materials/SiteInventoryList";
-import SiteInventoryView from "@/pages/materials/SiteInventoryView";
-import InventoryTransactions from "../../pages/materials/SiteInventoryTransactions";
-import InventoryTransactionNew from "../../pages/materials/SiteInventoryTransactionForm";
-import InventoryTransactionView from "../../pages/materials/SiteInventoryTransactionView";
-
-import { MaterialRequirementForm } from "../../pages/materials/MaterialRequirementForm";
-import MaterialsDashboard from "../../pages/dashboard/MaterialDashboard";
-
 import QuotationsDashboard from "@/pages/quotations/QuotationsDashboard";
 import QuotationNew from "@/pages/quotations/QuotationNew";
 import QuotationDetail from "@/pages/quotations/QuotationDetail";
 import QuotationCompare from "@/pages/quotations/QuotationCompare";
 import QuotationsActivity from "@/pages/quotations/QuotationActivity";
-
+import { MaterialRequirementForm } from "../../pages/materials/MaterialRequirementForm";
 import VendorsDashboard from "@/pages/vendors/VendorsDashboard";
 import VendorNew from "@/pages/vendors/VendorNew";
 import ShortlistsIndex from "@/pages/vendors/ShortlistsIndex";
@@ -54,7 +45,7 @@ export const materialsRoutes = [
     },
 
     dynamicSections: {
-      appKey: "materials",
+      appKey: "procurement",
 
       exclude: [
         "all",
@@ -74,10 +65,9 @@ export const materialsRoutes = [
       // ------------------------------------------------------------
       // Dashboard
       // ------------------------------------------------------------
-
       {
         index: true,
-        element: <AppDashboard appKey="materials" />,
+        element: <AppDashboard appKey="procurement" />,
       },
 
       // ------------------------------------------------------------
@@ -190,65 +180,6 @@ export const materialsRoutes = [
       // ------------------------------------------------------------
       // SITE INVENTORY
       // ------------------------------------------------------------
-
-      // Main inventory / stock overview
-      {
-        path: "inventory",
-        element: <SiteInventoryList />,
-      },
-
-      // Material-specific inventory view
-      //
-      // /materials/inventory/:id?project_id=PROJECT_UUID
-      //
-      {
-        path: "inventory/:id",
-        element: <SiteInventoryView />,
-      },
-
-      // ------------------------------------------------------------
-      // INVENTORY TRANSACTIONS
-      // ------------------------------------------------------------
-
-      // Complete transaction ledger
-      //
-      // /materials/inventory/transactions
-      //
-      // Optional:
-      // ?project_id=
-      // ?site_id=
-      // ?material_id=
-      // ?transaction_type=
-      // ?from_date=
-      // ?to_date=
-      //
-      {
-        path: "inventory/transactions",
-        element: <InventoryTransactions />,
-      },
-
-      // Create / record inventory transaction
-      //
-      // /materials/inventory/transactions/new
-      //
-      // Optional:
-      // ?project_id=
-      // ?site_id=
-      // ?material_id=
-      //
-      {
-        path: "inventory/transactions/new",
-        element: <InventoryTransactionNew />,
-      },
-
-      // Individual transaction detail
-      //
-      // /materials/inventory/transactions/:id
-      //
-      {
-        path: "inventory/transactions/:id",
-        element: <InventoryTransactionView />,
-      },
 
       // ------------------------------------------------------------
       // Quotation / Estimate Dashboard

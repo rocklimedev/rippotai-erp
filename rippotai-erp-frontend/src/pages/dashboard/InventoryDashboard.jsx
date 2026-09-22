@@ -165,33 +165,6 @@ const InventoryDashboard = () => {
     [],
   );
 
-  const quickActions = [
-    {
-      title: "Site Inventory",
-      description: "View and manage project/site stock",
-      icon: Warehouse,
-      path: "/inventory/site-inventory",
-    },
-    {
-      title: "Stock Transactions",
-      description: "View all inventory movements",
-      icon: ClipboardList,
-      path: "/inventory/transactions",
-    },
-    {
-      title: "Receive Stock",
-      description: "Record incoming material",
-      icon: ArrowDownToLine,
-      path: "/inventory/transactions/new?type=RECEIPT",
-    },
-    {
-      title: "Issue Stock",
-      description: "Issue material to a project or site",
-      icon: ArrowUpFromLine,
-      path: "/inventory/transactions/new?type=ISSUE",
-    },
-  ];
-
   const lowStockItems = MOCK_STOCK.filter(
     (item) => item.quantity <= item.minimumStock,
   );
@@ -218,15 +191,6 @@ const InventoryDashboard = () => {
               availability.
             </p>
           </div>
-
-          <button
-            type="button"
-            onClick={() => navigate("/inventory/site-inventory")}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#1F453B] px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
-          >
-            <Package size={17} />
-            Site Inventory
-          </button>
         </div>
 
         {/* ============================================================
@@ -261,56 +225,6 @@ const InventoryDashboard = () => {
               </Card>
             );
           })}
-        </div>
-
-        {/* ============================================================
-            QUICK ACTIONS
-        ============================================================ */}
-
-        <div>
-          <div className="mb-3">
-            <h2 className="text-lg font-semibold text-[#1F453B]">
-              Quick Actions
-            </h2>
-
-            <p className="text-sm text-gray-500">Common inventory operations</p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-
-              return (
-                <button
-                  key={action.title}
-                  type="button"
-                  onClick={() => navigate(action.path)}
-                  className="group text-left"
-                >
-                  <Card className="h-full p-5 transition hover:-translate-y-0.5 hover:shadow-md">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#EAEEF0] text-[#1F453B]">
-                        <Icon size={21} />
-                      </div>
-
-                      <ChevronRight
-                        size={18}
-                        className="text-gray-400 transition group-hover:translate-x-1 group-hover:text-[#1F453B]"
-                      />
-                    </div>
-
-                    <h3 className="mt-4 font-semibold text-[#1F453B]">
-                      {action.title}
-                    </h3>
-
-                    <p className="mt-1 text-sm leading-5 text-gray-500">
-                      {action.description}
-                    </p>
-                  </Card>
-                </button>
-              );
-            })}
-          </div>
         </div>
 
         {/* ============================================================
@@ -606,40 +520,6 @@ const InventoryDashboard = () => {
                 })}
               </tbody>
             </table>
-          </div>
-        </Card>
-
-        {/* ============================================================
-            INVENTORY STATUS
-        ============================================================ */}
-
-        <Card className="p-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#D8E0DA] text-[#1F453B]">
-                <RefreshCw size={19} />
-              </div>
-
-              <div>
-                <h3 className="font-medium text-[#1F453B]">
-                  Inventory Tracking
-                </h3>
-
-                <p className="mt-1 text-sm text-gray-500">
-                  Inventory balances are calculated from recorded material
-                  transactions.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => navigate("/inventory/site-inventory")}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#1F453B] px-4 py-2 text-sm font-medium text-[#1F453B] transition hover:bg-[#EAEEF0]"
-            >
-              Open Inventory
-              <ChevronRight size={16} />
-            </button>
           </div>
         </Card>
       </div>
