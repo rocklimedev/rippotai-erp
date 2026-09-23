@@ -9,22 +9,50 @@ import { UpdateZohoEventDto } from './dto/update-event.dto';
 @Injectable()
 export class ZohoCalendarService {
   /**
-   * Zoho Calendar API - India Data Center
+   * =========================================================
+   * ZOHO CALENDAR API
+   * =========================================================
    *
-   * NOTE:
-   * ZohoHttpService already resolves the user's api_domain
-   * from OAuth, so this path is intentionally relative.
+   * IMPORTANT:
+   *
+   * Zoho Calendar does NOT use the generic Zoho OAuth
+   * api_domain such as:
+   *
+   * https://www.zohoapis.in
+   *
+   * For the India region, Calendar API uses:
+   *
+   * https://calendar.zoho.in/api/v1
+   *
+   * Therefore every request from this service explicitly
+   * passes the Calendar API baseURL to ZohoHttpService.
+   *
+   * This keeps the generic ZohoHttpService working for:
+   *
+   * - Zoho Bigin
+   * - Zoho CRM
+   * - Zoho Tasks
+   * - Zoho Mail
+   * - Other Zoho APIs
+   *
+   * without changing their existing api_domain handling.
    */
-  private readonly baseUrl = '/calendar/v1';
+  private readonly baseUrl = 'https://calendar.zoho.in/api/v1';
 
   constructor(private readonly zohoHttpService: ZohoHttpService) {}
 
-  /**
-   * ---------------------------------------------------------
-   * CALENDARS
-   * ---------------------------------------------------------
-   */
+  // =========================================================
+  // CALENDARS
+  // =========================================================
 
+  /**
+   * GET
+   * https://calendar.zoho.in/api/v1/calendars
+   *
+   * Optional:
+   * ?category=...
+   * ?showhiddencal=true
+   */
   async listCalendars(
     userId: string,
     category?: string,
@@ -36,44 +64,74 @@ export class ZohoCalendarService {
       showhiddencal: showHiddenCal,
     };
 
-    if (category) {
-      params.category = category;
+    if (category?.trim()) {
+      params.category = category.trim();
     }
 
-    return this.zohoHttpService.get(userId, `${this.baseUrl}/calendars`, {
+    return this.zohoHttpService.get(userId, '/calendars', {
+      baseURL: this.baseUrl,
       params,
     });
   }
 
+  /**
+   * GET
+   * /calendars/:calendarUid
+   */
   async getCalendar(userId: string, calendarUid: string) {
-    this.validateUserId(userId);
-
-    if (!calendarUid) {
-      throw new BadRequestException('calendarUid is required');
-    }
+    this.validateCalendarParams(userId, calendarUid);
 
     return this.zohoHttpService.get(
       userId,
-      `${this.baseUrl}/calendars/${calendarUid}`,
+      `/calendars/${encodeURIComponent(calendarUid)}`,
+      {
+        baseURL: this.baseUrl,
+      },
     );
   }
 
+  /**
+   * POST
+   * /calendars
+   *
+   * Zoho Calendar expects:
+   *
+   * calendarData
+   */
   async createCalendar(userId: string, dto: CreateZohoCalendarDto) {
     this.validateUserId(userId);
 
-    return this.zohoHttpService.post(userId, `${this.baseUrl}/calendars`, {
+    if (!dto) {
+      throw new BadRequestException('Calendar data is required');
+    }
+
+    return this.zohoHttpService.post(userId, '/calendars', {
+      baseURL: this.baseUrl,
       params: {
-        calendarData: dto,
+        calendarData: JSON.stringify(dto),
       },
     });
   }
 
-  /**
-   * ---------------------------------------------------------
-   * EVENTS
-   * ---------------------------------------------------------
-   */
+  // =========================================================
+  // EVENTS
+  // =========================================================
 
+  /**
+   * GET
+   *
+   * /calendars/:calendarUid/events
+   *
+   * Optional range:
+   *
+   * range={
+   *   "start":"20260923T000000Z",
+   *   "end":"20260930T235959Z"
+   * }
+   *
+   * Optional:
+   * byinstance=true
+   */
   async listEvents(
     userId: string,
     calendarUid: string,
@@ -83,49 +141,78 @@ export class ZohoCalendarService {
     },
     byInstance = false,
   ) {
-    this.validateUserId(userId);
-
-    if (!calendarUid) {
-      throw new BadRequestException('calendarUid is required');
-    }
+    this.validateCalendarParams(userId, calendarUid);
 
     const params: Record<string, any> = {
       byinstance: byInstance,
     };
 
     if (range) {
-      params.range = range;
+      if (!range.start || !range.end) {
+        throw new BadRequestException(
+          'Both range.start and range.end are required',
+        );
+      }
+
+      params.range = JSON.stringify({
+        start: range.start,
+        end: range.end,
+      });
     }
 
     return this.zohoHttpService.get(
       userId,
-      `${this.baseUrl}/calendars/${calendarUid}/events`,
+      `/calendars/${encodeURIComponent(calendarUid)}/events`,
       {
+        baseURL: this.baseUrl,
         params,
       },
     );
   }
 
+  /**
+   * GET
+   *
+   * /calendars/:calendarUid/events/:eventUid
+   */
   async getEvent(userId: string, calendarUid: string, eventUid: string) {
     this.validateEventParams(userId, calendarUid, eventUid);
 
     return this.zohoHttpService.get(
       userId,
-      `${this.baseUrl}/calendars/${calendarUid}/events/${eventUid}`,
+      `/calendars/${encodeURIComponent(
+        calendarUid,
+      )}/events/${encodeURIComponent(eventUid)}`,
+      {
+        baseURL: this.baseUrl,
+      },
     );
   }
 
+  /**
+   * POST
+   *
+   * /calendars/:calendarUid/events
+   *
+   * Zoho Calendar expects:
+   *
+   * eventdata
+   */
   async createEvent(
     userId: string,
     calendarUid: string,
     dto: CreateZohoEventDto,
   ) {
-    this.validateUserId(userId);
+    this.validateCalendarParams(userId, calendarUid);
 
-    if (!calendarUid) {
-      throw new BadRequestException('calendarUid is required');
+    if (!dto) {
+      throw new BadRequestException('Event data is required');
     }
 
+    /**
+     * Zoho Calendar does not allow both
+     * description and richtext_description.
+     */
     if (dto.description && dto.richtext_description) {
       throw new BadRequestException(
         'Use either description or richtext_description, not both',
@@ -134,15 +221,21 @@ export class ZohoCalendarService {
 
     return this.zohoHttpService.post(
       userId,
-      `${this.baseUrl}/calendars/${calendarUid}/events`,
+      `/calendars/${encodeURIComponent(calendarUid)}/events`,
       {
+        baseURL: this.baseUrl,
         params: {
-          eventdata: dto,
+          eventdata: JSON.stringify(dto),
         },
       },
     );
   }
 
+  /**
+   * PUT
+   *
+   * /calendars/:calendarUid/events/:eventUid
+   */
   async updateEvent(
     userId: string,
     calendarUid: string,
@@ -151,32 +244,65 @@ export class ZohoCalendarService {
   ) {
     this.validateEventParams(userId, calendarUid, eventUid);
 
+    if (!dto) {
+      throw new BadRequestException('Event data is required');
+    }
+
+    if (dto.description && dto.richtext_description) {
+      throw new BadRequestException(
+        'Use either description or richtext_description, not both',
+      );
+    }
+
     return this.zohoHttpService.put(
       userId,
-      `${this.baseUrl}/calendars/${calendarUid}/events/${eventUid}`,
+      `/calendars/${encodeURIComponent(
+        calendarUid,
+      )}/events/${encodeURIComponent(eventUid)}`,
       {
+        baseURL: this.baseUrl,
         params: {
-          eventdata: dto,
+          eventdata: JSON.stringify(dto),
         },
       },
     );
   }
 
+  /**
+   * DELETE
+   *
+   * /calendars/:calendarUid/events/:eventUid
+   */
   async deleteEvent(userId: string, calendarUid: string, eventUid: string) {
     this.validateEventParams(userId, calendarUid, eventUid);
 
     return this.zohoHttpService.delete(
       userId,
-      `${this.baseUrl}/calendars/${calendarUid}/events/${eventUid}`,
+      `/calendars/${encodeURIComponent(
+        calendarUid,
+      )}/events/${encodeURIComponent(eventUid)}`,
+      {
+        baseURL: this.baseUrl,
+      },
     );
   }
 
-  /**
-   * ---------------------------------------------------------
-   * RECURRING EVENTS
-   * ---------------------------------------------------------
-   */
+  // =========================================================
+  // RECURRING EVENT INSTANCES
+  // =========================================================
 
+  /**
+   * GET
+   *
+   * /calendars/:calendarUid/events/:eventUid/byinstance
+   *
+   * Required:
+   *
+   * range={
+   *   "start":"20260923T000000Z",
+   *   "end":"20260930T235959Z"
+   * }
+   */
   async getEventInstances(
     userId: string,
     calendarUid: string,
@@ -194,44 +320,60 @@ export class ZohoCalendarService {
 
     return this.zohoHttpService.get(
       userId,
-      `${this.baseUrl}/calendars/${calendarUid}/events/${eventUid}/byinstance`,
+      `/calendars/${encodeURIComponent(
+        calendarUid,
+      )}/events/${encodeURIComponent(eventUid)}/byinstance`,
       {
+        baseURL: this.baseUrl,
         params: {
-          range,
+          range: JSON.stringify({
+            start: range.start,
+            end: range.end,
+          }),
         },
       },
     );
   }
 
-  /**
-   * ---------------------------------------------------------
-   * SMART ADD
-   * ---------------------------------------------------------
-   */
+  // =========================================================
+  // SMART ADD
+  // =========================================================
 
+  /**
+   * POST
+   *
+   * /smartadd
+   */
   async smartAddEvent(userId: string, title: string) {
     this.validateUserId(userId);
 
-    if (!title) {
+    if (!title?.trim()) {
       throw new BadRequestException('title is required');
     }
 
-    return this.zohoHttpService.post(userId, `${this.baseUrl}/smartadd`, {
+    return this.zohoHttpService.post(userId, '/smartadd', {
+      baseURL: this.baseUrl,
       params: {
-        title,
+        title: title.trim(),
       },
     });
   }
 
-  /**
-   * ---------------------------------------------------------
-   * HELPERS
-   * ---------------------------------------------------------
-   */
+  // =========================================================
+  // VALIDATION
+  // =========================================================
 
   private validateUserId(userId: string) {
-    if (!userId) {
+    if (!userId?.trim()) {
       throw new BadRequestException('userId is required');
+    }
+  }
+
+  private validateCalendarParams(userId: string, calendarUid: string) {
+    this.validateUserId(userId);
+
+    if (!calendarUid?.trim()) {
+      throw new BadRequestException('calendarUid is required');
     }
   }
 
@@ -240,13 +382,9 @@ export class ZohoCalendarService {
     calendarUid: string,
     eventUid: string,
   ) {
-    this.validateUserId(userId);
+    this.validateCalendarParams(userId, calendarUid);
 
-    if (!calendarUid) {
-      throw new BadRequestException('calendarUid is required');
-    }
-
-    if (!eventUid) {
+    if (!eventUid?.trim()) {
       throw new BadRequestException('eventUid is required');
     }
   }
