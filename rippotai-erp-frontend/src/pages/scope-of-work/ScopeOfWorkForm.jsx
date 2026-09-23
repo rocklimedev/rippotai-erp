@@ -29,6 +29,31 @@ const SCOPE_OF_WORK_SECTIONS = [
   { title: "Scope Items", type: "items" },
 ];
 
+// ============================================================
+// SLUG HELPERS
+// ============================================================
+
+const slugify = (text) =>
+  (text || "")
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+const generateUniqueSlug = (name, existingSlugs) => {
+  const base = slugify(name) || "space";
+  let slug = base;
+  let counter = 2;
+
+  while (existingSlugs.has(slug)) {
+    slug = `${base}-${counter}`;
+    counter += 1;
+  }
+
+  return slug;
+};
+
 export function ScopeOfWorkForm() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -165,6 +190,8 @@ export function ScopeOfWorkForm() {
           description: space.description || "",
 
           sort_order: space.sortOrder || 1,
+
+          slug: space.slug || "",
         });
       }
     });
@@ -403,6 +430,8 @@ export function ScopeOfWorkForm() {
 
             description: "",
 
+            slug: "",
+
             sort_order: (prev.Spaces || []).length + 1,
           },
         ],
@@ -410,18 +439,56 @@ export function ScopeOfWorkForm() {
     };
 
     const updateSpace = (index, field, value) => {
-      setValues((prev) => ({
-        ...prev,
+      setValues((prev) => {
+        const currentSpaces = prev.Spaces || [];
 
-        Spaces: (prev.Spaces || []).map((space, i) =>
-          i === index
-            ? {
-                ...space,
-                [field]: value,
-              }
-            : space,
-        ),
-      }));
+        // ------------------------------------------------------
+        // Whenever the name changes, (re)derive a unique slug
+        // from it so the payload never ships an empty slug.
+        // Uniqueness is checked against both already-saved
+        // project spaces and the other spaces in this form.
+        // ------------------------------------------------------
+
+        if (field === "name") {
+          const existingSlugs = new Set([
+            ...projectSpaces.map((space) => space.slug).filter(Boolean),
+
+            ...currentSpaces
+              .filter((_, i) => i !== index)
+              .map((space) => space.slug)
+              .filter(Boolean),
+          ]);
+
+          const newSlug = generateUniqueSlug(value, existingSlugs);
+
+          return {
+            ...prev,
+
+            Spaces: currentSpaces.map((space, i) =>
+              i === index
+                ? {
+                    ...space,
+                    name: value,
+                    slug: newSlug,
+                  }
+                : space,
+            ),
+          };
+        }
+
+        return {
+          ...prev,
+
+          Spaces: currentSpaces.map((space, i) =>
+            i === index
+              ? {
+                  ...space,
+                  [field]: value,
+                }
+              : space,
+          ),
+        };
+      });
     };
 
     const removeSpace = (index) => {
@@ -508,6 +575,12 @@ export function ScopeOfWorkForm() {
                       placeholder="e.g. Living Room"
                       className="bc-input w-full"
                     />
+
+                    {space.slug && (
+                      <p className="text-xs text-[#94A3A5] mt-1">
+                        Slug: {space.slug}
+                      </p>
+                    )}
                   </div>
 
                   {/* DESCRIPTION */}
@@ -952,7 +1025,19 @@ export function ScopeOfWorkForm() {
 
       // ========================================================
       // 3. CREATE ONLY NEW SPACES
+      //
+      // Every new space needs a unique slug or the backend
+      // silently drops it. We derive one from the name (it was
+      // already computed on name-change in updateSpace, but we
+      // re-check/regenerate here too in case a space was loaded
+      // without one or a collision slipped through) and track
+      // slugs already used in this project + this submit batch
+      // so two new spaces can never collide with each other.
       // ========================================================
+
+      const usedSlugs = new Set(
+        projectSpaces.map((space) => space.slug).filter(Boolean),
+      );
 
       for (let index = 0; index < spaces.length; index++) {
         const space = spaces[index];
@@ -969,18 +1054,31 @@ export function ScopeOfWorkForm() {
           // Existing DB space
           spaceIdMap.set(space.id, space.id);
 
+          if (existingSpace.slug) {
+            usedSlugs.add(existingSpace.slug);
+          }
+
           continue;
         }
 
         // ------------------------------------------------------
-        // New frontend-only space
+        // New frontend-only space — ensure a unique slug
         // ------------------------------------------------------
+
+        const slug =
+          space.slug && !usedSlugs.has(space.slug)
+            ? space.slug
+            : generateUniqueSlug(space.name, usedSlugs);
+
+        usedSlugs.add(slug);
 
         const createdSpace = await createProjectSpace({
           projectId,
 
           body: {
             name: space.name.trim(),
+
+            slug,
 
             description: space.description?.trim() || undefined,
 
