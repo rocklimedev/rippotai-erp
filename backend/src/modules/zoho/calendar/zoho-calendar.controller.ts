@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -19,14 +20,20 @@ import { UpdateZohoEventDto } from './dto/update-event.dto';
 export class ZohoCalendarController {
   constructor(private readonly zohoCalendarService: ZohoCalendarService) {}
 
-  /**
-   * ---------------------------------------------------------
-   * CALENDARS
-   * ---------------------------------------------------------
-   *
-   * GET /api/v1/zoho/calendar/:ownerKey/calendars
-   */
+  // =========================================================
+  // CALENDARS
+  // =========================================================
 
+  /**
+   * GET
+   *
+   * /api/v1/zoho/calendar/:ownerKey/calendars
+   *
+   * Optional:
+   *
+   * ?category=...
+   * ?showhiddencal=true
+   */
   @Get(':ownerKey/calendars')
   listCalendars(
     @Param('ownerKey') ownerKey: string,
@@ -36,14 +43,15 @@ export class ZohoCalendarController {
     return this.zohoCalendarService.listCalendars(
       ownerKey,
       category,
-      showHiddenCal === 'true',
+      this.toBoolean(showHiddenCal),
     );
   }
 
   /**
-   * GET /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid
+   * GET
+   *
+   * /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid
    */
-
   @Get(':ownerKey/calendars/:calendarUid')
   getCalendar(
     @Param('ownerKey') ownerKey: string,
@@ -53,9 +61,10 @@ export class ZohoCalendarController {
   }
 
   /**
-   * POST /api/v1/zoho/calendar/:ownerKey/calendars
+   * POST
+   *
+   * /api/v1/zoho/calendar/:ownerKey/calendars
    */
-
   @Post(':ownerKey/calendars')
   createCalendar(
     @Param('ownerKey') ownerKey: string,
@@ -64,21 +73,21 @@ export class ZohoCalendarController {
     return this.zohoCalendarService.createCalendar(ownerKey, dto);
   }
 
-  /**
-   * ---------------------------------------------------------
-   * EVENTS
-   * ---------------------------------------------------------
-   */
+  // =========================================================
+  // EVENTS
+  // =========================================================
 
   /**
-   * GET /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid/events
+   * GET
+   *
+   * /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid/events
    *
    * Optional:
-   * ?start=2026-09-22T00:00:00
-   * &end=2026-09-30T23:59:59
+   *
+   * ?start=20260923T000000Z
+   * &end=20260930T235959Z
    * &byinstance=true
    */
-
   @Get(':ownerKey/calendars/:calendarUid/events')
   listEvents(
     @Param('ownerKey') ownerKey: string,
@@ -87,26 +96,43 @@ export class ZohoCalendarController {
     @Query('end') end?: string,
     @Query('byinstance') byInstance?: string,
   ) {
-    const range =
-      start && end
-        ? {
-            start,
-            end,
-          }
-        : undefined;
+    let range:
+      | {
+          start: string;
+          end: string;
+        }
+      | undefined;
+
+    /**
+     * If either start or end is supplied,
+     * require both.
+     */
+    if (start || end) {
+      if (!start || !end) {
+        throw new BadRequestException(
+          'Both start and end are required when using a date range',
+        );
+      }
+
+      range = {
+        start,
+        end,
+      };
+    }
 
     return this.zohoCalendarService.listEvents(
       ownerKey,
       calendarUid,
       range,
-      byInstance === 'true',
+      this.toBoolean(byInstance),
     );
   }
 
   /**
-   * GET /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid/events/:eventUid
+   * GET
+   *
+   * /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid/events/:eventUid
    */
-
   @Get(':ownerKey/calendars/:calendarUid/events/:eventUid')
   getEvent(
     @Param('ownerKey') ownerKey: string,
@@ -117,9 +143,10 @@ export class ZohoCalendarController {
   }
 
   /**
-   * POST /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid/events
+   * POST
+   *
+   * /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid/events
    */
-
   @Post(':ownerKey/calendars/:calendarUid/events')
   createEvent(
     @Param('ownerKey') ownerKey: string,
@@ -130,9 +157,10 @@ export class ZohoCalendarController {
   }
 
   /**
-   * PUT /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid/events/:eventUid
+   * PUT
+   *
+   * /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid/events/:eventUid
    */
-
   @Put(':ownerKey/calendars/:calendarUid/events/:eventUid')
   updateEvent(
     @Param('ownerKey') ownerKey: string,
@@ -149,9 +177,10 @@ export class ZohoCalendarController {
   }
 
   /**
-   * DELETE /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid/events/:eventUid
+   * DELETE
+   *
+   * /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid/events/:eventUid
    */
-
   @Delete(':ownerKey/calendars/:calendarUid/events/:eventUid')
   deleteEvent(
     @Param('ownerKey') ownerKey: string,
@@ -165,24 +194,32 @@ export class ZohoCalendarController {
     );
   }
 
-  /**
-   * ---------------------------------------------------------
-   * RECURRING EVENT INSTANCES
-   * ---------------------------------------------------------
-   */
+  // =========================================================
+  // RECURRING EVENT INSTANCES
+  // =========================================================
 
   /**
-   * GET /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid/events/:eventUid/instances
+   * GET
+   *
+   * /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid/events/:eventUid/instances
+   *
+   * Required:
+   *
+   * ?start=20260923T000000Z
+   * &end=20260930T235959Z
    */
-
   @Get(':ownerKey/calendars/:calendarUid/events/:eventUid/instances')
   getEventInstances(
     @Param('ownerKey') ownerKey: string,
     @Param('calendarUid') calendarUid: string,
     @Param('eventUid') eventUid: string,
-    @Query('start') start: string,
-    @Query('end') end: string,
+    @Query('start') start?: string,
+    @Query('end') end?: string,
   ) {
+    if (!start || !end) {
+      throw new BadRequestException('Both start and end are required');
+    }
+
     return this.zohoCalendarService.getEventInstances(
       ownerKey,
       calendarUid,
@@ -194,16 +231,21 @@ export class ZohoCalendarController {
     );
   }
 
-  /**
-   * ---------------------------------------------------------
-   * SMART ADD
-   * ---------------------------------------------------------
-   */
+  // =========================================================
+  // SMART ADD
+  // =========================================================
 
   /**
-   * POST /api/v1/zoho/calendar/:ownerKey/smart-add
+   * POST
+   *
+   * /api/v1/zoho/calendar/:ownerKey/smart-add
+   *
+   * Body:
+   *
+   * {
+   *   "title": "Site visit tomorrow at 11 AM"
+   * }
    */
-
   @Post(':ownerKey/smart-add')
   smartAddEvent(
     @Param('ownerKey') ownerKey: string,
@@ -212,6 +254,14 @@ export class ZohoCalendarController {
       title: string;
     },
   ) {
-    return this.zohoCalendarService.smartAddEvent(ownerKey, body.title);
+    return this.zohoCalendarService.smartAddEvent(ownerKey, body?.title);
+  }
+
+  // =========================================================
+  // HELPERS
+  // =========================================================
+
+  private toBoolean(value?: string): boolean {
+    return value?.toLowerCase() === 'true';
   }
 }

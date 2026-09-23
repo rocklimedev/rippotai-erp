@@ -1,110 +1,270 @@
 import { baseApi } from "../../store/baseApi";
 
+/* -------------------------------------------------------------------------- */
+/* Owner helpers                                                              */
+/* -------------------------------------------------------------------------- */
+
+const getOwnerKey = () => {
+  try {
+    const raw = localStorage.getItem("bc_user");
+
+    if (!raw) {
+      return null;
+    }
+
+    const user = JSON.parse(raw);
+
+    return user?.id ?? user?._id ?? null;
+  } catch {
+    return null;
+  }
+};
+
+const encode = (value) => encodeURIComponent(String(value));
+
+const getErrorMessage = (error, fallback = "Something went wrong") => {
+  return (
+    error?.data?.message ||
+    error?.data?.zohoResponse?.message ||
+    error?.data?.zohoResponse?.error?.message ||
+    error?.error ||
+    fallback
+  );
+};
+
+/* -------------------------------------------------------------------------- */
+/* API                                                                        */
+/* -------------------------------------------------------------------------- */
+
 export const calendarApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // =========================
-    // CALENDAR EVENTS
-    // =========================
+    /* ---------------------------------------------------------------------- */
+    /* Calendars                                                               */
+    /* ---------------------------------------------------------------------- */
+
+    getCalendars: builder.query({
+      query: ({ ownerKey: suppliedOwnerKey } = {}) => {
+        const ownerKey = suppliedOwnerKey ?? getOwnerKey();
+
+        if (!ownerKey) {
+          throw new Error("Unable to identify the current user");
+        }
+
+        return {
+          url: `/zoho/calendar/${encode(ownerKey)}/calendars`,
+        };
+      },
+
+      providesTags: ["CalendarEvents"],
+    }),
+
+    getCalendar: builder.query({
+      query: ({ ownerKey: suppliedOwnerKey, calendarUid }) => {
+        const ownerKey = suppliedOwnerKey ?? getOwnerKey();
+
+        if (!ownerKey) {
+          throw new Error("Unable to identify the current user");
+        }
+
+        if (!calendarUid) {
+          throw new Error("Calendar UID is required");
+        }
+
+        return {
+          url: `/zoho/calendar/${encode(ownerKey)}/calendars/${encode(
+            calendarUid,
+          )}`,
+        };
+      },
+
+      providesTags: ["CalendarEvents"],
+    }),
+
+    /* ---------------------------------------------------------------------- */
+    /* Events                                                                  */
+    /* ---------------------------------------------------------------------- */
 
     getCalendarEvents: builder.query({
-      query: (params) => ({
-        url: "/calendar/events",
-        params,
-      }),
-      providesTags: ["CalendarEvents"],
-    }),
+      query: ({
+        ownerKey: suppliedOwnerKey,
+        calendarUid,
+        range,
+        byinstance = true,
+        timezone = "Asia/Kolkata",
+      }) => {
+        const ownerKey = suppliedOwnerKey ?? getOwnerKey();
 
-    getMyCalendarEvents: builder.query({
-      query: (params) => ({
-        url: "/calendar/events/my-events",
-        params,
-      }),
-      providesTags: ["CalendarEvents"],
-    }),
+        if (!ownerKey) {
+          throw new Error("Unable to identify the current user");
+        }
 
-    getTodayCalendarEvents: builder.query({
-      query: () => ({
-        url: "/calendar/events/today",
-      }),
-      providesTags: ["CalendarEvents"],
-    }),
+        if (!calendarUid) {
+          throw new Error("Calendar UID is required");
+        }
 
-    getUpcomingCalendarEvents: builder.query({
-      query: (days = 30) => ({
-        url: "/calendar/events/upcoming",
-        params: {
-          days,
-        },
-      }),
-      providesTags: ["CalendarEvents"],
-    }),
+        return {
+          url: `/zoho/calendar/${encode(ownerKey)}/calendars/${encode(
+            calendarUid,
+          )}/events`,
 
-    getProjectCalendarEvents: builder.query({
-      query: (projectId) => ({
-        url: `/calendar/events/project/${projectId}`,
-      }),
-      providesTags: ["CalendarEvents"],
-    }),
+          params: {
+            ...(range ? { range: JSON.stringify(range) } : {}),
+            byinstance,
+            timezone,
+          },
+        };
+      },
 
-    getCalendarStats: builder.query({
-      query: () => ({
-        url: "/calendar/events/stats",
-      }),
-      providesTags: ["CalendarStats"],
+      providesTags: ["CalendarEvents"],
     }),
 
     getCalendarEvent: builder.query({
-      query: (id) => ({
-        url: `/calendar/events/${id}`,
-      }),
+      query: ({ ownerKey: suppliedOwnerKey, calendarUid, eventUid }) => {
+        const ownerKey = suppliedOwnerKey ?? getOwnerKey();
+
+        if (!ownerKey) {
+          throw new Error("Unable to identify the current user");
+        }
+
+        if (!calendarUid) {
+          throw new Error("Calendar UID is required");
+        }
+
+        if (!eventUid) {
+          throw new Error("Event UID is required");
+        }
+
+        return {
+          url: `/zoho/calendar/${encode(ownerKey)}/calendars/${encode(
+            calendarUid,
+          )}/events/${encode(eventUid)}`,
+        };
+      },
+
       providesTags: ["CalendarEvents"],
     }),
 
+    /* ---------------------------------------------------------------------- */
+    /* Create                                                                  */
+    /* ---------------------------------------------------------------------- */
+
     createCalendarEvent: builder.mutation({
-      query: (body) => ({
-        url: "/calendar/events",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["CalendarEvents", "CalendarStats"],
+      query: ({ ownerKey: suppliedOwnerKey, calendarUid, body }) => {
+        const ownerKey = suppliedOwnerKey ?? getOwnerKey();
+
+        if (!ownerKey) {
+          throw new Error("Unable to identify the current user");
+        }
+
+        if (!calendarUid) {
+          throw new Error("Calendar UID is required");
+        }
+
+        return {
+          url: `/zoho/calendar/${encode(ownerKey)}/calendars/${encode(
+            calendarUid,
+          )}/events`,
+          method: "POST",
+
+          body,
+        };
+      },
+
+      invalidatesTags: ["CalendarEvents"],
     }),
+
+    /* ---------------------------------------------------------------------- */
+    /* Update                                                                  */
+    /* ---------------------------------------------------------------------- */
 
     updateCalendarEvent: builder.mutation({
-      query: ({ id, body }) => ({
-        url: `/calendar/events/${id}`,
-        method: "PATCH",
-        body,
-      }),
-      invalidatesTags: ["CalendarEvents", "CalendarStats"],
+      query: ({ ownerKey: suppliedOwnerKey, calendarUid, eventUid, body }) => {
+        const ownerKey = suppliedOwnerKey ?? getOwnerKey();
+
+        if (!ownerKey) {
+          throw new Error("Unable to identify the current user");
+        }
+
+        if (!calendarUid) {
+          throw new Error("Calendar UID is required");
+        }
+
+        if (!eventUid) {
+          throw new Error("Event UID is required");
+        }
+
+        return {
+          url: `/zoho/calendar/${encode(ownerKey)}/calendars/${encode(
+            calendarUid,
+          )}/events/${encode(eventUid)}`,
+          method: "PUT",
+
+          body,
+        };
+      },
+
+      invalidatesTags: ["CalendarEvents"],
     }),
+
+    /* ---------------------------------------------------------------------- */
+    /* Delete                                                                  */
+    /* ---------------------------------------------------------------------- */
 
     deleteCalendarEvent: builder.mutation({
-      query: (id) => ({
-        url: `/calendar/events/${id}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["CalendarEvents", "CalendarStats"],
+      query: ({ ownerKey: suppliedOwnerKey, calendarUid, eventUid, body }) => {
+        const ownerKey = suppliedOwnerKey ?? getOwnerKey();
+
+        if (!ownerKey) {
+          throw new Error("Unable to identify the current user");
+        }
+
+        if (!calendarUid) {
+          throw new Error("Calendar UID is required");
+        }
+
+        if (!eventUid) {
+          throw new Error("Event UID is required");
+        }
+
+        return {
+          url: `/zoho/calendar/${encode(ownerKey)}/calendars/${encode(
+            calendarUid,
+          )}/events/${encode(eventUid)}`,
+          method: "DELETE",
+
+          ...(body ? { body } : {}),
+        };
+      },
+
+      invalidatesTags: ["CalendarEvents"],
     }),
   }),
-  overrideExisting: false,
+
+  overrideExisting: true,
 });
 
+/* -------------------------------------------------------------------------- */
+/* Exports                                                                    */
+/* -------------------------------------------------------------------------- */
+
 export const {
+  useGetCalendarsQuery,
+  useLazyGetCalendarsQuery,
+
+  useGetCalendarQuery,
+  useLazyGetCalendarQuery,
+
   useGetCalendarEventsQuery,
   useLazyGetCalendarEventsQuery,
-  useGetMyCalendarEventsQuery,
-  useLazyGetMyCalendarEventsQuery,
-  useGetTodayCalendarEventsQuery,
-  useLazyGetTodayCalendarEventsQuery,
-  useGetUpcomingCalendarEventsQuery,
-  useLazyGetUpcomingCalendarEventsQuery,
-  useGetProjectCalendarEventsQuery,
-  useLazyGetProjectCalendarEventsQuery,
-  useGetCalendarStatsQuery,
-  useLazyGetCalendarStatsQuery,
+
   useGetCalendarEventQuery,
   useLazyGetCalendarEventQuery,
+
   useCreateCalendarEventMutation,
+
   useUpdateCalendarEventMutation,
+
   useDeleteCalendarEventMutation,
 } = calendarApi;
+
+export { getOwnerKey, getErrorMessage };

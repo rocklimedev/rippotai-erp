@@ -7,7 +7,9 @@ import {
   HttpException,
   InternalServerErrorException,
 } from '@nestjs/common';
+
 import axios, { AxiosRequestConfig, Method, AxiosError } from 'axios';
+
 import { ZohoAuthService } from '@/modules/auth/zoho-auth.service';
 
 @Injectable()
@@ -22,12 +24,26 @@ export class ZohoHttpService {
   ): Promise<T> {
     const accessToken = await this.zohoAuthService.getValidAccessToken(userId);
 
+    /**
+     * If the caller provides an explicit baseURL,
+     * use it.
+     *
+     * Otherwise use the user's Zoho regional api_domain.
+     *
+     * This is important because Zoho Calendar uses:
+     *
+     * https://calendar.zoho.com/api/v1
+     *
+     * rather than:
+     *
+     * https://www.zohoapis.in/calendar/v1
+     */
     const baseURL =
       options.baseURL ?? (await this.zohoAuthService.getApiDomain(userId));
 
     if (!baseURL) {
       throw new BadRequestException(
-        `Zoho API domain is missing for this user. ` +
+        'Zoho API domain is missing for this user. ' +
           'Please reconnect the Zoho account.',
       );
     }
@@ -39,6 +55,7 @@ export class ZohoHttpService {
         url: path,
         baseURL,
         headers: {
+          Accept: 'application/json',
           ...options.headers,
           Authorization: `Zoho-oauthtoken ${accessToken}`,
         },
@@ -56,12 +73,30 @@ export class ZohoHttpService {
     }
 
     const axiosErr = err as AxiosError<any>;
+
     const status = axiosErr.response?.status ?? 500;
+
     const data = axiosErr.response?.data;
 
-    // Zoho classic: { error: { code, message } }
-    // Zoho V3 often: { error_code, message } or similar
+    /**
+     * Zoho classic:
+     *
+     * {
+     *   error: {
+     *     code: "...",
+     *     message: "..."
+     *   }
+     * }
+     *
+     * Zoho newer APIs can also return:
+     *
+     * {
+     *   error_code: "...",
+     *   message: "..."
+     * }
+     */
     const zohoCode = data?.error?.code ?? data?.error_code ?? data?.code;
+
     const zohoMessage =
       data?.error?.message ??
       data?.message ??
@@ -85,16 +120,21 @@ export class ZohoHttpService {
     switch (status) {
       case 400:
         throw new BadRequestException(body);
+
       case 401:
         throw new UnauthorizedException(body);
+
       case 403:
         throw new ForbiddenException(body);
+
       case 404:
         throw new NotFoundException(body);
+
       default:
         if (status >= 400 && status < 500) {
           throw new HttpException(body, status);
         }
+
         throw new InternalServerErrorException(body);
     }
   }
