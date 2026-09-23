@@ -8,6 +8,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+
 import { WorkOrdersService } from '../services/work-orders.service';
 import { CreateWorkOrderDto } from '../dto/create-work-order.dto';
 import { UpdateWorkOrderDto } from '../dto/update-work-order.dto';
@@ -30,6 +31,11 @@ export class WorkOrdersController {
   // ============================================================
   // LIST
   // GET /api/v1/work-orders
+  //
+  // Optional filters:
+  // ?project_id=xxx
+  // ?vendor_id=xxx
+  // ?status=DRAFT
   // ============================================================
 
   @Get()
@@ -46,7 +52,7 @@ export class WorkOrdersController {
   }
 
   // ============================================================
-  // GET
+  // GET DETAIL
   // GET /api/v1/work-orders/:id
   // ============================================================
 
@@ -66,8 +72,13 @@ export class WorkOrdersController {
   }
 
   // ============================================================
-  // STATUS
+  // UPDATE STATUS
   // PATCH /api/v1/work-orders/:id/status
+  //
+  // Body:
+  // {
+  //   "status": "APPROVED"
+  // }
   // ============================================================
 
   @Patch(':id/status')
@@ -76,6 +87,37 @@ export class WorkOrdersController {
     @Body('status') status: WorkOrderStatus,
   ) {
     return this.workOrdersService.updateStatus(id, status);
+  }
+
+  // ============================================================
+  // APPROVE
+  // PATCH /api/v1/work-orders/:id/approve
+  // ============================================================
+
+  @Patch(':id/approve')
+  approve(@Param('id') id: string) {
+    return this.workOrdersService.updateStatus(id, WorkOrderStatus.APPROVED);
+  }
+
+  // ============================================================
+  // REJECT
+  // PATCH /api/v1/work-orders/:id/reject
+  //
+  // Body:
+  // {
+  //   "reason": "Commercial terms need revision"
+  // }
+  //
+  // NOTE:
+  // There is currently no REJECTED value in WorkOrderStatus.
+  // Therefore rejection is handled according to the service logic.
+  // If rejected work orders need a dedicated status, add REJECTED
+  // to WorkOrderStatus and use it here.
+  // ============================================================
+
+  @Patch(':id/reject')
+  reject(@Param('id') id: string, @Body('reason') reason?: string) {
+    return this.workOrdersService.reject(id, reason);
   }
 
   // ============================================================
