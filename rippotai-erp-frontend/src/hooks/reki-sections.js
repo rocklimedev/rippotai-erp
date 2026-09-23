@@ -1,3 +1,5 @@
+import { SITE_RESTRICTION_TYPES } from "./brief-sections";
+
 export const REKI_SECTIONS = [
   // ============================================================
   // 01. GENERAL INFORMATION
@@ -137,26 +139,34 @@ export const REKI_SECTIONS = [
   // ============================================================
   // 05. SOCIETY / RWA RESTRICTIONS
   // ============================================================
+  // ============================================================
+  // 05. SITE RULES & RESTRICTIONS
+  // ============================================================
+
   {
-    title: "Society / RWA Restrictions",
+    title: "Site Rules & Restrictions",
+    type: "restriction-table",
+    description:
+      "Record society, RWA, access, working-hour and other site-specific restrictions.",
     fields: [
       {
-        key: "society_rwa_restrictions",
-        label: "Society / RWA Restrictions",
-        type: "textarea",
-        rows: 5,
-      },
-      {
-        key: "working_hours_allowed",
-        label: "Working Hours Allowed",
-        type: "text",
-        placeholder: "e.g. 9:00 AM - 6:00 PM",
-      },
-      {
-        key: "material_movement_rule",
-        label: "Material Movement Rules",
-        type: "textarea",
-        rows: 5,
+        key: "site_restrictions",
+        label: "Site Restrictions",
+        type: "restriction-table",
+        restrictionOptions: SITE_RESTRICTION_TYPES,
+        columns: [
+          {
+            key: "type",
+            label: "Restriction Type",
+            type: "select",
+          },
+          {
+            key: "details",
+            label: "Details / Notes",
+            type: "text",
+          },
+        ],
+        addLabel: "Add Restriction",
       },
     ],
   },

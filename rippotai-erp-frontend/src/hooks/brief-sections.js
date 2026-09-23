@@ -91,6 +91,17 @@ export const YES_NO_OPTIONS = [
   { value: "No", label: "No" },
 ];
 
+export const FACING_ORIENTATION_OPTIONS = [
+  { value: "NORTH", label: "North" },
+  { value: "NORTH_EAST", label: "North-East" },
+  { value: "EAST", label: "East" },
+  { value: "SOUTH_EAST", label: "South-East" },
+  { value: "SOUTH", label: "South" },
+  { value: "SOUTH_WEST", label: "South-West" },
+  { value: "WEST", label: "West" },
+  { value: "NORTH_WEST", label: "North-West" },
+];
+
 // Mock data for drawings available — replace with real API later
 export const DRAWINGS_AVAILABLE_OPTIONS = [
   { value: "ARCHITECTURAL", label: "Architectural Drawings" },
@@ -190,15 +201,20 @@ export const BRIEF_SECTIONS = [
         options: SITE_AREA_UNIT_OPTIONS,
       },
       // siteAreaOtherUnit REMOVED
+
       {
         key: "facingOrientation",
         label: "Facing / Orientation",
+        type: "select",
+        options: FACING_ORIENTATION_OPTIONS,
       },
       {
         key: "parkingProvision",
         label: "Parking Provision",
-        // changed from textarea → normal input
+        type: "select",
+        options: YES_NO_OPTIONS,
       },
+
       {
         key: "ownershipStatus",
         label: "Ownership Status",
@@ -294,7 +310,36 @@ export const BRIEF_SECTIONS = [
       },
     ],
   },
-
+  // =========================================================
+  // OCCUPANTS  (table)
+  // =========================================================
+  {
+    title: "Occupants & Household",
+    key: "occupants",
+    fields: [
+      {
+        key: "occupants",
+        label: "Occupants",
+        type: "table",
+        columns: [
+          { key: "name", label: "Name", type: "text" },
+          { key: "relation", label: "Relation", type: "text" },
+          {
+            key: "specificNeeds",
+            label: "Specific Needs / Preferences",
+            type: "text",
+          },
+        ],
+        addLabel: "Add Occupant",
+      },
+      {
+        key: "householdNotes",
+        label: "Household Notes",
+        type: "textarea",
+        rows: 5,
+      },
+    ],
+  },
   // =========================================================
   // SPACE REQUIREMENTS  (boolean + table)
   // =========================================================
@@ -526,37 +571,6 @@ export const BRIEF_SECTIONS = [
           { key: "details", label: "Details / Notes", type: "text" },
         ],
         addLabel: "Add Restriction",
-      },
-    ],
-  },
-
-  // =========================================================
-  // OCCUPANTS  (table)
-  // =========================================================
-  {
-    title: "Occupants & Household",
-    key: "occupants",
-    fields: [
-      {
-        key: "occupants",
-        label: "Occupants",
-        type: "table",
-        columns: [
-          { key: "name", label: "Name", type: "text" },
-          { key: "relation", label: "Relation", type: "text" },
-          {
-            key: "specificNeeds",
-            label: "Specific Needs / Preferences",
-            type: "text",
-          },
-        ],
-        addLabel: "Add Occupant",
-      },
-      {
-        key: "householdNotes",
-        label: "Household Notes",
-        type: "textarea",
-        rows: 5,
       },
     ],
   },

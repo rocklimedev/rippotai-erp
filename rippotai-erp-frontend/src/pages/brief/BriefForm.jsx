@@ -146,7 +146,26 @@ export function BriefForm() {
     console.error("Failed to load project brief:", briefError);
     toast.error(briefError?.data?.message || "Failed to load project brief");
   }, [briefError]);
+  // ==========================================================
+  // AUTO-FILL SITE ADDRESS + PROJECT TYPE FROM SELECTED PROJECT
+  // ==========================================================
 
+  useEffect(() => {
+    if (!projectId) return;
+
+    const selectedProject = projects.find((p) => p.id === projectId);
+    if (!selectedProject) return;
+
+    setValues((current) => ({
+      ...current,
+      siteAddress: current.siteAddress || selectedProject.site_location || "",
+      projectType:
+        current.projectType ||
+        selectedProject.project_type_id ||
+        selectedProject.project_type?.id ||
+        "",
+    }));
+  }, [projectId, projects]);
   // ==========================================================
   // FIELD CHANGE
   // ==========================================================
