@@ -5,6 +5,11 @@ import { BulkIndexerService } from '../indexing/bulk-indexer.service';
 import { SearchableDocument } from '../interfaces/searchable-document.interface';
 import { DeliveryChallan } from '@/modules/material-procurement/models/delivery-challan.model';
 
+/**
+ * DeliveryChallan has project_id / vendor_id columns but does NOT define
+ * BelongsTo('project') or BelongsTo('vendor') associations.
+ * Only materialRequirement and items are associated.
+ */
 @Injectable()
 export class DeliveryChallanSearchService {
   private readonly logger = new Logger(DeliveryChallanSearchService.name);
@@ -18,10 +23,9 @@ export class DeliveryChallanSearchService {
   ) {}
 
   private toDocument(c: any): SearchableDocument {
-    const projectName = c.project?.name ?? '';
-    const vendorName = c.vendor?.name ?? '';
-    const title = c.challan_number ?? c.challanNumber ?? 'Untitled Challan';
-    const subtitle = [projectName, vendorName, c.status]
+    const number = c.challan_number ?? c.challanNumber ?? '';
+    const title = number || 'Untitled Challan';
+    const subtitle = [c.status, c.site_address ?? c.siteAddress]
       .filter(Boolean)
       .join(' · ');
 
@@ -33,11 +37,10 @@ export class DeliveryChallanSearchService {
       subtitle,
       status: c.status ?? null,
       searchable_text: [
-        c.challan_number ?? c.challanNumber,
-        projectName,
-        vendorName,
+        number,
         c.site_address ?? c.siteAddress,
         c.general_remarks ?? c.generalRemarks,
+        c.discrepancy_notes ?? c.discrepancyNotes,
         c.status,
       ]
         .filter(Boolean)
@@ -47,20 +50,15 @@ export class DeliveryChallanSearchService {
       visibility: 'project',
       is_deleted: false,
 
-      challan_number: c.challan_number ?? c.challanNumber,
-      project_name: projectName,
-      vendor_name: vendorName,
+      challan_number: number,
+      project_name: '',
+      vendor_name: '',
       site_address: c.site_address ?? c.siteAddress,
     };
   }
 
   async indexOne(id: string): Promise<void> {
-    const challan = await this.challanModel.findByPk(id, {
-      include: [
-        { association: 'project', required: false },
-        { association: 'vendor', required: false },
-      ],
-    });
+    const challan = await this.challanModel.findByPk(id);
     if (!challan) {
       await this.searchService.deleteDocument(this.INDEX, id);
       return;
@@ -78,12 +76,8 @@ export class DeliveryChallanSearchService {
 
   async reindexAll() {
     await this.searchService.ensureIndex(this.INDEX);
-    const rows = await this.challanModel.findAll({
-      include: [
-        { association: 'project', required: false },
-        { association: 'vendor', required: false },
-      ],
-    });
+    // No project/vendor associations — plain findAll only
+    const rows = await this.challanModel.findAll();
     const items = rows.map((c) => ({
       index: this.INDEX,
       id: c.id,
@@ -107,9 +101,7 @@ export class DeliveryChallanSearchService {
           fields: [
             'challan_number^6',
             'title^4',
-            'project_name^3',
-            'vendor_name^3',
-            'site_address^2',
+            'site_address^3',
             'searchable_text',
           ],
           fuzziness: 'AUTO',
