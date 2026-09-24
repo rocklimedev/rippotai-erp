@@ -14,7 +14,11 @@ import { User } from '@/modules/users/models/user.model';
 export class SiteRecceSearchService {
   private readonly logger = new Logger(SiteRecceSearchService.name);
 
-  private readonly INDEX = 'site_recce';
+  /**
+   * IMPORTANT:
+   * This must match the index used by GlobalSearchService.
+   */
+  private readonly INDEX = 'site_recces';
 
   constructor(
     private readonly searchService: SearchService,
@@ -29,6 +33,12 @@ export class SiteRecceSearchService {
 
   private toDocument(recce: SiteRecce) {
     return {
+      // ----------------------------------------------------------
+      // GLOBAL SEARCH METADATA
+      // ----------------------------------------------------------
+
+      entity_type: 'site_recce',
+
       id: recce.id,
 
       // ----------------------------------------------------------
@@ -165,7 +175,7 @@ export class SiteRecceSearchService {
       return;
     }
 
-    await this.searchService.index(
+    await this.searchService.indexDocument(
       this.INDEX,
       recce.id,
       this.toDocument(recce),
@@ -187,7 +197,7 @@ export class SiteRecceSearchService {
   // ============================================================
 
   async removeSiteRecce(id: string) {
-    await this.searchService.delete(this.INDEX, id);
+    await this.searchService.deleteDocument(this.INDEX, id);
 
     this.logger.log(`Removed Site Recce ${id}`);
   }
@@ -198,33 +208,35 @@ export class SiteRecceSearchService {
 
   async search(query: string) {
     return this.searchService.search(this.INDEX, {
-      multi_match: {
-        query,
+      query: {
+        multi_match: {
+          query,
 
-        fields: [
-          'project^6',
-          'project_name^5',
-          'client_name^5',
-          'site_address^4',
-          'site_engineer^5',
-          'accompanied_by^3',
+          fields: [
+            'project^6',
+            'project_name^5',
+            'client_name^5',
+            'site_address^4',
+            'site_engineer^5',
+            'accompanied_by^3',
 
-          'site_type^3',
-          'unit_floor_no',
+            'site_type^3',
+            'unit_floor_no',
 
-          'material_entry_point',
-          'water_connection',
-          'power_load_available',
-          'drainage_point_location',
+            'material_entry_point',
+            'water_connection',
+            'power_load_available',
+            'drainage_point_location',
 
-          'society_rwa_restrictions',
-          'working_hours_allowed',
-          'material_movement_rule',
+            'society_rwa_restrictions',
+            'working_hours_allowed',
+            'material_movement_rule',
 
-          'existing_condition^3',
-        ],
+            'existing_condition^3',
+          ],
 
-        fuzziness: 'AUTO',
+          fuzziness: 'AUTO',
+        },
       },
     });
   }
@@ -269,7 +281,7 @@ export class SiteRecceSearchService {
     });
 
     for (const recce of recceList) {
-      await this.searchService.index(
+      await this.searchService.indexDocument(
         this.INDEX,
         recce.id,
         this.toDocument(recce),

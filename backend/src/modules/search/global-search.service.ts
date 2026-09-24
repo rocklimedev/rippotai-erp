@@ -104,24 +104,37 @@ export class GlobalSearchService {
         fields: {
           title: { number_of_fragments: 1 },
           subtitle: { number_of_fragments: 1 },
-          searchable_text: { number_of_fragments: 2, fragment_size: 120 },
+          searchable_text: {
+            number_of_fragments: 2,
+            fragment_size: 120,
+          },
         },
         pre_tags: ['<em>'],
         post_tags: ['</em>'],
       },
       aggs: {
         entity_type: {
-          terms: { field: 'entity_type', size: 30 },
+          terms: {
+            field: 'entity_type',
+            size: 30,
+          },
         },
       },
       sort: [
         { _score: 'desc' },
-        { updated_at: { order: 'desc', unmapped_type: 'date' } },
+        {
+          updated_at: {
+            order: 'desc',
+            unmapped_type: 'date',
+          },
+        },
       ],
     };
 
     const start = Date.now();
+
     const response = await this.searchService.search(indices, body);
+
     const took_ms = Date.now() - start;
 
     const hits = (response.hits?.hits ?? []).map((hit: any) =>
@@ -134,11 +147,29 @@ export class GlobalSearchService {
         : (response.hits?.total?.value ?? 0);
 
     const facets: GlobalSearchResult['facets'] = {};
-    const typeBuckets = response.aggregations?.entity_type?.buckets;
-    if (Array.isArray(typeBuckets)) {
+
+    /**
+     * Elasticsearch types `aggregations` as a union of all possible
+     * aggregation types. Since `entity_type` is explicitly a `terms`
+     * aggregation in our query, narrow it to the terms shape here.
+     */
+    const entityTypeAggregation =
+      'aggregations' in response
+        ? response.aggregations?.entity_type
+        : undefined;
+
+    const typeBuckets =
+      entityTypeAggregation &&
+      'buckets' in entityTypeAggregation &&
+      Array.isArray(entityTypeAggregation.buckets)
+        ? entityTypeAggregation.buckets
+        : undefined;
+
+    if (typeBuckets) {
       facets.entity_type = {};
-      for (const b of typeBuckets) {
-        facets.entity_type[b.key] = b.doc_count;
+
+      for (const bucket of typeBuckets) {
+        facets.entity_type[String(bucket.key)] = bucket.doc_count;
       }
     }
 
