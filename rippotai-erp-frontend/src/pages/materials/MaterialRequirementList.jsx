@@ -909,12 +909,12 @@ export default function MaterialRequirementList() {
 
   const handleCreate = () => {
     if (selectedProjectId) {
-      nav(`/procurement/requirements/new?project_id=${selectedProjectId}`);
+      nav(`/procurement/requirements/add?project_id=${selectedProjectId}`);
 
       return;
     }
 
-    nav("/procurement/requirements/new");
+    nav("/procurement/requirements/add");
   };
 
   /* ==========================================================

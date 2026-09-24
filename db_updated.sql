@@ -14,6 +14,11 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
+
+-- Dumping database structure for spsyn8lm_rippotai_erp
+CREATE DATABASE IF NOT EXISTS `spsyn8lm_rippotai_erp` /*!40100 DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci */;
+USE `spsyn8lm_rippotai_erp`;
+
 -- Dumping structure for table spsyn8lm_rippotai_erp.access_rules
 CREATE TABLE IF NOT EXISTS `access_rules` (
   `id` char(36) COLLATE utf8_unicode_ci NOT NULL,
@@ -499,6 +504,7 @@ CREATE TABLE IF NOT EXISTS `delivery_challans` (
   `site_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `purchase_order_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `vendor_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `material_requirement_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `challan_date` date NOT NULL,
   `site_address` text COLLATE utf8mb4_unicode_ci,
   `status` enum('DRAFT','IN_TRANSIT','RECEIVED','PARTIALLY_ACCEPTED','REJECTED','CANCELLED') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'DRAFT',
@@ -523,7 +529,9 @@ CREATE TABLE IF NOT EXISTS `delivery_challans` (
   KEY `idx_delivery_challans_vendor_id` (`vendor_id`),
   KEY `idx_delivery_challans_status` (`status`),
   KEY `idx_delivery_challans_dispatched_by` (`dispatched_by`),
-  KEY `idx_delivery_challans_received_by` (`received_by`)
+  KEY `idx_delivery_challans_received_by` (`received_by`),
+  KEY `idx_delivery_challans_material_requirement_id` (`material_requirement_id`),
+  CONSTRAINT `fk_delivery_challans_material_requirement` FOREIGN KEY (`material_requirement_id`) REFERENCES `material_requirements` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data exporting was unselected.
@@ -1007,9 +1015,9 @@ CREATE TABLE IF NOT EXISTS `material_requirements` (
   `materialMasterId` char(36) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
   `category` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `selection` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `budgetAmount` decimal(12,2) DEFAULT NULL,
   `style` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `functionalNeeds` text COLLATE utf8mb4_unicode_ci,
+  `requirementDate` date DEFAULT NULL,
   `status` enum('DRAFT','READY','IN_PROGRESS','COMPLETED','CANCELLED') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'DRAFT',
   `createdAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -1019,6 +1027,7 @@ CREATE TABLE IF NOT EXISTS `material_requirements` (
   KEY `idx_material_requirements_status` (`status`),
   KEY `idx_material_requirements_created_at` (`createdAt`),
   KEY `idx_material_requirements_material_master` (`materialMasterId`),
+  KEY `idx_material_requirements_requirement_date` (`requirementDate`),
   CONSTRAINT `fk_material_requirements_material_master` FOREIGN KEY (`materialMasterId`) REFERENCES `material_masters` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

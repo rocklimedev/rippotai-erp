@@ -1,162 +1,117 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-
-import { SearchService } from '@/modules/search/search.service';
-
-import { Lead } from '../../leads/models/lead.model';
-import { LeadNote } from '../../leads/models/lead-note.model';
-import { LeadActivity } from '../../leads/models/lead-activity.model';
+import { SearchService } from '../search.service';
+import { BulkIndexerService } from '../indexing/bulk-indexer.service';
+import { SearchableDocument } from '../interfaces/searchable-document.interface';
+import { Lead } from '@/modules/leads/models/lead.model';
 
 @Injectable()
 export class LeadSearchService {
   private readonly logger = new Logger(LeadSearchService.name);
-
   private readonly INDEX = 'leads';
 
   constructor(
     private readonly searchService: SearchService,
-
-    @InjectModel(Lead)
-    private readonly leadModel: typeof Lead,
+    private readonly bulkIndexer: BulkIndexerService,
+    @InjectModel(Lead) private readonly leadModel: typeof Lead,
   ) {}
 
-  /**
-   * Convert Lead model into Elasticsearch document
-   */
-  private toDocument(lead: Lead) {
+  private toDocument(lead: any): SearchableDocument {
+    const title =
+      lead.name ?? lead.company_name ?? lead.email ?? 'Untitled Lead';
+    const subtitle = [lead.company_name, lead.stage, lead.email]
+      .filter(Boolean)
+      .join(' · ');
+
     return {
+      entity_type: 'lead',
       id: lead.id,
+      title,
+      subtitle,
+      status: lead.stage ?? lead.status ?? null,
+      searchable_text: [
+        lead.name,
+        lead.company_name,
+        lead.email,
+        lead.phone,
+        lead.stage,
+        lead.source,
+        lead.notes,
+        lead.address,
+      ]
+        .filter(Boolean)
+        .join(' '),
+      created_at: lead.created_at ?? lead.createdAt,
+      updated_at: lead.updated_at ?? lead.updatedAt,
+      visibility: 'internal',
+      is_deleted: !!lead.deleted_at || !!lead.deletedAt,
 
-      name: lead.name,
-      phone: lead.phone,
-      whatsapp: lead.whatsapp,
+      company_name: lead.company_name,
       email: lead.email,
-
-      type: lead.type,
+      phone: lead.phone,
       stage: lead.stage,
-
-      location: lead.location,
-      size: lead.size,
-      budget: lead.budget,
-      timeline: lead.timeline,
-
       source: lead.source,
-      owner: lead.owner,
-
-      days: lead.days,
-      stage_entered_at: lead.stageEnteredAt,
-
-      tag: lead.tag,
-      color: lead.color,
-
-      follow_up: lead.followUp,
-
-      proposal_amount: lead.proposalAmount,
-      proposal_timeline: lead.proposalTimeline,
-      proposal_remarks: lead.proposalRemarks,
-
-      doc_brief: lead.docBrief,
-      doc_proposal: lead.docProposal,
-      doc_contract: lead.docContract,
-
-      notes_count: lead.notes?.length ?? 0,
-      activity_count: lead.activity?.length ?? 0,
-
-      created_at: lead.createdAt,
-      updated_at: lead.updatedAt,
+      notes: lead.notes,
     };
   }
 
-  /**
-   * Index one Lead
-   */
-  async indexLead(id: string) {
-    const lead = await this.leadModel.findByPk(id, {
-      include: [
-        {
-          model: LeadNote,
-        },
-        {
-          model: LeadActivity,
-        },
-      ],
-    });
-
-    if (!lead) {
+  async indexOne(id: string): Promise<void> {
+    const lead = await this.leadModel.findByPk(id);
+    if (!lead || (lead as any).deleted_at || (lead as any).deletedAt) {
+      await this.searchService.deleteDocument(this.INDEX, id);
       return;
     }
-
-    await this.searchService.index(this.INDEX, lead.id, this.toDocument(lead));
-
-    this.logger.log(`Indexed Lead ${lead.id}`);
+    await this.searchService.indexDocument(
+      this.INDEX,
+      lead.id,
+      this.toDocument(lead),
+    );
   }
 
-  /**
-   * Update Elasticsearch document
-   */
-  async updateLead(id: string) {
-    return this.indexLead(id);
+  async removeOne(id: string): Promise<void> {
+    await this.searchService.deleteDocument(this.INDEX, id);
   }
 
-  /**
-   * Remove Lead from Elasticsearch
-   */
-  async removeLead(id: string) {
-    await this.searchService.delete(this.INDEX, id);
-
-    this.logger.log(`Removed Lead ${id}`);
+  async reindexAll() {
+    await this.searchService.ensureIndex(this.INDEX);
+    const rows = await this.leadModel.findAll();
+    const items = rows
+      .filter((l: any) => !l.deleted_at && !l.deletedAt)
+      .map((l) => ({
+        index: this.INDEX,
+        id: l.id,
+        document: this.toDocument(l),
+      }));
+    const result = await this.bulkIndexer.indexBatch(items);
+    await this.searchService.refresh(this.INDEX);
+    this.logger.log(`Reindexed leads: ${result.indexed}/${result.total}`);
+    return result;
   }
 
-  /**
-   * Search Leads
-   */
-  async search(query: string) {
-    return this.searchService.search(this.INDEX, {
-      multi_match: {
-        query,
-        fields: [
-          'name^5',
-          'phone^5',
-          'whatsapp^5',
-          'email^4',
-          'location^3',
-          'owner^3',
-          'source^2',
-          'budget^2',
-          'timeline',
-          'proposal_remarks',
-          'stage',
-          'type',
-          'tag',
-        ],
-        fuzziness: 'AUTO',
+  async search(query: string, size = 20) {
+    if (!query?.trim()) return [];
+    const response = await this.searchService.search(this.INDEX, {
+      size,
+      query: {
+        multi_match: {
+          query: query.trim(),
+          fields: [
+            'title^5',
+            'company_name^4',
+            'email^3',
+            'phone^3',
+            'stage^2',
+            'notes^2',
+            'searchable_text',
+          ],
+          fuzziness: 'AUTO',
+        },
       },
     });
-  }
-
-  /**
-   * Reindex all Leads
-   */
-  async reindexAll() {
-    const leads = await this.leadModel.findAll({
-      include: [
-        {
-          model: LeadNote,
-        },
-        {
-          model: LeadActivity,
-        },
-      ],
-    });
-
-    for (const lead of leads) {
-      await this.searchService.index(
-        this.INDEX,
-        lead.id,
-        this.toDocument(lead),
-      );
-    }
-
-    this.logger.log(`Indexed ${leads.length} leads`);
+    return (response.hits?.hits ?? []).map((hit: any) => ({
+      id: hit._id,
+      score: hit._score,
+      ...(hit._source as object),
+    }));
   }
 }

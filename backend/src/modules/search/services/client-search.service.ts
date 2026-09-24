@@ -1,127 +1,118 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-
-import { SearchService } from '@/modules/search/search.service';
-
-import { Client } from '../../clients/models/client.model';
-import { Project } from '@/modules/projects/models/projects.model';
+import { SearchService } from '../search.service';
+import { BulkIndexerService } from '../indexing/bulk-indexer.service';
+import { SearchableDocument } from '../interfaces/searchable-document.interface';
+import { Client } from '@/modules/clients/models/client.model';
 
 @Injectable()
 export class ClientSearchService {
   private readonly logger = new Logger(ClientSearchService.name);
-
   private readonly INDEX = 'clients';
 
   constructor(
     private readonly searchService: SearchService,
-
-    @InjectModel(Client)
-    private readonly clientModel: typeof Client,
+    private readonly bulkIndexer: BulkIndexerService,
+    @InjectModel(Client) private readonly clientModel: typeof Client,
   ) {}
 
-  /**
-   * Convert Client model to Elasticsearch document
-   */
-  private toDocument(client: Client) {
+  private toDocument(client: any): SearchableDocument {
+    const title = client.name ?? 'Untitled Client';
+    const subtitle = [client.contact_person, client.email, client.phone]
+      .filter(Boolean)
+      .join(' · ');
+
     return {
+      entity_type: 'client',
       id: client.id,
+      client_id: client.id,
+      title,
+      subtitle,
+      status: null,
+      searchable_text: [
+        client.name,
+        client.slug,
+        client.contact_person,
+        client.email,
+        client.phone,
+        client.address,
+      ]
+        .filter(Boolean)
+        .join(' '),
+      created_at: client.created_at ?? client.createdAt,
+      updated_at: client.updated_at ?? client.updatedAt,
+      visibility: 'internal',
+      is_deleted: !!client.deleted_at || !!client.deletedAt,
 
-      name: client.name,
       slug: client.slug,
-
       contact_person: client.contact_person,
       email: client.email,
       phone: client.phone,
       address: client.address,
-
       projects_count: client.projects?.length ?? 0,
-
-      created_at: client.createdAt,
-      updated_at: client.updatedAt,
     };
   }
 
-  /**
-   * Index one client
-   */
-  async indexClient(id: string) {
+  async indexOne(id: string): Promise<void> {
     const client = await this.clientModel.findByPk(id, {
-      include: [
-        {
-          model: Project,
-        },
-      ],
+      include: [{ association: 'projects', required: false }],
     });
-
-    if (!client) {
+    if (!client || (client as any).deleted_at) {
+      await this.searchService.deleteDocument(this.INDEX, id);
       return;
     }
-
-    await this.searchService.index(
+    await this.searchService.indexDocument(
       this.INDEX,
       client.id,
       this.toDocument(client),
     );
-
-    this.logger.log(`Indexed Client ${client.id}`);
   }
 
-  /**
-   * Update client index
-   */
-  async updateClient(id: string) {
-    return this.indexClient(id);
+  async removeOne(id: string): Promise<void> {
+    await this.searchService.deleteDocument(this.INDEX, id);
   }
 
-  /**
-   * Remove client from Elasticsearch
-   */
-  async removeClient(id: string) {
-    await this.searchService.delete(this.INDEX, id);
-
-    this.logger.log(`Removed Client ${id}`);
+  async reindexAll() {
+    await this.searchService.ensureIndex(this.INDEX);
+    const rows = await this.clientModel.findAll({
+      include: [{ association: 'projects', required: false }],
+    });
+    const items = rows
+      .filter((c: any) => !c.deleted_at)
+      .map((c) => ({
+        index: this.INDEX,
+        id: c.id,
+        document: this.toDocument(c),
+      }));
+    const result = await this.bulkIndexer.indexBatch(items);
+    await this.searchService.refresh(this.INDEX);
+    this.logger.log(`Reindexed clients: ${result.indexed}/${result.total}`);
+    return result;
   }
 
-  /**
-   * Search clients
-   */
-  async search(query: string) {
-    return this.searchService.search(this.INDEX, {
-      multi_match: {
-        query,
-        fields: [
-          'name^5',
-          'contact_person^4',
-          'email^3',
-          'phone^3',
-          'address^2',
-          'slug',
-        ],
-        fuzziness: 'AUTO',
+  async search(query: string, size = 20) {
+    if (!query?.trim()) return [];
+    const response = await this.searchService.search(this.INDEX, {
+      size,
+      query: {
+        multi_match: {
+          query: query.trim(),
+          fields: [
+            'title^5',
+            'contact_person^4',
+            'email^3',
+            'phone^3',
+            'address^2',
+            'searchable_text',
+          ],
+          fuzziness: 'AUTO',
+        },
       },
     });
-  }
-
-  /**
-   * Reindex every client
-   */
-  async reindexAll() {
-    const clients = await this.clientModel.findAll({
-      include: [
-        {
-          model: Project,
-        },
-      ],
-    });
-
-    for (const client of clients) {
-      await this.searchService.index(
-        this.INDEX,
-        client.id,
-        this.toDocument(client),
-      );
-    }
-
-    this.logger.log(`Indexed ${clients.length} clients`);
+    return (response.hits?.hits ?? []).map((hit: any) => ({
+      id: hit._id,
+      score: hit._score,
+      ...(hit._source as object),
+    }));
   }
 }

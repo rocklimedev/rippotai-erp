@@ -1,138 +1,112 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-
-import { SearchService } from '@/modules/search/search.service';
-
-import { Task } from '../../tasks/models/task.model';
-import { Project } from '@/modules/projects/models/projects.model';
-import { User } from '@/modules/users/models/user.model';
+import { SearchService } from '../search.service';
+import { BulkIndexerService } from '../indexing/bulk-indexer.service';
+import { SearchableDocument } from '../interfaces/searchable-document.interface';
+import { Task } from '@/modules/tasks/models/task.model';
 
 @Injectable()
 export class TaskSearchService {
   private readonly logger = new Logger(TaskSearchService.name);
-
   private readonly INDEX = 'tasks';
 
   constructor(
     private readonly searchService: SearchService,
-
-    @InjectModel(Task)
-    private readonly taskModel: typeof Task,
+    private readonly bulkIndexer: BulkIndexerService,
+    @InjectModel(Task) private readonly taskModel: typeof Task,
   ) {}
 
-  /**
-   * Convert Task model into Elasticsearch document
-   */
-  private toDocument(task: Task) {
+  private toDocument(task: any): SearchableDocument {
+    const projectName = task.project?.name ?? '';
+    const title = task.title ?? 'Untitled Task';
+    const subtitle = [projectName, task.priority, task.status]
+      .filter(Boolean)
+      .join(' · ');
+
     return {
+      entity_type: 'task',
       id: task.id,
-
-      title: task.title,
-
-      project_id: task.project_id,
-      project: task.project?.name ?? '',
+      project_id: task.project_id ?? task.projectId ?? null,
+      title,
+      subtitle,
+      status: task.status ?? null,
+      searchable_text: [
+        task.title,
+        projectName,
+        task.priority,
+        task.status,
+        task.due_bucket,
+      ]
+        .filter(Boolean)
+        .join(' '),
+      created_at: task.created_at ?? task.createdAt,
+      updated_at: task.updated_at ?? task.updatedAt,
+      visibility: 'project',
+      is_deleted: false,
 
       priority: task.priority,
-      status: task.status,
-
-      due_date: task.due_date,
-      due_bucket: task.due_bucket,
-
-      order_index: task.order_index,
-      workload_estimate_hours: task.workload_estimate_hours,
-
-      created_by: task.creator?.name ?? '',
-
-      created_at: task.created_at,
-      updated_at: task.updated_at,
+      due_date: task.due_date ?? task.dueDate,
+      project_name: projectName,
     };
   }
 
-  /**
-   * Index a task
-   */
-  async indexTask(id: string) {
+  async indexOne(id: string): Promise<void> {
     const task = await this.taskModel.findByPk(id, {
-      include: [
-        {
-          model: Project,
-        },
-        {
-          model: User,
-          as: 'creator',
-        },
-      ],
+      include: [{ association: 'project', required: false }],
     });
-
     if (!task) {
+      await this.searchService.deleteDocument(this.INDEX, id);
       return;
     }
-
-    await this.searchService.index(this.INDEX, task.id, this.toDocument(task));
-
-    this.logger.log(`Indexed Task ${task.id}`);
+    await this.searchService.indexDocument(
+      this.INDEX,
+      task.id,
+      this.toDocument(task),
+    );
   }
 
-  /**
-   * Update task index
-   */
-  async updateTask(id: string) {
-    return this.indexTask(id);
+  async removeOne(id: string): Promise<void> {
+    await this.searchService.deleteDocument(this.INDEX, id);
   }
 
-  /**
-   * Remove task from Elasticsearch
-   */
-  async removeTask(id: string) {
-    await this.searchService.delete(this.INDEX, id);
-
-    this.logger.log(`Removed Task ${id}`);
+  async reindexAll() {
+    await this.searchService.ensureIndex(this.INDEX);
+    const rows = await this.taskModel.findAll({
+      include: [{ association: 'project', required: false }],
+    });
+    const items = rows.map((t) => ({
+      index: this.INDEX,
+      id: t.id,
+      document: this.toDocument(t),
+    }));
+    const result = await this.bulkIndexer.indexBatch(items);
+    await this.searchService.refresh(this.INDEX);
+    this.logger.log(`Reindexed tasks: ${result.indexed}/${result.total}`);
+    return result;
   }
 
-  /**
-   * Search tasks
-   */
-  async search(query: string) {
-    return this.searchService.search(this.INDEX, {
-      multi_match: {
-        query,
-        fields: [
-          'title^6',
-          'project^5',
-          'created_by^4',
-          'priority^3',
-          'status^3',
-          'due_bucket^2',
-        ],
-        fuzziness: 'AUTO',
+  async search(query: string, size = 20) {
+    if (!query?.trim()) return [];
+    const response = await this.searchService.search(this.INDEX, {
+      size,
+      query: {
+        multi_match: {
+          query: query.trim(),
+          fields: [
+            'title^5',
+            'project_name^3',
+            'priority^2',
+            'status^2',
+            'searchable_text',
+          ],
+          fuzziness: 'AUTO',
+        },
       },
     });
-  }
-
-  /**
-   * Reindex all tasks
-   */
-  async reindexAll() {
-    const tasks = await this.taskModel.findAll({
-      include: [
-        {
-          model: Project,
-        },
-        {
-          model: User,
-          as: 'creator',
-        },
-      ],
-    });
-
-    for (const task of tasks) {
-      await this.searchService.index(
-        this.INDEX,
-        task.id,
-        this.toDocument(task),
-      );
-    }
-
-    this.logger.log(`Indexed ${tasks.length} tasks`);
+    return (response.hits?.hits ?? []).map((hit: any) => ({
+      id: hit._id,
+      score: hit._score,
+      ...(hit._source as object),
+    }));
   }
 }

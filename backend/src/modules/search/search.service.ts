@@ -1,167 +1,151 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ElasticsearchService } from '@nestjs/elasticsearch';
+import { INDEX_MAPPINGS, SearchIndexName } from './mappings/index-templates';
 
 @Injectable()
 export class SearchService {
   private readonly logger = new Logger(SearchService.name);
 
-  constructor(private readonly esService: ElasticsearchService) {}
+  constructor(private readonly es: ElasticsearchService) {}
 
   /**
-   * =========================================================
-   * CREATE INDEX IF NEEDED
-   * =========================================================
-   *
-   * Elasticsearch creates an index automatically when indexing
-   * a document, but explicit creation is safer for reindexing
-   * empty tables because an empty dataset otherwise never causes
-   * an index to be created.
+   * Create an index with the proper mapping if it does not already exist.
    */
-  async createIndex(
-    index: string,
-    mappings?: Record<string, any>,
-  ): Promise<void> {
-    const exists = await this.esService.indices.exists({
-      index,
-    });
+  async ensureIndex(index: SearchIndexName | string): Promise<void> {
+    const exists = await this.es.indices.exists({ index });
+    if (exists) return;
 
-    if (exists) {
-      return;
+    const body = INDEX_MAPPINGS[index as SearchIndexName];
+    if (!body) {
+      this.logger.warn(
+        `No mapping defined for index "${index}" – creating with dynamic mapping`,
+      );
     }
 
     try {
-      await this.esService.indices.create({
+      await this.es.indices.create({
         index,
-        ...(mappings ? { mappings } : {}),
+        ...(body ?? {}),
       });
-
       this.logger.log(`Created Elasticsearch index "${index}"`);
     } catch (error: any) {
-      /**
-       * Multiple reindex jobs can run concurrently from
-       * /reindex/all. If another job creates the same index
-       * between exists() and create(), Elasticsearch returns
-       * resource_already_exists_exception.
-       *
-       * That is safe to ignore.
-       */
-      const errorType =
+      const type =
         error?.meta?.body?.error?.type ??
         error?.body?.error?.type ??
         error?.type;
-
-      if (errorType === 'resource_already_exists_exception') {
-        return;
-      }
-
+      if (type === 'resource_already_exists_exception') return;
       throw error;
     }
   }
 
   /**
-   * =========================================================
-   * INDEX
-   * =========================================================
+   * Index a single document (create or overwrite).
    */
-  async index(
+  async indexDocument(
     index: string,
-    id: string | number,
-    document: Record<string, any>,
+    id: string,
+    document: Record<string, unknown>,
   ) {
-    await this.createIndex(index);
-
-    return this.esService.index({
+    await this.ensureIndex(index);
+    return this.es.index({
       index,
       id: String(id),
       document,
+      refresh: false, // let the worker / reindex control refresh
     });
   }
 
-  async indexDocument(
-    index: string,
-    id: string | number,
-    document: Record<string, any>,
-  ) {
-    return this.index(index, id, document);
-  }
-
   /**
-   * =========================================================
-   * UPDATE
-   * =========================================================
+   * Partial update with upsert.
    */
-  async update(
+  async updateDocument(
     index: string,
-    id: string | number,
-    document: Record<string, any>,
+    id: string,
+    document: Record<string, unknown>,
   ) {
-    await this.createIndex(index);
-
-    return this.esService.update({
+    await this.ensureIndex(index);
+    return this.es.update({
       index,
       id: String(id),
       doc: document,
       doc_as_upsert: true,
+      refresh: false,
     });
   }
 
-  async updateDocument(
-    index: string,
-    id: string | number,
-    document: Record<string, any>,
-  ) {
-    return this.update(index, id, document);
-  }
-
   /**
-   * =========================================================
-   * DELETE
-   * =========================================================
+   * Delete a document. Ignores 404.
    */
-  async delete(index: string, id: string | number) {
+  async deleteDocument(index: string, id: string) {
     try {
-      return await this.esService.delete({
+      return await this.es.delete({
         index,
         id: String(id),
+        refresh: false,
       });
     } catch (err: any) {
-      if (err?.meta?.statusCode !== 404) {
-        throw err;
-      }
+      if (err?.meta?.statusCode !== 404) throw err;
     }
-  }
-
-  async removeDocument(index: string, id: string | number) {
-    return this.delete(index, id);
   }
 
   /**
-   * =========================================================
-   * SEARCH
-   * =========================================================
+   * Bulk index / delete helper.
+   * operations: array of { index: { _index, _id } } | { delete: { _index, _id } } | document
    */
-  async search(index: string, query: Record<string, any>) {
-    const exists = await this.esService.indices.exists({
-      index,
+  async bulk(operations: any[]) {
+    if (!operations.length) return { errors: false, items: [] };
+
+    const response = await this.es.bulk({
+      operations,
+      refresh: false,
     });
 
-    /**
-     * An index with no records may legitimately not exist.
-     * Returning an empty result is more useful than throwing
-     * index_not_found_exception during global search.
-     */
-    if (!exists) {
-      return [];
+    if (response.errors) {
+      const failed = response.items.filter(
+        (item: any) => item.index?.error || item.delete?.error,
+      );
+      this.logger.warn(
+        `Bulk operation completed with ${failed.length} errors`,
+      );
     }
 
-    const { hits } = await this.esService.search({
-      index,
-      query,
-    });
+    return response;
+  }
 
-    return hits.hits.map((hit) => ({
-      id: hit._id,
-      ...(hit._source as object),
-    }));
+  /**
+   * Low-level search. Returns the raw ES response hits.
+   */
+  async search(index: string | string[], body: Record<string, any>) {
+    const indices = Array.isArray(index) ? index : [index];
+
+    // Filter to indices that actually exist to avoid index_not_found
+    const existing: string[] = [];
+    for (const idx of indices) {
+      const ok = await this.es.indices.exists({ index: idx });
+      if (ok) existing.push(idx);
+    }
+
+    if (!existing.length) {
+      return { hits: { hits: [], total: { value: 0 } }, took: 0 };
+    }
+
+    return this.es.search({
+      index: existing,
+      ...body,
+    });
+  }
+
+  /**
+   * Convenience: check whether an index exists.
+   */
+  async indexExists(index: string): Promise<boolean> {
+    return this.es.indices.exists({ index });
+  }
+
+  /**
+   * Refresh an index (make recent writes visible).
+   */
+  async refresh(index: string | string[]) {
+    return this.es.indices.refresh({ index });
   }
 }

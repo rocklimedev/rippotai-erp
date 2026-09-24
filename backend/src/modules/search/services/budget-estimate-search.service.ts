@@ -3,69 +3,76 @@ import { InjectModel } from '@nestjs/sequelize';
 import { SearchService } from '../search.service';
 import { BulkIndexerService } from '../indexing/bulk-indexer.service';
 import { SearchableDocument } from '../interfaces/searchable-document.interface';
-import { CalendarEvent } from '@/modules/calendar/models/calender-event.model';
+import { BudgetEstimate } from '@/modules/budget-estimate/models/budget-estimate.model';
 
 @Injectable()
-export class CalendarSearchService {
-  private readonly logger = new Logger(CalendarSearchService.name);
-  private readonly INDEX = 'calendar_events';
+export class BudgetEstimateSearchService {
+  private readonly logger = new Logger(BudgetEstimateSearchService.name);
+  private readonly INDEX = 'budget_estimates';
 
   constructor(
     private readonly searchService: SearchService,
     private readonly bulkIndexer: BulkIndexerService,
-    @InjectModel(CalendarEvent)
-    private readonly eventModel: typeof CalendarEvent,
+    @InjectModel(BudgetEstimate)
+    private readonly estimateModel: typeof BudgetEstimate,
   ) {}
 
-  private toDocument(event: any): SearchableDocument {
-    const projectName = event.project?.name ?? '';
-    const title = event.title ?? 'Untitled Event';
-    const subtitle = [event.type, projectName, event.location]
+  private toDocument(est: any): SearchableDocument {
+    const projectName = est.project?.name ?? '';
+    const number = est.estimate_number ?? est.estimateNumber ?? '';
+    const title = est.title ?? number ?? 'Untitled Estimate';
+    const subtitle = [projectName, number, est.status]
       .filter(Boolean)
       .join(' · ');
 
+    const itemsText = (est.items ?? est.categories ?? [])
+      .flatMap((c: any) => c.items ?? [c])
+      .map((i: any) => i.name ?? '')
+      .filter(Boolean)
+      .join(' ');
+
     return {
-      entity_type: 'calendar_event',
-      id: event.id,
-      project_id: event.project_id ?? event.projectId ?? null,
+      entity_type: 'budget_estimate',
+      id: est.id,
+      project_id: est.project_id ?? est.projectId ?? null,
       title,
       subtitle,
-      status: event.type ?? null,
+      status: est.status ?? null,
       searchable_text: [
-        event.title,
-        event.type,
-        event.location,
-        event.description,
+        est.title,
+        number,
         projectName,
+        est.client_name ?? est.clientName,
+        est.location,
+        itemsText,
+        est.status,
       ]
         .filter(Boolean)
         .join(' '),
-      created_at: event.created_at ?? event.createdAt,
-      updated_at: event.updated_at ?? event.updatedAt,
+      created_at: est.created_at ?? est.createdAt,
+      updated_at: est.updated_at ?? est.updatedAt,
       visibility: 'project',
       is_deleted: false,
 
-      type: event.type,
-      location: event.location,
-      description: event.description,
+      estimate_number: number,
       project_name: projectName,
-      starts_at: event.starts_at ?? event.startsAt,
-      ends_at: event.ends_at ?? event.endsAt,
+      total_amount: est.total_amount ?? est.totalAmount,
+      items_text: itemsText,
     };
   }
 
   async indexOne(id: string): Promise<void> {
-    const event = await this.eventModel.findByPk(id, {
+    const est = await this.estimateModel.findByPk(id, {
       include: [{ association: 'project', required: false }],
     });
-    if (!event) {
+    if (!est) {
       await this.searchService.deleteDocument(this.INDEX, id);
       return;
     }
     await this.searchService.indexDocument(
       this.INDEX,
-      event.id,
-      this.toDocument(event),
+      est.id,
+      this.toDocument(est),
     );
   }
 
@@ -75,7 +82,7 @@ export class CalendarSearchService {
 
   async reindexAll() {
     await this.searchService.ensureIndex(this.INDEX);
-    const rows = await this.eventModel.findAll({
+    const rows = await this.estimateModel.findAll({
       include: [{ association: 'project', required: false }],
     });
     const items = rows.map((e) => ({
@@ -86,7 +93,7 @@ export class CalendarSearchService {
     const result = await this.bulkIndexer.indexBatch(items);
     await this.searchService.refresh(this.INDEX);
     this.logger.log(
-      `Reindexed calendar events: ${result.indexed}/${result.total}`,
+      `Reindexed budget estimates: ${result.indexed}/${result.total}`,
     );
     return result;
   }
@@ -100,10 +107,9 @@ export class CalendarSearchService {
           query: query.trim(),
           fields: [
             'title^5',
-            'type^3',
-            'location^3',
-            'description^2',
-            'project_name^2',
+            'estimate_number^5',
+            'project_name^3',
+            'items_text^2',
             'searchable_text',
           ],
           fuzziness: 'AUTO',

@@ -1,220 +1,144 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-
-import { SearchService } from '@/modules/search/search.service';
-
-import { Quotation } from '../../quotations/models/quotations.model';
-import { Project } from '@/modules/projects/models/projects.model';
-import { Vendor } from '@/modules/vendors/models/vendors.model';
-import { User } from '@/modules/users/models/user.model';
-import { QuotationItem } from '../../quotations/models/quotation-items.model';
-import { QuotationVersion } from '../../quotations/models/quotation-versions.model';
+import { SearchService } from '../search.service';
+import { BulkIndexerService } from '../indexing/bulk-indexer.service';
+import { SearchableDocument } from '../interfaces/searchable-document.interface';
+import { Quotation } from '@/modules/quotations/models/quotations.model';
 
 @Injectable()
 export class QuotationSearchService {
   private readonly logger = new Logger(QuotationSearchService.name);
-
   private readonly INDEX = 'quotations';
 
   constructor(
     private readonly searchService: SearchService,
-
-    @InjectModel(Quotation)
-    private readonly quotationModel: typeof Quotation,
+    private readonly bulkIndexer: BulkIndexerService,
+    @InjectModel(Quotation) private readonly quotationModel: typeof Quotation,
   ) {}
 
-  /**
-   * Convert quotation into Elasticsearch document
-   */
-  private toDocument(quotation: Quotation) {
+  private toDocument(q: any): SearchableDocument {
+    const projectName = q.project?.name ?? '';
+    const vendorName =
+      q.vendor?.name ??
+      (q.vendorSnapshot as any)?.name ??
+      (q.vendor_snapshot as any)?.name ??
+      '';
+    const itemsText = (q.items ?? [])
+      .map((i: any) => i.description ?? i.name ?? '')
+      .filter(Boolean)
+      .join(' ');
+
+    const number = q.quotationNumber ?? q.quotation_number ?? '';
+    const title = number || 'Untitled Quotation';
+    const subtitle = [projectName, vendorName, q.status]
+      .filter(Boolean)
+      .join(' · ');
+
     return {
-      id: quotation.id,
+      entity_type: 'quotation',
+      id: q.id,
+      project_id: q.projectId ?? q.project_id ?? null,
+      title,
+      subtitle,
+      status: q.status ?? null,
+      searchable_text: [
+        number,
+        projectName,
+        vendorName,
+        q.boqReference ?? q.boq_reference,
+        q.comparisonNotes ?? q.comparison_notes,
+        q.reviewRemarks ?? q.review_remarks,
+        q.termsConditions ?? q.terms_conditions,
+        itemsText,
+        q.status,
+      ]
+        .filter(Boolean)
+        .join(' '),
+      created_at: q.createdAt ?? q.created_at,
+      updated_at: q.updatedAt ?? q.updated_at,
+      visibility: 'project',
+      is_deleted: !!q.deletedAt || !!q.deleted_at,
 
-      quotation_number: quotation.quotationNumber,
-      quotation_date: quotation.quotationDate,
-      expiry_date: quotation.expiryDate,
-      validity_days: quotation.validityDays,
-
-      status: quotation.status,
-
-      project_id: quotation.projectId,
-      vendor_id: quotation.vendorId,
-
-      project: quotation.project?.name ?? '',
-      vendor:
-        (quotation.vendorSnapshot as any)?.name ?? quotation.vendor?.name ?? '',
-
-      boq_reference: quotation.boqReference,
-
-      subtotal: quotation.subtotal,
-      additional_charges: quotation.additionalCharges,
-
-      global_discount_type: quotation.globalDiscountType,
-      global_discount_value: quotation.globalDiscountValue,
-
-      discount: quotation.discount,
-
-      tax_percent: quotation.taxPercent,
-      tax_amount: quotation.taxAmount,
-
-      total_amount: quotation.totalAmount,
-
-      comparison_notes: quotation.comparisonNotes,
-      review_remarks: quotation.reviewRemarks,
-      terms_conditions: quotation.termsConditions,
-
-      is_selected: quotation.isSelected,
-      current_version: quotation.currentVersion,
-
-      items_count: quotation.items?.length ?? 0,
-      versions_count: quotation.versions?.length ?? 0,
-
-      submitted_by: quotation.submitter?.name ?? '',
-      reviewed_by: quotation.reviewer?.name ?? '',
-      selected_by: quotation.selector?.name ?? '',
-      created_by: quotation.creator?.name ?? '',
-
-      created_at: quotation.createdAt,
-      updated_at: quotation.updatedAt,
+      quotation_number: number,
+      project_name: projectName,
+      vendor_name: vendorName,
+      boq_reference: q.boqReference ?? q.boq_reference,
+      total_amount: q.totalAmount ?? q.total_amount,
+      items_text: itemsText,
+      comparison_notes: q.comparisonNotes ?? q.comparison_notes,
+      review_remarks: q.reviewRemarks ?? q.review_remarks,
     };
   }
 
-  /**
-   * Index quotation
-   */
-  async indexQuotation(id: string) {
+  async indexOne(id: string): Promise<void> {
     const quotation = await this.quotationModel.findByPk(id, {
       include: [
-        {
-          model: Project,
-        },
-        {
-          model: Vendor,
-        },
-        {
-          model: QuotationItem,
-        },
-        {
-          model: QuotationVersion,
-        },
-        {
-          model: User,
-          as: 'submitter',
-        },
-        {
-          model: User,
-          as: 'reviewer',
-        },
-        {
-          model: User,
-          as: 'selector',
-        },
-        {
-          model: User,
-          as: 'creator',
-        },
+        { association: 'project', required: false },
+        { association: 'vendor', required: false },
+        { association: 'items', required: false },
       ],
     });
-
-    if (!quotation) {
+    if (!quotation || (quotation as any).deletedAt || (quotation as any).deleted_at) {
+      await this.searchService.deleteDocument(this.INDEX, id);
       return;
     }
-
-    await this.searchService.index(
+    await this.searchService.indexDocument(
       this.INDEX,
       quotation.id,
       this.toDocument(quotation),
     );
-
-    this.logger.log(`Indexed quotation ${quotation.id}`);
   }
 
-  /**
-   * Update quotation index
-   */
-  async updateQuotation(id: string) {
-    return this.indexQuotation(id);
+  async removeOne(id: string): Promise<void> {
+    await this.searchService.deleteDocument(this.INDEX, id);
   }
 
-  /**
-   * Remove quotation from index
-   */
-  async removeQuotation(id: string) {
-    await this.searchService.delete(this.INDEX, id);
-
-    this.logger.log(`Removed quotation ${id}`);
-  }
-
-  /**
-   * Search quotations
-   */
-  async search(query: string) {
-    return this.searchService.search(this.INDEX, {
-      multi_match: {
-        query,
-        fields: [
-          'quotation_number^6',
-          'project^5',
-          'vendor^5',
-          'boq_reference^4',
-          'comparison_notes^3',
-          'review_remarks^3',
-          'terms_conditions^2',
-          'status^2',
-          'submitted_by',
-          'reviewed_by',
-          'selected_by',
-        ],
-        fuzziness: 'AUTO',
-      },
-    });
-  }
-
-  /**
-   * Reindex all quotations
-   */
   async reindexAll() {
-    const quotations = await this.quotationModel.findAll({
+    await this.searchService.ensureIndex(this.INDEX);
+    const rows = await this.quotationModel.findAll({
       include: [
-        {
-          model: Project,
-        },
-        {
-          model: Vendor,
-        },
-        {
-          model: QuotationItem,
-        },
-        {
-          model: QuotationVersion,
-        },
-        {
-          model: User,
-          as: 'submitter',
-        },
-        {
-          model: User,
-          as: 'reviewer',
-        },
-        {
-          model: User,
-          as: 'selector',
-        },
-        {
-          model: User,
-          as: 'creator',
-        },
+        { association: 'project', required: false },
+        { association: 'vendor', required: false },
+        { association: 'items', required: false },
       ],
     });
+    const items = rows
+      .filter((q: any) => !q.deletedAt && !q.deleted_at)
+      .map((q) => ({
+        index: this.INDEX,
+        id: q.id,
+        document: this.toDocument(q),
+      }));
+    const result = await this.bulkIndexer.indexBatch(items);
+    await this.searchService.refresh(this.INDEX);
+    this.logger.log(`Reindexed quotations: ${result.indexed}/${result.total}`);
+    return result;
+  }
 
-    for (const quotation of quotations) {
-      await this.searchService.index(
-        this.INDEX,
-        quotation.id,
-        this.toDocument(quotation),
-      );
-    }
-
-    this.logger.log(`Indexed ${quotations.length} quotations`);
+  async search(query: string, size = 20) {
+    if (!query?.trim()) return [];
+    const response = await this.searchService.search(this.INDEX, {
+      size,
+      query: {
+        multi_match: {
+          query: query.trim(),
+          fields: [
+            'quotation_number^6',
+            'title^5',
+            'project_name^4',
+            'vendor_name^4',
+            'boq_reference^3',
+            'items_text^2',
+            'searchable_text',
+          ],
+          fuzziness: 'AUTO',
+        },
+      },
+    });
+    return (response.hits?.hits ?? []).map((hit: any) => ({
+      id: hit._id,
+      score: hit._score,
+      ...(hit._source as object),
+    }));
   }
 }

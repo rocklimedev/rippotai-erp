@@ -3,83 +3,81 @@ import { InjectModel } from '@nestjs/sequelize';
 import { SearchService } from '../search.service';
 import { BulkIndexerService } from '../indexing/bulk-indexer.service';
 import { SearchableDocument } from '../interfaces/searchable-document.interface';
-import { Boq } from '@/modules/boqs/models/boq.model';
+import { WorkOrder } from '@/modules/material-procurement/models/work-order.model';
 
 @Injectable()
-export class BoqSearchService {
-  private readonly logger = new Logger(BoqSearchService.name);
-  private readonly INDEX = 'boqs';
+export class WorkOrderSearchService {
+  private readonly logger = new Logger(WorkOrderSearchService.name);
+  private readonly INDEX = 'work_orders';
 
   constructor(
     private readonly searchService: SearchService,
     private readonly bulkIndexer: BulkIndexerService,
-    @InjectModel(Boq) private readonly boqModel: typeof Boq,
+    @InjectModel(WorkOrder) private readonly workOrderModel: typeof WorkOrder,
   ) {}
 
-  private toDocument(boq: any): SearchableDocument {
-    const projectName = boq.project?.name ?? '';
-    const itemsText = (boq.categories ?? [])
-      .flatMap((cat: any) => cat.items ?? [])
-      .map((item: any) => item.name)
+  private toDocument(wo: any): SearchableDocument {
+    const projectName = wo.project?.name ?? wo.project_name ?? '';
+    const contractor =
+      wo.contractor_name ?? wo.vendor?.name ?? wo.contractor_company_name ?? '';
+    const itemsText = (wo.items ?? [])
+      .map((i: any) => i.description ?? '')
       .filter(Boolean)
       .join(' ');
 
-    const title = boq.title ?? boq.boq_number ?? 'Untitled BOQ';
-    const subtitle = [projectName, boq.client_name, boq.status]
+    const title = wo.wo_id ?? 'Untitled Work Order';
+    const subtitle = [projectName, contractor, wo.status]
       .filter(Boolean)
       .join(' · ');
 
     return {
-      entity_type: 'boq',
-      id: boq.id,
-      project_id: boq.project_id ?? null,
+      entity_type: 'work_order',
+      id: wo.id,
+      project_id: wo.project_id ?? null,
       title,
       subtitle,
-      status: boq.status ?? null,
+      status: wo.status ?? null,
       searchable_text: [
-        boq.title,
-        boq.boq_number,
-        boq.client_name,
-        boq.location,
-        boq.prepared_by,
+        wo.wo_id,
         projectName,
+        contractor,
+        wo.site_address,
+        wo.agency,
         itemsText,
-        boq.status,
+        wo.status,
       ]
         .filter(Boolean)
         .join(' '),
-      created_at: boq.created_at ?? boq.createdAt,
-      updated_at: boq.updated_at ?? boq.updatedAt,
+      created_at: wo.created_at ?? wo.createdAt,
+      updated_at: wo.updated_at ?? wo.updatedAt,
       visibility: 'project',
-      is_deleted: !!boq.deleted_at || !!boq.deletedAt,
+      is_deleted: false,
 
-      boq_number: boq.boq_number,
-      client_name: boq.client_name,
-      location: boq.location,
-      prepared_by: boq.prepared_by,
-      total_value: boq.total_value,
+      wo_id: wo.wo_id,
       project_name: projectName,
+      contractor_name: contractor,
+      site_address: wo.site_address,
+      total_amount: wo.total_amount,
       items_text: itemsText,
-      version: boq.version,
-      locked: !!boq.locked,
     };
   }
 
   async indexOne(id: string): Promise<void> {
-    const boq = await this.boqModel.findByPk(id, {
+    const wo = await this.workOrderModel.findByPk(id, {
       include: [
         { association: 'project', required: false },
-        { association: 'categories', include: ['items'], required: false },
+        { association: 'vendor', required: false },
+        { association: 'items', required: false },
       ],
     });
-    if (!boq || (boq as any).deleted_at) {
+    if (!wo) {
       await this.searchService.deleteDocument(this.INDEX, id);
       return;
     }
     await this.searchService.indexDocument(
       this.INDEX,
-      boq.id,
-      this.toDocument(boq),
+      wo.id,
+      this.toDocument(wo),
     );
   }
 
@@ -89,22 +87,21 @@ export class BoqSearchService {
 
   async reindexAll() {
     await this.searchService.ensureIndex(this.INDEX);
-    const rows = await this.boqModel.findAll({
+    const rows = await this.workOrderModel.findAll({
       include: [
         { association: 'project', required: false },
-        { association: 'categories', include: ['items'], required: false },
+        { association: 'vendor', required: false },
+        { association: 'items', required: false },
       ],
     });
-    const items = rows
-      .filter((b: any) => !b.deleted_at)
-      .map((b) => ({
-        index: this.INDEX,
-        id: b.id,
-        document: this.toDocument(b),
-      }));
+    const items = rows.map((wo) => ({
+      index: this.INDEX,
+      id: wo.id,
+      document: this.toDocument(wo),
+    }));
     const result = await this.bulkIndexer.indexBatch(items);
     await this.searchService.refresh(this.INDEX);
-    this.logger.log(`Reindexed BOQs: ${result.indexed}/${result.total}`);
+    this.logger.log(`Reindexed work orders: ${result.indexed}/${result.total}`);
     return result;
   }
 
@@ -116,11 +113,11 @@ export class BoqSearchService {
         multi_match: {
           query: query.trim(),
           fields: [
-            'title^5',
-            'boq_number^5',
-            'client_name^3',
-            'project_name^3',
-            'location^2',
+            'wo_id^6',
+            'title^4',
+            'project_name^4',
+            'contractor_name^3',
+            'site_address^2',
             'items_text^2',
             'searchable_text',
           ],
