@@ -5,6 +5,10 @@ import { BulkIndexerService } from '../indexing/bulk-indexer.service';
 import { SearchableDocument } from '../interfaces/searchable-document.interface';
 import { Drawing } from '@/modules/documents/models/drawing.model';
 
+/**
+ * Drawing model has projectId as a column but does NOT define a
+ * BelongsTo('project') association. Do not include 'project'.
+ */
 @Injectable()
 export class DrawingSearchService {
   private readonly logger = new Logger(DrawingSearchService.name);
@@ -17,12 +21,9 @@ export class DrawingSearchService {
   ) {}
 
   private toDocument(d: any): SearchableDocument {
-    const projectName = d.project?.name ?? '';
     const number = d.drawingNumber ?? d.drawing_number ?? '';
     const title = d.title ?? number ?? 'Untitled Drawing';
-    const subtitle = [projectName, d.discipline, d.status]
-      .filter(Boolean)
-      .join(' · ');
+    const subtitle = [d.discipline, d.status, number].filter(Boolean).join(' · ');
 
     return {
       entity_type: 'drawing',
@@ -38,7 +39,7 @@ export class DrawingSearchService {
         d.phaseCode ?? d.phase_code,
         d.sheetNumber ?? d.sheet_number,
         d.remarks,
-        projectName,
+        d.issuePurpose ?? d.issue_purpose,
         d.status,
       ]
         .filter(Boolean)
@@ -52,14 +53,12 @@ export class DrawingSearchService {
       discipline: d.discipline,
       phase_code: d.phaseCode ?? d.phase_code,
       sheet_number: d.sheetNumber ?? d.sheet_number,
-      project_name: projectName,
+      project_name: '', // no association available
     };
   }
 
   async indexOne(id: string): Promise<void> {
-    const drawing = await this.drawingModel.findByPk(id, {
-      include: [{ association: 'project', required: false }],
-    });
+    const drawing = await this.drawingModel.findByPk(id);
     if (!drawing) {
       await this.searchService.deleteDocument(this.INDEX, id);
       return;
@@ -77,9 +76,8 @@ export class DrawingSearchService {
 
   async reindexAll() {
     await this.searchService.ensureIndex(this.INDEX);
-    const rows = await this.drawingModel.findAll({
-      include: [{ association: 'project', required: false }],
-    });
+    // No project association on Drawing model — fetch plain rows only
+    const rows = await this.drawingModel.findAll();
     const items = rows.map((d) => ({
       index: this.INDEX,
       id: d.id,
@@ -102,7 +100,6 @@ export class DrawingSearchService {
             'title^5',
             'drawing_number^6',
             'discipline^3',
-            'project_name^3',
             'phase_code^2',
             'searchable_text',
           ],
