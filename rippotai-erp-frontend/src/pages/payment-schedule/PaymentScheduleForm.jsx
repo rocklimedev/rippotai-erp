@@ -1,12 +1,16 @@
-import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus, Trash2, Wand2, Pencil, Eye, Code, Loader2 } from "lucide-react";
 
 import { PaymentSectionForm } from "../../components/payments/PaymentSectionForm";
 import { useAutoSave } from "../../hooks/use-autosave";
 import { useGetProjectsQuery } from "../../api/projects/project.api";
-import { useCreatePaymentScheduleMutation } from "../../api/documents/payment-schedules.api";
+import {
+  useCreatePaymentScheduleMutation,
+  useUpdatePaymentScheduleMutation,
+  useGetPaymentScheduleQuery,
+} from "../../api/documents/payment-schedules.api";
 import {
   useGetTermsTemplatesQuery,
   useCreateTermsTemplateMutation,
@@ -47,6 +51,8 @@ const calcPctFromAmount = (contractValue, amount) => {
   return round2(((Number(amount) || 0) * 100) / cv);
 };
 
+const str = (v) => (v === null || v === undefined ? "" : String(v));
+
 const SCOPES = [
   { value: "GLOBAL", label: "Global" },
   { value: "PROJECT", label: "Projects" },
@@ -56,8 +62,27 @@ const SCOPES = [
   { value: "PAYMENT", label: "Payment Schedule" },
 ];
 
-export function PaymentScheduleForm() {
+const EMPTY_VALUES = {
+  Overview: {
+    title: "Payment Schedule",
+    total_contract_value: "",
+    gst_rate: "",
+    terms_template_id: "",
+    terms_version: "",
+  },
+  milestones: [],
+};
+
+export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
   const navigate = useNavigate();
+  const { id: routeId } = useParams();
+
+  // ============================================================
+  // MODE (create vs edit)
+  // ============================================================
+
+  const scheduleId = scheduleIdProp || routeId;
+  const isEdit = Boolean(scheduleId);
 
   // ============================================================
   // PROJECTS
@@ -79,11 +104,23 @@ export function PaymentScheduleForm() {
     useUpdateTermsTemplateContentMutation();
 
   // ============================================================
-  // CREATE PAYMENT SCHEDULE
+  // EXISTING SCHEDULE (edit mode only)
   // ============================================================
 
-  const [createPaymentSchedule, { isLoading }] =
+  const { data: existing, isLoading: isLoadingExisting } =
+    useGetPaymentScheduleQuery(scheduleId, { skip: !isEdit });
+
+  // ============================================================
+  // CREATE / UPDATE PAYMENT SCHEDULE
+  // ============================================================
+
+  const [createPaymentSchedule, { isLoading: isCreating }] =
     useCreatePaymentScheduleMutation();
+
+  const [updatePaymentSchedule, { isLoading: isUpdating }] =
+    useUpdatePaymentScheduleMutation();
+
+  const isSubmitting = isCreating || isUpdating;
 
   // ============================================================
   // PROJECT
@@ -95,16 +132,44 @@ export function PaymentScheduleForm() {
   // FORM STATE
   // ============================================================
 
-  const [values, setValues] = useAutoSave(SAVE_KEY, {
-    Overview: {
-      title: "Payment Schedule",
-      total_contract_value: "",
-      gst_rate: "",
-      terms_template_id: "",
-      terms_version: "",
-    },
-    milestones: [],
-  });
+  // Separate draft key for edits so they never overwrite the "new" draft
+  const draftKey = isEdit ? `${SAVE_KEY}.${scheduleId}` : SAVE_KEY;
+
+  const [values, setValues] = useAutoSave(draftKey, EMPTY_VALUES);
+
+  // ============================================================
+  // HYDRATE FORM FROM SERVER (edit mode)
+  // ============================================================
+
+  const hydratedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isEdit || !existing || hydratedRef.current) return;
+    hydratedRef.current = true;
+
+    setProjectId(existing.projectId ?? existing.project?.id ?? "");
+
+    setValues({
+      Overview: {
+        title: existing.title || "Payment Schedule",
+        total_contract_value: str(existing.totalContractValue),
+        gst_rate: str(existing.gstRate),
+        terms_template_id: existing.termsTemplateId || "",
+        terms_version: str(existing.termsVersion),
+      },
+      milestones: [...(existing.milestones || [])]
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+        .map((m) => ({
+          id: m.id || crypto.randomUUID(),
+          milestone_code: m.milestoneCode || "",
+          title: m.title || "",
+          description: m.description || "",
+          release_trigger: m.releaseTrigger || "",
+          percentage: str(m.percentage),
+          amount: str(m.amount),
+        })),
+    });
+  }, [isEdit, existing, setValues]);
 
   // ============================================================
   // TERMS MODALS STATE
@@ -828,7 +893,7 @@ export function PaymentScheduleForm() {
   };
 
   // ============================================================
-  // SUBMIT
+  // SUBMIT (create or update)
   // ============================================================
 
   const handleSubmit = async () => {
@@ -892,6 +957,7 @@ export function PaymentScheduleForm() {
             : calcAmountFromPct(contractValue, pct);
 
         return {
+          // If your backend PATCH diffs milestones by id, add: id: existingId
           milestoneNumber: index + 1,
           milestoneCode: milestone.milestone_code.trim(),
           title: milestone.title,
@@ -905,15 +971,38 @@ export function PaymentScheduleForm() {
     };
 
     try {
-      const schedule = await createPaymentSchedule(payload).unwrap();
-      toast.success("Payment Schedule created successfully.");
-      localStorage.removeItem(SAVE_KEY);
-      navigate(`/payment-schedules/${schedule.id}`);
+      const result = isEdit
+        ? await updatePaymentSchedule({ id: scheduleId, ...payload }).unwrap()
+        : await createPaymentSchedule(payload).unwrap();
+
+      toast.success(
+        isEdit
+          ? "Payment Schedule updated successfully."
+          : "Payment Schedule created successfully.",
+      );
+      localStorage.removeItem(draftKey);
+      navigate(`/payment-schedules/${result?.id ?? scheduleId}`);
     } catch (error) {
-      console.error("Payment Schedule creation failed:", error);
-      toast.error(error?.data?.message || "Failed to create Payment Schedule.");
+      console.error("Payment Schedule save failed:", error);
+      toast.error(
+        error?.data?.message ||
+          `Failed to ${isEdit ? "update" : "create"} Payment Schedule.`,
+      );
     }
   };
+
+  // ============================================================
+  // LOADING STATE (edit mode)
+  // ============================================================
+
+  if (isEdit && isLoadingExisting) {
+    return (
+      <div className="flex items-center justify-center py-20 text-[#6B7B7C]">
+        <Loader2 size={20} className="animate-spin mr-2" />
+        Loading payment schedule…
+      </div>
+    );
+  }
 
   // ============================================================
   // RENDER
@@ -922,17 +1011,20 @@ export function PaymentScheduleForm() {
   return (
     <>
       <PaymentSectionForm
-        title="Payment Schedule"
+        title={isEdit ? "Edit Payment Schedule" : "Payment Schedule"}
         subtitle="Define contract value, GST, terms and milestone-based payment releases for this project"
-        submitLabel="Save Payment Schedule"
+        submitLabel={
+          isEdit ? "Update Payment Schedule" : "Save Payment Schedule"
+        }
         sections={PAYMENT_SCHEDULE_SECTIONS}
         values={values}
         onFieldChange={handleFieldChange}
         projects={projects}
         projectId={projectId}
         onProjectChange={setProjectId}
+        disableProject={isEdit}
         onSubmit={handleSubmit}
-        isSubmitting={isLoading}
+        isSubmitting={isSubmitting}
         renderSection={renderSection}
       />
 

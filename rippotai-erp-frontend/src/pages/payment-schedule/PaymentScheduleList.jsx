@@ -111,7 +111,7 @@ export default function PaymentScheduleList() {
   // ------------------------------------------------------------
 
   const handleEdit = (id) => {
-    nav(`/ledger/payment-schedules/${id}/edit`);
+    nav(`/ledger/forms/payment-schedule/${id}/edit`);
   };
 
   // ------------------------------------------------------------

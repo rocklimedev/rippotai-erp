@@ -315,10 +315,6 @@ export const APP_MENUS = {
   ],
   ledger: [
     {
-      label: "Ledger",
-      slug: "all",
-    },
-    {
       label: "BOQ",
       slug: "boq/all",
     },
