@@ -2,9 +2,9 @@ import { baseApi } from "../../store/baseApi";
 
 export const quotationApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // =========================
+    // ============================================================
     // QUOTATIONS
-    // =========================
+    // ============================================================
 
     createQuotation: builder.mutation({
       query: (body) => ({
@@ -19,20 +19,39 @@ export const quotationApi = baseApi.injectEndpoints({
       query: ({ status, project_id, vendor_id, includeDeleted } = {}) => {
         const params = new URLSearchParams();
 
-        if (status) params.append("status", status);
-        if (project_id) params.append("project_id", project_id);
-        if (vendor_id) params.append("vendor_id", vendor_id);
-        if (includeDeleted !== undefined)
-          params.append("includeDeleted", includeDeleted);
+        if (status) {
+          params.append("status", status);
+        }
 
-        return `/quotations?${params.toString()}`;
+        if (project_id) {
+          params.append("project_id", project_id);
+        }
+
+        if (vendor_id) {
+          params.append("vendor_id", vendor_id);
+        }
+
+        if (includeDeleted !== undefined) {
+          params.append("includeDeleted", String(includeDeleted));
+        }
+
+        const queryString = params.toString();
+
+        return queryString ? `/quotations?${queryString}` : "/quotations";
       },
+
       providesTags: ["Quotation"],
     }),
 
     getQuotationById: builder.query({
       query: (id) => `/quotations/${id}`,
-      providesTags: ["Quotation"],
+
+      providesTags: (result, error, id) => [
+        {
+          type: "Quotation",
+          id,
+        },
+      ],
     }),
 
     updateQuotation: builder.mutation({
@@ -41,16 +60,32 @@ export const quotationApi = baseApi.injectEndpoints({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["Quotation"],
+
+      invalidatesTags: (result, error, { id }) => [
+        "Quotation",
+        {
+          type: "Quotation",
+          id,
+        },
+      ],
     }),
 
     submitQuotation: builder.mutation({
       query: ({ id, submitted_by }) => ({
         url: `/quotations/${id}/submit`,
         method: "PATCH",
-        body: { submitted_by },
+        body: {
+          submitted_by,
+        },
       }),
-      invalidatesTags: ["Quotation"],
+
+      invalidatesTags: (result, error, { id }) => [
+        "Quotation",
+        {
+          type: "Quotation",
+          id,
+        },
+      ],
     }),
 
     approveQuotation: builder.mutation({
@@ -59,7 +94,14 @@ export const quotationApi = baseApi.injectEndpoints({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["Quotation"],
+
+      invalidatesTags: (result, error, { id }) => [
+        "Quotation",
+        {
+          type: "Quotation",
+          id,
+        },
+      ],
     }),
 
     returnQuotation: builder.mutation({
@@ -68,7 +110,14 @@ export const quotationApi = baseApi.injectEndpoints({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["Quotation"],
+
+      invalidatesTags: (result, error, { id }) => [
+        "Quotation",
+        {
+          type: "Quotation",
+          id,
+        },
+      ],
     }),
 
     declineQuotation: builder.mutation({
@@ -77,16 +126,32 @@ export const quotationApi = baseApi.injectEndpoints({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["Quotation"],
+
+      invalidatesTags: (result, error, { id }) => [
+        "Quotation",
+        {
+          type: "Quotation",
+          id,
+        },
+      ],
     }),
 
     cancelQuotation: builder.mutation({
       query: ({ id, updated_by }) => ({
         url: `/quotations/${id}/cancel`,
         method: "PATCH",
-        body: { updated_by },
+        body: {
+          updated_by,
+        },
       }),
-      invalidatesTags: ["Quotation"],
+
+      invalidatesTags: (result, error, { id }) => [
+        "Quotation",
+        {
+          type: "Quotation",
+          id,
+        },
+      ],
     }),
 
     restoreQuotation: builder.mutation({
@@ -94,16 +159,32 @@ export const quotationApi = baseApi.injectEndpoints({
         url: `/quotations/${id}/restore`,
         method: "PATCH",
       }),
-      invalidatesTags: ["Quotation"],
+
+      invalidatesTags: (result, error, id) => [
+        "Quotation",
+        {
+          type: "Quotation",
+          id,
+        },
+      ],
     }),
 
     softDeleteQuotation: builder.mutation({
       query: ({ id, deleted_by }) => ({
         url: `/quotations/${id}`,
         method: "DELETE",
-        body: { deleted_by },
+        body: {
+          deleted_by,
+        },
       }),
-      invalidatesTags: ["Quotation"],
+
+      invalidatesTags: (result, error, { id }) => [
+        "Quotation",
+        {
+          type: "Quotation",
+          id,
+        },
+      ],
     }),
 
     deleteQuotationPermanent: builder.mutation({
@@ -111,12 +192,13 @@ export const quotationApi = baseApi.injectEndpoints({
         url: `/quotations/${id}/permanent`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Quotation"],
+
+      invalidatesTags: ["Quotation", "QuotationItems", "QuotationVersions"],
     }),
 
-    // =========================
+    // ============================================================
     // QUOTATION ITEMS
-    // =========================
+    // ============================================================
 
     createQuotationItem: builder.mutation({
       query: ({ quotationId, ...body }) => ({
@@ -124,12 +206,39 @@ export const quotationApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["QuotationItems"],
+
+      invalidatesTags: (result, error, { quotationId }) => [
+        "Quotation",
+        {
+          type: "Quotation",
+          id: quotationId,
+        },
+        "QuotationItems",
+        {
+          type: "QuotationItems",
+          id: `LIST_${quotationId}`,
+        },
+      ],
     }),
 
     getQuotationItems: builder.query({
       query: (quotationId) => `/quotations/${quotationId}/items`,
-      providesTags: ["QuotationItems"],
+
+      providesTags: (result, error, quotationId) => {
+        const items = Array.isArray(result) ? result : result?.data || [];
+
+        return [
+          ...items.filter(Boolean).map((item) => ({
+            type: "QuotationItems",
+            id: item.id,
+          })),
+
+          {
+            type: "QuotationItems",
+            id: `LIST_${quotationId}`,
+          },
+        ];
+      },
     }),
 
     replaceQuotationItems: builder.mutation({
@@ -138,216 +247,353 @@ export const quotationApi = baseApi.injectEndpoints({
         method: "PUT",
         body: items,
       }),
-      invalidatesTags: ["QuotationItems"],
+
+      invalidatesTags: (result, error, { quotationId }) => [
+        "Quotation",
+        {
+          type: "Quotation",
+          id: quotationId,
+        },
+        "QuotationItems",
+        {
+          type: "QuotationItems",
+          id: `LIST_${quotationId}`,
+        },
+      ],
     }),
 
     updateQuotationItem: builder.mutation({
-      query: ({ itemId, ...body }) => ({
-        url: `/quotations/:quotationId/items/${itemId}`.replace(
-          ":quotationId",
-          "",
-        ),
+      query: ({ quotationId, itemId, ...body }) => ({
+        url: `/quotations/${quotationId}/items/${itemId}`,
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["QuotationItems"],
+
+      invalidatesTags: (result, error, { quotationId, itemId }) => [
+        "Quotation",
+        {
+          type: "Quotation",
+          id: quotationId,
+        },
+        {
+          type: "QuotationItems",
+          id: itemId,
+        },
+        {
+          type: "QuotationItems",
+          id: `LIST_${quotationId}`,
+        },
+      ],
     }),
 
     deleteQuotationItem: builder.mutation({
-      query: (itemId) => ({
-        url: `/quotations/:quotationId/items/${itemId}`.replace(
-          ":quotationId",
-          "",
-        ),
+      query: ({ quotationId, itemId }) => ({
+        url: `/quotations/${quotationId}/items/${itemId}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["QuotationItems"],
+
+      invalidatesTags: (result, error, { quotationId, itemId }) => [
+        "Quotation",
+        {
+          type: "Quotation",
+          id: quotationId,
+        },
+        {
+          type: "QuotationItems",
+          id: itemId,
+        },
+        {
+          type: "QuotationItems",
+          id: `LIST_${quotationId}`,
+        },
+      ],
     }),
 
-    // =========================
+    // ============================================================
     // QUOTATION VERSIONS
-    // =========================
+    // ============================================================
 
-    // List versions for a quotation
     getQuotationVersions: builder.query({
       query: (quotationId) => `/quotations/${quotationId}/versions`,
-      providesTags: (result, error, quotationId) =>
-        result
-          ? [
-              ...result.map((v) => ({
-                type: "QuotationVersions",
-                id: v.id,
-              })),
-              { type: "QuotationVersions", id: `LIST_${quotationId}` },
-            ]
-          : [{ type: "QuotationVersions", id: `LIST_${quotationId}` }],
+
+      providesTags: (result, error, quotationId) => {
+        const versions = Array.isArray(result) ? result : result?.data || [];
+
+        return [
+          ...versions.filter(Boolean).map((version) => ({
+            type: "QuotationVersions",
+            id: version.id,
+          })),
+
+          {
+            type: "QuotationVersions",
+            id: `LIST_${quotationId}`,
+          },
+        ];
+      },
     }),
 
-    // Create a new version (snapshot)
     createQuotationVersion: builder.mutation({
       query: ({ quotationId, created_by, remarks }) => ({
         url: `/quotations/${quotationId}/versions`,
         method: "POST",
-        body: { created_by, remarks },
+        body: {
+          created_by,
+          remarks,
+        },
       }),
-      invalidatesTags: ["Quotation", "QuotationItems", "QuotationVersions"],
+
+      invalidatesTags: (result, error, { quotationId }) => [
+        "Quotation",
+        {
+          type: "Quotation",
+          id: quotationId,
+        },
+        "QuotationItems",
+        "QuotationVersions",
+        {
+          type: "QuotationVersions",
+          id: `LIST_${quotationId}`,
+        },
+      ],
     }),
 
-    // Get a single version by id
     getQuotationVersion: builder.query({
       query: (id) => `/quotations/versions/${id}`,
-      providesTags: (result, error, id) => [{ type: "QuotationVersions", id }],
+
+      providesTags: (result, error, id) => [
+        {
+          type: "QuotationVersions",
+          id,
+        },
+      ],
     }),
 
-    // Delete a version
     deleteQuotationVersion: builder.mutation({
       query: (id) => ({
         url: `/quotations/versions/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["QuotationVersions"],
+
+      invalidatesTags: ["QuotationVersions", "Quotation"],
     }),
 
-    // Restore a version into the quotation
     restoreQuotationVersion: builder.mutation({
       query: ({ id, restored_by }) => ({
         url: `/quotations/versions/${id}/restore`,
         method: "POST",
-        body: { restored_by },
+        body: {
+          restored_by,
+        },
       }),
+
       invalidatesTags: ["Quotation", "QuotationItems", "QuotationVersions"],
     }),
 
-    // =========================
+    // ============================================================
     // QUOTATION COMPARISON
-    // =========================
+    // ============================================================
 
-    // Compare multiple quotations
     compareQuotations: builder.query({
       query: (ids) => ({
-        url: `/quotations/compare`,
+        url: "/quotations/compare",
         params: {
           ids: ids.join(","),
         },
       }),
+
       providesTags: ["Quotation"],
     }),
 
-    // Save a comparison
     saveQuotationComparison: builder.mutation({
       query: (body) => ({
         url: "/quotations/quotation-comparisons",
         method: "POST",
         body,
       }),
+
       invalidatesTags: ["Quotation"],
     }),
 
-    // Mark quotation as selected
     markQuotationSelected: builder.mutation({
       query: ({ id, remarks }) => ({
         url: `/quotations/${id}/mark-selected`,
         method: "POST",
-        body: { remarks },
+        body: {
+          remarks,
+        },
       }),
-      invalidatesTags: ["Quotation"],
+
+      invalidatesTags: (result, error, { id }) => [
+        "Quotation",
+        {
+          type: "Quotation",
+          id,
+        },
+      ],
     }),
 
-    // =========================
-    // DASHBOARD — summary card
-    // =========================
+    // ============================================================
+    // DASHBOARD — SUMMARY
+    // ============================================================
 
     getQuotationsSummary: builder.query({
       query: () => "/quotations/summary",
+
       providesTags: ["QuotationDashboard"],
     }),
 
-    // =========================
-    // DASHBOARD — Phase 8 tables/lists
-    // =========================
+    // ============================================================
+    // DASHBOARD — PROJECT WISE
+    // ============================================================
 
     getQuotationsProjectWise: builder.query({
       query: () => "/quotations/project-wise",
+
       providesTags: ["QuotationDashboard"],
     }),
+
+    // ============================================================
+    // DASHBOARD — EXPIRING SOON
+    // ============================================================
 
     getQuotationsExpiringSoon: builder.query({
       query: (withinDays = 7) =>
         `/quotations/expiring-soon?within_days=${withinDays}`,
+
       providesTags: ["QuotationDashboard"],
     }),
+
+    // ============================================================
+    // DASHBOARD — BOQ VARIANCE
+    // ============================================================
 
     getQuotationsBoqVariance: builder.query({
       query: () => "/quotations/boq-variance",
+
       providesTags: ["QuotationDashboard"],
     }),
 
-    // =========================
-    // DASHBOARD — Phase 10 charts
-    // =========================
+    // ============================================================
+    // DASHBOARD — VALUE TREND
+    // ============================================================
 
     getQuotationsValueTrend: builder.query({
       query: (months = 6) => `/quotations/value-trend?months=${months}`,
+
       providesTags: ["QuotationDashboard"],
     }),
+
+    // ============================================================
+    // DASHBOARD — STATUS MIX
+    // ============================================================
 
     getQuotationsStatusMix: builder.query({
       query: () => "/quotations/status-mix",
+
       providesTags: ["QuotationDashboard"],
     }),
+
+    // ============================================================
+    // DASHBOARD — VARIATION BY PROJECT
+    // ============================================================
 
     getQuotationsVariationByProject: builder.query({
       query: (limit = 6) => `/quotations/variation-by-project?limit=${limit}`,
+
       providesTags: ["QuotationDashboard"],
     }),
   }),
+
   overrideExisting: false,
 });
 
-// =========================
+// ============================================================
 // EXPORT HOOKS
-// =========================
+// ============================================================
 
 export const {
-  // quotations
+  // ------------------------------------------------------------
+  // Quotations
+  // ------------------------------------------------------------
+
   useCreateQuotationMutation,
+
   useGetQuotationsQuery,
+
   useGetQuotationByIdQuery,
+
   useUpdateQuotationMutation,
+
   useSubmitQuotationMutation,
+
   useApproveQuotationMutation,
+
   useReturnQuotationMutation,
+
   useDeclineQuotationMutation,
+
   useCancelQuotationMutation,
+
   useRestoreQuotationMutation,
+
   useSoftDeleteQuotationMutation,
+
   useDeleteQuotationPermanentMutation,
 
-  // comparison
+  // ------------------------------------------------------------
+  // Comparison
+  // ------------------------------------------------------------
+
   useCompareQuotationsQuery,
+
   useSaveQuotationComparisonMutation,
+
   useMarkQuotationSelectedMutation,
 
-  // items
+  // ------------------------------------------------------------
+  // Items
+  // ------------------------------------------------------------
+
   useCreateQuotationItemMutation,
+
   useGetQuotationItemsQuery,
+
   useReplaceQuotationItemsMutation,
+
   useUpdateQuotationItemMutation,
+
   useDeleteQuotationItemMutation,
 
-  // versions
+  // ------------------------------------------------------------
+  // Versions
+  // ------------------------------------------------------------
+
   useGetQuotationVersionsQuery,
+
   useCreateQuotationVersionMutation,
+
   useGetQuotationVersionQuery,
+
   useDeleteQuotationVersionMutation,
+
   useRestoreQuotationVersionMutation,
 
-  // dashboard
+  // ------------------------------------------------------------
+  // Dashboard
+  // ------------------------------------------------------------
+
   useGetQuotationsSummaryQuery,
+
   useGetQuotationsProjectWiseQuery,
+
   useGetQuotationsExpiringSoonQuery,
+
   useGetQuotationsBoqVarianceQuery,
+
   useGetQuotationsValueTrendQuery,
+
   useGetQuotationsStatusMixQuery,
+
   useGetQuotationsVariationByProjectQuery,
 } = quotationApi;

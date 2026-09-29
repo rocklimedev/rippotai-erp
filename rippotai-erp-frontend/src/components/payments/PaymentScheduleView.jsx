@@ -14,72 +14,170 @@ const money = (value) =>
       }).format(Number(value) || 0);
 const pct = (value) => `${Number(value) || 0}%`;
 const num = (value) => String(value).padStart(2, "0");
-function termsBlocks(html) {
-  const doc = new DOMParser().parseFromString(
-    html ||
-      "<p>No terms and conditions have been defined for this payment schedule.</p>",
-    "text/html",
-  );
+
+function termsBlocks(content) {
+  const fallback =
+    "<p>No terms and conditions have been defined for this payment schedule.</p>";
+
+  if (!content) {
+    content = fallback;
+  }
+
+  // ------------------------------------------------------------
+  // 1. Normalize escaped newlines
+  // ------------------------------------------------------------
+  let html = String(content)
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\r\n/g, "\n");
+
+  // ------------------------------------------------------------
+  // 2. If the content is Markdown/plain text, convert it to HTML
+  // ------------------------------------------------------------
+  const looksLikeMarkdown =
+    /(^|\n)\s*#{1,6}\s+/.test(html) || /(^|\n)\s*[-*]\s+/.test(html);
+
+  if (looksLikeMarkdown) {
+    const lines = html.split("\n");
+    const output = [];
+
+    let paragraph = [];
+
+    const flushParagraph = () => {
+      if (!paragraph.length) return;
+
+      const text = paragraph.join(" ").replace(/\s+/g, " ").trim();
+
+      if (text) {
+        output.push(`<p>${text}</p>`);
+      }
+
+      paragraph = [];
+    };
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+
+      // Empty line = end paragraph
+      if (!line) {
+        flushParagraph();
+        continue;
+      }
+
+      // Markdown heading
+      const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+
+      if (headingMatch) {
+        flushParagraph();
+
+        const level = Math.min(6, headingMatch[1].length);
+        const text = headingMatch[2].trim();
+
+        output.push(`<h${level}>${text}</h${level}>`);
+        continue;
+      }
+
+      // Markdown unordered list
+      const listMatch = line.match(/^[-*]\s+(.+)$/);
+
+      if (listMatch) {
+        flushParagraph();
+
+        output.push(`<ul><li>${listMatch[1].trim()}</li></ul>`);
+        continue;
+      }
+
+      paragraph.push(line);
+    }
+
+    flushParagraph();
+
+    html = output.join("\n");
+  }
+
+  // ------------------------------------------------------------
+  // 3. Parse the resulting HTML
+  // ------------------------------------------------------------
+  const doc = new DOMParser().parseFromString(html, "text/html");
+
+  // ------------------------------------------------------------
+  // 4. Remove unsafe elements
+  // ------------------------------------------------------------
   doc
     .querySelectorAll("script,style,iframe,object,embed,link,meta")
-    .forEach((n) => n.remove());
-  doc.querySelectorAll("*").forEach((n) =>
-    Array.from(n.attributes).forEach((a) => {
+    .forEach((node) => node.remove());
+
+  // ------------------------------------------------------------
+  // 5. Remove unsafe attributes / javascript URLs
+  // ------------------------------------------------------------
+  doc.querySelectorAll("*").forEach((node) => {
+    Array.from(node.attributes).forEach((attribute) => {
       if (
-        /^on/i.test(a.name) ||
-        (/^(href|src)$/i.test(a.name) && /^\s*javascript:/i.test(a.value))
-      )
-        n.removeAttribute(a.name);
-    }),
-  );
-  const blocks = [];
-  let heading = "";
-  Array.from(doc.body.childNodes).forEach((n) => {
-    if (n.nodeType === Node.TEXT_NODE) {
-      if (n.textContent.trim()) {
-        const p = doc.createElement("p");
-        p.textContent = n.textContent;
-        blocks.push(p.outerHTML);
+        /^on/i.test(attribute.name) ||
+        (/^(href|src)$/i.test(attribute.name) &&
+          /^\s*javascript:/i.test(attribute.value))
+      ) {
+        node.removeAttribute(attribute.name);
       }
+    });
+  });
+
+  // ------------------------------------------------------------
+  // 6. Split into individual blocks for PDF pagination
+  // ------------------------------------------------------------
+  const blocks = [];
+
+  let pendingHeading = "";
+
+  Array.from(doc.body.childNodes).forEach((node) => {
+    // Text node
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent?.trim();
+
+      if (text) {
+        const p = doc.createElement("p");
+        p.textContent = text;
+
+        blocks.push(pendingHeading + p.outerHTML);
+
+        pendingHeading = "";
+      }
+
       return;
     }
-    if (/^H[1-6]$/.test(n.tagName)) {
-      heading += n.outerHTML;
+
+    // Heading
+    if (node.nodeType === Node.ELEMENT_NODE && /^H[1-6]$/.test(node.tagName)) {
+      pendingHeading += node.outerHTML;
       return;
     }
-    if (n.tagName === "OL" || n.tagName === "UL")
-      Array.from(n.children).forEach((li, i) => {
-        const list = n.cloneNode(false);
-        const item = li.cloneNode(true);
-        if (n.tagName === "OL") {
-          const ordinal = Number(
-            li.getAttribute("value") ||
-              Number(n.getAttribute("start") || 1) + i,
-          );
-          list.setAttribute("start", ordinal);
-          item.classList.add("ps-numbered-item");
-          const label = doc.createElement("span");
-          label.className = "ps-term-number";
-          label.textContent = num(ordinal);
-          label.setAttribute("aria-hidden", "true");
-          item.prepend(label);
-        }
-        list.append(item);
-        blocks.push(heading + list.outerHTML);
-        heading = "";
-      });
-    else {
-      blocks.push(heading + n.outerHTML);
-      heading = "";
+
+    // Lists
+    if (
+      node.nodeType === Node.ELEMENT_NODE &&
+      (node.tagName === "OL" || node.tagName === "UL")
+    ) {
+      blocks.push(pendingHeading + node.outerHTML);
+
+      pendingHeading = "";
+      return;
+    }
+
+    // Normal element
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      blocks.push(pendingHeading + node.outerHTML);
+
+      pendingHeading = "";
     }
   });
-  if (heading) blocks.push(heading);
-  return blocks.length
-    ? blocks
-    : [
-        "<p>No terms and conditions have been defined for this payment schedule.</p>",
-      ];
+
+  if (pendingHeading) {
+    blocks.push(pendingHeading);
+  }
+
+  return blocks.length ? blocks : [fallback];
 }
+
 function Page({ children, address, cover }) {
   return (
     <section className={`payment-page${cover ? " ps-cover" : ""}`}>
@@ -228,19 +326,22 @@ export default function PaymentScheduleView({ schedule, className = "" }) {
           </div>
         </div>,
       ],
+
       [
         <h2 className="ps-terms-heading" key="heading">
           Terms &amp; Conditions
         </h2>,
+
         ...terms.map((html, i) => (
           <div
             className="ps-term"
-            key={i}
+            key={`term-${i}`}
             dangerouslySetInnerHTML={{
               __html: html,
             }}
           />
         )),
+
         <div className="ps-acceptance" key="acceptance">
           <p>
             The Client confirms having read and accepted the milestones,
@@ -248,6 +349,7 @@ export default function PaymentScheduleView({ schedule, className = "" }) {
             integral part of the Plan of Action and the signed Agreement for
             this project.
           </p>
+
           <div className="ps-signatures">
             {[
               ["For Rippotai", "Authorised Signatory", architect],
@@ -259,9 +361,13 @@ export default function PaymentScheduleView({ schedule, className = "" }) {
             ].map(([label, role, name]) => (
               <div key={label}>
                 <h4>{label}</h4>
+
                 <div className="ps-signature-line" />
+
                 <p>{role}</p>
+
                 <p>Name · {name || "________________"}</p>
+
                 <p>Date · ________________</p>
               </div>
             ))}

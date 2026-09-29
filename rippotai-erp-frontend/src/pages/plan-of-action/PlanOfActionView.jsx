@@ -10,44 +10,158 @@ import {
   useDeletePlanOfActionMutation,
   usePublishPlanOfActionMutation,
 } from "../../api/documents/plan-of-actions.api";
+// Template logo: cube + RIPPŌTAI wordmark (706x858 PNG, same asset as the Site Recce report).
 import logo from "../../assets/rippotai_logo.png";
-// ---- Brand tokens (matched to the Rippotai Plan of Action document) ----
-const GREEN = "#16352A";
-const GOLD = "#C6A15B";
-const HAIRLINE = "#DCCFAE";
-const INK = "#1F2937";
-const MUTED = "#6B7280";
 
-const statusBadgeClass = (status) => {
-  switch (status) {
-    case "published":
-      return "bg-[#E4F3E8] text-[#1F7A3D]";
-    case "review":
-      return "bg-[#FDEFD9] text-[#B0740F]";
-    default:
-      return "bg-[#EAEEF0] text-[#333333]";
-  }
+/* ================================================================ */
+/* DESIGN TOKENS — sampled from PLAN_OF_ACTION_VF.pdf               */
+/* ================================================================ */
+
+const C = {
+  green: "#103D2F",
+  gold: "#D9AF5F",
+  goldFaint: "#EBD9B0",
+  peach: "#F1DFCF",
+  ink: "#111111",
+  body: "#555555",
+  label: "#6F6F6F",
+  teal: "#356A78",
+  sage: "#6B8A7E",
+  paper: "#FFFFFF",
 };
-const chunkPhases = (items, size = 7) => {
-  const chunks = [];
 
-  for (let i = 0; i < items.length; i += size) {
-    chunks.push(items.slice(i, i + size));
-  }
+const FONT = "'Lato', 'Helvetica Neue', Arial, sans-serif";
+const PAGE_W = 794;
+const PAGE_H = 1123;
+const PAD = 71;
+const FOOTER_Y = 104; // gold rule sits 104px above the page bottom
 
-  return chunks;
-};
-// Parses the stored terms HTML (h3/p pairs) into numbered { title, body } items
+const FONT_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap');
+.poa-page, .poa-page * { font-family: ${FONT}; box-sizing: border-box; }
+.poa-backdrop { background: #57595c; padding: 40px 0 56px; }
+@media print {
+  @page { size: A4; margin: 0; }
+  body * { visibility: hidden; }
+  .poa-print-area, .poa-print-area * { visibility: visible; }
+  .poa-print-area { position: absolute; top: 0; left: 0; width: 100%; margin: 0; padding: 0; }
+  .poa-backdrop { background: none; padding: 0; }
+  .poa-page { margin: 0 !important; box-shadow: none !important; break-after: page; }
+  .poa-page:last-child { break-after: auto; }
+  .no-print { display: none !important; }
+}
+`;
+
+/* ================================================================ */
+/* DEFAULT CONTENT (used only when the record has none)             */
+/* ================================================================ */
+
+const NUM_WORDS = [
+  "zero",
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+  "ten",
+  "eleven",
+  "twelve",
+];
+
+const defaultDescription = (n) =>
+  `Execution at site is organised into ${NUM_WORDS[n] || n} phase${n === 1 ? "" : "s"}. Each phase has a defined scope and a defined duration, so progress can be reviewed against a clear benchmark rather than an open-ended schedule. Phases are deliberately overlapped — as one phase moves towards completion, the next one is already mobilised on site, which compresses the overall timeline without compromising the sequence of work.`;
+
+const DEFAULT_TERMS = [
+  {
+    title: "Overlapping of phases",
+    body: [
+      "From Phase 2 onwards, the next phase commences as the current phase moves towards completion. This overlap is intentional and is planned to keep work continuous at site.",
+    ],
+  },
+  {
+    title: "Snag closure before handover",
+    body: [
+      "During the snag phase, the site will not be handed over to the client until every item on the snag list has been rectified and jointly signed off.",
+    ],
+  },
+  {
+    title: "Commencement & counting of days",
+    body: [
+      "The timeline begins from the date of clear and unobstructed possession of the site. Durations stated are working days and exclude Sundays, public holidays and days on which work is stopped by any authority.",
+    ],
+  },
+  {
+    title: "Timely client decisions",
+    body: [
+      "Material, finish, fixture and furniture selections are to be approved within the parallel window indicated against each phase. Any delay in approvals will shift all subsequent phases day for day.",
+    ],
+  },
+  {
+    title: "Client-supplied items",
+    body: [
+      "Items procured directly by the client are to reach site as per the agreed schedule. Delay in the delivery, shortfall or damage of such items is not attributable to Rippotai and will extend the affected phase accordingly.",
+    ],
+  },
+  {
+    title: "Changes in scope",
+    body: [
+      "Any change in layout, specification or scope after a phase has commenced will be treated as a variation. The cost and time implication will be shared in writing and executed only after written approval.",
+    ],
+  },
+  {
+    title: "Payments",
+    body: [
+      "Payments are to be released as per the agreed Payment Schedule. Mobilisation of the next phase is subject to the corresponding milestone payment being cleared.",
+    ],
+  },
+  {
+    title: "Site facilities",
+    body: [
+      "Uninterrupted access to the site, along with power, water, and a secure area for storage of material, is to be provided by the client at no cost for the duration of the works.",
+    ],
+  },
+  {
+    title: "Circumstances beyond control",
+    body: [
+      "Statutory construction restrictions, labour strikes, extreme weather, transport disruption and unavailability of specified material are beyond our control and will extend the timeline proportionately, with prior intimation to the client.",
+    ],
+  },
+  {
+    title: "Post-handover defects",
+    body: [
+      "Issues reported after handover fall under the defect liability terms of the signed Agreement and not under the snag phase of this plan.",
+    ],
+  },
+];
+
+/* ================================================================ */
+/* HELPERS                                                          */
+/* ================================================================ */
+
+const pad2 = (n) => String(n).padStart(2, "0");
+
+function formatDurationLabel(min, max) {
+  const has = (v) => v !== null && v !== undefined && v !== "";
+  if (!has(min) && !has(max)) return null;
+  if (!has(min)) return `${pad2(max)} Days`;
+  if (!has(max) || Number(min) === Number(max)) return `${pad2(min)} Days`;
+  return `${pad2(min)}–${pad2(max)} Days`;
+}
+
+// Parses stored terms HTML (h3 + p pairs) into { title, body[] } items.
 function parseTermsHtml(html) {
   if (!html) return [];
   try {
     const doc = new DOMParser().parseFromString(html, "text/html");
-    const nodes = Array.from(doc.body.children);
     const items = [];
     let current = null;
-    nodes.forEach((node) => {
+    Array.from(doc.body.children).forEach((node) => {
       const tag = node.tagName?.toLowerCase();
-      if (tag === "h2") return; // skip top-level "Terms & Conditions" heading
+      if (tag === "h2") return;
       if (tag === "h3") {
         current = {
           title: node.textContent.replace(/^\d+\.\s*/, "").trim(),
@@ -64,170 +178,156 @@ function parseTermsHtml(html) {
   }
 }
 
-function parseDurationDays(label) {
-  if (!label) return 5;
-  const nums = (label.match(/\d+/g) || []).map(Number);
-  if (!nums.length) return 0; // e.g. "On completion" -> treated as the marker
-  if (nums.length === 1) return nums[0];
-  return (nums[0] + nums[1]) / 2; // e.g. "30-45 Days" -> 37.5
-}
-
-function formatDurationLabel(minDays, maxDays) {
-  if (minDays == null && maxDays == null) return null;
-  if (minDays == null) return `${maxDays} Days`;
-  if (maxDays == null) return `${minDays} Days`;
-  if (minDays === maxDays) return `${minDays} Days`;
-  return `${minDays}-${maxDays} Days`;
-}
-
-function computeOverlapBars(phases) {
-  if (!phases.length) return [];
-  const OVERLAP = 0.5; // each phase starts once the previous is ~50% through
-
+// Bars follow the template: each phase starts when the previous is ~84% through.
+function computeBars(phases) {
+  const OVERLAP = 0.84;
   let cursor = 0;
-  const raw = phases.map((phase, i) => {
-    const duration = parseDurationDays(phase.duration_label);
-    const isLast = i === phases.length - 1 || duration === 0;
+  const raw = phases.map((p, i) => {
+    const marker = i === phases.length - 1 && !p.avgDays;
     const start = cursor;
-    if (!isLast) cursor = start + duration * OVERLAP;
-    return { start, duration: isLast ? 0 : duration, isLast };
+    if (!marker) cursor = start + p.avgDays * OVERLAP;
+    return { start, dur: marker ? 0 : p.avgDays, marker };
   });
+  const span = Math.max(...raw.map((r) => r.start + r.dur), 1);
+  return raw.map((r) => ({
+    marker: r.marker,
+    left: (r.start / span) * 97,
+    width: Math.max(5, (r.dur / span) * 97),
+  }));
+}
 
-  const totalSpan = Math.max(...raw.map((r) => r.start + r.duration), 1);
+// Greedy pagination by estimated height, so long rows never get clipped.
+function paginate(items, estimate, available) {
+  const pages = [];
+  let cur = [];
+  let used = 0;
+  items.forEach((it) => {
+    const h = estimate(it);
+    if (cur.length && used + h > available) {
+      pages.push(cur);
+      cur = [];
+      used = 0;
+    }
+    cur.push(it);
+    used += h;
+  });
+  if (cur.length || !pages.length) pages.push(cur);
+  return pages;
+}
 
-  return raw.map((r) =>
-    r.isLast
-      ? { startPct: 96, widthPct: 4, marker: true }
-      : {
-          startPct: (r.start / totalSpan) * 94,
-          widthPct: Math.max(6, (r.duration / totalSpan) * 94),
-          marker: false,
-        },
+const lines = (text, perLine) =>
+  text ? Math.ceil(String(text).length / perLine) : 0;
+
+const estimatePhase = (p) => {
+  const desc = lines(p.description, 46) * 18;
+  const notes = [p.parallel_note, p.inclusion_note]
+    .filter(Boolean)
+    .reduce((s, n) => s + 10 + lines(n, 36) * 13, 0);
+  const name = lines(p.title, 20) * 17 + 14;
+  return Math.max(desc + notes, name) + 28;
+};
+
+const estimateTerm = (t) =>
+  17 + t.body.reduce((s, b) => s + lines(b, 105) * 14.5, 0) + 22;
+
+/* ================================================================ */
+/* PRIMITIVES                                                       */
+/* ================================================================ */
+
+function Page({ children, footerLine = true, style }) {
+  return (
+    <div
+      className="poa-page"
+      style={{
+        position: "relative",
+        width: PAGE_W,
+        height: PAGE_H,
+        overflow: "hidden",
+        margin: "0 auto 28px",
+        background: C.paper,
+        boxShadow: "0 8px 30px rgba(0,0,0,.35)",
+        color: C.ink,
+        ...style,
+      }}
+    >
+      {children}
+      {footerLine && (
+        <div
+          style={{
+            position: "absolute",
+            left: PAD,
+            right: PAD,
+            bottom: FOOTER_Y,
+            height: 1,
+            background: C.gold,
+          }}
+        />
+      )}
+    </div>
   );
 }
 
-const LogoMark = () => (
-  <img src={logo} alt="Rippotai" className="h-[120px] w-auto object-contain" />
-);
-
-const FieldRow = ({ children }) => (
+const PageTitle = ({ children, upper }) => (
   <div
-    className="grid grid-cols-2 gap-8 py-3 poa-avoid-break"
-    style={{ borderBottom: `1px solid ${HAIRLINE}` }}
+    style={{
+      fontSize: 34,
+      fontWeight: 300,
+      color: C.ink,
+      lineHeight: 1.1,
+      letterSpacing: upper ? "0.01em" : 0,
+    }}
   >
     {children}
   </div>
 );
 
-const Field = ({ label, value }) => (
-  <div>
-    <span
-      className="text-[11px] tracking-wide uppercase"
-      style={{ color: MUTED }}
+const Tracked = ({ children, style }) => (
+  <div style={{ textTransform: "uppercase", letterSpacing: "0.3em", ...style }}>
+    {children}
+  </div>
+);
+
+/* ================================================================ */
+/* COVER FIELD ROW                                                  */
+/* ================================================================ */
+
+function CoverRow({ cells, last }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: `repeat(${cells.length}, 1fr)`,
+        padding: "0 0 10px 27px",
+        borderBottom: `${last ? 2 : 1}px solid ${last ? C.gold : C.peach}`,
+        marginBottom: last ? 0 : 20,
+      }}
     >
-      {label}:{" "}
-    </span>
-    <span className="text-[13px] font-semibold" style={{ color: INK }}>
-      {value || "—"}
-    </span>
-  </div>
-);
+      {cells.map(([label, value]) => (
+        <div
+          key={label}
+          style={{
+            fontSize: 12,
+            lineHeight: "16px",
+            textTransform: "uppercase",
+            fontWeight: 300,
+            color: C.label,
+          }}
+        >
+          {label}
+          {value ? (
+            <span style={{ marginLeft: 8, fontWeight: 700, color: C.ink }}>
+              {value}
+            </span>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
 
-const A4_WIDTH_PX = 794; // 210mm @ 96dpi
-const A4_MIN_HEIGHT_PX = 1123; // 297mm @ 96dpi
-
-const PrintStyles = () => (
-  <style>{`
-    .poa-preview-backdrop {
-      background: #57595c;
-      padding: 40px 0 64px;
-    }
-    .poa-page {
-      width: ${A4_WIDTH_PX}px;
-      min-height: ${A4_MIN_HEIGHT_PX}px;
-      margin: 0 auto 40px;
-      background: #fff;
-      box-shadow: 0 8px 30px rgba(0,0,0,.35);
-      position: relative;
-    }
-    .poa-page-label {
-      position: absolute;
-      top: -24px;
-      left: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 11px;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: #d6d6d6;
-    }
-    @media print {
-      /* Hide everything on the page by default... */
-      body * {
-        visibility: hidden;
-      }
-      /* ...then reveal only the printable document and its contents */
-      .poa-print-area,
-      .poa-print-area * {
-        visibility: visible;
-      }
-      /* Pull the printable area out of the app layout so hidden siblings
-         (header/sidebar) don't leave blank reserved space on the page */
-      .poa-print-area {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-      }
-
-      @page {
-        size: A4;
-        margin: 0;
-      }
-      .poa-preview-backdrop {
-        background: none;
-        padding: 0;
-      }
-      .poa-page {
-        width: auto;
-        min-height: 0;
-        margin: 0;
-        box-shadow: none;
-        break-after: page;
-        page-break-after: always;
-      }
-      /* Only the cover page needs a real page-height box — its logo block
-         centers vertically via flex-1, which needs something to grow
-         into. Scoping this to just the cover (instead of every .poa-page)
-         keeps the other pages sizing naturally off their own content,
-         which is what lets break-after: page land cleanly without an
-         oversized box spilling a row onto the next physical page. */
-      .poa-page-cover {
-        height: 297mm;
-        box-sizing: border-box;
-        overflow: hidden;
-      }
-      .poa-page-label {
-        display: none;
-      }
-      .poa-page-last {
-        break-after: auto;
-        page-break-after: auto;
-      }
-      .poa-avoid-break {
-        break-inside: avoid;
-        page-break-inside: avoid;
-      }
-    }
-  `}</style>
-);
-
-const PageLabel = ({ index, title }) => (
-  <div className="poa-page-label print:hidden">
-    Page {index} of 4 · {title}
-  </div>
-);
+/* ================================================================ */
+/* MAIN VIEW                                                        */
+/* ================================================================ */
 
 export function PlanOfActionView() {
   const { id } = useParams();
@@ -242,6 +342,7 @@ export function PlanOfActionView() {
     useDeletePlanOfActionMutation();
   const [publishPlanOfAction, { isLoading: publishing }] =
     usePublishPlanOfActionMutation();
+  const [exporting, setExporting] = useState(false);
 
   const removePlan = async () => {
     if (!window.confirm("Delete this Plan of Action? This cannot be undone."))
@@ -270,49 +371,55 @@ export function PlanOfActionView() {
     }
   };
 
-  const [exporting, setExporting] = useState(false);
-
   const exportPdf = async () => {
     const pageEls = Array.from(
       document.querySelectorAll(".poa-print-area .poa-page"),
     );
-    if (!pageEls.length) return;
-
+    if (!pageEls.length || exporting) return;
     setExporting(true);
     try {
+      // Same typeface in the PDF as on screen.
+      if (document.fonts) {
+        await Promise.all(
+          ["300", "400", "700"].map((w) =>
+            document.fonts.load(`${w} 12px Lato`),
+          ),
+        );
+        await document.fonts.ready;
+      }
       const pdf = new jsPDF({
         unit: "mm",
         format: "a4",
         orientation: "portrait",
       });
-      const PAGE_W_MM = 210;
-      const PAGE_H_MM = 297;
-
       for (let i = 0; i < pageEls.length; i++) {
         const canvas = await html2canvas(pageEls[i], {
           scale: 2,
           useCORS: true,
           backgroundColor: "#ffffff",
-          // Screen-only chrome (the "Page X of 4" dev label) is hidden via
-          // `print:hidden`, but html2canvas doesn't evaluate @media print,
-          // so it must be stripped explicitly or it would bake into the
-          // exported image.
-          ignoreElements: (el) => el.classList?.contains("poa-page-label"),
+          logging: false,
+          width: PAGE_W,
+          height: PAGE_H,
+          windowWidth: PAGE_W,
+          onclone: (doc) => {
+            doc.querySelectorAll(".poa-page").forEach((el) => {
+              el.style.boxShadow = "none";
+              el.style.margin = "0";
+            });
+          },
         });
-        const imgData = canvas.toDataURL("image/jpeg", 0.95);
         if (i > 0) pdf.addPage();
         pdf.addImage(
-          imgData,
+          canvas.toDataURL("image/jpeg", 0.95),
           "JPEG",
           0,
           0,
-          PAGE_W_MM,
-          PAGE_H_MM,
+          210,
+          297,
           undefined,
           "FAST",
         );
       }
-
       const safeName = (poa?.project?.name || "plan-of-action")
         .trim()
         .replace(/[^\w-]+/g, "_");
@@ -326,17 +433,22 @@ export function PlanOfActionView() {
     }
   };
 
+  /* ---------------- derived data ---------------- */
   const phases = useMemo(() => {
-    const list = [...(poa?.phases || [])];
-    return list
+    return [...(poa?.phases || [])]
       .map((phase) => {
         const link = phase.PlanOfActionPhase || {};
+        const min = link.duration_min_days;
+        const max = link.duration_max_days;
+        const nums = [min, max]
+          .filter((v) => v !== null && v !== undefined)
+          .map(Number);
         return {
           ...phase,
-          duration_label: formatDurationLabel(
-            link.duration_min_days,
-            link.duration_max_days,
-          ),
+          duration_label: formatDurationLabel(min, max),
+          avgDays: nums.length
+            ? nums.reduce((a, b) => a + b, 0) / nums.length
+            : 0,
           parallel_note: link.parallel_work_note || null,
           inclusion_note: link.inclusion_note || null,
           sort_order: link.sort_order ?? phase.sort_order ?? 0,
@@ -344,11 +456,20 @@ export function PlanOfActionView() {
       })
       .sort((a, b) => a.sort_order - b.sort_order);
   }, [poa]);
-  const phasePages = useMemo(() => chunkPhases(phases, 7), [phases]);
-  const overlapBars = useMemo(() => computeOverlapBars(phases), [phases]);
-  const termItems = useMemo(
-    () => parseTermsHtml(poa?.terms_content_snapshot),
-    [poa?.terms_content_snapshot],
+
+  const bars = useMemo(() => computeBars(phases), [phases]);
+  const phasePages = useMemo(
+    () => paginate(phases, estimatePhase, 870),
+    [phases],
+  );
+
+  const termItems = useMemo(() => {
+    const parsed = parseTermsHtml(poa?.terms_content_snapshot);
+    return parsed.length ? parsed : DEFAULT_TERMS;
+  }, [poa?.terms_content_snapshot]);
+  const termPages = useMemo(
+    () => paginate(termItems, estimateTerm, 825),
+    [termItems],
   );
 
   if (isFetching) {
@@ -358,7 +479,6 @@ export function PlanOfActionView() {
       </Shell>
     );
   }
-
   if (isError || !poa) {
     return (
       <Shell title="Plan of Action">
@@ -372,14 +492,23 @@ export function PlanOfActionView() {
   }
 
   const project = poa.project || {};
-
-  const findTeamMemberName = (roleLabel) =>
+  const member = (role) =>
     poa.team_members?.find(
-      (m) => m.role_label?.toLowerCase() === roleLabel.toLowerCase(),
+      (m) => m.role_label?.toLowerCase() === role.toLowerCase(),
     )?.user?.name;
+  const clientName =
+    project.client_name || poa.client_name || project.client?.name;
 
-  const principalArchitect = findTeamMemberName("Principal Architect");
-  const projectLead = findTeamMemberName("Project Lead");
+  const nPhases = poa.total_phases ?? phases.length;
+  const totalLabel =
+    poa.total_duration_label ||
+    (poa.total_duration_min_days && poa.total_duration_max_days
+      ? `${poa.total_duration_min_days}–${poa.total_duration_max_days} days`
+      : "—");
+
+  const COLS = "48px 159px 297px 1fr"; // number | name | detail | timeline (matches template x-positions)
+  const lastIsMarker = bars.length > 0 && bars[bars.length - 1].marker;
+  const rowH = Math.min(32, Math.floor(420 / Math.max(phases.length, 1)));
 
   return (
     <Shell
@@ -425,364 +554,435 @@ export function PlanOfActionView() {
         </div>
       }
     >
-      <PrintStyles />
+      <style>{FONT_CSS}</style>
 
-      <div className="poa-preview-backdrop poa-print-area">
-        {/* Status ribbon (not in source doc — kept minimal so it doesn't disturb the layout) */}
-        <div className="flex justify-end max-w-[794px] mx-auto mb-4 print:hidden">
-          <span
-            className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${statusBadgeClass(
-              poa.status,
-            )}`}
-          >
-            {poa.status?.toUpperCase() || "DRAFT"}
-          </span>
-        </div>
-
-        {/* ================= PAGE 1 — COVER ================= */}
-        <div className="poa-page poa-page-cover px-16 pt-10 pb-24 flex flex-col items-center">
-          <PageLabel index={1} title="Cover" />
-
-          {/* LOGO + CONTENT CENTERED ON PAGE */}
-          <div className="flex flex-col items-center justify-center flex-1 w-full">
-            {/* LOGO */}
-            <LogoMark />
-
-            {/* BRAND NAME */}
+      <div className="poa-backdrop">
+        <div
+          className="poa-print-area"
+          style={{ width: PAGE_W, margin: "0 auto" }}
+        >
+          {/* ================= COVER ================= */}
+          <Page footerLine={false}>
+            <img
+              src={logo}
+              alt="Rippōtai"
+              style={{
+                position: "absolute",
+                top: 277,
+                left: (PAGE_W - 310) / 2,
+                width: 310,
+              }}
+            />
             <div
-              className="mt-6 text-center font-serif tracking-[0.25em] text-3xl"
-              style={{ color: GREEN }}
-            >
-              RIPPŌTAI
-            </div>
-
-            {/* TITLE */}
-            <div
-              className="text-center tracking-[0.2em] text-sm mt-1"
-              style={{ color: MUTED }}
+              style={{
+                position: "absolute",
+                top: 626,
+                width: "100%",
+                textAlign: "center",
+                fontSize: 22,
+                letterSpacing: "0.04em",
+                fontWeight: 300,
+                color: C.green,
+              }}
             >
               PLAN OF ACTION
             </div>
-
-            {/* PROJECT INFORMATION */}
-            <div className="w-full mt-20">
-              <FieldRow>
-                <Field label="Project" value={project.name} />
-                <div />
-              </FieldRow>
-
-              <FieldRow>
-                {/* NOTE: the API payload has no client name field anywhere
-                    (only `project.client_id`) — this stays blank until the
-                    backend includes a resolved client name or object. */}
-                <Field label="Address" value={project.site_location} />
-                <Field label="Client" value={project.client_name} />
-              </FieldRow>
-
-              <FieldRow>
-                <Field label="Principle Architect" value={principalArchitect} />
-
-                <Field label="Project Lead" value={projectLead} />
-              </FieldRow>
-            </div>
-          </div>
-        </div>
-        {/* ================= PAGE 2 — HOW THE EXECUTION RUNS ================= */}
-        <div className="poa-page px-16 py-16">
-          <PageLabel index={2} title="How the Execution runs" />
-          <h1 className="text-3xl font-normal" style={{ color: INK }}>
-            How the Execution runs
-          </h1>
-          <div
-            className="mt-6 pt-6"
-            style={{ borderTop: `1px solid ${INK}` }}
-          />
-
-          {poa.execution_description && (
-            <p
-              className="text-[13px] leading-relaxed mt-6 max-w-3xl"
-              style={{ color: "#374151" }}
+            <div
+              style={{ position: "absolute", left: PAD, right: PAD, top: 900 }}
             >
-              {poa.execution_description}
-            </p>
-          )}
+              <CoverRow cells={[["Project", project.name]]} />
+              <CoverRow
+                cells={[
+                  ["Address", project.site_location],
+                  ["Client", clientName],
+                ]}
+              />
+              <CoverRow
+                cells={[
+                  ["Principle Architect", member("Principal Architect")],
+                  ["Project Lead", member("Project Lead")],
+                ]}
+                last
+              />
+            </div>
+          </Page>
 
-          <div
-            className="mt-10 pt-6"
-            style={{ borderTop: `1px solid ${GOLD}` }}
-          >
-            <div className="grid grid-cols-2 gap-16 mt-6">
-              <div>
-                <div className="text-4xl font-normal" style={{ color: INK }}>
-                  {String(poa.total_phases ?? phases.length).padStart(2, "0")}
+          {/* ================= HOW THE EXECUTION RUNS ================= */}
+          <Page style={{ padding: `76px ${PAD}px 0` }}>
+            <PageTitle>How the Execution runs</PageTitle>
+            <div style={{ height: 2, background: C.ink, marginTop: 44 }} />
+
+            <p
+              style={{
+                margin: "22px 0 0",
+                fontSize: 11.5,
+                lineHeight: "18.5px",
+                fontWeight: 300,
+                color: C.body,
+              }}
+            >
+              {poa.execution_description || defaultDescription(nPhases)}
+            </p>
+
+            <div
+              style={{
+                width: 417,
+                height: 1.5,
+                background: C.gold,
+                marginTop: 42,
+              }}
+            />
+            <div style={{ display: "flex", marginTop: 20 }}>
+              <div style={{ width: 208 }}>
+                <div
+                  style={{
+                    fontSize: 27,
+                    fontWeight: 300,
+                    color: C.ink,
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {pad2(nPhases)}
                 </div>
-                <div className="text-[13px] mt-2" style={{ color: MUTED }}>
+                <div
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 300,
+                    color: C.sage,
+                    marginTop: 12,
+                    width: 170,
+                    lineHeight: 1.45,
+                  }}
+                >
                   Execution phases from services to handover
                 </div>
               </div>
               <div>
-                <div className="text-4xl font-normal" style={{ color: INK }}>
-                  {poa.total_duration_label ||
-                    (poa.total_duration_min_days && poa.total_duration_max_days
-                      ? `${poa.total_duration_min_days}-${poa.total_duration_max_days} days`
-                      : "—")}
+                <div
+                  style={{
+                    fontSize: 27,
+                    fontWeight: 300,
+                    color: C.ink,
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {totalLabel}
                 </div>
-                <div className="text-[13px] mt-2" style={{ color: MUTED }}>
+                <div
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 300,
+                    color: C.sage,
+                    marginTop: 12,
+                    width: 190,
+                    lineHeight: 1.45,
+                  }}
+                >
                   Indicative site duration with overlaps, subject to Terms
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="mt-14">
-            <div
-              className="text-[11px] tracking-[0.15em] font-semibold mb-6"
-              style={{ color: GREEN }}
+            <Tracked
+              style={{
+                marginTop: 70,
+                fontSize: 9,
+                fontWeight: 700,
+                color: C.green,
+              }}
             >
-              PHASE OVERLAP — INDICATIVE
-            </div>
+              Phase overlap — indicative
+            </Tracked>
 
-            <div className="space-y-3">
-              {phases.map((phase, i) => {
-                const bar = overlapBars[i] || {
-                  startPct: 0,
-                  widthPct: 20,
-                  marker: false,
-                };
+            <div style={{ marginTop: 26 }}>
+              {phases.map((p, i) => {
+                const b = bars[i];
                 return (
                   <div
-                    key={phase.id}
-                    className="flex items-center gap-4 poa-avoid-break"
+                    key={p.id || i}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      height: rowH,
+                    }}
                   >
                     <div
-                      className="w-8 text-[11px] font-semibold"
-                      style={{ color: GREEN }}
+                      style={{
+                        width: 32,
+                        fontSize: 10.5,
+                        fontWeight: 700,
+                        color: C.teal,
+                      }}
                     >
                       P{i + 1}
                     </div>
-                    <div className="relative flex-1 h-6">
-                      <div
-                        className="absolute top-0 h-6 rounded-sm flex items-center justify-center text-[9px] font-semibold text-white px-2 truncate"
-                        style={{
-                          left: `${bar.startPct}%`,
-                          width: bar.marker ? "16px" : `${bar.widthPct}%`,
-                          backgroundColor: bar.marker
-                            ? INK
-                            : i === phases.length - 2
-                              ? GOLD
-                              : GREEN,
-                        }}
-                        title={phase.title}
-                      >
-                        {!bar.marker && phase.title?.toUpperCase()}
-                      </div>
+                    <div style={{ position: "relative", flex: 1, height: 14 }}>
+                      {b.marker ? (
+                        <div
+                          style={{
+                            position: "absolute",
+                            right: 0,
+                            top: -1,
+                            width: 17,
+                            height: 16,
+                            background: "#000",
+                          }}
+                        />
+                      ) : (
+                        <div
+                          title={p.title}
+                          style={{
+                            position: "absolute",
+                            top: 0,
+                            left: `${b.left}%`,
+                            width: `${b.width}%`,
+                            height: 14,
+                            background:
+                              lastIsMarker && i === phases.length - 2
+                                ? C.gold
+                                : C.green,
+                            color:
+                              lastIsMarker && i === phases.length - 2
+                                ? "rgba(255,255,255,.75)"
+                                : "rgba(255,255,255,.85)",
+                            fontSize: 6.5,
+                            fontWeight: 300,
+                            textTransform: "uppercase",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "0 4px",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {p.title}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
               })}
-            </div>
-
-            <div
-              className="flex justify-between text-[11px] tracking-wide mt-4 pt-3"
-              style={{ borderTop: `1px solid ${GOLD}`, color: GREEN }}
-            >
-              <span>SITE START</span>
-              <span>HANDOVER</span>
-            </div>
-          </div>
-        </div>
-
-        {/* ================= PHASE DETAIL TIMELINE PAGES ================= */}
-
-        {Array.from(
-          { length: Math.ceil(phases.length / 7) },
-          (_, pageIndex) => {
-            const startIndex = pageIndex * 7;
-            const pagePhases = phases.slice(startIndex, startIndex + 7);
-
-            // Column template shared by the header row and every phase row,
-            // so cells line up. [number+name] [detail] [timeline]
-            const COLS = "grid-cols-[100px_1fr_140px]";
-
-            return (
+              {/* axis */}
               <div
-                key={`phase-detail-page-${pageIndex}`}
-                className="poa-page px-16 py-16"
+                style={{
+                  marginLeft: 32,
+                  marginTop: 10,
+                  borderBottom: `1.5px solid ${C.gold}`,
+                  paddingBottom: 3,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: "#1F4B3C",
+                  textTransform: "uppercase",
+                }}
               >
-                <PageLabel
-                  index={3 + pageIndex}
-                  title={`Phase Detail Timeline`}
-                />
+                <span>Site start</span>
+                <span style={{ marginRight: 34 }}>Handover</span>
+              </div>
+            </div>
+          </Page>
 
-                {/* PAGE HEADER — the source doc repeats the brand title
-                    ("PLAN OF ACTION", all caps) atop this page; it is
-                    distinct from the PHASE / DETAIL / TIMELINE table
-                    headers below, not a merged eyebrow label. */}
-                <div
-                  className="text-3xl font-normal tracking-wide uppercase"
-                  style={{ color: INK }}
-                >
-                  Plan of Action
-                </div>
+          {/* ================= PHASE DETAIL PAGES ================= */}
+          {phasePages.map((pagePhases, pageIdx) => {
+            const start = phasePages
+              .slice(0, pageIdx)
+              .reduce((s, p) => s + p.length, 0);
+            return (
+              <Page
+                key={`ph-${pageIdx}`}
+                style={{ padding: `74px ${PAD}px 0` }}
+              >
+                <PageTitle upper>PLAN OF ACTION</PageTitle>
 
-                {/* TABLE HEADER ROW */}
-                <div
-                  className={`grid ${COLS} gap-6 mt-10 pb-3`}
-                  style={{ borderBottom: `2px solid ${INK}` }}
-                >
+                <div style={{ marginRight: 28, marginTop: 44 }}>
                   <div
-                    className="text-[11px] tracking-[0.15em] font-semibold"
-                    style={{ color: GREEN }}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: COLS,
+                      paddingBottom: 9,
+                      borderBottom: `1.5px solid ${C.ink}`,
+                    }}
                   >
-                    PHASE
-                  </div>
-                  <div
-                    className="text-[11px] tracking-[0.15em] font-semibold"
-                    style={{ color: GREEN }}
-                  >
-                    DETAIL
-                  </div>
-                  <div
-                    className="text-[11px] tracking-[0.15em] font-semibold"
-                    style={{ color: GREEN }}
-                  >
-                    TIMELINE
-                  </div>
-                </div>
-
-                {/* PHASE ROWS — each row gets a rule beneath it, alternating
-                    gold/hairline the same way the source doc does. */}
-                <div>
-                  {pagePhases.map((phase, localIndex) => {
-                    const phaseIndex = startIndex + localIndex;
-                    const sepColor = phaseIndex % 2 === 0 ? GOLD : HAIRLINE;
-
-                    return (
-                      <div
-                        key={phase.id}
-                        className={`grid ${COLS} gap-6 items-start py-5 poa-avoid-break`}
-                        style={{ borderBottom: `1px solid ${sepColor}` }}
+                    <div />
+                    {["Phase", "Detail", "Timeline"].map((h) => (
+                      <Tracked
+                        key={h}
+                        style={{
+                          fontSize: 8.5,
+                          fontWeight: 700,
+                          color: C.green,
+                        }}
                       >
-                        {/* PHASE NUMBER + NAME — stacked in one column */}
-                        <div>
-                          <div className="text-[11px]" style={{ color: MUTED }}>
-                            {String(phaseIndex + 1).padStart(2, "0")}
-                          </div>
-                          <div
-                            className="text-sm font-semibold mt-1"
-                            style={{ color: INK }}
-                          >
-                            {phase.title}
-                          </div>
-                        </div>
+                        {h}
+                      </Tracked>
+                    ))}
+                  </div>
 
-                        {/* DETAIL */}
-                        <div>
-                          {phase.description && (
-                            <p
-                              className="text-[13px] leading-relaxed"
-                              style={{ color: "#374151" }}
-                            >
-                              {phase.description}
-                            </p>
-                          )}
-
-                          {phase.parallel_note && (
-                            <div
-                              className="text-[10px] tracking-wide font-semibold mt-2"
-                              style={{ color: GOLD }}
-                            >
-                              {phase.parallel_note.toUpperCase()}
-                            </div>
-                          )}
-
-                          {phase.inclusion_note && (
-                            <div
-                              className="text-[10px] tracking-wide font-semibold mt-2"
-                              style={{ color: GOLD }}
-                            >
-                              {phase.inclusion_note.toUpperCase()}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* TIMELINE */}
-                        <div
-                          className="text-sm font-semibold"
-                          style={{ color: INK }}
-                        >
-                          {phase.duration_label || "—"}
-                        </div>
+                  {pagePhases.map((p, k) => (
+                    <div
+                      key={p.id || k}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: COLS,
+                        padding: "14px 0",
+                        borderBottom: `1px solid ${C.gold}`,
+                        alignItems: "start",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 9.5,
+                          fontWeight: 300,
+                          color: C.goldFaint,
+                          paddingTop: 1,
+                        }}
+                      >
+                        {pad2(start + k + 1)}
                       </div>
-                    );
-                  })}
+                      <div
+                        style={{
+                          fontSize: 12.5,
+                          fontWeight: 400,
+                          color: C.ink,
+                          paddingRight: 12,
+                          lineHeight: "17px",
+                        }}
+                      >
+                        {p.title}
+                      </div>
+                      <div style={{ paddingRight: 12 }}>
+                        {p.description && (
+                          <div
+                            style={{
+                              fontSize: 11,
+                              lineHeight: "18px",
+                              fontWeight: 300,
+                              color: C.body,
+                            }}
+                          >
+                            {p.description}
+                          </div>
+                        )}
+                        {[p.parallel_note, p.inclusion_note]
+                          .filter(Boolean)
+                          .map((n, j) => (
+                            <div
+                              key={j}
+                              style={{
+                                marginTop: 10,
+                                fontSize: 8,
+                                lineHeight: "13px",
+                                letterSpacing: "0.2em",
+                                textTransform: "uppercase",
+                                fontWeight: 300,
+                                color: C.sage,
+                              }}
+                            >
+                              {n}
+                            </div>
+                          ))}
+                      </div>
+                      <div
+                        style={{ fontSize: 12, fontWeight: 400, color: C.ink }}
+                      >
+                        {p.duration_label ||
+                          (start + k === phases.length - 1
+                            ? "On completion"
+                            : "—")}
+                      </div>
+                    </div>
+                  ))}
 
-                  {/* NO PHASES */}
                   {phases.length === 0 && (
-                    <div className="text-sm py-6" style={{ color: MUTED }}>
+                    <div
+                      style={{
+                        padding: "24px 0",
+                        fontSize: 12,
+                        fontWeight: 300,
+                        color: C.label,
+                      }}
+                    >
                       No phases have been added yet.
                     </div>
                   )}
                 </div>
-              </div>
+              </Page>
             );
-          },
-        )}
+          })}
 
-        {/* ================= PAGE 4 — TERMS & CONDITIONS ================= */}
-        <div className="poa-page poa-page-last px-16 py-16">
-          <PageLabel index={4} title="Terms & Conditions" />
-          <div className="text-3xl font-normal mb-8" style={{ color: INK }}>
-            Terms & Conditions
-          </div>
+          {/* ================= TERMS & CONDITIONS ================= */}
+          {termPages.map((pageTerms, pageIdx) => {
+            const start = termPages
+              .slice(0, pageIdx)
+              .reduce((s, p) => s + p.length, 0);
+            return (
+              <Page
+                key={`tc-${pageIdx}`}
+                style={{ padding: `74px ${PAD}px 0` }}
+              >
+                <PageTitle>
+                  Terms &amp; Conditions{pageIdx > 0 ? " (contd.)" : ""}
+                </PageTitle>
+                <div style={{ height: 2, background: C.ink, marginTop: 44 }} />
 
-          <div className="grid grid-cols-1">
-            {termItems.map((item, i) => {
-              const isLast = i === termItems.length - 1;
-              const sepColor = i % 2 === 0 ? GOLD : HAIRLINE;
-              return (
-                <div
-                  key={i}
-                  className="grid grid-cols-[40px_1fr] gap-4 py-5 poa-avoid-break"
-                  style={
-                    !isLast
-                      ? { borderBottom: `1px solid ${sepColor}` }
-                      : undefined
-                  }
-                >
-                  <div
-                    className="text-sm font-semibold"
-                    style={{ color: GREEN }}
-                  >
-                    {String(i + 1).padStart(2, "0")}
-                  </div>
-                  <div>
+                <div style={{ marginTop: 18, marginRight: 28 }}>
+                  {pageTerms.map((t, k) => (
                     <div
-                      className="text-sm font-semibold"
-                      style={{ color: INK }}
+                      key={start + k}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "43px 1fr",
+                      }}
                     >
-                      {item.title}
-                    </div>
-                    {item.body.map((p, j) => (
-                      <p
-                        key={j}
-                        className="text-[13px] leading-relaxed mt-1"
-                        style={{ color: "#374151" }}
+                      <div
+                        style={{
+                          fontSize: 9.5,
+                          fontWeight: 300,
+                          color: C.goldFaint,
+                          paddingTop: 12,
+                        }}
                       >
-                        {p}
-                      </p>
-                    ))}
-                  </div>
+                        {pad2(start + k + 1)}
+                      </div>
+                      <div
+                        style={{
+                          padding: "10px 0 12px",
+                          borderBottom: `1px solid ${C.gold}`,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 400,
+                            color: C.ink,
+                            lineHeight: "17px",
+                          }}
+                        >
+                          {t.title}
+                        </div>
+                        {t.body.map((b, j) => (
+                          <div
+                            key={j}
+                            style={{
+                              marginTop: 3,
+                              fontSize: 9.5,
+                              lineHeight: "14.5px",
+                              fontWeight: 300,
+                              color: C.body,
+                            }}
+                          >
+                            {b}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              );
-            })}
-
-            {termItems.length === 0 && (
-              <div className="text-sm" style={{ color: MUTED }}>
-                No terms have been applied to this Plan of Action yet.
-              </div>
-            )}
-          </div>
+              </Page>
+            );
+          })}
         </div>
       </div>
     </Shell>
