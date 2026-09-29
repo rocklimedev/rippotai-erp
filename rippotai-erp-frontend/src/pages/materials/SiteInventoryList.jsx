@@ -140,7 +140,7 @@ export default function SiteInventoryList() {
       ? `?project_id=${projectFilter}&type=${type}`
       : `?type=${type}`;
 
-    nav(`/procurement/site-inventory/transactions/new${query}`);
+    nav(`/inventory/site-inventory/transactions/new`);
   };
 
   return (
