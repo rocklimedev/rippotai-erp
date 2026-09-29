@@ -331,108 +331,126 @@ export class PaymentSchedulesService {
   ): Promise<PaymentSchedule> {
     const schedule = await this.findOne(id);
 
-    const { termsTemplateId, termsVersion, ...scheduleData } = dto;
+    const { termsTemplateId, termsVersion, milestones, ...scheduleData } = dto;
 
-    let resolvedTermsTemplateId: string | null | undefined = termsTemplateId;
+    const termsUnchanged =
+      (termsTemplateId === undefined ||
+        termsTemplateId === schedule.termsTemplateId) &&
+      (termsVersion === undefined || termsVersion === schedule.termsVersion);
 
-    let resolvedTermsVersion: number | null | undefined = termsVersion;
+    let termsPatch: Record<string, unknown> = {};
 
-    // ----------------------------------------------------------
-    // If terms template is being changed
-    // ----------------------------------------------------------
+    if (!termsUnchanged) {
+      let resolvedTermsTemplateId: string | null | undefined = termsTemplateId;
+      let resolvedTermsVersion: number | null | undefined = termsVersion;
 
-    if (termsTemplateId !== undefined) {
-      if (termsTemplateId === null) {
-        resolvedTermsTemplateId = null;
-        resolvedTermsVersion = null;
-      } else {
-        const termsTemplate =
-          await this.termsTemplateModel.findByPk(termsTemplateId);
-
+      if (termsTemplateId !== undefined) {
+        if (termsTemplateId === null) {
+          resolvedTermsTemplateId = null;
+          resolvedTermsVersion = null;
+        } else {
+          const termsTemplate =
+            await this.termsTemplateModel.findByPk(termsTemplateId);
+          if (!termsTemplate) {
+            throw new NotFoundException(
+              `Terms template ${termsTemplateId} not found`,
+            );
+          }
+          if (!termsTemplate.is_active) {
+            throw new ConflictException(
+              `Terms template ${termsTemplateId} is inactive`,
+            );
+          }
+          if (resolvedTermsVersion == null) {
+            resolvedTermsVersion = termsTemplate.current_version;
+          }
+          const versionExists = await termsTemplate.$get('versions', {
+            where: { version: resolvedTermsVersion },
+          });
+          if (!versionExists?.length) {
+            throw new NotFoundException(
+              `Terms version ${resolvedTermsVersion} not found for template ${termsTemplateId}`,
+            );
+          }
+        }
+      } else if (termsVersion !== undefined) {
+        if (!schedule.termsTemplateId) {
+          throw new ConflictException(
+            'Cannot set terms version without a terms template',
+          );
+        }
+        const termsTemplate = await this.termsTemplateModel.findByPk(
+          schedule.termsTemplateId,
+        );
         if (!termsTemplate) {
           throw new NotFoundException(
-            `Terms template ${termsTemplateId} not found`,
+            `Terms template ${schedule.termsTemplateId} not found`,
           );
         }
-
-        if (!termsTemplate.is_active) {
-          throw new ConflictException(
-            `Terms template ${termsTemplateId} is inactive`,
-          );
-        }
-
-        // If no explicit version is provided,
-        // use the template's current version.
-        if (resolvedTermsVersion == null) {
-          resolvedTermsVersion = termsTemplate.current_version;
-        }
-
         const versionExists = await termsTemplate.$get('versions', {
-          where: {
-            version: resolvedTermsVersion,
-          },
+          where: { version: termsVersion },
         });
-
         if (!versionExists?.length) {
           throw new NotFoundException(
-            `Terms version ${resolvedTermsVersion} not found for template ${termsTemplateId}`,
+            `Terms version ${termsVersion} not found for template ${schedule.termsTemplateId}`,
           );
         }
+        resolvedTermsTemplateId = schedule.termsTemplateId;
       }
+
+      termsPatch = {
+        termsTemplateId: resolvedTermsTemplateId,
+        termsVersion: resolvedTermsVersion,
+      };
     }
 
-    // ----------------------------------------------------------
-    // If only terms version is being changed
-    // ----------------------------------------------------------
+    const transaction =
+      await this.paymentScheduleModel.sequelize!.transaction();
 
-    if (termsTemplateId === undefined && termsVersion !== undefined) {
-      if (!schedule.termsTemplateId) {
-        throw new ConflictException(
-          'Cannot set terms version without a terms template',
-        );
-      }
-
-      const termsTemplate = await this.termsTemplateModel.findByPk(
-        schedule.termsTemplateId,
-      );
-
-      if (!termsTemplate) {
-        throw new NotFoundException(
-          `Terms template ${schedule.termsTemplateId} not found`,
-        );
-      }
-
-      const versionExists = await termsTemplate.$get('versions', {
-        where: {
-          version: termsVersion,
-        },
+    try {
+      await schedule.update({ ...scheduleData, ...termsPatch } as any, {
+        transaction,
       });
 
-      if (!versionExists?.length) {
-        throw new NotFoundException(
-          `Terms version ${termsVersion} not found for template ${schedule.termsTemplateId}`,
-        );
+      // ----------------------------------------------------------
+      // Sync milestones (only if the client sent the array)
+      // ----------------------------------------------------------
+      if (milestones) {
+        const current = await this.milestoneModel.findAll({
+          where: { paymentScheduleId: id },
+          transaction,
+        });
+        const byCode = new Map(current.map((m) => [m.milestoneCode, m]));
+        const incomingCodes = new Set(milestones.map((m) => m.milestoneCode));
+
+        // Remove rows no longer present
+        for (const row of current) {
+          if (!incomingCodes.has(row.milestoneCode)) {
+            await row.destroy({ transaction });
+          }
+        }
+
+        // Update existing / create new
+        for (const m of milestones) {
+          const row = byCode.get(m.milestoneCode);
+          if (row) {
+            await row.update({ ...m } as any, { transaction });
+          } else {
+            await this.milestoneModel.create(
+              { ...m, paymentScheduleId: id } as any,
+              { transaction },
+            );
+          }
+        }
       }
 
-      resolvedTermsTemplateId = schedule.termsTemplateId;
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
     }
 
-    // ----------------------------------------------------------
-    // Update
-    // ----------------------------------------------------------
-
-    await schedule.update({
-      ...scheduleData,
-
-      ...(termsTemplateId !== undefined || termsVersion !== undefined
-        ? {
-            termsTemplateId: resolvedTermsTemplateId,
-            termsVersion: resolvedTermsVersion,
-          }
-        : {}),
-    } as any);
-
-    return this.findOne(schedule.id);
+    return this.findOne(id);
   }
 
   // ============================================================

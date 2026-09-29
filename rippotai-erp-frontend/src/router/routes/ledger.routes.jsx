@@ -70,6 +70,10 @@ export const ledgerRoutes = [
         element: <PaymentScheduleForm />,
       },
       {
+        path: "forms/payment-schedule/:id/edit",
+        element: <PaymentScheduleForm />,
+      },
+      {
         path: "budget-estimates/all",
         element: <BudgetEstimateList />,
       },
