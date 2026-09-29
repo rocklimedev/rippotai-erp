@@ -31,8 +31,9 @@ import {
 
 /**
  * Enhanced BriefSectionForm (shadcn/ui)
- * Supports: text, textarea, number, date, select, checkbox, multiselect,
- * table, restriction-table, and conditional visibility (showWhen).
+ * Supports: text, textarea, number, date, select, checkbox, multiselect
+ * (with optional "Select All"), table, restriction-table, and conditional
+ * visibility (showWhen / showWhenMultiselectIncludes).
  */
 export function BriefSectionForm({
   title,
@@ -163,7 +164,7 @@ export function BriefSectionForm({
                 </TableHeader>
                 <TableBody>
                   {rows.map((row, idx) => (
-                    <TableRow key={idx}>
+                    <TableRow key={row._id || row.autoFor || idx}>
                       {columns.map((col) => (
                         <TableCell key={col.key}>
                           <Input
@@ -284,16 +285,27 @@ export function BriefSectionForm({
       );
     }
 
-    // ---- MULTISELECT (checkbox list) ----
+    // ---- MULTISELECT (checkbox list, optional Select All) ----
     if (field.type === "multiselect") {
       const selected = Array.isArray(fieldValue) ? fieldValue : [];
       const options = field.options || [];
+      const allValues = options.map((o) =>
+        typeof o === "object" ? o.value : o,
+      );
+
+      const allSelected =
+        allValues.length > 0 && allValues.every((v) => selected.includes(v));
+      const someSelected = selected.length > 0 && !allSelected;
 
       const toggle = (optionValue) => {
         const next = selected.includes(optionValue)
           ? selected.filter((v) => v !== optionValue)
           : [...selected, optionValue];
         handleFieldChange(section, field.key, next);
+      };
+
+      const toggleAll = () => {
+        handleFieldChange(section, field.key, allSelected ? [] : allValues);
       };
 
       return (
@@ -305,6 +317,19 @@ export function BriefSectionForm({
           {field.description && (
             <p className="text-xs text-muted-foreground">{field.description}</p>
           )}
+
+          {field.selectAll && (
+            <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#1F453B]">
+              <Checkbox
+                checked={
+                  allSelected ? true : someSelected ? "indeterminate" : false
+                }
+                onCheckedChange={toggleAll}
+              />
+              Select All
+            </label>
+          )}
+
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {options.map((option) => {
               const optionValue =
@@ -435,22 +460,24 @@ export function BriefSectionForm({
 
     return (
       <div className="grid gap-4 md:grid-cols-2">
-        {(section?.fields || []).map((field) => (
-          <div
-            key={field.key}
-            className={
-              field.type === "table" ||
-              field.type === "restriction-table" ||
-              field.type === "textarea" ||
-              field.type === "multiselect" ||
-              field.fullWidth
-                ? "md:col-span-2"
-                : ""
-            }
-          >
-            {renderField(section, field)}
-          </div>
-        ))}
+        {(section?.fields || [])
+          .filter((field) => isFieldVisible(field))
+          .map((field) => (
+            <div
+              key={field.key}
+              className={
+                field.type === "table" ||
+                field.type === "restriction-table" ||
+                field.type === "textarea" ||
+                field.type === "multiselect" ||
+                field.fullWidth
+                  ? "md:col-span-2"
+                  : ""
+              }
+            >
+              {renderField(section, field)}
+            </div>
+          ))}
       </div>
     );
   };

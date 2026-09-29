@@ -22,6 +22,69 @@ import {
 } from "../../hooks/brief-form-helpers"; // adjust import path
 
 // ============================================================
+// OCCUPANT -> SPACE AUTO-SYNC HELPERS
+// ============================================================
+
+const uid = () =>
+  globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+
+const autoSpaceName = (occupant, index) =>
+  occupant?.name?.trim()
+    ? `${occupant.name.trim()}'s Room`
+    : `Occupant ${index + 1}'s Room`;
+
+// Keeps the Space Requirements table in step with the Occupants table.
+// - New occupant  -> new space row (tagged with autoFor = occupant._id)
+// - Removed       -> its auto-created space row is removed
+// - Renamed       -> its auto-created space row is renamed (unless the user
+//                    edited the space name by hand)
+const syncSpacesWithOccupants = (prev, next) => {
+  const prevOcc = Array.isArray(prev.occupants) ? prev.occupants : [];
+  const nextOcc = Array.isArray(next.occupants) ? next.occupants : [];
+  let spaces = Array.isArray(next.spaceRequirements)
+    ? [...next.spaceRequirements]
+    : [];
+
+  // 1. Tag new occupants and add a space row for each
+  const occupants = nextOcc.map((occ, i) => {
+    if (occ._id) return occ;
+    const _id = uid();
+    spaces.push({
+      spaceName: autoSpaceName(occ, i),
+      requirements: "",
+      autoFor: _id,
+    });
+    return { ...occ, _id };
+  });
+
+  // 2. Remove auto-created spaces of deleted occupants
+  const liveIds = new Set(occupants.map((o) => o._id));
+  spaces = spaces.filter((s) => !s.autoFor || liveIds.has(s.autoFor));
+
+  // 3. Rename auto-created spaces when the occupant's name changes
+  spaces = spaces.map((s) => {
+    if (!s.autoFor) return s;
+    const idx = occupants.findIndex((o) => o._id === s.autoFor);
+    if (idx < 0) return s;
+    const prevIdx = prevOcc.findIndex((o) => o._id === s.autoFor);
+    const prevAuto =
+      prevIdx >= 0 ? autoSpaceName(prevOcc[prevIdx], prevIdx) : null;
+    if (s.spaceName === prevAuto) {
+      return { ...s, spaceName: autoSpaceName(occupants[idx], idx) };
+    }
+    return s;
+  });
+
+  return {
+    ...next,
+    occupants,
+    spaceRequirements: spaces,
+    hasSpaceRequirements:
+      occupants.length > 0 ? "Yes" : next.hasSpaceRequirements,
+  };
+};
+
+// ============================================================
 // COMPONENT
 // ============================================================
 
@@ -110,6 +173,7 @@ export function BriefForm() {
       briefTakenBy: current.briefTakenBy || user?.id || "",
     }));
   }, [isEditMode, initialized, user?.id]);
+
   // ==========================================================
   // LOAD EXISTING BRIEF INTO FORM
   // ==========================================================
@@ -129,6 +193,14 @@ export function BriefForm() {
 
     const normalized = normalizeProjectBrief(existingBrief);
 
+    // Tag loaded occupants so they don't get a duplicate space auto-added
+    if (Array.isArray(normalized.occupants)) {
+      normalized.occupants = normalized.occupants.map((o) => ({
+        ...o,
+        _id: o._id || uid(),
+      }));
+    }
+
     setProjectId(existingBrief.projectId ?? "");
     setValues(normalized);
     setInitialized(true);
@@ -146,6 +218,7 @@ export function BriefForm() {
     console.error("Failed to load project brief:", briefError);
     toast.error(briefError?.data?.message || "Failed to load project brief");
   }, [briefError]);
+
   // ==========================================================
   // AUTO-FILL SITE ADDRESS + PROJECT TYPE FROM SELECTED PROJECT
   // ==========================================================
@@ -166,15 +239,30 @@ export function BriefForm() {
         "",
     }));
   }, [projectId, projects]);
+
   // ==========================================================
   // FIELD CHANGE
   // ==========================================================
 
   const handleFieldChange = (section, key, value) => {
-    setValues((current) => ({
-      ...current,
-      [key]: value,
-    }));
+    setValues((current) => {
+      let next = { ...current, [key]: value };
+
+      // Occupants -> auto-manage Space Requirements rows
+      if (key === "occupants") {
+        next = syncSpacesWithOccupants(current, next);
+      }
+
+      // "Material Procurement" unticked in Services -> clear its categories
+      if (
+        key === "services" &&
+        !(Array.isArray(value) && value.includes("MATERIAL_PROCUREMENT"))
+      ) {
+        next.procurementCategories = [];
+      }
+
+      return next;
+    });
   };
 
   // ==========================================================
@@ -182,7 +270,16 @@ export function BriefForm() {
   // ==========================================================
 
   const buildPayload = () => {
-    return buildProjectBriefPayload(projectId, values);
+    // Strip internal helper keys (_id, autoFor) before sending to the API
+    const cleaned = {
+      ...values,
+      occupants: (values.occupants || []).map(({ _id, ...row }) => row),
+      spaceRequirements: (values.spaceRequirements || []).map(
+        ({ autoFor, ...row }) => row,
+      ),
+    };
+
+    return buildProjectBriefPayload(projectId, cleaned);
   };
 
   // ==========================================================
@@ -214,7 +311,7 @@ export function BriefForm() {
           } updated successfully`,
         );
 
-        nav(`/documents/brief/${data?.id ?? id}`);
+        nav(`/crm/brief/${data?.id ?? id}`);
         return;
       }
 
@@ -228,7 +325,7 @@ export function BriefForm() {
         `Project brief v${data?.version ?? 1} created successfully`,
       );
 
-      nav(`/documents/brief/${data.id}`);
+      nav(`/brief/${data.id}`);
     } catch (error) {
       console.error(
         isEditMode

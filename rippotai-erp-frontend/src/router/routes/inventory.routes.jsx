@@ -72,7 +72,7 @@ export const inventoryRoutes = [
       // ?to_date=
       //
       {
-        path: "transactions",
+        path: "site-inventory/transactions",
         element: <InventoryTransactions />,
       },
 
@@ -86,7 +86,7 @@ export const inventoryRoutes = [
       // ?material_id=
       //
       {
-        path: "transactions/new",
+        path: "site-inventory/transactions/new",
         element: <InventoryTransactionNew />,
       },
 
@@ -95,7 +95,7 @@ export const inventoryRoutes = [
       // /materials/inventory/transactions/:id
       //
       {
-        path: "transactions/:id",
+        path: "site-inventory/transactions/:id",
         element: <InventoryTransactionView />,
       },
     ],

@@ -183,7 +183,7 @@ export const BRIEF_SECTIONS = [
         rows: 3,
       },
       {
-        key: "projectType", // renamed from propertyType
+        key: "projectType",
         label: "Project Type",
         type: "select",
         // options will be injected from projectTypesApi at runtime
@@ -200,8 +200,6 @@ export const BRIEF_SECTIONS = [
         type: "select",
         options: SITE_AREA_UNIT_OPTIONS,
       },
-      // siteAreaOtherUnit REMOVED
-
       {
         key: "facingOrientation",
         label: "Facing / Orientation",
@@ -214,7 +212,6 @@ export const BRIEF_SECTIONS = [
         type: "select",
         options: YES_NO_OPTIONS,
       },
-
       {
         key: "ownershipStatus",
         label: "Ownership Status",
@@ -236,7 +233,6 @@ export const BRIEF_SECTIONS = [
         type: "select",
         options: SITE_TYPE_OPTIONS,
       },
-      // siteTypeOther REMOVED
       {
         key: "siteCondition",
         label: "Current Site Condition",
@@ -252,7 +248,6 @@ export const BRIEF_SECTIONS = [
       {
         key: "drawingsOther",
         label: "Other Drawings / Notes",
-        // small input (not textarea)
       },
     ],
   },
@@ -279,6 +274,7 @@ export const BRIEF_SECTIONS = [
         label: "Services Required",
         type: "multiselect",
         options: SERVICE_TYPE_OPTIONS,
+        selectAll: true, // NEW: shows a "Select All" checkbox
       },
       {
         key: "servicesOther",
@@ -286,9 +282,15 @@ export const BRIEF_SECTIONS = [
       },
       {
         key: "procurementCategories",
-        label: "Material Procurement", // renamed
+        label: "Material Procurement",
         type: "multiselect",
         options: PROCUREMENT_CATEGORY_OPTIONS,
+        selectAll: true, // NEW: shows a "Select All" checkbox
+        // NEW: only visible when "Material Procurement" is ticked in Services Required
+        showWhenMultiselectIncludes: {
+          field: "services",
+          value: "MATERIAL_PROCUREMENT",
+        },
       },
       {
         key: "areasIncludedInScope",
@@ -310,6 +312,7 @@ export const BRIEF_SECTIONS = [
       },
     ],
   },
+
   // =========================================================
   // OCCUPANTS  (table)
   // =========================================================
@@ -340,6 +343,7 @@ export const BRIEF_SECTIONS = [
       },
     ],
   },
+
   // =========================================================
   // SPACE REQUIREMENTS  (boolean + table)
   // =========================================================
@@ -504,8 +508,9 @@ export const BRIEF_SECTIONS = [
       },
     ],
   },
+
   // =========================================================
-  // BUDGET  (GST status & Funding Stage removed)
+  // BUDGET
   // =========================================================
   {
     title: "Budget & Funding",
@@ -516,9 +521,6 @@ export const BRIEF_SECTIONS = [
         label: "Initial Client Budget",
         type: "number",
       },
-
-      // budgetGstStatus REMOVED
-      // fundingStage REMOVED
       {
         key: "budgetFlexibility",
         label: "Budget Flexibility",
@@ -527,7 +529,7 @@ export const BRIEF_SECTIONS = [
   },
 
   // =========================================================
-  // TIMELINE  (startDateStatus removed)
+  // TIMELINE
   // =========================================================
   {
     title: "Timeline & Delivery",
@@ -538,13 +540,11 @@ export const BRIEF_SECTIONS = [
         label: "Desired Start Date",
         type: "date",
       },
-      // startDateStatus REMOVED
       {
         key: "siteHandoverDate",
         label: "Site Handover Date",
         type: "date",
       },
-
       {
         key: "deadlineReason",
         label: "Deadline Reason",
