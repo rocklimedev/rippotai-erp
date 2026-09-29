@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -8,7 +8,6 @@ import {
   Download,
   Loader2,
   Camera,
-  MapPin,
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -17,61 +16,169 @@ import {
   useGetSiteRecceQuery,
   useDeleteSiteRecceMutation,
 } from "../../api/documents/site-recce.api";
+// Use the template logo (cube + RIPPŌTAI wordmark, 706x858 PNG).
 import logo from "../../assets/rippotai_logo.png";
-const BRAND = {
-  green: "#1B4332",
-  greenSoft: "#3C6E58",
-  gold: "#C9A227",
-  goldSoft: "#DCC17E",
-  ink: "#2A2A2A",
-  muted: "#7A7A72",
-  line: "#E4E0D3",
-  paper: "#FFFFFF",
+
+/* ================================================================ */
+/* DESIGN TOKENS — sampled from SITE_RECCE_Vf.pdf                   */
+/* ================================================================ */
+
+const C = {
+  green: "#0F3D2F",
+  gold: "#D9AF5F",
+  ink: "#222222",
+  title: "#3A3A3A",
+  label: "#6B6B6B",
+  faint: "#B4B4B4",
+  rule: "#BDBDBD",
+  black: "#111111",
+  dash: "#7A9A8E",
+  panel: "#F4F6F5",
+  arrow: "#2F5FA8",
 };
 
-const PAGE_WIDTH = 794; // px, A4 width @ 96dpi
-const PAGE_HEIGHT = 1123; // px, A4 height @ 96dpi
+const FONT = "'Lato', 'Helvetica Neue', Arial, sans-serif";
+const PAGE_W = 794;
+const PAGE_H = 1123;
+const PAD_X = 73;
 
-// Swap this for the real asset once it's available.
-const LOGO_SRC = logo;
+const FONT_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap');
+.recce-page, .recce-page * { font-family: ${FONT}; box-sizing: border-box; }
+@media print {
+  .no-print { display: none !important; }
+  .recce-page { break-after: page; box-shadow: none !important; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+`;
 
-const SITE_TYPES = ["FLAT", "FLOOR", "KOTHI", "RAW"];
+/* ================================================================ */
+/* STATIC TEMPLATE CONTENT                                          */
+/* ================================================================ */
 
-const ROOM_CAPTURE_GUIDE = [
+const PROJECT_TYPES = [
   {
-    room: "Living & Dining",
-    covers: "Every wall, the ceiling, the floor, and each window and door.",
+    name: "Residential",
+    items: [
+      "Bare Plot",
+      "Bare Shell",
+      "Builder Floor",
+      "Kothi",
+      "Flat",
+      "Villa",
+      "Farmhouse",
+      "Penthouse",
+    ],
   },
   {
-    room: "Bedrooms",
-    covers: "Every wall, the ceiling, the floor, and the window.",
+    name: "Commercial",
+    items: ["Bare Plot", "Bare Shell", "Office", "Retail Showroom"],
   },
   {
-    room: "Kitchen",
-    covers:
-      "Every wall, plus a close-up of every existing plumbing point and every existing electrical point.",
+    name: "Institutional",
+    items: [
+      "Bare Plot",
+      "Campus Addition",
+      "Education",
+      "Religious",
+      "Residential Institutional",
+      "Sports",
+    ],
   },
   {
-    room: "Bathroom",
-    covers:
-      "Every wall, plus a close-up of the floor drain and the ventilation point.",
-  },
-  {
-    room: "Balcony",
-    covers:
-      "Every wall, the railing, the floor drain, and the view looking out.",
+    name: "Hospitality",
+    items: [
+      "Bare Plot",
+      "Hotel",
+      "Restaurant",
+      "Banquets",
+      "Bar and Lounge",
+      "Resort",
+      "QSR and Cloud Kitchen",
+    ],
   },
 ];
 
-/* ---------------------------------------------------------------- */
-/* helpers                                                           */
-/* ---------------------------------------------------------------- */
+const SITE_CONDITIONS = [
+  {
+    name: "Residential",
+    items: [
+      "Bare Plot",
+      "Bare Shell",
+      "Warm Shell",
+      "Existing Occupied",
+      "Existing Vacant",
+    ],
+  },
+  {
+    name: "Commercial",
+    items: ["Bare Plot", "Cold Shell", "Warm Shell", "Existing Operational"],
+  },
+  {
+    name: "Institutional",
+    items: [
+      "Bare Plot",
+      "Existing Building",
+      "Existing Operational",
+      "Campus Addition",
+      "Fit Out",
+    ],
+  },
+  {
+    name: "Hospitality",
+    items: [
+      "Bare Plot",
+      "Cold Shell",
+      "Warm Shell",
+      "Existing Operational",
+      "Existing Vacant",
+      "Rebranding",
+    ],
+  },
+];
 
-const show = (v, suffix = "") =>
-  v === null || v === undefined || v === "" ? "—" : `${v}${suffix}`;
+const CAPTURE_GUIDE = [
+  [
+    "Living & Dining",
+    "Every wall, the ceiling, the floor, and each window and door.",
+  ],
+  ["Bedrooms", "Every wall, the ceiling, the floor, and the window."],
+  [
+    "Kitchen",
+    "Every wall, plus a close-up of every existing plumbing point and every existing electrical point.",
+  ],
+  [
+    "Bathroom",
+    "Every wall, plus a close-up of the floor drain and the ventilation point.",
+  ],
+  [
+    "Balcony",
+    "Every wall, the railing, the floor drain, and the view looking out.",
+  ],
+];
+
+const HOW_TO_STEPS = [
+  "For every photo you take in a room, use one row on that room’s sheet.",
+  "Paste or insert a copy of the room’s layout into the left box of that row.",
+  "On that layout, mark one dot where you were standing, and draw one arrow from the dot showing exactly which way the camera was pointed.",
+  "Paste the matching photo into the right box of the same row.",
+  "Move to the next row for your next photo. Do not put more than one arrow on a single layout copy — a layout with two arrows does not say which photo is which.",
+];
+
+/* ================================================================ */
+/* HELPERS                                                          */
+/* ================================================================ */
+
+const norm = (s) =>
+  String(s ?? "")
+    .toUpperCase()
+    .replace(/[\s_-]+/g, " ")
+    .trim();
+
+const has = (v) => v !== null && v !== undefined && String(v).trim() !== "";
 
 const fmtDate = (d) => {
-  if (!d) return "—";
+  if (!d) return "";
   try {
     return new Date(d).toLocaleDateString("en-IN", {
       day: "2-digit",
@@ -79,367 +186,677 @@ const fmtDate = (d) => {
       year: "numeric",
     });
   } catch {
-    return d;
+    return String(d);
   }
 };
 
-const ROOM_TABLE_FIRST_PAGE_ROWS = 4;
-const ROOM_TABLE_CONT_PAGE_ROWS = 14;
+const num = (v) => (has(v) ? String(Number(v)) : "");
 
-function chunkRows(items, firstSize, restSize) {
-  const chunks = [];
-  let i = 0;
-  let first = true;
-  if (items.length === 0) return [[]];
-  while (i < items.length) {
-    const size = first ? firstSize : restSize;
-    chunks.push(items.slice(i, i + size));
-    i += size;
-    first = false;
-  }
-  return chunks;
-}
-
-const LARGE_ROOM_MATCH = ["LIVING", "DINING", "HALL"];
-const BEDROOM_MATCH = ["BEDROOM"];
-
-function shotsPerPage(room) {
-  const type = `${room.room_type || ""} ${room.room_name || ""}`.toUpperCase();
-  if (LARGE_ROOM_MATCH.some((t) => type.includes(t))) return 3;
-  return 4;
-}
-
+// Room-type driven hints, as in the template.
 function roomHint(room) {
-  const type = `${room.room_type || ""} ${room.room_name || ""}`.toUpperCase();
-  if (LARGE_ROOM_MATCH.some((t) => type.includes(t))) {
+  const t = norm(`${room.room_type} ${room.room_name}`);
+  if (t.includes("LIVING") || t.includes("DINING") || t.includes("HALL"))
     return "A larger room — plan for six to ten photos.";
-  }
-  if (BEDROOM_MATCH.some((t) => type.includes(t))) {
-    return "Four to six photos is typical.";
-  }
+  if (t.includes("BEDROOM")) return "Four to six photos is typical.";
   return null;
 }
 
-function chunkShots(photos, perPage) {
-  const list = photos || [];
-  if (list.length === 0) return [[]];
-  const chunks = [];
-  for (let i = 0; i < list.length; i += perPage) {
-    chunks.push(list.slice(i, i + perPage));
+function chunk(list, first, rest) {
+  if (!list.length) return [[]];
+  const out = [];
+  let i = 0;
+  let size = first;
+  while (i < list.length) {
+    out.push(list.slice(i, i + size));
+    i += size;
+    size = rest;
   }
-  return chunks;
+  return out;
 }
 
-/* ---------------------------------------------------------------- */
-/* shared presentational primitives                                 */
-/* ---------------------------------------------------------------- */
+// Society/RWA, working hours and material movement — supports both the
+// legacy scalar fields and the newer `site_restrictions` table.
+function resolveRestrictions(recce) {
+  const list = Array.isArray(recce.site_restrictions)
+    ? recce.site_restrictions
+    : [];
+  const fmt = (r) =>
+    [r.type && String(r.type).replace(/_/g, " "), r.details]
+      .filter(Boolean)
+      .join(": ");
+  const pick = (re) =>
+    list
+      .filter((r) => re.test(String(r.type || "")))
+      .map(fmt)
+      .join("; ");
+  const working = recce.working_hours_allowed || pick(/work|hour|time/i);
+  const material = recce.material_movement_rule || pick(/material|movement/i);
+  const rest = list
+    .filter(
+      (r) => !/work|hour|time|material|movement/i.test(String(r.type || "")),
+    )
+    .map(fmt)
+    .join("; ");
+  return {
+    society: recce.society_rwa_restrictions || rest,
+    working,
+    material,
+  };
+}
 
-function SectionHeader({ number, title }) {
+/* ================================================================ */
+/* PRIMITIVES                                                       */
+/* ================================================================ */
+
+function Page({ children, footer = true, style }) {
   return (
-    <div className="flex items-center gap-3 mb-7">
-      {number && (
+    <div
+      className="recce-page"
+      style={{
+        position: "relative",
+        width: PAGE_W,
+        height: PAGE_H,
+        overflow: "hidden",
+        background: "#fff",
+        padding: `84px ${PAD_X}px 0`,
+        boxShadow: "0 1px 4px rgba(0,0,0,.12)",
+        color: C.ink,
+        ...style,
+      }}
+    >
+      {children}
+      {footer && (
         <div
-          className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-xs font-bold text-white"
-          style={{ backgroundColor: BRAND.green }}
+          style={{
+            position: "absolute",
+            left: PAD_X,
+            bottom: 40,
+            fontSize: 8,
+            letterSpacing: "0.3em",
+            textTransform: "uppercase",
+            fontWeight: 300,
+            color: C.faint,
+          }}
         >
-          {number}
+          Site Recce Format
         </div>
       )}
-      <h2
-        className="text-lg font-semibold tracking-tight"
-        style={{ color: BRAND.green }}
-      >
-        {title}
-      </h2>
-      <div className="flex-1 h-px" style={{ backgroundColor: BRAND.line }} />
     </div>
   );
 }
 
-function Field({ label, value, className = "" }) {
+// "01  Project & Site Details" + heavy black rule
+function SectionTitle({ no, children, marginTop = 0 }) {
   return (
-    <div className={className}>
-      <span
-        className="text-[11px] tracking-wide uppercase block mb-1"
-        style={{ color: BRAND.muted }}
-      >
-        {label}
-      </span>
-      <span className="text-sm font-medium" style={{ color: BRAND.ink }}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function CheckOption({ label, checked }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span
-        className="w-4 h-4 rounded-[3px] border flex items-center justify-center shrink-0"
+    <div style={{ marginTop }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 14 }}>
+        <span style={{ fontSize: 13, fontWeight: 300, color: C.label }}>
+          {no}
+        </span>
+        <span style={{ fontSize: 24, fontWeight: 300, color: C.title }}>
+          {children}
+        </span>
+      </div>
+      <div
         style={{
-          borderColor: checked ? BRAND.gold : "#C9C4B4",
-          backgroundColor: checked ? BRAND.gold : "transparent",
+          height: 2.5,
+          background: C.black,
+          marginTop: 34,
+          marginBottom: 26,
+        }}
+      />
+    </div>
+  );
+}
+
+// Small spaced caps heading with gold underline (Access / Utilities / Society)
+function GoldHeading({ children, marginTop = 0 }) {
+  return (
+    <div style={{ marginTop, marginBottom: 20 }}>
+      <div
+        style={{
+          fontSize: 11,
+          letterSpacing: "0.22em",
+          textTransform: "uppercase",
+          fontWeight: 300,
+          color: C.title,
         }}
       >
-        {checked && (
-          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-            <path
-              d="M1 4L3.5 6.5L9 1"
-              stroke="white"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        )}
-      </span>
-      <span className="text-sm" style={{ color: BRAND.ink }}>
-        {label}
-      </span>
-    </div>
-  );
-}
-
-/* Placeholder box used for layout image / photo image slots and diagram examples */
-function PlaceholderBox({ icon: Icon, label, className = "" }) {
-  return (
-    <div
-      className={`flex flex-col items-center justify-center gap-2 border border-dashed ${className}`}
-      style={{
-        backgroundColor: "#F8F9F5",
-        borderColor: "#C9C4B4",
-        color: "#9A9587",
-      }}
-    >
-      <Icon size={22} strokeWidth={1.5} />
-      <span className="text-[11px] uppercase tracking-wide text-center px-2">
-        {label}
-      </span>
-    </div>
-  );
-}
-
-/* Small running header repeated on every content page, matching the PDF */
-function PageHeader() {
-  return (
-    <div
-      className="px-10 pt-6 pb-2 text-right text-[10px] uppercase tracking-[0.14em] shrink-0"
-      style={{ color: BRAND.muted }}
-    >
-      Site Recce Format
-    </div>
-  );
-}
-
-function PageFooter({ address }) {
-  return (
-    <div
-      className="px-10 py-4 flex justify-between text-[10px] uppercase tracking-[0.12em] shrink-0"
-      style={{ color: BRAND.muted, borderTop: `1px solid ${BRAND.line}` }}
-    >
-      <span>Site Recce Format</span>
-      <span>{address}</span>
-    </div>
-  );
-}
-
-function Page({
-  children,
-  footer = true,
-  address,
-  contentClassName = "px-10 pb-8",
-}) {
-  return (
-    <div
-      className="recce-page shadow-sm print:shadow-none flex flex-col"
-      style={{
-        backgroundColor: BRAND.paper,
-        border: `1px solid ${BRAND.line}`,
-        width: PAGE_WIDTH,
-        minHeight: PAGE_HEIGHT,
-      }}
-    >
-      <PageHeader />
-      <div className={`flex-1 flex flex-col ${contentClassName}`}>
         {children}
       </div>
-      {footer && <PageFooter address={address} />}
+      <div style={{ height: 2, background: C.gold, marginTop: 10 }} />
     </div>
   );
 }
 
-/* A single Shot row: layout image (left) + photo (right), like Part 2 of the PDF */
-function ShotRow({ photo, index }) {
-  const meta = [photo.standing_position, photo.camera_direction]
-    .filter(Boolean)
-    .join(" • ");
+// Field: tiny spaced label + value sitting on a grey rule
+function Field({ label, value, span = 1 }) {
+  return (
+    <div style={{ gridColumn: `span ${span}` }}>
+      <div
+        style={{
+          fontSize: 8,
+          letterSpacing: "0.22em",
+          textTransform: "uppercase",
+          fontWeight: 300,
+          color: C.label,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          marginTop: 8,
+          minHeight: 30,
+          paddingBottom: 4,
+          borderBottom: `1px solid ${C.rule}`,
+          fontSize: 13,
+          fontWeight: 400,
+          color: C.ink,
+          display: "flex",
+          alignItems: "flex-end",
+          whiteSpace: "pre-wrap",
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
 
+const grid = (cols, gap = "22px 28px") => ({
+  display: "grid",
+  gridTemplateColumns: `repeat(${cols}, 1fr)`,
+  gap,
+});
+
+function Box({ checked }) {
+  return (
+    <span
+      style={{
+        width: 11,
+        height: 11,
+        flexShrink: 0,
+        border: `1px solid ${checked ? C.green : "#8A8A8A"}`,
+        background: checked ? C.green : "transparent",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {checked && (
+        <svg width="8" height="7" viewBox="0 0 10 8" fill="none">
+          <path
+            d="M1 4L3.5 6.5L9 1"
+            stroke="#fff"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )}
+    </span>
+  );
+}
+
+function BlockHeading({ children, marginTop = 0 }) {
+  return (
+    <div style={{ marginTop, marginBottom: 22 }}>
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          letterSpacing: "0.22em",
+          textTransform: "uppercase",
+          color: C.black,
+        }}
+      >
+        {children}
+      </div>
+      <div style={{ height: 1, background: C.rule, marginTop: 12 }} />
+    </div>
+  );
+}
+
+// Checkbox matrix: Residential / Commercial / Institutional / Hospitality / Other
+function TypeGrid({
+  groups,
+  selectedGroup,
+  selectedItem,
+  otherText,
+  showOther = true,
+}) {
+  const rows = [
+    ...groups.map((g) => {
+      const groupOn = norm(selectedGroup) === norm(g.name);
+      return (
+        <div key={g.name}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              fontSize: 10,
+              fontWeight: 300,
+              marginBottom: 12,
+            }}
+          >
+            <Box checked={groupOn} />
+            {g.name}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 11,
+              paddingLeft: 20,
+            }}
+          >
+            {g.items.map((it) => (
+              <div
+                key={it}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 8.5,
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                  fontWeight: 300,
+                }}
+              >
+                <Box checked={groupOn && norm(selectedItem) === norm(it)} />
+                {it}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }),
+  ];
+  if (showOther) {
+    const otherOn = norm(selectedGroup) === "OTHER";
+    rows.push(
+      <div
+        key="other"
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 8,
+          fontSize: 10,
+          fontWeight: 300,
+        }}
+      >
+        <Box checked={otherOn} />
+        <span>
+          Other{" "}
+          <span
+            style={{
+              display: "inline-block",
+              minWidth: 90,
+              borderBottom: `1px solid ${C.rule}`,
+              fontWeight: 400,
+            }}
+          >
+            {otherText || "\u00A0"}
+          </span>
+        </span>
+      </div>,
+    );
+  }
   return (
     <div
-      className="grid grid-cols-2 gap-6 py-6"
-      style={{ borderBottom: `1px solid ${BRAND.line}` }}
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gap: "26px 20px",
+        alignItems: "start",
+      }}
     >
-      <div>
-        <div
-          className="text-[12px] font-semibold mb-2"
-          style={{ color: BRAND.green }}
-        >
-          SHOT {photo.shot_number ?? index + 1} — LAYOUT
-        </div>
-        {photo.layout_image_url ? (
-          <img
-            src={photo.layout_image_url}
-            alt={photo.layout_file_name || "Layout"}
-            className="w-full h-56 object-contain rounded-lg bg-white"
-            style={{ border: `1px solid ${BRAND.line}` }}
-            crossOrigin="anonymous"
-          />
-        ) : (
-          <PlaceholderBox
-            icon={MapPin}
-            label="Layout not attached"
-            className="w-full h-56 rounded-lg"
-          />
-        )}
-      </div>
-      <div>
-        <div
-          className="text-[12px] font-semibold mb-2"
-          style={{ color: BRAND.green }}
-        >
-          PHOTO {photo.shot_number ?? index + 1}
-        </div>
-        {photo.photo_url ? (
-          <img
-            src={photo.photo_url}
-            alt={photo.photo_file_name || "Site photo"}
-            className="w-full h-56 object-cover rounded-lg"
-            style={{ border: `1px solid ${BRAND.line}` }}
-            crossOrigin="anonymous"
-          />
-        ) : (
-          <PlaceholderBox
-            icon={Camera}
-            label="Photo not attached"
-            className="w-full h-56 rounded-lg"
-          />
-        )}
-      </div>
-      {(meta || photo.notes) && (
-        <div
-          className="col-span-2 -mt-2 text-[12px]"
-          style={{ color: BRAND.muted }}
-        >
-          {meta && <span>{meta}</span>}
-          {meta && photo.notes && <span> • </span>}
-          {photo.notes && <span>{photo.notes}</span>}
-        </div>
-      )}
+      {rows}
     </div>
   );
 }
 
-function RoomMeasurementsTable({ rows }) {
+/* ================================================================ */
+/* ILLUSTRATIONS (page 03)                                          */
+/* ================================================================ */
+
+function Arrow({ x1, y1, x2, y2 }) {
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  const h = 9;
+  const p = (ang) =>
+    `${x2 - h * Math.cos(a + ang)},${y2 - h * Math.sin(a + ang)}`;
   return (
-    <table className="w-full text-sm border-collapse">
+    <g stroke={C.arrow} fill={C.arrow}>
+      <line
+        x1={x1}
+        y1={y1}
+        x2={x2 - 4 * Math.cos(a)}
+        y2={y2 - 4 * Math.sin(a)}
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+      <polygon points={`${x2},${y2} ${p(0.5)} ${p(-0.5)}`} stroke="none" />
+    </g>
+  );
+}
+
+function RoomOutline({ w, h, doorFrom, doorTo, children }) {
+  return (
+    <svg
+      width={w}
+      height={h}
+      viewBox={`0 0 ${w} ${h}`}
+      style={{ display: "block" }}
+    >
+      <path
+        d={`M1 ${h - 1} L1 1 L${w - 1} 1 L${w - 1} ${h - 1} L${doorTo} ${h - 1} M${doorFrom} ${h - 1} L1 ${h - 1}`}
+        fill="none"
+        stroke={C.black}
+        strokeWidth="2"
+      />
+      {children}
+    </svg>
+  );
+}
+
+function DashedBox({ style, children }) {
+  return (
+    <div
+      style={{
+        border: `1px dashed ${C.dash}`,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+        color: C.dash,
+        fontSize: 8,
+        letterSpacing: "0.08em",
+        textTransform: "uppercase",
+        fontWeight: 300,
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+const Tiny = ({ children, style }) => (
+  <div style={{ fontSize: 8, color: C.dash, fontWeight: 300, ...style }}>
+    {children}
+  </div>
+);
+
+const DiagramLabel = ({ children }) => (
+  <div
+    style={{
+      fontSize: 9,
+      fontWeight: 700,
+      letterSpacing: "0.04em",
+      textTransform: "uppercase",
+      color: C.green,
+      marginBottom: 10,
+    }}
+  >
+    {children}
+  </div>
+);
+
+/* ================================================================ */
+/* ROOM TABLE                                                       */
+/* ================================================================ */
+
+const TH = {
+  fontSize: 8,
+  letterSpacing: "0.22em",
+  textTransform: "uppercase",
+  fontWeight: 300,
+  color: C.label,
+  textAlign: "left",
+  padding: "0 6px 10px 0",
+};
+
+function RoomTable({ rows, blankRows = 0 }) {
+  const cols = ["20%", "11%", "11%", "11%", "47%"];
+  const cell = {
+    padding: "10px 6px 10px 0",
+    borderBottom: `1px solid ${C.rule}`,
+    fontSize: 12.5,
+    fontWeight: 400,
+    verticalAlign: "top",
+    height: 40,
+  };
+  return (
+    <table
+      style={{
+        width: "100%",
+        borderCollapse: "collapse",
+        tableLayout: "fixed",
+      }}
+    >
+      <colgroup>
+        {cols.map((w, i) => (
+          <col key={i} style={{ width: w }} />
+        ))}
+      </colgroup>
       <thead>
-        <tr
-          className="text-left"
-          style={{ borderBottom: `2px solid ${BRAND.green}` }}
-        >
-          <th
-            className="py-2 pr-4 font-semibold"
-            style={{ color: BRAND.green }}
-          >
-            Room
-          </th>
-          <th
-            className="py-2 pr-4 font-semibold"
-            style={{ color: BRAND.green }}
-          >
-            Length
-          </th>
-          <th
-            className="py-2 pr-4 font-semibold"
-            style={{ color: BRAND.green }}
-          >
-            Width
-          </th>
-          <th
-            className="py-2 pr-4 font-semibold"
-            style={{ color: BRAND.green }}
-          >
-            Height
-          </th>
-          <th className="py-2 font-semibold" style={{ color: BRAND.green }}>
-            Existing Flooring / Ceiling / Notes
-          </th>
+        <tr style={{ borderBottom: `1.5px solid ${C.black}` }}>
+          <th style={TH}>Room</th>
+          <th style={TH}>Length</th>
+          <th style={TH}>Width</th>
+          <th style={TH}>Height</th>
+          <th style={TH}>Existing Flooring / Ceiling / Notes</th>
         </tr>
       </thead>
       <tbody>
-        {rows.map((room) => {
-          const unit = (room.measurement_unit || "FT").toLowerCase();
+        {rows.map((r) => {
+          const u = norm(r.measurement_unit || "FT").toLowerCase();
+          const dim = (v) =>
+            has(v) ? (
+              <>
+                {num(v)}{" "}
+                <span style={{ color: C.label, fontSize: 9 }}>{u}</span>
+              </>
+            ) : (
+              ""
+            );
           const details = [
-            room.existing_flooring && `Flooring: ${room.existing_flooring}`,
-            room.existing_ceiling && `Ceiling: ${room.existing_ceiling}`,
-            room.notes,
-          ]
-            .filter(Boolean)
-            .join(" • ");
+            has(r.existing_flooring) && `Flooring: ${r.existing_flooring}`,
+            has(r.existing_ceiling) && `Ceiling: ${r.existing_ceiling}`,
+            has(r.notes) && r.notes,
+          ].filter(Boolean);
           return (
-            <tr
-              key={room.id}
-              style={{ borderBottom: `1px solid ${BRAND.line}` }}
-            >
-              <td className="py-3 pr-4 align-top">
-                <div className="font-medium" style={{ color: BRAND.ink }}>
-                  {room.room_name}
-                </div>
-                <div
-                  className="text-[11px] uppercase"
-                  style={{ color: BRAND.muted }}
-                >
-                  {room.room_type}
-                  {room.room_number ? ` • ${room.room_number}` : ""}
-                </div>
-              </td>
-              <td className="py-3 pr-4 align-top">
-                {show(room.length, ` ${unit}`)}
-              </td>
-              <td className="py-3 pr-4 align-top">
-                {show(room.width, ` ${unit}`)}
-              </td>
-              <td className="py-3 pr-4 align-top">
-                {show(room.height, ` ${unit}`)}
-              </td>
-              <td className="py-3 align-top" style={{ color: BRAND.ink }}>
-                {details || "—"}
+            <tr key={r.id}>
+              <td style={cell}>{r.room_name}</td>
+              <td style={cell}>{dim(r.length)}</td>
+              <td style={cell}>{dim(r.width)}</td>
+              <td style={cell}>{dim(r.height)}</td>
+              <td style={{ ...cell, fontSize: 11.5 }}>
+                {details.map((d, i) => (
+                  <div key={i}>{d}</div>
+                ))}
               </td>
             </tr>
           );
         })}
+        {Array.from({ length: blankRows }).map((_, i) => (
+          <tr key={`b${i}`}>
+            {cols.map((_, j) => (
+              <td key={j} style={cell}>
+                &nbsp;
+              </td>
+            ))}
+          </tr>
+        ))}
       </tbody>
     </table>
   );
 }
 
-/* ---------------------------------------------------------------- */
-/* main view                                                          */
-/* ---------------------------------------------------------------- */
+/* ================================================================ */
+/* SHOT ROW (section 04)                                            */
+/* ================================================================ */
+
+function ShotRow({ photo, n, floorThumb }) {
+  const meta = [
+    has(photo?.standing_position) && `Standing: ${photo.standing_position}`,
+    has(photo?.camera_direction) && `Facing: ${photo.camera_direction}`,
+    has(photo?.notes) && photo.notes,
+  ]
+    .filter(Boolean)
+    .join("  •  ");
+
+  return (
+    <div style={{ marginBottom: 6 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1.25fr 1fr 74px",
+          height: 168,
+          border: `1px dashed ${C.dash}`,
+        }}
+      >
+        {/* layout */}
+        <div
+          style={{
+            padding: "8px 10px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            minWidth: 0,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 8,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: C.dash,
+              fontWeight: 300,
+            }}
+          >
+            Shot {n} —{" "}
+            {photo?.layout_image_url ? "Room layout" : "Paste room layout here"}
+          </div>
+          {photo?.layout_image_url ? (
+            <img
+              src={photo.layout_image_url}
+              alt={photo.layout_file_name || "Layout"}
+              crossOrigin="anonymous"
+              style={{
+                marginTop: 6,
+                flex: 1,
+                minHeight: 0,
+                maxWidth: "100%",
+                objectFit: "contain",
+              }}
+            />
+          ) : (
+            <Tiny style={{ marginTop: 4, textAlign: "center" }}>
+              Mark ONE dot where you stood, and ONE arrow showing the exact
+              direction the camera faced.
+            </Tiny>
+          )}
+        </div>
+        {/* photo */}
+        <div
+          style={{
+            borderLeft: `1px dashed ${C.dash}`,
+            padding: 8,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            minWidth: 0,
+          }}
+        >
+          {photo?.photo_url ? (
+            <img
+              src={photo.photo_url}
+              alt={photo.photo_file_name || "Site photo"}
+              crossOrigin="anonymous"
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : (
+            <>
+              <div
+                style={{
+                  fontSize: 8,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: C.dash,
+                }}
+              >
+                Photo {n}
+              </div>
+              <Tiny>paste matching photo</Tiny>
+            </>
+          )}
+        </div>
+        {/* floor thumbnail */}
+        <div
+          style={{
+            borderLeft: `1px dashed ${C.dash}`,
+            padding: 4,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+          }}
+        >
+          {floorThumb ? (
+            <img
+              src={floorThumb}
+              alt="Floor layout"
+              crossOrigin="anonymous"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                objectFit: "contain",
+              }}
+            />
+          ) : (
+            <Tiny>Floor layout thumbnail marked with room</Tiny>
+          )}
+        </div>
+      </div>
+      <div
+        style={{
+          height: 14,
+          fontSize: 8.5,
+          color: C.label,
+          fontWeight: 300,
+          marginTop: 3,
+          overflow: "hidden",
+          whiteSpace: "nowrap",
+          textOverflow: "ellipsis",
+        }}
+      >
+        {meta}
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================ */
+/* MAIN VIEW                                                        */
+/* ================================================================ */
 
 export function SiteRekiView() {
   const { id } = useParams();
   const nav = useNavigate();
-
   const {
     data: recce,
     isFetching,
     isError,
   } = useGetSiteRecceQuery(id, { skip: !id });
-
   const [deleteSiteRecce, { isLoading: deleting }] =
     useDeleteSiteRecceMutation();
+  const contentRef = useRef(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
   const removeRecce = async () => {
     if (!window.confirm("Delete this site recce? This cannot be undone."))
@@ -453,60 +870,59 @@ export function SiteRekiView() {
     }
   };
 
-  const contentRef = useRef(null);
-  const [generatingPdf, setGeneratingPdf] = useState(false);
-
   const downloadPdf = async () => {
     if (!contentRef.current || generatingPdf) return;
     setGeneratingPdf(true);
     try {
-      const pageNodes = contentRef.current.querySelectorAll(".recce-page");
-      if (!pageNodes.length) {
-        toast.error("Nothing to export yet");
-        return;
+      // Make sure Lato is loaded so the PDF uses the same face as the screen.
+      if (document.fonts) {
+        await Promise.all([
+          document.fonts.load("300 12px Lato"),
+          document.fonts.load("400 12px Lato"),
+          document.fonts.load("700 12px Lato"),
+        ]);
+        await document.fonts.ready;
       }
+      const nodes = contentRef.current.querySelectorAll(".recce-page");
+      if (!nodes.length) return toast.error("Nothing to export yet");
 
       const pdf = new jsPDF({ unit: "pt", format: "a4" });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
+      const pw = pdf.internal.pageSize.getWidth();
+      const ph = pdf.internal.pageSize.getHeight();
 
-      for (let i = 0; i < pageNodes.length; i++) {
-        const canvas = await html2canvas(pageNodes[i], {
+      for (let i = 0; i < nodes.length; i++) {
+        const canvas = await html2canvas(nodes[i], {
           scale: 2,
           useCORS: true,
-          allowTaint: false,
           backgroundColor: "#ffffff",
           logging: false,
-          ignoreElements: (el) => el.classList?.contains("no-print"),
+          width: PAGE_W,
+          height: PAGE_H,
+          windowWidth: PAGE_W,
+          onclone: (doc) => {
+            doc
+              .querySelectorAll(".recce-page")
+              .forEach((el) => (el.style.boxShadow = "none"));
+          },
         });
-        const imgData = canvas.toDataURL("image/jpeg", 0.92);
-
-        // Fit the captured page inside the A4 canvas, centered. Since every
-        // .recce-page now renders at a real A4 footprint (794×1123px, same
-        // ratio as the jsPDF "a4" page), this is normally an exact fit with
-        // no letterboxing — it still degrades gracefully for the rare page
-        // that grew taller than one sheet.
-        const ratio = Math.min(
-          pageWidth / canvas.width,
-          pageHeight / canvas.height,
-        );
-        const imgWidth = canvas.width * ratio;
-        const imgHeight = canvas.height * ratio;
-        const x = (pageWidth - imgWidth) / 2;
-        const y = (pageHeight - imgHeight) / 2;
-
         if (i > 0) pdf.addPage();
-        pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight);
+        pdf.addImage(
+          canvas.toDataURL("image/jpeg", 0.95),
+          "JPEG",
+          0,
+          0,
+          pw,
+          ph,
+        );
       }
 
       const nameSource =
         recce?.project?.name || recce?.project_name || "site-recce";
-      const safeName = nameSource
-        .toString()
+      const safe = String(nameSource)
         .trim()
         .replace(/\s+/g, "_")
         .replace(/[^\w-]/g, "");
-      pdf.save(`${safeName || "site-recce"}_recce_report.pdf`);
+      pdf.save(`${safe || "site-recce"}_recce_report.pdf`);
       toast.success("PDF downloaded");
     } catch (e) {
       console.error(e);
@@ -523,7 +939,6 @@ export function SiteRekiView() {
       </Shell>
     );
   }
-
   if (isError || !recce) {
     return (
       <Shell title="Site Recce">
@@ -536,21 +951,52 @@ export function SiteRekiView() {
     );
   }
 
+  /* ---------------- derived data ---------------- */
   const project = recce.project || {};
-  const siteEngineer = recce.site_engineer || {};
-  const rooms = recce.rooms || [];
-  const addressLine = [
-    project.name || recce.project_name,
-    recce.site_address || project.site_location,
-  ]
-    .filter(Boolean)
-    .join(", ");
-
-  const roomTableChunks = chunkRows(
-    rooms,
-    ROOM_TABLE_FIRST_PAGE_ROWS,
-    ROOM_TABLE_CONT_PAGE_ROWS,
+  const engineer = recce.site_engineer || {};
+  const rooms = [...(recce.rooms || [])].sort(
+    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
   );
+  const restr = resolveRestrictions(recce);
+
+  // Legacy records have only site_type (FLAT/KOTHI...) — treat them as Residential.
+  const projectType =
+    recce.project_type || (recce.site_type ? "Residential" : "");
+  const siteCondGroup =
+    recce.site_condition_category ||
+    recce.project_type ||
+    (recce.site_condition ? "Residential" : "");
+
+  const floorLayouts = (recce.floor_layouts || recce.floor_layout_urls || [])
+    .map((f) => (typeof f === "string" ? f : f?.url))
+    .filter(Boolean);
+  const floorThumb = floorLayouts[0];
+
+  const condition = recce.existing_condition || "";
+  const roomChunks = chunk(rooms, condition.length > 240 ? 1 : 3, 18);
+
+  // Room pages: 3 shots on the first (intro) page, 4 elsewhere.
+  const roomPages = [];
+  rooms.forEach((room, ri) => {
+    const shots = [...(room.photos || [])].sort(
+      (a, b) => (a.shot_number ?? 0) - (b.shot_number ?? 0),
+    );
+    const first = ri === 0 ? 3 : 4;
+    const parts = chunk(shots, first, 4);
+    parts.forEach((part, pi) =>
+      roomPages.push({
+        room,
+        part,
+        pi,
+        last: pi === parts.length - 1,
+        ri,
+        hint: roomHint(room),
+        offset: pi === 0 ? 0 : first + (pi - 1) * 4,
+      }),
+    );
+  });
+
+  const gridBox = { marginBottom: 0 };
 
   return (
     <Shell
@@ -574,7 +1020,7 @@ export function SiteRekiView() {
             onClick={downloadPdf}
             disabled={generatingPdf}
             className="h-10 px-4 rounded-lg text-[13px] font-semibold text-white inline-flex items-center gap-1.5 disabled:opacity-50"
-            style={{ backgroundColor: BRAND.green }}
+            style={{ backgroundColor: C.green }}
           >
             {generatingPdf ? (
               <>
@@ -596,540 +1042,776 @@ export function SiteRekiView() {
         </div>
       }
     >
-      <style>{`
-        @media print {
-          .no-print { display: none !important; }
-          .recce-page { break-after: page; }
-          .recce-page:last-child { break-after: auto; }
-          .shot-row { break-inside: avoid; }
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        }
-      `}</style>
+      <style>{FONT_CSS}</style>
 
-      {/* ✅ ref attached here — this was the missing piece */}
       <div
         ref={contentRef}
-        className="mx-auto space-y-6"
-        style={{ width: PAGE_WIDTH }}
+        className="mx-auto"
+        style={{
+          width: PAGE_W,
+          display: "flex",
+          flexDirection: "column",
+          gap: 24,
+        }}
       >
-        {/* ============================================================ */}
-        {/* PAGE 1 — Cover                                                */}
-        {/* ============================================================ */}
-        <div
-          className="recce-page shadow-sm print:shadow-none flex flex-col items-center text-center px-14 pt-20 pb-10"
-          style={{
-            backgroundColor: BRAND.paper,
-            border: `1px solid ${BRAND.line}`,
-            width: PAGE_WIDTH,
-            minHeight: PAGE_HEIGHT,
-          }}
-        >
+        {/* ============ COVER ============ */}
+        <Page footer={false} style={{ padding: 0 }}>
           <img
-            src={LOGO_SRC}
-            alt="Rippotai"
-            className="w-40 h-40 object-contain mb-6"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-              e.currentTarget.nextSibling.style.display = "flex";
+            src={logo}
+            alt="Rippōtai"
+            style={{
+              position: "absolute",
+              top: 172,
+              left: (PAGE_W - 190) / 2,
+              width: 190,
             }}
           />
           <div
-            className="w-24 h-24 rounded-full mb-6 items-center justify-center text-2xl font-semibold text-white"
-            style={{ backgroundColor: BRAND.green, display: "none" }}
-          >
-            R
-          </div>
-
-          <div
-            className="text-2xl tracking-[0.25em] font-medium"
-            style={{ color: BRAND.green }}
-          >
-            RIPPŌTAI
-          </div>
-          <div
-            className="text-lg tracking-[0.1em] mt-3"
-            style={{ color: BRAND.green }}
+            style={{
+              position: "absolute",
+              top: 432,
+              width: "100%",
+              textAlign: "center",
+              fontSize: 22,
+              fontWeight: 300,
+              letterSpacing: "0.15em",
+              color: C.green,
+            }}
           >
             SITE RECCE FORMAT
           </div>
-
-          <div className="flex-1" />
-
-          <div className="w-full text-left mt-auto">
+          <div
+            style={{
+              position: "absolute",
+              left: PAD_X,
+              right: PAD_X,
+              top: 754,
+            }}
+          >
             <div
-              className="text-[11px] uppercase tracking-[0.14em] pb-3 mb-6"
               style={{
-                color: BRAND.muted,
-                borderBottom: `1px solid ${BRAND.line}`,
+                fontSize: 10,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                fontWeight: 300,
+                color: C.title,
+                paddingBottom: 14,
+                borderBottom: `1px solid ${C.rule}`,
               }}
             >
               To be filled by the site engineer at the survey visit
             </div>
-            <div className="grid grid-cols-2 gap-x-10">
-              <div
-                className="pb-3"
-                style={{ borderBottom: `2px solid ${BRAND.gold}` }}
-              >
-                <div
-                  className="text-[11px] uppercase tracking-wide font-semibold"
-                  style={{ color: BRAND.gold }}
-                >
-                  Part 1
-                </div>
-                <div className="text-sm mt-1" style={{ color: BRAND.ink }}>
-                  Text &amp; Content Details
-                </div>
-              </div>
-              <div
-                className="pb-3"
-                style={{ borderBottom: `2px solid ${BRAND.gold}` }}
-              >
-                <div
-                  className="text-[11px] uppercase tracking-wide font-semibold"
-                  style={{ color: BRAND.gold }}
-                >
-                  Part 2
-                </div>
-                <div className="text-sm mt-1" style={{ color: BRAND.ink }}>
-                  Layout &amp; Photo Reference
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ============================================================ */}
-        {/* PAGE 2 — 01 Project & Site Details + Access for Material     */}
-        {/* ============================================================ */}
-        <Page address={addressLine} contentClassName="px-0 pb-0">
-          <div
-            className="px-10 pb-8"
-            style={{ borderBottom: `1px solid ${BRAND.line}` }}
-          >
-            <SectionHeader number="01" title="Project & Site Details" />
-
-            <div className="grid grid-cols-2 gap-x-8 gap-y-6 text-sm mb-6">
-              <Field
-                label="Project Name"
-                value={show(project.name || recce.project_name)}
-              />
-              <Field label="Client Name" value={show(recce.client_name)} />
-            </div>
-
-            <div className="mb-6">
-              <Field
-                label="Site Address"
-                value={show(recce.site_address || project.site_location)}
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-x-8 gap-y-6 text-sm mb-6">
-              <Field label="Date of Recce" value={fmtDate(recce.recce_date)} />
-              <Field label="Site Engineer" value={show(siteEngineer.name)} />
-              <Field
-                label="Accompanied By"
-                value={show(recce.accompanied_by)}
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-x-8 gap-y-6 text-sm mb-6">
-              <Field
-                label="Unit / Floor No."
-                value={show(recce.unit_floor_no)}
-              />
-              <Field
-                label="Carpet Area (approx. sq ft)"
-                value={show(recce.carpet_area_sqft)}
-              />
-              <Field label="No. of Rooms" value={show(recce.number_of_rooms)} />
-            </div>
-
-            <div className="grid grid-cols-3 gap-x-8 gap-y-6 text-sm mb-8">
-              <Field
-                label="Build Up Area (approx. sq ft)"
-                value={show(recce.built_up_area_sqft)}
-              />
-              <Field
-                label="No. of Floors"
-                value={show(recce.number_of_floors)}
-              />
-            </div>
-
-            <div>
-              <span
-                className="text-[11px] tracking-wide uppercase block mb-3"
-                style={{ color: BRAND.muted }}
-              >
-                Site Type — tick one
-              </span>
-              <div className="flex flex-wrap gap-x-8 gap-y-3">
-                {SITE_TYPES.map((t) => (
-                  <CheckOption
-                    key={t}
-                    label={t}
-                    checked={recce.site_type === t}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="px-10 py-8">
-            <SectionHeader title="Access for Material & Labour" />
-            <div className="grid grid-cols-3 gap-x-8 gap-y-6 text-sm">
-              <Field
-                label="Lift Available (Y/N) & Size"
-                value={
-                  recce.lift_available
-                    ? `Yes${recce.lift_size ? " • " + recce.lift_size : ""}`
-                    : "No"
-                }
-              />
-              <Field
-                label="Staircase Width"
-                value={show(recce.staircase_width)}
-              />
-              <Field
-                label="Material Entry Point"
-                value={show(recce.material_entry_point)}
-              />
-            </div>
-          </div>
-        </Page>
-
-        {/* ============================================================ */}
-        {/* PAGE 3 — Utilities + Existing Condition + 02 Room Table       */}
-        {/* ============================================================ */}
-        <Page address={addressLine} contentClassName="px-0 pb-0">
-          <div
-            className="px-10 pb-8"
-            style={{ borderBottom: `1px solid ${BRAND.line}` }}
-          >
-            <SectionHeader title="Utilities Available on Site" />
-            <div className="grid grid-cols-3 gap-x-8 gap-y-6 text-sm mb-6">
-              <Field
-                label="Water Connection"
-                value={show(recce.water_connection)}
-              />
-              <Field
-                label="Power Load Available"
-                value={show(recce.power_load_available)}
-              />
-              <Field
-                label="Drainage Point Location"
-                value={show(recce.drainage_point_location)}
-              />
-            </div>
-            <div className="grid grid-cols-1 gap-y-6 text-sm">
-              <Field
-                label="Society / RWA Restrictions"
-                value={show(recce.society_rwa_restrictions)}
-              />
-              <div className="grid grid-cols-2 gap-x-8">
-                <Field
-                  label="Working Hours Allowed"
-                  value={show(recce.working_hours_allowed)}
-                />
-                <Field
-                  label="Material Movement Rule"
-                  value={show(recce.material_movement_rule)}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div
-            className="px-10 py-8"
-            style={{ borderBottom: `1px solid ${BRAND.line}` }}
-          >
-            <SectionHeader title="Existing Condition" />
-            <p className="text-[13px] mb-3" style={{ color: BRAND.muted }}>
-              Seepage, cracks, prior alterations, damage — recorded before any
-              work touched the site.
-            </p>
             <div
-              className="text-sm leading-relaxed"
-              style={{ color: BRAND.ink }}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1.07fr 1fr",
+                gap: 18,
+                marginTop: 20,
+              }}
             >
-              {show(recce.existing_condition)}
+              {[
+                ["Part 1", "Text & Content Details"],
+                ["Part 2", "Layout & Photo Reference"],
+              ].map(([a, b]) => (
+                <div
+                  key={a}
+                  style={{
+                    borderBottom: `3px solid ${C.gold}`,
+                    paddingBottom: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 8,
+                      letterSpacing: "0.3em",
+                      textTransform: "uppercase",
+                      color: C.title,
+                      fontWeight: 300,
+                    }}
+                  >
+                    {a}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      fontWeight: 300,
+                      marginTop: 12,
+                    }}
+                  >
+                    {b}
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-
-          <div className="px-10 py-8 flex-1 flex flex-col">
-            <SectionHeader number="02" title="Room-Wise Measurements" />
-            {rooms.length === 0 ? (
-              <p className="text-sm" style={{ color: BRAND.muted }}>
-                No rooms recorded.
-              </p>
-            ) : (
-              <RoomMeasurementsTable rows={roomTableChunks[0]} />
-            )}
           </div>
         </Page>
 
-        {/* ============================================================ */}
-        {/* PAGE 3B, 3C, ... — table continuation pages                  */}
-        {/* ============================================================ */}
-        {roomTableChunks.slice(1).map((chunk, i) => (
-          <Page key={`room-table-cont-${i}`} address={addressLine}>
-            <RoomMeasurementsTable rows={chunk} />
+        {/* ============ 01 PROJECT & SITE DETAILS ============ */}
+        <Page>
+          <SectionTitle no="01">Project &amp; Site Details</SectionTitle>
+          <div style={grid(2)}>
+            <Field
+              label="Project Name"
+              value={project.name || recce.project_name}
+            />
+            <Field label="Client Name" value={recce.client_name} />
+          </div>
+          <div style={{ ...grid(1), marginTop: 26 }}>
+            <Field
+              label="Site Address"
+              value={recce.site_address || project.site_location}
+            />
+          </div>
+          <div style={{ ...grid(3), marginTop: 26 }}>
+            <Field label="Date of Recce" value={fmtDate(recce.recce_date)} />
+            <Field label="Site Engineer" value={engineer.name} />
+            <Field label="Accompanied By" value={recce.accompanied_by} />
+            <Field label="Unit / Floor No." value={recce.unit_floor_no} />
+            <Field
+              label="Carpet Area (Approx. Sq Ft)"
+              value={num(recce.carpet_area_sqft)}
+            />
+            <Field label="No. of Rooms" value={recce.number_of_rooms} />
+            <Field
+              label="Build Up Area (Approx. Sq Ft)"
+              value={num(recce.built_up_area_sqft)}
+            />
+            <Field label="No. of Floors" value={recce.number_of_floors} />
+          </div>
+          <BlockHeading marginTop={44}>
+            Project Type &amp; Site Type
+          </BlockHeading>
+          <TypeGrid
+            groups={PROJECT_TYPES.slice(0, 3)}
+            selectedGroup={projectType}
+            selectedItem={recce.site_type}
+            showOther={false}
+          />
+        </Page>
+
+        {/* ============ 01 (cont.) HOSPITALITY / OTHER / SITE CONDITION ============ */}
+        <Page>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "26px 20px",
+              alignItems: "start",
+            }}
+          >
+            {(() => {
+              const g = PROJECT_TYPES[3];
+              const on = norm(projectType) === norm(g.name);
+              return (
+                <div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      fontSize: 10,
+                      fontWeight: 300,
+                      marginBottom: 12,
+                    }}
+                  >
+                    <Box checked={on} />
+                    {g.name}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 11,
+                      paddingLeft: 20,
+                    }}
+                  >
+                    {g.items.map((it) => (
+                      <div
+                        key={it}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          fontSize: 8.5,
+                          letterSpacing: "0.05em",
+                          textTransform: "uppercase",
+                          fontWeight: 300,
+                        }}
+                      >
+                        <Box
+                          checked={on && norm(recce.site_type) === norm(it)}
+                        />
+                        {it}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 8,
+                fontSize: 10,
+                fontWeight: 300,
+              }}
+            >
+              <Box checked={norm(projectType) === "OTHER"} />
+              <span>
+                Other{" "}
+                <span
+                  style={{
+                    display: "inline-block",
+                    minWidth: 90,
+                    borderBottom: `1px solid ${C.rule}`,
+                    fontWeight: 400,
+                  }}
+                >
+                  {(norm(projectType) === "OTHER" &&
+                    (recce.site_type_other || recce.site_type)) ||
+                    "\u00A0"}
+                </span>
+              </span>
+            </div>
+          </div>
+
+          <BlockHeading marginTop={46}>Site Condition</BlockHeading>
+          <TypeGrid
+            groups={SITE_CONDITIONS.slice(0, 3)}
+            selectedGroup={siteCondGroup}
+            selectedItem={recce.site_condition}
+            showOther={false}
+          />
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "26px 20px",
+              alignItems: "start",
+              marginTop: 40,
+            }}
+          >
+            {(() => {
+              const g = SITE_CONDITIONS[3];
+              const on = norm(siteCondGroup) === norm(g.name);
+              return (
+                <div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      fontSize: 10,
+                      fontWeight: 300,
+                      marginBottom: 12,
+                    }}
+                  >
+                    <Box checked={on} />
+                    {g.name}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 11,
+                      paddingLeft: 20,
+                    }}
+                  >
+                    {g.items.map((it) => (
+                      <div
+                        key={it}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          fontSize: 8.5,
+                          letterSpacing: "0.05em",
+                          textTransform: "uppercase",
+                          fontWeight: 300,
+                        }}
+                      >
+                        <Box
+                          checked={
+                            on && norm(recce.site_condition) === norm(it)
+                          }
+                        />
+                        {it}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 8,
+                fontSize: 10,
+                fontWeight: 300,
+              }}
+            >
+              <Box checked={norm(siteCondGroup) === "OTHER"} />
+              <span>
+                Other{" "}
+                <span
+                  style={{
+                    display: "inline-block",
+                    minWidth: 90,
+                    borderBottom: `1px solid ${C.rule}`,
+                    fontWeight: 400,
+                  }}
+                >
+                  {(norm(siteCondGroup) === "OTHER" &&
+                    (recce.site_condition_other || recce.site_condition)) ||
+                    "\u00A0"}
+                </span>
+              </span>
+            </div>
+          </div>
+        </Page>
+
+        {/* ============ ACCESS / UTILITIES / SOCIETY / EXISTING / 02 ============ */}
+        <Page style={{ paddingTop: 70 }}>
+          <GoldHeading>Access for Material &amp; Labour</GoldHeading>
+          <div style={grid(3)}>
+            <Field
+              label="Lift Available (Y/N) & Size"
+              value={
+                recce.lift_available === true
+                  ? `Yes${has(recce.lift_size) ? " • " + recce.lift_size : ""}`
+                  : recce.lift_available === false
+                    ? "No"
+                    : ""
+              }
+            />
+            <Field label="Staircase Width" value={recce.staircase_width} />
+            <Field
+              label="Material Entry Point"
+              value={recce.material_entry_point}
+            />
+          </div>
+
+          <GoldHeading marginTop={32}>Utilities Available on Site</GoldHeading>
+          <div style={grid(3)}>
+            <Field label="Water Connection" value={recce.water_connection} />
+            <Field
+              label="Power Load Available"
+              value={recce.power_load_available}
+            />
+            <Field
+              label="Drainage Point Location"
+              value={recce.drainage_point_location}
+            />
+          </div>
+
+          <GoldHeading marginTop={28}>Society / RWA Restrictions</GoldHeading>
+          <div style={grid(3)}>
+            <Field label="Working Hours Allowed" value={restr.working} />
+            <Field label="Material Movement Rule" value={restr.material} />
+            <div />
+          </div>
+          {has(restr.society) && (
+            <div
+              style={{
+                marginTop: 14,
+                fontSize: 12,
+                fontWeight: 400,
+                lineHeight: 1.5,
+              }}
+            >
+              {restr.society}
+            </div>
+          )}
+
+          <div style={{ marginTop: 30 }}>
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: "0.22em",
+                textTransform: "uppercase",
+                fontWeight: 300,
+                color: C.title,
+              }}
+            >
+              Existing Condition — Note Anything Found
+            </div>
+            <div
+              style={{
+                height: 1,
+                background: C.rule,
+                marginTop: 10,
+                marginBottom: 12,
+              }}
+            />
+            <div
+              style={{
+                fontSize: 8.5,
+                fontWeight: 300,
+                color: C.label,
+                marginBottom: 6,
+              }}
+            >
+              Seepage, cracks, prior alterations, damage — record before any
+              work touches the site.
+            </div>
+            <div
+              style={{
+                minHeight: 84,
+                fontSize: 12,
+                fontWeight: 400,
+                lineHeight: "28px",
+                whiteSpace: "pre-wrap",
+                backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent 27px, ${C.rule} 27px, ${C.rule} 28px)`,
+              }}
+            >
+              {condition}
+            </div>
+          </div>
+
+          <SectionTitle no="02" marginTop={26}>
+            Room-Wise Measurements
+          </SectionTitle>
+          <RoomTable
+            rows={roomChunks[0]}
+            blankRows={rooms.length === 0 ? 3 : 0}
+          />
+        </Page>
+
+        {/* table continuation */}
+        {roomChunks.slice(1).map((rows, i) => (
+          <Page key={`rt-${i}`}>
+            <RoomTable rows={rows} />
           </Page>
         ))}
 
-        {/* ============================================================ */}
-        {/* PAGE 4 — 03 How to Document the Layout & Photos               */}
-        {/* ============================================================ */}
-        <Page address={addressLine}>
-          <SectionHeader
-            number="03"
-            title="How to Document the Layout & Photos"
-          />
-
-          <p
-            className="text-sm leading-relaxed mb-8"
-            style={{ color: BRAND.ink }}
-          >
+        {/* ============ 03 HOW TO DOCUMENT ============ */}
+        <Page>
+          <SectionTitle no="03">
+            How to Document the Layout &amp; Photos
+          </SectionTitle>
+          <div style={{ fontSize: 9.5, fontWeight: 300, color: "#555" }}>
             One photo. One arrow. One copy of the layout. That is the whole
             method — repeated as many times as you took photos in that room.
-          </p>
-
-          <div className="grid grid-cols-2 gap-8 mb-10">
-            <div>
-              <div
-                className="text-[11px] uppercase tracking-wide font-semibold mb-3"
-                style={{ color: BRAND.muted }}
-              >
-                1. Mark where you stood
-              </div>
-              <PlaceholderBox
-                icon={MapPin}
-                label="Layout with dot & arrow"
-                className="w-full h-40 rounded-lg"
-              />
-              <p className="text-xs mt-2" style={{ color: BRAND.muted }}>
-                One dot. One arrow, pointing the way the camera faced.
-              </p>
-            </div>
-            <div>
-              <div
-                className="text-[11px] uppercase tracking-wide font-semibold mb-3"
-                style={{ color: BRAND.muted }}
-              >
-                2. Paste that photo next to it
-              </div>
-              <PlaceholderBox
-                icon={Camera}
-                label="Matching photo"
-                className="w-full h-40 rounded-lg"
-              />
-              <p className="text-xs mt-2" style={{ color: BRAND.muted }}>
-                The photo taken from that spot, in that direction.
-              </p>
-            </div>
-          </div>
-
-          <div className="mb-10">
-            <div
-              className="text-[11px] uppercase tracking-wide font-semibold mb-3"
-              style={{ color: BRAND.muted }}
-            >
-              Same room, four photos
-            </div>
-            <div className="grid grid-cols-2 gap-8 items-start">
-              <div className="space-y-2">
-                {[1, 2, 3, 4].map((n) => (
-                  <div key={n} className="flex items-center gap-3">
-                    <PlaceholderBox
-                      icon={Camera}
-                      label={`${n}`}
-                      className="w-10 h-10 rounded shrink-0"
-                    />
-                    <span className="text-xs" style={{ color: BRAND.ink }}>
-                      Photo {n} + its own layout copy
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <PlaceholderBox
-                icon={MapPin}
-                label="Four dots, four arrows — one per corner"
-                className="w-full h-44 rounded-lg"
-              />
-            </div>
-            <p className="text-xs mt-2" style={{ color: BRAND.muted }}>
-              Four photos taken in this room means four separate
-              layout-and-photo pairs on the sheet — not one shared layout.
-            </p>
           </div>
 
           <div
-            className="rounded-lg p-6"
-            style={{ backgroundColor: "#F8F9F5" }}
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 36,
+              marginTop: 36,
+              paddingLeft: 0,
+            }}
+          >
+            <div>
+              <DiagramLabel>1. Mark where you stood</DiagramLabel>
+              <RoomOutline w={200} h={176} doorFrom={62} doorTo={108}>
+                <circle cx="16" cy="160" r="4.5" fill={C.black} />
+                <Arrow x1="30" y1="146" x2="56" y2="118" />
+              </RoomOutline>
+              <Tiny style={{ marginTop: 8, color: C.label }}>
+                One dot. One arrow, pointing the way the camera faced.
+              </Tiny>
+            </div>
+            <div style={{ alignSelf: "center", color: C.gold, fontSize: 14 }}>
+              =
+            </div>
+            <div>
+              <DiagramLabel>2. Paste that photo next to it</DiagramLabel>
+              <DashedBox style={{ width: 140, height: 176 }}>
+                <Camera size={26} strokeWidth={1.4} color={C.dash} />
+                <div style={{ marginTop: 10, fontSize: 7, lineHeight: 1.4 }}>
+                  The photo taken
+                  <br />
+                  from that spot,
+                  <br />
+                  in that direction
+                </div>
+              </DashedBox>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 60, marginTop: 84 }}>
+            <div
+              style={{
+                width: 170,
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+                paddingTop: 22,
+              }}
+            >
+              {[1, 2, 3, 4].map((n) => (
+                <div
+                  key={n}
+                  style={{ display: "flex", alignItems: "center", gap: 12 }}
+                >
+                  <DashedBox style={{ width: 30, height: 34, flexShrink: 0 }}>
+                    <Camera size={13} strokeWidth={1.5} color={C.dash} />
+                  </DashedBox>
+                  <span style={{ fontSize: 8, fontWeight: 300 }}>
+                    Photo {n} + its own layout copy
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div>
+              <DiagramLabel>Same room, four photos</DiagramLabel>
+              <RoomOutline w={160} h={176} doorFrom={52} doorTo={92}>
+                {[
+                  { x: 15, y: 162, tx: 34, ty: 140, n: 1, lx: 14, ly: 156 },
+                  { x: 145, y: 162, tx: 126, ty: 140, n: 2, lx: 140, ly: 156 },
+                  { x: 145, y: 15, tx: 126, ty: 36, n: 3, lx: 140, ly: 12 },
+                  { x: 15, y: 15, tx: 34, ty: 36, n: 4, lx: 14, ly: 12 },
+                ].map((d) => (
+                  <g key={d.n}>
+                    <circle cx={d.x} cy={d.y} r="4.5" fill={C.black} />
+                    <Arrow
+                      x1={d.x + (d.tx - d.x) * 0.25}
+                      y1={d.y + (d.ty - d.y) * 0.25}
+                      x2={d.tx}
+                      y2={d.ty}
+                    />
+                    <text
+                      x={d.lx}
+                      y={d.ly}
+                      fontSize="7"
+                      fill={C.black}
+                      textAnchor="middle"
+                      dy={d.ly > 100 ? 11 : -6}
+                      fontWeight="700"
+                    >
+                      {d.n}
+                    </text>
+                  </g>
+                ))}
+              </RoomOutline>
+              <Tiny style={{ marginTop: 8, color: C.label, width: 170 }}>
+                Four photos taken in this room means four separate
+                layout-and-photo pairs on the sheet — not one shared layout.
+              </Tiny>
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 40,
+              fontSize: 9,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              fontWeight: 300,
+              color: C.title,
+            }}
+          >
+            Mark direction on each layout (North, East, South and West)
+          </div>
+
+          <div
+            style={{ marginTop: 22, background: C.panel, padding: "22px 26px" }}
           >
             <div
-              className="text-[11px] uppercase tracking-wide font-semibold mb-3"
-              style={{ color: BRAND.muted }}
+              style={{
+                fontSize: 8.5,
+                letterSpacing: "0.22em",
+                textTransform: "uppercase",
+                fontWeight: 300,
+                color: C.label,
+                marginBottom: 14,
+              }}
             >
               How to fill Part 2, step by step
             </div>
-            <ol
-              className="text-sm space-y-2 list-decimal list-inside"
-              style={{ color: BRAND.ink }}
-            >
-              <li>
-                For every photo you take in a room, use one row on that room's
-                sheet.
-              </li>
-              <li>
-                Paste or insert a copy of the room's layout into the left box of
-                that row.
-              </li>
-              <li>
-                On that layout, mark one dot where you were standing, and draw
-                one arrow from the dot showing exactly which way the camera was
-                pointed.
-              </li>
-              <li>
-                Paste the matching photo into the right box of the same row.
-              </li>
-              <li>
-                Move to the next row for your next photo. Do not put more than
-                one arrow on a single layout copy — a layout with two arrows
-                does not say which photo is which.
-              </li>
-            </ol>
+            {HOW_TO_STEPS.map((s, i) => (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  fontSize: 9,
+                  fontWeight: 300,
+                  lineHeight: 1.5,
+                  marginBottom: 8,
+                }}
+              >
+                <span style={{ width: 12 }}>{i + 1}.</span>
+                <span>{s}</span>
+              </div>
+            ))}
           </div>
         </Page>
 
-        {/* ============================================================ */}
-        {/* PAGE 5 — 03.1 What to Capture, Room by Room (static guide)    */}
-        {/* ============================================================ */}
-        <Page address={addressLine}>
-          <SectionHeader
-            number="03.1"
-            title="What to Make Sure You Capture, Room by Room"
-          />
-          <table className="w-full text-sm border-collapse mb-4">
+        {/* ============ 03.1 CAPTURE GUIDE ============ */}
+        <Page>
+          <SectionTitle no="03.1">
+            What to Make Sure You Capture, Room by Room
+          </SectionTitle>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr
-                className="text-left"
-                style={{ borderBottom: `2px solid ${BRAND.green}` }}
-              >
-                <th
-                  className="py-2 pr-4 font-semibold w-[22%]"
-                  style={{ color: BRAND.green }}
-                >
-                  Room
-                </th>
-                <th
-                  className="py-2 font-semibold"
-                  style={{ color: BRAND.green }}
-                >
-                  Make Sure One Photo Each Covers
-                </th>
+              <tr style={{ borderBottom: `1.5px solid ${C.black}` }}>
+                <th style={{ ...TH, width: "22%" }}>Room</th>
+                <th style={TH}>Make sure one photo each covers</th>
               </tr>
             </thead>
             <tbody>
-              {ROOM_CAPTURE_GUIDE.map((row) => (
-                <tr
-                  key={row.room}
-                  style={{ borderBottom: `1px solid ${BRAND.line}` }}
-                >
+              {CAPTURE_GUIDE.map(([r, t]) => (
+                <tr key={r}>
                   <td
-                    className="py-3 pr-4 align-top font-medium"
-                    style={{ color: BRAND.ink }}
+                    style={{
+                      padding: "12px 6px 12px 0",
+                      borderBottom: `1px solid ${C.rule}`,
+                      fontSize: 11.5,
+                      fontWeight: 300,
+                      verticalAlign: "top",
+                    }}
                   >
-                    {row.room}
+                    {r}
                   </td>
-                  <td className="py-3 align-top" style={{ color: BRAND.ink }}>
-                    {row.covers}
+                  <td
+                    style={{
+                      padding: "12px 0",
+                      borderBottom: `1px solid ${C.rule}`,
+                      fontSize: 11.5,
+                      fontWeight: 300,
+                    }}
+                  >
+                    {t}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <p className="text-xs" style={{ color: BRAND.muted }}>
+          <div
+            style={{
+              marginTop: 16,
+              fontSize: 9,
+              fontWeight: 300,
+              color: C.label,
+              lineHeight: 1.5,
+            }}
+          >
             A close-up of a plumbing or electrical point still gets its own row
             — mark where you stood and which way you pointed the camera, exactly
             like any other shot.
-          </p>
+          </div>
         </Page>
 
-        {/* ============================================================ */}
-        {/* PAGE 6+ — 04 Layout & Photo Sheets (one page-group per room)  */}
-        {/* ============================================================ */}
-        {rooms.flatMap((room, roomIdx) => {
-          const perPage = shotsPerPage(room);
-          const hint = roomHint(room);
-          const chunks = chunkShots(room.photos, perPage);
+        {/* ============ 04 FLOOR LAYOUT ============ */}
+        <Page>
+          <SectionTitle no="04">Layout &amp; Photo Sheets</SectionTitle>
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: C.black,
+              marginBottom: 22,
+            }}
+          >
+            FLOOR LAYOUT
+          </div>
+          {[0, 1].map((i) => (
+            <DashedBox
+              key={i}
+              style={{
+                width: "100%",
+                height: 250,
+                marginBottom: 40,
+                justifyContent: "flex-start",
+                padding: floorLayouts[i] ? 6 : 8,
+              }}
+            >
+              {floorLayouts[i] ? (
+                <img
+                  src={floorLayouts[i]}
+                  alt="Floor layout"
+                  crossOrigin="anonymous"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
+                  }}
+                />
+              ) : (
+                "Paste floor layout here"
+              )}
+            </DashedBox>
+          ))}
+        </Page>
 
-          return chunks.map((chunk, chunkIdx) => {
-            const isFirstChunk = chunkIdx === 0;
-            const isLastChunk = chunkIdx === chunks.length - 1;
-
-            return (
-              <Page key={`${room.id}-${chunkIdx}`} address={addressLine}>
-                {roomIdx === 0 && isFirstChunk && (
-                  <SectionHeader number="04" title="Layout & Photo Sheets" />
-                )}
-
-                {isFirstChunk && (
-                  <div className="mb-6">
-                    <div
-                      className="text-[15px] font-semibold"
-                      style={{ color: BRAND.green }}
-                    >
-                      {room.room_name}
-                    </div>
-                    <div
-                      className="text-[12px] uppercase tracking-wide"
-                      style={{ color: BRAND.muted }}
-                    >
-                      {room.room_type}
-                      {room.room_number ? ` • ${room.room_number}` : ""} •{" "}
-                      {(room.photos || []).length} photo
-                      {(room.photos || []).length !== 1 ? "s" : ""}
-                    </div>
-                    {hint && (
-                      <div
-                        className="text-xs italic mt-1"
-                        style={{ color: BRAND.muted }}
-                      >
-                        {hint}
-                      </div>
-                    )}
+        {/* ============ 04 ROOM SHEETS ============ */}
+        {roomPages.length === 0 && (
+          <Page>
+            <div style={{ fontSize: 11, fontWeight: 300, color: C.label }}>
+              No rooms recorded.
+            </div>
+          </Page>
+        )}
+        {roomPages.map(({ room, part, pi, last, ri, hint, offset }) => (
+          <Page key={`${room.id}-${pi}`}>
+            {ri === 0 && pi === 0 && (
+              <div
+                style={{
+                  fontSize: 9,
+                  fontWeight: 300,
+                  color: "#555",
+                  marginBottom: 22,
+                  lineHeight: 1.5,
+                }}
+              >
+                One block per room. Each row is one photo and its matching
+                layout arrow. Duplicate a row for extra photos; leave rows blank
+                if you needed fewer.
+              </div>
+            )}
+            {pi === 0 && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.black }}>
+                  {room.room_name}
+                </div>
+                {hint && (
+                  <div
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 300,
+                      color: C.label,
+                      marginTop: 8,
+                    }}
+                  >
+                    {hint}
                   </div>
                 )}
-
-                {chunk.length === 0 ? (
-                  isFirstChunk && (
-                    <p className="text-sm" style={{ color: BRAND.muted }}>
-                      No shots recorded for this room.
-                    </p>
-                  )
-                ) : (
-                  <div>
-                    {chunk.map((photo, idx) => (
-                      <div key={photo.id} className="shot-row">
-                        <ShotRow
-                          photo={photo}
-                          index={chunkIdx * perPage + idx}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {isLastChunk && chunk.length > 0 && (
-                  <p className="text-xs mt-4" style={{ color: BRAND.muted }}>
-                    Took more photos than rows here? Duplicate a row. Took
-                    fewer? Leave the rest blank.
-                  </p>
-                )}
-              </Page>
-            );
-          });
-        })}
+              </div>
+            )}
+            {part.length === 0 ? (
+              <ShotRow photo={null} n={1} floorThumb={floorThumb} />
+            ) : (
+              part.map((p, k) => (
+                <ShotRow
+                  key={p.id || k}
+                  photo={p}
+                  n={p.shot_number ?? offset + k + 1}
+                  floorThumb={floorThumb}
+                />
+              ))
+            )}
+            {last && (
+              <div
+                style={{
+                  marginTop: 10,
+                  fontSize: 9,
+                  fontWeight: 300,
+                  color: C.label,
+                }}
+              >
+                Took more photos than rows here? Duplicate a row. Took fewer?
+                Leave the rest blank.
+              </div>
+            )}
+          </Page>
+        ))}
       </div>
     </Shell>
   );
