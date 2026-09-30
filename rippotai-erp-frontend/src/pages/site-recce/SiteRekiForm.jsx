@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus, Trash2, Upload, X } from "lucide-react";
@@ -223,37 +223,11 @@ const mapBackendToFormValues = (data) => {
   // in the backend.
   // ----------------------------------------------------------
 
-  const layoutAttachments = [];
-
-  (data.rooms || []).forEach((room) => {
-    (room.photos || []).forEach((photo) => {
-      if (!photo.layout_image_url) return;
-
-      layoutAttachments.push({
-        id: `layout-${photo.id}`,
-
-        title: photo.layout_file_name || `${room.room_name || "Room"} Layout`,
-
-        remark: photo.notes || "",
-
-        floor_id: "",
-
-        images: [
-          {
-            id: photo.id,
-
-            preview: photo.layout_image_url,
-
-            url: photo.layout_image_url,
-
-            file_name: photo.layout_file_name || "",
-
-            caption: photo.notes || "",
-          },
-        ],
-      });
-    });
-  });
+  const layoutAttachments = (data.floor_layouts || []).map((url, index) => ({
+    id: `floor-layout-${index}`,
+    title: `Floor layout ${index + 1}`,
+    images: [{ id: `floor-image-${index}`, url, preview: url }],
+  }));
 
   return {
     status: "draft",
@@ -299,6 +273,24 @@ const mapBackendToFormValues = (data) => {
         : String(data.number_of_floors),
 
     site_type: data.site_type || "",
+    project_type: data.project_type || "",
+    site_type_other: data.site_type_other || "",
+    site_condition: data.site_condition || "",
+    site_condition_category: data.site_condition_category || "",
+    site_condition_other: data.site_condition_other || "",
+    site_restrictions:
+      data.site_restrictions ??
+      [
+        {
+          type: "societyRwaPermittedWorkTimings",
+          details: data.working_hours_allowed,
+        },
+        {
+          type: "materialMovementRestrictions",
+          details: data.material_movement_rule,
+        },
+        { type: "other", details: data.society_rwa_restrictions },
+      ].filter((row) => row.details),
 
     lift_available:
       data.lift_available === null || data.lift_available === undefined
@@ -437,7 +429,18 @@ const buildSiteReccePayload = (projectId, values) => {
 
     number_of_floors: toIntOrUndefined(values.number_of_floors),
 
-    site_type: strOrUndefined(values.site_type),
+    site_type: values.site_type || null,
+    project_type: values.project_type || null,
+    site_type_other: values.site_type_other || null,
+    site_condition: values.site_condition || null,
+    site_condition_category: values.site_condition_category || null,
+    site_condition_other: values.site_condition_other || null,
+    floor_layouts: (values.layoutAttachments || []).flatMap((layout) =>
+      (layout.images || []).map((image) => image.url).filter(Boolean),
+    ),
+    site_restrictions: (values.site_restrictions || []).map(
+      ({ type, details }) => ({ type, details: details || "" }),
+    ),
 
     lift_available: boolOrUndefined(values.lift_available),
 
@@ -529,6 +532,7 @@ export function SiteRekiForm() {
   // ==========================================================
 
   const [projectId, setProjectId] = useState("");
+  const [pendingUploads, setPendingUploads] = useState(0);
 
   // ==========================================================
   // FORM STATE
@@ -654,7 +658,8 @@ export function SiteRekiForm() {
   // IMAGE UPLOAD
   // ==========================================================
 
-  const handleFileUpload = async (file, type) => {
+  const handleFileUpload = async (file) => {
+    setPendingUploads((count) => count + 1);
     try {
       const result = await uploadSiteRecceImage(file).unwrap();
 
@@ -675,6 +680,8 @@ export function SiteRekiForm() {
       console.error("SITE RECCE IMAGE UPLOAD FAILED:", error);
 
       throw error;
+    } finally {
+      setPendingUploads((count) => count - 1);
     }
   };
 
@@ -1131,33 +1138,34 @@ export function SiteRekiForm() {
       }));
     };
 
-    const handleImageUpload = (layoutIndex, e) => {
+    const handleImageUpload = async (layoutIndex, e) => {
       const files = Array.from(e.target.files || []);
-
-      setValues((prev) => {
-        const newLayouts = [...(prev.layoutAttachments || [])];
-
-        const layout = newLayouts[layoutIndex];
-
-        const newImages = files.map((file) => ({
-          id: crypto.randomUUID(),
-
-          file,
-
-          preview: URL.createObjectURL(file),
-
-          caption: "",
-        }));
-
-        layout.images = [...(layout.images || []), ...newImages];
-
-        return {
-          ...prev,
-          layoutAttachments: newLayouts,
-        };
-      });
-
       e.target.value = "";
+      const layoutId = values.layoutAttachments[layoutIndex]?.id;
+      try {
+        const images = await Promise.all(
+          files.map(async (file) => {
+            const url = await handleFileUpload(file, "layout");
+            return {
+              id: crypto.randomUUID(),
+              url,
+              preview: url,
+              file_name: file.name,
+              caption: "",
+            };
+          }),
+        );
+        setValues((prev) => ({
+          ...prev,
+          layoutAttachments: (prev.layoutAttachments || []).map((layout) =>
+            layout.id === layoutId
+              ? { ...layout, images: [...(layout.images || []), ...images] }
+              : layout,
+          ),
+        }));
+      } catch {
+        toast.error("Failed to upload floor layout");
+      }
     };
 
     const updateImageCaption = (layoutIndex, imageIndex, caption) => {
@@ -1379,6 +1387,10 @@ export function SiteRekiForm() {
   // ============================================================
 
   const handleSubmit = async () => {
+    if (pendingUploads) {
+      toast.error("Please wait for image uploads to finish.");
+      return;
+    }
     if (!projectId) {
       toast.error("Please select a project.");
 
@@ -1408,7 +1420,7 @@ export function SiteRekiForm() {
       if (isEditMode) {
         console.log("UPDATING SITE RECCE:", siteRecceId);
 
-        const updated = await updateSiteRecce({
+        await updateSiteRecce({
           id: siteRecceId,
           ...payload,
         }).unwrap();
@@ -1487,7 +1499,7 @@ export function SiteRekiForm() {
       projectId={projectId}
       onProjectChange={setProjectId}
       onSubmit={handleSubmit}
-      isSubmitting={isCreating || isUpdating}
+      isSubmitting={isCreating || isUpdating || pendingUploads > 0}
       renderSection={renderSection}
       onFileUpload={handleFileUpload}
     />

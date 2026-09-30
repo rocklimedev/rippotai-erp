@@ -13,6 +13,26 @@ export const SITE_AREA_UNIT_OPTIONS = [
 ];
 
 export const SITE_TYPE_OPTIONS = [
+  { value: "BUILDER_FLOOR", label: "Builder Floor" },
+  { value: "BUNGALOW", label: "Bungalow" },
+  { value: "VILLA", label: "Villa" },
+  { value: "FARMHOUSE", label: "Farmhouse" },
+  { value: "PENTHOUSE", label: "Penthouse" },
+  { value: "OFFICE", label: "Office" },
+  { value: "RETAIL_SHOWROOM", label: "Retail Showroom" },
+  { value: "HOTEL", label: "Hotel" },
+  { value: "RESTAURANT", label: "Restaurant" },
+  { value: "BANQUETS", label: "Banquets" },
+  { value: "BAR_AND_LOUNGE", label: "Bar And Lounge" },
+  { value: "CAFE", label: "Cafe" },
+  { value: "RESORT", label: "Resort" },
+  { value: "QSR_AND_CLOUD_KITCHEN", label: "Qsr And Cloud Kitchen" },
+  { value: "CAMPUS_ADDITION", label: "Campus Addition" },
+  { value: "EDUCATION", label: "Education" },
+  { value: "RELIGIOUS", label: "Religious" },
+  { value: "RESIDENTIAL_INSTITUTIONAL", label: "Residential Institutional" },
+  { value: "SPORTS", label: "Sports" },
+
   { value: "FLAT", label: "Flat" },
   { value: "FLOOR", label: "Floor" },
   { value: "KOTHI", label: "Kothi" },
@@ -21,6 +41,20 @@ export const SITE_TYPE_OPTIONS = [
 ];
 
 export const SITE_CONDITION_OPTIONS = [
+  { value: "BARE_PLOT", label: "Bare Plot" },
+  { value: "COLD_SHELL", label: "Cold Shell" },
+  { value: "WARM_SHELL", label: "Warm Shell" },
+  { value: "EXISTING_OCCUPIED", label: "Existing Occupied" },
+  { value: "EXISTING_VACANT", label: "Existing Vacant" },
+  { value: "EXISTING_OPERATIONAL", label: "Existing Operational" },
+  { value: "REBRANDING", label: "Rebranding" },
+  { value: "EXISTING_BUILDING_VACANT", label: "Existing Building Vacant" },
+  {
+    value: "EXISTING_BUILDING_OPERATIONAL",
+    label: "Existing Building Operational",
+  },
+  { value: "FIT_OUT_REQUIRED", label: "Fit Out Required" },
+
   { value: "OCCUPIED", label: "Occupied" },
   { value: "UNOCCUPIED", label: "Unoccupied" },
 ];
@@ -158,6 +192,8 @@ export const BRIEF_SECTIONS = [
     title: "Client & Project Information",
     key: "clientProject",
     fields: [
+      { key: "principalArchitect", label: "Principal Architect", type: "text" },
+      { key: "projectLead", label: "Project Lead", type: "text" },
       {
         key: "relationshipToClient",
         label: "Relationship to Client",
@@ -176,6 +212,7 @@ export const BRIEF_SECTIONS = [
     title: "Site & Property",
     key: "siteProperty",
     fields: [
+      { key: "propertyType", label: "Property Type", type: "text" },
       {
         key: "siteAddress",
         label: "Site Address",
@@ -334,6 +371,11 @@ export const BRIEF_SECTIONS = [
           },
         ],
         addLabel: "Add Occupant",
+      },
+      {
+        key: "toiletFacilityAndStayForLabour",
+        label: "Toilet Facility and Stay for Labour",
+        type: "textarea",
       },
       {
         key: "householdNotes",
@@ -517,6 +559,28 @@ export const BRIEF_SECTIONS = [
     key: "budget",
     fields: [
       {
+        key: "fundingStage",
+        label: "Funding Stage",
+        type: "select",
+        options: [
+          { value: "SELF_FUNDED", label: "Self Funded" },
+          { value: "LOAN", label: "Loan" },
+          { value: "NOT_SPECIFIED", label: "Not Specified" },
+        ],
+      },
+      {
+        key: "budgetRange",
+        label: "Budget Range",
+        type: "select",
+        options: [
+          { value: "50L_TO_1CR", label: "50L To 1Cr" },
+          { value: "1CR_TO_2CR", label: "1Cr To 2Cr" },
+          { value: "2CR_TO_5CR", label: "2Cr To 5Cr" },
+          { value: "5CR_TO_8CR", label: "5Cr To 8Cr" },
+          { value: "8CR_TO_10CR", label: "8Cr To 10Cr" },
+        ],
+      },
+      {
         key: "initialClientBudget",
         label: "Initial Client Budget",
         type: "number",
@@ -535,6 +599,17 @@ export const BRIEF_SECTIONS = [
     title: "Timeline & Delivery",
     key: "timeline",
     fields: [
+      {
+        key: "expectedTimeline",
+        label: "Expected Timeline",
+        type: "select",
+        options: [
+          { value: "3_6_MONTHS", label: "3 6 Months" },
+          { value: "6_12_MONTHS", label: "6 12 Months" },
+          { value: "12_18_MONTHS", label: "12 18 Months" },
+          { value: "FLEXIBLE", label: "Flexible" },
+        ],
+      },
       {
         key: "desiredStartDate",
         label: "Desired Start Date",

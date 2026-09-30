@@ -124,6 +124,13 @@ export const normalizeProjectBrief = (brief) => {
     // ========================================================
     // CLIENT / PROJECT
     // ========================================================
+    principalArchitect: brief.principalArchitect ?? "",
+    projectLead: brief.projectLead ?? "",
+    propertyType: brief.propertyType ?? "",
+    fundingStage: brief.fundingStage ?? "",
+    budgetRange: brief.budgetRange ?? "",
+    expectedTimeline: brief.expectedTimeline ?? "",
+    toiletFacilityAndStayForLabour: brief.toiletFacilityAndStayForLabour ?? "",
     relationshipToClient: brief.relationshipToClient ?? "",
     referredBySource: brief.referredBySource ?? "",
     briefDate: brief.briefDate ?? "",
@@ -260,6 +267,13 @@ export const buildProjectBriefPayload = (projectId, values) => {
     projectId,
 
     // CLIENT / PROJECT
+    principalArchitect: values.principalArchitect || null,
+    projectLead: values.projectLead || null,
+    propertyType: values.propertyType || null,
+    fundingStage: values.fundingStage || null,
+    budgetRange: values.budgetRange || null,
+    expectedTimeline: values.expectedTimeline || null,
+    toiletFacilityAndStayForLabour: values.toiletFacilityAndStayForLabour || null,
     relationshipToClient: values.relationshipToClient || null,
     referredBySource: values.referredBySource || null,
     briefDate: values.briefDate || null,

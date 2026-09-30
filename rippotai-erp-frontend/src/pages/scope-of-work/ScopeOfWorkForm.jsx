@@ -1,3 +1,4 @@
+import { useGetUsersQuery } from "../../api/users/user.api";
 import React, { useEffect } from "react";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -226,6 +227,16 @@ export function ScopeOfWorkForm() {
 
     const mappedValues = {
       Overview: {
+        totalAreaSqft: existingScopeOfWork.totalAreaSqft ?? "",
+        documentDate: existingScopeOfWork.documentDate ?? "",
+        preparedBy: existingScopeOfWork.preparedBy ?? "",
+        reviewedBy: existingScopeOfWork.reviewedBy ?? "",
+        authorisedSignatoryName:
+          existingScopeOfWork.authorisedSignatoryName ?? "",
+        authorisedSignatoryDate:
+          existingScopeOfWork.authorisedSignatoryDate ?? "",
+        clientSignatureName: existingScopeOfWork.clientSignatureName ?? "",
+        clientSignatureDate: existingScopeOfWork.clientSignatureDate ?? "",
         scope_summary: existingScopeOfWork.scopeSummary || "",
 
         specific_exclusions: existingScopeOfWork.specificExclusions || "",
@@ -283,6 +294,10 @@ export function ScopeOfWorkForm() {
   // ============================================================
 
   const overview = values.Overview || {};
+  const { data: userResponse = [] } = useGetUsersQuery();
+  const users = Array.isArray(userResponse)
+    ? userResponse
+    : userResponse.data || [];
 
   const spaces = values.Spaces || [];
 
@@ -305,6 +320,52 @@ export function ScopeOfWorkForm() {
         </p>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {[
+          ["totalAreaSqft", "Total Area (sq ft)", "number"],
+          ["documentDate", "Document Date", "date"],
+          ["authorisedSignatoryName", "Authorised Signatory Name", "text"],
+          ["authorisedSignatoryDate", "Authorised Signatory Date", "date"],
+          ["clientSignatureName", "Client Signature Name", "text"],
+          ["clientSignatureDate", "Client Signature Date", "date"],
+        ].map(([key, label, type]) => (
+          <label key={key} className="bc-label">
+            {label}
+            <input
+              className="bc-input w-full"
+              type={type}
+              min={type === "number" ? 0 : undefined}
+              step={type === "number" ? "0.01" : undefined}
+              value={overview[key] ?? ""}
+              onChange={(event) =>
+                handleFieldChange("Overview", key, event.target.value)
+              }
+            />
+          </label>
+        ))}
+        {[
+          ["preparedBy", "Prepared By"],
+          ["reviewedBy", "Reviewed By"],
+        ].map(([key, label]) => (
+          <label key={key} className="bc-label">
+            {label}
+            <select
+              className="bc-input w-full"
+              value={overview[key] || ""}
+              onChange={(event) =>
+                handleFieldChange("Overview", key, event.target.value)
+              }
+            >
+              <option value="">Select person</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))}
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* PROJECT MODE */}
 
@@ -967,6 +1028,17 @@ export function ScopeOfWorkForm() {
           id: scopeOfWorkId,
 
           body: {
+            totalAreaSqft:
+              overview.totalAreaSqft === "" || overview.totalAreaSqft == null
+                ? null
+                : Number(overview.totalAreaSqft),
+            documentDate: overview.documentDate || null,
+            preparedBy: overview.preparedBy || null,
+            reviewedBy: overview.reviewedBy || null,
+            authorisedSignatoryName: overview.authorisedSignatoryName || null,
+            authorisedSignatoryDate: overview.authorisedSignatoryDate || null,
+            clientSignatureName: overview.clientSignatureName || null,
+            clientSignatureDate: overview.clientSignatureDate || null,
             scopeSummary: overview.scope_summary?.trim() || undefined,
 
             specificExclusions:
@@ -988,6 +1060,17 @@ export function ScopeOfWorkForm() {
           projectId,
 
           body: {
+            totalAreaSqft:
+              overview.totalAreaSqft === "" || overview.totalAreaSqft == null
+                ? null
+                : Number(overview.totalAreaSqft),
+            documentDate: overview.documentDate || null,
+            preparedBy: overview.preparedBy || null,
+            reviewedBy: overview.reviewedBy || null,
+            authorisedSignatoryName: overview.authorisedSignatoryName || null,
+            authorisedSignatoryDate: overview.authorisedSignatoryDate || null,
+            clientSignatureName: overview.clientSignatureName || null,
+            clientSignatureDate: overview.clientSignatureDate || null,
             scopeSummary: overview.scope_summary?.trim() || undefined,
 
             specificExclusions:

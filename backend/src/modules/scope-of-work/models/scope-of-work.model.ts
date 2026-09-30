@@ -132,6 +132,18 @@ export class ScopeOfWork extends Model<ScopeOfWork> {
   })
   declare clientSignatureDate: string;
 
+  @Column({ type: DataType.DECIMAL(12, 2), allowNull: true })
+  declare totalAreaSqft: number | null;
+
+  @Column({ type: DataType.DATEONLY, allowNull: true })
+  declare documentDate: string | null;
+
+  @Column({ type: DataType.STRING(255), allowNull: true })
+  declare authorisedSignatoryName: string | null;
+
+  @Column({ type: DataType.DATEONLY, allowNull: true })
+  declare authorisedSignatoryDate: string | null;
+
   @CreatedAt
   @Column
   declare createdAt: Date;

@@ -65,6 +65,27 @@ export class ProjectBrief extends Model<ProjectBrief> {
   @BelongsTo(() => Project, 'projectId')
   declare project: Project;
 
+  @Column(DataType.TEXT)
+  declare principalArchitect: string | null;
+
+  @Column(DataType.TEXT)
+  declare projectLead: string | null;
+
+  @Column(DataType.TEXT)
+  declare propertyType: string | null;
+
+  @Column(DataType.TEXT)
+  declare fundingStage: string | null;
+
+  @Column(DataType.TEXT)
+  declare budgetRange: string | null;
+
+  @Column(DataType.TEXT)
+  declare expectedTimeline: string | null;
+
+  @Column(DataType.TEXT)
+  declare toiletFacilityAndStayForLabour: string | null;
+
   @Column(DataType.STRING)
   declare relationshipToClient: string | null;
 
