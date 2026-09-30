@@ -287,8 +287,9 @@ export const APP_MENUS = {
     {
       label: "Site Operations",
       items: [
-        I("Daily Reports", "daily-reports"),
-        I("Visit Assignments", "visit-assignments"),
+        I("Daily Reports", "daily-reports/list"),
+        I("Visit Assignments", "site-visits/list"),
+        I("Snags", "snags/list"),
       ],
     },
 
@@ -296,9 +297,10 @@ export const APP_MENUS = {
       label: "Quality & Coordination",
       items: [
         I("QC Sign-offs", "qc/history"),
-        I("QC Handoff Status", "qc/handoff-status"),
+        I("QC Checks", "qc/list"),
         I("Checklists", "qc/checklist-templates"),
-        I("Mockups", "mockups"),
+        I("QC Handoff Status", "qc/handoff-status"),
+        I("Mockups", "mockups/list"),
         I("RFIs / Clarifications", "rfis"),
       ],
     },

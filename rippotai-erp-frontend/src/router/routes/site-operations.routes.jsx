@@ -7,8 +7,23 @@ import QCChecklistTemplates from "../../pages/site-ops/QcChecklistTemplatespage"
 import QCHandoffStatus from "../../pages/site-ops/QcHandoffStatus";
 import RFIs from "../../pages/site-ops/RfisPage";
 import Mockups from "../../pages/site-ops/MockupsPage";
-
+import QualityChecksPage from "../../pages/site-ops/QualityChecksPage";
 import SiteOperationsDashboard from "../../pages/dashboard/SiteOperationsDashboard";
+import DailyReportsListPage from "../../pages/site-ops/DailyReportsListPage";
+import DailyReportCreatePage from "../../pages/site-ops/DailyReportCreatePage";
+import DailyReportDetailPage from "../../pages/site-ops/DailyReportDetailPage";
+import MockupsListPage from "../../pages/site-ops/MockupsListPage";
+import MockupCreatePage from "../../pages/site-ops/MockupCreatePage";
+import MockupDetailPage from "../../pages/site-ops/MockupDetailPage";
+import RfisListPage from "../../pages/site-ops/RfisListPage";
+import RfiCreatePage from "../../pages/site-ops/RfiCreatePage";
+import RfiDetailPage from "../../pages/site-ops/RfiDetailPage";
+import SiteVisitsListPage from "../../pages/site-ops/SiteVisitsListPage";
+import SiteVisitCreatePage from "../../pages/site-ops/SiteVisitCreatePage";
+import SiteVisitDetailPage from "../../pages/site-ops/SiteVisitDetailPage";
+import SnagsListPage from "../../pages/site-ops/SnagsListPage";
+import SnagCreatePage from "../../pages/site-ops/SnagCreatePage";
+import SnagDetailPage from "../../pages/site-ops/SnagDetailPage";
 export const siteOperationsRoutes = [
   {
     type: "layout",
@@ -37,8 +52,16 @@ export const siteOperationsRoutes = [
       // =========================================================
 
       {
-        path: "daily-reports",
-        element: <DailySiteReports />,
+        path: "daily-reports/list",
+        element: <DailyReportsListPage />,
+      },
+      {
+        path: "daily-report/create",
+        element: <DailyReportCreatePage />,
+      },
+      {
+        path: "daily-report/:id",
+        element: <DailyReportDetailPage />,
       },
 
       // =========================================================
@@ -46,10 +69,17 @@ export const siteOperationsRoutes = [
       // =========================================================
 
       {
-        path: "visit-assignments",
-        element: <VisitAssignments />,
+        path: "site-visits/list",
+        element: <SiteVisitsListPage />,
       },
-
+      {
+        path: "site-visits/create",
+        element: <SiteVisitCreatePage />,
+      },
+      {
+        path: "site-visits/:id",
+        element: <SiteVisitDetailPage />,
+      },
       // =========================================================
       // QC
       // =========================================================
@@ -58,7 +88,10 @@ export const siteOperationsRoutes = [
         path: "qc/history",
         element: <QCSignOffHistory />,
       },
-
+      {
+        path: "qc/list",
+        element: <QualityChecksPage />,
+      },
       {
         path: "qc/checklist-templates",
         element: <QCChecklistTemplates />,
@@ -75,16 +108,43 @@ export const siteOperationsRoutes = [
 
       {
         path: "rfis",
-        element: <RFIs />,
+        element: <RfisListPage />,
       },
-
+      {
+        path: "rfis/create",
+        element: <RfiCreatePage />,
+      },
+      {
+        path: "rfis/:id",
+        element: <RfiDetailPage />,
+      },
       // =========================================================
       // MOCKUPS
       // =========================================================
 
       {
-        path: "mockups",
-        element: <Mockups />,
+        path: "mockups/list",
+        element: <MockupsListPage />,
+      },
+      {
+        path: "mockups/create",
+        element: <MockupCreatePage />,
+      },
+      {
+        path: "mockups/:id",
+        element: <MockupDetailPage />,
+      },
+      {
+        path: "snags/list",
+        element: <SnagsListPage />,
+      },
+      {
+        path: "snags/create",
+        element: <SnagCreatePage />,
+      },
+      {
+        path: "snag/:id",
+        element: <SnagDetailPage />,
       },
     ],
   },
