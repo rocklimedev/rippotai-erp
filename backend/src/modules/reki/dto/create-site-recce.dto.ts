@@ -1,7 +1,7 @@
 import {
+  IsArray,
   IsBoolean,
   IsDateString,
-  IsEnum,
   IsInt,
   IsNumber,
   IsOptional,
@@ -22,7 +22,52 @@ export enum SiteType {
   RAW = 'RAW',
 }
 
+export class SiteRecceRestrictionDto {
+  @IsString()
+  type: string;
+
+  @IsOptional()
+  @IsString()
+  details?: string;
+}
+
 export class CreateSiteRecceDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  project_type?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  site_type_other?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  site_condition?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  site_condition_category?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  site_condition_other?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  floor_layouts?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SiteRecceRestrictionDto)
+  site_restrictions?: SiteRecceRestrictionDto[];
+
   // ============================================================
   // PROJECT
   // ============================================================
@@ -98,8 +143,9 @@ export class CreateSiteRecceDto {
   // ============================================================
 
   @IsOptional()
-  @IsEnum(SiteType)
-  site_type?: SiteType;
+  @IsString()
+  @MaxLength(100)
+  site_type?: string;
 
   // ============================================================
   // ACCESS

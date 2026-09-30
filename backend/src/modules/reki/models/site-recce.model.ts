@@ -144,10 +144,31 @@ export class SiteRecce extends Model<SiteRecce> {
   // ============================================================
 
   @Column({
-    type: DataType.ENUM('FLAT', 'FLOOR', 'KOTHI', 'RAW'),
+    type: DataType.STRING(100),
     allowNull: true,
   })
-  declare site_type: 'FLAT' | 'FLOOR' | 'KOTHI' | 'RAW' | null;
+  declare site_type: string | null;
+
+  @Column({ type: DataType.STRING(100), allowNull: true })
+  declare project_type: string | null;
+
+  @Column({ type: DataType.STRING(100), allowNull: true })
+  declare site_type_other: string | null;
+
+  @Column({ type: DataType.STRING(100), allowNull: true })
+  declare site_condition: string | null;
+
+  @Column({ type: DataType.STRING(100), allowNull: true })
+  declare site_condition_category: string | null;
+
+  @Column({ type: DataType.STRING(100), allowNull: true })
+  declare site_condition_other: string | null;
+
+  @Column({ type: DataType.JSON, allowNull: true })
+  declare floor_layouts: string[] | null;
+
+  @Column({ type: DataType.JSON, allowNull: true })
+  declare site_restrictions: { type: string; details?: string }[] | null;
 
   // ============================================================
   // ACCESS FOR MATERIAL & LABOUR

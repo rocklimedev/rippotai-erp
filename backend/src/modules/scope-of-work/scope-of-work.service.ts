@@ -64,6 +64,7 @@ export class ScopeOfWorkService {
         model: Project,
         as: 'project',
         include: [
+          { association: 'project_type' },
           // ======================================================
           // CLIENT
           // ======================================================
@@ -550,6 +551,14 @@ export class ScopeOfWorkService {
           {
             projectId,
 
+            totalAreaSqft: dto.totalAreaSqft ?? null,
+            documentDate: dto.documentDate ?? null,
+            preparedBy: dto.preparedBy ?? null,
+            reviewedBy: dto.reviewedBy ?? null,
+            authorisedSignatoryName: dto.authorisedSignatoryName ?? null,
+            authorisedSignatoryDate: dto.authorisedSignatoryDate ?? null,
+            clientSignatureName: dto.clientSignatureName ?? null,
+            clientSignatureDate: dto.clientSignatureDate ?? null,
             scopeSummary: dto.scopeSummary?.trim() || undefined,
 
             specificExclusions: dto.specificExclusions?.trim() || undefined,

@@ -566,6 +566,14 @@ export class ProjectBriefsService {
           initialClientBudget: current.initialClientBudget,
           budgetCurrency: current.budgetCurrency,
           budgetFlexibility: current.budgetFlexibility,
+          principalArchitect: current.principalArchitect,
+          projectLead: current.projectLead,
+          propertyType: current.propertyType,
+          fundingStage: current.fundingStage,
+          budgetRange: current.budgetRange,
+          expectedTimeline: current.expectedTimeline,
+          toiletFacilityAndStayForLabour: current.toiletFacilityAndStayForLabour,
+
 
           desiredStartDate: current.desiredStartDate,
           siteHandoverDate: current.siteHandoverDate,

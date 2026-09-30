@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -180,10 +180,12 @@ const has = (v) => v !== null && v !== undefined && String(v).trim() !== "";
 const fmtDate = (d) => {
   if (!d) return "";
   try {
+    if (Number.isNaN(new Date(d).getTime())) return String(d);
     return new Date(d).toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "short",
       year: "numeric",
+      timeZone: "UTC",
     });
   } catch {
     return String(d);
@@ -227,10 +229,15 @@ function resolveRestrictions(recce) {
   const pick = (re) =>
     list
       .filter((r) => re.test(String(r.type || "")))
-      .map(fmt)
+      .map((r) => r.details)
+      .filter(Boolean)
       .join("; ");
-  const working = recce.working_hours_allowed || pick(/work|hour|time/i);
-  const material = recce.material_movement_rule || pick(/material|movement/i);
+  const working = Array.isArray(recce.site_restrictions)
+    ? pick(/work|hour|time/i)
+    : recce.working_hours_allowed;
+  const material = Array.isArray(recce.site_restrictions)
+    ? pick(/material|movement/i)
+    : recce.material_movement_rule;
   const rest = list
     .filter(
       (r) => !/work|hour|time|material|movement/i.test(String(r.type || "")),
@@ -238,7 +245,9 @@ function resolveRestrictions(recce) {
     .map(fmt)
     .join("; ");
   return {
-    society: recce.society_rwa_restrictions || rest,
+    society: Array.isArray(recce.site_restrictions)
+      ? rest
+      : recce.society_rwa_restrictions,
     working,
     material,
   };
@@ -255,22 +264,22 @@ function Page({ children, footer = true, style }) {
       style={{
         position: "relative",
         width: PAGE_W,
-        height: PAGE_H,
-        overflow: "hidden",
+        minHeight: PAGE_H,
+        display: "flex",
+        flexDirection: "column",
         background: "#fff",
-        padding: `84px ${PAD_X}px 0`,
+        padding: `84px ${PAD_X}px 40px`,
         boxShadow: "0 1px 4px rgba(0,0,0,.12)",
         color: C.ink,
         ...style,
       }}
     >
-      {children}
+      <div style={{ flex: 1, minWidth: 0 }}>{children}</div>
       {footer && (
         <div
           style={{
-            position: "absolute",
-            left: PAD_X,
-            bottom: 40,
+            marginTop: 30,
+            flexShrink: 0,
             fontSize: 8,
             letterSpacing: "0.3em",
             textTransform: "uppercase",
@@ -301,8 +310,8 @@ function SectionTitle({ no, children, marginTop = 0 }) {
         style={{
           height: 2.5,
           background: C.black,
-          marginTop: 34,
-          marginBottom: 26,
+          marginTop: 12,
+          marginBottom: 36,
         }}
       />
     </div>
@@ -356,6 +365,7 @@ function Field({ label, value, span = 1 }) {
           display: "flex",
           alignItems: "flex-end",
           whiteSpace: "pre-wrap",
+          overflowWrap: "anywhere",
         }}
       >
         {value}
@@ -413,7 +423,7 @@ function BlockHeading({ children, marginTop = 0 }) {
       >
         {children}
       </div>
-      <div style={{ height: 1, background: C.rule, marginTop: 12 }} />
+      <div style={{ height: 1, background: C.gold, marginTop: 20 }} />
     </div>
   );
 }
@@ -627,7 +637,8 @@ function RoomTable({ rows, blankRows = 0 }) {
     fontSize: 12.5,
     fontWeight: 400,
     verticalAlign: "top",
-    height: 40,
+    height: 48,
+    overflowWrap: "anywhere",
   };
   return (
     <table
@@ -700,7 +711,7 @@ function RoomTable({ rows, blankRows = 0 }) {
 /* SHOT ROW (section 04)                                            */
 /* ================================================================ */
 
-function ShotRow({ photo, n, floorThumb }) {
+function ShotRow({ photo, n, floorThumb, tall = false }) {
   const meta = [
     has(photo?.standing_position) && `Standing: ${photo.standing_position}`,
     has(photo?.camera_direction) && `Facing: ${photo.camera_direction}`,
@@ -714,8 +725,9 @@ function ShotRow({ photo, n, floorThumb }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1.25fr 1fr 74px",
-          height: 168,
+          gridTemplateColumns: "1.55fr 1fr",
+          position: "relative",
+          height: tall ? 184 : 168,
           border: `1px dashed ${C.dash}`,
         }}
       >
@@ -778,7 +790,7 @@ function ShotRow({ photo, n, floorThumb }) {
               src={photo.photo_url}
               alt={photo.photo_file_name || "Site photo"}
               crossOrigin="anonymous"
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
             />
           ) : (
             <>
@@ -799,7 +811,12 @@ function ShotRow({ photo, n, floorThumb }) {
         {/* floor thumbnail */}
         <div
           style={{
-            borderLeft: `1px dashed ${C.dash}`,
+            position: "absolute",
+            right: -45,
+            bottom: 0,
+            width: 45,
+            height: 65,
+            border: `1px dashed ${C.dash}`,
             padding: 4,
             display: "flex",
             alignItems: "center",
@@ -825,14 +842,13 @@ function ShotRow({ photo, n, floorThumb }) {
       </div>
       <div
         style={{
-          height: 14,
+          minHeight: 14,
           fontSize: 8.5,
           color: C.label,
           fontWeight: 300,
           marginTop: 3,
-          overflow: "hidden",
-          whiteSpace: "nowrap",
-          textOverflow: "ellipsis",
+          whiteSpace: "pre-wrap",
+          overflowWrap: "anywhere",
         }}
       >
         {meta}
@@ -886,7 +902,13 @@ export function SiteRekiView() {
       const nodes = contentRef.current.querySelectorAll(".recce-page");
       if (!nodes.length) return toast.error("Nothing to export yet");
 
-      const pdf = new jsPDF({ unit: "pt", format: "a4" });
+      await Promise.all(
+        Array.from(contentRef.current.querySelectorAll("img")).map((img) =>
+          img.decode(),
+        ),
+      );
+      const pdf = new jsPDF({ unit: "pt", format: "a4", compress: true });
+      let outputPage = 0;
       const pw = pdf.internal.pageSize.getWidth();
       const ph = pdf.internal.pageSize.getHeight();
 
@@ -897,7 +919,6 @@ export function SiteRekiView() {
           backgroundColor: "#ffffff",
           logging: false,
           width: PAGE_W,
-          height: PAGE_H,
           windowWidth: PAGE_W,
           onclone: (doc) => {
             doc
@@ -905,15 +926,36 @@ export function SiteRekiView() {
               .forEach((el) => (el.style.boxShadow = "none"));
           },
         });
-        if (i > 0) pdf.addPage();
-        pdf.addImage(
-          canvas.toDataURL("image/jpeg", 0.95),
-          "JPEG",
-          0,
-          0,
-          pw,
-          ph,
-        );
+        const pagePixels = Math.ceil((canvas.width * ph) / pw);
+        for (let top = 0; top < canvas.height; top += pagePixels) {
+          if (outputPage++) pdf.addPage();
+          const slice = document.createElement("canvas");
+          slice.width = canvas.width;
+          slice.height = Math.min(pagePixels, canvas.height - top);
+          slice
+            .getContext("2d")
+            .drawImage(
+              canvas,
+              0,
+              top,
+              canvas.width,
+              slice.height,
+              0,
+              0,
+              canvas.width,
+              slice.height,
+            );
+          pdf.addImage(
+            slice.toDataURL("image/jpeg", 0.98),
+            "JPEG",
+            0,
+            0,
+            pw,
+            (slice.height * pw) / canvas.width,
+          );
+          slice.width = slice.height = 0;
+        }
+        canvas.width = canvas.height = 0;
       }
 
       const nameSource =
@@ -922,11 +964,15 @@ export function SiteRekiView() {
         .trim()
         .replace(/\s+/g, "_")
         .replace(/[^\w-]/g, "");
-      pdf.save(`${safe || "site-recce"}_recce_report.pdf`);
+      await pdf.save(`${safe || "site-recce"}_recce_report.pdf`, {
+        returnPromise: true,
+      });
       toast.success("PDF downloaded");
     } catch (e) {
       console.error(e);
-      toast.error("Failed to generate PDF");
+      toast.error(
+        "Failed to generate PDF. Check that all layout and photo images are available.",
+      );
     } finally {
       setGeneratingPdf(false);
     }
@@ -961,28 +1007,54 @@ export function SiteRekiView() {
 
   // Legacy records have only site_type (FLAT/KOTHI...) — treat them as Residential.
   const projectType =
-    recce.project_type || (recce.site_type ? "Residential" : "");
-  const siteCondGroup =
-    recce.site_condition_category ||
     recce.project_type ||
-    (recce.site_condition ? "Residential" : "");
+    project.project_type?.name ||
+    (["FLAT", "FLOOR", "KOTHI", "RAW"].includes(recce.site_type)
+      ? "Residential"
+      : "");
+  const siteCondGroup = recce.site_condition_category || projectType;
 
   const floorLayouts = (recce.floor_layouts || recce.floor_layout_urls || [])
     .map((f) => (typeof f === "string" ? f : f?.url))
     .filter(Boolean);
   const floorThumb = floorLayouts[0];
+  const floorPages = chunk(floorLayouts, 2, 2);
 
   const condition = recce.existing_condition || "";
-  const roomChunks = chunk(rooms, condition.length > 240 ? 1 : 3, 18);
+  const roomChunks = chunk(rooms, 2, 6);
+  if (roomChunks.length === 1) roomChunks.push([]);
 
-  // Room pages: 3 shots on the first (intro) page, 4 elsewhere.
+  // Preserve the six room blocks and blank shot rows in the supplied template.
+  const templates = [
+    ["LIVING_DINING", "Living & Dining", 6],
+    ["MASTER_BEDROOM", "Master Bedroom", 5],
+    ["BEDROOM", "Bedroom 01", 5],
+    ["KITCHEN", "Kitchen", 6],
+    ["BATHROOM", "Bathroom 02", 5],
+    ["BALCONY", "Balcony", 5],
+  ];
+  const used = new Set();
+  const sheetRooms = templates.map(([type, name, count]) => {
+    const room = rooms.find((r) => r.room_type === type && !used.has(r.id));
+    if (room) used.add(room.id);
+    return {
+      ...(room || { id: `blank-${type}`, room_type: type, room_name: name }),
+      minimumShots: count,
+    };
+  });
+  sheetRooms.push(...rooms.filter((r) => !used.has(r.id)));
   const roomPages = [];
-  rooms.forEach((room, ri) => {
-    const shots = [...(room.photos || [])].sort(
-      (a, b) => (a.shot_number ?? 0) - (b.shot_number ?? 0),
-    );
-    const first = ri === 0 ? 3 : 4;
-    const parts = chunk(shots, first, 4);
+  sheetRooms.forEach((room, ri) => {
+    const nested = room.photos || [];
+    const shots = [
+      ...nested,
+      ...(recce.photos || []).filter(
+        (p) => p.room_id === room.id && !nested.some((n) => n.id === p.id),
+      ),
+    ].sort((a, b) => (a.shot_number ?? 0) - (b.shot_number ?? 0));
+    while (shots.length < (room.minimumShots || 4)) shots.push(null);
+    const first = room.room_type === "LIVING_DINING" ? 3 : 4;
+    const parts = chunk(shots, first, first);
     parts.forEach((part, pi) =>
       roomPages.push({
         room,
@@ -991,12 +1063,10 @@ export function SiteRekiView() {
         last: pi === parts.length - 1,
         ri,
         hint: roomHint(room),
-        offset: pi === 0 ? 0 : first + (pi - 1) * 4,
+        offset: pi * first,
       }),
     );
   });
-
-  const gridBox = { marginBottom: 0 };
 
   return (
     <Shell
@@ -1061,11 +1131,24 @@ export function SiteRekiView() {
             alt="Rippōtai"
             style={{
               position: "absolute",
-              top: 172,
-              left: (PAGE_W - 190) / 2,
-              width: 190,
+              top: 187,
+              left: (PAGE_W - 330) / 2,
+              width: 330,
             }}
           />
+          <div
+            style={{
+              position: "absolute",
+              top: 359,
+              width: "100%",
+              textAlign: "center",
+              fontSize: 40,
+              fontWeight: 300,
+              color: C.green,
+            }}
+          >
+            RIPPŌTAI
+          </div>
           <div
             style={{
               position: "absolute",
@@ -1156,7 +1239,10 @@ export function SiteRekiView() {
               label="Project Name"
               value={project.name || recce.project_name}
             />
-            <Field label="Client Name" value={recce.client_name} />
+            <Field
+              label="Client Name"
+              value={recce.client_name || project.client?.name}
+            />
           </div>
           <div style={{ ...grid(1), marginTop: 26 }}>
             <Field
@@ -1186,7 +1272,9 @@ export function SiteRekiView() {
           <TypeGrid
             groups={PROJECT_TYPES.slice(0, 3)}
             selectedGroup={projectType}
-            selectedItem={recce.site_type}
+            selectedItem={
+              recce.site_type === "FLOOR" ? "BUILDER_FLOOR" : recce.site_type
+            }
             showOther={false}
           />
         </Page>
@@ -1259,7 +1347,12 @@ export function SiteRekiView() {
                 fontWeight: 300,
               }}
             >
-              <Box checked={norm(projectType) === "OTHER"} />
+              <Box
+                checked={
+                  norm(projectType) === "OTHER" ||
+                  norm(recce.site_type) === "OTHER"
+                }
+              />
               <span>
                 Other{" "}
                 <span
@@ -1270,7 +1363,8 @@ export function SiteRekiView() {
                     fontWeight: 400,
                   }}
                 >
-                  {(norm(projectType) === "OTHER" &&
+                  {((norm(projectType) === "OTHER" ||
+                    norm(recce.site_type) === "OTHER") &&
                     (recce.site_type_other || recce.site_type)) ||
                     "\u00A0"}
                 </span>
@@ -1354,7 +1448,12 @@ export function SiteRekiView() {
                 fontWeight: 300,
               }}
             >
-              <Box checked={norm(siteCondGroup) === "OTHER"} />
+              <Box
+                checked={
+                  norm(siteCondGroup) === "OTHER" ||
+                  norm(recce.site_condition) === "OTHER"
+                }
+              />
               <span>
                 Other{" "}
                 <span
@@ -1365,7 +1464,8 @@ export function SiteRekiView() {
                     fontWeight: 400,
                   }}
                 >
-                  {(norm(siteCondGroup) === "OTHER" &&
+                  {((norm(siteCondGroup) === "OTHER" ||
+                    norm(recce.site_condition) === "OTHER") &&
                     (recce.site_condition_other || recce.site_condition)) ||
                     "\u00A0"}
                 </span>
@@ -1465,6 +1565,7 @@ export function SiteRekiView() {
                 fontWeight: 400,
                 lineHeight: "28px",
                 whiteSpace: "pre-wrap",
+                overflowWrap: "anywhere",
                 backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent 27px, ${C.rule} 27px, ${C.rule} 28px)`,
               }}
             >
@@ -1477,14 +1578,14 @@ export function SiteRekiView() {
           </SectionTitle>
           <RoomTable
             rows={roomChunks[0]}
-            blankRows={rooms.length === 0 ? 3 : 0}
+            blankRows={Math.max(0, 2 - roomChunks[0].length)}
           />
         </Page>
 
         {/* table continuation */}
         {roomChunks.slice(1).map((rows, i) => (
           <Page key={`rt-${i}`}>
-            <RoomTable rows={rows} />
+            <RoomTable rows={rows} blankRows={Math.max(0, 6 - rows.length)} />
           </Page>
         ))}
 
@@ -1700,46 +1801,48 @@ export function SiteRekiView() {
         </Page>
 
         {/* ============ 04 FLOOR LAYOUT ============ */}
-        <Page>
-          <SectionTitle no="04">Layout &amp; Photo Sheets</SectionTitle>
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: C.black,
-              marginBottom: 22,
-            }}
-          >
-            FLOOR LAYOUT
-          </div>
-          {[0, 1].map((i) => (
-            <DashedBox
-              key={i}
+        {floorPages.map((layouts, pageIndex) => (
+          <Page key={`floor-${pageIndex}`}>
+            <SectionTitle no="04">Layout &amp; Photo Sheets</SectionTitle>
+            <div
               style={{
-                width: "100%",
-                height: 250,
-                marginBottom: 40,
-                justifyContent: "flex-start",
-                padding: floorLayouts[i] ? 6 : 8,
+                fontSize: 12,
+                fontWeight: 700,
+                color: C.black,
+                marginBottom: 22,
               }}
             >
-              {floorLayouts[i] ? (
-                <img
-                  src={floorLayouts[i]}
-                  alt="Floor layout"
-                  crossOrigin="anonymous"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "contain",
-                  }}
-                />
-              ) : (
-                "Paste floor layout here"
-              )}
-            </DashedBox>
-          ))}
-        </Page>
+              FLOOR LAYOUT
+            </div>
+            {[0, 1].map((i) => (
+              <DashedBox
+                key={i}
+                style={{
+                  width: "100%",
+                  height: 250,
+                  marginBottom: 40,
+                  justifyContent: "flex-start",
+                  padding: layouts[i] ? 6 : 8,
+                }}
+              >
+                {layouts[i] ? (
+                  <img
+                    src={layouts[i]}
+                    alt="Floor layout"
+                    crossOrigin="anonymous"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                    }}
+                  />
+                ) : (
+                  "Paste floor layout here"
+                )}
+              </DashedBox>
+            ))}
+          </Page>
+        ))}
 
         {/* ============ 04 ROOM SHEETS ============ */}
         {roomPages.length === 0 && (
@@ -1750,7 +1853,10 @@ export function SiteRekiView() {
           </Page>
         )}
         {roomPages.map(({ room, part, pi, last, ri, hint, offset }) => (
-          <Page key={`${room.id}-${pi}`}>
+          <Page
+            key={`${room.id}-${pi}`}
+            style={{ paddingTop: ri === 0 && pi === 0 ? 134 : 84 }}
+          >
             {ri === 0 && pi === 0 && (
               <div
                 style={{
@@ -1777,7 +1883,7 @@ export function SiteRekiView() {
                       fontSize: 9,
                       fontWeight: 300,
                       color: C.label,
-                      marginTop: 8,
+                      marginTop: 26,
                     }}
                   >
                     {hint}
@@ -1790,10 +1896,11 @@ export function SiteRekiView() {
             ) : (
               part.map((p, k) => (
                 <ShotRow
-                  key={p.id || k}
+                  key={p?.id || k}
                   photo={p}
-                  n={p.shot_number ?? offset + k + 1}
+                  n={p?.shot_number ?? offset + k + 1}
                   floorThumb={floorThumb}
+                  tall={room.room_type === "LIVING_DINING"}
                 />
               ))
             )}
