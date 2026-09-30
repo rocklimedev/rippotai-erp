@@ -8,7 +8,6 @@ import {
   Cloud,
   MoreHorizontal,
   Eye,
-  Pencil,
   Share2,
   Users,
   AlertTriangle,
@@ -19,9 +18,8 @@ import {
 import {
   useGetDailySiteReportsByProjectQuery,
   useCreateDailySiteReportMutation,
-  useUpdateDailySiteReportMutation,
   useShareDailySiteReportMutation,
-} from "@/api/procuerment/site-ops.api";
+} from "@/api/site-ops/daily-site-report.api";
 
 const DailySiteReportsPage = () => {
   const [selectedProjectId, setSelectedProjectId] = useState("");
@@ -46,24 +44,103 @@ const DailySiteReportsPage = () => {
   const [shareReport, { isLoading: isSharing }] =
     useShareDailySiteReportMutation();
 
-  const reports = useMemo(() => {
+  // ============================================================
+  // NORMALIZE REPORTS
+  // ============================================================
+
+  const allReports = useMemo(() => {
     const rows = Array.isArray(reportsData)
       ? reportsData
       : reportsData?.data || reportsData?.reports || [];
 
-    return rows.filter((report) => {
-      const q = search.trim().toLowerCase();
+    return Array.isArray(rows) ? rows : [];
+  }, [reportsData]);
 
-      if (!q) return true;
+  // ============================================================
+  // FILTER REPORTS
+  // ============================================================
 
-      return (
-        report.reportDate?.toLowerCase().includes(q) ||
-        report.reportedBy?.toLowerCase().includes(q) ||
-        report.workCompleted?.toLowerCase().includes(q) ||
-        report.issues?.toLowerCase().includes(q)
-      );
+  const reports = useMemo(() => {
+    const q = search.trim().toLowerCase();
+
+    const now = new Date();
+
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const startOfWeek = new Date(now);
+    const day = startOfWeek.getDay();
+
+    const mondayOffset = day === 0 ? 6 : day - 1;
+
+    startOfWeek.setDate(startOfWeek.getDate() - mondayOffset);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    return allReports.filter((report) => {
+      // --------------------------------------------------------
+      // Search
+      // --------------------------------------------------------
+
+      if (q) {
+        const searchable = [
+          report.reportDate,
+          report.reportedBy,
+          report.workCompleted,
+          report.issues,
+          report.weatherCondition,
+          report.weatherNotes,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        if (!searchable.includes(q)) {
+          return false;
+        }
+      }
+
+      // --------------------------------------------------------
+      // Date filter
+      // --------------------------------------------------------
+
+      if (dateFilter !== "all" && report.reportDate) {
+        const reportDate = new Date(`${report.reportDate}T00:00:00`);
+
+        if (Number.isNaN(reportDate.getTime())) {
+          return true;
+        }
+
+        if (dateFilter === "today") {
+          const reportDay = new Date(reportDate);
+          reportDay.setHours(0, 0, 0, 0);
+
+          if (reportDay.getTime() !== startOfToday.getTime()) {
+            return false;
+          }
+        }
+
+        if (dateFilter === "week") {
+          if (reportDate < startOfWeek || reportDate > now) {
+            return false;
+          }
+        }
+
+        if (dateFilter === "month") {
+          if (reportDate < startOfMonth || reportDate > now) {
+            return false;
+          }
+        }
+      }
+
+      return true;
     });
-  }, [reportsData, search]);
+  }, [allReports, search, dateFilter]);
+
+  // ============================================================
+  // SHARE
+  // ============================================================
 
   const handleShare = async (report) => {
     try {
@@ -72,6 +149,10 @@ const DailySiteReportsPage = () => {
       console.error("Failed to share report", error);
     }
   };
+
+  // ============================================================
+  // WEATHER
+  // ============================================================
 
   const getWeatherIcon = (condition) => {
     const value = String(condition || "").toUpperCase();
@@ -87,6 +168,10 @@ const DailySiteReportsPage = () => {
     return <Sun size={17} />;
   };
 
+  // ============================================================
+  // STATS
+  // ============================================================
+
   const stats = useMemo(() => {
     const total = reports.length;
 
@@ -97,7 +182,7 @@ const DailySiteReportsPage = () => {
     ).length;
 
     const manpower = reports.reduce((sum, report) => {
-      const entries = report.manpower || [];
+      const entries = Array.isArray(report.manpower) ? report.manpower : [];
 
       return (
         sum +
@@ -118,7 +203,10 @@ const DailySiteReportsPage = () => {
 
   return (
     <div className="min-h-screen bg-[#F7F8F6] text-[#1F2937]">
-      {/* Header */}
+      {/* ======================================================
+          HEADER
+      ====================================================== */}
+
       <div className="border-b border-[#E5E7E3] bg-white">
         <div className="mx-auto max-w-[1600px] px-6 py-5">
           <div className="flex items-center justify-between gap-4">
@@ -138,8 +226,10 @@ const DailySiteReportsPage = () => {
             </div>
 
             <button
+              type="button"
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 rounded-lg bg-[#1F453B] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#16352A]"
+              disabled={!selectedProjectId}
+              className="flex items-center gap-2 rounded-lg bg-[#1F453B] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#16352A] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus size={17} />
               New Daily Report
@@ -149,7 +239,10 @@ const DailySiteReportsPage = () => {
       </div>
 
       <main className="mx-auto max-w-[1600px] px-6 py-6">
-        {/* Project selector */}
+        {/* ====================================================
+            PROJECT SELECTOR
+        ==================================================== */}
+
         <div className="mb-5 rounded-xl border border-[#E5E7E3] bg-white p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-end">
             <div className="flex-1">
@@ -164,7 +257,7 @@ const DailySiteReportsPage = () => {
               >
                 <option value="">Select a project</option>
 
-                {/* Replace with project query */}
+                {/* Replace these with your project query */}
                 <option value="1">Project 001</option>
                 <option value="2">Project 002</option>
               </select>
@@ -172,7 +265,10 @@ const DailySiteReportsPage = () => {
           </div>
         </div>
 
-        {/* Stats */}
+        {/* ====================================================
+            STATS
+        ==================================================== */}
+
         <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard icon={FileText} label="Total Reports" value={stats.total} />
 
@@ -195,7 +291,10 @@ const DailySiteReportsPage = () => {
           />
         </div>
 
-        {/* Filters */}
+        {/* ====================================================
+            FILTERS
+        ==================================================== */}
+
         <div className="mb-4 flex flex-col gap-3 rounded-xl border border-[#E5E7E3] bg-white p-4 lg:flex-row lg:items-center">
           <div className="relative flex-1">
             <Search
@@ -227,7 +326,10 @@ const DailySiteReportsPage = () => {
           </div>
         </div>
 
-        {/* Table */}
+        {/* ====================================================
+            TABLE
+        ==================================================== */}
+
         <div className="overflow-hidden rounded-xl border border-[#E5E7E3] bg-white">
           <div className="flex items-center justify-between border-b border-[#E5E7E3] px-5 py-4">
             <div>
@@ -254,6 +356,7 @@ const DailySiteReportsPage = () => {
               description="Create the first daily site report for this project."
               action={
                 <button
+                  type="button"
                   onClick={() => setShowCreate(true)}
                   className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#1F453B] px-4 py-2 text-sm font-medium text-white"
                 >
@@ -301,7 +404,9 @@ const DailySiteReportsPage = () => {
 
                 <tbody>
                   {reports.map((report) => {
-                    const manpower = (report.manpower || []).reduce(
+                    const manpower = (
+                      Array.isArray(report.manpower) ? report.manpower : []
+                    ).reduce(
                       (sum, item) => sum + Number(item.headcount || 0),
                       0,
                     );
@@ -313,6 +418,7 @@ const DailySiteReportsPage = () => {
                       >
                         <td className="px-5 py-4">
                           <button
+                            type="button"
                             onClick={() => setSelectedReport(report)}
                             className="font-medium text-[#16352A] hover:underline"
                           >
@@ -323,6 +429,7 @@ const DailySiteReportsPage = () => {
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-2 text-sm text-[#4B5563]">
                             {getWeatherIcon(report.weatherCondition)}
+
                             <span>
                               {formatWeather(report.weatherCondition)}
                             </span>
@@ -338,6 +445,7 @@ const DailySiteReportsPage = () => {
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-2 text-sm">
                             <Users size={15} className="text-[#7A847F]" />
+
                             {manpower || "—"}
                           </div>
                         </td>
@@ -354,7 +462,7 @@ const DailySiteReportsPage = () => {
                         </td>
 
                         <td className="px-5 py-4 text-sm text-[#4B5563]">
-                          {report.reportedBy}
+                          {report.reportedBy || "—"}
                         </td>
 
                         <td className="px-5 py-4">
@@ -399,7 +507,10 @@ const DailySiteReportsPage = () => {
         </div>
       </main>
 
-      {/* Create modal placeholder */}
+      {/* ======================================================
+          CREATE MODAL
+      ====================================================== */}
+
       {showCreate && (
         <CreateReportModal
           projectId={selectedProjectId}
@@ -407,7 +518,10 @@ const DailySiteReportsPage = () => {
         />
       )}
 
-      {/* Details drawer */}
+      {/* ======================================================
+          DETAILS DRAWER
+      ====================================================== */}
+
       {selectedReport && (
         <ReportDetails
           report={selectedReport}
@@ -417,6 +531,10 @@ const DailySiteReportsPage = () => {
     </div>
   );
 };
+
+// ============================================================
+// STAT CARD
+// ============================================================
 
 const StatCard = ({ icon: Icon, label, value }) => (
   <div className="rounded-xl border border-[#E5E7E3] bg-white p-4">
@@ -428,10 +546,15 @@ const StatCard = ({ icon: Icon, label, value }) => (
 
     <div className="mt-4">
       <div className="text-2xl font-semibold text-[#16352A]">{value}</div>
+
       <div className="mt-0.5 text-sm text-[#7A847F]">{label}</div>
     </div>
   </div>
 );
+
+// ============================================================
+// STATUS BADGE
+// ============================================================
 
 const StatusBadge = ({ label, icon: Icon, muted }) => (
   <span
@@ -444,6 +567,10 @@ const StatusBadge = ({ label, icon: Icon, muted }) => (
   </span>
 );
 
+// ============================================================
+// ICON BUTTON
+// ============================================================
+
 const IconButton = ({ children, title, onClick, disabled }) => (
   <button
     type="button"
@@ -455,6 +582,10 @@ const IconButton = ({ children, title, onClick, disabled }) => (
     {children}
   </button>
 );
+
+// ============================================================
+// EMPTY STATE
+// ============================================================
 
 const EmptyState = ({ icon: Icon, title, description, action }) => (
   <div className="flex min-h-[360px] flex-col items-center justify-center px-6 text-center">
@@ -470,6 +601,10 @@ const EmptyState = ({ icon: Icon, title, description, action }) => (
   </div>
 );
 
+// ============================================================
+// LOADING STATE
+// ============================================================
+
 const LoadingState = () => (
   <div className="flex min-h-[360px] items-center justify-center">
     <div className="flex items-center gap-3 text-sm text-[#7A847F]">
@@ -478,6 +613,10 @@ const LoadingState = () => (
     </div>
   </div>
 );
+
+// ============================================================
+// CREATE REPORT MODAL
+// ============================================================
 
 const CreateReportModal = ({ projectId, onClose }) => {
   const [createReport, { isLoading }] = useCreateDailySiteReportMutation();
@@ -528,6 +667,7 @@ const CreateReportModal = ({ projectId, onClose }) => {
           </div>
 
           <button
+            type="button"
             onClick={onClose}
             className="text-sm text-[#6B7280] hover:text-[#1F453B]"
           >
@@ -625,6 +765,10 @@ const CreateReportModal = ({ projectId, onClose }) => {
   );
 };
 
+// ============================================================
+// REPORT DETAILS
+// ============================================================
+
 const ReportDetails = ({ report, onClose }) => (
   <div className="fixed inset-0 z-50 flex justify-end bg-black/20">
     <div className="h-full w-full max-w-xl overflow-y-auto bg-white shadow-xl">
@@ -638,6 +782,7 @@ const ReportDetails = ({ report, onClose }) => (
         </div>
 
         <button
+          type="button"
           onClick={onClose}
           className="text-sm text-[#6B7280] hover:text-[#1F453B]"
         >
@@ -647,7 +792,9 @@ const ReportDetails = ({ report, onClose }) => (
 
       <div className="space-y-6 p-6">
         <DetailSection title="Weather">
-          <div className="text-sm text-[#374151]">
+          <div className="flex items-center gap-2 text-sm text-[#374151]">
+            {getWeatherIconStatic(report.weatherCondition)}
+
             {formatWeather(report.weatherCondition)}
           </div>
 
@@ -658,7 +805,7 @@ const ReportDetails = ({ report, onClose }) => (
 
         <DetailSection title="Work Completed">
           <p className="whitespace-pre-wrap text-sm leading-6 text-[#374151]">
-            {report.workCompleted}
+            {report.workCompleted || "No work details recorded."}
           </p>
         </DetailSection>
 
@@ -673,9 +820,9 @@ const ReportDetails = ({ report, onClose }) => (
             <p className="text-sm text-[#7A847F]">No manpower entries.</p>
           ) : (
             <div className="divide-y divide-[#EEF0ED] rounded-lg border border-[#E5E7E3]">
-              {report.manpower.map((entry) => (
+              {report.manpower.map((entry, index) => (
                 <div
-                  key={entry.id}
+                  key={entry.id || `${entry.teamId}-${index}`}
                   className="flex items-center justify-between px-4 py-3"
                 >
                   <span className="text-sm text-[#374151]">
@@ -712,6 +859,10 @@ const ReportDetails = ({ report, onClose }) => (
   </div>
 );
 
+// ============================================================
+// DETAIL SECTION
+// ============================================================
+
 const DetailSection = ({ title, children }) => (
   <section>
     <h3 className="mb-2 text-sm font-semibold text-[#16352A]">{title}</h3>
@@ -719,6 +870,10 @@ const DetailSection = ({ title, children }) => (
     {children}
   </section>
 );
+
+// ============================================================
+// INFO
+// ============================================================
 
 const Info = ({ label, value }) => (
   <div>
@@ -730,6 +885,10 @@ const Info = ({ label, value }) => (
   </div>
 );
 
+// ============================================================
+// FIELD
+// ============================================================
+
 const Field = ({ label, children }) => (
   <div>
     <label className="mb-1.5 block text-sm font-medium text-[#374151]">
@@ -740,10 +899,20 @@ const Field = ({ label, children }) => (
   </div>
 );
 
+// ============================================================
+// HELPERS
+// ============================================================
+
 const formatDate = (value) => {
   if (!value) return "—";
 
-  return new Date(`${value}T00:00:00`).toLocaleDateString("en-IN", {
+  const date = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -753,7 +922,13 @@ const formatDate = (value) => {
 const formatDateTime = (value) => {
   if (!value) return "—";
 
-  return new Date(value).toLocaleString("en-IN", {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -769,6 +944,20 @@ const formatWeather = (value) => {
     .replaceAll("_", " ")
     .toLowerCase()
     .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const getWeatherIconStatic = (condition) => {
+  const value = String(condition || "").toUpperCase();
+
+  if (value.includes("RAIN")) {
+    return <CloudRain size={17} />;
+  }
+
+  if (value.includes("CLOUD")) {
+    return <Cloud size={17} />;
+  }
+
+  return <Sun size={17} />;
 };
 
 export default DailySiteReportsPage;
