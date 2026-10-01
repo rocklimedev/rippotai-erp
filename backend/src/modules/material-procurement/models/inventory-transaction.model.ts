@@ -19,19 +19,15 @@ import type {
 
 import { MaterialMaster } from './material-master.model';
 import { Unit } from '@/modules/metas/models/unit.model';
+export enum YesNoNA {
+  YES = 'YES',
+  NO = 'NO',
+  NOT_APPLICABLE = 'NA',
+}
+// ============================================================
+// INVENTORY TRANSACTION TYPES
+// ============================================================
 
-/**
- * ============================================================
- * INVENTORY TRANSACTION TYPES
- * ============================================================
- *
- * Every stock movement must be represented by one of these
- * transaction types.
- *
- * IMPORTANT:
- * Do not update/delete posted inventory transactions.
- * Corrections should be done using reversal/adjustment entries.
- */
 export enum InventoryTransactionType {
   RECEIPT = 'RECEIPT',
 
@@ -50,25 +46,19 @@ export enum InventoryTransactionType {
   ADJUSTMENT_OUT = 'ADJUSTMENT_OUT',
 }
 
-/**
- * ============================================================
- * INVENTORY DIRECTION
- * ============================================================
- */
+// ============================================================
+// INVENTORY DIRECTION
+// ============================================================
+
 export enum InventoryDirection {
   IN = 'IN',
   OUT = 'OUT',
 }
 
-/**
- * ============================================================
- * INVENTORY REFERENCE TYPES
- * ============================================================
- *
- * reference_type + reference_id + reference_item_id allow
- * inventory transactions to be traced back to the document
- * that caused them.
- */
+// ============================================================
+// INVENTORY REFERENCE TYPES
+// ============================================================
+
 export enum InventoryReferenceType {
   DELIVERY_CHALLAN = 'DELIVERY_CHALLAN',
 
@@ -81,14 +71,14 @@ export enum InventoryReferenceType {
   ADJUSTMENT = 'ADJUSTMENT',
 
   RETURN = 'RETURN',
+
   MANUAL = 'MANUAL',
 }
 
-/**
- * ============================================================
- * INVENTORY CONDITION
- * ============================================================
- */
+// ============================================================
+// INVENTORY CONDITION
+// ============================================================
+
 export enum InventoryConditionStatus {
   GOOD = 'GOOD',
 
@@ -101,34 +91,36 @@ export enum InventoryConditionStatus {
   NOT_APPLICABLE = 'NOT_APPLICABLE',
 }
 
-/**
- * ============================================================
- * INVENTORY TRANSACTION
- * ============================================================
- *
- * InventoryTransaction is the STOCK LEDGER.
- *
- * Current stock should always be calculated from:
- *
- *   IN transactions
- *   -
- *   OUT transactions
- *
- * Example:
- *
- * RECEIPT       +100
- * ISSUE          -20
- * RETURN          +5
- * ADJUSTMENT_OUT  -2
- * -------------------
- * CURRENT STOCK   83
- *
- * Never maintain a manually editable "current_stock" value
- * as the source of truth.
- */
+// ============================================================
+// INVENTORY TRANSACTION
+// ============================================================
+//
+// This table is the inventory STOCK LEDGER.
+//
+// Current stock is calculated:
+//
+//   IN  -> increases stock
+//   OUT -> decreases stock
+//
+// Quantity is ALWAYS positive.
+//
+// Example:
+//
+// RECEIPT          100 IN
+// ISSUE             20 OUT
+// RETURN              5 IN
+// ADJUSTMENT_OUT      2 OUT
+//
+// Current stock = 83
+//
+// Posted transactions should NOT be edited/deleted.
+// Corrections should be made using reversal transactions.
+// ============================================================
+
 @Table({
   tableName: 'inventory_transactions',
   timestamps: true,
+  underscored: true,
 })
 export class InventoryTransaction extends Model<
   InferAttributes<InventoryTransaction>,
@@ -144,7 +136,7 @@ export class InventoryTransaction extends Model<
   declare id: CreationOptional<string>;
 
   // ============================================================
-  // PROJECT / SITE
+  // PROJECT
   // ============================================================
 
   @AllowNull(false)
@@ -152,15 +144,12 @@ export class InventoryTransaction extends Model<
   @Column(DataType.UUID)
   declare project_id: string;
 
-  /**
-   * Nullable because some inventory may belong to the project
-   * without being assigned to a particular site.
-   */
-  @AllowNull(true)
-  @Index
-  @Column(DataType.UUID)
-  declare site_id: string | null;
+  // ============================================================
+  // SITE
+  // ============================================================
 
+  @Column({ type: DataType.STRING(255), allowNull: true })
+  declare site_location: string | null;
   // ============================================================
   // MATERIAL
   // ============================================================
@@ -182,14 +171,11 @@ export class InventoryTransaction extends Model<
   // ============================================================
 
   /**
-   * Unit is copied from MaterialMaster when the transaction is
-   * created.
+   * Unit is intentionally stored on the transaction.
    *
-   * This is intentional.
-   *
-   * If the material's master unit is changed later, historical
-   * inventory transactions must still retain the unit that was
-   * used when the movement happened.
+   * MaterialMaster.unit_id may change in the future, but
+   * historical transactions must retain the unit used at
+   * the time of the movement.
    */
   @ForeignKey(() => Unit)
   @AllowNull(false)
@@ -229,21 +215,14 @@ export class InventoryTransaction extends Model<
   // ============================================================
 
   /**
-   * Always store quantity as a positive number.
+   * Always positive.
    *
-   * Direction determines whether it increases or decreases stock.
+   * Direction determines whether the quantity is added
+   * or subtracted from stock.
    *
-   * Example:
-   *
-   * quantity = 10
-   * direction = IN
-   *
-   * means +10
-   *
-   * quantity = 10
-   * direction = OUT
-   *
-   * means -10
+   * Because MySQL DECIMAL values can be returned as strings,
+   * service-layer code should continue using Number(quantity)
+   * whenever arithmetic is performed.
    */
   @AllowNull(false)
   @Column(DataType.DECIMAL(15, 3))
@@ -263,36 +242,38 @@ export class InventoryTransaction extends Model<
   // ============================================================
 
   /**
-   * Document that caused this inventory movement.
-   *
-   * Examples:
-   *
-   * DELIVERY_CHALLAN -> DC UUID
-   * PURCHASE_ORDER   -> PO UUID
-   * TRANSFER         -> Transfer UUID
-   * ADJUSTMENT       -> Adjustment UUID
-   * RETURN           -> Return UUID
+   * Type of document/source that created this inventory movement.
    */
   @AllowNull(true)
   @Index
   @Column(DataType.ENUM(...Object.values(InventoryReferenceType)))
   declare reference_type: InventoryReferenceType | null;
 
+  /**
+   * Parent document UUID.
+   *
+   * Examples:
+   *
+   * DELIVERY_CHALLAN -> delivery_challans.id
+   * PURCHASE_ORDER   -> purchase_orders.id
+   * TRANSFER         -> generated transfer UUID
+   * ISSUE            -> issue document UUID
+   */
   @AllowNull(true)
   @Index
   @Column(DataType.UUID)
   declare reference_id: string | null;
 
   /**
-   * Optional child item reference.
+   * Child item UUID.
    *
    * Example:
    *
-   * Delivery Challan
-   *     ↓
-   * Delivery Challan Item
-   *     ↓
-   * Inventory Transaction
+   * delivery_challans
+   *       ↓
+   * delivery_challan_items
+   *       ↓
+   * inventory_transactions
    */
   @AllowNull(true)
   @Index
@@ -304,22 +285,19 @@ export class InventoryTransaction extends Model<
   // ============================================================
 
   /**
-   * Links this transaction to the transaction being corrected.
+   * Points to the original transaction being reversed.
    *
    * Example:
    *
    * Original:
    *
-   * ISSUE 100
+   * ISSUE 100 OUT
    *
-   * Mistake discovered:
+   * Reversal:
    *
-   * REVERSAL / ADJUSTMENT_IN 100
+   * ADJUSTMENT_IN 100 IN
    *
-   * reversal_of_id points to the original transaction.
-   *
-   * This gives us a complete audit trail without modifying the
-   * original transaction.
+   * reversal_of_id = original.id
    */
   @AllowNull(true)
   @Index
@@ -327,39 +305,73 @@ export class InventoryTransaction extends Model<
   declare reversal_of_id: string | null;
 
   /**
-   * Mandatory from the service layer whenever reversal_of_id
-   * is populated.
+   * Reason for reversal/correction.
    */
   @AllowNull(true)
   @Column(DataType.TEXT)
   declare reversal_reason: string | null;
 
   // ============================================================
-  // VENDOR / CONTRACTOR
+  // VENDOR
   // ============================================================
 
+  /**
+   * Vendor UUID.
+   *
+   * Kept as a plain UUID field intentionally so this model does
+   * not create a hard Sequelize association with Vendor.
+   */
   @AllowNull(true)
   @Index
   @Column(DataType.UUID)
   declare vendor_id: string | null;
 
+  // ============================================================
+  // CONTRACTOR
+  // ============================================================
+
+  /**
+   * Contractor UUID.
+   */
   @AllowNull(true)
   @Index
   @Column(DataType.UUID)
   declare contractor_id: string | null;
 
+  // ============================================================
+  // TRADE
+  // ============================================================
+
+  /**
+   * Example:
+   *
+   * Carpenter
+   * Electrical
+   * Plumbing
+   * Civil
+   */
   @AllowNull(true)
   @Column(DataType.STRING(100))
   declare trade: string | null;
 
   // ============================================================
-  // WORK / STORAGE
+  // WORK REFERENCE
   // ============================================================
 
+  /**
+   * Human-readable work/activity reference.
+   */
   @AllowNull(true)
   @Column(DataType.STRING(255))
   declare work_reference: string | null;
 
+  // ============================================================
+  // STORAGE
+  // ============================================================
+
+  /**
+   * Physical store/location/bin/rack.
+   */
   @AllowNull(true)
   @Index
   @Column(DataType.STRING(255))
@@ -383,20 +395,21 @@ export class InventoryTransaction extends Model<
   // ============================================================
 
   /**
-   * Human-readable recipient.
+   * Human-readable person/team receiving the material.
    *
    * Example:
    *
-   * "Rajesh - Carpenter Team"
+   * Rajesh - Carpenter Team
    */
   @AllowNull(true)
   @Column(DataType.STRING(255))
   declare issued_to: string | null;
 
   /**
-   * User who physically issued the material.
+   * UUID of user who physically issued the material.
    */
   @AllowNull(true)
+  @Index
   @Column(DataType.UUID)
   declare issued_by: string | null;
 
@@ -405,11 +418,44 @@ export class InventoryTransaction extends Model<
   // ============================================================
 
   /**
-   * User who physically received/accepted the material.
+   * UUID of user who physically received/accepted material.
    */
   @AllowNull(true)
+  @Index
   @Column(DataType.UUID)
   declare received_by: string | null;
+
+  // ============================================================
+  // DELIVERY CHALLAN / REGISTER INFORMATION
+  // ============================================================
+
+  /**
+   * Printed challan/bill number.
+   *
+   * Example:
+   *
+   * DC-2026-00125
+   */
+  @AllowNull(true)
+  @Index
+  @Column(DataType.STRING(100))
+  declare challan_bill_no: string | null;
+
+  /**
+   * Whether gate pass was received.
+   *
+   * Stored as string enum because YesNoNA is an application enum.
+   */
+  @AllowNull(true)
+  @Column(DataType.ENUM('YES', 'NO', 'NA'))
+  declare gate_pass_received: string | null;
+
+  /**
+   * Whether material was checked.
+   */
+  @AllowNull(true)
+  @Column(DataType.ENUM('YES', 'NO', 'NA'))
+  declare material_checked: string | null;
 
   // ============================================================
   // REMARKS
@@ -430,4 +476,14 @@ export class InventoryTransaction extends Model<
   @Index
   @Column(DataType.UUID)
   declare created_by: string | null;
+
+  // ============================================================
+  // CREATED / UPDATED
+  // ============================================================
+  //
+  // Sequelize manages these automatically because timestamps:true.
+  //
+  // No need to explicitly declare created_at / updated_at unless
+  // your application needs direct TypeScript access to them.
+  // ============================================================
 }

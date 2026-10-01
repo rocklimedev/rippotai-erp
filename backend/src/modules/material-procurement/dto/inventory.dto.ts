@@ -1,10 +1,13 @@
 import {
   IsDateString,
   IsEnum,
+  IsIn,
   IsNumber,
   IsOptional,
   IsString,
   IsUUID,
+  MaxLength,
+  IsNotEmpty,
   Min,
 } from 'class-validator';
 
@@ -13,40 +16,86 @@ import {
   InventoryDirection,
   InventoryReferenceType,
   InventoryTransactionType,
+  YesNoNA,
 } from '../models/inventory-transaction.model';
+export interface MaterialReceivedRegisterRow {
+  id: string;
+  date: Date | string;
+  material_id: string;
+  material_code: string | null;
+  material_description: string | null;
+  brand: string | null;
+  received_from: string | null;
+  vendor_id: string | null;
+  for_which_work: string | null;
+  qty: number;
+  unit: string | null;
+  challan_bill_no: string | null;
+  gate_pass_received: string | null;
+  material_checked: string | null;
+  condition_shortage_noted: string | null;
+  stored_at: string | null;
+  received_by: string | null;
+  remarks: string | null;
+  transaction_type: InventoryTransactionType;
+  reference_type: InventoryReferenceType | null;
+  reference_id: string | null;
+  reversal_of_id: string | null;
+  balance_after: number;
+}
 
-/**
- * ============================================================
- * CREATE INVENTORY TRANSACTION
- * ============================================================
- *
- * Generic inventory transaction DTO.
- *
- * Supported transaction types:
- *
- * - RECEIPT
- * - ISSUE
- * - RETURN_FROM_CONTRACTOR
- * - RETURN_TO_VENDOR
- * - TRANSFER_IN
- * - TRANSFER_OUT
- * - ADJUSTMENT_IN
- * - ADJUSTMENT_OUT
- *
- * IMPORTANT:
- *
- * unit_id is intentionally NOT accepted.
- *
- * Unit is always derived from:
- *
- * material_id
- *      ↓
- * MaterialMaster
- *      ↓
- * unit_id
- *      ↓
- * InventoryTransaction.unit_id
- */
+export interface MaterialIssuedRegisterRow {
+  id: string;
+  date: Date | string;
+  material_id: string;
+  material_code: string | null;
+  material_description: string | null;
+  qty_issued: number;
+  unit: string | null;
+  issued_to: string | null;
+  contractor_id: string | null;
+  trade: string | null;
+  for_which_work: string | null;
+  issued_by: string | null;
+  remarks: string | null;
+  transaction_type: InventoryTransactionType;
+  reference_type: InventoryReferenceType | null;
+  reference_id: string | null;
+  reversal_of_id: string | null;
+  balance_after: number;
+}
+// ============================================================
+// CREATE INVENTORY TRANSACTION
+// ============================================================
+//
+// Generic inventory ledger entry.
+//
+// Supported transaction types:
+//
+// RECEIPT
+// ISSUE
+// RETURN_FROM_CONTRACTOR
+// RETURN_TO_VENDOR
+// TRANSFER_IN
+// TRANSFER_OUT
+// ADJUSTMENT_IN
+// ADJUSTMENT_OUT
+//
+// IMPORTANT:
+//
+// unit_id is intentionally NOT accepted.
+//
+// Unit is always derived:
+//
+// material_id
+//     ↓
+// MaterialMaster
+//     ↓
+// unit_id
+//     ↓
+// InventoryTransaction.unit_id
+// ============================================================
+
 export class CreateInventoryTransactionDto {
   // ============================================================
   // PROJECT / SITE
@@ -55,10 +104,11 @@ export class CreateInventoryTransactionDto {
   @IsUUID()
   project_id: string;
 
+  // AFTER
   @IsOptional()
-  @IsUUID()
-  site_id?: string;
-
+  @IsString()
+  @MaxLength(255)
+  site_location?: string;
   // ============================================================
   // MATERIAL
   // ============================================================
@@ -95,6 +145,22 @@ export class CreateInventoryTransactionDto {
   @IsOptional()
   @IsUUID()
   reference_item_id?: string;
+
+  // ============================================================
+  // DELIVERY CHALLAN / REGISTER
+  // ============================================================
+
+  @IsOptional()
+  @IsString()
+  challan_bill_no?: string;
+
+  @IsOptional()
+  @IsEnum(YesNoNA)
+  gate_pass_received?: YesNoNA;
+
+  @IsOptional()
+  @IsEnum(YesNoNA)
+  material_checked?: YesNoNA;
 
   // ============================================================
   // VENDOR / CONTRACTOR
@@ -165,20 +231,21 @@ export class CreateInventoryTransactionDto {
   remarks?: string;
 }
 
-/**
- * ============================================================
- * ISSUE MATERIAL
- * ============================================================
- *
- * Used specifically when material leaves project/site inventory.
- *
- * Service automatically sets:
- *
- * transaction_type = ISSUE
- * reference_type   = ISSUE
- *
- * Unit is derived from MaterialMaster.
- */
+// ============================================================
+// ISSUE MATERIAL
+// ============================================================
+//
+// Used when material leaves project/site inventory.
+//
+// Service automatically sets:
+//
+// transaction_type = ISSUE
+// reference_type   = ISSUE
+//
+// Direction is automatically derived as OUT.
+// Unit is automatically derived from MaterialMaster.
+// ============================================================
+
 export class IssueMaterialDto {
   // ============================================================
   // PROJECT / SITE
@@ -187,10 +254,11 @@ export class IssueMaterialDto {
   @IsUUID()
   project_id: string;
 
+  // AFTER
   @IsOptional()
-  @IsUUID()
-  site_id?: string;
-
+  @IsString()
+  @MaxLength(255)
+  site_location?: string;
   // ============================================================
   // MATERIAL
   // ============================================================
@@ -238,6 +306,14 @@ export class IssueMaterialDto {
   storage_location?: string;
 
   // ============================================================
+  // ISSUED BY
+  // ============================================================
+
+  @IsOptional()
+  @IsUUID()
+  issued_by?: string;
+
+  // ============================================================
   // REMARKS
   // ============================================================
 
@@ -246,24 +322,27 @@ export class IssueMaterialDto {
   remarks?: string;
 }
 
-/**
- * ============================================================
- * ADD / RECEIVE INVENTORY
- * ============================================================
- *
- * Used from the Inventory UI when material is manually added
- * to project inventory.
- *
- * Example:
- *
- * Material: Plywood 18mm
- * Quantity: 100
- * Site: Main Site
- *
- * This creates:
- *
- * transaction_type = RECEIPT
- */
+// ============================================================
+// ADD / RECEIVE INVENTORY
+// ============================================================
+//
+// Manual inventory receipt.
+//
+// Service automatically sets:
+//
+// transaction_type = RECEIPT
+//
+// Example:
+//
+// Material: Plywood 18mm
+// Quantity: 100
+// Site: Main Site
+//
+// Creates:
+//
+// RECEIPT +100
+// ============================================================
+
 export class AddInventoryDto {
   // ============================================================
   // PROJECT / SITE
@@ -271,11 +350,11 @@ export class AddInventoryDto {
 
   @IsUUID()
   project_id: string;
-
+  // AFTER
   @IsOptional()
-  @IsUUID()
-  site_id?: string;
-
+  @IsString()
+  @MaxLength(255)
+  site_location?: string;
   // ============================================================
   // MATERIAL
   // ============================================================
@@ -311,6 +390,22 @@ export class AddInventoryDto {
   reference_item_id?: string;
 
   // ============================================================
+  // DELIVERY CHALLAN / REGISTER
+  // ============================================================
+
+  @IsOptional()
+  @IsString()
+  challan_bill_no?: string;
+
+  @IsOptional()
+  @IsEnum(YesNoNA)
+  gate_pass_received?: YesNoNA;
+
+  @IsOptional()
+  @IsEnum(YesNoNA)
+  material_checked?: YesNoNA;
+
+  // ============================================================
   // VENDOR
   // ============================================================
 
@@ -319,8 +414,12 @@ export class AddInventoryDto {
   vendor_id?: string;
 
   // ============================================================
-  // STORAGE
+  // WORK / STORAGE
   // ============================================================
+
+  @IsOptional()
+  @IsString()
+  work_reference?: string;
 
   @IsOptional()
   @IsString()
@@ -355,41 +454,34 @@ export class AddInventoryDto {
   remarks?: string;
 }
 
-/**
- * ============================================================
- * ADJUST INVENTORY
- * ============================================================
- *
- * Used for physical stock corrections.
- *
- * IN:
- *   increases stock
- *
- * OUT:
- *   decreases stock
- *
- * Examples:
- *
- * Physical count says:
- *
- * System = 80
- * Physical = 85
- *
- * Adjustment:
- *
- * direction = IN
- * quantity  = 5
- *
- * ------------------------------------------------------------
- *
- * System = 80
- * Physical = 75
- *
- * Adjustment:
- *
- * direction = OUT
- * quantity  = 5
- */
+// ============================================================
+// ADJUST INVENTORY
+// ============================================================
+//
+// Physical stock correction.
+//
+// Example:
+//
+// System = 80
+// Physical = 85
+//
+// direction = IN
+// quantity  = 5
+//
+// OR:
+//
+// System = 80
+// Physical = 75
+//
+// direction = OUT
+// quantity  = 5
+//
+// Service automatically converts direction to:
+//
+// ADJUSTMENT_IN
+// ADJUSTMENT_OUT
+// ============================================================
+
 export class AdjustInventoryDto {
   // ============================================================
   // PROJECT / SITE
@@ -397,11 +489,11 @@ export class AdjustInventoryDto {
 
   @IsUUID()
   project_id: string;
-
+  // AFTER
   @IsOptional()
-  @IsUUID()
-  site_id?: string;
-
+  @IsString()
+  @MaxLength(255)
+  site_location?: string;
   // ============================================================
   // MATERIAL
   // ============================================================
@@ -459,22 +551,23 @@ export class AdjustInventoryDto {
   remarks?: string;
 }
 
-/**
- * ============================================================
- * OPENING STOCK
- * ============================================================
- *
- * Opening stock is intentionally represented through the
- * inventory ledger instead of a separate stock table.
- *
- * The service creates:
- *
- * ADJUSTMENT_IN
- *
- * with reference:
- *
- * ADJUSTMENT
- */
+// ============================================================
+// OPENING STOCK
+// ============================================================
+//
+// Opening stock is represented through the same inventory ledger.
+//
+// Service creates:
+//
+// ADJUSTMENT_IN
+//
+// reference_type:
+//
+// ADJUSTMENT
+//
+// No separate stock table is required.
+// ============================================================
+
 export class OpeningStockDto {
   // ============================================================
   // PROJECT / SITE
@@ -483,10 +576,11 @@ export class OpeningStockDto {
   @IsUUID()
   project_id: string;
 
+  // AFTER
   @IsOptional()
-  @IsUUID()
-  site_id?: string;
-
+  @IsString()
+  @MaxLength(255)
+  site_location?: string;
   // ============================================================
   // MATERIAL
   // ============================================================
@@ -534,26 +628,26 @@ export class OpeningStockDto {
   remarks?: string;
 }
 
-/**
- * ============================================================
- * TRANSFER INVENTORY
- * ============================================================
- *
- * Transfers material from one project site to another.
- *
- * Example:
- *
- * Main Site
- *    ↓
- * Floor 1
- *
- * Service creates:
- *
- * TRANSFER_OUT
- * TRANSFER_IN
- *
- * Both use the same UUID reference_id.
- */
+// ============================================================
+// TRANSFER INVENTORY
+// ============================================================
+//
+// Transfers stock between two sites within the same project.
+//
+// Example:
+//
+// Main Site
+//     ↓
+// Floor 1
+//
+// Service creates:
+//
+// TRANSFER_OUT
+// TRANSFER_IN
+//
+// Both share the same reference_id.
+// ============================================================
+
 export class TransferInventoryDto {
   // ============================================================
   // PROJECT
@@ -563,15 +657,18 @@ export class TransferInventoryDto {
   project_id: string;
 
   // ============================================================
-  // SITES
+  // SOURCE / DESTINATION
   // ============================================================
 
-  @IsUUID()
-  from_site_id: string;
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  from_site_location: string;
 
-  @IsUUID()
-  to_site_id: string;
-
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  to_site_location: string;
   // ============================================================
   // MATERIAL
   // ============================================================
@@ -591,14 +688,14 @@ export class TransferInventoryDto {
   quantity: number;
 
   // ============================================================
-  // EXISTING TRANSFER REFERENCE
+  // TRANSFER REFERENCE
   // ============================================================
-  //
-  // Optional when creating a new transfer.
-  //
-  // Useful when another module already generated a UUID.
-  //
 
+  /**
+   * Optional externally generated transfer UUID.
+   *
+   * If omitted, the service generates one.
+   */
   @IsOptional()
   @IsUUID()
   reference_id?: string;
@@ -652,22 +749,19 @@ export class TransferInventoryDto {
   remarks?: string;
 }
 
-/**
- * ============================================================
- * RETURN INVENTORY
- * ============================================================
- *
- * Supports:
- *
- * RETURN_FROM_CONTRACTOR
- * RETURN_TO_VENDOR
- *
- * RETURN_FROM_CONTRACTOR:
- *   stock IN
- *
- * RETURN_TO_VENDOR:
- *   stock OUT
- */
+// ============================================================
+// RETURN INVENTORY
+// ============================================================
+//
+// Supports:
+//
+// RETURN_FROM_CONTRACTOR
+//     → IN
+//
+// RETURN_TO_VENDOR
+//     → OUT
+// ============================================================
+
 export class ReturnInventoryDto {
   // ============================================================
   // PROJECT / SITE
@@ -676,10 +770,11 @@ export class ReturnInventoryDto {
   @IsUUID()
   project_id: string;
 
+  // AFTER
   @IsOptional()
-  @IsUUID()
-  site_id?: string;
-
+  @IsString()
+  @MaxLength(255)
+  site_location?: string;
   // ============================================================
   // MATERIAL
   // ============================================================
@@ -698,11 +793,13 @@ export class ReturnInventoryDto {
   @Min(0.001)
   quantity: number;
 
-  @IsEnum([
+  @IsIn([
     InventoryTransactionType.RETURN_FROM_CONTRACTOR,
     InventoryTransactionType.RETURN_TO_VENDOR,
   ])
-  return_type: InventoryTransactionType;
+  return_type:
+    | InventoryTransactionType.RETURN_FROM_CONTRACTOR
+    | InventoryTransactionType.RETURN_TO_VENDOR;
 
   // ============================================================
   // REFERENCE
@@ -745,8 +842,12 @@ export class ReturnInventoryDto {
   trade?: string;
 
   // ============================================================
-  // STORAGE
+  // WORK / STORAGE
   // ============================================================
+
+  @IsOptional()
+  @IsString()
+  work_reference?: string;
 
   @IsOptional()
   @IsString()
@@ -773,6 +874,14 @@ export class ReturnInventoryDto {
   received_by?: string;
 
   // ============================================================
+  // ISSUE / RETURN TO VENDOR
+  // ============================================================
+
+  @IsOptional()
+  @IsUUID()
+  issued_by?: string;
+
+  // ============================================================
   // REMARKS
   // ============================================================
 
@@ -781,27 +890,23 @@ export class ReturnInventoryDto {
   remarks?: string;
 }
 
-/**
- * ============================================================
- * DELIVERY CHALLAN RECEIPT
- * ============================================================
- *
- * Used when accepted material from a Delivery Challan enters
- * project inventory.
- *
- * The DC item is the source reference.
- *
- * reference_type:
- *   DELIVERY_CHALLAN
- *
- * reference_id:
- *   delivery_challan.id
- *
- * reference_item_id:
- *   delivery_challan_item.id
- *
- * Supports partial receiving.
- */
+// ============================================================
+// RECEIVE FROM DELIVERY CHALLAN
+// ============================================================
+//
+// Creates:
+//
+// RECEIPT
+//
+// Reference:
+//
+// reference_type     = DELIVERY_CHALLAN
+// reference_id      = delivery_challan.id
+// reference_item_id = delivery_challan_item.id
+//
+// Supports partial receiving.
+// ============================================================
+
 export class ReceiveDeliveryInventoryDto {
   // ============================================================
   // PROJECT / SITE
@@ -810,10 +915,11 @@ export class ReceiveDeliveryInventoryDto {
   @IsUUID()
   project_id: string;
 
+  // AFTER
   @IsOptional()
-  @IsUUID()
-  site_id?: string;
-
+  @IsString()
+  @MaxLength(255)
+  site_location?: string;
   // ============================================================
   // MATERIAL
   // ============================================================
@@ -832,7 +938,7 @@ export class ReceiveDeliveryInventoryDto {
   delivery_challan_item_id: string;
 
   // ============================================================
-  // RECEIVING
+  // TRANSACTION
   // ============================================================
 
   @IsDateString()
@@ -843,20 +949,32 @@ export class ReceiveDeliveryInventoryDto {
   quantity: number;
 
   /**
-   * Accepted quantity for the DC item.
+   * Total accepted quantity for the DC item.
    *
-   * This allows the inventory service to calculate:
+   * Remaining receivable quantity:
    *
-   * accepted quantity
-   * -
-   * already received
-   * =
-   * remaining quantity
+   * accepted_quantity - already_received
    */
   @IsOptional()
   @IsNumber()
   @Min(0)
   accepted_quantity?: number;
+
+  // ============================================================
+  // CHALLAN / REGISTER
+  // ============================================================
+
+  @IsOptional()
+  @IsString()
+  challan_bill_no?: string;
+
+  @IsOptional()
+  @IsEnum(YesNoNA)
+  gate_pass_received?: YesNoNA;
+
+  @IsOptional()
+  @IsEnum(YesNoNA)
+  material_checked?: YesNoNA;
 
   // ============================================================
   // VENDOR
@@ -867,8 +985,12 @@ export class ReceiveDeliveryInventoryDto {
   vendor_id?: string;
 
   // ============================================================
-  // STORAGE
+  // WORK / STORAGE
   // ============================================================
+
+  @IsOptional()
+  @IsString()
+  work_reference?: string;
 
   @IsOptional()
   @IsString()
@@ -887,7 +1009,7 @@ export class ReceiveDeliveryInventoryDto {
   condition_notes?: string;
 
   // ============================================================
-  // RECEIVED BY
+  // RECEIVING
   // ============================================================
 
   @IsOptional()

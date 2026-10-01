@@ -1,10 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, ClipboardList, RefreshCw } from "lucide-react";
+
 import { useGetDailySiteReportsByProjectQuery } from "../../api/site-ops/site-ops.api";
+
+import { useGetProjectsQuery } from "../../api/projects/project.api";
+
 import { PageHeader } from "@/components/site-ops/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
 import {
   Table,
   TableBody,
@@ -20,6 +25,15 @@ export default function DailyReportsListPage() {
   const [to, setTo] = useState("");
   const [queryId, setQueryId] = useState(null);
 
+  const { data: projectsResponse, isLoading: projectsLoading } =
+    useGetProjectsQuery({
+      includeArchived: false,
+    });
+
+  const projects = Array.isArray(projectsResponse)
+    ? projectsResponse
+    : projectsResponse?.data || [];
+
   const {
     data: reports = [],
     isLoading,
@@ -31,13 +45,14 @@ export default function DailyReportsListPage() {
       from: from || undefined,
       to: to || undefined,
     },
-    { skip: !queryId },
+    {
+      skip: !queryId,
+    },
   );
 
   const load = () => {
-    const n = Number(projectId);
-    if (!n) return;
-    setQueryId(n);
+    if (!projectId) return;
+    setQueryId(Number(projectId));
   };
 
   return (
@@ -56,11 +71,14 @@ export default function DailyReportsListPage() {
                 disabled={isFetching}
               >
                 <RefreshCw
-                  className={`h-4 w-4 mr-1.5 ${isFetching ? "animate-spin" : ""}`}
+                  className={`h-4 w-4 mr-1.5 ${
+                    isFetching ? "animate-spin" : ""
+                  }`}
                 />
-                Refresh
+                Refresh{" "}
               </Button>
             )}
+
             <Button asChild className="bc-btn-primary">
               <Link to="/site-ops/daily-reports/new">
                 <Plus className="h-4 w-4 mr-1.5" />
@@ -73,17 +91,38 @@ export default function DailyReportsListPage() {
 
       <div className="bc-card p-4 mb-4">
         <div className="flex flex-wrap items-end gap-3">
+          {/* Project */}
           <div className="space-y-1">
-            <label className="text-xs text-[var(--muted)]">Project ID</label>
-            <Input
-              type="number"
-              className="bc-input w-[140px] h-10"
+            <label className="text-xs text-[var(--muted)]">Project</label>
+
+            <select
+              className="bc-input h-10 w-[280px] rounded-md border px-3 text-sm"
               value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
-            />
+              onChange={(e) => {
+                setProjectId(e.target.value);
+                setQueryId(null);
+              }}
+              disabled={projectsLoading}
+            >
+              <option value="">
+                {projectsLoading ? "Loading projects..." : "Select project"}
+              </option>
+
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name ||
+                    project.projectName ||
+                    `Project #${project.id}`}
+                  {project.code ? ` (${project.code})` : ""}
+                </option>
+              ))}
+            </select>
           </div>
+
+          {/* From */}
           <div className="space-y-1">
             <label className="text-xs text-[var(--muted)]">From</label>
+
             <Input
               type="date"
               className="bc-input w-[150px] h-10"
@@ -91,8 +130,11 @@ export default function DailyReportsListPage() {
               onChange={(e) => setFrom(e.target.value)}
             />
           </div>
+
+          {/* To */}
           <div className="space-y-1">
             <label className="text-xs text-[var(--muted)]">To</label>
+
             <Input
               type="date"
               className="bc-input w-[150px] h-10"
@@ -100,7 +142,12 @@ export default function DailyReportsListPage() {
               onChange={(e) => setTo(e.target.value)}
             />
           </div>
-          <Button className="bc-btn-primary h-10" onClick={load}>
+
+          <Button
+            className="bc-btn-primary h-10"
+            onClick={load}
+            disabled={!projectId}
+          >
             Load reports
           </Button>
         </div>
@@ -119,14 +166,16 @@ export default function DailyReportsListPage() {
                 <TableHead className="actions">Actions</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {!queryId ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-12">
                     <div className="bc-empty-state">
                       <ClipboardList className="h-10 w-10 mx-auto mb-3 text-[var(--sage)]" />
+
                       <p className="text-[var(--muted)]">
-                        Enter a project ID to load daily reports.
+                        Select a project to load daily reports.
                       </p>
                     </div>
                   </TableCell>
@@ -160,16 +209,23 @@ export default function DailyReportsListPage() {
                         ? new Date(r.reportDate).toLocaleDateString()
                         : "—"}
                     </TableCell>
+
                     <TableCell>{r.weatherCondition || "—"}</TableCell>
+
                     <TableCell className="max-w-[280px]">
-                      <span className="line-clamp-2">{r.workCompleted}</span>
+                      <span className="line-clamp-2">
+                        {r.workCompleted || "—"}
+                      </span>
                     </TableCell>
-                    <TableCell>{r.reportedBy}</TableCell>
+
+                    <TableCell>{r.reportedBy || "—"}</TableCell>
+
                     <TableCell>
                       {r.sharedAt
                         ? new Date(r.sharedAt).toLocaleDateString()
                         : "—"}
                     </TableCell>
+
                     <TableCell className="actions">
                       <Button variant="ghost" size="sm" asChild>
                         <Link to={`/site-ops/daily-reports/${r.id}`}>View</Link>

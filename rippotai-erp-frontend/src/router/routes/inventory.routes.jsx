@@ -11,6 +11,7 @@ import InventoryTransactionNew from "../../pages/materials/SiteInventoryTransact
 import InventoryTransactionView from "../../pages/materials/SiteInventoryTransactionView";
 
 import MaterialsDashboard from "../../pages/dashboard/MaterialDashboard";
+import ProjectInventoryRegisterPage from "../../pages/materials/ProjectInventoryRegisterPage";
 
 export const inventoryRoutes = [
   {
@@ -72,7 +73,7 @@ export const inventoryRoutes = [
       // ?to_date=
       //
       {
-        path: "site-inventory/transactions",
+        path: "transactions",
         element: <InventoryTransactions />,
       },
 
@@ -86,7 +87,7 @@ export const inventoryRoutes = [
       // ?material_id=
       //
       {
-        path: "site-inventory/transactions/new",
+        path: "transactions/new",
         element: <InventoryTransactionNew />,
       },
 
@@ -95,8 +96,12 @@ export const inventoryRoutes = [
       // /materials/inventory/transactions/:id
       //
       {
-        path: "site-inventory/transactions/:id",
+        path: "transactions/:id",
         element: <InventoryTransactionView />,
+      },
+      {
+        path: "site-inventory/register",
+        element: <ProjectInventoryRegisterPage />,
       },
     ],
   },
