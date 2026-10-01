@@ -700,8 +700,6 @@ export class DeliveryChallanService {
           {
             project_id: challan.project_id,
 
-            site_id: challan.site_id ?? undefined,
-
             material_id: item.material_id,
 
             quantity: accepted,

@@ -140,7 +140,19 @@ export const inventoryApi = baseApi.injectEndpoints({
         "DeliveryChallan",
       ],
     }),
-
+    getSiteInventoryRegister: builder.query({
+      query: ({ projectId, siteId, materialId, fromDate, toDate }) => ({
+        url: `/inventory/register/${projectId}`,
+        method: "GET",
+        params: {
+          siteId,
+          ...(materialId && { materialId }),
+          ...(fromDate && { fromDate }),
+          ...(toDate && { toDate }),
+        },
+      }),
+      providesTags: ["Inventory", "InventoryStock"],
+    }),
     // ============================================================
     // MATERIAL ISSUE
     // ============================================================
@@ -460,4 +472,5 @@ export const {
 
   // Summary
   useGetInventorySummaryQuery,
+  useGetSiteInventoryRegisterQuery,
 } = inventoryApi;

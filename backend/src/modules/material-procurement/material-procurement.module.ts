@@ -52,6 +52,7 @@ import { MaterialProcurementService } from './services/material-procurement.serv
 
 import { MaterialProcurement } from './models/material-procurement.model';
 import { MaterialProcurementItem } from './models/material-procurement-item.model';
+import { InventoryController } from './controllers/inventory.controller';
 
 /**
  * Material & Procurement module — Sequelize (MySQL) edition.
@@ -110,7 +111,7 @@ import { MaterialProcurementItem } from './models/material-procurement-item.mode
     PurchaseOrderController,
     DeliveryChallanController,
     WorkOrdersController,
-
+    InventoryController,
     // Material Master
     MaterialMasterController,
     MaterialProcurementController,
