@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
+
 import { SequelizeModule } from '@nestjs/sequelize';
 
-import { SearchModule } from '../search/search.module'; // <-- ADD THIS
+import { SearchModule } from '../search/search.module';
 
 import { Vendor } from './models/vendors.model';
 import { VendorCategory } from './models/vendor-category.model';
@@ -18,9 +19,18 @@ import { VendorsService } from './vendors.service';
 import { VendorCategoriesService } from './vendor-categories.service';
 import { VendorBusinessTypesService } from './vendor-business-types.service';
 import { VendorDashboardService } from './vendor-dashboard.service';
-import { VendorSearchService } from '../search/services/vendor-search.service';
 
 import { ActivityLogsModule } from '../engagement/activity-logs.module';
+
+import { ProjectShortlist } from './models/project-shortlist.model';
+import { ShortlistEntry } from './models/shortlist-entry.model';
+
+import { ProjectShortlistController } from './project-shortlist.controller';
+import { ShortlistEntryController } from './shortlist-entry.controller';
+
+import { ProjectShortlistService } from './project-shortlist.service';
+import { ShortlistEntryService } from './shortlist-entry.service';
+import { ShortlistExportService } from './shortlist-export.service';
 
 @Module({
   imports: [
@@ -30,24 +40,41 @@ import { ActivityLogsModule } from '../engagement/activity-logs.module';
       VendorBusinessType,
       Project,
       Quotation,
+      ProjectShortlist,
+      ShortlistEntry,
     ]),
+
     ActivityLogsModule,
+
+    // ✅ SearchModule actually needs to be imported here
+    SearchModule,
   ],
+
   controllers: [
     VendorsController,
     VendorCategoriesController,
     VendorBusinessTypesController,
+    ProjectShortlistController,
+    ShortlistEntryController,
   ],
+
   providers: [
     VendorsService,
     VendorCategoriesService,
     VendorBusinessTypesService,
     VendorDashboardService,
+    ProjectShortlistService,
+    ShortlistEntryService,
+    ShortlistExportService,
   ],
+
   exports: [
     VendorsService,
     VendorCategoriesService,
     VendorBusinessTypesService,
+    ProjectShortlistService,
+    ShortlistEntryService,
+    ShortlistExportService,
   ],
 })
 export class VendorsModule {}

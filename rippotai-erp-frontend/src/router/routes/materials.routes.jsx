@@ -36,6 +36,7 @@ import SingleProjectMaterialRequirements from "../../pages/materials/SingleProje
 import MaterialProcurementSheetList from "../../pages/materials/MaterialProcurementSheetList";
 import CreateMaterialProcurementSheet from "../../pages/materials/CreateMaterialProcurementSheet";
 import MaterialProcurementSheetView from "../../pages/materials/MaterialProcurementSheetView";
+import VendorShortlistWorkspace from "../../pages/vendors/VendorShortlistWorkspace";
 export const materialsRoutes = [
   {
     type: "layout",
@@ -240,7 +241,7 @@ export const materialsRoutes = [
 
       {
         path: "vendors/shortlists",
-        element: <ComingSoon />,
+        element: <VendorShortlistWorkspace />,
       },
 
       {
