@@ -13,8 +13,9 @@ import {
   DeliveryChallanItem,
   InventoryTransaction,
   MaterialMaster,
+  MaterialProcurement,
+  MaterialProcurementItem,
 } from './models';
-
 import { MaterialRequirementService } from './services/material-requirement.service';
 import { SampleBoardService } from './services/sample-board.service';
 import { MaterialRateSheetService } from './services/material-rate-sheet.service';
@@ -47,6 +48,8 @@ import { WorkOrderTerm } from './models/work-order-term.model';
 import { Project } from '../projects/models/projects.model';
 import { TermsTemplate } from '../metas/models/terms-templates.model';
 import { Quotation } from '../quotations/models/quotations.model';
+import { MaterialProcurementService } from './services/material-procurement.service';
+import { MaterialProcurementController } from './controllers/material-procurement.controller';
 
 /**
  * Material & Procurement module — Sequelize (MySQL) edition.
@@ -77,14 +80,19 @@ import { Quotation } from '../quotations/models/quotations.model';
       DeliveryChallan,
       DeliveryChallanItem,
 
-      // Material Master
       MaterialMaster,
       Vendor,
       Unit,
       Project,
       MaterialVendor,
+
+      // Material Procurement
+      MaterialProcurement,
+      MaterialProcurementItem,
+
       // Inventory
       InventoryTransaction,
+
       WorkOrder,
       WorkOrderItem,
       WorkOrderPaymentStage,
@@ -107,6 +115,7 @@ import { Quotation } from '../quotations/models/quotations.model';
 
     // Material Master
     MaterialMasterController,
+    MaterialProcurementController,
   ],
 
   providers: [
@@ -122,6 +131,7 @@ import { Quotation } from '../quotations/models/quotations.model';
 
     // Material Master
     MaterialMasterService,
+    MaterialProcurementService,
   ],
 
   exports: [
@@ -137,6 +147,7 @@ import { Quotation } from '../quotations/models/quotations.model';
 
     // Material Master
     MaterialMasterService,
+    MaterialProcurementService,
   ],
 })
 export class MaterialProcurementModule {}

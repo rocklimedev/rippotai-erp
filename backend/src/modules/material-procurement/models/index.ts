@@ -1,11 +1,25 @@
 export * from './material-requirement.model';
+
 export * from './sample-board.model';
+
 export * from './material-rate-sheet.model';
+
 export * from './material-estimate.model';
+
 export * from './material-quotation.model';
+
 export * from './purchase-order.model';
+
 export * from './purchase-order-item.model';
+
 export * from './delivery-challan.model';
+
 export * from './delivery-challan-item.model';
+
 export * from './material-master.model';
+
 export * from './inventory-transaction.model';
+
+// Material Procurement
+export * from './material-procurement.model';
+export * from './material-procurement-item.model';

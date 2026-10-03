@@ -163,7 +163,6 @@ export const APP_MENUS = {
         I("Audit Trail", "audit"),
       ],
     },
-
   ],
   crm: [
     {
@@ -244,7 +243,7 @@ export const APP_MENUS = {
       items: [
         I("Requirements", "requirements"),
         I("Vendors", "vendors/directory"),
-
+        I("Procurement Sheet", "material-procurement/list"),
         I("Rate Comparison", "vendors/rate-comparison"),
         I("Rate Sheets", "rate-sheets"),
       ],
