@@ -153,9 +153,42 @@ export async function fetchPaymentSchedule(projectId) {
   };
 }
 
-// GET /api/projects/:id/next-steps  (defaults — overwritten by any saved state)
+// Next steps are persisted for real in the backend settings store under
+// key "proposal_next_steps.<projectId>" (GET/PUT /api/v1/settings/:key).
+const nextStepsKey = (projectId) => `proposal_next_steps.${projectId || "unassigned"}`;
+async function settingsRequest(key, init = {}) {
+  const { API_URL } = await import("./config");
+  const token = localStorage.getItem("bc_token");
+  const res = await fetch(`${API_URL}/settings/${encodeURIComponent(key)}`, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(init.headers || {}) },
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Settings request failed (${res.status})`);
+  return res.json();
+}
+
+// Defaults merged with whatever was saved for this project (done flags, edited text).
 export async function fetchNextSteps(projectId) {
-  await delay(200);
+  const defaults = defaultNextSteps();
+  try {
+    const row = await settingsRequest(nextStepsKey(projectId));
+    let saved = row?.value;
+    if (typeof saved === "string") saved = JSON.parse(saved);
+    if (!saved) return defaults;
+    const merge = (base, over = []) => {
+      const byId = Object.fromEntries((over || []).map((x) => [x.id, x]));
+      const merged = base.map((b) => ({ ...b, ...(byId[b.id] || {}) }));
+      const extra = (over || []).filter((x) => !base.some((b) => b.id === x.id));
+      return [...merged, ...extra];
+    };
+    return { steps: merge(defaults.steps, saved.steps), checklist: merge(defaults.checklist, saved.checklist) };
+  } catch {
+    return defaults;
+  }
+}
+
+function defaultNextSteps() {
   return {
     steps: [
       { id: "review", title: "Review this proposal", detail: "Take a week. Mark anything unclear — we will walk it through with you.", done: false },
@@ -177,8 +210,7 @@ export async function fetchNextSteps(projectId) {
 
 // POST /api/projects/:id/next-steps  — persists whatever the user ticked
 export async function saveNextSteps(projectId, payload) {
-  await delay(300);
-  console.info("[mockApi] saved next steps for", projectId, payload);
+  await settingsRequest(nextStepsKey(projectId), { method: "PUT", body: JSON.stringify({ value: payload }) });
   return { ok: true, savedAt: new Date().toISOString() };
 }
 

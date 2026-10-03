@@ -196,7 +196,7 @@ export function ProjectPlannerForm() {
           <button
             type="button"
             onClick={() => navigate("/planner")}
-            className="h-10 px-4 rounded-lg border border-[rgba(31,69,59,0.14)] text-[13px] font-semibold text-[#333333] inline-flex items-center gap-1.5"
+            className="h-10 px-4 rounded-lg border border-[rgba(31,69,59,0.14)] text-[13px] font-semibold text-[var(--text)] inline-flex items-center gap-1.5"
           >
             <ArrowLeft size={14} />
             Back
@@ -206,7 +206,7 @@ export function ProjectPlannerForm() {
             type="button"
             onClick={handleInitialize}
             disabled={isInitializing}
-            className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-2 disabled:opacity-60"
+            className="h-10 px-4 rounded-lg bg-[var(--brand)] text-white text-[14px] font-semibold inline-flex items-center gap-2 disabled:opacity-60"
           >
             <PlayCircle size={15} />
             {isInitializing ? "Initializing..." : "Initialize Checklist"}
@@ -221,9 +221,9 @@ export function ProjectPlannerForm() {
 
         {needsProjectSelection && (
           <Card>
-            <h3 className="font-semibold text-[#333333] mb-1">Project</h3>
+            <h3 className="font-semibold text-[var(--text)] mb-1">Project</h3>
 
-            <p className="text-xs text-[#6B7B7C] mb-4">
+            <p className="text-xs text-[var(--text-2)] mb-4">
               Choose which project this checklist belongs to.
             </p>
 
@@ -248,9 +248,9 @@ export function ProjectPlannerForm() {
         ====================================================== */}
 
         <Card>
-          <h3 className="font-semibold text-[#333333] mb-1">Module</h3>
+          <h3 className="font-semibold text-[var(--text)] mb-1">Module</h3>
 
-          <p className="text-xs text-[#6B7B7C] mb-4">
+          <p className="text-xs text-[var(--text-2)] mb-4">
             Choose which checklist you're setting up for this project.
           </p>
 
@@ -273,37 +273,37 @@ export function ProjectPlannerForm() {
 
         <Card>
           <div className="flex items-center justify-between mb-1">
-            <h3 className="font-semibold text-[#333333]">Floors</h3>
+            <h3 className="font-semibold text-[var(--text)]">Floors</h3>
           </div>
 
-          <p className="text-xs text-[#6B7B7C] mb-4">
+          <p className="text-xs text-[var(--text-2)] mb-4">
             Floors are shared across all modules for this project — progress is
             tracked per floor, per task.
           </p>
 
           {!projectId ? (
-            <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center">
-              <p className="text-sm text-gray-500">
+            <div className="rounded-lg border border-dashed border-[var(--line-strong)] p-6 text-center">
+              <p className="text-sm text-[var(--text-3)]">
                 Select a project above to manage its floors.
               </p>
             </div>
           ) : isLoadingFloors ? (
-            <p className="text-sm text-[#6B7B7C]">Loading floors…</p>
+            <p className="text-sm text-[var(--text-2)]">Loading floors…</p>
           ) : floorList.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center">
-              <p className="text-sm text-gray-500">No floors added yet.</p>
+            <div className="rounded-lg border border-dashed border-[var(--line-strong)] p-6 text-center">
+              <p className="text-sm text-[var(--text-3)]">No floors added yet.</p>
             </div>
           ) : (
             <div className="space-y-2 mb-4">
               {floorList.map((floor) => (
                 <div
                   key={floor.id}
-                  className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2"
+                  className="flex items-center justify-between rounded-lg border border-[var(--line)] px-3 py-2"
                 >
-                  <div className="text-sm text-[#333333]">
+                  <div className="text-sm text-[var(--text)]">
                     <span className="font-medium">{floor.floor_name}</span>
 
-                    <span className="text-xs text-gray-500 ml-2">
+                    <span className="text-xs text-[var(--text-3)] ml-2">
                       (Floor {floor.floor_number})
                     </span>
                   </div>
@@ -311,7 +311,7 @@ export function ProjectPlannerForm() {
                   <button
                     type="button"
                     onClick={() => handleRemoveFloor(floor)}
-                    className="rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-600"
+                    className="rounded-lg p-1.5 text-[var(--text-3)] transition hover:bg-[var(--bad-bg)] hover:text-[var(--bad-fg)]"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -338,7 +338,7 @@ export function ProjectPlannerForm() {
               type="button"
               onClick={handleAddFloor}
               disabled={isCreatingFloor}
-              className="h-10 px-3 rounded-lg bg-[#1F453B] text-white text-sm font-medium inline-flex items-center gap-1.5 disabled:opacity-60"
+              className="h-10 px-3 rounded-lg bg-[var(--brand)] text-white text-sm font-medium inline-flex items-center gap-1.5 disabled:opacity-60"
             >
               <Plus className="h-4 w-4" />
               Add
@@ -351,42 +351,42 @@ export function ProjectPlannerForm() {
         ====================================================== */}
 
         <Card>
-          <h3 className="font-semibold text-[#333333] mb-1">
+          <h3 className="font-semibold text-[var(--text)] mb-1">
             Templates to Clone
           </h3>
 
-          <p className="text-xs text-[#6B7B7C] mb-4">
+          <p className="text-xs text-[var(--text-2)] mb-4">
             These master checklist items will be copied into this project when
             you initialize {selectedModuleLabel}.
           </p>
 
           {isLoadingTemplates ? (
-            <p className="text-sm text-[#6B7B7C]">Loading templates…</p>
+            <p className="text-sm text-[var(--text-2)]">Loading templates…</p>
           ) : templateSummary.total === 0 ? (
-            <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center">
-              <p className="text-sm text-gray-500">
+            <div className="rounded-lg border border-dashed border-[var(--line-strong)] p-6 text-center">
+              <p className="text-sm text-[var(--text-3)]">
                 No master templates exist for {selectedModuleLabel} yet. Add
                 templates before initializing this checklist.
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-lg border border-gray-200 p-3">
-                <p className="text-xs uppercase tracking-wide text-gray-500">
+              <div className="rounded-lg border border-[var(--line)] p-3">
+                <p className="text-xs uppercase tracking-wide text-[var(--text-3)]">
                   Work Items
                 </p>
 
-                <p className="mt-1 text-xl font-semibold text-[#333333]">
+                <p className="mt-1 text-xl font-semibold text-[var(--text)]">
                   {templateSummary.workCount}
                 </p>
               </div>
 
-              <div className="rounded-lg border border-gray-200 p-3">
-                <p className="text-xs uppercase tracking-wide text-gray-500">
+              <div className="rounded-lg border border-[var(--line)] p-3">
+                <p className="text-xs uppercase tracking-wide text-[var(--text-3)]">
                   Detail Sub-items
                 </p>
 
-                <p className="mt-1 text-xl font-semibold text-[#333333]">
+                <p className="mt-1 text-xl font-semibold text-[var(--text)]">
                   {templateSummary.detailCount}
                 </p>
               </div>

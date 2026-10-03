@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { X, Save } from "lucide-react";
+import { Building2, Save, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import {
   useCreateClientMutation,
   useUpdateClientMutation,
 } from "../../api/projects/client.api";
+import { Field, TextInput } from "@/components/inos";
+import { AdminModal, ModalActions } from "@/pages/settings/_admin-ui";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ClientModal({ client, onClose }) {
   const isEdit = !!client;
@@ -20,6 +24,7 @@ export default function ClientModal({ client, onClose }) {
     phone: "",
     company_name: "",
   });
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (client) {
@@ -46,15 +51,17 @@ export default function ClientModal({ client, onClose }) {
       ...prev,
       [name]: value,
     }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.name.trim()) {
-      toast.error("Client name is required");
-      return;
-    }
+    const next = {};
+    if (!form.name.trim()) next.name = "Client name is required.";
+    if (form.email.trim() && !EMAIL_RE.test(form.email.trim())) next.email = "That doesn't look like an email address.";
+    setErrors(next);
+    if (Object.keys(next).length) return;
 
     try {
       if (isEdit) {
@@ -91,133 +98,71 @@ export default function ClientModal({ client, onClose }) {
   const saving = creating || updating;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40"
-        onClick={saving ? undefined : onClose}
-      />
+    <AdminModal
+      as="form"
+      onSubmit={handleSubmit}
+      onClose={onClose}
+      busy={saving}
+      icon={isEdit ? Building2 : UserPlus}
+      title={isEdit ? "Edit client" : "Add client"}
+      subtitle={isEdit ? "Changes apply everywhere this client appears." : "Only the name is required — add contact details now or later."}
+      width={560}
+      testId="client-modal"
+      footer={
+        <ModalActions
+          onCancel={onClose}
+          submitting={saving}
+          submitLabel={isEdit ? "Save changes" : "Add client"}
+          icon={isEdit ? Save : undefined}
+        />
+      }
+    >
+      <div className="inos-form-grid">
+        <Field label="Client name" required full error={errors.name} htmlFor="cm-name" hint="Person or family name as it should appear on documents.">
+          <TextInput
+            id="cm-name"
+            name="name"
+            value={form.name}
+            onChange={handleChange}
+            invalid={!!errors.name}
+            placeholder="e.g. Sagar Mehta"
+            autoFocus
+          />
+        </Field>
 
-      {/* Modal */}
-      <div className="relative w-full max-w-lg mx-4 bg-white rounded-2xl shadow-xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E8EAF0]">
-          <div>
-            <h2 className="text-lg font-semibold text-[#333333]">
-              {isEdit ? "Edit Client" : "Add Client"}
-            </h2>
+        <Field label="Company" optional full htmlFor="cm-company">
+          <TextInput
+            id="cm-company"
+            name="company_name"
+            value={form.company_name}
+            onChange={handleChange}
+            placeholder="e.g. Aurum Capital Pvt. Ltd."
+          />
+        </Field>
 
-            <p className="text-sm text-[#6B7B7C] mt-0.5">
-              {isEdit
-                ? "Update client information."
-                : "Create a new client account."}
-            </p>
-          </div>
+        <Field label="Email" optional error={errors.email} htmlFor="cm-email">
+          <TextInput
+            id="cm-email"
+            type="email"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            invalid={!!errors.email}
+            placeholder="name@company.com"
+          />
+        </Field>
 
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-[#6B7B7C] hover:bg-[#F3F3F1] disabled:opacity-50"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit}>
-          <div className="p-6 space-y-5">
-            {/* Client Name */}
-            <div>
-              <label className="block text-sm font-medium text-[#333333] mb-1.5">
-                Client Name
-                <span className="text-red-500 ml-1">*</span>
-              </label>
-
-              <input
-                type="text"
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                placeholder="Enter client name"
-                autoFocus
-                className="w-full h-10 px-3 rounded-lg border border-[#D9DDE5] bg-white text-sm text-[#333333] outline-none focus:border-[#1F453B] focus:ring-1 focus:ring-[#1F453B]"
-              />
-            </div>
-
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-[#333333] mb-1.5">
-                Email
-              </label>
-
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                placeholder="client@example.com"
-                className="w-full h-10 px-3 rounded-lg border border-[#D9DDE5] bg-white text-sm text-[#333333] outline-none focus:border-[#1F453B] focus:ring-1 focus:ring-[#1F453B]"
-              />
-            </div>
-
-            {/* Phone */}
-            <div>
-              <label className="block text-sm font-medium text-[#333333] mb-1.5">
-                Phone
-              </label>
-
-              <input
-                type="tel"
-                name="phone"
-                value={form.phone}
-                onChange={handleChange}
-                placeholder="Enter phone number"
-                className="w-full h-10 px-3 rounded-lg border border-[#D9DDE5] bg-white text-sm text-[#333333] outline-none focus:border-[#1F453B] focus:ring-1 focus:ring-[#1F453B]"
-              />
-            </div>
-
-            {/* Company */}
-            <div>
-              <label className="block text-sm font-medium text-[#333333] mb-1.5">
-                Company
-              </label>
-
-              <input
-                type="text"
-                name="company_name"
-                value={form.company_name}
-                onChange={handleChange}
-                placeholder="Company name"
-                className="w-full h-10 px-3 rounded-lg border border-[#D9DDE5] bg-white text-sm text-[#333333] outline-none focus:border-[#1F453B] focus:ring-1 focus:ring-[#1F453B]"
-              />
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 bg-[#FAF8F5] border-t border-[#E8EAF0]">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving}
-              className="h-10 px-4 rounded-lg border border-[#D9DDE5] bg-white text-sm font-medium text-[#333333] hover:bg-[#F3F3F1] disabled:opacity-50"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-2 h-10 px-4 rounded-lg text-white text-sm font-semibold disabled:opacity-60"
-              style={{ backgroundColor: "#1F453B" }}
-            >
-              <Save size={15} />
-
-              {saving ? "Saving..." : isEdit ? "Save Changes" : "Create Client"}
-            </button>
-          </div>
-        </form>
+        <Field label="Phone" optional htmlFor="cm-phone">
+          <TextInput
+            id="cm-phone"
+            type="tel"
+            name="phone"
+            value={form.phone}
+            onChange={handleChange}
+            placeholder="+91 98100 00000"
+          />
+        </Field>
       </div>
-    </div>
+    </AdminModal>
   );
 }

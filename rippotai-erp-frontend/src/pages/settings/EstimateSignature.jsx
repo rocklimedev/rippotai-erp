@@ -3,8 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
-import { ShieldAlert, Upload } from "lucide-react";
+import { ImageUp, PenLine, RefreshCw, X } from "lucide-react";
+import { Page, PageHeader, Card, Button, EmptyState, Field, TextInput, Pill } from "@/components/inos";
 import { useLazyMeQuery } from "../../api/auth/auth.api";
+import { useUploadSignatureMutation } from "../../api/users/user-signatures.api";
+import { AdminAccessDenied, adminCrumbs } from "./_admin-ui";
 
 export default function EstimateSignature() {
   const { user } = useAuth();
@@ -12,7 +15,9 @@ export default function EstimateSignature() {
 
   const [fetchMe] = useLazyMeQuery();
 
+  const [uploadSignature] = useUploadSignatureMutation();
   const [me, setMe] = useState(null);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const [sigName, setSigName] = useState("");
   const [currentSig, setCurrentSig] = useState({
@@ -45,6 +50,7 @@ export default function EstimateSignature() {
         });
       })
       .catch(() => {
+        setLoadFailed(true);
         toast.error("Failed to load user information.");
       });
   }, [user, fetchMe]);
@@ -82,6 +88,12 @@ export default function EstimateSignature() {
     };
 
     reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const clearPick = () => {
+    setSigFile(null);
+    setSigPreview(null);
   };
 
   const saveSignature = async () => {
@@ -93,25 +105,20 @@ export default function EstimateSignature() {
     setSigSaving(true);
 
     try {
-      const { b64, mime } = await readFile(sigFile);
-
-      const { data } = await api.post("/users/me/signature", {
-        name: sigName.trim() || me?.name,
-        image_b64: b64,
-        mime,
-      });
+      // POST /api/v1/user-signatures (multipart) — the old /users/me/signature route doesn't exist.
+      const data = await uploadSignature({ userId: me?.id, file: sigFile }).unwrap();
 
       toast.success("Signature saved successfully.");
 
       setCurrentSig({
-        url: data.signature_url,
-        name: data.name,
+        url: data?.signature_url || data?.signatureUrl || data?.url,
+        name: sigName.trim() || me?.name,
       });
 
       setSigPreview(null);
       setSigFile(null);
     } catch (error) {
-      toast.error(error?.response?.data?.detail || "Unable to save signature.");
+      toast.error(error?.data?.message || error?.response?.data?.detail || "Unable to save signature.");
     } finally {
       setSigSaving(false);
     }
@@ -119,124 +126,139 @@ export default function EstimateSignature() {
 
   const isAdmin = me?.role?.toUpperCase() === "ADMIN";
 
+  const header = (
+    <PageHeader
+      crumbs={adminCrumbs("Estimate signature")}
+      title="Estimate signature"
+      subtitle="The signature and name printed on every estimate you approve."
+    />
+  );
+
   // Wait until user details are loaded
   if (!me) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-[#6B7B7C]">Loading...</div>
-      </div>
+      <Page width="narrow">
+        {header}
+        <Card>
+          {loadFailed ? (
+            <EmptyState
+              icon={PenLine}
+              title="Couldn't load your account"
+              text="We need your profile to show the current signature. Refresh to try again."
+              action={
+                <Button variant="soft" icon={RefreshCw} onClick={() => window.location.reload()}>
+                  Refresh
+                </Button>
+              }
+            />
+          ) : (
+            <div style={{ display: "grid", gap: 12 }}>
+              <div className="adm-skel" style={{ width: "40%" }} />
+              <div className="adm-skel" style={{ height: 120, borderRadius: 12 }} />
+            </div>
+          )}
+        </Card>
+      </Page>
     );
   }
 
   if (!isAdmin) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="w-12 h-12 rounded-full bg-[#F1D9D3] flex items-center justify-center mb-4">
-          <ShieldAlert size={22} className="text-[#7A2E1A]" />
-        </div>
-
-        <h2 className="text-2xl font-semibold text-[#333333]">Admin Only</h2>
-
-        <p className="text-[#6B7B7C] mt-2 mb-6">
-          Estimate Approval Signature can only be managed by administrators.
-        </p>
-
-        <button
-          onClick={() => nav("/dashboard")}
-          className="h-10 px-5 rounded-lg text-white font-semibold"
-          style={{ backgroundColor: "#1F453B" }}
-        >
-          Back to Dashboard
-        </button>
-      </div>
+      <AdminAccessDenied
+        crumb="Estimate signature"
+        title="Admins only"
+        text="The estimate approval signature can only be managed by administrators."
+        action={
+          <Button variant="soft" onClick={() => nav("/dashboard")}>
+            Back to dashboard
+          </Button>
+        }
+      />
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-          Settings
-        </div>
+    <Page width="narrow">
+      {header}
 
-        <h1 className="text-4xl font-bold text-[#333333]">
-          Estimate Approval Signature
-        </h1>
-
-        <p className="text-[#6B7B7C] mt-2">
-          Upload the signature that will appear on approved estimates.
-        </p>
-      </div>
-
-      {currentSig.url && (
-        <div className="bg-white border border-[#DDD8CE] rounded-2xl p-5">
-          <div className="text-xs uppercase tracking-widest text-[#B5C4B6] font-semibold mb-3">
-            Current Signature
-          </div>
-
-          <img
-            src={currentSig.url}
-            alt="Current Signature"
-            className="max-h-20 rounded-md border border-[#EAEEF0] bg-[#FAF8F5] p-2"
-          />
-
-          <div className="mt-3 text-sm font-semibold text-[#333333]">
-            {currentSig.name || "-"}
-          </div>
-        </div>
-      )}
-
-      <div className="bg-white border border-[#DDD8CE] rounded-2xl p-6 space-y-5">
-        <div>
-          <label className="block text-xs font-semibold text-[#333333] mb-2">
-            Display Name
-          </label>
-
-          <input
-            value={sigName}
-            onChange={(e) => setSigName(e.target.value)}
-            placeholder="e.g. Dhruv Verma"
-            className="w-full h-10 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] px-3 text-sm outline-none"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-[#333333] mb-2">
-            Signature Image (PNG / JPG)
-          </label>
-
-          <label className="inline-flex items-center gap-2 px-4 h-10 rounded-lg border border-[#1F453B] cursor-pointer font-medium">
-            <Upload size={16} />
-            Choose File
-            <input
-              type="file"
-              accept="image/png,image/jpeg"
-              className="hidden"
-              onChange={onSigPick}
-            />
-          </label>
-
-          {sigPreview && (
-            <div className="mt-4">
-              <img
-                src={sigPreview}
-                alt="Preview"
-                className="max-h-24 rounded-md border border-[#EAEEF0] bg-[#FAF8F5] p-2"
-              />
+      <Card
+        title="Current signature"
+        subtitle={currentSig.url ? "Shown on approved estimates." : undefined}
+        actions={currentSig.url ? <Pill tone="ok">In use</Pill> : <Pill tone="warn">Not set</Pill>}
+      >
+        {currentSig.url ? (
+          <div style={{ display: "grid", gap: 10 }}>
+            <div className="adm-sig">
+              <img src={currentSig.url} alt="Current signature" />
             </div>
-          )}
-        </div>
+            <div className="adm-cell-title">{currentSig.name || me?.name || "—"}</div>
+          </div>
+        ) : (
+          <div className="adm-sig" style={{ borderStyle: "dashed", minHeight: 96, gap: 6, textAlign: "center" }}>
+            <PenLine size={20} style={{ color: "var(--text-3)" }} aria-hidden />
+            <span className="adm-cell-sub" style={{ marginTop: 0 }}>
+              No signature yet — upload one below and approved estimates will carry it.
+            </span>
+          </div>
+        )}
+      </Card>
 
-        <div className="flex justify-end">
-          <button
-            onClick={saveSignature}
-            disabled={!sigFile || sigSaving}
-            className="h-10 px-5 rounded-lg bg-[#1F453B] text-white font-semibold disabled:opacity-50"
-          >
-            {sigSaving ? "Saving..." : "Save Signature"}
-          </button>
+      <Card title={currentSig.url ? "Replace signature" : "Upload signature"} subtitle="PNG or JPG, up to 2 MB. A transparent PNG looks best.">
+        <div style={{ display: "grid", gap: 18 }}>
+          <Field label="Name under the signature" htmlFor="sig-name" hint="Printed below the signature, e.g. your full name and title.">
+            <TextInput
+              id="sig-name"
+              value={sigName}
+              onChange={(e) => setSigName(e.target.value)}
+              placeholder="e.g. Dhruv Verma, Principal Architect"
+            />
+          </Field>
+
+          <Field label="Signature image" required>
+            {sigPreview ? (
+              <div style={{ display: "grid", gap: 8 }}>
+                <div className="adm-sig">
+                  <img src={sigPreview} alt="New signature preview" />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <span className="adm-cell-sub" style={{ marginTop: 0 }}>
+                    {sigFile?.name}
+                  </span>
+                  <Button variant="ghost" size="sm" icon={X} onClick={clearPick}>
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <label className="adm-drop">
+                <span className="inos-icon-tile">
+                  <ImageUp aria-hidden />
+                </span>
+                <span className="adm-drop__title">Choose an image</span>
+                <span className="adm-drop__hint">PNG or JPG · max 2 MB</span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  className="sr-only"
+                  style={{ position: "absolute", width: 1, height: 1, opacity: 0 }}
+                  onChange={onSigPick}
+                />
+              </label>
+            )}
+          </Field>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, borderTop: "1px solid var(--line)", paddingTop: 16 }}>
+            {sigFile && (
+              <Button variant="ghost" onClick={clearPick} disabled={sigSaving}>
+                Cancel
+              </Button>
+            )}
+            <Button variant="primary" onClick={saveSignature} disabled={!sigFile || sigSaving}>
+              {sigSaving ? "Saving…" : "Save signature"}
+            </Button>
+          </div>
         </div>
-      </div>
-    </div>
+      </Card>
+    </Page>
   );
 }

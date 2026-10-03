@@ -7,6 +7,7 @@ import {
   Param,
   Query,
   ParseIntPipe,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { MockupService } from './mockup.service';
 import { ProposeMockupDto, ReviewMockupDto } from './dto/mockup.dto';
@@ -19,6 +20,15 @@ export class MockupController {
   @Post()
   propose(@Body() dto: ProposeMockupDto) {
     return this.mockupService.propose(dto);
+  }
+
+  /** GET /site-ops/mockups?projectId=<uuid>&status=APPROVED — all projects when projectId is omitted. */
+  @Get()
+  listAll(
+    @Query('projectId') projectId?: string,
+    @Query('status') status?: MockupStatus,
+  ) {
+    return this.mockupService.list({ projectId: projectId || undefined, status: status || undefined });
   }
 
   @Patch(':id/review')
@@ -34,7 +44,7 @@ export class MockupController {
   /** GET /site-ops/mockups/projects/:projectId?status=APPROVED */
   @Get('projects/:projectId')
   list(
-    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('projectId', ParseUUIDPipe) projectId: string,
     @Query('status') status?: MockupStatus,
   ) {
     return this.mockupService.listForProject(projectId, status);

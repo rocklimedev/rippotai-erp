@@ -1,26 +1,39 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Responsive, WidthProvider } from "react-grid-layout";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import GridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { Plus, X, Lock, Check, Search, RefreshCw } from "lucide-react";
+import "./app-dashboard.css";
+import {
+  Plus,
+  X,
+  Lock,
+  Check,
+  RefreshCw,
+  GripVertical,
+  LayoutGrid,
+  RotateCcw,
+  SlidersHorizontal,
+  AlertTriangle,
+} from "lucide-react";
 import { toast } from "sonner";
-import { APP_ICONS } from "./AppIcons";
 import { APP_META } from "@/config/appNav";
+import { ProjectPicker } from "@/pages/site-ops/siteProjects";
 import { WIDGETS as WIDGET_COMPONENTS } from "@/widgets/registry";
+import { Button, EmptyState, Pill, SearchInput } from "@/components/inos";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   useGetDashboardQuery,
   useGetDashboardLibraryQuery,
@@ -28,7 +41,11 @@ import {
   useResetDashboardMutation,
 } from "../../api/reports/dashboard.api";
 
-const RGL = WidthProvider(Responsive);
+
+const COLS = { lg: 12, md: 6, sm: 1 };
+const BREAKPOINTS = { lg: 1000, md: 600, sm: 0 };
+const ROW_HEIGHT = 62;
+const MARGIN = [16, 16];
 
 const SIZE_TO_HW = {
   small: { w: 3, h: 2 },
@@ -37,197 +54,444 @@ const SIZE_TO_HW = {
   full: { w: 12, h: 4 },
 };
 
-function firstAvailableSlot(layout, w, h) {
-  // Simple: append at bottom, x=0
+const CATEGORY_ORDER = [
+  "Recommended",
+  "App Data",
+  "Project Data",
+  "Alerts",
+  "Reports",
+  "Personal Work",
+  "Recently Used",
+];
+
+// Per-app primary CTA (create/add). Missing → no button rendered.
+const PRIMARY_CTA = {
+  boq: { label: "Create BOQ", to: "/boq/new" },
+  projects: { label: "Create Project", to: "/projects/new" },
+  quotations: { label: "Create Estimate", to: "/quotations/new" },
+  vendors: { label: "Add Vendor", to: "/vendors/new" },
+  documents: { label: "Add Document", to: "/documents/upload" },
+  tasks: { label: "Add Task", to: "/tasks/new" },
+};
+
+/* ------------------------------------------------------------ helpers */
+
+const clean = (l = []) =>
+  l.map(({ key, x, y, w, h }) => ({
+    key,
+    x: Math.max(0, Math.round(x) || 0),
+    y: Math.max(0, Math.round(y) || 0),
+    w: Math.max(1, Math.round(w) || 1),
+    h: Math.max(1, Math.round(h) || 1),
+  }));
+
+const sig = (l = []) =>
+  JSON.stringify(
+    clean(l)
+      .slice()
+      .sort((a, b) => (a.key < b.key ? -1 : 1)),
+  );
+
+/** Vertically compact a 12-col layout (same result RGL shows on screen). */
+function compact(layout) {
+  const sorted = clean(layout).sort((a, b) => a.y - b.y || a.x - b.x);
+  const placed = [];
+  for (const it of sorted) {
+    let y = 0;
+    const collides = (yy) =>
+      placed.some(
+        (p) =>
+          it.x < p.x + p.w &&
+          it.x + it.w > p.x &&
+          yy < p.y + p.h &&
+          yy + it.h > p.y,
+      );
+    while (collides(y)) y += 1;
+    placed.push({ ...it, y });
+  }
+  return placed;
+}
+
+/** First gap (top-down, left-right) where a w×h widget fits in 12 cols. */
+function firstFreeSlot(layout, w, h) {
+  const cols = COLS.lg;
   const maxY = layout.reduce((m, i) => Math.max(m, i.y + i.h), 0);
+  const free = (x, y) =>
+    !layout.some(
+      (p) => x < p.x + p.w && x + w > p.x && y < p.y + p.h && y + h > p.y,
+    );
+  for (let y = 0; y <= maxY; y += 1) {
+    for (let x = 0; x + w <= cols; x += 1) {
+      if (free(x, y)) return { x, y, w, h };
+    }
+  }
   return { x: 0, y: maxY, w, h };
 }
 
-/* Dashboard header (Add Widget/Cancel/Done only appear in edit mode) */
-function DashboardHeader({
-  appKey,
-  editing,
-  dirty,
-  saving,
-  onCancel,
-  onSave,
-  onAddWidget,
-}) {
-  const Icon = APP_ICONS[appKey];
-  const meta = APP_META[appKey];
-  if (!editing) {
-    return null; // no page hero in normal mode — header dropdowns communicate context
+function widgetKind(meta, key = "") {
+  const k = key.toLowerCase();
+  if (meta?.sizes?.length === 1 && meta.sizes[0] === "small") return "stat";
+  if (/donut|mix|pie|availability/.test(k)) return "donut";
+  if (/trend|chart|bar|volume|variance|progress/.test(k)) return "chart";
+  return "list";
+}
+
+function constraintsFor(meta, key) {
+  const kind = widgetKind(meta, key);
+  if (kind === "stat") return { minW: 2, minH: 2, maxH: 4 };
+  return { minW: 3, minH: 3 };
+}
+
+/** Derive the tablet / phone layouts from the saved desktop layout. */
+function deriveLayouts(layout, libraryByKey) {
+  const ordered = compact(layout);
+  const lg = ordered.map((i) => ({
+    i: i.key,
+    x: i.x,
+    y: i.y,
+    w: i.w,
+    h: i.h,
+    ...constraintsFor(libraryByKey[i.key], i.key),
+  }));
+  const md = ordered.map((i) => {
+    const w = i.w >= 5 ? 6 : 3;
+    return {
+      i: i.key,
+      x: w === 6 ? 0 : i.x >= 6 ? 3 : 0,
+      y: i.y,
+      w,
+      h: i.h,
+    };
+  });
+  let y = 0;
+  const sm = ordered.map((i) => {
+    const out = { i: i.key, x: 0, y, w: 1, h: i.h };
+    y += i.h;
+    return out;
+  });
+  return { lg, md, sm };
+}
+
+/* ------------------------------------------------------------ widget frame */
+
+class WidgetBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
   }
-  // Edit mode floating action bar
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error) {
+    // eslint-disable-next-line no-console
+    console.warn(`[dashboard] widget ${this.props.name} crashed`, error);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <WidgetNotice
+          title={this.props.name}
+          text="This widget couldn't load. Try refreshing the dashboard."
+        />
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function WidgetNotice({ title, text }) {
   return (
-    <>
-      <div className="flex items-center gap-3 mb-6">
-        <div
-          className="w-11 h-11 bg-white rounded-xl bc-card flex items-center justify-center"
-          style={{ padding: 0 }}
-        >
-          <div style={{ width: 32, height: 32 }}>
-            <Icon />
-          </div>
-        </div>
-        <div>
-          <div className="eyebrow">Editing dashboard</div>
-          <h1
-            className="text-[22px] font-semibold"
-            style={{ color: "#333333", fontFamily: "Poppins" }}
-          >
-            Your {meta?.name || "App"} dashboard
-          </h1>
-        </div>
+    <div className="h-full w-full inos-card p-5 flex flex-col">
+      <div
+        className="text-[14px] font-semibold truncate"
+        style={{ color: "var(--text)" }}
+      >
+        {title}
       </div>
       <div
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bc-card px-3 py-2 flex items-center gap-2"
-        data-testid="dashboard-edit-bar"
+        className="flex-1 flex flex-col items-center justify-center gap-2 text-center"
+        style={{ color: "var(--text-3)", fontSize: 12.5 }}
       >
-        {dirty && (
-          <span
-            className="text-[12px] font-semibold px-2 py-1 rounded-full"
-            style={{ border: "1px solid #1F453B", color: "#333333" }}
-            data-testid="dashboard-dirty"
-          >
-            Unsaved changes
-          </span>
-        )}
-        <button
-          data-testid="dashboard-add-widget"
-          onClick={onAddWidget}
-          className="bc-btn-secondary"
-          style={{ minHeight: 36, padding: "0 12px" }}
-        >
-          <Plus size={14} /> Add Widget
-        </button>
-        <button
-          data-testid="dashboard-cancel-btn"
-          onClick={onCancel}
-          disabled={saving}
-          className="bc-btn-secondary"
-          style={{ minHeight: 36, padding: "0 12px" }}
-        >
-          Cancel
-        </button>
-        <button
-          data-testid="dashboard-done-btn"
-          onClick={onSave}
-          disabled={saving}
-          className="bc-btn-primary"
-          style={{ minHeight: 36, padding: "0 14px" }}
-        >
-          <Check size={14} /> {saving ? "Saving…" : "Done"}
-        </button>
+        <AlertTriangle size={18} />
+        {text}
       </div>
-    </>
+    </div>
   );
 }
 
-/* Add Widget drawer */
-function AddWidgetDrawer({ open, onClose, appKey, library, layout, onAdd }) {
-  const [q, setQ] = useState("");
-  const [tab, setTab] = useState("all");
-  const active = new Set((layout || []).map((i) => i.key));
-  const cats = [
-    "all",
-    "Recommended",
-    "Recently Used",
-    "App Data",
-    "Project Data",
-    "Personal Work",
-    "Alerts",
-    "Reports",
-  ];
-  const filtered = (library || []).filter((w) => {
-    if (tab !== "all" && (w.category || "") !== tab) return false;
-    if (
-      q &&
-      !`${w.name} ${w.description || ""}`
-        .toLowerCase()
-        .includes(q.toLowerCase())
-    )
-      return false;
-    return true;
-  });
+function WidgetFrame({ item, meta, editing, canRemove, onRemove, isNew }) {
+  const Comp = WIDGET_COMPONENTS[item.key];
+  const name = meta?.name || item.key.split(".").pop().replace(/_/g, " ");
   return (
-    <Sheet open={open} onOpenChange={onClose}>
+    <div
+      className={`dash-item${isNew ? " is-new" : ""}`}
+      data-testid={`widget-${item.key}`}
+      data-grid-key={item.key}
+    >
+      <div className="dash-item__body" aria-hidden={editing || undefined}>
+        <WidgetBoundary name={name}>
+          {Comp ? (
+            <Comp />
+          ) : (
+            <WidgetNotice
+              title={name}
+              text="This widget is no longer available."
+            />
+          )}
+        </WidgetBoundary>
+      </div>
+
+      {editing && (
+        <div className="dash-item__chrome">
+          <div
+            className="dash-item__bar dash-drag-handle"
+            title="Drag to move"
+            data-testid={`widget-handle-${item.key}`}
+          >
+            <GripVertical aria-hidden />
+            <span>{name}</span>
+          </div>
+          {canRemove ? (
+            <button
+              type="button"
+              className="dash-item__remove"
+              onClick={() => onRemove(item.key)}
+              data-testid={`widget-remove-${item.key}`}
+              title="Remove widget"
+              aria-label={`Remove ${name}`}
+            >
+              <X aria-hidden />
+            </button>
+          ) : (
+            <span
+              className="dash-item__lock"
+              title="Required widget — can't be removed"
+              data-testid={`widget-locked-${item.key}`}
+            >
+              <Lock aria-hidden />
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------ widget library */
+
+function MiniPreview({ kind }) {
+  const g = "var(--brand)";
+  const s = "var(--sage)";
+  if (kind === "stat")
+    return (
+      <svg width="44" height="30" viewBox="0 0 44 30" aria-hidden>
+        <rect x="2" y="3" width="18" height="3" rx="1.5" fill={s} />
+        <rect x="2" y="13" width="26" height="9" rx="2" fill={g} />
+      </svg>
+    );
+  if (kind === "donut")
+    return (
+      <svg width="44" height="30" viewBox="0 0 44 30" aria-hidden>
+        <circle cx="15" cy="15" r="10" fill="none" stroke={s} strokeWidth="5" />
+        <path d="M15 5 A10 10 0 0 1 24.5 18" fill="none" stroke={g} strokeWidth="5" />
+        <rect x="30" y="9" width="11" height="3" rx="1.5" fill={s} />
+        <rect x="30" y="17" width="8" height="3" rx="1.5" fill={s} />
+      </svg>
+    );
+  if (kind === "chart")
+    return (
+      <svg width="44" height="30" viewBox="0 0 44 30" aria-hidden>
+        {[10, 17, 12, 22, 16, 25].map((h, i) => (
+          <rect
+            key={i}
+            x={3 + i * 7}
+            y={28 - h}
+            width="5"
+            height={h}
+            rx="1.5"
+            fill={i === 5 ? g : s}
+          />
+        ))}
+      </svg>
+    );
+  return (
+    <svg width="44" height="30" viewBox="0 0 44 30" aria-hidden>
+      {[3, 12, 21].map((y) => (
+        <g key={y}>
+          <rect x="2" y={y} width="26" height="4" rx="2" fill={s} />
+          <rect x="34" y={y} width="8" height="4" rx="2" fill={g} />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+const SIZE_LABEL = {
+  small: "Tile",
+  medium: "Half width",
+  large: "Half width, tall",
+  full: "Full width",
+};
+
+function WidgetLibrary({ open, onClose, appName, library, activeKeys, onAdd }) {
+  const [q, setQ] = useState("");
+  const [cat, setCat] = useState("all");
+
+  useEffect(() => {
+    if (open) {
+      setQ("");
+      setCat("all");
+    }
+  }, [open]);
+
+  const cats = useMemo(() => {
+    const present = new Set(library.map((w) => w.category || "Other"));
+    const ordered = CATEGORY_ORDER.filter((c) => present.has(c));
+    present.forEach((c) => !ordered.includes(c) && ordered.push(c));
+    return ordered;
+  }, [library]);
+
+  const matches = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return library.filter((w) => {
+      if (cat !== "all" && (w.category || "Other") !== cat) return false;
+      if (!needle) return true;
+      return `${w.name} ${w.description || ""} ${w.category || ""}`
+        .toLowerCase()
+        .includes(needle);
+    });
+  }, [library, q, cat]);
+
+  const groups = useMemo(
+    () =>
+      cats
+        .map((c) => ({
+          cat: c,
+          items: matches
+            .filter((w) => (w.category || "Other") === c)
+            .sort(
+              (a, b) =>
+                Number(activeKeys.has(a.key)) - Number(activeKeys.has(b.key)),
+            ),
+        }))
+        .filter((g) => g.items.length),
+    [cats, matches, activeKeys],
+  );
+
+  const available = library.filter((w) => !activeKeys.has(w.key)).length;
+
+  return (
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent
         side="right"
-        className="w-[500px] sm:max-w-none bg-white border-l border-[#B5C4B6]/60"
+        className="w-full sm:w-[460px] sm:max-w-[460px] bg-white flex flex-col gap-0 p-0"
         data-testid="add-widget-drawer"
+        style={{ borderLeft: "1px solid var(--line)" }}
       >
-        <SheetHeader>
-          <SheetTitle className="text-[16px] font-bold text-[#333333]">
-            Add Widget
+        <SheetHeader className="px-5 pt-5 pb-4 text-left space-y-1">
+          <SheetTitle
+            className="text-[16px] font-bold"
+            style={{ color: "var(--text)" }}
+          >
+            Widget library
           </SheetTitle>
+          <SheetDescription
+            className="text-[12.5px]"
+            style={{ color: "var(--text-3)" }}
+          >
+            {available} of {library.length} {appName} widgets available to add
+          </SheetDescription>
         </SheetHeader>
-        <div className="mt-4 flex items-center gap-2 h-10 px-3 rounded-lg border border-[#B5C4B6] bg-white">
-          <Search size={14} className="text-[#B5C4B6]" />
-          <input
-            data-testid="add-widget-search"
+        <div className="px-5 pb-3 flex flex-col gap-3" data-testid="add-widget-search">
+          <SearchInput
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={setQ}
             placeholder="Search widgets…"
-            className="flex-1 text-[13px] outline-none placeholder:text-[#B5C4B6]"
           />
-        </div>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {cats.map((c) => (
+          <div className="dash-lib__chips">
             <button
-              key={c}
-              onClick={() => setTab(c)}
-              className={`h-7 px-2.5 rounded-full text-[11px] font-semibold border ${tab === c ? "bg-[#1F453B] text-white border-[#1F453B]" : "bg-white text-[#333333]/70 border-[#B5C4B6] hover:bg-[#D8E0DA]/60]"}`}
+              type="button"
+              className="dash-lib__chip"
+              aria-pressed={cat === "all"}
+              onClick={() => setCat("all")}
             >
-              {c === "all" ? "All" : c}
+              All <em>{library.length}</em>
             </button>
-          ))}
-        </div>
-        <div className="mt-3 flex-1 overflow-y-auto max-h-[calc(100vh-220px)] pr-1">
-          {filtered.map((w) => {
-            const already = active.has(w.key);
-            return (
-              <div
-                key={w.key}
-                className="p-3 border border-[#B5C4B6]/50 rounded-xl mb-2 flex items-start gap-3"
-                data-testid={`widget-lib-${w.key}`}
+            {cats.map((c) => (
+              <button
+                key={c}
+                type="button"
+                className="dash-lib__chip"
+                aria-pressed={cat === c}
+                onClick={() => setCat(c)}
               >
-                <div className="flex-1 min-w-0">
-                  <div className="text-[12.5px] font-semibold text-[#333333]">
-                    {w.name}
-                  </div>
-                  {w.description && (
-                    <div className="text-[11.5px] text-[#6B7B7C] mt-0.5">
-                      {w.description}
+                {c}{" "}
+                <em>
+                  {library.filter((w) => (w.category || "Other") === c).length}
+                </em>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div
+          className="flex-1 min-h-0 overflow-y-auto px-5 pb-6"
+          style={{ borderTop: "1px solid var(--line)" }}
+        >
+          {groups.map((g) => (
+            <div key={g.cat}>
+              <div className="dash-lib__group-title">{g.cat}</div>
+              {g.items.map((w) => {
+                const added = activeKeys.has(w.key);
+                return (
+                  <div
+                    key={w.key}
+                    className={`dash-lib__item${added ? " is-added" : ""}`}
+                    data-testid={`widget-lib-${w.key}`}
+                  >
+                    <div className="dash-lib__preview">
+                      <MiniPreview kind={widgetKind(w, w.key)} />
                     </div>
-                  )}
-                  <div className="mt-1.5 flex gap-1.5 text-[10px] uppercase tracking-widest font-semibold text-[#B5C4B6]">
-                    <span>{w.category}</span>
-                    <span>·</span>
-                    <span>{w.sizes.join(" / ")}</span>
-                    {w.locked_required && (
-                      <>
-                        <span>·</span>
-                        <span className="text-[#333333]">Required</span>
-                      </>
+                    <div className="flex-1 min-w-0">
+                      <div className="dash-lib__name">{w.name}</div>
+                      {w.description && (
+                        <div className="dash-lib__desc">{w.description}</div>
+                      )}
+                      <div className="dash-lib__meta">
+                        <span>{SIZE_LABEL[w.defaultSize] || w.defaultSize}</span>
+                        {w.locked_required && (
+                          <>
+                            <span>·</span>
+                            <span>Required</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {added ? (
+                      <Pill tone="ok" size="sm">
+                        Added
+                      </Pill>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="soft"
+                        icon={Plus}
+                        data-testid={`add-widget-${w.key}`}
+                        onClick={() => onAdd(w)}
+                      >
+                        Add
+                      </Button>
                     )}
                   </div>
-                </div>
-                <button
-                  disabled={already}
-                  data-testid={`add-widget-${w.key}`}
-                  onClick={() => onAdd(w)}
-                  className={`h-8 px-3 rounded-lg text-[11.5px] font-semibold shrink-0 ${already ? "bg-[#D8E0DA]] text-[#B5C4B6] cursor-not-allowed" : "bg-[#1F453B] text-white hover:opacity-90"}`}
-                >
-                  {already ? "Added" : "Add"}
-                </button>
-              </div>
-            );
-          })}
-          {filtered.length === 0 && (
-            <div className="text-center py-8 text-[12.5px] text-[#B5C4B6]">
-              No widgets match.
+                );
+              })}
             </div>
+          ))}
+          {groups.length === 0 && (
+            <EmptyState
+              icon={LayoutGrid}
+              title="No widgets match"
+              text="Try a different search or category."
+            />
           )}
         </div>
       </SheetContent>
@@ -235,121 +499,58 @@ function AddWidgetDrawer({ open, onClose, appKey, library, layout, onAdd }) {
   );
 }
 
-/* Reset Modal */
-function ResetModal({ open, onClose, onConfirm, resetting }) {
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent
-        className="bg-white border border-[#B5C4B6] max-w-[440px]"
-        data-testid="reset-modal"
-      >
-        <DialogHeader>
-          <DialogTitle className="text-[16px] font-bold text-[#333333]">
-            Reset Dashboard?
-          </DialogTitle>
-        </DialogHeader>
-        <p className="text-[13px] text-[#333333]/70">
-          Reset this dashboard to the default layout? Your personal arrangement
-          and hidden widgets will be removed.
-        </p>
-        <DialogFooter>
-          <button
-            onClick={onClose}
-            disabled={resetting}
-            className="h-9 px-3 rounded-lg bg-white border border-[#B5C4B6] text-[12.5px] font-semibold text-[#333333] hover:bg-[#D8E0DA]/60]"
-          >
-            Cancel
-          </button>
-          <button
-            data-testid="reset-confirm-btn"
-            onClick={onConfirm}
-            disabled={resetting}
-            className="h-9 px-3.5 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold hover:opacity-90"
-          >
-            {resetting ? "Resetting…" : "Reset"}
-          </button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+/* ------------------------------------------------------------ skeleton */
 
-/* Widget wrapper with edit-mode controls */
-function WidgetWrapper({ item, meta, editing, canRemove, onRemove }) {
-  const Comp = WIDGET_COMPONENTS[item.key];
+function DashboardSkeleton() {
+  const tiles = [
+    { c: "span 3", h: 140 },
+    { c: "span 3", h: 140 },
+    { c: "span 3", h: 140 },
+    { c: "span 3", h: 140 },
+    { c: "span 6", h: 280 },
+    { c: "span 6", h: 280 },
+  ];
   return (
     <div
-      className={`relative h-full ${editing ? "widget-jiggle" : ""}`}
-      data-testid={`widget-${item.key}`}
+      data-testid="dashboard-loading"
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(12, minmax(0, 1fr))",
+        gap: 16,
+        padding: "0 16px",
+      }}
     >
-      {editing && (
-        <div className="absolute inset-0 rounded-2xl border-2 border-dashed border-[#B5C4B6] pointer-events-none z-0" />
-      )}
-      {editing && meta?.locked_required && (
+      {tiles.map((t, i) => (
         <div
-          className="absolute -top-2 -left-2 z-20 w-6 h-6 rounded-full bg-white border border-[#1F453B] flex items-center justify-center"
-          title="Required widget"
+          key={i}
+          className="dash-skel p-5 flex flex-col gap-3"
+          style={{ gridColumn: t.c, height: t.h }}
         >
-          <Lock size={11} className="text-[#333333]" />
+          <div className="dash-skel__bar" style={{ width: "45%" }} />
+          <div className="flex-1" />
+          <div className="dash-skel__bar" style={{ width: "30%", height: 22 }} />
         </div>
-      )}
-      {editing && (
-        <button
-          disabled={!canRemove}
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove(item.key);
-          }}
-          data-testid={`widget-remove-${item.key}`}
-          className={`absolute -top-2 -right-2 z-20 w-6 h-6 rounded-full flex items-center justify-center ${canRemove ? "bg-[#1F453B] text-white hover:opacity-90" : "bg-[#1F453B]/20 text-white cursor-not-allowed"}`}
-          title={canRemove ? "Remove" : "Required widget — cannot be removed"}
-        >
-          <X size={12} />
-        </button>
-      )}
-      <div className="h-full">
-        {Comp ? (
-          <Comp />
-        ) : (
-          <div className="p-4 text-[12px] text-[#B5C4B6] bg-white rounded-2xl border border-[#B5C4B6]/50">
-            Unknown widget
-          </div>
-        )}
-      </div>
-
-      {/* NEW: swallow clicks on widget content while editing */}
-      {editing && (
-        <div
-          className="absolute inset-0 z-10 cursor-move"
-          data-testid={`widget-edit-overlay-${item.key}`}
-          onClickCapture={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-        />
-      )}
+      ))}
     </div>
   );
 }
 
-/* Main AppDashboard */
+/* ------------------------------------------------------------ main */
+
 export default function AppDashboard({ appKey }) {
-  const [layout, setLayout] = useState([]);
-  const [hidden, setHidden] = useState([]);
-  const [requiredKeys, setRequiredKeys] = useState([]);
-  const [defaultLayout, setDefaultLayout] = useState([]);
-  const [editing, setEditing] = useState(false);
-  const [drawer, setDrawer] = useState(false);
-  const [resetOpen, setResetOpen] = useState(false);
+  const navigate = useNavigate();
   const [sp, setSp] = useSearchParams();
-  const savedRef = useRef({ layout: [], hidden_keys: [] });
-  const undoTimerRef = useRef(null);
-  // Tracks whether we've hydrated local state for the CURRENT appKey at
-  // least once — lets a background refetch/poll update local state safely
-  // before the user starts editing, without ever clobbering an in-progress
-  // edit once they have.
-  const hydratedRef = useRef(false);
+
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState([]);
+  const [draftHidden, setDraftHidden] = useState([]);
+  const [drawer, setDrawer] = useState(false);
+  const [gridWidth, setGridWidth] = useState(0);
+  const [ready, setReady] = useState(false);
+  const [newKey, setNewKey] = useState(null);
+  const wrapRef = useRef(null);
+  const baselineRef = useRef({ layout: [], hidden: [] });
+  const prevAppRef = useRef(appKey);
 
   const {
     data: dash,
@@ -357,121 +558,211 @@ export default function AppDashboard({ appKey }) {
     isError: dashIsError,
     refetch: refetchDashboard,
   } = useGetDashboardQuery(appKey, { skip: !appKey });
-
   const { data: lib, isLoading: libLoading } = useGetDashboardLibraryQuery(
     appKey,
     { skip: !appKey },
   );
-  const library = lib?.widgets || [];
+  const library = useMemo(() => lib?.widgets || [], [lib]);
+  const libraryByKey = useMemo(
+    () => Object.fromEntries(library.map((w) => [w.key, w])),
+    [library],
+  );
+  const requiredKeys = useMemo(() => dash?.required_keys || [], [dash]);
 
   const [saveDashboard, { isLoading: saving }] = useSaveDashboardMutation();
   const [resetDashboard, { isLoading: resetting }] =
     useResetDashboardMutation();
 
-  const loading = (dashLoading || libLoading) && !hydratedRef.current;
+  const savedLayout = useMemo(() => dash?.layout || [], [dash]);
+  const layout = editing ? draft : savedLayout;
+  const activeKeys = useMemo(() => new Set(layout.map((l) => l.key)), [layout]);
+  const dirty =
+    editing &&
+    (sig(draft) !== sig(baselineRef.current.layout) ||
+      JSON.stringify([...draftHidden].sort()) !==
+        JSON.stringify([...baselineRef.current.hidden].sort()));
 
-  // Reset hydration when switching apps, so the new app's server data is
-  // guaranteed to populate local state even if we're mid-"edit=1" deep link.
+  const meta = APP_META[appKey];
+  const appName = meta?.name || "App";
+  const title = appKey === "boq" ? "Bill of Quantities" : meta?.name || "Dashboard";
+  const cta = PRIMARY_CTA[appKey];
+  const breakpoint =
+    gridWidth >= BREAKPOINTS.lg ? "lg" : gridWidth >= BREAKPOINTS.md ? "md" : "sm";
+  const canArrange = breakpoint === "lg";
+
+  // Switching apps always leaves customise mode.
   useEffect(() => {
-    hydratedRef.current = false;
-    setEditing(false);
+    if (prevAppRef.current !== appKey) {
+      prevAppRef.current = appKey;
+      setEditing(false);
+      setDrawer(false);
+      setReady(false);
+    }
   }, [appKey]);
 
-  // Hydrate local editable state from the server. Skips while the user is
-  // actively editing (after the first hydration) so a background refetch
-  // never overwrites an unsaved drag/resize/add/remove.
+  // Enable grid transitions only after the first paint, so widgets don't
+  // animate in from the default width on load.
   useEffect(() => {
-    if (!dash) return;
-    if (hydratedRef.current && editing) return;
-    setLayout(dash.layout || []);
-    setHidden(dash.hidden_keys || []);
-    setRequiredKeys(dash.required_keys || []);
-    setDefaultLayout(dash.default_layout || []);
-    savedRef.current = {
-      layout: dash.layout || [],
-      hidden_keys: dash.hidden_keys || [],
-    };
-    hydratedRef.current = true;
-  }, [dash, editing]);
+    if (!dash || ready) return undefined;
+    const t = setTimeout(() => setReady(true), 350);
+    return () => clearTimeout(t);
+  }, [dash, ready]);
+
+  // Track the grid's breakpoint from its own width (RGL only reports changes).
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(([entry]) => {
+      setGridWidth(Math.floor(entry.contentRect.width));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
-    if (dashIsError) toast.error("Failed to load dashboard");
+    if (dashIsError) toast.error("Couldn't load this dashboard");
   }, [dashIsError]);
 
-  useEffect(() => {
-    if (sp.get("edit") === "1") {
-      setEditing(true);
-      sp.delete("edit");
-      setSp(sp, { replace: true });
-    }
-    // eslint-disable-next-line
-  }, [sp]);
+  const enterEdit = useCallback(() => {
+    if (!dash) return;
+    const base = compact(dash.layout || []);
+    baselineRef.current = {
+      layout: base,
+      hidden: [...(dash.hidden_keys || [])],
+    };
+    setDraft(base);
+    setDraftHidden([...(dash.hidden_keys || [])]);
+    setEditing(true);
+  }, [dash]);
 
-  // Keyboard shortcuts (Esc / Cmd+S)
+  // Deep link: /app?edit=1 (the "Edit Dashboard" menu item). Idempotent, so
+  // StrictMode's double effect run is harmless.
   useEffect(() => {
+    if (sp.get("edit") !== "1" || !dash) return;
+    if (!editing) enterEdit();
+    setSp(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("edit");
+        return next;
+      },
+      { replace: true },
+    );
+  }, [sp, dash, editing, enterEdit, setSp]);
+
+  const handleCancel = useCallback(() => {
+    const hadChanges = dirty;
+    setEditing(false);
+    setDrawer(false);
+    if (hadChanges) toast("Changes discarded");
+  }, [dirty]);
+
+  const handleSave = useCallback(async () => {
+    if (!dirty) {
+      setEditing(false);
+      setDrawer(false);
+      return;
+    }
+    const payload = compact(draft);
+    const hidden = [...draftHidden];
+    // Optimistic: leave customise mode straight away; the cache already holds
+    // the new layout (see dashboard.api.js).
+    setEditing(false);
+    setDrawer(false);
+    try {
+      await saveDashboard({ appKey, layout: payload, hidden_keys: hidden }).unwrap();
+      toast.success("Dashboard saved");
+    } catch (e) {
+      baselineRef.current = {
+        layout: compact(savedLayout),
+        hidden: dash?.hidden_keys || [],
+      };
+      setDraft(payload);
+      setDraftHidden(hidden);
+      setEditing(true);
+      const msg = e?.data?.message;
+      toast.error(
+        Array.isArray(msg) ? msg[0] : msg || "Couldn't save your layout",
+        { action: { label: "Retry", onClick: () => handleSaveRef.current?.() } },
+      );
+    }
+  }, [dirty, draft, draftHidden, saveDashboard, appKey, savedLayout, dash]);
+  const handleSaveRef = useRef(handleSave);
+  handleSaveRef.current = handleSave;
+
+  // Keyboard: Esc cancels, Ctrl/Cmd+S saves (not while the library is open).
+  useEffect(() => {
+    if (!editing) return undefined;
     const onKey = (e) => {
-      if (!editing) return;
+      if (drawer) return;
       if (e.key === "Escape") {
         e.preventDefault();
         handleCancel();
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
-        handleSave();
+        handleSaveRef.current();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line
-  }, [editing, layout, hidden]);
+  }, [editing, drawer, handleCancel]);
 
-  const libraryByKey = useMemo(
-    () => Object.fromEntries((library || []).map((w) => [w.key, w])),
-    [library],
-  );
-  const rgLayout = useMemo(
-    () =>
-      layout.map((i) => ({
-        i: i.key,
-        x: i.x,
-        y: i.y,
-        w: i.w,
-        h: i.h,
-        static: !editing,
-      })),
-    [layout, editing],
-  );
-  const dirty = useMemo(
-    () =>
-      JSON.stringify(layout) !== JSON.stringify(savedRef.current.layout) ||
-      JSON.stringify([...hidden].sort()) !==
-        JSON.stringify([...savedRef.current.hidden_keys].sort()),
-    [layout, hidden],
-  );
+  // Warn before leaving the page with unsaved changes.
+  useEffect(() => {
+    if (!dirty) return undefined;
+    const onBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
 
-  const onGridChange = (rgl) => {
-    if (!editing) return;
-    setLayout((prev) =>
-      prev.map((item) => {
-        const g = rgl.find((x) => x.i === item.key);
-        return g ? { ...item, x: g.x, y: g.y, w: g.w, h: g.h } : item;
-      }),
-    );
-  };
+  // Scroll a newly added widget into view and flash it.
+  useEffect(() => {
+    if (!newKey) return undefined;
+    const t1 = setTimeout(() => {
+      document
+        .querySelector(`[data-grid-key="${CSS.escape(newKey)}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 260);
+    const t2 = setTimeout(() => setNewKey(null), 1800);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [newKey]);
+
+  const onLayoutChange = useCallback(
+    (current) => {
+      // Only the desktop (12-col) arrangement is persisted; tablet/phone
+      // layouts are derived from it.
+      if (!editing || breakpoint !== "lg") return;
+      setDraft((prev) => {
+        const next = prev.map((item) => {
+          const g = current.find((x) => x.i === item.key);
+          return g ? { ...item, x: g.x, y: g.y, w: g.w, h: g.h } : item;
+        });
+        return sig(next) === sig(prev) ? prev : next;
+      });
+    },
+    [editing, breakpoint],
+  );
 
   const removeWidget = (key) => {
     if (requiredKeys.includes(key)) return;
-    const removed = layout.find((l) => l.key === key);
-    setLayout((prev) => prev.filter((l) => l.key !== key));
-    setHidden((prev) => [...new Set([...prev, key])]);
-    // Undo toast
-    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-    toast("Widget removed", {
+    const removed = draft.find((l) => l.key === key);
+    if (!removed) return;
+    setDraft((prev) => prev.filter((l) => l.key !== key));
+    setDraftHidden((prev) => [...new Set([...prev, key])]);
+    toast(`Removed ${libraryByKey[key]?.name || "widget"}`, {
       action: {
         label: "Undo",
         onClick: () => {
-          setLayout((prev) => [...prev, removed]);
-          setHidden((prev) => prev.filter((k) => k !== key));
+          setDraft((prev) =>
+            prev.some((l) => l.key === key) ? prev : [...prev, removed],
+          );
+          setDraftHidden((prev) => prev.filter((k) => k !== key));
         },
       },
       duration: 5000,
@@ -479,58 +770,47 @@ export default function AppDashboard({ appKey }) {
   };
 
   const addWidget = (w) => {
+    if (draft.some((l) => l.key === w.key)) return;
     const size = SIZE_TO_HW[w.defaultSize] || SIZE_TO_HW.small;
-    const slot = firstAvailableSlot(layout, size.w, size.h);
-    setLayout((prev) => [...prev, { key: w.key, ...slot }]);
-    setHidden((prev) => prev.filter((k) => k !== w.key));
+    const slot = firstFreeSlot(compact(draft), size.w, size.h);
+    setDraft((prev) => [...prev, { key: w.key, ...slot }]);
+    setDraftHidden((prev) => prev.filter((k) => k !== w.key));
     setDrawer(false);
+    setNewKey(w.key);
     toast.success(`Added ${w.name}`);
   };
 
-  const handleSave = async () => {
-    try {
-      await saveDashboard({ appKey, layout, hidden_keys: hidden }).unwrap();
-      savedRef.current = {
-        layout: JSON.parse(JSON.stringify(layout)),
-        hidden_keys: [...hidden],
-      };
-      setEditing(false);
-      toast.success("Dashboard saved");
-    } catch (e) {
-      const detail = e?.data?.detail || "Save failed — retry";
-      toast.error(detail);
-    }
+  const restoreDefaultDraft = () => {
+    const defaults = dash?.default_layout || [];
+    const present = new Set(defaults.map((d) => d.key));
+    const extras = requiredKeys
+      .filter((k) => !present.has(k))
+      .map((k) => {
+        const size = SIZE_TO_HW[libraryByKey[k]?.defaultSize] || SIZE_TO_HW.small;
+        return { key: k, x: 0, y: 999, ...size };
+      });
+    setDraft(compact([...defaults, ...extras]));
+    setDraftHidden([]);
+    toast("Default layout restored — save to keep it", {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          setDraft(baselineRef.current.layout);
+          setDraftHidden(baselineRef.current.hidden);
+        },
+      },
+    });
   };
 
-  const handleCancel = () => {
-    setLayout(savedRef.current.layout);
-    setHidden(savedRef.current.hidden_keys);
-    setEditing(false);
-  };
-
-  const handleReset = async () => {
+  const restoreDefaultNow = async () => {
     try {
-      const r = await resetDashboard(appKey).unwrap();
-      const newLayout = r.layout || [];
-      setLayout(newLayout);
-      setHidden([]);
-      savedRef.current = { layout: newLayout, hidden_keys: [] };
-      setEditing(false);
-      setResetOpen(false);
-      toast.success("Reset to default");
+      await resetDashboard(appKey).unwrap();
+      toast.success("Default layout restored");
     } catch {
-      toast.error("Reset failed");
+      toast.error("Couldn't restore the default layout");
     }
   };
 
-  if (loading)
-    return (
-      <div className="py-16 text-center text-[13px] text-[#B5C4B6]">
-        Loading dashboard…
-      </div>
-    );
-
-  const isEmpty = layout.length === 0;
   const handleManualRefresh = () => {
     refetchDashboard();
     window.dispatchEvent(
@@ -538,145 +818,240 @@ export default function AppDashboard({ appKey }) {
         detail: { app: appKey, manual: true },
       }),
     );
-    toast.success("Refreshed");
+    toast.success("Dashboard refreshed");
   };
 
-  // Per-app primary CTA (create/add). null → no button rendered.
-  const PRIMARY_CTA = {
-    boq: { label: "Create BOQ", to: "/boq/new" },
-    projects: { label: "Create Project", to: "/projects/new" },
-    quotations: { label: "Create Estimate", to: "/quotations/new" },
-    vendors: { label: "Add Vendor", to: "/vendors/new" },
-    documents: { label: "Add Document", to: "/documents/upload" },
-    tasks: { label: "Add Task", to: "/tasks/new" },
-  };
-  const cta = PRIMARY_CTA[appKey];
-  const meta = APP_META[appKey];
+  const layouts = useMemo(
+    () => deriveLayouts(layout, libraryByKey),
+    [layout, libraryByKey],
+  );
+
+  const loading = (dashLoading || libLoading) && !dash;
+  const isEmpty = !loading && layout.length === 0;
 
   return (
-    <div data-testid={`app-dashboard-${appKey}`}>
-      <DashboardHeader
-        appKey={appKey}
-        editing={editing}
-        dirty={dirty}
-        saving={saving}
-        onCancel={handleCancel}
-        onSave={handleSave}
-        onAddWidget={() => setDrawer(true)}
-      />
-
-      {!editing && (
-        <div
-          className="flex items-center justify-between mb-4 gap-3 flex-wrap"
-          data-testid={`dashboard-header-${appKey}`}
-        >
-          <div className="min-w-0">
-            <h1
-              title={meta?.name}
-              className="text-[36px] font-bold text-[#333333] truncate"
-              style={{ fontFamily: "Poppins" }}
-            >
-              {appKey === "boq"
-                ? "Bill of Quantities"
-                : meta?.name || "Dashboard"}
-            </h1>
-          </div>
+    <div data-testid={`app-dashboard-${appKey}`} ref={wrapRef}>
+      {/* Header */}
+      <div
+        className="flex items-center justify-between mb-5 gap-3 flex-wrap px-4"
+        data-testid={`dashboard-header-${appKey}`}
+      >
+        <h1 title={title} className="inos-title truncate min-w-0" style={{ fontSize: 30 }}>
+          {title}
+        </h1>
+        {!editing && (
           <div className="flex items-center gap-2 shrink-0">
-            {!isEmpty && (
-              <button
-                data-testid={`dashboard-refresh-${appKey}`}
-                onClick={handleManualRefresh}
-                title="Refresh dashboard data"
-                className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-[rgba(31,69,59,0.14)] bg-white text-[#333333] hover:bg-[#F4F6F7] transition-colors group"
-                aria-label="Refresh"
-              >
-                <RefreshCw size={15} className="group-active:animate-spin" />
-              </button>
-            )}
-            {cta && (
-              <button
-                data-testid={`dashboard-cta-${appKey}`}
-                onClick={() => window.location.assign(cta.to)}
-                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-white text-[13px] font-semibold hover:opacity-90 transition-opacity"
-                style={{ backgroundColor: "#1F453B" }}
-              >
-                <Plus size={14} /> {cta.label}
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {isEmpty ? (
-        <div className="bg-white rounded-2xl border border-[#B5C4B6]/50 p-12 text-center">
-          <h2 className="text-[20px] font-bold text-[#333333]">
-            Your dashboard is empty
-          </h2>
-          <p className="text-[13px] text-[#6B7B7C] mt-1">
-            Add widgets to see your {APP_META[appKey]?.name || "app"} data at a
-            glance.
-          </p>
-          <div className="mt-5 flex items-center justify-center gap-2">
-            <button
-              onClick={() => setDrawer(true)}
-              className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold hover:opacity-90"
-            >
-              Add Widget
-            </button>
-            <button
-              onClick={handleReset}
-              disabled={resetting}
-              className="h-10 px-4 rounded-xl bg-white border border-[#B5C4B6] text-[#333333] text-[13px] font-semibold hover:bg-[#D8E0DA]/60]"
-            >
-              {resetting ? "Restoring…" : "Restore Default Layout"}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className={editing ? "relative pt-1" : "relative"}>
-          {editing && (
-            <div className="absolute inset-0 bg-[#D8E0DA]/40] pointer-events-none rounded-lg" />
-          )}
-          <RGL
-            className="layout"
-            layouts={{ lg: rgLayout, md: rgLayout, sm: rgLayout }}
-            breakpoints={{ lg: 1024, md: 768, sm: 0 }}
-            cols={{ lg: 12, md: 6, sm: 1 }}
-            rowHeight={62}
-            margin={[16, 16]}
-            isDraggable={editing}
-            isResizable={editing}
-            onLayoutChange={onGridChange}
-            draggableCancel="button, a, input, textarea"
-          >
-            {layout.map((item) => (
-              <div key={item.key}>
-                <WidgetWrapper
-                  item={item}
-                  meta={libraryByKey[item.key]}
-                  editing={editing}
-                  canRemove={!requiredKeys.includes(item.key)}
-                  onRemove={removeWidget}
+            {appKey === "siteOperations" && (
+              // Site Operations widgets follow ?project= (widgets/siteops useDash)
+              <div style={{ width: 240 }} data-testid="dashboard-project-filter">
+                <ProjectPicker
+                  value={sp.get("project") || ""}
+                  onChange={(v) =>
+                    setSp(
+                      (prev) => {
+                        const next = new URLSearchParams(prev);
+                        if (v) next.set("project", v);
+                        else next.delete("project");
+                        return next;
+                      },
+                      { replace: true },
+                    )
+                  }
                 />
               </div>
-            ))}
-          </RGL>
+            )}
+            {!isEmpty && !loading && (
+              <Button
+                variant="secondary"
+                icon={RefreshCw}
+                onClick={handleManualRefresh}
+                title="Refresh dashboard data"
+                aria-label="Refresh"
+                data-testid={`dashboard-refresh-${appKey}`}
+              />
+            )}
+            {!loading && dash && (
+              <Button
+                variant="secondary"
+                icon={SlidersHorizontal}
+                onClick={enterEdit}
+                data-testid="dashboard-customise-btn"
+              >
+                Customise
+              </Button>
+            )}
+            {cta && (
+              <Button
+                variant="primary"
+                icon={Plus}
+                onClick={() => navigate(cta.to)}
+                data-testid={`dashboard-cta-${appKey}`}
+              >
+                {cta.label}
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Customise toolbar */}
+      {editing && (
+        <div className="dash-editbar mx-4" data-testid="dashboard-edit-bar">
+          <div className="dash-editbar__text">
+            <span className="inos-icon-tile" aria-hidden>
+              <LayoutGrid size={16} />
+            </span>
+            <div className="min-w-0 flex flex-col">
+              <span className="dash-editbar__title">Customising dashboard</span>
+              <span className="dash-editbar__hint">
+                {canArrange
+                  ? "Drag a widget by its handle · resize from the bottom-right corner"
+                  : "Widen the window to move or resize widgets"}
+              </span>
+            </div>
+            {dirty && (
+              <span data-testid="dashboard-dirty">
+                <Pill tone="warn" size="sm">
+                  Unsaved changes
+                </Pill>
+              </span>
+            )}
+          </div>
+          <div className="dash-editbar__actions">
+            <Button
+              variant="soft"
+              size="sm"
+              icon={Plus}
+              onClick={() => setDrawer(true)}
+              data-testid="dashboard-add-widget"
+            >
+              Add widget
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={RotateCcw}
+              onClick={restoreDefaultDraft}
+              data-testid="dashboard-reset-btn"
+              title="Restore the default layout for this app"
+            >
+              Reset
+            </Button>
+            <span className="dash-editbar__divider" />
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleCancel}
+              disabled={saving}
+              data-testid="dashboard-cancel-btn"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              icon={Check}
+              onClick={() => handleSaveRef.current()}
+              disabled={saving}
+              data-testid="dashboard-done-btn"
+            >
+              {saving ? "Saving…" : "Save"}
+            </Button>
+          </div>
         </div>
       )}
 
-      <AddWidgetDrawer
+      {dashIsError && !dash ? (
+        <div className="px-4">
+          <div className="inos-card" data-testid="dashboard-error">
+            <EmptyState
+              icon={AlertTriangle}
+              title="Couldn't load this dashboard"
+              text="Check your connection and try again."
+              action={
+                <Button variant="secondary" icon={RefreshCw} onClick={refetchDashboard}>
+                  Retry
+                </Button>
+              }
+            />
+          </div>
+        </div>
+      ) : loading ? (
+        <DashboardSkeleton />
+      ) : isEmpty ? (
+        <div className="px-4">
+          <div className="inos-card" data-testid="dashboard-empty">
+            <EmptyState
+              icon={LayoutGrid}
+              title={editing ? "No widgets yet" : "Your dashboard is empty"}
+              text={`Add widgets to see your ${appName} data at a glance.`}
+              action={
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <Button
+                    variant="primary"
+                    icon={Plus}
+                    onClick={() => {
+                      if (!editing) enterEdit();
+                      setDrawer(true);
+                    }}
+                  >
+                    Add widget
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    icon={RotateCcw}
+                    onClick={editing ? restoreDefaultDraft : restoreDefaultNow}
+                    disabled={resetting}
+                  >
+                    {resetting ? "Restoring…" : "Restore default layout"}
+                  </Button>
+                </div>
+              }
+            />
+          </div>
+        </div>
+      ) : !gridWidth ? (
+        <DashboardSkeleton />
+      ) : (
+        <GridLayout
+          key={breakpoint}
+          width={gridWidth}
+          className={`dash-grid${ready ? " is-ready" : ""}${editing ? " is-editing" : ""}`}
+          layout={layouts[breakpoint]}
+          cols={COLS[breakpoint]}
+          rowHeight={ROW_HEIGHT}
+          margin={MARGIN}
+          compactType="vertical"
+          useCSSTransforms
+          isDraggable={editing && canArrange}
+          isResizable={editing && canArrange}
+          draggableHandle=".dash-drag-handle"
+          draggableCancel=".dash-item__remove, .dash-item__lock"
+          resizeHandles={["se"]}
+          onLayoutChange={onLayoutChange}
+        >
+          {layout.map((item) => (
+            <div key={item.key}>
+              <WidgetFrame
+                item={item}
+                meta={libraryByKey[item.key]}
+                editing={editing}
+                canRemove={!requiredKeys.includes(item.key)}
+                onRemove={removeWidget}
+                isNew={newKey === item.key}
+              />
+            </div>
+          ))}
+        </GridLayout>
+      )}
+
+      <WidgetLibrary
         open={drawer}
         onClose={() => setDrawer(false)}
-        appKey={appKey}
+        appName={appName}
         library={library}
-        layout={layout}
+        activeKeys={activeKeys}
         onAdd={addWidget}
-      />
-      <ResetModal
-        open={resetOpen}
-        onClose={() => setResetOpen(false)}
-        onConfirm={handleReset}
-        resetting={resetting}
       />
     </div>
   );

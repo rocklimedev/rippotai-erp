@@ -67,7 +67,7 @@ const estimate: NativeSource = {
 const boq: NativeSource = {
   table: 'boqs',
   label: 'BOQ',
-  route: '/boq/all',
+  route: '/ledger/boq/all',
   deleted: true,
   version: true,
   accepted: ['PENDING_APPROVAL', 'APPROVED'],
@@ -144,7 +144,7 @@ export const NATIVE_EVIDENCE: Readonly<Record<string, NativeSource>> = {
   VENDOR_QUOTATION: {
     table: 'quotations',
     label: 'Vendor quotation',
-    route: '/quotations',
+    route: '/procurement/estimates/all',
     deleted: true,
     accepted: ['SUBMITTED', 'APPROVED'],
     approved: ['APPROVED'],
@@ -199,8 +199,8 @@ export class NativeEvidenceService {
               plan_of_actions: `/crm/plan-of-action/${row.id}`,
               payment_schedules: `/ledger/payment-schedule/${row.id}`,
               budget_estimates: `/ledger/budget-estimate/${row.id}`,
-              boqs: `/boq/${row.id}`,
-              quotations: `/quotations/${row.id}`,
+              boqs: `/ledger/boq/${row.id}`,
+              quotations: `/procurement/estimates/${row.id}`,
               project_planners: `/projects/${encodeURIComponent(projectId)}`,
             } as Record<string, string>
           )[config.table] ?? config.route)

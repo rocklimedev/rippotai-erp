@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Req,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
@@ -34,8 +35,20 @@ export class TasksController {
   // GET ALL TASKS
   // =========================
   @Get()
-  findAll() {
-    return this.tasksService.findAll();
+  findAll(
+    @Query('status') status?: string,
+    @Query('project_id') project_id?: string,
+    @Query('assigned_to') assigned_to?: string,
+    @Query('priority') priority?: string,
+    @Query('q') q?: string,
+  ) {
+    return this.tasksService.findAll({
+      status,
+      project_id,
+      assigned_to,
+      priority,
+      q,
+    });
   }
 
   // =========================

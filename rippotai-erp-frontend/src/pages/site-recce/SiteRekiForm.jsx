@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus, Trash2, Upload, X } from "lucide-react";
+import { Plus, Trash2, Upload, X, Loader2 } from "lucide-react";
 
 import { SiteRecceSectionForm } from "../../components/SiteRecceSectionForm";
 import { useAutoSave } from "../../hooks/use-autosave";
+import { Page, EmptyState } from "@/components/inos";
+import { todayISODate } from "@/components/forms/crm-form-ui";
 
 import { useGetProjectsQuery } from "../../api/projects/project.api";
 import { useGetUsersByRoleNameQuery } from "../../api/users/user.api";
@@ -223,11 +225,37 @@ const mapBackendToFormValues = (data) => {
   // in the backend.
   // ----------------------------------------------------------
 
-  const layoutAttachments = (data.floor_layouts || []).map((url, index) => ({
-    id: `floor-layout-${index}`,
-    title: `Floor layout ${index + 1}`,
-    images: [{ id: `floor-image-${index}`, url, preview: url }],
-  }));
+  const layoutAttachments = [];
+
+  (data.rooms || []).forEach((room) => {
+    (room.photos || []).forEach((photo) => {
+      if (!photo.layout_image_url) return;
+
+      layoutAttachments.push({
+        id: `layout-${photo.id}`,
+
+        title: photo.layout_file_name || `${room.room_name || "Room"} Layout`,
+
+        remark: photo.notes || "",
+
+        floor_id: "",
+
+        images: [
+          {
+            id: photo.id,
+
+            preview: photo.layout_image_url,
+
+            url: photo.layout_image_url,
+
+            file_name: photo.layout_file_name || "",
+
+            caption: photo.notes || "",
+          },
+        ],
+      });
+    });
+  });
 
   return {
     status: "draft",
@@ -273,24 +301,6 @@ const mapBackendToFormValues = (data) => {
         : String(data.number_of_floors),
 
     site_type: data.site_type || "",
-    project_type: data.project_type || "",
-    site_type_other: data.site_type_other || "",
-    site_condition: data.site_condition || "",
-    site_condition_category: data.site_condition_category || "",
-    site_condition_other: data.site_condition_other || "",
-    site_restrictions:
-      data.site_restrictions ??
-      [
-        {
-          type: "societyRwaPermittedWorkTimings",
-          details: data.working_hours_allowed,
-        },
-        {
-          type: "materialMovementRestrictions",
-          details: data.material_movement_rule,
-        },
-        { type: "other", details: data.society_rwa_restrictions },
-      ].filter((row) => row.details),
 
     lift_available:
       data.lift_available === null || data.lift_available === undefined
@@ -429,18 +439,7 @@ const buildSiteReccePayload = (projectId, values) => {
 
     number_of_floors: toIntOrUndefined(values.number_of_floors),
 
-    site_type: values.site_type || null,
-    project_type: values.project_type || null,
-    site_type_other: values.site_type_other || null,
-    site_condition: values.site_condition || null,
-    site_condition_category: values.site_condition_category || null,
-    site_condition_other: values.site_condition_other || null,
-    floor_layouts: (values.layoutAttachments || []).flatMap((layout) =>
-      (layout.images || []).map((image) => image.url).filter(Boolean),
-    ),
-    site_restrictions: (values.site_restrictions || []).map(
-      ({ type, details }) => ({ type, details: details || "" }),
-    ),
+    site_type: strOrUndefined(values.site_type),
 
     lift_available: boolOrUndefined(values.lift_available),
 
@@ -476,6 +475,7 @@ export function SiteRekiForm() {
   const navigate = useNavigate();
 
   const { id: siteRecceId } = useParams();
+  const [searchParams] = useSearchParams();
 
   const isEditMode = Boolean(siteRecceId);
 
@@ -532,7 +532,6 @@ export function SiteRekiForm() {
   // ==========================================================
 
   const [projectId, setProjectId] = useState("");
-  const [pendingUploads, setPendingUploads] = useState(0);
 
   // ==========================================================
   // FORM STATE
@@ -601,6 +600,34 @@ export function SiteRekiForm() {
   }, [isEditMode, existingSiteRecce, setValues]);
 
   // ==========================================================
+  // SENSIBLE DEFAULT: recce date = today (create mode only)
+  // ==========================================================
+
+  useEffect(() => {
+    if (isEditMode) return;
+    if (values.recce_date) return;
+    setValues((prev) => ({ ...prev, recce_date: prev.recce_date || todayISODate() }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode]);
+
+  // Preselect project from ?project_id= when opened from a project
+  useEffect(() => {
+    if (isEditMode) return;
+    const fromQuery = searchParams.get("project_id") || searchParams.get("projectId");
+    if (fromQuery) setProjectId(fromQuery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode]);
+
+  const handleSaveDraft = () => {
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(values));
+      toast.success("Draft saved on this device.");
+    } catch {
+      toast.error("Could not save the draft.");
+    }
+  };
+
+  // ==========================================================
   // ERROR WHILE LOADING
   // ==========================================================
 
@@ -658,8 +685,7 @@ export function SiteRekiForm() {
   // IMAGE UPLOAD
   // ==========================================================
 
-  const handleFileUpload = async (file) => {
-    setPendingUploads((count) => count + 1);
+  const handleFileUpload = async (file, type) => {
     try {
       const result = await uploadSiteRecceImage(file).unwrap();
 
@@ -680,8 +706,6 @@ export function SiteRekiForm() {
       console.error("SITE RECCE IMAGE UPLOAD FAILED:", error);
 
       throw error;
-    } finally {
-      setPendingUploads((count) => count - 1);
     }
   };
 
@@ -820,7 +844,7 @@ export function SiteRekiForm() {
           <button
             type="button"
             onClick={addFloor}
-            className="flex items-center gap-2 bg-[#1F453B] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#1a3a32]"
+            className="flex items-center gap-2 inos-btn inos-btn--primary"
           >
             <Plus size={16} />
             Add Floor
@@ -828,13 +852,13 @@ export function SiteRekiForm() {
         </div>
 
         {floors.length === 0 ? (
-          <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl">
-            <p className="text-gray-500">No floors added yet.</p>
+          <div className="text-center py-12 border border-dashed border-[var(--line-strong)] rounded-xl">
+            <p className="text-[var(--text-3)]">No floors added yet.</p>
 
             <button
               type="button"
               onClick={addFloor}
-              className="mt-4 text-[#1F453B] hover:underline"
+              className="mt-4 text-[var(--brand)] hover:underline"
             >
               Add your first floor
             </button>
@@ -843,11 +867,11 @@ export function SiteRekiForm() {
           floors.map((floor, floorIndex) => (
             <div
               key={floor.id}
-              className="border border-gray-200 rounded-xl p-6 bg-white"
+              className="border border-[var(--line)] rounded-xl p-6 bg-white"
             >
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
-                  <span className="text-xl font-bold text-[#1F453B]">
+                  <span className="text-xl font-bold text-[var(--brand)]">
                     Floor {floorIndex + 1}
                   </span>
 
@@ -880,7 +904,7 @@ export function SiteRekiForm() {
                   <button
                     type="button"
                     onClick={() => removeFloor(floorIndex)}
-                    className="text-red-500 hover:text-red-700 p-2"
+                    className="text-[var(--text-3)] hover:text-[var(--bad-fg)] p-2"
                   >
                     <Trash2 size={18} />
                   </button>
@@ -904,7 +928,7 @@ export function SiteRekiForm() {
                   <button
                     type="button"
                     onClick={() => addRoom(floorIndex)}
-                    className="text-[#1F453B] flex items-center gap-1 text-sm hover:underline"
+                    className="text-[var(--brand)] flex items-center gap-1 text-sm hover:underline"
                   >
                     <Plus size={16} />
                     Add Room
@@ -913,8 +937,8 @@ export function SiteRekiForm() {
 
                 {floor.rooms?.length > 0 ? (
                   <div className="overflow-x-auto">
-                    <table className="min-w-full border border-gray-200">
-                      <thead className="bg-gray-50">
+                    <table className="min-w-full border border-[var(--line)]">
+                      <thead className="bg-[var(--surface-2)]">
                         <tr>
                           {[
                             "Room Name",
@@ -928,7 +952,7 @@ export function SiteRekiForm() {
                           ].map((heading, index) => (
                             <th
                               key={index}
-                              className="px-4 py-3 text-left text-xs font-medium text-gray-600"
+                              className="px-4 py-3 text-left text-xs font-medium text-[var(--text-3)]"
                             >
                               {heading}
                             </th>
@@ -936,7 +960,7 @@ export function SiteRekiForm() {
                         </tr>
                       </thead>
 
-                      <tbody className="divide-y divide-gray-200">
+                      <tbody className="divide-y divide-[var(--line)]">
                         {floor.rooms.map((room, roomIndex) => (
                           <tr key={room.id}>
                             <td className="px-4 py-2">
@@ -1062,7 +1086,7 @@ export function SiteRekiForm() {
                                 onClick={() =>
                                   removeRoom(floorIndex, roomIndex)
                                 }
-                                className="text-red-500 hover:text-red-700"
+                                className="text-[var(--text-3)] hover:text-[var(--bad-fg)]"
                               >
                                 <Trash2 size={18} />
                               </button>
@@ -1073,7 +1097,7 @@ export function SiteRekiForm() {
                     </table>
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-sm italic">
+                  <p className="text-[var(--text-3)] text-sm italic">
                     No rooms added yet.
                   </p>
                 )}
@@ -1138,34 +1162,33 @@ export function SiteRekiForm() {
       }));
     };
 
-    const handleImageUpload = async (layoutIndex, e) => {
+    const handleImageUpload = (layoutIndex, e) => {
       const files = Array.from(e.target.files || []);
-      e.target.value = "";
-      const layoutId = values.layoutAttachments[layoutIndex]?.id;
-      try {
-        const images = await Promise.all(
-          files.map(async (file) => {
-            const url = await handleFileUpload(file, "layout");
-            return {
-              id: crypto.randomUUID(),
-              url,
-              preview: url,
-              file_name: file.name,
-              caption: "",
-            };
-          }),
-        );
-        setValues((prev) => ({
-          ...prev,
-          layoutAttachments: (prev.layoutAttachments || []).map((layout) =>
-            layout.id === layoutId
-              ? { ...layout, images: [...(layout.images || []), ...images] }
-              : layout,
-          ),
+
+      setValues((prev) => {
+        const newLayouts = [...(prev.layoutAttachments || [])];
+
+        const layout = newLayouts[layoutIndex];
+
+        const newImages = files.map((file) => ({
+          id: crypto.randomUUID(),
+
+          file,
+
+          preview: URL.createObjectURL(file),
+
+          caption: "",
         }));
-      } catch {
-        toast.error("Failed to upload floor layout");
-      }
+
+        layout.images = [...(layout.images || []), ...newImages];
+
+        return {
+          ...prev,
+          layoutAttachments: newLayouts,
+        };
+      });
+
+      e.target.value = "";
     };
 
     const updateImageCaption = (layoutIndex, imageIndex, caption) => {
@@ -1214,7 +1237,7 @@ export function SiteRekiForm() {
           <button
             type="button"
             onClick={addLayout}
-            className="flex items-center gap-2 bg-[#1F453B] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#1a3a32]"
+            className="flex items-center gap-2 inos-btn inos-btn--primary"
           >
             <Plus size={16} />
             Add Layout
@@ -1222,13 +1245,13 @@ export function SiteRekiForm() {
         </div>
 
         {layouts.length === 0 ? (
-          <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl">
-            <p className="text-gray-500">No layout drawings added yet.</p>
+          <div className="text-center py-12 border border-dashed border-[var(--line-strong)] rounded-xl">
+            <p className="text-[var(--text-3)]">No layout drawings added yet.</p>
 
             <button
               type="button"
               onClick={addLayout}
-              className="mt-4 text-[#1F453B] hover:underline"
+              className="mt-4 text-[var(--brand)] hover:underline"
             >
               Add first layout
             </button>
@@ -1237,7 +1260,7 @@ export function SiteRekiForm() {
           layouts.map((layout, layoutIndex) => (
             <div
               key={layout.id}
-              className="border border-gray-200 rounded-xl p-6 bg-white"
+              className="border border-[var(--line)] rounded-xl p-6 bg-white"
             >
               <div className="flex justify-between items-start mb-6">
                 <div className="flex-1">
@@ -1271,7 +1294,7 @@ export function SiteRekiForm() {
                 <button
                   type="button"
                   onClick={() => removeLayout(layoutIndex)}
-                  className="text-red-500 hover:text-red-700 p-2"
+                  className="text-[var(--text-3)] hover:text-[var(--bad-fg)] p-2"
                 >
                   <Trash2 size={20} />
                 </button>
@@ -1291,7 +1314,7 @@ export function SiteRekiForm() {
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="font-semibold">Images</h4>
 
-                  <label className="cursor-pointer flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg text-sm">
+                  <label className="cursor-pointer flex items-center gap-2 bg-[var(--sage-50)] hover:bg-[var(--sage-100)] px-4 py-2 rounded-lg text-sm">
                     <Upload size={16} />
                     Upload Images
                     <input
@@ -1308,7 +1331,7 @@ export function SiteRekiForm() {
                   {(layout.images || []).map((image, imgIndex) => (
                     <div
                       key={image.id}
-                      className="border rounded-lg overflow-hidden bg-gray-50"
+                      className="border rounded-lg overflow-hidden bg-[var(--surface-2)]"
                     >
                       <div className="relative">
                         {image.preview ? (
@@ -1318,7 +1341,7 @@ export function SiteRekiForm() {
                             className="w-full h-48 object-cover"
                           />
                         ) : (
-                          <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-400">
+                          <div className="w-full h-48 bg-[var(--sage-50)] flex items-center justify-center text-[var(--text-3)]">
                             No Preview
                           </div>
                         )}
@@ -1326,7 +1349,7 @@ export function SiteRekiForm() {
                         <button
                           type="button"
                           onClick={() => removeImage(layoutIndex, imgIndex)}
-                          className="absolute top-2 right-2 bg-white rounded-full p-1 text-red-500 hover:bg-red-50"
+                          className="absolute top-2 right-2 bg-white rounded-full p-1 text-red-500 hover:bg-[var(--bad-bg)]"
                         >
                           <X size={18} />
                         </button>
@@ -1373,7 +1396,7 @@ export function SiteRekiForm() {
 
     if (section.type === "documents") {
       return (
-        <div className="py-12 text-center text-gray-500">
+        <div className="py-12 text-center text-[var(--text-3)]">
           Additional Documents section coming soon...
         </div>
       );
@@ -1387,10 +1410,6 @@ export function SiteRekiForm() {
   // ============================================================
 
   const handleSubmit = async () => {
-    if (pendingUploads) {
-      toast.error("Please wait for image uploads to finish.");
-      return;
-    }
     if (!projectId) {
       toast.error("Please select a project.");
 
@@ -1420,7 +1439,7 @@ export function SiteRekiForm() {
       if (isEditMode) {
         console.log("UPDATING SITE RECCE:", siteRecceId);
 
-        await updateSiteRecce({
+        const updated = await updateSiteRecce({
           id: siteRecceId,
           ...payload,
         }).unwrap();
@@ -1470,13 +1489,9 @@ export function SiteRekiForm() {
 
   if (isEditMode && (isLoadingSiteRecce || isFetchingSiteRecce)) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-[#1F453B] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-
-          <p className="text-gray-500">Loading Site Recce...</p>
-        </div>
-      </div>
+      <Page width="form">
+        <EmptyState icon={Loader2} title="Loading site recce…" />
+      </Page>
     );
   }
 
@@ -1486,12 +1501,19 @@ export function SiteRekiForm() {
 
   return (
     <SiteRecceSectionForm
-      title={isEditMode ? "Edit Site Recce" : "Site Recce"}
+      title={isEditMode ? "Edit site recce" : "Site recce"}
       subtitle={
         isEditMode
-          ? "Update site inspection details"
-          : "Complete site inspection form"
+          ? "Update the site inspection record for this project."
+          : "Record what you found on the site visit — rooms, measurements, photos and site rules. Produces the site recce report."
       }
+      crumbs={[
+        { label: "CRM", to: "/crm" },
+        { label: "Forms" },
+        { label: isEditMode ? "Edit site recce" : "Site recce" },
+      ]}
+      submitLabel={isEditMode ? "Update site recce" : "Save site recce"}
+      onSaveDraft={handleSaveDraft}
       sections={sections}
       values={values}
       onFieldChange={handleFieldChange}
@@ -1499,7 +1521,7 @@ export function SiteRekiForm() {
       projectId={projectId}
       onProjectChange={setProjectId}
       onSubmit={handleSubmit}
-      isSubmitting={isCreating || isUpdating || pendingUploads > 0}
+      isSubmitting={isCreating || isUpdating}
       renderSection={renderSection}
       onFileUpload={handleFileUpload}
     />

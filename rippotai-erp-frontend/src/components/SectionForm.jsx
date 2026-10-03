@@ -48,24 +48,24 @@ export function SectionForm({
         <button
           onClick={onSubmit}
           disabled={isSubmitting}
-          className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold inline-flex items-center gap-2 disabled:opacity-60"
+          className="inos-btn inos-btn--primary"
         >
           <Save size={15} />
           {isSubmitting
-            ? "Saving..."
+            ? "Saving…"
             : title.includes("Recce")
-              ? "Save Site Recce"
-              : "Generate Brief"}
+              ? "Save site recce"
+              : "Generate brief"}
         </button>
       }
     >
       {/* Project Selector */}
       <Card>
-        <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
+        <label className="text-[13px] font-semibold text-[var(--text)] mb-1 block">
           Project
         </label>
         <select
-          className="bc-input h-10 max-w-lg"
+          className="inos-select max-w-lg"
           value={projectId}
           onChange={(e) => onProjectChange(e.target.value)}
         >
@@ -81,7 +81,7 @@ export function SectionForm({
       <div className="grid md:grid-cols-[240px_1fr] gap-5">
         {/* Sidebar */}
         <Card>
-          <div className="text-xs uppercase tracking-widest text-[#6B7B7C] mb-3">
+          <div className="inos-section-title mb-3">
             Sections
           </div>
           <div className="flex flex-col gap-1">
@@ -91,8 +91,8 @@ export function SectionForm({
                 onClick={() => setActive(index)}
                 className={`text-left rounded-lg px-3 py-2 text-sm transition ${
                   active === index
-                    ? "bg-[#1F453B] text-white"
-                    : "hover:bg-[#F4F6F7] text-[#333]"
+                    ? "bg-[var(--brand-50)] text-[var(--brand)] font-semibold"
+                    : "hover:bg-[var(--sage-50)] text-[var(--text-2)]"
                 }`}
               >
                 {index + 1}. {section.title}
@@ -103,7 +103,7 @@ export function SectionForm({
 
         {/* Main Content */}
         <Card>
-          <div className="text-lg font-semibold text-[#333333] mb-4">
+          <div className="text-lg font-semibold text-[var(--text)] mb-4">
             {currentSection?.title}
           </div>
 
@@ -120,7 +120,7 @@ export function SectionForm({
 
                 return (
                   <div key={field.key}>
-                    <label className="block text-[13px] font-semibold text-[#333333] mb-1">
+                    <label className="block text-[13px] font-semibold text-[var(--text)] mb-1">
                       {field.label}
                     </label>
 
@@ -162,7 +162,7 @@ export function SectionForm({
                       />
                     ) : field.type === "select" ? (
                       <select
-                        className="bc-input h-10 w-full"
+                        className="inos-select"
                         value={fieldValue}
                         onChange={(e) =>
                           onFieldChange(
@@ -204,22 +204,22 @@ export function SectionForm({
               type="button"
               disabled={active === 0}
               onClick={() => setActive((prev) => prev - 1)}
-              className="h-9 px-4 rounded-lg border border-[rgba(31,69,59,0.14)] text-sm disabled:opacity-50"
+              className="inos-btn inos-btn--secondary inos-btn--sm"
             >
-              ← Previous
+              Previous
             </button>
 
             <button
               type="button"
               disabled={active === sections.length - 1}
               onClick={() => setActive((prev) => prev + 1)}
-              className="h-9 px-4 rounded-lg border border-[rgba(31,69,59,0.14)] text-sm disabled:opacity-50"
+              className="inos-btn inos-btn--secondary inos-btn--sm"
             >
-              Next →
+              Next
             </button>
           </div>
 
-          <div className="mt-4 text-xs text-[#94A3A5]">
+          <div className="mt-4 text-xs text-[var(--text-3)]">
             Draft autosaved locally • {filledCount} field
             {filledCount !== 1 ? "s" : ""} completed
           </div>

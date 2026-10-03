@@ -23,6 +23,7 @@ import { NotificationsModule } from '../engagement/notifications.module';
 import { QuotationVersionsService } from './quotation-versions.service';
 import { QuotationVersionsController } from './quotation-versions.controller';
 import { QuotationDashboardService } from './quotation-dashboard.service';
+import { QuotationExportService } from './quotation-export.service';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { QuotationDashboardService } from './quotation-dashboard.service';
     QuotationItemsService,
     QuotationVersionsService,
     QuotationDashboardService,
+    QuotationExportService,
   ],
 
   exports: [QuotationsService, QuotationItemsService, QuotationVersionsService],

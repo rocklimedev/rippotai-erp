@@ -9,6 +9,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useCreateUnitMutation } from "../../api/meta/unit.api";
+import { Button, Field, TextInput, TextArea } from "@/components/inos";
 
 export function AddUnitModal({ open, onClose, onCreated }) {
   const [name, setName] = useState("");
@@ -52,70 +53,57 @@ export function AddUnitModal({ open, onClose, onCreated }) {
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Unit</DialogTitle>
+          <DialogTitle>Add unit</DialogTitle>
           <DialogDescription>
-            Create a new unit of measurement. It will be available for every
-            line item once added.
+            A new unit of measurement, available on every line item once added.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
-          <div>
-            <label className="text-[11.5px] uppercase tracking-widest text-[#B5C4B6]">
-              Name
-            </label>
-            <input
-              className="bc-input mt-1"
-              placeholder="e.g. Square Meter"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              data-testid="add-unit-name"
-              autoFocus
-            />
+        <form
+          className="inos-modal-body"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+        >
+          <div className="inos-form-grid">
+            <Field label="Name" required>
+              <TextInput
+                placeholder="e.g. Square metre"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                data-testid="add-unit-name"
+                autoFocus
+              />
+            </Field>
+            <Field label="Code" required hint="Short label shown in tables.">
+              <TextInput
+                placeholder="e.g. Sqm"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                data-testid="add-unit-code"
+              />
+            </Field>
           </div>
-
-          <div>
-            <label className="text-[11.5px] uppercase tracking-widest text-[#B5C4B6]">
-              Code
-            </label>
-            <input
-              className="bc-input mt-1"
-              placeholder="e.g. Sqm"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              data-testid="add-unit-code"
-            />
-          </div>
-
-          <div>
-            <label className="text-[11.5px] uppercase tracking-widest text-[#B5C4B6]">
-              Description
-            </label>
-            <textarea
-              className="bc-input mt-1 min-h-[70px]"
+          <Field label="Description" optional>
+            <TextArea
+              rows={2}
               placeholder="Optional notes about this unit"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               data-testid="add-unit-description"
             />
-          </div>
-        </div>
+          </Field>
+          <button type="submit" hidden aria-hidden tabIndex={-1} />
+        </form>
 
-        <DialogFooter>
-          <button
-            onClick={() => onClose(false)}
-            className="h-10 px-4 rounded-xl border border-[#B5C4B6] text-[13px] font-semibold"
-          >
+        <DialogFooter className="gap-2">
+          <Button variant="ghost" onClick={() => onClose(false)}>
             Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={isLoading}
-            className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold disabled:opacity-60"
-            data-testid="add-unit-submit"
-          >
-            {isLoading ? "Adding…" : "Add Unit"}
-          </button>
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} disabled={isLoading} data-testid="add-unit-submit">
+            {isLoading ? "Adding…" : "Add unit"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

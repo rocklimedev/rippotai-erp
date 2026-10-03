@@ -4,7 +4,6 @@ import { toast } from "sonner";
 
 import {
   Plus,
-  Search,
   MoreHorizontal,
   Edit,
   Archive,
@@ -13,38 +12,58 @@ import {
   FileText,
   Download,
   RefreshCw,
-  CheckCircle2,
-  Circle,
   FolderOpen,
   ChevronRight,
-  List,
-  GitBranch,
+  LayoutGrid,
+  GitCommitHorizontal,
+  Rows3,
+  Layers,
+  PlayCircle,
+  PauseCircle,
+  CheckCircle2,
+  ArchiveRestore,
+  Clock3,
 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+  Page,
+  PageHeader,
+  Card,
+  Button,
+  Stats,
+  StatTile,
+  Toolbar,
+  ToolbarSpacer,
+  SearchInput,
+  Segmented,
+  Tabs,
+  Pill,
+  StatusPill,
+  EmptyState,
+  Progress,
+  FolderCard,
+  folderToneFor,
+} from "@/components/inos";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { Shell } from "../../hooks/shared";
+import {
+  PhaseStepper,
+  PhaseLegend,
+  Skeleton,
+  formatDate,
+  normalizeTreePhases,
+  normalizeEmbeddedPhases,
+  normalizeCommandCenterPhases,
+  commandCenterProgress,
+  phaseProgress,
+} from "@/components/projects/_projects-ui";
+import { useGetCommandCenterPortfolioQuery } from "@/api/projects/command-center.api";
 
 import {
   useGetProjectsSummaryQuery,
@@ -56,48 +75,29 @@ import {
 
 import { useGetProjectDocumentPhaseTreeQuery } from "../../api/documents/document.api";
 
-/* ------------------------------------------------------------------
- * Brand — centralised until these live in the tailwind theme.
- * ------------------------------------------------------------------ */
-const BRAND = "bg-[#1F453B] hover:bg-[#17372f] text-white";
-const BRAND_TEXT = "text-[#1F453B]";
-const BRAND_SOFT = "bg-[#E7F1EA] text-[#1F453B]";
-
 /* ============================================================
-   STATUS
+   CONSTANTS
 ============================================================ */
 
 const STATUS_LABEL = {
   active: "Active",
   completed: "Completed",
   archived: "Archived",
-  on_hold: "On Hold",
+  on_hold: "On hold",
 };
-
-const STATUS_CLASS = {
-  active: "bg-[#E7F1EA] text-[#2F6B3F] hover:bg-[#E7F1EA]",
-  completed: "bg-[#E7F1EA] text-[#2F6B3F] hover:bg-[#E7F1EA]",
-  archived: "bg-muted text-muted-foreground hover:bg-muted",
-  on_hold: "bg-[#F4E1D6] text-[#A34D27] hover:bg-[#F4E1D6]",
-};
-
-/* ============================================================
-   DOCUMENT TEMPLATES
-============================================================ */
 
 const DOCUMENT_TEMPLATES = [
   {
     id: "site-visit-schedule-template",
-    name: "Site Visit Schedule Template",
-    description:
-      "Standard template for planning and recording project site visits.",
+    name: "Site visit schedule template",
+    description: "Standard template for planning and recording project site visits.",
     type: "Template",
     format: "PDF",
     file: "/templates/site-visit-schedule-template.pdf",
   },
   {
     id: "how-we-work",
-    name: "How We Work",
+    name: "How we work",
     description:
       "Overview of the standard project workflow, processes, responsibilities, and ways of working.",
     type: "Guideline",
@@ -106,12 +106,13 @@ const DOCUMENT_TEMPLATES = [
   },
 ];
 
+const VIEW_KEY = "inos.projects.view";
+
 /* ============================================================
    HELPERS — PROJECT
 ============================================================ */
 
-const getProjectId = (project) =>
-  project?.id || project?.projectId || project?.project_id || "";
+const getProjectId = (project) => project?.id || project?.projectId || project?.project_id || "";
 
 const getProjectName = (project) =>
   project?.name ||
@@ -122,39 +123,24 @@ const getProjectName = (project) =>
   getProjectId(project) ||
   "Untitled project";
 
-const getProjectCode = (project) =>
-  project?.code || project?.project_code || project?.slug || "";
+const getProjectCode = (project) => project?.code || project?.project_code || project?.slug || "";
 
-const getClientName = (project) =>
-  project?.client?.name || project?.clientName || project?.client_name || "—";
+const getClientName = (project) => project?.client?.name || project?.clientName || project?.client_name || "";
 
 const getProjectType = (project) =>
   project?.project_type?.name ||
   project?.projectType?.name ||
   project?.project_type_name ||
   project?.projectTypeName ||
-  "—";
+  "";
 
-const getProjectStatus = (project) =>
-  String(project?.status || "active").toLowerCase();
+const getLocation = (project) => project?.site_location || project?.siteLocation || project?.location || "";
 
-const formatDate = (value) => {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-};
+const getProjectStatus = (project) => String(project?.status || "active").toLowerCase();
 
-/*
- * If a project object ever carries its own embedded phases (legacy /
- * alternate backend shape), this keeps the timeline UI independent from
- * the exact serialization.
- */
-const getProjectPhases = (project) => {
+const getEcd = (project) => project?.expected_completion_date || project?.expectedCompletionDate;
+
+const getEmbeddedPhases = (project) => {
   const phases =
     project?.phases ||
     project?.project_phases ||
@@ -162,95 +148,27 @@ const getProjectPhases = (project) => {
     project?.timeline ||
     project?.workflow?.phases ||
     [];
-
   return Array.isArray(phases) ? phases : [];
 };
 
-const getPhaseName = (phase) =>
-  phase?.name ||
-  phase?.title ||
-  phase?.phase_name ||
-  phase?.phaseName ||
-  phase?.label ||
-  phase?.process_name ||
-  "Untitled phase";
-
-const getPhaseId = (phase, index) =>
-  phase?.id ||
-  phase?.phaseId ||
-  phase?.phase_id ||
-  phase?.code ||
-  phase?.phase_code ||
-  `phase-${index}`;
-
-const getPhaseStatus = (phase) => {
-  const explicitStatus = String(
-    phase?.status || phase?.phase_status || phase?.state || "",
-  ).toLowerCase();
-
-  if (
-    ["completed", "complete", "cleared", "done", "finished"].includes(
-      explicitStatus,
-    )
-  ) {
-    return "completed";
-  }
-
-  if (
-    ["current", "active", "in_progress", "in-progress", "working"].includes(
-      explicitStatus,
-    )
-  ) {
-    return "current";
-  }
-
-  if (
-    ["pending", "upcoming", "locked", "ready", "not_started"].includes(
-      explicitStatus,
-    )
-  ) {
-    return "upcoming";
-  }
-
-  if (phase?.completed === true || phase?.isComplete === true)
-    return "completed";
-  if (
-    phase?.current === true ||
-    phase?.isCurrent === true ||
-    phase?.active === true
-  )
-    return "current";
-
-  return "upcoming";
-};
-
-/*
- * Fallback current-phase / current-document readers for projects that
- * don't resolve against the phase tree at all (e.g. tree fetch failed,
- * or the project isn't present in the tree response for some reason).
- */
-const getCurrentPhaseName = (project) => {
-  const phases = getProjectPhases(project);
-
-  const current =
-    project?.current_phase ||
-    project?.currentPhase ||
-    (project?.current_phase_name && { name: project.current_phase_name }) ||
-    phases.find((phase) => getPhaseStatus(phase) === "current") ||
-    null;
-
+const findPhaseTreeProject = (project, phaseTree) => {
+  const entries = Array.isArray(phaseTree?.projects) ? phaseTree.projects : Array.isArray(phaseTree) ? phaseTree : [];
+  const projectId = String(getProjectId(project) || "");
+  const projectName = getProjectName(project).trim().toLowerCase();
   return (
-    current?.name ||
-    current?.title ||
-    current?.phase_name ||
-    current?.phaseName ||
-    project?.current_phase_name ||
-    project?.currentPhaseName ||
-    "Phase not started"
+    entries.find((entry) => String(entry?.id || "") === projectId) ||
+    entries.find((entry) => String(entry?.name || "").trim().toLowerCase() === projectName) ||
+    null
   );
 };
 
-const getCurrentDocumentName = (project) => {
+const getFallbackPhaseName = (project) => {
+  const current = project?.current_phase || project?.currentPhase;
+  if (typeof current === "string") return current;
+  return current?.name || current?.title || project?.current_phase_name || project?.currentPhaseName || null;
+};
+
+const getFallbackDocumentName = (project) => {
   const document =
     project?.current_document ||
     project?.currentDocument ||
@@ -258,737 +176,344 @@ const getCurrentDocumentName = (project) => {
     project?.documentInProgress ||
     project?.active_document ||
     project?.activeDocument ||
-    project?.documentBeingPrepared ||
     null;
-
   if (typeof document === "string") return document;
-
-  return (
-    document?.name ||
-    document?.title ||
-    document?.document_name ||
-    document?.documentName ||
-    project?.current_document_name ||
-    project?.currentDocumentName ||
-    "No document currently being prepared"
-  );
+  return document?.name || document?.title || project?.current_document_name || project?.currentDocumentName || null;
 };
 
-const normalizePhaseTreeProjects = (tree) => {
-  if (Array.isArray(tree?.projects)) return tree.projects;
-  if (Array.isArray(tree)) return tree;
-  return [];
-};
-
-const findPhaseTreeProject = (project, phaseTree) => {
-  const entries = normalizePhaseTreeProjects(phaseTree);
-  const projectId = String(getProjectId(project) || "");
-  const projectName = getProjectName(project).trim().toLowerCase();
-
-  return (
-    entries.find((entry) => String(entry?.id || "") === projectId) ||
-    entries.find(
-      (entry) =>
-        String(entry?.name || "")
-          .trim()
-          .toLowerCase() === projectName,
-    ) ||
-    null
-  );
-};
-
-const getTreePhases = (entry) =>
-  Array.isArray(entry?.phases) ? entry.phases : [];
-
-const getTreePhaseId = (phase, index) =>
-  phase?.id || phase?.phaseCode || phase?.code || `phase-${index}`;
-
-const getTreePhaseName = (phase) =>
-  phase?.title || phase?.phaseCode || phase?.name || "Untitled phase";
-
-const getTreePhaseOrder = (phase, index) =>
-  phase?.sortOrder ?? phase?.phaseNumber ?? index;
-
-const getTreePhaseComplete = (phase) => Boolean(phase?.isComplete);
-
-const getTreePhaseDocCounts = (phase) => {
-  const summary = phase?.summary;
-  if (!summary) return null;
-
-  return {
-    uploaded: summary.uploaded ?? 0,
-    total: summary.total ?? 0,
-    required: summary.required ?? 0,
-    uploadedRequired: summary.uploadedRequired ?? 0,
-    pendingRequired: summary.pendingRequired ?? 0,
-  };
-};
-
-/*
- * The next document to work on within a phase: the earliest REQUIRED
- * document (by sequence) not yet uploaded, falling back to any pending
- * document if nothing required is outstanding.
+/**
+ * Everything a card / row / table cell shows about a project's position,
+ * derived once. Phase statuses only count as done when the data says so
+ * (see treePhaseIsComplete) — no more "11 of 11 completed" on a new project.
  */
-const getTreePhasePendingDocument = (phase) => {
-  const documents = Array.isArray(phase?.documents) ? phase.documents : [];
-
-  const pending = documents
-    .filter((doc) => !doc?.isUploaded)
-    .slice()
-    .sort((a, b) => (a?.sequence ?? 0) - (b?.sequence ?? 0));
-
-  const requiredPending = pending.find(
-    (doc) => doc?.requirementType === "REQUIRED",
-  );
-
-  return (requiredPending || pending[0])?.name || null;
-};
-
-/*
- * Builds the normalized phases array rendered by <ProjectTimeline> /
- * consumed by the table + search. Each item: { id, name, status,
- * docCounts, pendingDocumentName }.
- *
- * Priority:
- *   1. Project's own embedded phases, if present (legacy shape).
- *   2. The matching entry in the phase tree response.
- */
-const buildTimelinePhases = (project, phaseTree) => {
-  const ownPhases = getProjectPhases(project);
-
-  if (ownPhases.length) {
-    return ownPhases.map((phase, index) => ({
-      id: getPhaseId(phase, index),
-      name: getPhaseName(phase),
-      status: getPhaseStatus(phase),
-      docCounts: null,
-      pendingDocumentName: null,
-    }));
+const getProjectInfo = (project, phaseTree) => {
+  // Command Center rollup first — same phase / % as the Command Center and the project page.
+  const cc = phaseTree?.ccById?.get(String(getProjectId(project)));
+  if (cc?.phases?.length) {
+    const phases = normalizeCommandCenterPhases(cc);
+    const progress = commandCenterProgress(cc, phases);
+    const docs = phases.reduce(
+      (acc, p) => ({ uploaded: acc.uploaded + (p.docCounts?.uploaded || 0), total: acc.total + (p.docCounts?.total || 0) }),
+      { uploaded: 0, total: 0 },
+    );
+    return {
+      phases,
+      progress,
+      docs,
+      phaseName: progress.current?.name || "Not started",
+      documentName: getFallbackDocumentName(project) || null,
+    };
   }
+  const embedded = getEmbeddedPhases(project);
+  const treeEntry = embedded.length ? null : findPhaseTreeProject(project, phaseTree);
+  const phases = embedded.length ? normalizeEmbeddedPhases(embedded) : normalizeTreePhases(treeEntry?.phases || []);
+  const progress = phaseProgress(phases);
 
-  const treeEntry = findPhaseTreeProject(project, phaseTree);
-  const treePhases = getTreePhases(treeEntry)
-    .slice()
-    .sort((a, b) => getTreePhaseOrder(a, 0) - getTreePhaseOrder(b, 0));
-
-  if (!treePhases.length) return [];
-
-  const firstIncompleteIndex = treePhases.findIndex(
-    (phase) => !getTreePhaseComplete(phase),
+  const docs = phases.reduce(
+    (acc, p) => ({
+      uploaded: acc.uploaded + (p.docCounts?.uploaded || 0),
+      total: acc.total + (p.docCounts?.total || 0),
+    }),
+    { uploaded: 0, total: 0 },
   );
 
-  return treePhases.map((phase, index) => ({
-    id: getTreePhaseId(phase, index),
-    name: getTreePhaseName(phase),
-    status: getTreePhaseComplete(phase)
-      ? "completed"
-      : index === firstIncompleteIndex
-        ? "current"
-        : "upcoming",
-    docCounts: getTreePhaseDocCounts(phase),
-    pendingDocumentName:
-      index === firstIncompleteIndex
-        ? getTreePhasePendingDocument(phase)
-        : null,
-  }));
-};
-
-/*
- * Resolves what a project's card / row should show for "current phase"
- * and "document being prepared", preferring the phase tree and falling
- * back to whatever the project object itself carries.
- */
-const getProjectCurrentInfo = (project, phaseTree) => {
-  const phases = buildTimelinePhases(project, phaseTree);
-  const current = phases.find((phase) => phase.status === "current");
+  const phaseName = progress.current?.name || getFallbackPhaseName(project) || (progress.total && progress.done === progress.total ? "All phases complete" : "Not started");
 
   return {
     phases,
-    phaseName: current?.name || getCurrentPhaseName(project),
-    documentName:
-      current?.pendingDocumentName || getCurrentDocumentName(project),
+    progress,
+    docs,
+    phaseName,
+    documentName: progress.current?.pendingDocumentName || getFallbackDocumentName(project) || null,
   };
 };
 
-const getPhaseProgress = (phases) => {
-  if (!phases.length) return { completed: 0, current: 0, percentage: 0 };
-
-  const completed = phases.filter(
-    (phase) => getPhaseStatus(phase) === "completed",
-  ).length;
-  const current = phases.findIndex(
-    (phase) => getPhaseStatus(phase) === "current",
-  );
-  const currentIndex =
-    current >= 0 ? current + 1 : completed > 0 ? completed : 0;
-
-  return {
-    completed,
-    current: currentIndex,
-    percentage: Math.round((currentIndex / phases.length) * 100),
-  };
+const readView = () => {
+  try {
+    const v = localStorage.getItem(VIEW_KEY);
+    return ["grid", "timeline", "table"].includes(v) ? v : "grid";
+  } catch {
+    return "grid";
+  }
 };
-
-const clampPercent = (value) => Math.min(Math.max(value, 0), 100);
 
 /* ============================================================
-   STATUS CHIP
+   ROW ACTIONS MENU
 ============================================================ */
 
-function StatusChip({ status }) {
-  const normalized = String(status || "active").toLowerCase();
-
+function ProjectMenu({ project, onArchive, onRestore, onDelete }) {
+  const nav = useNavigate();
+  const id = getProjectId(project);
+  const name = getProjectName(project);
   return (
-    <Badge
-      className={cn(
-        "rounded-full text-[10.5px] font-bold",
-        STATUS_CLASS[normalized] || STATUS_CLASS.active,
-      )}
-    >
-      {STATUS_LABEL[normalized] || normalized}
-    </Badge>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" icon={MoreHorizontal} aria-label={`Actions for ${name}`} />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="inos-menu w-48">
+        <DropdownMenuItem onSelect={() => nav(`/projects/${id}`)}>
+          <ChevronRight className="mr-2 h-4 w-4" /> Open
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => nav(`/projects/${id}/edit`)}>
+          <Edit className="mr-2 h-4 w-4" /> Edit details
+        </DropdownMenuItem>
+        {getProjectStatus(project) !== "archived" ? (
+          <DropdownMenuItem onSelect={() => onArchive(id, name)}>
+            <Archive className="mr-2 h-4 w-4" /> Archive
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onSelect={() => onRestore(id, name)}>
+            <RotateCcw className="mr-2 h-4 w-4" /> Restore
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => onDelete(id, name)} style={{ color: "var(--bad-fg)" }}>
+          <Trash2 className="mr-2 h-4 w-4" /> Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
 /* ============================================================
-   PHASE DOT
+   GRID VIEW — folder cards
 ============================================================ */
 
-function PhaseDot({ status }) {
-  if (status === "completed") {
-    return (
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#BBD5C1] bg-[#E7F1EA]">
-        <CheckCircle2 className="h-[15px] w-[15px] text-[#2F6B3F]" />
-      </div>
-    );
-  }
-
-  if (status === "current") {
-    return (
-      <div
-        className={cn(
-          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-4 border-[#D8E0DA]",
-          BRAND,
-        )}
-      >
-        <div className="h-1.5 w-1.5 rounded-full bg-white" />
-      </div>
-    );
-  }
-
+function ProjectGrid({ projects, phaseTree }) {
+  const nav = useNavigate();
   return (
-    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[#D8E0DA] bg-background">
-      <Circle className="h-[11px] w-[11px] text-muted-foreground" />
+    <div className="pj-grid">
+      {projects.map((project) => {
+        const id = getProjectId(project);
+        const info = getProjectInfo(project, phaseTree);
+        const { progress } = info;
+        const location = getLocation(project);
+        const client = getClientName(project);
+        return (
+          <FolderCard
+            key={id}
+            tone={folderToneFor(id)}
+            title={getProjectName(project)}
+            subtitle={[location, client].filter(Boolean).join(" · ") || "No site location"}
+            badge={<StatusPill status={getProjectStatus(project)} size="sm" />}
+            onClick={() => nav(`/projects/${id}`)}
+            meta={
+              <span className="pj-meta">
+                <FileText aria-hidden />
+                {info.docs.total ? `${info.docs.uploaded}/${info.docs.total} docs` : "No docs yet"}
+              </span>
+            }
+            footer={
+              <span className="pj-meta pj-muted">
+                <Clock3 aria-hidden />
+                {formatDate(project?.updated_at || project?.created_at)}
+              </span>
+            }
+          >
+            <div className="pj-folder-body">
+              <div className="pj-folder-phase">
+                <span className="pj-folder-phase__name" style={progress.started ? undefined : { color: "var(--text-3)", fontWeight: 550 }}>
+                  {info.phaseName}
+                </span>
+                {progress.total > 0 && (
+                  <span className="pj-folder-phase__count">
+                    {progress.done}/{progress.total} phases
+                  </span>
+                )}
+              </div>
+              <Progress value={progress.percent} tone={progress.percent === 100 ? "ok" : undefined} />
+            </div>
+          </FolderCard>
+        );
+      })}
     </div>
   );
 }
 
 /* ============================================================
-   PROJECT TIMELINE
+   TIMELINE VIEW — compact rows with a slim stepper
 ============================================================ */
 
-function ProjectTimeline({ project, phaseTree }) {
-  const { phases, phaseName, documentName } = useMemo(
-    () => getProjectCurrentInfo(project, phaseTree),
-    [project, phaseTree],
-  );
-
-  const progress = getPhaseProgress(phases);
-
+function ProjectTimeline({ projects, phaseTree, actions }) {
+  const nav = useNavigate();
   return (
-    <Card className="overflow-hidden py-0">
-      {/* Project header */}
-      <div className="border-b px-4 py-3">
-        <div className="flex items-start gap-3">
-          <div
-            className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-              BRAND_SOFT,
-            )}
-          >
-            <FolderOpen className="h-[18px] w-[18px]" />
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                variant="link"
-                className={cn(
-                  "h-auto p-0 text-[15px] font-bold text-foreground hover:no-underline hover:text-[#1F453B]",
-                )}
-                onClick={() =>
-                  (window.location.href = `/projects/${getProjectId(project)}`)
-                }
-              >
+    <Card flush title="Phase timeline" subtitle="Where every project sits across the 11 delivery phases" actions={<PhaseLegend />}>
+      {projects.map((project) => {
+        const id = getProjectId(project);
+        const info = getProjectInfo(project, phaseTree);
+        const { progress } = info;
+        const location = getLocation(project);
+        return (
+          <div className="pj-trow" key={id}>
+            <div style={{ minWidth: 0 }}>
+              <button type="button" className="pj-trow__name" onClick={() => nav(`/projects/${id}`)}>
                 {getProjectName(project)}
-              </Button>
+              </button>
+              <div className="pj-trow__sub pj-truncate">
+                {[location, getClientName(project)].filter(Boolean).join(" · ") || "No site location"}
+              </div>
+            </div>
 
-              {getProjectCode(project) && (
-                <span className="text-[10.5px] text-muted-foreground">
-                  {getProjectCode(project)}
+            <div className="pj-trow__phase">
+              <div className="pj-trow__phase-top">
+                <span className="pj-truncate">
+                  {progress.started ? (
+                    <>
+                      <span className="pj-muted">Now · </span>
+                      <b style={{ fontWeight: 600 }}>{info.phaseName}</b>
+                    </>
+                  ) : (
+                    <span className="pj-muted">{info.phaseName}</span>
+                  )}
+                  {info.documentName && <span className="pj-muted"> — {info.documentName}</span>}
+                </span>
+                {progress.total > 0 && (
+                  <span className="pj-muted tabular" style={{ flexShrink: 0 }}>
+                    {progress.done}/{progress.total}
+                  </span>
+                )}
+              </div>
+              {progress.total > 0 ? (
+                <PhaseStepper phases={info.phases} label={`${getProjectName(project)} phases`} />
+              ) : (
+                <span className="pj-muted" style={{ fontSize: 12 }}>
+                  Phases not configured
                 </span>
               )}
-
-              <StatusChip status={getProjectStatus(project)} />
             </div>
 
-            <div className="mt-0.5 text-[11.5px] text-muted-foreground">
-              {getClientName(project)}
+            <div className="pj-trow__stat">
+              <StatusPill status={getProjectStatus(project)} size="sm" />
+              <span className="pj-muted">ECD {formatDate(getEcd(project))}</span>
             </div>
+
+            <ProjectMenu project={project} {...actions} />
           </div>
-
-          <div className="hidden shrink-0 text-right sm:block">
-            <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-              ECD
-            </div>
-            <div className="mt-0.5 text-xs font-semibold">
-              {formatDate(
-                project?.expected_completion_date ||
-                  project?.expectedCompletionDate,
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Current work */}
-      <div className="border-b bg-muted/30 px-4 py-3">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <div className="rounded-lg border bg-background px-3 py-2.5">
-            <div className="flex items-center gap-2">
-              <GitBranch className={cn("h-[14px] w-[14px]", BRAND_TEXT)} />
-              <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                Current phase
-              </span>
-            </div>
-            <div className="mt-1 text-[13px] font-bold">{phaseName}</div>
-          </div>
-
-          <div className="rounded-lg border bg-background px-3 py-2.5">
-            <div className="flex items-center gap-2">
-              <FileText className={cn("h-[14px] w-[14px]", BRAND_TEXT)} />
-              <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                Document being prepared
-              </span>
-            </div>
-            <div className="mt-1 truncate text-[13px] font-bold">
-              {documentName}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Timeline */}
-      <div className="px-5 py-5">
-        {phases.length ? (
-          <>
-            <div className="mb-3 flex items-center justify-between">
-              <div>
-                <div className="text-xs font-semibold">Project timeline</div>
-                <div className="mt-0.5 text-[10.5px] text-muted-foreground">
-                  {progress.completed} of {phases.length} phases completed
-                </div>
-              </div>
-              <div className={cn("text-xs font-bold", BRAND_TEXT)}>
-                {progress.percentage}%
-              </div>
-            </div>
-
-            <Progress
-              value={clampPercent(progress.percentage)}
-              className="mb-6 h-1.5"
-            />
-
-            <div className="overflow-x-auto pb-2">
-              <div
-                className="relative min-w-[720px]"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: `repeat(${phases.length}, minmax(130px, 1fr))`,
-                }}
-              >
-                <div className="absolute left-4 right-4 top-[13px] h-[2px] bg-[#D8E0DA]" />
-
-                {phases.map((phase, index) => {
-                  const status = getPhaseStatus(phase);
-
-                  return (
-                    <div
-                      key={getPhaseId(phase, index)}
-                      className="relative px-2"
-                    >
-                      <div className="flex justify-center">
-                        <PhaseDot status={status} />
-                      </div>
-
-                      <div className="mt-2 text-center">
-                        <div
-                          className={cn(
-                            "text-[11.5px] font-semibold leading-tight",
-                            status === "current"
-                              ? BRAND_TEXT
-                              : status === "completed"
-                                ? "text-foreground"
-                                : "text-muted-foreground",
-                          )}
-                        >
-                          {getPhaseName(phase)}
-                        </div>
-
-                        <div className="mt-1 text-[9.5px] text-muted-foreground/80">
-                          {status === "completed"
-                            ? "Completed"
-                            : status === "current"
-                              ? "In progress"
-                              : "Upcoming"}
-                        </div>
-
-                        {phase.docCounts && (
-                          <div className="mt-0.5 text-[9.5px] text-muted-foreground/80">
-                            {phase.docCounts.uploaded}/{phase.docCounts.total}{" "}
-                            docs
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="py-8 text-center">
-            <GitBranch className="mx-auto mb-2 h-[30px] w-[30px] text-muted-foreground/50" />
-            <div className="text-[13px] font-semibold">
-              Timeline not configured
-            </div>
-            <div className="mt-1 text-[11px] text-muted-foreground">
-              Project phases will appear here once configured.
-            </div>
-          </div>
-        )}
-      </div>
+        );
+      })}
     </Card>
   );
 }
 
 /* ============================================================
-   PROJECT TABLE
+   TABLE VIEW
 ============================================================ */
 
-function ProjectTable({
-  projects,
-  loading,
-  phaseTree,
-  onArchive,
-  onRestore,
-  onDelete,
-}) {
+function ProjectTable({ projects, phaseTree, actions }) {
   const nav = useNavigate();
-
   return (
-    <Card className="overflow-hidden py-0">
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/30 hover:bg-muted/30">
-              <TableHead>Project</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Current phase</TableHead>
-              <TableHead>Document</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>ECD</TableHead>
-              <TableHead className="w-12" />
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {loading && (
-              <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="py-12 text-center text-muted-foreground"
-                >
-                  Loading projects...
-                </TableCell>
-              </TableRow>
-            )}
-
-            {!loading && !projects.length && (
-              <TableRow>
-                <TableCell colSpan={7} className="py-12 text-center">
-                  <FolderOpen className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
-                  <div className="text-[13px] font-semibold">
-                    No projects found
-                  </div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">
-                    Try changing your search or status filter.
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-
-            {!loading &&
-              projects.map((project) => {
-                const projectId = getProjectId(project);
-                const { phaseName, documentName } = getProjectCurrentInfo(
-                  project,
-                  phaseTree,
-                );
-
-                return (
-                  <TableRow key={projectId}>
-                    <TableCell>
-                      <button
-                        type="button"
-                        onClick={() => nav(`/projects/${projectId}`)}
-                        className="min-w-0 text-left"
-                      >
-                        <div
-                          className={cn(
-                            "max-w-[220px] truncate font-semibold hover:text-[#1F453B]",
-                          )}
-                        >
-                          {getProjectName(project)}
-                        </div>
-                        <div className="mt-0.5 max-w-[220px] truncate text-[10.5px] text-muted-foreground">
-                          {getProjectCode(project)}
-                        </div>
-                      </button>
-                    </TableCell>
-
-                    <TableCell className="text-muted-foreground">
-                      {getClientName(project)}
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <GitBranch
-                          className={cn(
-                            "h-[13px] w-[13px] shrink-0",
-                            BRAND_TEXT,
-                          )}
-                        />
-                        <span className="max-w-[180px] truncate font-semibold">
-                          {phaseName}
-                        </span>
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-[13px] w-[13px] shrink-0 text-muted-foreground" />
-                        <span className="max-w-[210px] truncate text-muted-foreground">
-                          {documentName}
-                        </span>
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <StatusChip status={getProjectStatus(project)} />
-                    </TableCell>
-
-                    <TableCell className="whitespace-nowrap text-muted-foreground">
-                      {formatDate(
-                        project?.expected_completion_date ||
-                          project?.expectedCompletionDate,
-                      )}
-                    </TableCell>
-
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Project actions"
-                          >
-                            <MoreHorizontal className="h-[17px] w-[17px]" />
-                          </Button>
-                        </DropdownMenuTrigger>
-
-                        <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem
-                            onSelect={() => nav(`/projects/${projectId}`)}
-                          >
-                            <ChevronRight className="mr-2 h-[15px] w-[15px]" />
-                            View
-                          </DropdownMenuItem>
-
-                          <DropdownMenuItem
-                            onSelect={() => nav(`/projects/${projectId}/edit`)}
-                          >
-                            <Edit className="mr-2 h-[15px] w-[15px]" />
-                            Edit
-                          </DropdownMenuItem>
-
-                          {getProjectStatus(project) !== "archived" ? (
-                            <DropdownMenuItem
-                              onSelect={() =>
-                                onArchive(projectId, getProjectName(project))
-                              }
-                              className="text-amber-700"
-                            >
-                              <Archive className="mr-2 h-[15px] w-[15px]" />
-                              Archive
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem
-                              onSelect={() =>
-                                onRestore(projectId, getProjectName(project))
-                              }
-                              className="text-emerald-700"
-                            >
-                              <RotateCcw className="mr-2 h-[15px] w-[15px]" />
-                              Restore
-                            </DropdownMenuItem>
-                          )}
-
-                          <DropdownMenuItem
-                            onSelect={() =>
-                              onDelete(projectId, getProjectName(project))
-                            }
-                            className="text-red-600"
-                          >
-                            <Trash2 className="mr-2 h-[15px] w-[15px]" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-          </TableBody>
-        </Table>
+    <Card flush>
+      <div className="inos-table-wrap">
+        <table className="inos-table">
+          <thead>
+            <tr>
+              <th>Project</th>
+              <th>Client</th>
+              <th>Current phase</th>
+              <th>Progress</th>
+              <th>Status</th>
+              <th>ECD</th>
+              <th className="actions" aria-label="Actions" />
+            </tr>
+          </thead>
+          <tbody>
+            {projects.map((project) => {
+              const id = getProjectId(project);
+              const info = getProjectInfo(project, phaseTree);
+              return (
+                <tr key={id} className="is-clickable" onClick={() => nav(`/projects/${id}`)}>
+                  <td style={{ maxWidth: 260 }}>
+                    <div className="pj-cell-title pj-truncate">{getProjectName(project)}</div>
+                    <div className="pj-cell-sub pj-truncate">{getLocation(project) || getProjectCode(project)}</div>
+                  </td>
+                  <td className={getClientName(project) ? "" : "muted"}>{getClientName(project) || "—"}</td>
+                  <td style={{ maxWidth: 240 }}>
+                    <div className="pj-truncate" style={{ fontWeight: 550 }}>{info.phaseName}</div>
+                    {info.documentName && <div className="pj-cell-sub pj-truncate">{info.documentName}</div>}
+                  </td>
+                  <td>
+                    <div className="pj-progress-cell">
+                      <Progress value={info.progress.percent} />
+                      <span>{info.progress.percent}%</span>
+                    </div>
+                  </td>
+                  <td>
+                    <StatusPill status={getProjectStatus(project)} />
+                  </td>
+                  <td className="muted" style={{ whiteSpace: "nowrap" }}>
+                    {formatDate(getEcd(project))}
+                  </td>
+                  <td className="actions" onClick={(e) => e.stopPropagation()}>
+                    <ProjectMenu project={project} {...actions} />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </Card>
   );
 }
 
 /* ============================================================
-   DOCUMENTS VIEW
+   DOCUMENTS TAB
 ============================================================ */
 
 function DocumentsView() {
-  return (
-    <Card className="overflow-hidden py-0">
-      <CardHeader className="border-b py-4">
-        <div className="flex items-center gap-3">
-          <div
-            className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-lg",
-              BRAND_SOFT,
-            )}
-          >
-            <FileText className="h-[17px] w-[17px]" />
-          </div>
-          <div>
-            <div className="text-sm font-bold">Project documents</div>
-            <div className="mt-0.5 text-[11px] text-muted-foreground">
-              Approved templates and documents available for download.
-            </div>
-          </div>
-        </div>
-      </CardHeader>
-
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/30 hover:bg-muted/30">
-              <TableHead>Document</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Format</TableHead>
-              <TableHead className="text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {DOCUMENT_TEMPLATES.map((document) => (
-              <TableRow key={document.id}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={cn(
-                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-                        BRAND_SOFT,
-                      )}
-                    >
-                      <FileText className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-semibold">{document.name}</div>
-                      <div className="mt-0.5 text-[10.5px] text-muted-foreground">
-                        {document.description}
-                      </div>
-                    </div>
-                  </div>
-                </TableCell>
-
-                <TableCell className="text-muted-foreground">
-                  {document.type}
-                </TableCell>
-
-                <TableCell>
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "rounded-md text-[10px] font-bold",
-                      BRAND_TEXT,
-                    )}
-                  >
-                    {document.format}
-                  </Badge>
-                </TableCell>
-
-                <TableCell className="text-right">
-                  <Button asChild size="sm" className={BRAND}>
-                    <a href={document.file} download>
-                      <Download className="h-[13px] w-[13px]" />
-                      Download
-                    </a>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </Card>
-  );
-}
-
-/* ============================================================
-   SUMMARY CARD (clickable status filter)
-============================================================ */
-
-function SummaryCard({ label, value, sub, valueClassName, active, onClick }) {
+  const nav = useNavigate();
   return (
     <Card
-      role="button"
-      tabIndex={0}
-      aria-pressed={active}
-      onClick={onClick}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onClick?.();
-        }
-      }}
-      className={cn(
-        "cursor-pointer p-3 transition-all hover:border-[#1F453B]/40 hover:shadow-sm",
-        active && "border-[#1F453B] bg-[#E7F1EA]/50 ring-1 ring-[#1F453B]",
-      )}
+      flush
+      title="Templates & guidelines"
+      subtitle="Approved templates available to every project team."
+      actions={
+        <Button variant="secondary" size="sm" icon={FolderOpen} onClick={() => nav("/projects/documents/all")}>
+          Project documents
+        </Button>
+      }
     >
-      <div className="text-[10.5px] uppercase tracking-[0.12em] text-muted-foreground">
-        {label}
+      <div className="inos-table-wrap">
+        <table className="inos-table">
+          <thead>
+            <tr>
+              <th>Document</th>
+              <th>Type</th>
+              <th>Format</th>
+              <th className="actions" aria-label="Download" />
+            </tr>
+          </thead>
+          <tbody>
+            {DOCUMENT_TEMPLATES.map((document) => (
+              <tr key={document.id}>
+                <td>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                    <span className="inos-icon-tile inos-icon-tile--sm">
+                      <FileText aria-hidden />
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="pj-cell-title">{document.name}</div>
+                      <div className="pj-cell-sub">{document.description}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="muted">{document.type}</td>
+                <td>
+                  <Pill tone="brand" dot={false} size="sm">
+                    {document.format}
+                  </Pill>
+                </td>
+                <td className="actions">
+                  <a href={document.file} download className="inos-btn inos-btn--soft inos-btn--sm">
+                    <Download aria-hidden />
+                    <span>Download</span>
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      <div className={cn("mt-1 text-[22px] font-bold", valueClassName)}>
-        {value}
-      </div>
-      <div className="text-[10.5px] text-muted-foreground">{sub}</div>
     </Card>
   );
 }
@@ -997,26 +522,26 @@ function SummaryCard({ label, value, sub, valueClassName, active, onClick }) {
    MAIN
 ============================================================ */
 
-const TABS = [
-  ["all", "Projects"],
-  ["documents", "Documents"],
-];
-
 export default function ProjectsDashboard() {
   const nav = useNavigate();
 
   const [tab, setTab] = useState("all");
-  const [view, setView] = useState("timeline");
+  const [view, setViewState] = useState(readView);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
+  const setView = (v) => {
+    setViewState(v);
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      /* per-viewer convenience only */
+    }
+  };
+
   /* -------------------------------------------------- Queries */
 
-  const {
-    data: summary,
-    isFetching: summaryLoading,
-    isError: summaryError,
-  } = useGetProjectsSummaryQuery();
+  const { data: summary, isFetching: summaryLoading, isError: summaryError } = useGetProjectsSummaryQuery();
 
   const {
     data: projectsResponse,
@@ -1025,18 +550,17 @@ export default function ProjectsDashboard() {
     refetch,
   } = useGetProjectsQuery({});
 
-  /*
-   * { projects: [ { id, name, phases: [...] } ] } — per-project phase
-   * and document completion, used to drive the timeline view, the
-   * table's Phase/Document columns, and search.
-   */
-  const {
-    data: phaseTree,
-    isFetching: phaseTreeLoading,
-    isError: phaseTreeError,
-  } = useGetProjectDocumentPhaseTreeQuery();
-
-  /* -------------------------------------------------- Normalize */
+  const { data: docPhaseTree, isFetching: phaseTreeLoading, isError: phaseTreeError } =
+    useGetProjectDocumentPhaseTreeQuery();
+  const { data: portfolio } = useGetCommandCenterPortfolioQuery({});
+  // phase source for every card/row: Command Center rollup by project id, document tree as fallback
+  const phaseTree = useMemo(
+    () => ({
+      projects: Array.isArray(docPhaseTree) ? docPhaseTree : docPhaseTree?.projects || [],
+      ccById: new Map((Array.isArray(portfolio) ? portfolio : []).map((r) => [String(r.id), r])),
+    }),
+    [docPhaseTree, portfolio],
+  );
 
   const projects = useMemo(() => {
     if (Array.isArray(projectsResponse)) return projectsResponse;
@@ -1052,61 +576,43 @@ export default function ProjectsDashboard() {
   /* -------------------------------------------------- Errors */
 
   useEffect(() => {
-    if (summaryError || projectsError) {
-      toast.error("Projects could not be loaded.");
-    }
+    if (summaryError || projectsError) toast.error("Projects could not be loaded.");
   }, [summaryError, projectsError]);
 
   useEffect(() => {
-    if (phaseTreeError) {
-      toast.error("Project timeline phases could not be loaded.");
-    }
+    if (phaseTreeError) toast.error("Project timeline phases could not be loaded.");
   }, [phaseTreeError]);
 
   /* -------------------------------------------------- Filter */
 
   const filteredProjects = useMemo(() => {
     const search = q.trim().toLowerCase();
-
     return projects.filter((project) => {
       const status = getProjectStatus(project);
-
       if (statusFilter !== "all" && status !== statusFilter) return false;
       if (!search) return true;
-
-      const { phaseName, documentName } = getProjectCurrentInfo(
-        project,
-        phaseTree,
-      );
-
-      const values = [
+      const { phaseName, documentName } = getProjectInfo(project, phaseTree);
+      return [
         getProjectName(project),
         getProjectCode(project),
         getClientName(project),
         getProjectType(project),
+        getLocation(project),
         phaseName,
         documentName,
-      ];
-
-      return values.some((value) =>
-        String(value || "")
-          .toLowerCase()
-          .includes(search),
-      );
+      ].some((value) => String(value || "").toLowerCase().includes(search));
     });
   }, [projects, q, statusFilter, phaseTree]);
 
   /* -------------------------------------------------- Actions */
 
   const handleStatusCardClick = (status) => {
-    setTab("all"); // make sure the Projects tab is visible
-    // clicking the active card again clears the filter
+    setTab("all");
     setStatusFilter((prev) => (prev === status ? "all" : status));
   };
 
   const handleArchive = async (id, name) => {
     if (!window.confirm(`Archive project "${name}"?`)) return;
-
     try {
       await archiveProject({ id, archived_by: "current_user" }).unwrap();
       toast.success(`"${name}" has been archived.`);
@@ -1117,7 +623,6 @@ export default function ProjectsDashboard() {
 
   const handleRestore = async (id, name) => {
     if (!window.confirm(`Restore project "${name}"?`)) return;
-
     try {
       await restoreProject(id).unwrap();
       toast.success(`"${name}" has been restored.`);
@@ -1127,13 +632,7 @@ export default function ProjectsDashboard() {
   };
 
   const handleDelete = async (id, name) => {
-    if (
-      !window.confirm(
-        `Permanently delete "${name}"?\n\nThis action cannot be undone.`,
-      )
-    )
-      return;
-
+    if (!window.confirm(`Permanently delete "${name}"?\n\nThis action cannot be undone.`)) return;
     try {
       await deleteProject(id).unwrap();
       toast.success(`"${name}" was deleted.`);
@@ -1142,285 +641,164 @@ export default function ProjectsDashboard() {
     }
   };
 
+  const actions = { onArchive: handleArchive, onRestore: handleRestore, onDelete: handleDelete };
   const loading = summaryLoading || projectsLoading;
 
-  /* -------------------------------------------------- Summary fallbacks */
+  /* -------------------------------------------------- Summary */
 
+  const countBy = (s) => projects.filter((project) => getProjectStatus(project) === s).length;
   const total = summary?.total ?? projects.length;
+  const active = summary?.active ?? countBy("active");
+  const completed = summary?.completed ?? countBy("completed");
+  const onHold = summary?.on_hold ?? countBy("on_hold");
+  const archived = summary?.archived ?? countBy("archived");
 
-  const active =
-    summary?.active ??
-    projects.filter((project) => getProjectStatus(project) === "active").length;
-
-  const completed =
-    summary?.completed ??
-    projects.filter((project) => getProjectStatus(project) === "completed")
-      .length;
-
-  const onHold =
-    summary?.on_hold ??
-    projects.filter((project) => getProjectStatus(project) === "on_hold")
-      .length;
-
-  const archived =
-    summary?.archived ??
-    projects.filter((project) => getProjectStatus(project) === "archived")
-      .length;
-
-  const summaryCards = [
-    { key: "all", label: "Total projects", value: total, sub: "in workspace" },
-    {
-      key: "active",
-      label: "Active",
-      value: active,
-      sub: "currently running",
-      cls: BRAND_TEXT,
-    },
-    {
-      key: "on_hold",
-      label: "On hold",
-      value: onHold,
-      sub: "require attention",
-      cls: "text-[#A34D27]",
-    },
-    {
-      key: "completed",
-      label: "Completed",
-      value: completed,
-      sub: "handed over",
-      cls: "text-[#2F6B3F]",
-    },
-    {
-      key: "archived",
-      label: "Archived",
-      value: archived,
-      sub: "archived projects",
-      cls: "text-muted-foreground",
-    },
+  const tiles = [
+    { key: "all", label: "All projects", value: total, meta: "In the workspace", icon: <Layers />, tone: undefined },
+    { key: "active", label: "Active", value: active, meta: "Currently running", icon: <PlayCircle />, tone: "ok" },
+    { key: "on_hold", label: "On hold", value: onHold, meta: "Need attention", icon: <PauseCircle />, tone: "peach" },
+    { key: "completed", label: "Completed", value: completed, meta: "Handed over", icon: <CheckCircle2 />, tone: "info" },
+    { key: "archived", label: "Archived", value: archived, meta: "Out of view", icon: <ArchiveRestore />, tone: "lilac" },
   ];
+
+  const showSkeleton = loading || (view !== "table" && phaseTreeLoading && !phaseTree);
 
   /* -------------------------------------------------- Render */
 
   return (
-    <Shell
-      title="Projects"
-      subtitle="Manage every project from briefing to final handover through one connected workspace."
-      action={
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => refetch()}
-            disabled={loading}
-          >
-            <RefreshCw
-              className={cn("h-[14px] w-[14px]", loading && "animate-spin")}
-            />
-            <span className="hidden sm:inline">Refresh</span>
-          </Button>
-
-          <Button
-            type="button"
-            className={BRAND}
-            onClick={() => nav("/projects/new")}
-          >
-            <Plus className="h-[14px] w-[14px]" />
-            Create project
-          </Button>
-        </div>
-      }
-    >
-      <div className="space-y-4">
-        {/* -------------------------------------------- Summary (click to filter) */}
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-          {summaryCards.map((card) => (
-            <SummaryCard
-              key={card.key}
-              label={card.label}
-              value={card.value}
-              sub={card.sub}
-              valueClassName={card.cls}
-              active={tab === "all" && statusFilter === card.key}
-              onClick={() => handleStatusCardClick(card.key)}
-            />
-          ))}
-        </div>
-
-        {/* -------------------------------------------- Tabs */}
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="h-auto w-full justify-start gap-1 rounded-none border-b bg-transparent p-0">
-            {TABS.map(([key, label]) => (
-              <TabsTrigger
-                key={key}
-                value={key}
-                className={cn(
-                  "rounded-t-lg rounded-b-none border-0 px-3 py-2 text-xs font-semibold shadow-none",
-                  "data-[state=active]:bg-[#EAF0EB] data-[state=active]:text-[#1F453B] data-[state=active]:shadow-none",
-                )}
-              >
-                {label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-
-        {/* -------------------------------------------- Documents */}
-        {tab === "documents" ? (
-          <DocumentsView />
-        ) : (
+    <Page className="pj-page">
+      <PageHeader
+        title="Projects"
+        subtitle="Every project from brief to handover — see where each one stands and open its workspace."
+        actions={
           <>
-            {/* Filter / view bar */}
-            <Card className="p-3">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                <div className="relative max-w-xl flex-1">
-                  <Search className="absolute left-3 top-1/2 h-[14px] w-[14px] -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={q}
-                    onChange={(event) => setQ(event.target.value)}
-                    placeholder="Search project, client, phase, document..."
-                    className="pl-9"
-                  />
-                </div>
+            <Button
+              variant="ghost"
+              icon={RefreshCw}
+              onClick={() => refetch()}
+              disabled={loading}
+              aria-label="Refresh projects"
+              title="Refresh"
+            />
+            <Button variant="primary" icon={Plus} onClick={() => nav("/projects/new")} data-testid="btn-new-project">
+              New project
+            </Button>
+          </>
+        }
+      />
 
-                <div className="flex items-center rounded-lg border bg-muted/30 p-1 lg:ml-auto">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={view === "timeline" ? "default" : "ghost"}
-                    onClick={() => setView("timeline")}
-                    className={cn(
-                      "h-8 gap-1.5 text-[11.5px]",
-                      view === "timeline" && BRAND,
-                    )}
-                  >
-                    <GitBranch className="h-[13px] w-[13px]" />
-                    Timeline
-                  </Button>
+      <Stats>
+        {tiles.map((t) => (
+          <StatTile
+            key={t.key}
+            label={t.label}
+            value={loading && !projects.length ? "—" : t.value}
+            meta={t.meta}
+            icon={t.icon}
+            tone={t.tone}
+            active={tab === "all" && statusFilter === t.key}
+            onClick={() => handleStatusCardClick(t.key)}
+          />
+        ))}
+      </Stats>
 
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={view === "table" ? "default" : "ghost"}
-                    onClick={() => setView("table")}
-                    className={cn(
-                      "h-8 gap-1.5 text-[11.5px]",
-                      view === "table" && BRAND,
-                    )}
-                  >
-                    <List className="h-[13px] w-[13px]" />
-                    Table
-                  </Button>
-                </div>
+      <Tabs
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: "all", label: "Projects", count: projects.length },
+          { value: "documents", label: "Documents", count: DOCUMENT_TEMPLATES.length },
+        ]}
+      />
+
+      {tab === "documents" ? (
+        <DocumentsView />
+      ) : (
+        <>
+          <Toolbar>
+            <SearchInput value={q} onChange={setQ} placeholder="Search project, client, location, phase…" />
+            <Segmented
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={[
+                { value: "all", label: "All" },
+                { value: "active", label: "Active" },
+                { value: "on_hold", label: "On hold" },
+                { value: "completed", label: "Completed" },
+                { value: "archived", label: "Archived" },
+              ]}
+            />
+            <ToolbarSpacer />
+            <Segmented
+              value={view}
+              onChange={setView}
+              options={[
+                { value: "grid", label: "Grid", icon: LayoutGrid },
+                { value: "timeline", label: "Timeline", icon: GitCommitHorizontal },
+                { value: "table", label: "Table", icon: Rows3 },
+              ]}
+            />
+          </Toolbar>
+
+          {showSkeleton ? (
+            view === "grid" ? (
+              <div className="pj-grid">
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} height={236} />
+                ))}
               </div>
-            </Card>
-
-            {/* Result info */}
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-[13px] font-semibold">
-                  {statusFilter === "all"
-                    ? "Project workspace"
-                    : `${STATUS_LABEL[statusFilter] || statusFilter} projects`}
-                </div>
-                <div className="mt-0.5 text-[11px] text-muted-foreground">
-                  {filteredProjects.length} project
-                  {filteredProjects.length !== 1 ? "s" : ""} in view
-                </div>
+            ) : (
+              <div style={{ display: "grid", gap: 8 }}>
+                <Skeleton height={64} />
+                <Skeleton height={64} />
+                <Skeleton height={64} />
               </div>
-
-              {view === "timeline" && (
-                <div className="hidden items-center gap-3 text-[10.5px] text-muted-foreground sm:flex">
-                  <span className="inline-flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3 text-[#2F6B3F]" />
-                    Completed
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <span className={cn("h-2.5 w-2.5 rounded-full", BRAND)} />
-                    Current
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Circle className="h-3 w-3 text-muted-foreground" />
-                    Upcoming
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Loading */}
-            {(loading || (view === "timeline" && phaseTreeLoading)) && (
-              <div className="space-y-3">
-                <Skeleton className="h-24 w-full rounded-xl" />
-                <Skeleton className="h-24 w-full rounded-xl" />
-              </div>
-            )}
-
-            {/* Empty */}
-            {!loading && !filteredProjects.length && (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <FolderOpen className="mx-auto mb-3 h-[38px] w-[38px] text-muted-foreground/50" />
-                  <div className="text-sm font-semibold">No projects found</div>
-                  <div className="mt-1 text-[11.5px] text-muted-foreground">
-                    {q
-                      ? "Try a different search."
-                      : statusFilter !== "all"
-                        ? "No projects match the selected status."
-                        : "No projects are available."}
-                  </div>
-                  {q && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      className={cn(BRAND, "mt-4")}
-                      onClick={() => setQ("")}
-                    >
+            )
+          ) : !filteredProjects.length ? (
+            <Card>
+              <EmptyState
+                icon={FolderOpen}
+                title={projects.length ? "No projects match" : "No projects yet"}
+                text={
+                  q
+                    ? "Try a different search term."
+                    : statusFilter !== "all"
+                      ? `There are no ${String(STATUS_LABEL[statusFilter] || statusFilter).toLowerCase()} projects right now.`
+                      : "Create your first project to start tracking phases, documents and handover."
+                }
+                action={
+                  q ? (
+                    <Button variant="secondary" onClick={() => setQ("")}>
                       Clear search
                     </Button>
-                  )}
-                  {!q && statusFilter !== "all" && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      className={cn(BRAND, "mt-4")}
-                      onClick={() => setStatusFilter("all")}
-                    >
+                  ) : statusFilter !== "all" ? (
+                    <Button variant="secondary" onClick={() => setStatusFilter("all")}>
                       Show all projects
                     </Button>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Timeline */}
-            {!loading &&
-              !phaseTreeLoading &&
-              filteredProjects.length > 0 &&
-              view === "timeline" && (
-                <div className="space-y-3">
-                  {filteredProjects.map((project) => (
-                    <ProjectTimeline
-                      key={getProjectId(project)}
-                      project={project}
-                      phaseTree={phaseTree}
-                    />
-                  ))}
-                </div>
-              )}
-
-            {/* Table */}
-            {!loading && filteredProjects.length > 0 && view === "table" && (
-              <ProjectTable
-                projects={filteredProjects}
-                loading={loading}
-                phaseTree={phaseTree}
-                onArchive={handleArchive}
-                onRestore={handleRestore}
-                onDelete={handleDelete}
+                  ) : (
+                    <Button variant="primary" icon={Plus} onClick={() => nav("/projects/new")}>
+                      New project
+                    </Button>
+                  )
+                }
               />
-            )}
-          </>
-        )}
-      </div>
-    </Shell>
+            </Card>
+          ) : view === "grid" ? (
+            <ProjectGrid projects={filteredProjects} phaseTree={phaseTree} />
+          ) : view === "timeline" ? (
+            <ProjectTimeline projects={filteredProjects} phaseTree={phaseTree} actions={actions} />
+          ) : (
+            <ProjectTable projects={filteredProjects} phaseTree={phaseTree} actions={actions} />
+          )}
+
+          {!showSkeleton && filteredProjects.length > 0 && (
+            <p className="pj-muted" style={{ fontSize: 12.5, margin: "-8px 0 0" }}>
+              Showing {filteredProjects.length} of {projects.length} project{projects.length !== 1 ? "s" : ""}
+              {statusFilter !== "all" ? ` · ${STATUS_LABEL[statusFilter] || statusFilter}` : ""}
+            </p>
+          )}
+        </>
+      )}
+    </Page>
   );
 }

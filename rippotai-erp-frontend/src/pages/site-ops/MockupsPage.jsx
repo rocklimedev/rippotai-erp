@@ -1,4 +1,7 @@
 import React, { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+import { useSiteProjects, useProjectParam, ProjectPicker, rowProjectName } from "./siteProjects";
 import {
   Plus,
   Search,
@@ -66,7 +69,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 
 import {
-  useGetMockupsByProjectQuery,
+  useListMockupsQuery,
   useProposeMockupMutation,
   useReviewMockupMutation,
 } from "@/api/procuerment/site-ops.api";
@@ -87,11 +90,19 @@ const STATUS_CONFIG = {
     className: "bg-red-50 text-red-700 border-red-200",
     icon: XCircle,
   },
-  REWORK: {
-    label: "Rework",
+  UNDER_REVIEW: {
+    label: "Under review",
     className: "bg-orange-50 text-orange-700 border-orange-200",
     icon: RotateCcw,
   },
+};
+
+const imagesOf = (m) => {
+  let v = m?.referenceImageUrls;
+  if (typeof v === "string") {
+    try { v = JSON.parse(v); } catch { v = []; }
+  }
+  return Array.isArray(v) ? v : [];
 };
 
 function StatusBadge({ status }) {
@@ -163,7 +174,7 @@ function EmptyState({ onCreate }) {
 }
 
 function MockupCard({ mockup, onView, onReview }) {
-  const image = mockup.referenceImageUrls?.[0] || null;
+  const image = imagesOf(mockup)[0] || null;
 
   return (
     <Card className="group overflow-hidden border-border/60 shadow-sm transition hover:shadow-md">
@@ -171,7 +182,8 @@ function MockupCard({ mockup, onView, onReview }) {
         {image ? (
           <img
             src={image}
-            alt={mockup.name}
+            alt=""
+            onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
             className="h-full w-full object-cover"
           />
         ) : (
@@ -227,6 +239,9 @@ function MockupCard({ mockup, onView, onReview }) {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="truncate font-semibold">{mockup.name}</h3>
+            {mockup.project?.name && (
+              <p className="mt-0.5 truncate text-xs font-medium text-[#1F453B]">{mockup.project.name}</p>
+            )}
 
             {mockup.finishType && (
               <p className="mt-1 text-sm text-muted-foreground">
@@ -312,10 +327,11 @@ function MockupDetailsDialog({ mockup, open, onOpenChange }) {
 
         <div className="grid gap-6 md:grid-cols-[1.2fr_1fr]">
           <div className="overflow-hidden rounded-xl border bg-muted">
-            {mockup.referenceImageUrls?.length ? (
+            {imagesOf(mockup).length ? (
               <img
-                src={mockup.referenceImageUrls[0]}
-                alt={mockup.name}
+                src={imagesOf(mockup)[0]}
+                alt=""
+                onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
                 className="aspect-video h-full w-full object-cover"
               />
             ) : (
@@ -453,10 +469,10 @@ function ReviewDialog({ mockup, open, onOpenChange, onSubmit, loading }) {
                   </span>
                 </SelectItem>
 
-                <SelectItem value="REWORK">
+                <SelectItem value="UNDER_REVIEW">
                   <span className="flex items-center gap-2">
                     <RotateCcw className="h-4 w-4 text-orange-600" />
-                    Rework Required
+                    Keep under review
                   </span>
                 </SelectItem>
 
@@ -516,8 +532,10 @@ function ReviewDialog({ mockup, open, onOpenChange, onSubmit, loading }) {
   );
 }
 
-function ProposeMockupDialog({ open, onOpenChange, onSubmit, loading }) {
+function ProposeMockupDialog({ open, onOpenChange, onSubmit, loading, defaultProjectId, projects, proposer }) {
+  const [tried, setTried] = useState(false);
   const [form, setForm] = useState({
+    projectId: "",
     name: "",
     finishType: "",
     location: "",
@@ -533,8 +551,19 @@ function ProposeMockupDialog({ open, onOpenChange, onSubmit, loading }) {
     }));
   };
 
+  React.useEffect(() => {
+    if (open) {
+      setTried(false);
+      setForm((f) => ({ ...f, projectId: defaultProjectId || f.projectId || "", proposedBy: f.proposedBy || proposer || "" }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   const submit = () => {
+    setTried(true);
+    if (!form.projectId || !form.name.trim() || !form.proposedBy.trim()) return;
     onSubmit({
+      projectId: form.projectId,
       name: form.name,
       finishType: form.finishType || null,
       location: form.location || null,
@@ -558,6 +587,20 @@ function ProposeMockupDialog({ open, onOpenChange, onSubmit, loading }) {
         </DialogHeader>
 
         <div className="grid gap-5 md:grid-cols-2">
+          <div className="md:col-span-2">
+            <label className="mb-2 block text-sm font-medium">
+              Project <span className="text-red-600">*</span>
+            </label>
+            <ProjectPicker
+              value={form.projectId}
+              onChange={(v) => update("projectId", v)}
+              placeholder="Select a project"
+              projects={projects}
+              invalid={tried && !form.projectId}
+            />
+            {tried && !form.projectId && <p className="mt-1 text-xs text-red-600">Pick the project</p>}
+          </div>
+
           <div className="md:col-span-2">
             <label className="mb-2 block text-sm font-medium">
               Mockup Name
@@ -648,7 +691,10 @@ function ProposeMockupDialog({ open, onOpenChange, onSubmit, loading }) {
   );
 }
 
-export default function MockupsPage({ projectId }) {
+export default function MockupsPage() {
+  const { user } = useAuth();
+  const [projectId, setProjectId] = useProjectParam();
+  const { projects, nameOf } = useSiteProjects();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("ALL");
   const [view, setView] = useState("grid");
@@ -659,15 +705,10 @@ export default function MockupsPage({ projectId }) {
 
   const [selectedMockup, setSelectedMockup] = useState(null);
 
-  const { data, isLoading, isFetching } = useGetMockupsByProjectQuery(
-    {
-      projectId,
-      status: status === "ALL" ? undefined : status,
-    },
-    {
-      skip: !projectId,
-    },
-  );
+  const { data, isLoading, isFetching } = useListMockupsQuery({
+    projectId,
+    status: status === "ALL" ? undefined : status,
+  });
 
   const [proposeMockup, { isLoading: proposing }] = useProposeMockupMutation();
 
@@ -683,6 +724,7 @@ export default function MockupsPage({ projectId }) {
 
       return [
         item.name,
+        rowProjectName(item, nameOf),
         item.finishType,
         item.location,
         item.proposedBy,
@@ -691,35 +733,42 @@ export default function MockupsPage({ projectId }) {
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(q));
     });
-  }, [data, search]);
+  }, [data, search, nameOf]);
 
   const stats = useMemo(() => {
     return {
       total: mockups.length,
-      proposed: mockups.filter((m) => m.status === "PROPOSED").length,
+      proposed: mockups.filter((m) => ["PROPOSED", "UNDER_REVIEW"].includes(m.status)).length,
       approved: mockups.filter((m) => m.status === "APPROVED").length,
-      rework: mockups.filter((m) => m.status === "REWORK").length,
+      rework: mockups.filter((m) => m.status === "REJECTED").length,
       rollout: mockups.filter((m) => m.clearedForRollout).length,
     };
   }, [mockups]);
 
-  const handleCreate = async (body) => {
-    await proposeMockup({
-      projectId,
-      ...body,
-    }).unwrap();
+  const errMsg = (e) => {
+    const m = e?.data?.message;
+    return Array.isArray(m) ? m.join(", ") : m || "Something went wrong";
+  };
 
-    setCreateOpen(false);
+  const handleCreate = async (body) => {
+    try {
+      await proposeMockup(body).unwrap();
+      toast.success("Mock-up proposed");
+      setCreateOpen(false);
+    } catch (e) {
+      toast.error(errMsg(e));
+    }
   };
 
   const handleReview = async ({ id, body }) => {
-    await reviewMockup({
-      id,
-      ...body,
-    }).unwrap();
-
-    setReviewOpen(false);
-    setSelectedMockup(null);
+    try {
+      await reviewMockup({ id, reviewedBy: user?.name || "Reviewer", ...body }).unwrap();
+      toast.success("Review saved");
+      setReviewOpen(false);
+      setSelectedMockup(null);
+    } catch (e) {
+      toast.error(errMsg(e));
+    }
   };
 
   const openDetails = (mockup) => {
@@ -766,7 +815,7 @@ export default function MockupsPage({ projectId }) {
         <StatCard
           title="Total Mockups"
           value={stats.total}
-          description="Project proposals"
+          description={projectId ? nameOf(projectId) : "Across all projects"}
           icon={ImageIcon}
         />
 
@@ -785,7 +834,7 @@ export default function MockupsPage({ projectId }) {
         />
 
         <StatCard
-          title="Rework"
+          title="Rejected"
           value={stats.rework}
           description="Needs revision"
           icon={RotateCcw}
@@ -803,13 +852,17 @@ export default function MockupsPage({ projectId }) {
       <Card className="border-border/60 shadow-sm">
         <CardContent className="p-4">
           <div className="flex flex-col gap-3 lg:flex-row">
+            <div className="w-full lg:w-[260px]">
+              <ProjectPicker value={projectId} onChange={setProjectId} projects={projects} />
+            </div>
+
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search mockups, finishes, locations..."
+                placeholder="Search mockups, projects, finishes, locations..."
                 className="pl-9"
               />
             </div>
@@ -824,7 +877,7 @@ export default function MockupsPage({ projectId }) {
                 <SelectItem value="ALL">All Statuses</SelectItem>
                 <SelectItem value="PROPOSED">Proposed</SelectItem>
                 <SelectItem value="APPROVED">Approved</SelectItem>
-                <SelectItem value="REWORK">Rework</SelectItem>
+                <SelectItem value="UNDER_REVIEW">Under review</SelectItem>
                 <SelectItem value="REJECTED">Rejected</SelectItem>
               </SelectContent>
             </Select>
@@ -886,10 +939,11 @@ export default function MockupsPage({ projectId }) {
                 className="flex flex-col gap-4 p-4 transition hover:bg-muted/30 md:flex-row md:items-center"
               >
                 <div className="h-20 w-28 shrink-0 overflow-hidden rounded-lg border bg-muted">
-                  {mockup.referenceImageUrls?.[0] ? (
+                  {imagesOf(mockup)[0] ? (
                     <img
-                      src={mockup.referenceImageUrls[0]}
-                      alt={mockup.name}
+                      src={imagesOf(mockup)[0]}
+                      alt=""
+                      onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -907,6 +961,7 @@ export default function MockupsPage({ projectId }) {
                   </div>
 
                   <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
+                    {mockup.project?.name && <span className="font-medium text-[#1F453B]">{mockup.project.name}</span>}
                     {mockup.finishType && <span>{mockup.finishType}</span>}
 
                     {mockup.location && (
@@ -957,6 +1012,9 @@ export default function MockupsPage({ projectId }) {
         onOpenChange={setCreateOpen}
         onSubmit={handleCreate}
         loading={proposing}
+        defaultProjectId={projectId}
+        projects={projects}
+        proposer={user?.name}
       />
 
       <MockupDetailsDialog

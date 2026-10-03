@@ -2,6 +2,8 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { allSlugsFor } from "@/config/appNav";
 import SectionPage from "@/pages/SectionPage";
+import ActivityPage from "@/pages/workspace/ActivityPage";
+import AppRolesPage from "@/pages/workspace/AppRolesPage";
 
 /**
  * Wraps a route element so it requires auth.
@@ -55,6 +57,14 @@ export function sectionRoutes(appKey, realSlugs = []) {
     .filter((it) => it.slug && !it.slug.startsWith("/") && !set.has(it.slug))
     .map((it) => ({
       path: it.slug,
-      element: <SectionPage appKey={appKey} slugOverride={it.slug} />,
+      // Common per-app menu items get real shared pages; everything else the generic SectionPage.
+      element:
+        it.slug === "activity" ? (
+          <ActivityPage appKey={appKey === "adminConsole" ? undefined : appKey} />
+        ) : it.slug === "roles" ? (
+          <AppRolesPage appKey={appKey} />
+        ) : (
+          <SectionPage appKey={appKey} slugOverride={it.slug} />
+        ),
     }));
 }

@@ -18,7 +18,7 @@ export class UpdateTaskDto {
   title?: string;
 
   @IsOptional()
-  @IsUUID('4')
+  @IsUUID()
   project_id?: string | null;
 
   @IsOptional()
@@ -48,4 +48,16 @@ export class UpdateTaskDto {
   @IsNumber()
   @Min(0)
   workload_estimate_hours?: number;
+
+  @IsOptional()
+  @IsString()
+  description?: string | null;
+
+  @IsOptional()
+  @IsUUID()
+  assigned_to?: string | null;
+
+  @IsOptional()
+  @IsDateString()
+  start_date?: string | null;
 }

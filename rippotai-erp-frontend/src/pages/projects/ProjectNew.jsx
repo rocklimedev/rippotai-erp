@@ -1,7 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, X } from "lucide-react";
+import { Plus, UserPlus, Tag, Flag, ArrowDown, ArrowUp, AlertTriangle, Minus } from "lucide-react";
+
+import {
+  Page,
+  PageHeader,
+  Button,
+  FormSection,
+  Field,
+  TextInput,
+  SelectInput,
+  TextArea,
+  ChoiceGroup,
+} from "@/components/inos";
+import { Skeleton } from "@/components/projects/_projects-ui";
 
 import {
   useCreateProjectMutation,
@@ -9,25 +22,19 @@ import {
   useUpdateProjectMutation,
 } from "../../api/projects/project.api";
 
-import {
-  useGetProjectTypesQuery,
-  useCreateProjectTypeMutation,
-} from "../../api/projects/project-type.api";
+import { useGetProjectTypesQuery, useCreateProjectTypeMutation } from "../../api/projects/project-type.api";
 
-import {
-  useGetClientsQuery,
-  useCreateClientMutation,
-} from "../../api/projects/client.api";
+import { useGetClientsQuery, useCreateClientMutation } from "../../api/projects/client.api";
 
 // ============================================================
 // CONSTANTS
 // ============================================================
 
 const PRIORITY_OPTIONS = [
-  { label: "Low", value: "LOW" },
-  { label: "Medium", value: "MEDIUM" },
-  { label: "High", value: "HIGH" },
-  { label: "Critical", value: "CRITICAL" },
+  { label: "Low", value: "LOW", icon: ArrowDown },
+  { label: "Medium", value: "MEDIUM", icon: Minus },
+  { label: "High", value: "HIGH", icon: ArrowUp },
+  { label: "Critical", value: "CRITICAL", icon: AlertTriangle },
 ];
 
 // ============================================================
@@ -36,15 +43,12 @@ const PRIORITY_OPTIONS = [
 
 const toDateInputValue = (value) => {
   if (!value) return "";
-
   const d = new Date(value);
-
-  if (Number.isNaN(d.getTime())) {
-    return "";
-  }
-
+  if (Number.isNaN(d.getTime())) return "";
   return d.toISOString().slice(0, 10);
 };
+
+const todayInput = () => new Date().toISOString().slice(0, 10);
 
 // ============================================================
 // COMPONENT
@@ -53,662 +57,427 @@ const toDateInputValue = (value) => {
 export default function ProjectNew() {
   const nav = useNavigate();
   const { id: projectId } = useParams();
-
   const isEdit = Boolean(projectId);
+  const [searchParams] = useSearchParams();
 
-  // ============================================================
-  // PROJECT FORM
-  // ============================================================
-
+  // ------------------------------------------------------------ form
   const [form, setForm] = useState({
     name: "",
-    client_id: "",
+    client_id: searchParams.get("client_id") || "", // prefilled from Client detail → New project
     project_type_id: "",
     site_location: "",
     priority: "MEDIUM",
     expected_completion_date: "",
+    description: "",
   });
-
+  const [errors, setErrors] = useState({});
   const [hydrated, setHydrated] = useState(false);
 
-  // ============================================================
-  // PROJECT TYPE
-  // ============================================================
+  const set = (key, value) => {
+    setForm((f) => ({ ...f, [key]: value }));
+    if (errors[key]) setErrors((e) => ({ ...e, [key]: undefined }));
+  };
 
+  // ------------------------------------------------------------ inline "add" panels
   const [showAddType, setShowAddType] = useState(false);
   const [newTypeName, setNewTypeName] = useState("");
 
-  // ============================================================
-  // CLIENT
-  // ============================================================
-
   const [showAddClient, setShowAddClient] = useState(false);
   const [newClientName, setNewClientName] = useState("");
+  const [newClientEmail, setNewClientEmail] = useState("");
+  const [newClientPhone, setNewClientPhone] = useState("");
 
-  // ============================================================
-  // PROJECT
-  // ============================================================
-
+  // ------------------------------------------------------------ data
   const {
     data: project,
     isFetching: projectLoading,
     isError: projectError,
-  } = useGetProjectByIdQuery(projectId, {
-    skip: !isEdit,
-  });
+  } = useGetProjectByIdQuery(projectId, { skip: !isEdit });
 
-  // ============================================================
-  // PROJECT TYPES
-  // ============================================================
+  const { data: types = [], isFetching: typesLoading, isError: typesError } = useGetProjectTypesQuery();
+  const { data: clients = [], isFetching: clientsLoading, isError: clientsError } = useGetClientsQuery();
 
-  const {
-    data: types = [],
-    isFetching: typesLoading,
-    isError: typesError,
-  } = useGetProjectTypesQuery();
-
-  // ============================================================
-  // CLIENTS
-  // ============================================================
-
-  const {
-    data: clients = [],
-    isFetching: clientsLoading,
-    isError: clientsError,
-  } = useGetClientsQuery();
-
-  // ============================================================
-  // MUTATIONS
-  // ============================================================
-
-  const [createProjectType, { isLoading: creatingType }] =
-    useCreateProjectTypeMutation();
-
-  const [createClient, { isLoading: creatingClient }] =
-    useCreateClientMutation();
-
-  const [createProject, { isLoading: creatingProject }] =
-    useCreateProjectMutation();
-
-  const [updateProject, { isLoading: updatingProject }] =
-    useUpdateProjectMutation();
+  const [createProjectType, { isLoading: creatingType }] = useCreateProjectTypeMutation();
+  const [createClient, { isLoading: creatingClient }] = useCreateClientMutation();
+  const [createProject, { isLoading: creatingProject }] = useCreateProjectMutation();
+  const [updateProject, { isLoading: updatingProject }] = useUpdateProjectMutation();
 
   const busy = isEdit ? updatingProject : creatingProject;
 
-  // ============================================================
-  // ERROR HANDLING
-  // ============================================================
-
   useEffect(() => {
-    if (projectError) {
-      toast.error("Failed to load project");
-    }
+    if (projectError) toast.error("Failed to load project");
   }, [projectError]);
-
   useEffect(() => {
-    if (typesError) {
-      toast.error("Failed to load project types");
-    }
+    if (typesError) toast.error("Failed to load project types");
   }, [typesError]);
-
   useEffect(() => {
-    if (clientsError) {
-      toast.error("Failed to load clients");
-    }
+    if (clientsError) toast.error("Failed to load clients");
   }, [clientsError]);
 
-  // ============================================================
-  // HYDRATE EDIT FORM
-  // ============================================================
-
+  // ------------------------------------------------------------ hydrate edit form
   useEffect(() => {
-    if (!isEdit || !project || hydrated) {
-      return;
-    }
-
+    if (!isEdit || !project || hydrated) return;
     setForm({
       name: project.name || "",
       client_id: project.client_id || project.client?.id || "",
-      project_type_id:
-        project.project_type_id || project.project_type?.id || "",
+      project_type_id: project.project_type_id || project.project_type?.id || "",
       site_location: project.site_location || "",
       priority: project.priority || "MEDIUM",
-      expected_completion_date: toDateInputValue(
-        project.expected_completion_date,
-      ),
+      expected_completion_date: toDateInputValue(project.expected_completion_date),
+      description: project.description || "",
     });
-
     setHydrated(true);
   }, [isEdit, project, hydrated]);
 
-  // ============================================================
-  // DEFAULT PROJECT TYPE
-  // ============================================================
-
+  // ------------------------------------------------------------ default project type (first in list)
   useEffect(() => {
     if (isEdit) return;
-
     if (!form.project_type_id && types.length) {
-      setForm((f) => ({
-        ...f,
-        project_type_id: types[0].id,
-      }));
+      setForm((f) => ({ ...f, project_type_id: types[0].id }));
     }
   }, [isEdit, types, form.project_type_id]);
 
-  // ============================================================
-  // DEFAULT CLIENT
-  // ============================================================
-
-  useEffect(() => {
-    if (isEdit) return;
-
-    if (!form.client_id && clients.length) {
-      setForm((f) => ({
-        ...f,
-        client_id: clients[0].id,
-      }));
-    }
-  }, [isEdit, clients, form.client_id]);
-
-  // ============================================================
-  // ADD PROJECT TYPE
-  // ============================================================
-
+  // ------------------------------------------------------------ add project type
   const saveNewType = async () => {
     if (!newTypeName.trim()) {
       toast.error("Name required");
       return;
     }
-
     try {
-      const data = await createProjectType({
-        name: newTypeName.trim(),
-      }).unwrap();
-
+      const data = await createProjectType({ name: newTypeName.trim() }).unwrap();
       toast.success(`Project type "${data.name}" added`);
-
       setShowAddType(false);
       setNewTypeName("");
-
-      setForm((f) => ({
-        ...f,
-        project_type_id: data.id,
-      }));
+      setForm((f) => ({ ...f, project_type_id: data.id }));
     } catch (e) {
-      toast.error(
-        e?.data?.detail || e?.data?.message || "Failed to add project type",
-      );
+      toast.error(e?.data?.detail || e?.data?.message || "Failed to add project type");
     }
   };
 
-  // ============================================================
-  // ADD CLIENT
-  // ============================================================
-
+  // ------------------------------------------------------------ add client
   const saveNewClient = async () => {
     if (!newClientName.trim()) {
       toast.error("Name required");
       return;
     }
-
     try {
       const data = await createClient({
         name: newClientName.trim(),
+        ...(newClientEmail.trim() ? { email: newClientEmail.trim() } : {}),
+        ...(newClientPhone.trim() ? { phone: newClientPhone.trim() } : {}),
       }).unwrap();
-
       toast.success(`Client "${data.name}" added`);
-
       setShowAddClient(false);
       setNewClientName("");
-
-      setForm((f) => ({
-        ...f,
-        client_id: data.id,
-      }));
+      setNewClientEmail("");
+      setNewClientPhone("");
+      setForm((f) => ({ ...f, client_id: data.id }));
     } catch (e) {
-      toast.error(
-        e?.data?.detail || e?.data?.message || "Failed to add client",
-      );
+      toast.error(e?.data?.detail || e?.data?.message || "Failed to add client");
     }
   };
 
-  // ============================================================
-  // SUBMIT PROJECT
-  // ============================================================
+  // ------------------------------------------------------------ validation
+  const validate = (keys = ["name", "site_location"]) => {
+    const next = { ...errors };
+    if (keys.includes("name")) next.name = form.name.trim() ? undefined : "Give the project a name.";
+    if (keys.includes("site_location"))
+      next.site_location = form.site_location.trim() ? undefined : "Where is the site? A locality and city is enough.";
+    setErrors(next);
+    return next;
+  };
 
-  const submit = async () => {
-    if (!form.name.trim()) {
-      return toast.error("Name required");
-    }
-
-    if (!form.site_location.trim()) {
-      return toast.error("Location required");
-    }
+  // ------------------------------------------------------------ submit
+  const submit = async (event) => {
+    event?.preventDefault?.();
+    const v = validate();
+    if (v.name) return toast.error("Name required");
+    if (v.site_location) return toast.error("Location required");
 
     const payload = {
       name: form.name.trim(),
-
       site_location: form.site_location.trim(),
-
       priority: form.priority,
-
-      ...(form.client_id
-        ? {
-            client_id: form.client_id,
-          }
-        : {}),
-
-      ...(form.project_type_id
-        ? {
-            project_type_id: form.project_type_id,
-          }
-        : {}),
-
-      ...(form.expected_completion_date
-        ? {
-            expected_completion_date: form.expected_completion_date,
-          }
-        : {}),
+      ...(form.client_id ? { client_id: form.client_id } : {}),
+      ...(form.project_type_id ? { project_type_id: form.project_type_id } : {}),
+      ...(form.expected_completion_date ? { expected_completion_date: form.expected_completion_date } : {}),
+      ...(form.description.trim() || isEdit ? { description: form.description.trim() } : {}),
     };
 
     try {
       if (isEdit) {
-        const data = await updateProject({
-          id: projectId,
-          ...payload,
-        }).unwrap();
-
+        const data = await updateProject({ id: projectId, ...payload }).unwrap();
         toast.success("Project updated");
-
         nav(`/projects/${data?.id || projectId}`);
       } else {
         const data = await createProject(payload).unwrap();
-
         toast.success("Project created");
-
         nav(`/projects/${data.id}`);
       }
     } catch (e) {
       const messages = e?.data?.message;
-
-      toast.error(
-        Array.isArray(messages)
-          ? messages[0]
-          : messages || e?.data?.detail || "Failed",
-      );
+      toast.error(Array.isArray(messages) ? messages[0] : messages || e?.data?.detail || "Failed");
     }
   };
 
-  // ============================================================
-  // LOADING
-  // ============================================================
+  const backTarget = isEdit ? `/projects/${projectId}` : "/projects";
 
+  // ------------------------------------------------------------ loading (edit)
   if (isEdit && projectLoading && !hydrated) {
     return (
-      <div className="max-w-[900px] mx-auto p-6">
-        <div className="text-[13px] text-[#6B7B7C]">Loading project…</div>
-      </div>
+      <Page width="form">
+        <PageHeader crumbs={[{ label: "Projects", to: "/projects" }, { label: "Edit" }]} title="Edit project" />
+        <Skeleton height={220} />
+        <Skeleton height={160} />
+      </Page>
     );
   }
 
-  const backTarget = isEdit ? `/projects/${projectId}` : "/projects";
+  const selectedClient = clients.find((c) => String(c.id) === String(form.client_id));
 
-  // ============================================================
-  // RENDER
-  // ============================================================
-
+  // ------------------------------------------------------------ render
   return (
-    <div className="max-w-[900px] mx-auto p-6">
-      {/* ======================================================
-          BACK
-      ====================================================== */}
+    <Page width="form">
+      <PageHeader
+        crumbs={
+          isEdit
+            ? [
+                { label: "Projects", to: "/projects" },
+                { label: project?.name || "Project", to: backTarget },
+                { label: "Edit" },
+              ]
+            : [{ label: "Projects", to: "/projects" }, { label: "New project" }]
+        }
+        title={isEdit ? "Edit project" : "New project"}
+        subtitle={
+          isEdit
+            ? "Update the basics — phases, documents and team stay as they are."
+            : "Two fields are required: a name and the site location. Everything else can be added later."
+        }
+      />
 
-      <button
-        onClick={() => nav(backTarget)}
-        className="text-[13px] text-[#6B7B7C] inline-flex items-center gap-1 mb-3"
-      >
-        <ArrowLeft size={14} />
+      <form className="inos-form" onSubmit={submit} noValidate>
+        {/* 1 — Basics */}
+        <FormSection step={1} title="Basics" description="What the project is called and where the site is.">
+          <Field label="Project name" required full htmlFor="pj-name" error={errors.name} hint="Usually the client or building name.">
+            <TextInput
+              id="pj-name"
+              autoFocus={!isEdit}
+              value={form.name}
+              onChange={(e) => set("name", e.target.value)}
+              onBlur={() => form.name && validate(["name"])}
+              placeholder="e.g. Malhotra Residence, Golf Links"
+              invalid={Boolean(errors.name)}
+              data-testid="new-name"
+            />
+          </Field>
 
-        {isEdit ? "Project" : "Projects"}
-      </button>
+          <Field label="Site location" required htmlFor="pj-site" error={errors.site_location}>
+            <TextInput
+              id="pj-site"
+              value={form.site_location}
+              onChange={(e) => set("site_location", e.target.value)}
+              onBlur={() => form.site_location && validate(["site_location"])}
+              placeholder="e.g. Sector 42, Gurugram"
+              invalid={Boolean(errors.site_location)}
+              data-testid="new-site-location"
+            />
+          </Field>
 
-      {/* ======================================================
-          HEADER
-      ====================================================== */}
+          <Field
+            label="Project type"
+            htmlFor="pj-type"
+            hint={types.length ? undefined : typesLoading ? "Loading types…" : "No types yet — add one."}
+          >
+            <div className="pj-input-row">
+              <SelectInput
+                id="pj-type"
+                value={form.project_type_id}
+                onChange={(e) => set("project_type_id", e.target.value)}
+                disabled={typesLoading}
+                data-testid="project-type-select"
+              >
+                {typesLoading && <option value="">Loading…</option>}
+                {!typesLoading && types.length === 0 && <option value="">No types yet</option>}
+                {!typesLoading &&
+                  types.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+              </SelectInput>
+              <Button
+                variant="secondary"
+                icon={Plus}
+                onClick={() => setShowAddType((v) => !v)}
+                title="Add new project type"
+                aria-label="Add new project type"
+                data-testid="add-project-type-btn"
+              />
+            </div>
+          </Field>
 
-      <h1 className="text-[36px] font-bold text-[#333333]">
-        {isEdit ? "Edit Project" : "Create Project"}
-      </h1>
+          {showAddType && (
+            <div className="pj-inline-panel" data-testid="add-type-modal">
+              <div className="pj-inline-panel__head">
+                <span className="pj-inline-panel__title">
+                  <Tag size={15} aria-hidden /> New project type
+                </span>
+                <Button variant="ghost" size="sm" onClick={() => setShowAddType(false)}>
+                  Cancel
+                </Button>
+              </div>
+              <div className="pj-input-row">
+                <TextInput
+                  autoFocus
+                  value={newTypeName}
+                  onChange={(e) => setNewTypeName(e.target.value)}
+                  placeholder="e.g. Boutique retail"
+                  aria-label="New project type name"
+                  data-testid="new-type-name"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      saveNewType();
+                    }
+                  }}
+                />
+                <Button variant="primary" onClick={saveNewType} loading={creatingType} data-testid="new-type-save">
+                  Add type
+                </Button>
+              </div>
+              <span className="inos-hint">Becomes available for every future project.</span>
+            </div>
+          )}
+        </FormSection>
 
-      <p className="text-[13px] text-[#6B7B7C] mt-1">
-        {isEdit ? "Update project details." : "Set up a new project."}
-      </p>
-
-      {/* ======================================================
-          PROJECT DETAILS
-      ====================================================== */}
-
-      <div className="bg-white border border-[#B5C4B6] rounded-xl p-6 mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* PROJECT NAME */}
-
-        <div className="md:col-span-2">
-          <label className="text-[12px] font-semibold text-[#6B7B7C]">
-            Project Name *
-          </label>
-
-          <input
-            value={form.name}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                name: e.target.value,
-              })
+        {/* 2 — Client */}
+        <FormSection step={2} title="Client" description="Pick an existing client, or add a new one without leaving this page.">
+          <Field
+            label="Client"
+            optional
+            full
+            htmlFor="pj-client"
+            hint={
+              selectedClient
+                ? [selectedClient.contact_person, selectedClient.email, selectedClient.phone].filter(Boolean).join(" · ") || undefined
+                : "You can link a client later."
             }
-            className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
-            data-testid="new-name"
-          />
-        </div>
-
-        {/* CLIENT */}
-
-        <div>
-          <label className="text-[12px] font-semibold text-[#6B7B7C]">
-            Client
-          </label>
-
-          <div className="flex items-center gap-2 mt-1">
-            <select
-              value={form.client_id}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  client_id: e.target.value,
-                })
-              }
-              disabled={clientsLoading}
-              className="flex-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
-              data-testid="client-select"
-            >
-              {clientsLoading && <option>Loading…</option>}
-
-              {!clientsLoading && clients.length === 0 && (
-                <option value="">No clients yet</option>
-              )}
-
-              {!clientsLoading &&
-                clients.map((c) => (
+          >
+            <div className="pj-input-row">
+              <SelectInput
+                id="pj-client"
+                value={form.client_id}
+                onChange={(e) => set("client_id", e.target.value)}
+                disabled={clientsLoading}
+                data-testid="client-select"
+              >
+                <option value="">{clientsLoading ? "Loading…" : clients.length ? "Select a client" : "No clients yet"}</option>
+                {clients.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
                 ))}
-            </select>
-
-            <button
-              type="button"
-              onClick={() => setShowAddClient(true)}
-              className="w-9 h-9 rounded-lg border border-[#1F453B] text-[#333333] flex items-center justify-center hover:bg-[#EAEEF0]"
-              title="Add new client"
-              data-testid="add-client-btn"
-            >
-              <Plus size={15} />
-            </button>
-          </div>
-        </div>
-
-        {/* PROJECT TYPE */}
-
-        <div>
-          <label className="text-[12px] font-semibold text-[#6B7B7C]">
-            Project Type
-          </label>
-
-          <div className="flex items-center gap-2 mt-1">
-            <select
-              value={form.project_type_id}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  project_type_id: e.target.value,
-                })
-              }
-              disabled={typesLoading}
-              className="flex-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
-              data-testid="project-type-select"
-            >
-              {typesLoading && <option>Loading…</option>}
-
-              {!typesLoading &&
-                types.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-            </select>
-
-            <button
-              type="button"
-              onClick={() => setShowAddType(true)}
-              className="w-9 h-9 rounded-lg border border-[#1F453B] text-[#333333] flex items-center justify-center hover:bg-[#EAEEF0]"
-              title="Add new project type"
-              data-testid="add-project-type-btn"
-            >
-              <Plus size={15} />
-            </button>
-          </div>
-        </div>
-
-        {/* LOCATION */}
-
-        <div>
-          <label className="text-[12px] font-semibold text-[#6B7B7C]">
-            Location *
-          </label>
-
-          <input
-            value={form.site_location}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                site_location: e.target.value,
-              })
-            }
-            className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
-            data-testid="new-site-location"
-          />
-        </div>
-
-        {/* PRIORITY */}
-
-        <div>
-          <label className="text-[12px] font-semibold text-[#6B7B7C]">
-            Priority
-          </label>
-
-          <select
-            value={form.priority}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                priority: e.target.value,
-              })
-            }
-            className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
-            data-testid="new-priority"
-          >
-            {PRIORITY_OPTIONS.map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* EXPECTED COMPLETION */}
-
-        <div>
-          <label className="text-[12px] font-semibold text-[#6B7B7C]">
-            Expected Completion
-          </label>
-
-          <input
-            type="date"
-            value={form.expected_completion_date}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                expected_completion_date: e.target.value,
-              })
-            }
-            className="w-full mt-1 px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
-            data-testid="new-expected-completion"
-          />
-        </div>
-      </div>
-
-      {/* ======================================================
-          ACTIONS
-      ====================================================== */}
-
-      <div className="flex justify-end gap-2 mt-4">
-        <button
-          onClick={() => nav(backTarget)}
-          className="px-4 py-2 rounded-lg border border-[#B5C4B6] text-[13px] font-semibold"
-        >
-          Cancel
-        </button>
-
-        <button
-          onClick={submit}
-          disabled={busy}
-          className="px-4 py-2 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold disabled:opacity-50"
-          data-testid="btn-create-project-confirm"
-        >
-          {isEdit ? "Save Changes" : "Create Project"}
-        </button>
-      </div>
-
-      {/* ======================================================
-          ADD PROJECT TYPE MODAL
-      ====================================================== */}
-
-      {showAddType && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => setShowAddType(false)}
-        >
-          <div
-            className="bg-white rounded-2xl w-[420px] p-6 relative"
-            onClick={(e) => e.stopPropagation()}
-            data-testid="add-type-modal"
-          >
-            <button
-              className="absolute top-4 right-4 text-[#6B7B7C]"
-              onClick={() => setShowAddType(false)}
-            >
-              <X size={18} />
-            </button>
-
-            <div className="text-[18px] font-semibold text-[#333333] mb-1">
-              New Project Type
+              </SelectInput>
+              <Button
+                variant="secondary"
+                icon={UserPlus}
+                onClick={() => setShowAddClient((v) => !v)}
+                title="Add new client"
+                data-testid="add-client-btn"
+              >
+                New client
+              </Button>
             </div>
+          </Field>
 
-            <div className="text-[12.5px] text-[#6B7B7C] mb-4">
-              Add a project type on the fly. It becomes available for all future
-              projects.
+          {showAddClient && (
+            <div className="pj-inline-panel" data-testid="add-client-modal">
+              <div className="pj-inline-panel__head">
+                <span className="pj-inline-panel__title">
+                  <UserPlus size={15} aria-hidden /> New client
+                </span>
+                <Button variant="ghost" size="sm" onClick={() => setShowAddClient(false)}>
+                  Cancel
+                </Button>
+              </div>
+              <div className="inos-form-grid">
+                <Field label="Client name" required full>
+                  <TextInput
+                    autoFocus
+                    value={newClientName}
+                    onChange={(e) => setNewClientName(e.target.value)}
+                    placeholder="e.g. Apex Buildcon Pvt Ltd"
+                    data-testid="new-client-name"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        saveNewClient();
+                      }
+                    }}
+                  />
+                </Field>
+                <Field label="Email" optional>
+                  <TextInput type="email" value={newClientEmail} onChange={(e) => setNewClientEmail(e.target.value)} placeholder="name@company.com" />
+                </Field>
+                <Field label="Phone" optional>
+                  <TextInput type="tel" value={newClientPhone} onChange={(e) => setNewClientPhone(e.target.value)} placeholder="+91 98100 00000" />
+                </Field>
+              </div>
+              <div>
+                <Button variant="primary" onClick={saveNewClient} loading={creatingClient} data-testid="new-client-save">
+                  Add client
+                </Button>
+              </div>
             </div>
+          )}
+        </FormSection>
 
-            <input
-              autoFocus
-              value={newTypeName}
-              onChange={(e) => setNewTypeName(e.target.value)}
-              placeholder="e.g. Boutique Retail"
-              className="w-full h-10 px-3 rounded-lg border border-[#B5C4B6] bg-[#EAEEF0] text-[13.5px]"
-              data-testid="new-type-name"
-              onKeyDown={(e) => e.key === "Enter" && saveNewType()}
+        {/* 3 — Details */}
+        <FormSection step={3} title="Details" description="Priority, target date and a short brief. All optional.">
+          <Field label="Priority" full>
+            <div data-testid="new-priority">
+              <ChoiceGroup name="Priority" value={form.priority} onChange={(v) => set("priority", v)} options={PRIORITY_OPTIONS} />
+            </div>
+          </Field>
+
+          <Field label="Expected completion" optional htmlFor="pj-ecd" hint="Used for the ECD on the projects list.">
+            <TextInput
+              id="pj-ecd"
+              type="date"
+              min={isEdit ? undefined : todayInput()}
+              value={form.expected_completion_date}
+              onChange={(e) => set("expected_completion_date", e.target.value)}
+              data-testid="new-expected-completion"
             />
+          </Field>
 
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                onClick={() => setShowAddType(false)}
-                className="h-10 px-4 rounded-lg border border-[#B5C4B6] text-[13px] font-semibold text-[#333333]"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={saveNewType}
-                disabled={creatingType}
-                className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold"
-                data-testid="new-type-save"
-              >
-                Add Type
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ======================================================
-          ADD CLIENT MODAL
-      ====================================================== */}
-
-      {showAddClient && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => setShowAddClient(false)}
-        >
-          <div
-            className="bg-white rounded-2xl w-[420px] p-6 relative"
-            onClick={(e) => e.stopPropagation()}
-            data-testid="add-client-modal"
-          >
-            <button
-              className="absolute top-4 right-4 text-[#6B7B7C]"
-              onClick={() => setShowAddClient(false)}
-            >
-              <X size={18} />
-            </button>
-
-            <div className="text-[18px] font-semibold text-[#333333] mb-1">
-              New Client
-            </div>
-
-            <div className="text-[12.5px] text-[#6B7B7C] mb-4">
-              Add a client on the fly. It becomes available for all future
-              projects.
-            </div>
-
-            <input
-              autoFocus
-              value={newClientName}
-              onChange={(e) => setNewClientName(e.target.value)}
-              placeholder="e.g. Apex Buildcon Pvt Ltd"
-              className="w-full h-10 px-3 rounded-lg border border-[#B5C4B6] bg-[#EAEEF0] text-[13.5px]"
-              data-testid="new-client-name"
-              onKeyDown={(e) => e.key === "Enter" && saveNewClient()}
+          <Field label="Description" optional full htmlFor="pj-desc">
+            <TextArea
+              id="pj-desc"
+              rows={3}
+              value={form.description}
+              onChange={(e) => set("description", e.target.value)}
+              placeholder="e.g. 4BHK residence — full interiors, landscaping and façade refresh"
             />
+          </Field>
+        </FormSection>
 
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                onClick={() => setShowAddClient(false)}
-                className="h-10 px-4 rounded-lg border border-[#B5C4B6] text-[13px] font-semibold text-[#333333]"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={saveNewClient}
-                disabled={creatingClient}
-                className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold"
-                data-testid="new-client-save"
-              >
-                Add Client
-              </button>
-            </div>
+        <div className="inos-form-actions">
+          <span className="inos-form-actions__note">
+            <Flag size={13} style={{ display: "inline", verticalAlign: "-2px", marginRight: 6 }} aria-hidden />
+            {isEdit ? "Changes apply immediately to the project workspace." : "Phases and document checklists appear in the project workspace."}
+          </span>
+          <div className="inos-form-actions__buttons">
+            <Button variant="ghost" onClick={() => nav(backTarget)}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" loading={busy} data-testid="btn-create-project-confirm">
+              {isEdit ? "Save changes" : "Create project"}
+            </Button>
           </div>
         </div>
-      )}
-    </div>
+      </form>
+    </Page>
   );
 }

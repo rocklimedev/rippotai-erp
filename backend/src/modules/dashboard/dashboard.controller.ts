@@ -8,6 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { DashboardsService } from './dashboard.service';
+import { DashboardDataService } from './dashboard-data.service';
 import { SaveDashboardDto } from './dto/save-dashboard.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
@@ -16,7 +17,16 @@ import { User } from '@/modules/users/models/user.model';
 @UseGuards(JwtAuthGuard)
 @Controller('dashboards')
 export class DashboardsController {
-  constructor(private readonly dashboardsService: DashboardsService) {}
+  constructor(
+    private readonly dashboardsService: DashboardsService,
+    private readonly dataService: DashboardDataService,
+  ) {}
+
+  // Aggregated widget data feed — must come before ':appKey'
+  @Get('data/:app')
+  getData(@Param('app') app: string) {
+    return this.dataService.getData(app);
+  }
 
   // Must come before ':appKey'
   @Get('library/:appKey')

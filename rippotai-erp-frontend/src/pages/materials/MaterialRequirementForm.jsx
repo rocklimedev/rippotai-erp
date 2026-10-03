@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Plus,
@@ -10,7 +10,30 @@ import {
   Save,
   Package,
   Search,
+  ArrowLeft,
 } from "lucide-react";
+
+import {
+  Page,
+  PageHeader,
+  Button,
+  Field,
+  TextInput,
+  SelectInput,
+  TextArea,
+  FormActions,
+  Pill,
+} from "@/components/inos";
+import {
+  DocSection,
+  Grid,
+  LineTable,
+  IconAction,
+  RemoveRow,
+  AddRow,
+  Callout,
+} from "@/components/forms/commerce-form-ui";
+import { useAuth } from "@/context/AuthContext";
 
 import { useAutoSave } from "../../hooks/use-autosave";
 
@@ -59,7 +82,13 @@ export function MaterialRequirementForm() {
   const [createMaterialRequirement, { isLoading }] =
     useCreateMaterialRequirementMutation();
 
-  const [projectId, setProjectId] = React.useState("");
+  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+
+  // Preselect the project when arriving from a project page (?projectId=…).
+  const [projectId, setProjectId] = React.useState(
+    () => searchParams.get("projectId") || searchParams.get("project") || "",
+  );
 
   const [values, setValues] = useAutoSave(SAVE_KEY, {
     designerId: "",
@@ -67,6 +96,14 @@ export function MaterialRequirementForm() {
   });
 
   const requirements = values.requirements || [];
+
+  // Default the designer to the signed-in user when they are in the list.
+  React.useEffect(() => {
+    if (values.designerId || !user?.id || !Array.isArray(users)) return;
+    if (users.some((u) => u.id === user.id)) {
+      setValues((prev) => (prev.designerId ? prev : { ...prev, designerId: user.id }));
+    }
+  }, [user?.id, users, values.designerId, setValues]);
 
   // ============================================================
   // MATERIAL MASTER HELPERS
@@ -322,86 +359,60 @@ export function MaterialRequirementForm() {
 
   const selectedDesigner = users.find((user) => user.id === values.designerId);
 
+  const filledCount = requirements.filter(
+    (item) => item.itemName?.trim() || item.selection?.trim(),
+  ).length;
+
+  const missing = [
+    !projectId && "project",
+    !values.designerId && "designer",
+    !filledCount && "at least one material",
+  ].filter(Boolean);
+
   return (
-    <div className="min-h-screen bg-[#F7F8F8]">
-      {/* =====================================================
-          PAGE HEADER
-      ===================================================== */}
+    <Page>
+      <PageHeader
+        crumbs={[
+          { label: "Procurement", to: "/procurement" },
+          { label: "Material requirements", to: "/procurement/requirements" },
+          { label: "New" },
+        ]}
+        title="New material requirement"
+        subtitle="List what the design needs — procurement raises quotations and prices later."
+        actions={
+          <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate("/procurement/requirements")}>
+            Back to list
+          </Button>
+        }
+      />
 
-      <div className="border-b border-gray-200 bg-white">
-        <div className="px-6 py-5">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#1F453B] text-white flex items-center justify-center">
-                  <Package size={19} />
-                </div>
-
-                <div>
-                  <h1 className="text-xl font-semibold text-[#333333]">
-                    Material Requirements
-                  </h1>
-
-                  <p className="text-sm text-[#6B7B7C] mt-0.5">
-                    Select materials from the Material Master and capture design
-                    requirements for procurement.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="h-10 px-5 rounded-lg bg-[#1F453B] text-white text-sm font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-60"
-            >
-              <Save size={16} />
-
-              {isLoading ? "Saving..." : "Save Requirements"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* =====================================================
-          CONTENT
-      ===================================================== */}
-
-      <div className="p-6 space-y-5">
-        {/* =================================================
-            CONTEXT
-        ================================================= */}
-
-        <div className="bg-white border border-gray-200 rounded-xl p-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Project */}
-
-            <div>
-              <label className="bc-label">Project</label>
-
-              <select
-                className="bc-input h-10 w-full"
+      <form
+        className="inos-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          handleSubmit();
+        }}
+      >
+        <DocSection step={1} title="Project & designer" description="Who is asking, and for which project.">
+          <Grid cols={2}>
+            <Field label="Project" required htmlFor="mr-project">
+              <SelectInput
+                id="mr-project"
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
+                placeholder="Select project"
               >
-                <option value="">Select Project</option>
-
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.name}
                   </option>
                 ))}
-              </select>
-            </div>
+              </SelectInput>
+            </Field>
 
-            {/* Designer */}
-
-            <div>
-              <label className="bc-label">Designer</label>
-
-              <select
-                className="bc-input h-10 w-full"
+            <Field label="Designer" required htmlFor="mr-designer" hint="Defaults to you.">
+              <SelectInput
+                id="mr-designer"
                 value={values.designerId}
                 onChange={(e) =>
                   setValues((prev) => ({
@@ -409,384 +420,181 @@ export function MaterialRequirementForm() {
                     designerId: e.target.value,
                   }))
                 }
+                placeholder="Select designer"
               >
-                <option value="">Select Designer</option>
-
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name}
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
                   </option>
                 ))}
-              </select>
-            </div>
-          </div>
+              </SelectInput>
+            </Field>
+          </Grid>
+        </DocSection>
 
-          {(selectedProject || selectedDesigner) && (
-            <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
-              {selectedProject && (
-                <span className="px-3 py-1.5 rounded-full bg-[#F1F5F3] text-xs font-medium text-[#1F453B]">
-                  Project: {selectedProject.name}
-                </span>
-              )}
-
-              {selectedDesigner && (
-                <span className="px-3 py-1.5 rounded-full bg-[#F1F5F3] text-xs font-medium text-[#1F453B]">
-                  Designer: {selectedDesigner.name}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* =================================================
-            MATERIAL TABLE
-        ================================================= */}
-
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          {/* Header */}
-
-          <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between gap-4">
-            <div>
-              <h2 className="font-semibold text-[#333333]">Material Items</h2>
-
-              <p className="text-xs text-[#94A3A5] mt-1">
-                Select materials from the Material Master. Vendor pricing is
-                maintained through Rate Sheets.
-              </p>
-            </div>
-
-            <div className="text-sm text-[#6B7B7C]">
-              {requirements.length}{" "}
-              {requirements.length === 1 ? "item" : "items"}
-            </div>
-          </div>
-
-          {/* Material Master status */}
-
-          <div className="px-5 py-3 bg-[#F8FAF9] border-b border-gray-100 flex items-center gap-2 text-xs text-[#6B7B7C]">
-            <Search size={14} />
-
-            {materialsLoading
-              ? "Loading Material Master..."
-              : `${materials.length} active materials available`}
-          </div>
-
-          {/* =================================================
-              TABLE
-          ================================================= */}
-
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px] border-collapse">
-              <thead>
-                <tr className="bg-[#F8FAF9] border-b border-gray-200">
-                  <th className="w-12 px-3 py-3 text-center text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
-                    #
-                  </th>
-
-                  <th className="min-w-[260px] px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
-                    Material Master
-                  </th>
-
-                  <th className="w-[150px] px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
-                    Category
-                  </th>
-
-                  <th className="min-w-[320px] px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
-                    Selection / Specification
-                  </th>
-
-                  <th className="w-[150px] px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
-                    Style
-                  </th>
-
-                  <th className="w-[150px] px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
-                    Required By
-                  </th>
-                  <th className="w-[130px] px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
-                    Unit
-                  </th>
-
-                  <th className="w-[120px] px-3 py-3 text-center text-[11px] font-semibold uppercase tracking-wide text-[#6B7B7C]">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {requirements.map((item, index) => (
+        <DocSection
+          step={2}
+          flush
+          title="Materials needed"
+          description={
+            materialsLoading
+              ? "Loading the material master…"
+              : materials.length
+                ? `Pick from ${materials.length} active materials — name, category, brand and unit fill in. Add the exact selection you want.`
+                : "The material master is empty — type the item name, then the exact selection you want."
+          }
+          actions={
+            <Button variant="secondary" size="sm" icon={Plus} onClick={addRequirement}>
+              Add item
+            </Button>
+          }
+          footer={
+            <>
+              <AddRow onClick={addRequirement}>Add item</AddRow>
+              <span className="inos-hint tabular">
+                {filledCount} of {requirements.length} {requirements.length === 1 ? "line" : "lines"} filled
+              </span>
+            </>
+          }
+        >
+          <LineTable minWidth={1040}>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th style={{ minWidth: 230 }}>Material</th>
+                <th style={{ width: 140 }}>Category</th>
+                <th style={{ minWidth: 260 }}>Selection / specification *</th>
+                <th style={{ width: 130 }}>Style</th>
+                <th style={{ width: 150 }}>Required by</th>
+                <th style={{ width: 80 }}>Unit</th>
+                <th className="actions" aria-label="Row actions" />
+              </tr>
+            </thead>
+            <tbody>
+              {requirements.map((item, index) => {
+                const incomplete = Boolean(item.itemName?.trim()) !== Boolean(item.selection?.trim());
+                return (
                   <React.Fragment key={item.id}>
-                    <tr className="border-b border-gray-100 hover:bg-[#FCFDFC]">
-                      {/* Number */}
-
-                      <td className="px-3 py-3 text-center text-xs font-semibold text-[#94A3A5]">
-                        {index + 1}
-                      </td>
-
-                      {/* Material Master */}
-
-                      <td className="px-3 py-3 align-top">
-                        <select
+                    <tr>
+                      <td className="cf-idx">{index + 1}</td>
+                      <td>
+                        <SelectInput
                           value={item.materialId || ""}
-                          onChange={(e) =>
-                            handleMaterialChange(index, e.target.value)
-                          }
+                          onChange={(e) => handleMaterialChange(index, e.target.value)}
                           disabled={materialsLoading}
-                          className="bc-input h-9 w-full min-w-[240px]"
+                          placeholder={materialsLoading ? "Loading materials…" : "Select material"}
+                          aria-label={`Material line ${index + 1}`}
                         >
-                          <option value="">
-                            {materialsLoading
-                              ? "Loading materials..."
-                              : "Select material"}
-                          </option>
-
                           {materials.map((material) => (
                             <option key={material.id} value={material.id}>
                               {getMaterialName(material)}
-                              {material.materialCode
-                                ? ` — ${material.materialCode}`
-                                : ""}
+                              {material.materialCode ? ` — ${material.materialCode}` : ""}
                             </option>
                           ))}
-                        </select>
-
-                        {(item.brand || item.unit) && (
-                          <div className="flex flex-wrap gap-1.5 mt-2">
-                            {item.brand && (
-                              <span className="px-2 py-1 rounded-md bg-[#F1F5F3] text-[10px] font-medium text-[#1F453B]">
-                                {item.brand}
-                              </span>
-                            )}
-
-                            {item.unit && (
-                              <span className="px-2 py-1 rounded-md bg-gray-100 text-[10px] font-medium text-[#6B7B7C]">
-                                {item.unit}
-                              </span>
-                            )}
+                        </SelectInput>
+                        {!item.materialId && (
+                          <TextInput
+                            style={{ marginTop: 6 }}
+                            value={item.itemName}
+                            onChange={(e) => updateRequirement(index, "itemName", e.target.value)}
+                            placeholder="…or type an item name"
+                            aria-label={`Item name line ${index + 1}`}
+                          />
+                        )}
+                        {item.brand && (
+                          <div style={{ marginTop: 6 }}>
+                            <Pill tone="brand" size="sm" dot={false}>
+                              {item.brand}
+                            </Pill>
                           </div>
                         )}
                       </td>
-
-                      {/* Category */}
-
-                      <td className="px-3 py-3 align-top">
-                        <input
-                          type="text"
+                      <td>
+                        <TextInput
                           value={item.category}
-                          onChange={(e) =>
-                            updateRequirement(index, "category", e.target.value)
-                          }
-                          placeholder="Category"
-                          className="bc-input h-9 w-full"
+                          onChange={(e) => updateRequirement(index, "category", e.target.value)}
+                          placeholder="e.g. Flooring"
                         />
                       </td>
-
-                      {/* Selection */}
-
-                      <td className="px-3 py-3 align-top">
-                        <input
-                          type="text"
+                      <td>
+                        <TextInput
                           value={item.selection}
-                          onChange={(e) =>
-                            updateRequirement(
-                              index,
-                              "selection",
-                              e.target.value,
-                            )
-                          }
-                          placeholder="Product / finish / specification"
-                          className="bc-input h-9 w-full"
+                          onChange={(e) => updateRequirement(index, "selection", e.target.value)}
+                          placeholder="e.g. Italian Statuario, 18mm, polished"
+                          invalid={incomplete && !item.selection?.trim()}
                         />
+                        {incomplete && !item.selection?.trim() && (
+                          <span className="inos-error" style={{ display: "block", marginTop: 4 }}>
+                            Add the selection to save this line.
+                          </span>
+                        )}
                       </td>
-
-                      {/* Style */}
-
-                      <td className="px-3 py-3 align-top">
-                        <input
-                          type="text"
+                      <td>
+                        <TextInput
                           value={item.style}
-                          onChange={(e) =>
-                            updateRequirement(index, "style", e.target.value)
-                          }
-                          placeholder="Modern"
-                          className="bc-input h-9 w-full"
+                          onChange={(e) => updateRequirement(index, "style", e.target.value)}
+                          placeholder="e.g. Modern"
                         />
                       </td>
-                      {/* Required By */}
-
-                      <td className="px-3 py-3 align-top">
-                        <input
+                      <td>
+                        <TextInput
                           type="date"
                           value={item.requirementDate}
-                          onChange={(e) =>
-                            updateRequirement(
-                              index,
-                              "requirementDate",
-                              e.target.value,
-                            )
-                          }
-                          className="bc-input h-9 w-full"
+                          onChange={(e) => updateRequirement(index, "requirementDate", e.target.value)}
                         />
                       </td>
-                      {/* Unit */}
-
-                      <td className="px-3 py-3 align-top">
-                        <div className="h-9 flex items-center px-3 rounded-md bg-[#F8FAF9] border border-gray-200 text-sm text-[#6B7B7C]">
-                          {item.unit || "—"}
-                        </div>
+                      <td style={{ paddingTop: 19, color: item.unit ? "var(--text)" : "var(--text-3)" }}>
+                        {item.unit || "—"}
                       </td>
-
-                      {/* Actions */}
-
-                      <td className="px-3 py-3 align-top">
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            type="button"
+                      <td className="actions">
+                        <div style={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
+                          <IconAction
+                            icon={item.expanded ? ChevronUp : ChevronDown}
+                            label={item.expanded ? "Hide functional needs" : "Add functional needs"}
                             onClick={() => toggleExpanded(index)}
-                            className="p-2 rounded-lg hover:bg-gray-100 text-[#6B7B7C]"
-                            title="Additional details"
-                          >
-                            {item.expanded ? (
-                              <ChevronUp size={16} />
-                            ) : (
-                              <ChevronDown size={16} />
-                            )}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => duplicateRequirement(index)}
-                            className="p-2 rounded-lg hover:bg-gray-100 text-[#6B7B7C]"
-                            title="Duplicate"
-                          >
-                            <Copy size={16} />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => removeRequirement(index)}
-                            className="p-2 rounded-lg hover:bg-red-50 text-red-500"
-                            title="Remove"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          />
+                          <IconAction icon={Copy} label="Duplicate line" onClick={() => duplicateRequirement(index)} />
+                          <RemoveRow onClick={() => removeRequirement(index)} />
                         </div>
                       </td>
                     </tr>
-
-                    {/* Expanded details */}
-
                     {item.expanded && (
-                      <tr className="border-b border-gray-200 bg-[#FAFBFB]">
-                        <td colSpan={7} className="px-6 py-4">
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-5xl">
-                            <div>
-                              <label className="bc-label">
-                                Functional Needs
-                              </label>
-
-                              <textarea
-                                rows={3}
-                                value={item.functionalNeeds}
-                                onChange={(e) =>
-                                  updateRequirement(
-                                    index,
-                                    "functionalNeeds",
-                                    e.target.value,
-                                  )
-                                }
-                                placeholder="Describe functional requirements, installation constraints, compatibility requirements, performance requirements, etc."
-                                className="bc-input w-full resize-y"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="bc-label">
-                                Material Specification
-                              </label>
-
-                              <div className="rounded-lg border border-gray-200 bg-white p-3 min-h-[90px]">
-                                <div className="text-sm font-medium text-[#333333]">
-                                  {item.itemName || "No material selected"}
-                                </div>
-
-                                {item.selection && (
-                                  <div className="text-xs text-[#6B7B7C] mt-1">
-                                    {item.selection}
-                                  </div>
-                                )}
-
-                                {item.brand && (
-                                  <div className="text-xs text-[#94A3A5] mt-2">
-                                    Brand: {item.brand}
-                                  </div>
-                                )}
-
-                                {item.unit && (
-                                  <div className="text-xs text-[#94A3A5] mt-1">
-                                    Unit: {item.unit}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
+                      <tr className="cf-subrow">
+                        <td />
+                        <td colSpan={7}>
+                          <Field label="Functional needs" optional hint="Installation constraints, compatibility, performance.">
+                            <TextArea
+                              rows={2}
+                              value={item.functionalNeeds}
+                              onChange={(e) => updateRequirement(index, "functionalNeeds", e.target.value)}
+                              placeholder="e.g. Must suit underfloor heating; anti-skid for wet areas"
+                            />
+                          </Field>
                         </td>
                       </tr>
                     )}
                   </React.Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                );
+              })}
+            </tbody>
+          </LineTable>
+        </DocSection>
 
-          {/* =================================================
-              ADD ROW
-          ================================================= */}
+        {missing.length > 0 && filledCount > 0 && (
+          <Callout tone="warn" title="Before saving">
+            Add {missing.join(", ")}.
+          </Callout>
+        )}
 
-          <div className="px-5 py-4 border-t border-gray-200 bg-[#FAFBFB]">
-            <button
-              type="button"
-              onClick={addRequirement}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-[#1F453B] hover:text-[#16382F]"
-            >
-              <Plus size={17} />
-              Add Material
-            </button>
-          </div>
-        </div>
-
-        {/* =====================================================
-            FOOTER
-        ===================================================== */}
-
-        <div className="flex items-center justify-between">
-          <div className="text-xs text-[#94A3A5]">Draft autosaved locally</div>
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => navigate("/procurement/requirements")}
-              className="h-10 px-4 rounded-lg border border-gray-200 bg-white text-sm font-medium text-[#333333] hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="h-10 px-5 rounded-lg bg-[#1F453B] text-white text-sm font-semibold inline-flex items-center gap-2 disabled:opacity-60"
-            >
-              <Save size={16} />
-
-              {isLoading
-                ? "Saving..."
-                : `Save ${requirements.length} ${
-                    requirements.length === 1 ? "Requirement" : "Requirements"
-                  }`}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+        <FormActions
+          note="Draft autosaves on this device."
+          onCancel={() => navigate("/procurement/requirements")}
+          submitLabel={
+            filledCount > 1 ? `Save ${filledCount} requirements` : "Save requirement"
+          }
+          submitting={isLoading}
+        />
+      </form>
+    </Page>
   );
 }

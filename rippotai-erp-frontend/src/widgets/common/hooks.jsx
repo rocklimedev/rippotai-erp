@@ -22,28 +22,29 @@ import {
 
 /* --------- Chart palette (muted, theme-blending — Phase F) --------- */
 export const CHART = {
-  primary: "#B8A99A",
-  sage: "#9DB1A6",
-  sageSoft: "#A0A4A8",
-  mist: "#EAEEF0",
-  muted: "#6B7B7C",
-  stroke: "rgba(51,51,51,0.12)",
+  primary: "#1F453B",
+  sage: "#8FAE9C",
+  sageSoft: "#B5C4B6",
+  mist: "#EEF3F0",
+  muted: "#7F8E88",
+  stroke: "#E4E9E6",
 };
+// Brand green first, then pastels (semantic colours stay pastel across the app)
 export const DONUT_SEGMENTS = [
-  "#B8A99A",
-  "#9DB1A6",
-  "#A0A4A8",
-  "#C2A98E",
-  "#A8AC85",
-  "#98A8B5",
+  "#1F453B",
+  "#8FAE9C",
+  "#D9AF61",
+  "#7EA6C9",
+  "#A08CC6",
+  "#E3A57C",
 ];
 export const CHART_SERIES = [
-  "#B8A99A",
-  "#9DB1A6",
-  "#A0A4A8",
-  "#C2A98E",
-  "#A8AC85",
-  "#98A8B5",
+  "#1F453B",
+  "#8FAE9C",
+  "#D9AF61",
+  "#7EA6C9",
+  "#A08CC6",
+  "#E3A57C",
 ];
 
 export const MONTH_LABEL = (yyyymm) => {
@@ -97,13 +98,14 @@ export function WidgetShell({
           ? `widget-link-${title.toLowerCase().replace(/\s+/g, "-")}`
           : undefined
       }
-      className={`h-full w-full nm-raised rounded-[16px] p-5 flex flex-col overflow-hidden ${clickable ? "cursor-pointer hover:shadow-md hover:border-[#1F453B] transition-shadow focus:outline-none focus:ring-2 focus:ring-[#1F453B]/40" : ""}`}
+      className={`h-full w-full inos-card p-5 flex flex-col overflow-hidden ${clickable ? "inos-card--interactive" : ""}`}
     >
-      <div className="flex items-start justify-between pb-2.5 mb-2.5 border-b border-[rgba(31,69,59,0.08)] shrink-0 gap-2">
+      <div className="flex items-start justify-between pb-3 shrink-0 gap-2">
         <div className="min-w-0 flex-1">
           <div
             title={title}
-            className="text-[12px] uppercase tracking-[0.16em] text-[#6B7B7C] font-semibold truncate"
+            className="text-[14px] font-semibold truncate"
+            style={{ color: "var(--text)" }}
           >
             {title}
           </div>
@@ -127,8 +129,8 @@ export function Stat({ value, delta, deltaDirection, note }) {
     <div className="flex flex-col justify-end h-full min-w-0">
       <div
         title={String(value)}
-        className="bc-stat-number text-[36px] xl:text-[40px] font-semibold"
-        style={{ color: "#333333", fontFamily: "Poppins" }}
+        className="bc-stat-number text-[32px] xl:text-[34px] font-bold tabular"
+        style={{ color: "var(--text)", letterSpacing: "-0.02em" }}
       >
         {value}
       </div>
@@ -223,65 +225,117 @@ export function StubWidget({ title, message }) {
 
 /* -------- Generic polling data hook used by every dashboard endpoint -------- */
 
-export function useEndpoint(url, deps = []) {
-  const [d, setD] = useState(null);
-  const [nonce, setNonce] = useState(0);
+// Legacy aggregate URLs (never existed on the NestJS backend) → the v1
+// dashboard data feeds served by the dashboards module.
+const ENDPOINT_ALIASES = {
+  "/crm/dashboard": "/v1/dashboards/data/crm",
+  "/ledger/dashboard": "/v1/dashboards/data/ledger",
+  "/materials/dashboard": "/v1/dashboards/data/materials",
+  "/site-ops/dashboard": "/v1/dashboards/data/site-ops",
+  "/design-studio/dashboard": "/v1/dashboards/data/design-studio",
+  "/admin/dashboard": "/v1/dashboards/data/admin",
+};
+const resolveEndpoint = (url) => {
+  if (ENDPOINT_ALIASES[url]) return ENDPOINT_ALIASES[url];
+  if (url.startsWith("/documents")) return `/v1${url}`;
+  return url;
+};
+
+// One shared cache entry per URL: every widget on a dashboard that reads the
+// same feed shares a single request, a single 30s poll and the same data, so
+// widgets render together instead of popping in one by one.
+const endpointCache = new Map();
+const STALE_MS = 5000;
+
+function endpointEntry(url) {
+  let e = endpointCache.get(url);
+  if (!e) {
+    e = { data: undefined, at: 0, inflight: null, subs: new Set() };
+    endpointCache.set(url, e);
+  }
+  return e;
+}
+
+function fetchEndpoint(url, force = false) {
+  const e = endpointEntry(url);
+  if (e.inflight) return e.inflight;
+  if (!force && e.data !== undefined && Date.now() - e.at < STALE_MS)
+    return Promise.resolve(e.data);
+  e.inflight = api
+    .get(url)
+    .then((r) => {
+      e.data = r.data;
+      e.at = Date.now();
+      e.subs.forEach((fn) => fn(e.data));
+      return e.data;
+    })
+    .catch(() => {
+      if (e.data === undefined) {
+        e.data = null;
+        e.subs.forEach((fn) => fn(null));
+      }
+      return e.data;
+    })
+    .finally(() => {
+      e.inflight = null;
+    });
+  return e.inflight;
+}
+
+export function useEndpoint(rawUrl, deps = []) {
+  const url = resolveEndpoint(rawUrl);
+  const [d, setD] = useState(() => endpointCache.get(url)?.data ?? null);
   useEffect(() => {
-    let cancelled = false;
-    const fetchOnce = () =>
-      api
-        .get(url)
-        .then((r) => {
-          if (!cancelled) setD(r.data);
-        })
-        .catch(() => {});
-    fetchOnce();
-    // Poll every 30s while tab is visible
+    const e = endpointEntry(url);
+    const sub = (data) => setD(data);
+    e.subs.add(sub);
+    if (e.data !== undefined) setD(e.data);
+    fetchEndpoint(url);
+    // Poll every 30s while tab is visible (deduped across widgets)
     const iv = setInterval(() => {
-      if (document.visibilityState === "visible") fetchOnce();
+      if (document.visibilityState === "visible") fetchEndpoint(url);
     }, 30000);
-    // Refetch on window focus
     const onFocus = () => {
-      if (document.visibilityState === "visible") fetchOnce();
+      if (document.visibilityState === "visible") fetchEndpoint(url);
     };
     // Refetch when a mutation elsewhere in the app requests a dashboard refresh
-    const onRefresh = () => fetchOnce();
+    const onRefresh = () => fetchEndpoint(url, true);
     window.addEventListener("focus", onFocus);
     window.addEventListener("bc:dashboard-refresh", onRefresh);
     return () => {
-      cancelled = true;
+      e.subs.delete(sub);
       clearInterval(iv);
       window.removeEventListener("focus", onFocus);
       window.removeEventListener("bc:dashboard-refresh", onRefresh);
     };
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [url, nonce, ...deps]);
+  }, [url, ...deps]);
   return d;
 }
 
 /* -------- Status pill used by every project-wise / table widget -------- */
 
 export const STATUS_PILL = {
-  approved: { bg: "#D8E0DA", fg: "#333333", label: "Approved" },
-  draft: { bg: "#EAEEF0", fg: "#6B7B7C", label: "Draft" },
-  awaiting_approval: { bg: "#EAEEF0", fg: "#333333", label: "Pending" },
-  returned: { bg: "#EAEEF0", fg: "#333333", label: "Returned" },
-  received: { bg: "#D8E0DA", fg: "#333333", label: "Received" },
-  selected: { bg: "#D8E0DA", fg: "#333333", label: "Selected" },
-  under_review: { bg: "#EAEEF0", fg: "#333333", label: "Review" },
-  on_track: { bg: "#D8E0DA", fg: "#333333", label: "On Track" },
-  at_risk: { bg: "#EAEEF0", fg: "#333333", label: "At Risk" },
-  delayed: { bg: "#B5C4B6", fg: "#333333", label: "Delayed" },
+  approved: { bg: "var(--ok-bg)", fg: "var(--ok-fg)", label: "Approved" },
+  draft: { bg: "var(--mute-bg)", fg: "var(--mute-fg)", label: "Draft" },
+  awaiting_approval: { bg: "var(--warn-bg)", fg: "var(--warn-fg)", label: "Pending" },
+  returned: { bg: "var(--peach-bg)", fg: "var(--peach-fg)", label: "Returned" },
+  received: { bg: "var(--info-bg)", fg: "var(--info-fg)", label: "Received" },
+  selected: { bg: "var(--ok-bg)", fg: "var(--ok-fg)", label: "Selected" },
+  under_review: { bg: "var(--lilac-bg)", fg: "var(--lilac-fg)", label: "Review" },
+  on_track: { bg: "var(--ok-bg)", fg: "var(--ok-fg)", label: "On Track" },
+  at_risk: { bg: "var(--warn-bg)", fg: "var(--warn-fg)", label: "At Risk" },
+  delayed: { bg: "var(--bad-bg)", fg: "var(--bad-fg)", label: "Delayed" },
 };
 export const StatusPill = ({ s }) => {
   const m = STATUS_PILL[s] || {
-    bg: "#EAEEF0",
-    fg: "#6B7B7C",
+    bg: "var(--mute-bg)",
+    fg: "var(--mute-fg)",
     label: (s || "").replace("_", " "),
   };
   return (
     <span
-      className="inline-flex px-2 py-0.5 rounded-full text-[10.5px] font-semibold"
+      className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold"
       style={{ background: m.bg, color: m.fg }}
     >
       {m.label}

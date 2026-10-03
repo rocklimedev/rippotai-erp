@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { LoadingBlock } from "@/components/forms/commerce-form-ui";
 import DeliveryChallanForm from "../../components/DeliveryChallanForm";
 
 import { useGetProjectsQuery } from "../../api/projects/project.api";
@@ -47,9 +47,7 @@ export default function CreateDeliveryChallanPage() {
 
   if (isLoadingLookups || (isEditMode && challanLoading)) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
+      <LoadingBlock label="Loading delivery challan…" />
     );
   }
 

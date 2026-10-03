@@ -10,6 +10,9 @@ import {
   useCreateUnitMutation,
 } from "../../api/meta/unit.api";
 
+import { Button, Field, TextInput, SelectInput, TextArea } from "@/components/inos";
+import { Modal, Affix } from "@/components/forms/commerce-form-ui";
+
 const ADD_NEW = "__add_new__";
 
 /* ============ Add Category Modal ============ */
@@ -32,39 +35,30 @@ function AddCategoryModal({ onClose, onAdded }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40"
-      onClick={onClose}
+    <Modal
+      title="New category"
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleAdd} disabled={!name.trim()}>
+            Add category
+          </Button>
+        </>
+      }
     >
-      <div
-        className="bg-white rounded-2xl w-[380px] p-6"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="text-lg font-semibold mb-4">Add New Category</h3>
-        <input
+      <Field label="Category name" required>
+        <TextInput
           autoFocus
-          className="h-10 w-full px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13.5px] mb-4"
-          placeholder="Category name"
+          placeholder="e.g. False ceiling"
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
         />
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="h-10 px-4 rounded-lg border border-[#DDD8CE]"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleAdd}
-            className="h-10 px-4 rounded-lg bg-[#1F453B] text-white"
-          >
-            Add Category
-          </button>
-        </div>
-      </div>
-    </div>
+      </Field>
+    </Modal>
   );
 }
 
@@ -101,73 +95,39 @@ function AddUnitModal({ onClose, onAdded }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl w-[420px] p-6"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="text-lg font-semibold mb-4">Add New Unit</h3>
-
-        <div className="space-y-4">
-          <div>
-            <label className="text-xs font-semibold block mb-1">
-              Unit Name
-            </label>
-            <input
-              autoFocus
-              className="h-10 w-full px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5]"
-              placeholder="e.g. Cubic Meter"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold block mb-1">
-              Code <span className="text-red-500">*</span>
-            </label>
-            <input
-              className="h-10 w-full px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] uppercase"
-              placeholder="e.g. M3, KG, PCS"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              maxLength={20}
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold block mb-1">
-              Description (Optional)
-            </label>
-            <textarea
-              rows={2}
-              className="w-full px-3 py-2 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5]"
-              placeholder="Additional description..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2 mt-6">
-          <button
-            onClick={onClose}
-            className="h-10 px-4 rounded-lg border border-[#DDD8CE]"
-          >
+    <Modal
+      title="New unit"
+      subtitle="Available on every library and BOQ item once added."
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={handleAdd}
-            className="h-10 px-4 rounded-lg bg-[#1F453B] text-white"
-          >
-            Add Unit
-          </button>
-        </div>
+          </Button>
+          <Button variant="primary" onClick={handleAdd}>
+            Add unit
+          </Button>
+        </>
+      }
+    >
+      <div className="inos-form-grid">
+        <Field label="Unit name" required>
+          <TextInput autoFocus placeholder="e.g. Cubic metre" value={name} onChange={(e) => setName(e.target.value)} />
+        </Field>
+        <Field label="Code" required hint="Saved in capitals.">
+          <TextInput
+            style={{ textTransform: "uppercase" }}
+            placeholder="e.g. M3, KG, PCS"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            maxLength={20}
+          />
+        </Field>
       </div>
-    </div>
+      <Field label="Description" optional>
+        <TextArea rows={2} placeholder="Anything worth noting" value={description} onChange={(e) => setDescription(e.target.value)} />
+      </Field>
+    </Modal>
   );
 }
 
@@ -258,119 +218,78 @@ export function LibraryItemModal({ item, cats, onClose, onSaved }) {
 
   return (
     <>
-      {/* Main Modal */}
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-        onClick={onClose}
-      >
-        <div
-          className="bg-white rounded-2xl w-[440px] p-6"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="text-[18px] font-semibold text-[#333333] mb-4">
-            {isEdit ? "Edit Library Item" : "Add Library Item"}
-          </div>
-
-          <div className="grid gap-3">
-            <div>
-              <label className="text-[12px] font-semibold text-[#333333] mb-1 block">
-                Name
-              </label>
-              <input
-                className="h-10 w-full px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13.5px]"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="text-[12px] font-semibold text-[#333333] mb-1 block">
-                Category
-              </label>
-              <select
-                className="h-10 w-full px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13.5px]"
-                value={form.category_id}
-                onChange={(e) => handleCategorySelect(e.target.value)}
-              >
-                {localCats.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-                <option value={ADD_NEW}>+ Add new category</option>
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[12px] font-semibold text-[#333333] mb-1 block">
-                  Unit
-                </label>
-                <select
-                  className="h-10 w-full px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13.5px]"
-                  value={form.unit_id}
-                  onChange={(e) => handleUnitSelect(e.target.value)}
-                >
-                  <option value="" disabled>
-                    Select unit
-                  </option>
-                  {units.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name} ({u.code})
-                    </option>
-                  ))}
-                  <option value={ADD_NEW}>+ Add new unit</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[12px] font-semibold text-[#333333] mb-1 block">
-                  Default Rate
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="h-10 w-full px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13.5px]"
-                  value={form.default_rate}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      default_rate: parseFloat(e.target.value) || 0,
-                    })
-                  }
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-[12px] font-semibold text-[#333333] mb-1 block">
-                Notes
-              </label>
-              <textarea
-                rows={2}
-                className="w-full px-3 py-2 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13.5px]"
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="mt-5 flex justify-end gap-2">
-            <button
-              onClick={onClose}
-              className="h-10 px-4 rounded-lg border border-[#DDD8CE] text-[13px] font-semibold text-[#333333]"
-            >
+      <Modal
+        title={isEdit ? "Edit library item" : "New library item"}
+        subtitle="Reusable item with a default rate for BOQs and estimates."
+        onClose={onClose}
+        footer={
+          <>
+            <Button variant="ghost" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              onClick={save}
-              className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold"
-            >
-              {isEdit ? "Save" : "Add"}
-            </button>
-          </div>
+            </Button>
+            <Button variant="primary" onClick={save} disabled={!form.name.trim()}>
+              {isEdit ? "Save changes" : "Add to library"}
+            </Button>
+          </>
+        }
+      >
+        <Field label="Name" required>
+          <TextInput
+            autoFocus
+            placeholder="e.g. Gypsum false ceiling — plain"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+        </Field>
+        <Field label="Category">
+          <SelectInput value={form.category_id} onChange={(e) => handleCategorySelect(e.target.value)}>
+            <option value="" disabled>
+              {localCats.length ? "Select category" : "No categories yet"}
+            </option>
+            {localCats.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+            <option value={ADD_NEW}>+ Add new category</option>
+          </SelectInput>
+        </Field>
+        <div className="inos-form-grid">
+          <Field label="Unit">
+            <SelectInput value={form.unit_id} onChange={(e) => handleUnitSelect(e.target.value)}>
+              <option value="" disabled>
+                Select unit
+              </option>
+              {units.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name} ({u.code})
+                </option>
+              ))}
+              <option value={ADD_NEW}>+ Add new unit</option>
+            </SelectInput>
+          </Field>
+          <Field label="Default rate">
+            <Affix pre="₹">
+              <TextInput
+                type="number"
+                step="0.01"
+                inputMode="decimal"
+                style={{ textAlign: "right" }}
+                value={form.default_rate}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    default_rate: parseFloat(e.target.value) || 0,
+                  })
+                }
+              />
+            </Affix>
+          </Field>
         </div>
-      </div>
+        <Field label="Notes" optional>
+          <TextArea rows={2} placeholder="Spec, brand or finish notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+        </Field>
+      </Modal>
 
       {/* Sub Modals */}
       {showAddCategory && (

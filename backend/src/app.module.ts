@@ -63,7 +63,10 @@ import { GatesModule } from './modules/gates/gates.module';
 import { ZohoModule } from './modules/zoho/zoho.module';
 import { MicrosoftModule } from './modules/microsoft/microsoft.module';
 import { GoogleModule } from './modules/google/google.module';
+import { AutomationModule } from './modules/automation/automation.module';
+import { ClientPortalModule } from './modules/client-portal/client-portal.module';
 import { ProjectPlannerModule } from './modules/projects/project-planner.module';
+import { WorkspaceModule } from './modules/workspace/workspace.module';
 
 @Module({
   imports: [
@@ -101,6 +104,7 @@ import { ProjectPlannerModule } from './modules/projects/project-planner.module'
     ProjectsModule,
     ClientsModule,
     ProjectPlannerModule,
+    WorkspaceModule,
     VendorsModule,
     PlanOfActionsModule,
     PaymentSchedulesModule,
@@ -155,6 +159,8 @@ import { ProjectPlannerModule } from './modules/projects/project-planner.module'
     ZohoModule,
     MicrosoftModule,
     GoogleModule,
+    AutomationModule,
+    ClientPortalModule,
   ],
 
   controllers: [AppController],

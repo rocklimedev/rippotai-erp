@@ -16,38 +16,6 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
 import {
   Command,
   CommandEmpty,
@@ -56,14 +24,33 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Page,
+  PageHeader,
+  Button,
+  Field,
+  TextInput,
+  SelectInput,
+  TextArea,
+  FormActions,
+  ChoiceGroup,
+} from "@/components/inos";
+import {
+  DocSection,
+  DocLayout,
+  Grid,
+  LineTable,
+  RemoveRow,
+  AddRow,
+  TotalsCard,
+  Callout,
+  Check as CheckBox,
+} from "@/components/forms/commerce-form-ui";
 
 import {
   useCreateDeliveryChallanMutation,
@@ -74,9 +61,6 @@ import {
  * Brand
  * ------------------------------------------------------------------ */
 
-const BRAND = "bg-[#1F453B] hover:bg-[#17372f] text-white";
-const BRAND_TEXT = "text-[#1F453B]";
-const BRAND_SOFT = "bg-[#D8E0DA] text-[#1F453B]";
 const NONE = "__none__";
 
 /* ------------------------------------------------------------------
@@ -374,51 +358,18 @@ function mapPurchaseOrderItem(item) {
 function FieldError({ message }) {
   if (!message) return null;
 
-  return <p className="mt-1.5 text-xs text-destructive">{message}</p>;
-}
-
-function Field({ label, htmlFor, required, error, className, children }) {
   return (
-    <div className={cn("space-y-1.5", className)}>
-      {label && (
-        <Label
-          htmlFor={htmlFor}
-          className="text-xs font-medium text-muted-foreground"
-        >
-          {label}
-
-          {required && <span className="ml-0.5 text-destructive">*</span>}
-        </Label>
-      )}
-
-      {children}
-
-      <FieldError message={error} />
-    </div>
+    <span className="inos-error" style={{ display: "block", marginTop: 4 }}>
+      {message}
+    </span>
   );
 }
 
-function SectionHeader({ icon: Icon, title, description, action }) {
-  return (
-    <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b py-4">
-      <div className="flex items-start gap-2.5">
-        {Icon && (
-          <Icon className={cn("mt-0.5 h-[18px] w-[18px]", BRAND_TEXT)} />
-        )}
-
-        <div className="space-y-0.5">
-          <CardTitle className="text-base">{title}</CardTitle>
-
-          {description && (
-            <CardDescription className="text-xs">{description}</CardDescription>
-          )}
-        </div>
-      </div>
-
-      {action}
-    </CardHeader>
-  );
-}
+const qty = (value) =>
+  Number(value || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 3,
+  });
 
 /* ------------------------------------------------------------------
  * Combobox
@@ -432,7 +383,7 @@ function Combobox({
   searchPlaceholder = "Search...",
   emptyText = "No results.",
   invalid,
-  className,
+  id,
 }) {
   const [open, setOpen] = useState(false);
 
@@ -443,29 +394,26 @@ function Combobox({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
+        <button
+          id={id}
           type="button"
-          variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn(
-            "w-full justify-between font-normal",
-            !selected && "text-muted-foreground",
-            invalid && "border-destructive focus-visible:ring-destructive",
-            className,
-          )}
+          aria-invalid={invalid || undefined}
+          className="cf-combo"
+          style={{ minHeight: 40, borderRadius: 10, fontSize: "var(--fs-body)", ...(invalid ? { borderColor: "var(--bad-dot)" } : null) }}
         >
-          <span className="truncate">
+          <span className={cn("truncate", !selected && "cf-combo__placeholder")}>
             {selected ? selected.label : placeholder}
           </span>
 
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
+          <ChevronsUpDown aria-hidden />
+        </button>
       </PopoverTrigger>
 
       <PopoverContent
         align="start"
-        className="w-[var(--radix-popover-trigger-width)] min-w-[220px] p-0"
+        className="w-[var(--radix-popover-trigger-width)] min-w-[240px] p-0"
       >
         <Command
           filter={(itemValue, search) =>
@@ -509,80 +457,6 @@ function Combobox({
         </Command>
       </PopoverContent>
     </Popover>
-  );
-}
-
-function SummaryPill({ label, value }) {
-  return (
-    <div className="rounded-lg border bg-background px-3 py-2 text-center">
-      <div className="text-sm font-semibold tabular-nums">
-        {Number(value || 0).toFixed(3)}
-      </div>
-
-      <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </div>
-    </div>
-  );
-}
-
-function InfoRow({ label, value }) {
-  return (
-    <div className="flex items-start justify-between gap-4 border-b pb-3 text-xs last:border-0 last:pb-0">
-      <span className="text-muted-foreground">{label}</span>
-
-      <span className="max-w-[180px] truncate text-right font-medium">
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function MetricRow({ label, value }) {
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-muted-foreground">{label}</span>
-
-      <span className="font-semibold tabular-nums">
-        {Number(value || 0).toFixed(3)}
-      </span>
-    </div>
-  );
-}
-
-function StatusRow({ checked, label }) {
-  return (
-    <div className="flex items-center gap-2 text-sm">
-      <span
-        className={cn(
-          "flex h-5 w-5 items-center justify-center rounded-full",
-          checked ? BRAND : "bg-muted text-muted-foreground",
-        )}
-      >
-        {checked && <Check className="h-3 w-3" />}
-      </span>
-
-      <span className={checked ? "" : "text-muted-foreground"}>{label}</span>
-    </div>
-  );
-}
-
-function ToggleCard({ checked, onChange, title, description }) {
-  return (
-    <div
-      className={cn(
-        "flex items-center justify-between gap-4 rounded-lg border p-4 transition",
-        checked && "border-[#1F453B]/30 bg-[#D8E0DA]/30",
-      )}
-    >
-      <div className="min-w-0 space-y-0.5">
-        <p className="text-sm font-medium">{title}</p>
-
-        <p className="text-xs leading-5 text-muted-foreground">{description}</p>
-      </div>
-
-      <Switch checked={checked} onCheckedChange={onChange} />
-    </div>
   );
 }
 
@@ -1258,1054 +1132,411 @@ export default function DeliveryChallanForm({
    * Render
    * --------------------------------------------------------------- */
 
+  const projectLabel =
+    getDisplayString(selectedProject?.name) ||
+    getDisplayString(selectedProject?.project_name) ||
+    "";
+
+  const vendorLabel =
+    getDisplayString(selectedPurchaseOrder?.agency_name) ||
+    getDisplayString(selectedVendor?.name) ||
+    getDisplayString(selectedVendor?.agency_name) ||
+    "";
+
+  const accountedTotal =
+    totals.accepted + totals.shortage + totals.damaged + totals.rejected;
+
   return (
-    <form onSubmit={handleSubmit} className="min-h-screen bg-muted/30">
-      {/* Header */}
-
-      <div className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex min-w-0 items-center gap-3">
-            {onCancel && (
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={onCancel}
-                aria-label="Back"
-                className="shrink-0"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            )}
-
-            <div
-              className={cn(
-                "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
-                BRAND,
-              )}
-            >
-              <Truck className="h-5 w-5" />
-            </div>
-
-            <div className="min-w-0">
-              <h1 className="truncate text-lg font-semibold leading-none">
-                {isEditMode ? "Edit delivery challan" : "New delivery challan"}
-              </h1>
-
-              <p className="mt-1 hidden text-xs text-muted-foreground sm:block">
-                Record incoming material delivery and receiving details
-              </p>
-            </div>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2">
-            {onCancel && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onCancel}
-                disabled={isSubmitting}
-                className="hidden sm:inline-flex"
-              >
-                Cancel
-              </Button>
-            )}
-
-            <Button type="submit" disabled={isSubmitting} className={BRAND}>
-              {isSubmitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-2 h-4 w-4" />
-              )}
-
-              {isSubmitting
-                ? "Saving"
-                : isEditMode
-                  ? "Update challan"
-                  : "Save challan"}
+    <Page>
+      <PageHeader
+        crumbs={[
+          { label: "Procurement", to: "/procurement" },
+          { label: "Delivery challans", to: "/procurement/delivery-challans" },
+          { label: isEditMode ? "Edit" : "New" },
+        ]}
+        title={isEditMode ? "Edit delivery challan" : "New delivery challan"}
+        subtitle="Record what arrived on site — link a purchase order to load its lines automatically."
+        actions={
+          onCancel && (
+            <Button variant="ghost" icon={ArrowLeft} onClick={onCancel} disabled={isSubmitting}>
+              Back to list
             </Button>
-          </div>
-        </div>
-      </div>
+          )
+        }
+      />
 
-      {/* Content */}
-
-      <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="space-y-6">
-            {/* ------------------------------------------------
-             * Challan details
-             * ------------------------------------------------ */}
-
-            <Card>
-              <SectionHeader
-                icon={FileText}
-                title="Challan details"
-                description="Project, site, vendor and delivery reference"
-              />
-
-              <CardContent className="grid gap-5 pt-5 md:grid-cols-2 xl:grid-cols-3">
-                <Field label="Project" required error={getError("project_id")}>
-                  <Combobox
-                    options={projectOptions}
-                    value={form.project_id}
-                    onChange={handleProjectChange}
-                    invalid={Boolean(getError("project_id"))}
-                    placeholder="Select project"
-                    searchPlaceholder="Search projects..."
-                    emptyText="No projects found."
-                  />
-                </Field>
-
-                <Field label="Site">
-                  <Select
-                    value={form.site_id || NONE}
-                    onValueChange={(value) =>
-                      updateField("site_id", value === NONE ? "" : value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select site" />
-                    </SelectTrigger>
-
-                    <SelectContent>
-                      <SelectItem value={NONE}>No site</SelectItem>
-
-                      {availableSites.map((site) => (
-                        <SelectItem key={site.id} value={String(site.id)}>
-                          {getDisplayString(site.name) ||
-                            getDisplayString(site.site_name) ||
-                            site.id}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-
-                <Field label="Purchase order">
-                  <Combobox
-                    options={purchaseOrderOptions}
-                    value={form.purchase_order_id}
-                    onChange={handlePurchaseOrderChange}
-                    placeholder="Select purchase order"
-                    searchPlaceholder="Search purchase orders..."
-                    emptyText="No purchase orders found."
-                  />
-                </Field>
-
-                <Field label="Vendor">
-                  <Combobox
-                    options={vendorOptions}
-                    value={form.vendor_id}
-                    onChange={(value) => updateField("vendor_id", value)}
-                    placeholder="Select vendor"
-                    searchPlaceholder="Search vendors..."
-                    emptyText="No vendors found."
-                  />
-                </Field>
-
-                <Field
-                  label="Challan date"
-                  htmlFor="challan_date"
-                  required
-                  error={getError("challan_date")}
-                >
-                  <Input
-                    id="challan_date"
-                    type="date"
-                    value={form.challan_date}
-                    onChange={(event) =>
-                      updateField("challan_date", event.target.value)
-                    }
-                    className={cn(
-                      getError("challan_date") &&
-                        "border-destructive focus-visible:ring-destructive",
-                    )}
-                  />
-                </Field>
-
-                <Field label="Delivery address" htmlFor="site_address">
-                  <Input
-                    id="site_address"
-                    value={form.site_address}
-                    onChange={(event) =>
-                      updateField("site_address", event.target.value)
-                    }
-                    placeholder="Delivery / site address"
-                  />
-                </Field>
-              </CardContent>
-            </Card>
-
-            {/* ------------------------------------------------
-             * PO summary
-             * ------------------------------------------------ */}
-
-            {selectedPurchaseOrder && (
-              <Alert>
-                <ClipboardList className="h-4 w-4" />
-
-                <AlertDescription>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                    <span>
-                      <strong>
-                        {getDisplayString(selectedPurchaseOrder.po_number)}
-                      </strong>
-                    </span>
-
-                    <span>
-                      Vendor:{" "}
-                      {getDisplayString(selectedPurchaseOrder.agency_name) ||
-                        getDisplayString(selectedVendor?.name) ||
-                        "—"}
-                    </span>
-
-                    <span>
-                      PO date: {getDisplayString(selectedPurchaseOrder.po_date)}
-                    </span>
-
-                    <span>
-                      Status: {getDisplayString(selectedPurchaseOrder.status)}
-                    </span>
-                  </div>
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* ------------------------------------------------
-             * Materials
-             * ------------------------------------------------ */}
-
-            <Card className="overflow-hidden">
-              <SectionHeader
-                icon={Package}
-                title="Delivered materials"
-                description="Record every material received on this challan"
-                action={
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={addItem}
-                    className={BRAND}
-                  >
-                    <Plus className="mr-1.5 h-4 w-4" />
-                    Add material
-                  </Button>
+      <form onSubmit={handleSubmit} className="inos-form" noValidate>
+          {/* 1 — Challan details */}
+          <DocSection
+            step={1}
+            title="Challan details"
+            description="Start with the purchase order — project, vendor and lines fill in from it."
+          >
+            <Grid cols={2}>
+              <Field
+                label="Purchase order"
+                optional
+                full
+                hint={
+                  selectedPurchaseOrder
+                    ? `${getDisplayString(selectedPurchaseOrder.status) || "—"} · PO date ${getDisplayString(selectedPurchaseOrder.po_date) || "—"}`
+                    : purchaseOrderOptions.length
+                      ? "Selecting a PO loads its pending material lines."
+                      : "No purchase orders yet — add lines manually below."
                 }
-              />
-
-              {(getError("items") || itemErrorCount > 0) && (
-                <div className="px-6 pt-4">
-                  <Alert variant="destructive">
-                    <AlertDescription>
-                      {getError("items") ||
-                        `${itemErrorCount} field${
-                          itemErrorCount === 1 ? "" : "s"
-                        } in the material lines need fixing.`}
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              )}
-
-              <CardContent className="p-0">
-                {/* Desktop */}
-
-                <div className="hidden overflow-x-auto lg:block">
-                  <Table className="min-w-[1300px]">
-                    <TableHeader>
-                      <TableRow className="hover:bg-transparent">
-                        <TableHead className="w-10 text-center">#</TableHead>
-
-                        <TableHead className="min-w-[220px]">
-                          Material
-                        </TableHead>
-
-                        <TableHead className="min-w-[180px]">
-                          Description
-                        </TableHead>
-
-                        <TableHead className="w-28 text-right">Qty</TableHead>
-
-                        <TableHead className="w-28 text-right">
-                          Accepted
-                        </TableHead>
-
-                        <TableHead className="w-28 text-right">Short</TableHead>
-
-                        <TableHead className="w-28 text-right">
-                          Damaged
-                        </TableHead>
-
-                        <TableHead className="w-28 text-right">
-                          Rejected
-                        </TableHead>
-
-                        <TableHead className="min-w-[160px]">
-                          Condition
-                        </TableHead>
-
-                        <TableHead className="min-w-[160px]">
-                          Stored at
-                        </TableHead>
-
-                        <TableHead className="w-12" />
-                      </TableRow>
-                    </TableHeader>
-
-                    <TableBody>
-                      {form.items.map((item, index) => {
-                        const materialError = getError(
-                          `items.${index}.material_id`,
-                        );
-
-                        const quantityError = getError(
-                          `items.${index}.quantity`,
-                        );
-
-                        const breakdownError = getError(
-                          `items.${index}.quantity_breakdown`,
-                        );
-
-                        return (
-                          <React.Fragment
-                            key={
-                              item.purchase_order_item_id ||
-                              `${item.material_id}-${index}`
-                            }
-                          >
-                            <TableRow className="border-b-0 align-top hover:bg-transparent">
-                              <TableCell className="pt-6 text-center text-sm font-medium text-muted-foreground">
-                                {index + 1}
-                              </TableCell>
-
-                              <TableCell>
-                                <Combobox
-                                  options={materialOptions}
-                                  value={item.material_id}
-                                  onChange={(value) =>
-                                    handleMaterialChange(index, value)
-                                  }
-                                  invalid={Boolean(materialError)}
-                                  placeholder="Select material"
-                                  searchPlaceholder="Search materials..."
-                                  emptyText="No materials found."
-                                />
-
-                                <FieldError message={materialError} />
-
-                                {item.purchase_order_item_id && (
-                                  <p className="mt-1 text-[11px] text-muted-foreground">
-                                    Linked to PO item
-                                  </p>
-                                )}
-                              </TableCell>
-
-                              <TableCell>
-                                <Input
-                                  value={item.description}
-                                  onChange={(event) =>
-                                    updateItem(
-                                      index,
-                                      "description",
-                                      event.target.value,
-                                    )
-                                  }
-                                  placeholder="Description"
-                                />
-                              </TableCell>
-
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  min="0.001"
-                                  step="0.001"
-                                  value={item.quantity}
-                                  onChange={(event) =>
-                                    updateItem(
-                                      index,
-                                      "quantity",
-                                      event.target.value,
-                                    )
-                                  }
-                                  placeholder="0.000"
-                                  className={cn(
-                                    "text-right tabular-nums",
-                                    quantityError &&
-                                      "border-destructive focus-visible:ring-destructive",
-                                  )}
-                                />
-
-                                {item.unit && (
-                                  <span className="mt-1 block text-right text-[11px] text-muted-foreground">
-                                    {item.unit}
-                                  </span>
-                                )}
-
-                                <FieldError message={quantityError} />
-                              </TableCell>
-
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  step="0.001"
-                                  value={item.accepted_quantity}
-                                  onChange={(event) =>
-                                    updateItem(
-                                      index,
-                                      "accepted_quantity",
-                                      event.target.value,
-                                    )
-                                  }
-                                  placeholder="0.000"
-                                  className="text-right tabular-nums"
-                                />
-                              </TableCell>
-
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  step="0.001"
-                                  value={item.shortage_quantity}
-                                  onChange={(event) =>
-                                    updateItem(
-                                      index,
-                                      "shortage_quantity",
-                                      event.target.value,
-                                    )
-                                  }
-                                  placeholder="0.000"
-                                  className="text-right tabular-nums"
-                                />
-                              </TableCell>
-
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  step="0.001"
-                                  value={item.damaged_quantity}
-                                  onChange={(event) =>
-                                    updateItem(
-                                      index,
-                                      "damaged_quantity",
-                                      event.target.value,
-                                    )
-                                  }
-                                  placeholder="0.000"
-                                  className="text-right tabular-nums"
-                                />
-                              </TableCell>
-
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  step="0.001"
-                                  value={item.rejected_quantity}
-                                  onChange={(event) =>
-                                    updateItem(
-                                      index,
-                                      "rejected_quantity",
-                                      event.target.value,
-                                    )
-                                  }
-                                  placeholder="0.000"
-                                  className="text-right tabular-nums"
-                                />
-                              </TableCell>
-
-                              <TableCell>
-                                <Select
-                                  value={item.condition_status}
-                                  onValueChange={(value) =>
-                                    updateItem(index, "condition_status", value)
-                                  }
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-
-                                  <SelectContent>
-                                    {CONDITION_OPTIONS.map((option) => (
-                                      <SelectItem
-                                        key={option.value}
-                                        value={option.value}
-                                      >
-                                        {option.label}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </TableCell>
-
-                              <TableCell>
-                                <Input
-                                  value={item.stored_at}
-                                  onChange={(event) =>
-                                    updateItem(
-                                      index,
-                                      "stored_at",
-                                      event.target.value,
-                                    )
-                                  }
-                                  placeholder="Warehouse / room"
-                                />
-                              </TableCell>
-
-                              <TableCell className="pt-5 text-center">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeItem(index)}
-                                  aria-label={`Remove line ${index + 1}`}
-                                  className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-
-                            <TableRow className="bg-muted/30 hover:bg-muted/30">
-                              <TableCell />
-
-                              <TableCell colSpan={10} className="pb-4 pt-0">
-                                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                                  <Input
-                                    value={item.brand}
-                                    onChange={(event) =>
-                                      updateItem(
-                                        index,
-                                        "brand",
-                                        event.target.value,
-                                      )
-                                    }
-                                    placeholder="Brand"
-                                  />
-
-                                  <Input
-                                    value={item.specification}
-                                    onChange={(event) =>
-                                      updateItem(
-                                        index,
-                                        "specification",
-                                        event.target.value,
-                                      )
-                                    }
-                                    placeholder="Specification"
-                                  />
-
-                                  <Input
-                                    value={item.unit}
-                                    onChange={(event) =>
-                                      updateItem(
-                                        index,
-                                        "unit",
-                                        event.target.value,
-                                      )
-                                    }
-                                    placeholder="Unit"
-                                  />
-
-                                  <Input
-                                    value={item.condition_notes}
-                                    onChange={(event) =>
-                                      updateItem(
-                                        index,
-                                        "condition_notes",
-                                        event.target.value,
-                                      )
-                                    }
-                                    placeholder="Condition notes"
-                                  />
-
-                                  <Input
-                                    value={item.remarks}
-                                    onChange={(event) =>
-                                      updateItem(
-                                        index,
-                                        "remarks",
-                                        event.target.value,
-                                      )
-                                    }
-                                    placeholder="Item remarks"
-                                    className="md:col-span-2"
-                                  />
-
-                                  {breakdownError && (
-                                    <p className="text-xs font-medium text-destructive md:col-span-2 xl:col-span-4">
-                                      {breakdownError}
-                                    </p>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          </React.Fragment>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                {/* Mobile */}
-
-                <div className="space-y-4 p-4 lg:hidden">
-                  {form.items.map((item, index) => {
-                    const materialError = getError(
-                      `items.${index}.material_id`,
-                    );
-
-                    const quantityError = getError(`items.${index}.quantity`);
-
-                    const breakdownError = getError(
-                      `items.${index}.quantity_breakdown`,
-                    );
-
-                    return (
-                      <Card
-                        key={
-                          item.purchase_order_item_id ||
-                          `${item.material_id}-${index}`
-                        }
-                        className="bg-muted/30"
-                      >
-                        <CardContent className="p-4">
-                          <div className="mb-4 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={cn(
-                                  "flex h-6 w-6 items-center justify-center rounded-md text-xs font-semibold",
-                                  BRAND,
-                                )}
-                              >
-                                {index + 1}
-                              </span>
-
-                              <span className="text-sm font-medium">
-                                Material item
-                              </span>
-                            </div>
-
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeItem(index)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-
-                          <div className="grid gap-4 sm:grid-cols-2">
-                            <Field
-                              label="Material"
-                              required
-                              error={materialError}
-                              className="sm:col-span-2"
-                            >
-                              <Combobox
-                                options={materialOptions}
-                                value={item.material_id}
-                                onChange={(value) =>
-                                  handleMaterialChange(index, value)
-                                }
-                                invalid={Boolean(materialError)}
-                                placeholder="Select material"
-                                searchPlaceholder="Search materials..."
-                                emptyText="No materials found."
-                              />
-                            </Field>
-
-                            <Field
-                              label="Description"
-                              className="sm:col-span-2"
-                            >
-                              <Input
-                                value={item.description}
-                                onChange={(event) =>
-                                  updateItem(
-                                    index,
-                                    "description",
-                                    event.target.value,
-                                  )
-                                }
-                              />
-                            </Field>
-
-                            <Field
-                              label="Quantity"
-                              required
-                              error={quantityError}
-                            >
-                              <Input
-                                type="number"
-                                min="0.001"
-                                step="0.001"
-                                value={item.quantity}
-                                onChange={(event) =>
-                                  updateItem(
-                                    index,
-                                    "quantity",
-                                    event.target.value,
-                                  )
-                                }
-                              />
-                            </Field>
-
-                            <Field label="Unit">
-                              <Input
-                                value={item.unit}
-                                onChange={(event) =>
-                                  updateItem(index, "unit", event.target.value)
-                                }
-                              />
-                            </Field>
-
-                            <Field label="Accepted">
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.001"
-                                value={item.accepted_quantity}
-                                onChange={(event) =>
-                                  updateItem(
-                                    index,
-                                    "accepted_quantity",
-                                    event.target.value,
-                                  )
-                                }
-                              />
-                            </Field>
-
-                            <Field label="Shortage">
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.001"
-                                value={item.shortage_quantity}
-                                onChange={(event) =>
-                                  updateItem(
-                                    index,
-                                    "shortage_quantity",
-                                    event.target.value,
-                                  )
-                                }
-                              />
-                            </Field>
-
-                            <Field label="Damaged">
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.001"
-                                value={item.damaged_quantity}
-                                onChange={(event) =>
-                                  updateItem(
-                                    index,
-                                    "damaged_quantity",
-                                    event.target.value,
-                                  )
-                                }
-                              />
-                            </Field>
-
-                            <Field label="Rejected">
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.001"
-                                value={item.rejected_quantity}
-                                onChange={(event) =>
-                                  updateItem(
-                                    index,
-                                    "rejected_quantity",
-                                    event.target.value,
-                                  )
-                                }
-                              />
-                            </Field>
-
-                            <Field label="Condition">
-                              <Select
-                                value={item.condition_status}
-                                onValueChange={(value) =>
-                                  updateItem(index, "condition_status", value)
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-
-                                <SelectContent>
-                                  {CONDITION_OPTIONS.map((option) => (
-                                    <SelectItem
-                                      key={option.value}
-                                      value={option.value}
-                                    >
-                                      {option.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </Field>
-
-                            <Field label="Stored at">
-                              <Input
-                                value={item.stored_at}
-                                onChange={(event) =>
-                                  updateItem(
-                                    index,
-                                    "stored_at",
-                                    event.target.value,
-                                  )
-                                }
-                              />
-                            </Field>
-
-                            <Field label="Brand">
-                              <Input
-                                value={item.brand}
-                                onChange={(event) =>
-                                  updateItem(index, "brand", event.target.value)
-                                }
-                              />
-                            </Field>
-
-                            <Field label="Specification">
-                              <Input
-                                value={item.specification}
-                                onChange={(event) =>
-                                  updateItem(
-                                    index,
-                                    "specification",
-                                    event.target.value,
-                                  )
-                                }
-                              />
-                            </Field>
-
-                            <Field
-                              label="Condition notes"
-                              className="sm:col-span-2"
-                            >
-                              <Input
-                                value={item.condition_notes}
-                                onChange={(event) =>
-                                  updateItem(
-                                    index,
-                                    "condition_notes",
-                                    event.target.value,
-                                  )
-                                }
-                              />
-                            </Field>
-
-                            <Field
-                              label="Item remarks"
-                              className="sm:col-span-2"
-                            >
-                              <Textarea
-                                rows={2}
-                                value={item.remarks}
-                                onChange={(event) =>
-                                  updateItem(
-                                    index,
-                                    "remarks",
-                                    event.target.value,
-                                  )
-                                }
-                                className="resize-none"
-                              />
-                            </Field>
-
-                            {breakdownError && (
-                              <p className="text-xs font-medium text-destructive sm:col-span-2">
-                                {breakdownError}
-                              </p>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-
-                <Separator />
-
-                <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={addItem}
-                    className={BRAND_TEXT}
-                  >
-                    <Plus className="mr-1.5 h-4 w-4" />
-                    Add another material
-                  </Button>
-
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-                    <SummaryPill label="Delivered" value={totals.quantity} />
-
-                    <SummaryPill label="Accepted" value={totals.accepted} />
-
-                    <SummaryPill label="Short" value={totals.shortage} />
-
-                    <SummaryPill label="Damaged" value={totals.damaged} />
-
-                    <SummaryPill label="Rejected" value={totals.rejected} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* ------------------------------------------------
-             * Remarks
-             * ------------------------------------------------ */}
-
-            <Card>
-              <SectionHeader
-                title="Remarks and documentation"
-                description="Receiving notes, discrepancies and supporting documents"
-              />
-
-              <CardContent className="grid gap-5 pt-5 md:grid-cols-2">
-                <Field label="General remarks">
-                  <Textarea
-                    rows={4}
-                    value={form.general_remarks}
-                    onChange={(event) =>
-                      updateField("general_remarks", event.target.value)
-                    }
-                    placeholder="General notes about this delivery"
-                    className="resize-none"
-                  />
-                </Field>
-
-                <Field label="Discrepancy notes">
-                  <Textarea
-                    rows={4}
-                    value={form.discrepancy_notes}
-                    onChange={(event) =>
-                      updateField("discrepancy_notes", event.target.value)
-                    }
-                    placeholder="Shortages, damages, rejected items or other discrepancies"
-                    className="resize-none"
-                  />
-                </Field>
-
-                <Field label="Attachment URL" className="md:col-span-2">
-                  <Input
-                    type="url"
-                    value={form.attachment_url}
-                    onChange={(event) =>
-                      updateField("attachment_url", event.target.value)
-                    }
-                    placeholder="https://..."
-                  />
-                </Field>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* --------------------------------------------------
-           * Sidebar
-           * -------------------------------------------------- */}
-
-          <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
-            <Card>
-              <CardContent className="space-y-4 pt-6">
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className={cn(
-                      "flex h-9 w-9 items-center justify-center rounded-lg",
-                      BRAND_SOFT,
-                    )}
-                  >
-                    <ClipboardList className="h-[18px] w-[18px]" />
-                  </div>
-
-                  <div>
-                    <h3 className="text-sm font-semibold leading-none">
-                      Delivery summary
-                    </h3>
-
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Current challan overview
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <InfoRow
-                    label="Project"
-                    value={
-                      getDisplayString(selectedProject?.name) ||
-                      getDisplayString(selectedProject?.project_name) ||
-                      form.project_id ||
-                      "Not selected"
-                    }
-                  />
-
-                  <InfoRow
-                    label="Purchase order"
-                    value={
-                      getDisplayString(selectedPurchaseOrder?.po_number) ||
-                      "Not linked"
-                    }
-                  />
-
-                  <InfoRow
-                    label="Vendor"
-                    value={
-                      getDisplayString(selectedPurchaseOrder?.agency_name) ||
-                      getDisplayString(selectedVendor?.name) ||
-                      getDisplayString(selectedVendor?.agency_name) ||
-                      "Not selected"
-                    }
-                  />
-
-                  <InfoRow
-                    label="Date"
-                    value={form.challan_date || "Not selected"}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="space-y-2.5 pt-6">
-                <h3 className="mb-1 text-sm font-semibold">Verification</h3>
-
-                <StatusRow
-                  checked={form.gate_pass_received}
-                  label="Gate pass received"
-                />
-
-                <StatusRow
-                  checked={form.material_checked}
-                  label="Material checked"
-                />
-              </CardContent>
-            </Card>
-
-            {onCancel && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onCancel}
-                disabled={isSubmitting}
-                className="w-full sm:hidden"
               >
-                <X className="mr-2 h-4 w-4" />
-                Cancel
+                <Combobox
+                  options={purchaseOrderOptions}
+                  value={form.purchase_order_id}
+                  onChange={handlePurchaseOrderChange}
+                  placeholder="Search purchase orders"
+                  searchPlaceholder="PO number…"
+                  emptyText="No purchase orders found."
+                />
+              </Field>
+
+              <Field label="Project" required error={getError("project_id")}>
+                <Combobox
+                  options={projectOptions}
+                  value={form.project_id}
+                  onChange={handleProjectChange}
+                  invalid={Boolean(getError("project_id"))}
+                  placeholder="Select project"
+                  searchPlaceholder="Search projects…"
+                  emptyText="No projects found."
+                />
+              </Field>
+
+              <Field label="Vendor" optional>
+                <Combobox
+                  options={vendorOptions}
+                  value={form.vendor_id}
+                  onChange={(value) => updateField("vendor_id", value)}
+                  placeholder="Select vendor"
+                  searchPlaceholder="Search vendors…"
+                  emptyText="No vendors found."
+                />
+              </Field>
+
+              <Field label="Challan date" htmlFor="challan_date" required error={getError("challan_date")}>
+                <TextInput
+                  id="challan_date"
+                  type="date"
+                  value={form.challan_date}
+                  onChange={(event) => updateField("challan_date", event.target.value)}
+                  invalid={Boolean(getError("challan_date"))}
+                />
+              </Field>
+
+              <Field label="Site" optional htmlFor="dc-site">
+                <SelectInput
+                  id="dc-site"
+                  value={form.site_id || ""}
+                  onChange={(event) => updateField("site_id", event.target.value)}
+                  placeholder={availableSites.length ? "No site" : "No sites set up"}
+                  disabled={!availableSites.length}
+                >
+                  {availableSites.map((site) => (
+                    <option key={site.id} value={String(site.id)}>
+                      {getDisplayString(site.name) || getDisplayString(site.site_name) || site.id}
+                    </option>
+                  ))}
+                </SelectInput>
+              </Field>
+
+              <Field label="Delivery address" optional full htmlFor="site_address">
+                <TextInput
+                  id="site_address"
+                  value={form.site_address}
+                  onChange={(event) => updateField("site_address", event.target.value)}
+                  placeholder="e.g. Plot 14, Sector 44, Gurugram — site gate 2"
+                />
+              </Field>
+            </Grid>
+          </DocSection>
+
+          {/* 2 — Delivered materials */}
+          <DocSection
+            step={2}
+            flush
+            title="Delivered materials"
+            description="Enter what arrived, then split it into accepted, short, damaged and rejected."
+            actions={
+              <Button variant="secondary" size="sm" icon={Plus} onClick={addItem}>
+                Add item
               </Button>
-            )}
-          </aside>
-        </div>
-      </div>
-    </form>
+            }
+            footer={
+              <>
+                <AddRow onClick={addItem}>Add item</AddRow>
+                <span className="inos-hint tabular">
+                  {form.items.length} {form.items.length === 1 ? "line" : "lines"} · Delivered{" "}
+                  <strong style={{ color: "var(--text)" }}>{qty(totals.quantity)}</strong>
+                </span>
+              </>
+            }
+          >
+            <LineTable minWidth={1120}>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th style={{ minWidth: 220 }}>Material</th>
+                  <th style={{ minWidth: 160 }}>Description</th>
+                  <th className="num" style={{ width: 100 }}>Delivered</th>
+                  <th className="num" style={{ width: 92 }}>Accepted</th>
+                  <th className="num" style={{ width: 92 }}>Short</th>
+                  <th className="num" style={{ width: 92 }}>Damaged</th>
+                  <th className="num" style={{ width: 92 }}>Rejected</th>
+                  <th style={{ width: 150 }}>Condition</th>
+                  <th style={{ minWidth: 130 }}>Stored at</th>
+                  <th className="actions" aria-label="Row actions" />
+                </tr>
+              </thead>
+              <tbody>
+                {form.items.map((item, index) => {
+                  const materialError = getError(`items.${index}.material_id`);
+                  const quantityError = getError(`items.${index}.quantity`);
+                  const breakdownError = getError(`items.${index}.quantity_breakdown`);
+                  const numCell = (field, placeholder = "0") => (
+                    <td className="num">
+                      <TextInput
+                        type="number"
+                        min="0"
+                        step="0.001"
+                        inputMode="decimal"
+                        value={item[field]}
+                        onChange={(event) => updateItem(index, field, event.target.value)}
+                        placeholder={placeholder}
+                        invalid={Boolean(getError(`items.${index}.${field}`) || breakdownError)}
+                        aria-label={`${field.replace(/_/g, " ")} line ${index + 1}`}
+                      />
+                    </td>
+                  );
+
+                  return (
+                    <React.Fragment key={item.purchase_order_item_id || `${item.material_id}-${index}`}>
+                      <tr>
+                        <td className="cf-idx">{index + 1}</td>
+                        <td>
+                          <Combobox
+                            options={materialOptions}
+                            value={item.material_id}
+                            onChange={(value) => handleMaterialChange(index, value)}
+                            invalid={Boolean(materialError)}
+                            placeholder="Search materials"
+                            searchPlaceholder="Name or code…"
+                            emptyText="No materials found."
+                          />
+                          <FieldError message={materialError} />
+                          {item.purchase_order_item_id && <div className="cf-sub">Linked to PO line</div>}
+                        </td>
+                        <td>
+                          <TextInput
+                            value={item.description}
+                            onChange={(event) => updateItem(index, "description", event.target.value)}
+                            placeholder="e.g. 20mm aggregate"
+                          />
+                        </td>
+                        <td className="num">
+                          <TextInput
+                            type="number"
+                            min="0.001"
+                            step="0.001"
+                            inputMode="decimal"
+                            value={item.quantity}
+                            onChange={(event) => updateItem(index, "quantity", event.target.value)}
+                            placeholder="0"
+                            invalid={Boolean(quantityError)}
+                            aria-label={`Delivered quantity line ${index + 1}`}
+                          />
+                          {item.unit && <div className="cf-sub" style={{ textAlign: "right" }}>{item.unit}</div>}
+                          <FieldError message={quantityError} />
+                        </td>
+                        {numCell("accepted_quantity")}
+                        {numCell("shortage_quantity")}
+                        {numCell("damaged_quantity")}
+                        {numCell("rejected_quantity")}
+                        <td>
+                          <SelectInput
+                            value={item.condition_status}
+                            onChange={(event) => updateItem(index, "condition_status", event.target.value)}
+                            aria-label={`Condition line ${index + 1}`}
+                          >
+                            {CONDITION_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </SelectInput>
+                        </td>
+                        <td>
+                          <TextInput
+                            value={item.stored_at}
+                            onChange={(event) => updateItem(index, "stored_at", event.target.value)}
+                            placeholder="e.g. Store room B"
+                          />
+                        </td>
+                        <td className="actions">
+                          <RemoveRow onClick={() => removeItem(index)} label={`Remove line ${index + 1}`} />
+                        </td>
+                      </tr>
+                      <tr className="cf-subrow">
+                        <td />
+                        <td colSpan={10} style={{ paddingTop: 0 }}>
+                          <div className="cf-subrow__grid">
+                            <TextInput
+                              value={item.brand}
+                              onChange={(event) => updateItem(index, "brand", event.target.value)}
+                              placeholder="Brand"
+                              aria-label="Brand"
+                            />
+                            <TextInput
+                              value={item.specification}
+                              onChange={(event) => updateItem(index, "specification", event.target.value)}
+                              placeholder="Specification"
+                              aria-label="Specification"
+                            />
+                            <TextInput
+                              value={item.unit}
+                              onChange={(event) => updateItem(index, "unit", event.target.value)}
+                              placeholder="Unit (e.g. Bags)"
+                              aria-label="Unit"
+                            />
+                            <TextInput
+                              value={item.condition_notes}
+                              onChange={(event) => updateItem(index, "condition_notes", event.target.value)}
+                              placeholder="Condition notes"
+                              aria-label="Condition notes"
+                            />
+                            <TextInput
+                              value={item.remarks}
+                              onChange={(event) => updateItem(index, "remarks", event.target.value)}
+                              placeholder="Line remarks"
+                              aria-label="Line remarks"
+                            />
+                          </div>
+                          {breakdownError && <FieldError message={breakdownError} />}
+                        </td>
+                      </tr>
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </LineTable>
+          </DocSection>
+
+        <DocLayout
+          aside={
+            <>
+              <DocSection step={4} title="Review" description="Live totals across all lines.">
+                <TotalsCard
+                  plain
+                  title={null}
+                  rows={[
+                    { label: "Project", value: projectLabel || "—" },
+                    { label: "Purchase order", value: getDisplayString(selectedPurchaseOrder?.po_number) || "Not linked" },
+                    { label: "Vendor", value: vendorLabel || "—" },
+                    { label: "Challan date", value: form.challan_date || "—" },
+                  ]}
+                />
+                <TotalsCard
+                  plain
+                  title={null}
+                  rows={[
+                    { label: "Accepted", value: qty(totals.accepted) },
+                    { label: "Short", value: qty(totals.shortage) },
+                    { label: "Damaged", value: qty(totals.damaged) },
+                    { label: "Rejected", value: qty(totals.rejected) },
+                  ]}
+                  totalLabel="Delivered"
+                  total={qty(totals.quantity)}
+                  meta={
+                    totals.quantity > 0 && accountedTotal < totals.quantity
+                      ? `${qty(totals.quantity - accountedTotal)} not yet split into accepted / short / damaged / rejected.`
+                      : null
+                  }
+                />
+                {(getError("items") || itemErrorCount > 0) && (
+                  <Callout tone="bad" title="Check the material lines">
+                    {getError("items") ||
+                      `${itemErrorCount} field${itemErrorCount === 1 ? "" : "s"} need fixing.`}
+                  </Callout>
+                )}
+              </DocSection>
+            </>
+          }
+        >
+          {/* 3 — Receiving checks & notes */}
+          <DocSection
+            step={3}
+            title="Receiving checks & notes"
+            description="Confirm the checks done at the gate and note any discrepancies."
+          >
+            <Grid cols={2}>
+              <Field label="Checks done" full>
+                <div className="inos-choices" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={Boolean(form.gate_pass_received)}
+                    className="inos-choice"
+                    onClick={() => updateField("gate_pass_received", !form.gate_pass_received)}
+                  >
+                    <Check size={16} style={{ opacity: form.gate_pass_received ? 1 : 0.25 }} aria-hidden />
+                    Gate pass received
+                  </button>
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={Boolean(form.material_checked)}
+                    className="inos-choice"
+                    onClick={() => updateField("material_checked", !form.material_checked)}
+                  >
+                    <Check size={16} style={{ opacity: form.material_checked ? 1 : 0.25 }} aria-hidden />
+                    Material checked
+                  </button>
+                </div>
+              </Field>
+              <Field label="General remarks" optional>
+                <TextArea
+                  rows={3}
+                  value={form.general_remarks}
+                  onChange={(event) => updateField("general_remarks", event.target.value)}
+                  placeholder="e.g. Received by site supervisor, unloaded by vendor"
+                />
+              </Field>
+              <Field label="Discrepancy notes" optional>
+                <TextArea
+                  rows={3}
+                  value={form.discrepancy_notes}
+                  onChange={(event) => updateField("discrepancy_notes", event.target.value)}
+                  placeholder="Shortages, damages or rejections and why"
+                />
+              </Field>
+              <Field label="Attachment link" optional full hint="Link to the scanned challan or photos.">
+                <TextInput
+                  type="url"
+                  value={form.attachment_url}
+                  onChange={(event) => updateField("attachment_url", event.target.value)}
+                  placeholder="https://drive.google.com/…"
+                />
+              </Field>
+            </Grid>
+          </DocSection>
+        </DocLayout>
+
+        <FormActions
+          note={
+            <span className="tabular">
+              {form.items.length} {form.items.length === 1 ? "line" : "lines"} · Delivered{" "}
+              <strong style={{ color: "var(--brand)" }}>{qty(totals.quantity)}</strong>
+            </span>
+          }
+          onCancel={onCancel}
+          submitLabel={isEditMode ? "Update challan" : "Save challan"}
+          submitting={isSubmitting}
+        />
+      </form>
+    </Page>
   );
 }

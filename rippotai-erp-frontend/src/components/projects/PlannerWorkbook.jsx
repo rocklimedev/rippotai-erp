@@ -145,7 +145,7 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
     }
 
     return (
-      <div className="min-w-[130px]">
+      <div className="min-w-[120px]">
         <Select
           value={relation?.status || ""}
           disabled={saving === key}
@@ -207,7 +207,8 @@ export function PlannerWorkbook({ overview, view, refresh, editable = true }) {
           }}
         >
           <SelectTrigger
-            className="h-9 w-full min-w-[125px] border-0 bg-transparent shadow-none focus:ring-1"
+            className="planner-status w-full min-w-[110px] border-0 shadow-none focus:ring-1"
+            data-status={relation?.status || ""}
             aria-label={`${item.work_name || item.details} — ${location.name}`}
           >
             <SelectValue placeholder="—" />

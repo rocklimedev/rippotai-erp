@@ -7,14 +7,9 @@ import {
   BelongsTo,
 } from 'sequelize-typescript';
 import { DailySiteReport } from './daily-site-report.model';
-import { Team } from '../../process-workflow/models/team.model';
 
-/** Headcount for one trade/team on one day's report. */
-@Table({
-  tableName: 'manpower_entries',
-  timestamps: true,
-  indexes: [{ unique: true, fields: ['dailySiteReportId', 'teamId'] }],
-})
+/** Headcount for one trade / contractor on one day's report. */
+@Table({ tableName: 'manpower_entries', timestamps: true })
 export class ManpowerEntry extends Model<ManpowerEntry> {
   @ForeignKey(() => DailySiteReport)
   @Column({ type: DataType.INTEGER, allowNull: false })
@@ -23,12 +18,17 @@ export class ManpowerEntry extends Model<ManpowerEntry> {
   @BelongsTo(() => DailySiteReport)
   dailySiteReport: DailySiteReport;
 
-  @ForeignKey(() => Team)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  teamId: number;
+  /** Legacy link to a process-workflow team (unused by the current form). */
+  @Column({ type: DataType.CHAR(36), allowNull: true })
+  teamId: string | null;
 
-  @BelongsTo(() => Team)
-  team: Team;
+  /** Trade category, e.g. CIVIL, ELECTRICAL, CARPENTRY, HELPER. */
+  @Column({ type: DataType.STRING(40), allowNull: false })
+  trade: string;
+
+  /** Contractor / agency supplying the workers (optional). */
+  @Column({ type: DataType.STRING(150), allowNull: true })
+  contractorName: string | null;
 
   @Column({ type: DataType.INTEGER, allowNull: false })
   headcount: number;

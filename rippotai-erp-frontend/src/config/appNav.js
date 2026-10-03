@@ -105,6 +105,10 @@ export const APP_MENUS = {
 
   projects: [
     {
+      label: "Clients",
+      slug: "/clients",
+    },
+    {
       label: "Documents",
       items: [
         I("All Documents", "documents/all"),
@@ -126,6 +130,10 @@ export const APP_MENUS = {
       label: "Drawings",
       slug: "all",
     },
+    {
+      label: "Upload",
+      slug: "upload",
+    },
 
     {
       label: "Management",
@@ -141,7 +149,7 @@ export const APP_MENUS = {
     {
       label: "Automation",
       items: [
-        I("Overview", "all"),
+        I("Overview", "/automation"),
         I("Rules", "rules"),
         I("Create Rule", "rules/new"),
       ],
@@ -149,13 +157,13 @@ export const APP_MENUS = {
 
     {
       label: "Monitoring",
-      items: [I("Run Log", "run-log"), I("Escalations", "escalations")],
+      items: [
+        I("Run Log", "runs"),
+        I("Escalations", "escalations"),
+        I("Audit Trail", "audit"),
+      ],
     },
 
-    {
-      label: "Configuration",
-      items: [I("Notification Preferences", "notifications")],
-    },
   ],
   crm: [
     {
@@ -184,6 +192,7 @@ export const APP_MENUS = {
       label: "Settings",
       items: [
         I("Projects", "/projects"),
+        I("Clients", "/clients"),
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles and Permissions", "roles"),
         I("Activity", "activity"),
@@ -208,6 +217,7 @@ export const APP_MENUS = {
     {
       label: "Administration",
       items: [
+        I("Company Profile", "company-profile"),
         I("Terms & Conditions", "terms-and-conditions"),
         I("Super Admin", "super-admin"),
       ],
@@ -270,8 +280,8 @@ export const APP_MENUS = {
       label: "Documents",
       items: [
         I("Site Inventory", "site-inventory/all"),
-        I("Inventory Transactions", "transactions"),
-        I("Record Transaction", "transactions/new"),
+        I("Inventory Transactions", "site-inventory/transactions"),
+        I("Record Transaction", "site-inventory/transactions/new"),
       ],
     },
     {
@@ -287,9 +297,8 @@ export const APP_MENUS = {
     {
       label: "Site Operations",
       items: [
-        I("Daily Reports", "daily-reports/list"),
-        I("Visit Assignments", "site-visits/list"),
-        I("Snags", "snags/list"),
+        I("Daily Reports", "daily-reports"),
+        I("Visit Assignments", "visit-assignments"),
       ],
     },
 
@@ -297,10 +306,9 @@ export const APP_MENUS = {
       label: "Quality & Coordination",
       items: [
         I("QC Sign-offs", "qc/history"),
-        I("QC Checks", "qc/list"),
-        I("Checklists", "qc/checklist-templates"),
         I("QC Handoff Status", "qc/handoff-status"),
-        I("Mockups", "mockups/list"),
+        I("Checklists", "qc/checklist-templates"),
+        I("Mockups", "mockups"),
         I("RFIs / Clarifications", "rfis"),
       ],
     },
@@ -349,7 +357,16 @@ export const APP_MENUS = {
   tasks: [
     {
       label: "Tasks",
-      items: [I("My Tasks", "mine"), I("All Tasks", "all")],
+      items: [
+        I("My Tasks", "mine"),
+        I("All Tasks", "all"),
+        I("Overdue", "overdue"),
+        I("New Task", "new"),
+      ],
+    },
+    {
+      label: "Notes",
+      slug: "notes",
     },
     {
       label: "Settings",
@@ -421,7 +438,8 @@ export function allSlugsFor(app) {
 
 export function sectionNameFor(app, slug) {
   for (const g of APP_MENUS[app] || []) {
-    for (const it of g.items) if (it.slug === slug) return it.label;
+    if (g.slug === slug) return g.label;
+    for (const it of g.items || []) if (it.slug === slug) return it.label;
   }
   return (
     (slug || "")

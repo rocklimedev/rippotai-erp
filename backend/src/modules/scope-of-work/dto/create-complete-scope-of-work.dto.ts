@@ -1,4 +1,3 @@
-import { CreateScopeOfWorkDto } from './create-scope-of-work.dto';
 import {
   IsArray,
   IsBoolean,
@@ -61,7 +60,31 @@ class ScopeOfWorkItemDto {
   sortOrder?: number;
 }
 
-export class CreateCompleteScopeOfWorkDto extends CreateScopeOfWorkDto {
+export class CreateCompleteScopeOfWorkDto {
+  @IsOptional()
+  @IsString()
+  scopeSummary?: string;
+
+  @IsOptional()
+  @IsString()
+  specificExclusions?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsOptional()
+  @IsString()
+  projectMode?: string;
+
+  @IsOptional()
+  @IsInt()
+  version?: number;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ScopeOfWorkSpaceDto)

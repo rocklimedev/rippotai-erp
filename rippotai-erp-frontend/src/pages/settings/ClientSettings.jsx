@@ -1,8 +1,20 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ShieldAlert, UserPlus, Search } from "lucide-react";
+import { Building2, SearchX, UserPlus } from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
+import {
+  Page,
+  PageHeader,
+  Card,
+  Button,
+  Toolbar,
+  ToolbarSpacer,
+  SearchInput,
+  Segmented,
+  Pill,
+  Avatar,
+} from "@/components/inos";
 
 import {
   useGetClientsQuery,
@@ -12,6 +24,7 @@ import {
 
 import ClientModal from "../../components/clients/ClientModal";
 import ClientActionsMenu from "../../components/clients/ClientActionsMenu";
+import { AdminAccessDenied, SkeletonRows, TableEmpty, adminCrumbs, plural } from "./_admin-ui";
 
 export default function ClientSettings() {
   const { user } = useAuth();
@@ -58,11 +71,12 @@ export default function ClientSettings() {
    * - Company
    */
   const filteredClients = useMemo(() => {
+    const list = Array.isArray(clients) ? clients : [];
     const query = search.trim().toLowerCase();
 
-    if (!query) return clients;
+    if (!query) return list;
 
-    return clients.filter((client) => {
+    return list.filter((client) => {
       return [
         client.name,
         client.email,
@@ -70,6 +84,7 @@ export default function ClientSettings() {
         client.mobile,
         client.company_name,
         client.company,
+        client.contact_person,
       ]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(query));
@@ -126,201 +141,130 @@ export default function ClientSettings() {
    * Access control
    */
   if (!isAdmin) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="w-12 h-12 rounded-full bg-[#F1D9D3] flex items-center justify-center mx-auto mb-4">
-          <ShieldAlert size={22} className="text-[#7A2E1A]" />
-        </div>
-
-        <div className="text-xl font-semibold mb-2">Access denied</div>
-
-        <p className="text-[#6B7B7C]">You need admin privileges.</p>
-      </div>
-    );
+    return <AdminAccessDenied crumb="Clients" />;
   }
 
+  const total = Array.isArray(clients) ? clients.length : 0;
+
   return (
-    <div>
-      {/* Header */}
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <h2 className="text-2xl font-semibold text-[#333333]">Clients</h2>
+    <Page>
+      <PageHeader
+        crumbs={adminCrumbs("Clients")}
+        title="Clients"
+        subtitle="The people and companies you build for — used on projects, estimates and invoices."
+        actions={
+          <Button variant="primary" icon={UserPlus} onClick={() => setModalClient("new")} data-testid="add-client-btn">
+            Add client
+          </Button>
+        }
+      />
 
-          <p className="text-[#6B7B7C]">
-            Manage clients, contact details and client accounts.
-          </p>
-        </div>
+      <Toolbar>
+        <SearchInput value={search} onChange={setSearch} placeholder="Search name, email, phone or company" />
+        <Segmented
+          value={showDeleted ? "all" : "current"}
+          onChange={(v) => setShowDeleted(v === "all")}
+          options={[
+            { value: "current", label: "Current" },
+            { value: "all", label: "Include deleted" },
+          ]}
+        />
+        <ToolbarSpacer />
+      </Toolbar>
 
-        <button
-          onClick={() => setModalClient("new")}
-          className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg text-white text-sm font-semibold"
-          style={{ backgroundColor: "#1F453B" }}
-        >
-          <UserPlus size={15} />
-          Add Client
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div className="flex items-center justify-between gap-4 mb-4">
-        {/* Search */}
-        <div className="relative w-full max-w-sm">
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7B7C]"
-          />
-
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search clients..."
-            className="w-full h-10 pl-9 pr-3 rounded-lg border border-[#E8EAF0] bg-white text-sm outline-none focus:border-[#1F453B]"
-          />
-        </div>
-
-        {/* Deleted toggle */}
-        <label className="flex items-center gap-2 text-sm text-[#333333] cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showDeleted}
-            onChange={(e) => setShowDeleted(e.target.checked)}
-            className="w-4 h-4 accent-[#1F453B]"
-          />
-          Show deleted clients
-        </label>
-      </div>
-
-      {/* Clients table */}
-      <div className="bg-white border border-[#E8EAF0] rounded-2xl overflow-hidden">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-[#F3F3F1] text-xs uppercase tracking-wider text-[#6B7B7C]">
-              <th className="px-5 py-3">Client</th>
-
-              <th className="px-5 py-3">Email</th>
-
-              <th className="px-5 py-3">Phone</th>
-
-              <th className="px-5 py-3">Company</th>
-
-              <th className="px-5 py-3">Status</th>
-
-              <th className="px-5 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {loadingClients ? (
+      <Card flush>
+        <div className="inos-table-wrap">
+          <table className="inos-table">
+            <thead>
               <tr>
-                <td colSpan={6} className="text-center py-12 text-[#6B7B7C]">
-                  Loading clients…
-                </td>
+                <th>Client</th>
+                <th className="adm-hide-sm">Email</th>
+                <th>Phone</th>
+                <th className="adm-hide-sm">Company</th>
+                <th>Status</th>
+                <th className="actions" aria-label="Actions" />
               </tr>
-            ) : filteredClients.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="text-center py-12 text-[#6B7B7C]">
-                  {search
-                    ? "No clients match your search."
-                    : showDeleted
-                      ? "No clients found."
-                      : "No clients found."}
-                </td>
-              </tr>
-            ) : (
-              filteredClients.map((client) => {
-                const active =
-                  client.is_active !== false && client.deleted_at == null;
+            </thead>
 
-                const deleted =
-                  client.deleted_at != null || client.is_deleted === true;
+            <tbody>
+              {loadingClients && total === 0 ? (
+                <SkeletonRows cols={6} />
+              ) : total === 0 ? (
+                <TableEmpty
+                  cols={6}
+                  icon={Building2}
+                  title={clientsError ? "Couldn't load clients" : "No clients yet"}
+                  text={
+                    clientsError
+                      ? "The clients service didn't respond. Try again in a moment."
+                      : "Add a client once and pick them on every project, estimate and invoice."
+                  }
+                  action={
+                    !clientsError && (
+                      <Button variant="soft" icon={UserPlus} onClick={() => setModalClient("new")}>
+                        Add client
+                      </Button>
+                    )
+                  }
+                />
+              ) : filteredClients.length === 0 ? (
+                <TableEmpty cols={6} icon={SearchX} title="No matching clients" text="Try a different name, phone or company." />
+              ) : (
+                filteredClients.map((client) => {
+                  const active =
+                    client.is_active !== false && client.deleted_at == null;
 
-                return (
-                  <tr
-                    key={client.id}
-                    className="border-t border-[#EFF2F9] hover:bg-[#FAF8F5]"
-                  >
-                    {/* Client */}
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#1F453B] text-white text-xs font-semibold flex items-center justify-center">
-                          {(client.avatar_initials || client.name || "?")
-                            .slice(0, 2)
-                            .toUpperCase()}
-                        </div>
+                  const deleted =
+                    client.deleted_at != null || client.is_deleted === true;
 
-                        <div>
-                          <div className="font-semibold text-[#333333]">
-                            {client.name || "-"}
+                  const company = client.company_name || client.company;
+                  const sub = client.client_code || (client.contact_person && client.contact_person !== client.name ? client.contact_person : null) || client.address;
+
+                  return (
+                    <tr key={client.id} style={deleted ? { opacity: 0.7 } : undefined}>
+                      <td>
+                        <div className="adm-cell-main">
+                          <Avatar name={client.name} size={36} />
+                          <div style={{ minWidth: 0 }}>
+                            <div className="adm-cell-title">{client.name || "Unnamed client"}</div>
+                            {sub && <div className="adm-cell-sub">{sub}</div>}
                           </div>
-
-                          {client.client_code && (
-                            <div className="text-xs text-[#6B7B7C]">
-                              {client.client_code}
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Email */}
-                    <td className="px-5 py-3 text-sm text-[#252525]">
-                      {client.email || "-"}
-                    </td>
+                      <td className="adm-cell-2 adm-hide-sm">{client.email || <span className="muted">—</span>}</td>
 
-                    {/* Phone */}
-                    <td className="px-5 py-3 text-sm text-[#333333]">
-                      {client.phone || client.mobile || "-"}
-                    </td>
+                      <td className="adm-cell-2 tabular" style={{ whiteSpace: "nowrap" }}>
+                        {client.phone || client.mobile || <span className="muted">—</span>}
+                      </td>
 
-                    {/* Company */}
-                    <td className="px-5 py-3 text-sm text-[#333333]">
-                      {client.company_name || client.company || "-"}
-                    </td>
+                      <td className="adm-cell-2 adm-hide-sm">{company || <span className="muted">—</span>}</td>
 
-                    {/* Status */}
-                    <td className="px-5 py-3">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                          deleted
-                            ? "bg-[#F1D9D3] text-[#7A2E1A]"
-                            : active
-                              ? "bg-[#D3E7D3] text-[#2A6B45]"
-                              : "bg-[#EAEEF0] text-[#6B7B7C]"
-                        }`}
-                      >
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            deleted
-                              ? "bg-[#7A2E1A]"
-                              : active
-                                ? "bg-[#2A6B45]"
-                                : "bg-[#6B7B7C]"
-                          }`}
+                      <td>
+                        <Pill tone={deleted ? "bad" : active ? "ok" : "mute"}>
+                          {deleted ? "Deleted" : active ? "Active" : "Inactive"}
+                        </Pill>
+                      </td>
+
+                      <td className="actions">
+                        <ClientActionsMenu
+                          client={client}
+                          isDeleted={deleted}
+                          saving={savingId === client.id}
+                          onEdit={() => setModalClient(client)}
+                          onDelete={() => deleteClient(client)}
+                          onRestore={() => restoreClient(client)}
                         />
-
-                        {deleted ? "Deleted" : active ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-5 py-3 text-right">
-                      <ClientActionsMenu
-                        client={client}
-                        isDeleted={deleted}
-                        saving={savingId === client.id}
-                        onEdit={() => setModalClient(client)}
-                        onDelete={() => deleteClient(client)}
-                        onRestore={() => restoreClient(client)}
-                      />
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+        {total > 0 && <div className="adm-table-foot">{plural(filteredClients.length, "client")} shown</div>}
+      </Card>
 
       {/* Create / Edit Modal */}
       {modalClient && (
@@ -329,6 +273,6 @@ export default function ClientSettings() {
           onClose={() => setModalClient(null)}
         />
       )}
-    </div>
+    </Page>
   );
 }

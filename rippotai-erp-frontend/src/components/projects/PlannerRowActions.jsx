@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button, TextInput as Input } from "@/components/inos";
+import { Plus, Trash2, Rows3 } from "lucide-react";
 
 import {
   Select,
@@ -135,12 +135,21 @@ export function PlannerRowActions({ overview, view, refresh }) {
   };
 
   return (
-    <details className="rounded-lg border bg-card p-4 shadow-sm">
-      <summary className="cursor-pointer select-none text-sm font-medium">
+    <details className="inos-card" style={{ padding: "14px 20px" }}>
+      <summary
+        className="cursor-pointer select-none"
+        style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 600, fontSize: 14 }}
+      >
+        <span className="inos-icon-tile inos-icon-tile--sm" aria-hidden>
+          <Rows3 />
+        </span>
         Add or remove rows
+        <span style={{ fontWeight: 500, color: "var(--text-3)", fontSize: 13 }}>
+          — {vendor ? "procurement categories" : "tasks in this sheet"}
+        </span>
       </summary>
 
-      <div className="mt-4 space-y-4">
+      <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
         <form className="planner-toolbar" onSubmit={handleCreate}>
           {vendor ? (
             <Select value={type} onValueChange={setType} disabled={busy}>
@@ -199,7 +208,7 @@ export function PlannerRowActions({ overview, view, refresh }) {
             />
           )}
 
-          <Button type="submit" disabled={busy || !name.trim()}>
+          <Button type="submit" variant="soft" icon={Plus} disabled={busy || !name.trim()}>
             {busy ? "Adding…" : "Add row"}
           </Button>
         </form>
@@ -228,7 +237,8 @@ export function PlannerRowActions({ overview, view, refresh }) {
 
           <Button
             type="button"
-            variant="outline"
+            variant="danger"
+            icon={Trash2}
             disabled={busy || !rowId}
             onClick={handleDelete}
           >
@@ -236,7 +246,7 @@ export function PlannerRowActions({ overview, view, refresh }) {
           </Button>
 
           {selectedRow && (
-            <span className="text-xs text-muted-foreground">
+            <span className="inos-hint">
               Selected:{" "}
               {selectedRow.work_name ||
                 selectedRow.category_name ||

@@ -1,3 +1,4 @@
+import { Navigate } from "react-router-dom";
 import AppLayout from "@/layouts/AppLayout";
 import AppDashboard from "@/components/dashboard/AppDashboard";
 import ProjectsDashboard from "@/pages/projects/ProjectsDashboard";
@@ -22,6 +23,8 @@ export const projectsRoutes = [
     children: [
       { index: true, element: <ProjectsDashboard /> },
 
+      // "/projects/all" is the projects list (the index page), not a project id.
+      { path: "all", element: <Navigate to="/projects" replace /> },
       { path: "activity", element: <ProjectActivity /> },
       { path: "new", element: <ProjectNew /> },
       { path: ":id/handover", element: <ProjectHandover /> },

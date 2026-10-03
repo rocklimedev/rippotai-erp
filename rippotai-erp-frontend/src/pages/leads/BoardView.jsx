@@ -1,397 +1,353 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import * as Popover from "@radix-ui/react-popover";
+import { toast } from "sonner";
+import { Plus, LayoutGrid, List, SlidersHorizontal, X, RefreshCw, Workflow, Eye, EyeOff } from "lucide-react";
 
+import { Page, PageHeader, Button, Segmented, SearchInput, SelectInput, TextInput, Field, EmptyState, Card } from "@/components/inos";
 import {
   useGetBoardQuery,
+  useGetLeadsQuery,
+  useGetLeadsMetaQuery,
   useMoveStageMutation,
-} from "../../api/connectors/leads.api";
-import { useZohoStatusQuery } from "../../api/auth/authConnectors.api";
-import { STAGES, getStageAccent, stageOf } from "../../hooks/stages";
+  useSyncLeadsFromZohoMutation,
+} from "@/api/connectors/leads.api";
+import { STAGES, stageOf, formatINR } from "@/hooks/stages";
 
-import LeadCard from "../../components/leads/LeadCard";
-import LeadActionModal from "../../components/leads/LeadActionModal";
+import KanbanBoard from "@/components/leads/pipeline/KanbanBoard";
+import DealsList from "@/components/leads/pipeline/DealsList";
+import DealDrawer from "@/components/leads/pipeline/DealDrawer";
+import QuickCreateDeal from "@/components/leads/pipeline/QuickCreateDeal";
+import LostReasonModal from "@/components/leads/pipeline/LostReasonModal";
+import { errorText, parseRupees } from "@/components/leads/pipeline/utils";
+import "@/components/leads/pipeline/pipeline.css";
 
-const formatCurrency = (value) => {
-  if (value == null || value === "") return null;
+const SORTS = [
+  { value: "newest", label: "Newest first" },
+  { value: "updated", label: "Recently updated" },
+  { value: "value-desc", label: "Value: high to low" },
+  { value: "value-asc", label: "Value: low to high" },
+  { value: "close", label: "Closing soonest" },
+  { value: "days", label: "Oldest in pipeline" },
+  { value: "name-asc", label: "Name A–Z" },
+];
 
-  if (typeof value === "number") {
-    return new Intl.NumberFormat("en-IN", {
-      maximumFractionDigits: 0,
-    }).format(value);
-  }
+const FILTER_KEYS = ["owner", "source", "stage", "minValue", "maxValue", "from", "to", "closeFrom", "closeTo"];
 
-  return String(value);
+const FILTER_LABEL = {
+  owner: "Owner",
+  source: "Source",
+  stage: "Stage",
+  minValue: "Min",
+  maxValue: "Max",
+  from: "Created from",
+  to: "Created to",
+  closeFrom: "Closing from",
+  closeTo: "Closing to",
 };
 
-export default function BoardView({ onOpenLead, onEditLead }) {
-  const navigate = useNavigate();
+// Values are typed in lakh / crore ("50 L") and stored in the URL as rupees.
+const moneyChip = (v) => formatINR(Number(v));
 
-  // ------------------------------------------------------------
-  // ZOHO CONNECTION STATUS
-  // ------------------------------------------------------------
-
-  const {
-    data: zohoStatus,
-    isLoading: isZohoStatusLoading,
-    isFetching: isZohoStatusFetching,
-  } = useZohoStatusQuery(undefined, {
-    pollingInterval: 5000,
-  });
-
-  const zohoConnected =
-    zohoStatus?.connected === true ||
-    zohoStatus?.isConnected === true ||
-    zohoStatus?.status === "connected";
-
-  // ------------------------------------------------------------
-  // LEADS BOARD
-  // ------------------------------------------------------------
-
-  const { data, isLoading, isFetching, isError, refetch } = useGetBoardQuery(
-    undefined,
-    {
-      skip: !zohoConnected,
-    },
-  );
-
-  const [moveStage] = useMoveStageMutation();
-
-  const [dragId, setDragId] = useState(null);
-  const [dragOverCol, setDragOverCol] = useState(null);
-  const [modal, setModal] = useState(null);
-
-  // ------------------------------------------------------------
-  // WHEN ZOHO CONNECTS
-  // ------------------------------------------------------------
-
-  useEffect(() => {
-    if (zohoConnected) {
-      refetch();
-    }
-  }, [zohoConnected, refetch]);
-
-  // ------------------------------------------------------------
-  // MODALS
-  // ------------------------------------------------------------
-
-  const openRemark = (lead) => {
-    setModal({
-      kind: "remark",
-      lead,
-    });
-  };
-
-  const openProposed = (lead) => {
-    setModal({
-      kind: "proposed",
-      lead,
-    });
-  };
-
-  const closeModal = () => {
-    setModal(null);
-  };
-
-  // ------------------------------------------------------------
-  // ADD LEAD
-  // ------------------------------------------------------------
-
-  const handleAddLead = (stageId) => {
-    navigate("/crm/leads/new", {
-      state: {
-        stage: stageId,
-      },
-    });
-  };
-
-  // ------------------------------------------------------------
-  // ZOHO STATUS LOADING
-  // ------------------------------------------------------------
-
-  if (isZohoStatusLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[420px] text-sm text-[var(--muted)]">
-        Checking Zoho connection...
-      </div>
-    );
-  }
-
-  // ------------------------------------------------------------
-  // ZOHO NOT CONNECTED
-  // ------------------------------------------------------------
-
-  if (!zohoConnected) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[420px] px-6 text-center">
-        <div className="w-full max-w-md rounded-2xl border border-[var(--stroke)] bg-paper p-7">
-          <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-[var(--mist)]">
-            <span className="h-2.5 w-2.5 rounded-full bg-[#a54536]" />
-          </div>
-
-          <h2 className="text-[16px] font-semibold text-[var(--ink-green)]">
-            Zoho Bigin is not connected
-          </h2>
-
-          <p className="mt-2 text-[12.5px] leading-5 text-[var(--muted)]">
-            Connect your Zoho Bigin account to load and manage leads from the
-            pipeline.
-          </p>
-
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-[var(--mist)] px-3 py-1.5 text-[11px] font-semibold text-[var(--muted)]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#a54536]" />
-            Disconnected
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ------------------------------------------------------------
-  // BOARD LOADING
-  // ------------------------------------------------------------
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[420px] text-sm text-[var(--muted)]">
-        Loading pipeline...
-      </div>
-    );
-  }
-
-  if (isError || !data) {
-    return (
-      <div className="mx-7 my-6 rounded-xl border border-[#ead5d0] bg-[#fff8f6] px-4 py-3 text-sm text-[#a54536]">
-        Couldn't load the pipeline board.
-      </div>
-    );
-  }
-
-  const totalLeads = data.activeCount ?? 0;
-
-  // Reconcile whatever the API sent back with the canonical Bigin
-  // stage list, in the fixed pipeline order shown in Zoho.
-  const columnsById = new Map((data.columns || []).map((c) => [c.id, c]));
-
-  const knownColumns = STAGES.map((stage) => {
-    const existing = columnsById.get(stage.id);
-
-    return (
-      existing || {
-        id: stage.id,
-        label: stage.label,
-        leads: [],
-      }
-    );
-  });
-
-  // Any stage returned by the backend that isn't in our known list
-  // still gets shown after the canonical columns.
-  const extraColumns = (data.columns || []).filter(
-    (c) => !STAGES.some((s) => s.id === c.id),
-  );
-
-  const columns = [...knownColumns, ...extraColumns];
+function FiltersPopover({ values, onApply, meta }) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(values);
+  const set = (k, v) => setDraft((d) => ({ ...d, [k]: v }));
+  const active = FILTER_KEYS.filter((k) => values[k]).length;
 
   return (
-    <div className="flex flex-col min-w-0 h-full">
-      {/* ---------------------------------------------------------- */}
-      {/* BOARD HEADER                                               */}
-      {/* ---------------------------------------------------------- */}
-
-      <div className="px-7 pt-6 pb-5">
-        <div className="flex items-end justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-[20px] font-semibold tracking-[-0.02em] text-[var(--ink-green)]">
-                Leads Pipeline
-              </h1>
-
-              <span className="inline-flex items-center rounded-full bg-[var(--mist)] px-2.5 py-1 text-[11px] font-semibold text-[var(--muted)]">
-                {totalLeads} active
-              </span>
-
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#eef7f1] px-2.5 py-1 text-[10px] font-semibold text-[#3f6d5f]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#3f6d5f]" />
-                Zoho connected
-              </span>
-            </div>
-
-            <p className="mt-1.5 text-[12.5px] text-[var(--muted)]">
-              Move leads through the pipeline and keep every opportunity moving
-              forward.
-            </p>
+    <Popover.Root
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (o)
+          setDraft({
+            ...values,
+            minValue: values.minValue ? String(Number(values.minValue) / 1e5) + " L" : "",
+            maxValue: values.maxValue ? String(Number(values.maxValue) / 1e5) + " L" : "",
+          });
+      }}
+    >
+      <Popover.Trigger asChild>
+        <Button icon={SlidersHorizontal} data-testid="filters-btn">
+          Filters {active > 0 && <span className="crm-filter-count">{active}</span>}
+        </Button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content className="crm-popover" align="start" sideOffset={6} data-testid="filters-popover">
+          <div className="crm-popover__grid">
+            <Field label="Owner">
+              <SelectInput value={draft.owner || ""} onChange={(e) => set("owner", e.target.value)} placeholder="Anyone" aria-label="Owner">
+                {(meta?.owners || []).map((o) => (
+                  <option key={o.id || o.name} value={o.name}>
+                    {o.name}
+                  </option>
+                ))}
+              </SelectInput>
+            </Field>
+            <Field label="Source">
+              <SelectInput value={draft.source || ""} onChange={(e) => set("source", e.target.value)} placeholder="Any source" aria-label="Source">
+                {(meta?.sources || []).map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </SelectInput>
+            </Field>
+            <Field label="Stage">
+              <SelectInput value={draft.stage || ""} onChange={(e) => set("stage", e.target.value)} placeholder="All stages" aria-label="Stage">
+                <option value="capture,qual,disc,prop,nego">All open stages</option>
+                {STAGES.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </SelectInput>
+            </Field>
+            <div />
+            <Field label="Value from">
+              <TextInput value={draft.minValue || ""} onChange={(e) => set("minValue", e.target.value)} placeholder="e.g. 50 L" aria-label="Minimum value" />
+            </Field>
+            <Field label="Value to">
+              <TextInput value={draft.maxValue || ""} onChange={(e) => set("maxValue", e.target.value)} placeholder="e.g. 2 Cr" aria-label="Maximum value" />
+            </Field>
+            <Field label="Created from">
+              <TextInput type="date" value={draft.from || ""} onChange={(e) => set("from", e.target.value)} />
+            </Field>
+            <Field label="Created to">
+              <TextInput type="date" value={draft.to || ""} onChange={(e) => set("to", e.target.value)} />
+            </Field>
+            <Field label="Closing from">
+              <TextInput type="date" value={draft.closeFrom || ""} onChange={(e) => set("closeFrom", e.target.value)} />
+            </Field>
+            <Field label="Closing to">
+              <TextInput type="date" value={draft.closeTo || ""} onChange={(e) => set("closeTo", e.target.value)} />
+            </Field>
           </div>
-
-          <div className="hidden md:flex items-center gap-2 text-[11px] text-[var(--muted)]">
-            <span className="h-2 w-2 rounded-full bg-[var(--ink-green)]" />
-            Drag cards between stages
+          <div className="crm-popover__foot">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                onApply(Object.fromEntries(FILTER_KEYS.map((k) => [k, ""])));
+                setOpen(false);
+              }}
+            >
+              Clear all
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              data-testid="filters-apply"
+              onClick={() => {
+                const min = parseRupees(draft.minValue);
+                const max = parseRupees(draft.maxValue);
+                if (Number.isNaN(min) || Number.isNaN(max)) {
+                  toast.error("Values: use numbers like 50 L or 1.5 Cr.");
+                  return;
+                }
+                onApply({ ...draft, minValue: min ?? "", maxValue: max ?? "" });
+                setOpen(false);
+              }}
+            >
+              Apply filters
+            </Button>
           </div>
-        </div>
-      </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}
 
-      {/* ---------------------------------------------------------- */}
-      {/* BOARD                                                      */}
-      {/* ---------------------------------------------------------- */}
+export default function BoardView() {
+  const [params, setParams] = useSearchParams();
+  const view = params.get("view") === "list" ? "list" : "board";
+  const q = params.get("q") || "";
+  const sort = params.get("sort") || "newest";
+  const showClosed = params.get("closed") !== "0";
+  const openDealId = params.get("deal");
 
-      <div className="flex-1 min-w-0 overflow-x-auto px-7 pb-8">
-        <div className="flex items-start gap-4 min-w-max">
-          {columns.map((col) => {
-            const isOver = dragOverCol === col.id && dragId != null;
+  const filters = useMemo(() => Object.fromEntries(FILTER_KEYS.map((k) => [k, params.get(k) || ""])), [params]);
 
-            const accent = getStageAccent(col.id);
-            const label = col.label || stageOf(col.id).label;
+  const update = (patch) => {
+    const next = new URLSearchParams(params);
+    Object.entries(patch).forEach(([k, v]) => (v === "" || v == null ? next.delete(k) : next.set(k, String(v))));
+    setParams(next, { replace: true });
+  };
 
-            const stageValue = col.leads.reduce((sum, lead) => {
-              const raw =
-                lead.budgetValue ??
-                lead.budgetAmount ??
-                lead.value ??
-                lead.budget;
+  const query = { q, sort, ...filters };
+  const { data: meta } = useGetLeadsMetaQuery();
+  const board = useGetBoardQuery(query, { skip: view !== "board" });
+  const list = useGetLeadsQuery(query, { skip: view !== "list" });
+  const [moveStage] = useMoveStageMutation();
+  const [syncZoho, { isLoading: syncing }] = useSyncLeadsFromZohoMutation();
 
-              if (typeof raw === "number") {
-                return sum + raw;
-              }
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createStage, setCreateStage] = useState("capture");
+  const [lostDeal, setLostDeal] = useState(null);
+  const [lostBusy, setLostBusy] = useState(false);
 
-              const parsed = Number(String(raw || "").replace(/[₹,\s]/g, ""));
+  // Board: when a stage filter is set, only show those columns
+  const stageFilter = filters.stage ? filters.stage.split(",") : null;
+  const columns = (board.data?.columns || []).filter((c) => !stageFilter || stageFilter.includes(c.id));
+  const allDeals = view === "board" ? columns.flatMap((c) => c.leads) : list.data || [];
+  const openDeals = allDeals.filter((d) => ["capture", "qual", "disc", "prop", "nego"].includes(d.stage));
+  const wonDeals = allDeals.filter((d) => ["contract", "handoff"].includes(d.stage));
+  const sum = (xs) => xs.reduce((a, d) => a + (d.amount || 0), 0);
 
-              return Number.isFinite(parsed) ? sum + parsed : sum;
-            }, 0);
+  const doMove = async (deal, stage, opts = {}) => {
+    if (stage === "lost" && !opts.lostReason && opts.lostReason !== "") {
+      setLostDeal(deal);
+      return;
+    }
+    const from = deal.stage;
+    try {
+      await moveStage({ id: deal.id, stage, lostReason: opts.lostReason || undefined }).unwrap();
+      if (!opts.silent) {
+        const label = stage === "contract" && !["contract", "handoff"].includes(from) ? "Marked won" : `Moved to ${stageOf(stage).label}`;
+        toast.success(`${label} — ${deal.title}`, {
+          action: { label: "Undo", onClick: () => moveStage({ id: deal.id, stage: from }) },
+        });
+      }
+    } catch (err) {
+      toast.error(errorText(err, "Couldn't move the deal."));
+    }
+  };
 
-            return (
-              <section
-                key={col.id}
-                className={[
-                  "flex flex-col w-[292px] shrink-0 rounded-2xl transition-all duration-150",
-                  isOver
-                    ? "bg-[var(--sage-soft)] ring-1 ring-dashed ring-[var(--ink-green)]"
-                    : "bg-[var(--mist-soft)]",
-                ].join(" ")}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = "move";
+  const confirmLost = async (reason) => {
+    setLostBusy(true);
+    await doMove(lostDeal, "lost", { lostReason: reason || "" });
+    setLostBusy(false);
+    setLostDeal(null);
+  };
 
-                  if (dragOverCol !== col.id) {
-                    setDragOverCol(col.id);
-                  }
-                }}
-                onDragLeave={(e) => {
-                  if (
-                    !e.currentTarget.contains(e.relatedTarget) &&
-                    dragOverCol === col.id
-                  ) {
-                    setDragOverCol(null);
-                  }
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
+  const openDeal = (deal) => update({ deal: deal.id });
+  const quickAdd = (stage) => {
+    setCreateStage(stage || "capture");
+    setCreateOpen(true);
+  };
 
-                  if (dragId != null) {
-                    moveStage({
-                      id: dragId,
-                      stage: col.id,
-                      via: "drag",
-                    });
-                  }
+  const chips = FILTER_KEYS.filter((k) => filters[k]).map((k) => {
+    let v = filters[k];
+    if (k === "minValue" || k === "maxValue") v = moneyChip(v);
+    if (k === "stage") v = v.includes(",") ? "Open stages" : stageOf(v).label;
+    return { k, text: `${FILTER_LABEL[k]}: ${v}` };
+  });
 
-                  setDragId(null);
-                  setDragOverCol(null);
-                }}
+  const loading = view === "board" ? board.isLoading : list.isLoading;
+  const error = view === "board" ? board.isError : list.isError;
+  const zohoConnected = meta?.zohoConnected || board.data?.zohoConnected;
+
+  return (
+    <Page className="crm-page">
+      <PageHeader
+        crumbs={[{ label: "CRM", to: "/crm" }, { label: "Pipeline" }]}
+        title="Deals pipeline"
+        subtitle="Every enquiry from first call to handoff — drag deals between stages, open one to add notes, tasks and documents."
+        actions={
+          <>
+            {zohoConnected && (
+              <Button
+                icon={RefreshCw}
+                loading={syncing}
+                onClick={() =>
+                  syncZoho()
+                    .unwrap()
+                    .then((r) => toast.success(`Bigin sync: ${r.created} new, ${r.updated} updated`))
+                    .catch((e) => toast.error(errorText(e, "Bigin sync failed.")))
+                }
               >
-                {/* STAGE HEADER */}
+                Sync Bigin
+              </Button>
+            )}
+            <Button variant="primary" icon={Plus} onClick={() => quickAdd("capture")} data-testid="new-deal-btn">
+              Deal
+            </Button>
+          </>
+        }
+      />
 
-                <div
-                  className="px-3.5 pt-3.5 pb-3 rounded-t-2xl border-t-2"
-                  style={{ borderTopColor: accent }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span
-                        className="h-2 w-2 rounded-full shrink-0"
-                        style={{ background: accent }}
-                      />
-
-                      <h2 className="text-[12px] font-bold uppercase tracking-[0.08em] text-[var(--ink-green)] truncate">
-                        {label}
-                      </h2>
-
-                      <span className="inline-flex min-w-[22px] h-[20px] items-center justify-center rounded-full bg-paper border border-[var(--stroke)] px-1.5 text-[10px] font-bold text-[var(--muted)]">
-                        {col.leads.length}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-[10.5px] text-[var(--muted)]">
-                      {col.leads.length === 1
-                        ? "1 Deal"
-                        : `${col.leads.length} Deal`}
-                    </span>
-
-                    <span
-                      className="text-[10.5px] font-semibold"
-                      style={{ color: accent }}
-                    >
-                      ₹{formatCurrency(stageValue) || "0"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* CARDS */}
-
-                <div className="flex flex-col gap-2 px-2 pb-2">
-                  {col.leads.length === 0 ? (
-                    <div
-                      className={[
-                        "flex min-h-[120px] items-center justify-center rounded-xl border border-dashed",
-                        isOver
-                          ? "border-[var(--ink-green)] bg-paper"
-                          : "border-[var(--stroke)]",
-                      ].join(" ")}
-                    >
-                      <span className="text-[11px] text-[var(--muted)]">
-                        This stage is empty
-                      </span>
-                    </div>
-                  ) : (
-                    col.leads.map((lead) => (
-                      <LeadCard
-                        key={lead.id}
-                        lead={lead}
-                        dragging={dragId === lead.id}
-                        onClick={onOpenLead}
-                        onEdit={onEditLead}
-                        onRemark={openRemark}
-                        onProposed={openProposed}
-                        onDragStart={setDragId}
-                        onDragEnd={() => {
-                          setDragId(null);
-                          setDragOverCol(null);
-                        }}
-                      />
-                    ))
-                  )}
-
-                  {/* ADD LEAD CARD */}
-
-                  <button
-                    type="button"
-                    onClick={() => handleAddLead(col.id)}
-                    className="group flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--stroke)] bg-paper/50 px-3 py-3 text-[11px] font-semibold text-[var(--muted)] transition-all duration-150 hover:border-[var(--ink-green)] hover:bg-paper hover:text-[var(--ink-green)]"
-                  >
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full border border-current text-[14px] leading-none transition-transform duration-150 group-hover:scale-110">
-                      +
-                    </span>
-
-                    <span>Add Lead</span>
-                  </button>
-                </div>
-              </section>
-            );
-          })}
+      <div className="crm-toolbar">
+        <span className="crm-pipeline-picker" title="Pipeline">
+          <Workflow size={16} aria-hidden /> Design &amp; Build
+        </span>
+        <Segmented
+          value={view}
+          onChange={(v) => update({ view: v === "board" ? "" : v })}
+          options={[
+            { value: "board", label: "Kanban", icon: LayoutGrid },
+            { value: "list", label: "List", icon: List },
+          ]}
+        />
+        <SearchInput value={q} onChange={(v) => update({ q: v })} placeholder="Search deals, clients, phone…" />
+        <FiltersPopover values={filters} onApply={(f) => update(f)} meta={meta} />
+        <SelectInput className="crm-select-sm" value={sort} onChange={(e) => update({ sort: e.target.value === "newest" ? "" : e.target.value })} aria-label="Sort">
+          {SORTS.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </SelectInput>
+        {view === "board" && (
+          <Button variant="ghost" icon={showClosed ? EyeOff : Eye} onClick={() => update({ closed: showClosed ? "0" : "" })}>
+            {showClosed ? "Hide nurture & lost" : "Show nurture & lost"}
+          </Button>
+        )}
+        <div className="crm-toolbar__spacer" />
+        <div className="crm-summary" data-testid="pipeline-summary">
+          <span>
+            <b>{openDeals.length}</b> open · <b>{formatINR(sum(openDeals))}</b>
+          </span>
+          <span className="sep" />
+          <span>
+            Won <b>{formatINR(sum(wonDeals))}</b>
+          </span>
         </div>
       </div>
 
-      <LeadActionModal modal={modal} onClose={closeModal} />
-    </div>
+      {chips.length > 0 && (
+        <div className="crm-chips">
+          {chips.map((c) => (
+            <span className="crm-chip" key={c.k}>
+              {c.text}
+              <button type="button" aria-label={`Remove ${c.text}`} onClick={() => update({ [c.k]: "" })}>
+                <X size={12} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {loading ? (
+        <p className="inos-hint">Loading pipeline…</p>
+      ) : error ? (
+        <Card>
+          <EmptyState title="Couldn't load the pipeline" text="Check your connection and try again." action={<Button onClick={() => (view === "board" ? board.refetch() : list.refetch())}>Retry</Button>} />
+        </Card>
+      ) : view === "board" ? (
+        allDeals.length === 0 && !q && !chips.length ? (
+          <Card>
+            <EmptyState title="No deals yet" text="Add your first enquiry — it lands in Lead Capture." action={<Button variant="primary" icon={Plus} onClick={() => quickAdd("capture")}>New deal</Button>} />
+          </Card>
+        ) : (
+          <KanbanBoard columns={columns} showClosed={showClosed || !!stageFilter} onMove={doMove} onOpen={openDeal} onQuickAdd={quickAdd} />
+        )
+      ) : (
+        <DealsList deals={list.data || []} meta={meta} onOpen={openDeal} onMove={doMove} onCreate={() => quickAdd("capture")} />
+      )}
+
+      <QuickCreateDeal open={createOpen} onOpenChange={setCreateOpen} defaultStage={createStage} meta={meta} onCreated={(d) => update({ deal: d.id })} />
+
+      <DealDrawer
+        dealId={openDealId}
+        open={!!openDealId}
+        onOpenChange={(o) => !o && update({ deal: "" })}
+        meta={meta}
+        onMove={doMove}
+        onAskLost={(d) => setLostDeal(d)}
+      />
+
+      <LostReasonModal deal={lostDeal} open={!!lostDeal} onCancel={() => setLostDeal(null)} onConfirm={confirmLost} busy={lostBusy} />
+    </Page>
   );
 }

@@ -1,10 +1,25 @@
-import { useGetUsersQuery } from "../../api/users/user.api";
 import React, { useEffect } from "react";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus, Trash2, Folder, ListChecks } from "lucide-react";
+import { Folder, ListChecks, Loader2, FileSearch } from "lucide-react";
 
-import { PaymentSectionForm } from "../../components/payments/PaymentSectionForm";
+import { PlanOfActionSectionForm } from "../../components/plan-of-action/PlanOfActionSectionForm";
+import {
+  Page,
+  EmptyState,
+  Button,
+  Field,
+  TextInput,
+  TextArea,
+  SelectInput,
+} from "@/components/inos";
+import {
+  Choices,
+  RowCard,
+  AddRowButton,
+  EmptyRows,
+  Callout,
+} from "@/components/forms/crm-form-ui";
 import { useAutoSave } from "../../hooks/use-autosave";
 import { useGetProjectsQuery } from "../../api/projects/project.api";
 
@@ -28,6 +43,22 @@ const SCOPE_OF_WORK_SECTIONS = [
   { title: "Overview", type: "overview" },
   { title: "Spaces", type: "spaces" },
   { title: "Scope Items", type: "items" },
+];
+
+const PROJECT_MODE_OPTIONS = [
+  { value: "TURNKEY", label: "Turnkey" },
+  { value: "DESIGN_BUILD", label: "Design & build" },
+  { value: "DESIGN_ONLY", label: "Design only" },
+  { value: "EXECUTION_ONLY", label: "Execution only" },
+  { value: "CONSULTANCY", label: "Consultancy" },
+  { value: "OTHER", label: "Other" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "DRAFT", label: "Draft" },
+  { value: "REVIEW", label: "Under review" },
+  { value: "APPROVED", label: "Approved" },
+  { value: "ACCEPTED", label: "Accepted" },
 ];
 
 // ============================================================
@@ -75,6 +106,9 @@ export function ScopeOfWorkForm() {
   const initialProjectId = searchParams.get("project_id") || "";
 
   const [projectId, setProjectId] = React.useState(initialProjectId);
+
+  // Inline errors appear only after the first submit attempt
+  const [submitAttempted, setSubmitAttempted] = React.useState(false);
 
   // ============================================================
   // FORM STATE
@@ -227,16 +261,6 @@ export function ScopeOfWorkForm() {
 
     const mappedValues = {
       Overview: {
-        totalAreaSqft: existingScopeOfWork.totalAreaSqft ?? "",
-        documentDate: existingScopeOfWork.documentDate ?? "",
-        preparedBy: existingScopeOfWork.preparedBy ?? "",
-        reviewedBy: existingScopeOfWork.reviewedBy ?? "",
-        authorisedSignatoryName:
-          existingScopeOfWork.authorisedSignatoryName ?? "",
-        authorisedSignatoryDate:
-          existingScopeOfWork.authorisedSignatoryDate ?? "",
-        clientSignatureName: existingScopeOfWork.clientSignatureName ?? "",
-        clientSignatureDate: existingScopeOfWork.clientSignatureDate ?? "",
         scope_summary: existingScopeOfWork.scopeSummary || "",
 
         specific_exclusions: existingScopeOfWork.specificExclusions || "",
@@ -294,10 +318,6 @@ export function ScopeOfWorkForm() {
   // ============================================================
 
   const overview = values.Overview || {};
-  const { data: userResponse = [] } = useGetUsersQuery();
-  const users = Array.isArray(userResponse)
-    ? userResponse
-    : userResponse.data || [];
 
   const spaces = values.Spaces || [];
 
@@ -305,170 +325,80 @@ export function ScopeOfWorkForm() {
 
   const items = values.Items || [];
 
+  const summaryError = submitAttempted && !overview.scope_summary?.trim();
+  const spacesTouched = submitAttempted;
+  const itemsTouched = submitAttempted;
+
   // ============================================================
   // OVERVIEW SECTION
   // ============================================================
 
   const renderOverviewSection = () => (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold">Scope of Work Overview</h3>
+    <div className="inos-form-grid">
+      <Field label="Project mode" full>
+        <Choices
+          name="Project mode"
+          value={overview.project_mode || ""}
+          options={PROJECT_MODE_OPTIONS}
+          columns={3}
+          onChange={(value) =>
+            handleFieldChange("Overview", "project_mode", value)
+          }
+        />
+      </Field>
 
-        <p className="text-sm text-[#6B7B7C] mt-1">
-          Define the overall scope, exclusions, project mode and document
-          status.
-        </p>
-      </div>
+      <Field label="Status" full hint="Keep as draft until the client has reviewed it.">
+        <Choices
+          name="Status"
+          value={overview.status || "DRAFT"}
+          options={STATUS_OPTIONS}
+          columns={4}
+          onChange={(value) => handleFieldChange("Overview", "status", value)}
+        />
+      </Field>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {[
-          ["totalAreaSqft", "Total Area (sq ft)", "number"],
-          ["documentDate", "Document Date", "date"],
-          ["authorisedSignatoryName", "Authorised Signatory Name", "text"],
-          ["authorisedSignatoryDate", "Authorised Signatory Date", "date"],
-          ["clientSignatureName", "Client Signature Name", "text"],
-          ["clientSignatureDate", "Client Signature Date", "date"],
-        ].map(([key, label, type]) => (
-          <label key={key} className="bc-label">
-            {label}
-            <input
-              className="bc-input w-full"
-              type={type}
-              min={type === "number" ? 0 : undefined}
-              step={type === "number" ? "0.01" : undefined}
-              value={overview[key] ?? ""}
-              onChange={(event) =>
-                handleFieldChange("Overview", key, event.target.value)
-              }
-            />
-          </label>
-        ))}
-        {[
-          ["preparedBy", "Prepared By"],
-          ["reviewedBy", "Reviewed By"],
-        ].map(([key, label]) => (
-          <label key={key} className="bc-label">
-            {label}
-            <select
-              className="bc-input w-full"
-              value={overview[key] || ""}
-              onChange={(event) =>
-                handleFieldChange("Overview", key, event.target.value)
-              }
-            >
-              <option value="">Select person</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        ))}
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* PROJECT MODE */}
+      <Field
+        label="Scope summary"
+        required
+        full
+        error={summaryError ? "Enter the scope summary." : undefined}
+      >
+        <TextArea
+          rows={5}
+          value={overview.scope_summary || ""}
+          invalid={summaryError}
+          onChange={(e) =>
+            handleFieldChange("Overview", "scope_summary", e.target.value)
+          }
+          placeholder="e.g. Complete interior fit-out of a 3BHK apartment including civil, electrical, plumbing and furniture."
+        />
+      </Field>
 
-        <div>
-          <label className="bc-label">Project Mode</label>
+      <Field label="Specific exclusions" full hint="One exclusion per line reads best in the document.">
+        <TextArea
+          rows={4}
+          value={overview.specific_exclusions || ""}
+          onChange={(e) =>
+            handleFieldChange(
+              "Overview",
+              "specific_exclusions",
+              e.target.value,
+            )
+          }
+          placeholder="e.g. Loose furniture, appliances, structural changes"
+        />
+      </Field>
 
-          <select
-            className="bc-input w-full"
-            value={overview.project_mode || ""}
-            onChange={(e) =>
-              handleFieldChange("Overview", "project_mode", e.target.value)
-            }
-          >
-            <option value="">Select Project Mode</option>
-
-            <option value="TURNKEY">Turnkey</option>
-
-            <option value="DESIGN_BUILD">Design & Build</option>
-
-            <option value="DESIGN_ONLY">Design Only</option>
-
-            <option value="EXECUTION_ONLY">Execution Only</option>
-
-            <option value="CONSULTANCY">Consultancy</option>
-
-            <option value="OTHER">Other</option>
-          </select>
-        </div>
-
-        {/* STATUS */}
-
-        <div>
-          <label className="bc-label">Status</label>
-
-          <select
-            className="bc-input w-full"
-            value={overview.status || "DRAFT"}
-            onChange={(e) =>
-              handleFieldChange("Overview", "status", e.target.value)
-            }
-          >
-            <option value="DRAFT">Draft</option>
-
-            <option value="REVIEW">Under Review</option>
-
-            <option value="APPROVED">Approved</option>
-
-            <option value="ACCEPTED">Accepted</option>
-          </select>
-        </div>
-
-        {/* SCOPE SUMMARY */}
-
-        <div className="md:col-span-2">
-          <label className="bc-label">Scope Summary</label>
-
-          <textarea
-            rows={6}
-            value={overview.scope_summary || ""}
-            onChange={(e) =>
-              handleFieldChange("Overview", "scope_summary", e.target.value)
-            }
-            placeholder="Describe the overall scope of work..."
-            className="bc-input w-full"
-          />
-        </div>
-
-        {/* EXCLUSIONS */}
-
-        <div className="md:col-span-2">
-          <label className="bc-label">Specific Exclusions</label>
-
-          <textarea
-            rows={5}
-            value={overview.specific_exclusions || ""}
-            onChange={(e) =>
-              handleFieldChange(
-                "Overview",
-                "specific_exclusions",
-                e.target.value,
-              )
-            }
-            placeholder="List anything specifically excluded from the scope..."
-            className="bc-input w-full"
-          />
-        </div>
-
-        {/* NOTES */}
-
-        <div className="md:col-span-2">
-          <label className="bc-label">Notes</label>
-
-          <textarea
-            rows={4}
-            value={overview.notes || ""}
-            onChange={(e) =>
-              handleFieldChange("Overview", "notes", e.target.value)
-            }
-            placeholder="Additional notes..."
-            className="bc-input w-full"
-          />
-        </div>
-      </div>
+      <Field label="Notes" optional full>
+        <TextArea
+          rows={3}
+          value={overview.notes || ""}
+          onChange={(e) =>
+            handleFieldChange("Overview", "notes", e.target.value)
+          }
+          placeholder="Anything else the team should know"
+        />
+      </Field>
     </div>
   );
 
@@ -561,132 +491,63 @@ export function ScopeOfWorkForm() {
     };
 
     return (
-      <div className="space-y-6">
-        {/* HEADER */}
-
-        <div className="flex justify-between items-center flex-wrap gap-3">
-          <div>
-            <h3 className="text-lg font-semibold">Project Spaces</h3>
-
-            <p className="text-sm text-[#6B7B7C] mt-1">
-              Define the spaces or areas covered by this project.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={addSpace}
-            className="flex items-center gap-2 bg-[#1F453B] text-white px-4 py-2 rounded-lg text-sm"
-          >
-            <Plus size={16} />
-            Add Space
-          </button>
-        </div>
-
-        {/* EMPTY */}
+      <>
+        {projectSpaces.length > 0 && (
+          <Callout title={`${projectSpaces.length} space${projectSpaces.length > 1 ? "s" : ""} already on this project`}>
+            {projectSpaces.map((space) => space.name).join(", ")}. These are available for scope items without adding them again.
+          </Callout>
+        )}
 
         {spaces.length === 0 ? (
-          <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl">
-            <Folder size={28} className="mx-auto text-[#94A3A5] mb-2" />
-
-            <p className="text-gray-500">No spaces added yet.</p>
-
-            <p className="text-xs text-[#94A3A5] mt-1">
-              Add spaces such as Living Room, Kitchen, Bedroom, Bathroom, etc.
-            </p>
-          </div>
+          <EmptyRows
+            icon={Folder}
+            title="No new spaces added"
+            text="Add spaces such as Living room, Kitchen, Master bedroom or Bathroom."
+          />
         ) : (
-          <div className="space-y-4">
-            {spaces.map((space, index) => (
-              <div
-                key={space.id}
-                className="border border-gray-200 rounded-xl p-5 bg-white"
-              >
-                <div className="flex justify-between items-center mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-[#1F453B] text-white flex items-center justify-center font-semibold">
-                      {index + 1}
-                    </div>
+          <div className="crmf-rows">
+            {spaces.map((space, index) => {
+              const missingName = spacesTouched && !space.name?.trim();
+              return (
+                <RowCard
+                  key={space.id}
+                  index={index + 1}
+                  title={space.name?.trim() || `Space ${index + 1}`}
+                  meta={space.slug ? `/${space.slug}` : undefined}
+                  onRemove={() => removeSpace(index)}
+                  removeLabel="Remove space"
+                >
+                  <div className="inos-form-grid">
+                    <Field label="Space name" required error={missingName ? "Name this space." : undefined}>
+                      <TextInput
+                        value={space.name || ""}
+                        invalid={missingName}
+                        autoFocus={!space.name}
+                        onChange={(e) => updateSpace(index, "name", e.target.value)}
+                        placeholder="e.g. Living room"
+                      />
+                    </Field>
 
-                    <span className="font-semibold">Space {index + 1}</span>
+                    <Field label="Description" optional>
+                      <TextInput
+                        value={space.description || ""}
+                        onChange={(e) =>
+                          updateSpace(index, "description", e.target.value)
+                        }
+                        placeholder="e.g. Double-height living with balcony"
+                      />
+                    </Field>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => removeSpace(index)}
-                    className="text-red-500 hover:text-red-700 p-2"
-                    title="Remove space"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* NAME */}
-
-                  <div>
-                    <label className="bc-label">Space Name</label>
-
-                    <input
-                      type="text"
-                      value={space.name || ""}
-                      onChange={(e) =>
-                        updateSpace(index, "name", e.target.value)
-                      }
-                      placeholder="e.g. Living Room"
-                      className="bc-input w-full"
-                    />
-
-                    {space.slug && (
-                      <p className="text-xs text-[#94A3A5] mt-1">
-                        Slug: {space.slug}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* DESCRIPTION */}
-
-                  <div className="md:col-span-2">
-                    <label className="bc-label">Description</label>
-
-                    <textarea
-                      rows={3}
-                      value={space.description || ""}
-                      onChange={(e) =>
-                        updateSpace(index, "description", e.target.value)
-                      }
-                      placeholder="Describe this space..."
-                      className="bc-input w-full"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
+                </RowCard>
+              );
+            })}
           </div>
         )}
 
-        {/* EXISTING PROJECT SPACES */}
-
-        {projectSpaces.length > 0 && (
-          <div>
-            <h4 className="font-semibold mb-3">Existing Project Spaces</h4>
-
-            <div className="grid md:grid-cols-2 gap-3">
-              {projectSpaces.map((space) => (
-                <div key={space.id} className="border rounded-lg p-3">
-                  <div className="font-medium">{space.name}</div>
-
-                  {space.description && (
-                    <div className="text-xs text-[#6B7B7C] mt-1">
-                      {space.description}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+        <AddRowButton onClick={addSpace}>
+          {spaces.length ? "Add space" : "Add first space"}
+        </AddRowButton>
+      </>
     );
   };
 
@@ -746,153 +607,116 @@ export function ScopeOfWorkForm() {
       }));
     };
 
+    const spaceOptions = [
+      ...projectSpaces,
+      ...spaces.filter(
+        (space) => !projectSpaces.some((existing) => existing.id === space.id),
+      ),
+    ];
+
     return (
-      <div className="space-y-6">
-        {/* HEADER */}
-
-        <div className="flex justify-between items-center flex-wrap gap-3">
-          <div>
-            <h3 className="text-lg font-semibold">Scope Items</h3>
-
-            <p className="text-sm text-[#6B7B7C] mt-1">
-              Define the detailed scope of work for each project space and
-              category.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={addItem}
-            className="flex items-center gap-2 bg-[#1F453B] text-white px-4 py-2 rounded-lg text-sm"
-          >
-            <Plus size={16} />
-            Add Scope Item
-          </button>
-        </div>
-
-        {/* EMPTY */}
-
+      <>
         {items.length === 0 ? (
-          <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl">
-            <ListChecks size={28} className="mx-auto text-[#94A3A5] mb-2" />
-
-            <p className="text-gray-500">No scope items added yet.</p>
-
-            <p className="text-xs text-[#94A3A5] mt-1">
-              Add the detailed work included or excluded from the project.
-            </p>
-          </div>
+          <EmptyRows
+            icon={ListChecks}
+            title="No scope items yet"
+            text="Add the detailed work for each space — what is included and what is excluded."
+          />
         ) : (
-          <div className="space-y-4">
-            {items.map((item, index) => (
-              <div
-                key={item.id}
-                className="border border-gray-200 rounded-xl overflow-hidden"
-              >
-                {/* ITEM HEADER */}
+          <div className="crmf-rows">
+            {items.map((item, index) => {
+              const spaceName = spaceOptions.find(
+                (s) => s.id === item.project_space_id,
+              )?.name;
+              const categoryName = scopeCategories.find(
+                (c) => c.id === item.scope_category_id,
+              )?.name;
+              const showErrors = itemsTouched;
 
-                <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-[#1F453B] text-white flex items-center justify-center font-semibold">
-                      {index + 1}
-                    </div>
-
-                    <span className="font-semibold">
-                      Scope Item {index + 1}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => removeItem(index)}
-                    className="text-red-500 hover:text-red-700 p-2"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-
-                {/* ITEM BODY */}
-
-                <div className="p-5 bg-gray-50">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* PROJECT SPACE */}
-
-                    <div>
-                      <label className="bc-label">Project Space</label>
-
-                      <select
-                        className="bc-input w-full"
+              return (
+                <RowCard
+                  key={item.id}
+                  index={index + 1}
+                  title={
+                    [spaceName, categoryName].filter(Boolean).join(" · ") ||
+                    `Scope item ${index + 1}`
+                  }
+                  meta={item.is_excluded ? "Excluded" : "Included"}
+                  onRemove={() => removeItem(index)}
+                  removeLabel="Remove scope item"
+                >
+                  <div className="inos-form-grid">
+                    <Field
+                      label="Space"
+                      required
+                      error={showErrors && !item.project_space_id ? "Pick a space." : undefined}
+                      hint={spaceOptions.length ? undefined : "Add a space in the section above first."}
+                    >
+                      <SelectInput
                         value={item.project_space_id || ""}
+                        invalid={showErrors && !item.project_space_id}
                         onChange={(e) =>
                           updateItem(index, "project_space_id", e.target.value)
                         }
+                        placeholder="Select space"
                       >
-                        <option value="">Select Space</option>
-
-                        {[
-                          ...projectSpaces,
-                          ...spaces.filter(
-                            (space) =>
-                              !projectSpaces.some(
-                                (existing) => existing.id === space.id,
-                              ),
-                          ),
-                        ].map((space) => (
+                        {spaceOptions.map((space) => (
                           <option key={space.id} value={space.id}>
                             {space.name || "(unnamed space)"}
                           </option>
                         ))}
-                      </select>
-                    </div>
+                      </SelectInput>
+                    </Field>
 
-                    {/* CATEGORY */}
-
-                    <div>
-                      <label className="bc-label">Scope Category</label>
-
-                      <select
-                        className="bc-input w-full"
+                    <Field
+                      label="Category"
+                      required
+                      error={showErrors && !item.scope_category_id ? "Pick a category." : undefined}
+                    >
+                      <SelectInput
                         value={item.scope_category_id || ""}
+                        invalid={showErrors && !item.scope_category_id}
                         onChange={(e) =>
                           updateItem(index, "scope_category_id", e.target.value)
                         }
+                        placeholder="Select category"
                       >
-                        <option value="">Select Category</option>
-
                         {scopeCategories.map((category) => (
                           <option key={category.id} value={category.id}>
                             {category.name}
                           </option>
                         ))}
-                      </select>
-                    </div>
+                      </SelectInput>
+                    </Field>
 
-                    {/* SCOPE OF WORK */}
-
-                    <div className="md:col-span-2">
-                      <label className="bc-label">Scope of Work</label>
-
-                      <textarea
-                        rows={5}
+                    <Field
+                      label="Scope of work"
+                      required
+                      full
+                      error={showErrors && !item.scope_of_work?.trim() ? "Describe the work." : undefined}
+                    >
+                      <TextArea
+                        rows={3}
                         value={item.scope_of_work || ""}
+                        invalid={showErrors && !item.scope_of_work?.trim()}
                         onChange={(e) =>
                           updateItem(index, "scope_of_work", e.target.value)
                         }
-                        placeholder="Describe the work to be carried out..."
-                        className="bc-input w-full"
+                        placeholder="e.g. Supply and install 600×1200 vitrified tiles with skirting"
                       />
-                    </div>
+                    </Field>
 
-                    {/* INCLUSION */}
-
-                    <div>
-                      <label className="bc-label">Inclusion</label>
-
-                      <select
-                        className="bc-input w-full"
+                    <Field label="Inclusion">
+                      <Choices
+                        name="Inclusion"
+                        columns={2}
                         value={item.is_excluded ? "excluded" : "included"}
-                        onChange={(e) => {
-                          const excluded = e.target.value === "excluded";
+                        options={[
+                          { value: "included", label: "Included" },
+                          { value: "excluded", label: "Excluded" },
+                        ]}
+                        onChange={(value) => {
+                          const excluded = value === "excluded";
 
                           setValues((prev) => ({
                             ...prev,
@@ -910,35 +734,29 @@ export function ScopeOfWorkForm() {
                             ),
                           }));
                         }}
-                      >
-                        <option value="included">Included</option>
+                      />
+                    </Field>
 
-                        <option value="excluded">Excluded</option>
-                      </select>
-                    </div>
-
-                    {/* NOTES */}
-
-                    <div>
-                      <label className="bc-label">Notes</label>
-
-                      <textarea
-                        rows={3}
+                    <Field label="Notes" optional>
+                      <TextInput
                         value={item.notes || ""}
                         onChange={(e) =>
                           updateItem(index, "notes", e.target.value)
                         }
-                        placeholder="Additional notes..."
-                        className="bc-input w-full"
+                        placeholder="e.g. Client to approve tile sample"
                       />
-                    </div>
+                    </Field>
                   </div>
-                </div>
-              </div>
-            ))}
+                </RowCard>
+              );
+            })}
           </div>
         )}
-      </div>
+
+        <AddRowButton onClick={addItem}>
+          {items.length ? "Add scope item" : "Add first scope item"}
+        </AddRowButton>
+      </>
     );
   };
 
@@ -967,6 +785,7 @@ export function ScopeOfWorkForm() {
   // ============================================================
 
   const handleSubmit = async () => {
+    setSubmitAttempted(true);
     // ----------------------------------------------------------
     // VALIDATION
     // ----------------------------------------------------------
@@ -1028,17 +847,6 @@ export function ScopeOfWorkForm() {
           id: scopeOfWorkId,
 
           body: {
-            totalAreaSqft:
-              overview.totalAreaSqft === "" || overview.totalAreaSqft == null
-                ? null
-                : Number(overview.totalAreaSqft),
-            documentDate: overview.documentDate || null,
-            preparedBy: overview.preparedBy || null,
-            reviewedBy: overview.reviewedBy || null,
-            authorisedSignatoryName: overview.authorisedSignatoryName || null,
-            authorisedSignatoryDate: overview.authorisedSignatoryDate || null,
-            clientSignatureName: overview.clientSignatureName || null,
-            clientSignatureDate: overview.clientSignatureDate || null,
             scopeSummary: overview.scope_summary?.trim() || undefined,
 
             specificExclusions:
@@ -1060,17 +868,6 @@ export function ScopeOfWorkForm() {
           projectId,
 
           body: {
-            totalAreaSqft:
-              overview.totalAreaSqft === "" || overview.totalAreaSqft == null
-                ? null
-                : Number(overview.totalAreaSqft),
-            documentDate: overview.documentDate || null,
-            preparedBy: overview.preparedBy || null,
-            reviewedBy: overview.reviewedBy || null,
-            authorisedSignatoryName: overview.authorisedSignatoryName || null,
-            authorisedSignatoryDate: overview.authorisedSignatoryDate || null,
-            clientSignatureName: overview.clientSignatureName || null,
-            clientSignatureDate: overview.clientSignatureDate || null,
             scopeSummary: overview.scope_summary?.trim() || undefined,
 
             specificExclusions:
@@ -1313,13 +1110,9 @@ export function ScopeOfWorkForm() {
 
   if (isEditMode && (isLoadingScopeOfWork || isFetchingScopeOfWork)) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-[#1F453B] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-
-          <p className="text-sm text-[#6B7B7C]">Loading Scope of Work...</p>
-        </div>
-      </div>
+      <Page width="form">
+        <EmptyState icon={Loader2} title="Loading scope of work…" />
+      </Page>
     );
   }
 
@@ -1329,25 +1122,18 @@ export function ScopeOfWorkForm() {
 
   if (isEditMode && !isLoadingScopeOfWork && !existingScopeOfWork) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <h3 className="text-lg font-semibold text-gray-800">
-            Scope of Work not found
-          </h3>
-
-          <p className="text-sm text-gray-500 mt-1">
-            The requested Scope of Work could not be loaded.
-          </p>
-
-          <button
-            type="button"
-            onClick={() => navigate("/documents/scope-of-work")}
-            className="mt-4 bg-[#1F453B] text-white px-4 py-2 rounded-lg text-sm"
-          >
-            Back to Scope of Work
-          </button>
-        </div>
-      </div>
+      <Page width="form">
+        <EmptyState
+          icon={FileSearch}
+          title="Scope of work not found"
+          text="The requested scope of work could not be loaded."
+          action={
+            <Button onClick={() => navigate("/documents/scope-of-work")}>
+              Back to scope of work
+            </Button>
+          }
+        />
+      </Page>
     );
   }
 
@@ -1356,15 +1142,46 @@ export function ScopeOfWorkForm() {
   // ============================================================
 
   return (
-    <PaymentSectionForm
-      title={isEditMode ? "Edit Scope of Work" : "Scope of Work"}
+    <PlanOfActionSectionForm
+      title={isEditMode ? "Edit scope of work" : "Scope of work"}
       subtitle={
         isEditMode
-          ? "Update the project scope, spaces, categories and detailed work items"
-          : "Define the project scope, spaces, categories and detailed work items"
+          ? "Update what is included, the spaces covered and each work item."
+          : "Define what is included, the spaces covered and each work item. Produces the scope of work document."
       }
-      submitLabel={isEditMode ? "Update Scope of Work" : "Save Scope of Work"}
+      crumbs={[
+        { label: "CRM", to: "/crm" },
+        { label: "Forms" },
+        { label: isEditMode ? "Edit scope of work" : "Scope of work" },
+      ]}
+      submitLabel={isEditMode ? "Update scope of work" : "Save scope of work"}
       sections={SCOPE_OF_WORK_SECTIONS}
+      sectionMeta={{
+        Overview: {
+          description: "Project mode, summary and what is excluded.",
+          done: Boolean(overview.scope_summary?.trim()),
+        },
+        Spaces: {
+          description:
+            "Rooms or areas this scope covers. Existing project spaces are reused.",
+          done: spaces.length > 0 || projectSpaces.length > 0,
+          count: spaces.length,
+        },
+        "Scope Items": {
+          description:
+            "Each piece of work, tied to a space and category, marked included or excluded.",
+          done: items.length > 0,
+          count: items.length,
+        },
+      }}
+      onSaveDraft={() => {
+        try {
+          localStorage.setItem(SAVE_KEY, JSON.stringify(values));
+          toast.success("Draft saved on this device.");
+        } catch {
+          toast.error("Could not save the draft.");
+        }
+      }}
       values={values}
       onFieldChange={handleFieldChange}
       projects={projects}

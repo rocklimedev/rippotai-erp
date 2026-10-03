@@ -1,3 +1,4 @@
+import { automationBus } from '@/common/automation-bus';
 import {
   Injectable,
   NotFoundException,
@@ -531,6 +532,11 @@ export class PaymentSchedulesService {
     const milestone = await this.findMilestone(paymentScheduleId, milestoneId);
 
     await milestone.update({ ...dto } as any);
+
+    // Automation hook: a milestone marked OVERDUE runs PAYMENT_MILESTONE_OVERDUE rules for it.
+    if (String((milestone as any).status) === 'OVERDUE') {
+      automationBus.emitEvent('PAYMENT_MILESTONE_OVERDUE', { entityId: milestone.id });
+    }
 
     return milestone;
   }

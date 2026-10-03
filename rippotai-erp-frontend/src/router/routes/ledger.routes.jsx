@@ -35,8 +35,7 @@ export const ledgerRoutes = [
         "payment-schedules/all",
         "aggrements/all",
         "edit-dashboard",
-        "roles",
-        "activity",
+        // "roles" / "activity" fall through to SectionPage like every other app
       ],
     },
 
@@ -79,6 +78,10 @@ export const ledgerRoutes = [
       },
       {
         path: "forms/budget-estimate",
+        element: <BudgetEstimateForm />,
+      },
+      {
+        path: "forms/budget-estimate/:id/edit",
         element: <BudgetEstimateForm />,
       },
       {

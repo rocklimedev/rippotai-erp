@@ -19,10 +19,10 @@ import { MockupStatus } from '../../../common/enums/site-operations.enums';
 @Table({ tableName: 'mockups', timestamps: true })
 export class Mockup extends Model<Mockup> {
   @ForeignKey(() => Project)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  projectId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  projectId: string;
 
-  @BelongsTo(() => Project)
+  @BelongsTo(() => Project, { constraints: false })
   project: Project;
 
   @ForeignKey(() => Step)

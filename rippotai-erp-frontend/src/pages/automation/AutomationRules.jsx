@@ -1,335 +1,181 @@
-// src/pages/automation/AutomationRules.jsx
-
+// Automation — rule registry: search/filter, run now, test, edit, duplicate, enable/disable, delete.
 import React, { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { Copy, GitBranch, Pencil, PlayCircle, Plus, Power, TestTube2, Trash2 } from "lucide-react";
+import { Page, PageHeader, Card, Button, Stats, StatTile, EmptyState, Toolbar, ToolbarSpacer, SearchInput, Segmented } from "@/components/inos";
+import { RowMenu } from "@/pages/settings/_admin-ui";
 import {
-  CheckCircle2,
-  ChevronDown,
-  Copy,
-  Edit3,
-  MoreHorizontal,
-  Plus,
-  Search,
-  TestTube2,
-  ToggleLeft,
-  ToggleRight,
-  Zap,
-} from "lucide-react";
+  useGetAutomationRulesQuery,
+  useToggleAutomationRuleMutation,
+  useDuplicateAutomationRuleMutation,
+  useDeleteAutomationRuleMutation,
+  useRunAutomationRuleMutation,
+} from "@/api/automation/automation.api";
+import { autoCrumbs, RuleStatus, actionText, ago, runSummary } from "./_automation-ui";
 
-import { automationRules } from "../../data/automationMockData";
+export default function AutomationRules() {
+  const nav = useNavigate();
+  const { data: rules = [], isLoading, isError, refetch } = useGetAutomationRulesQuery();
+  const [toggle] = useToggleAutomationRuleMutation();
+  const [duplicate] = useDuplicateAutomationRuleMutation();
+  const [remove] = useDeleteAutomationRuleMutation();
+  const [run] = useRunAutomationRuleMutation();
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState("ALL");
+  const [busy, setBusy] = useState(null);
 
-const StatusBadge = ({ status }) => {
-  const styles = {
-    ACTIVE: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    DRAFT: "bg-amber-50 text-amber-700 border-amber-200",
-    DISABLED: "bg-slate-100 text-slate-600 border-slate-200",
+  const shown = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    return rules.filter(
+      (r) =>
+        (status === "ALL" || r.status === status) &&
+        (!s || [r.name, r.description, r.trigger, r.phase].some((x) => String(x || "").toLowerCase().includes(s))),
+    );
+  }, [rules, q, status]);
+
+  const count = (st) => rules.filter((r) => r.status === st).length;
+
+  const act = async (id, fn, ok) => {
+    setBusy(id);
+    try {
+      const res = await fn();
+      if (ok) toast.success(typeof ok === "function" ? ok(res) : ok);
+      return res;
+    } catch (e) {
+      toast.error(e?.data?.message || "Something went wrong");
+    } finally {
+      setBusy(null);
+    }
   };
 
   return (
-    <span
-      className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
-        styles[status] || styles.DISABLED
-      }`}
-    >
-      {status}
-    </span>
-  );
-};
+    <Page>
+      <PageHeader
+        crumbs={autoCrumbs({ label: "Rules" })}
+        title="Rules"
+        subtitle="Every automation: what triggers it, the conditions it checks and what it does."
+        actions={
+          <Button variant="primary" icon={Plus} onClick={() => nav("/automation/rules/new")}>
+            New rule
+          </Button>
+        }
+      />
 
-export default function AutomationRules() {
-  const [search, setSearch] = useState("");
-  const [phase, setPhase] = useState("ALL");
-  const [status, setStatus] = useState("ALL");
+      <Stats>
+        <StatTile label="All rules" value={rules.length} icon={<GitBranch size={16} />} onClick={() => setStatus("ALL")} active={status === "ALL"} />
+        <StatTile label="Active" value={count("ACTIVE")} tone="ok" icon={<Power size={16} />} onClick={() => setStatus("ACTIVE")} active={status === "ACTIVE"} />
+        <StatTile label="Draft" value={count("DRAFT")} tone="warn" icon={<Pencil size={16} />} onClick={() => setStatus("DRAFT")} active={status === "DRAFT"} />
+        <StatTile label="Disabled" value={count("DISABLED")} icon={<Power size={16} />} onClick={() => setStatus("DISABLED")} active={status === "DISABLED"} />
+      </Stats>
 
-  const filteredRules = useMemo(() => {
-    return automationRules.filter((rule) => {
-      const matchesSearch =
-        !search ||
-        rule.name.toLowerCase().includes(search.toLowerCase()) ||
-        rule.description.toLowerCase().includes(search.toLowerCase()) ||
-        rule.trigger.toLowerCase().includes(search.toLowerCase());
+      <Toolbar>
+        <SearchInput value={q} onChange={setQ} placeholder="Search rules, triggers, areas" />
+        <ToolbarSpacer />
+        <Segmented
+          value={status}
+          onChange={setStatus}
+          options={[
+            { value: "ALL", label: "All" },
+            { value: "ACTIVE", label: "Active" },
+            { value: "DRAFT", label: "Draft" },
+            { value: "DISABLED", label: "Disabled" },
+          ]}
+        />
+      </Toolbar>
 
-      const matchesPhase = phase === "ALL" || rule.phase === phase;
-      const matchesStatus = status === "ALL" || rule.status === status;
-
-      return matchesSearch && matchesPhase && matchesStatus;
-    });
-  }, [search, phase, status]);
-
-  const phases = [...new Set(automationRules.map((rule) => rule.phase))];
-
-  return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-6">
-      <div className="mx-auto max-w-[1600px] space-y-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <div className="mb-2 flex items-center gap-2 text-sm text-slate-500">
-              <Zap size={16} />
-              Automation Center / Rules
-            </div>
-
-            <h1 className="text-2xl font-bold text-slate-900">
-              Automation Rules
-            </h1>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Central registry for every automation rule running across INOS.
-            </p>
-          </div>
-
-          <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1F453B] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#17382f]">
-            <Plus size={17} />
-            Create Rule
-          </button>
-        </div>
-
-        {/* Summary */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-500">Total Rules</p>
-            <p className="mt-2 text-3xl font-bold text-slate-900">
-              {automationRules.length}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-500">Active</p>
-            <p className="mt-2 text-3xl font-bold text-emerald-600">
-              {automationRules.filter((r) => r.status === "ACTIVE").length}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-500">Draft</p>
-            <p className="mt-2 text-3xl font-bold text-amber-600">
-              {automationRules.filter((r) => r.status === "DRAFT").length}
-            </p>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="grid gap-3 lg:grid-cols-[1fr_220px_180px]">
-            <div className="relative">
-              <Search
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search rules, triggers or descriptions..."
-                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm outline-none transition focus:border-[#1F453B] focus:bg-white"
-              />
-            </div>
-
-            <div className="relative">
-              <select
-                value={phase}
-                onChange={(e) => setPhase(e.target.value)}
-                className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 pr-10 text-sm text-slate-700 outline-none"
-              >
-                <option value="ALL">All Phases</option>
-                {phases.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-
-              <ChevronDown
-                size={16}
-                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-            </div>
-
-            <div className="relative">
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 pr-10 text-sm text-slate-700 outline-none"
-              >
-                <option value="ALL">All Statuses</option>
-                <option value="ACTIVE">Active</option>
-                <option value="DRAFT">Draft</option>
-                <option value="DISABLED">Disabled</option>
-              </select>
-
-              <ChevronDown
-                size={16}
-                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px]">
+      <Card flush title={`${shown.length} ${shown.length === 1 ? "rule" : "rules"}`}>
+        {isError ? (
+          <EmptyState icon={GitBranch} title="Couldn't load rules" action={<Button onClick={refetch}>Retry</Button>} />
+        ) : isLoading ? (
+          <div style={{ padding: 24, color: "var(--text-3)" }}>Loading…</div>
+        ) : !shown.length ? (
+          <EmptyState
+            icon={GitBranch}
+            title={rules.length ? "No rules match" : "No rules yet"}
+            text={rules.length ? "Clear the search or pick another status." : "Create a rule to start automating follow-ups."}
+            action={!rules.length && <Button variant="primary" icon={Plus} onClick={() => nav("/automation/rules/new")}>New rule</Button>}
+          />
+        ) : (
+          <div className="inos-table-wrap">
+            <table className="inos-table">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/70 text-left">
-                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Rule
-                  </th>
-                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Phase
-                  </th>
-                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Trigger
-                  </th>
-                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Actions
-                  </th>
-                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Project Type
-                  </th>
-                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Runs
-                  </th>
-                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Status
-                  </th>
-                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Actions
-                  </th>
+                <tr>
+                  <th>Rule</th>
+                  <th>Trigger</th>
+                  <th>Does</th>
+                  <th className="num">Runs</th>
+                  <th>Last run</th>
+                  <th>Status</th>
+                  <th className="actions" aria-label="Actions" />
                 </tr>
               </thead>
-
-              <tbody className="divide-y divide-slate-100">
-                {filteredRules.map((rule) => (
-                  <tr key={rule.id} className="transition hover:bg-slate-50">
-                    <td className="px-5 py-4">
-                      <div>
-                        <p className="font-semibold text-slate-800">
-                          {rule.name}
-                        </p>
-                        <p className="mt-1 max-w-[280px] text-xs leading-5 text-slate-400">
-                          {rule.description}
-                        </p>
+              <tbody>
+                {shown.map((r) => (
+                  <tr key={r.id} className="is-clickable" onClick={() => nav(`/automation/rules/${r.id}/edit`)}>
+                    <td style={{ maxWidth: 320 }}>
+                      <div style={{ fontWeight: 600 }}>{r.name}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.45 }}>{r.description}</div>
+                    </td>
+                    <td>
+                      <div>{r.trigger}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-3)" }}>
+                        {r.phase}
+                        {r.conditions?.length ? ` · ${r.conditions.length} ${r.conditions.length === 1 ? "condition" : "conditions"}` : ""}
                       </div>
                     </td>
-
-                    <td className="px-5 py-4">
-                      <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
-                        {rule.phase}
-                      </span>
+                    <td style={{ fontSize: 13 }}>
+                      {(r.actions || []).map((a, i) => (
+                        <div key={i}>{actionText(a)}</div>
+                      ))}
                     </td>
-
-                    <td className="px-5 py-4 text-sm text-slate-600">
-                      {rule.trigger}
+                    <td className="num">
+                      <div style={{ fontWeight: 600 }}>{r.runs}</div>
+                      {r.failed > 0 && <div style={{ fontSize: 12, color: "var(--bad-fg)" }}>{r.failed} failed</div>}
                     </td>
-
-                    <td className="px-5 py-4">
-                      <div className="space-y-1">
-                        {rule.actions.slice(0, 2).map((action) => (
-                          <div
-                            key={action}
-                            className="flex items-center gap-1.5 text-xs text-slate-500"
-                          >
-                            <CheckCircle2
-                              size={13}
-                              className="text-emerald-500"
-                            />
-                            {action}
-                          </div>
-                        ))}
-
-                        {rule.actions.length > 2 && (
-                          <span className="text-xs text-slate-400">
-                            +{rule.actions.length - 2} more
-                          </span>
-                        )}
-                      </div>
+                    <td className="muted">{ago(r.lastRunAt)}</td>
+                    <td>
+                      <RuleStatus status={r.status} />
                     </td>
-
-                    <td className="px-5 py-4">
-                      <div className="flex max-w-[180px] flex-wrap gap-1">
-                        {rule.projectTypes.map((type) => (
-                          <span
-                            key={type}
-                            className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600"
-                          >
-                            {type}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-
-                    <td className="px-5 py-4">
-                      <p className="text-sm font-semibold text-slate-700">
-                        {rule.executions}
-                      </p>
-                      <p className="mt-1 text-xs text-emerald-600">
-                        {rule.successRate || 0}% success
-                      </p>
-                    </td>
-
-                    <td className="px-5 py-4">
-                      <StatusBadge status={rule.status} />
-                    </td>
-
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-1">
-                        <button
-                          title="Edit"
-                          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                        >
-                          <Edit3 size={16} />
-                        </button>
-
-                        <button
-                          title="Test"
-                          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                        >
-                          <TestTube2 size={16} />
-                        </button>
-
-                        <button
-                          title="Duplicate"
-                          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                        >
-                          <Copy size={16} />
-                        </button>
-
-                        <button
-                          title="Toggle"
-                          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                        >
-                          {rule.status === "ACTIVE" ? (
-                            <ToggleRight
-                              size={19}
-                              className="text-emerald-600"
-                            />
-                          ) : (
-                            <ToggleLeft size={19} />
-                          )}
-                        </button>
-
-                        <button className="rounded-lg p-2 text-slate-500 hover:bg-slate-100">
-                          <MoreHorizontal size={17} />
-                        </button>
-                      </div>
+                    <td className="actions" onClick={(e) => e.stopPropagation()}>
+                      <RowMenu
+                        busy={busy === r.id}
+                        items={[
+                          {
+                            label: "Run now",
+                            icon: PlayCircle,
+                            disabled: r.status !== "ACTIVE",
+                            onClick: () => act(r.id, () => run({ id: r.id }).unwrap(), (res) => `${r.name}: ${runSummary(res)}`),
+                          },
+                          {
+                            label: "Test (no changes)",
+                            icon: TestTube2,
+                            onClick: () =>
+                              act(r.id, () => run({ id: r.id, dryRun: true }).unwrap(), (res) => `Test: ${res.candidates} records checked, ${res.matched} would match`),
+                          },
+                          { label: "Edit", icon: Pencil, onClick: () => nav(`/automation/rules/${r.id}/edit`) },
+                          { label: "Duplicate", icon: Copy, onClick: () => act(r.id, () => duplicate(r.id).unwrap(), "Copy created as a draft") },
+                          {
+                            label: r.status === "ACTIVE" ? "Disable" : "Enable",
+                            icon: Power,
+                            onClick: () => act(r.id, () => toggle(r.id).unwrap(), r.status === "ACTIVE" ? "Rule disabled" : "Rule enabled"),
+                          },
+                          {
+                            label: "Delete",
+                            icon: Trash2,
+                            danger: true,
+                            onClick: () => window.confirm(`Delete “${r.name}”? Its run history is kept.`) && act(r.id, () => remove(r.id).unwrap(), "Rule deleted"),
+                          },
+                        ]}
+                      />
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-
-          {filteredRules.length === 0 && (
-            <div className="py-16 text-center">
-              <Zap className="mx-auto text-slate-300" size={32} />
-              <p className="mt-3 font-semibold text-slate-700">
-                No automation rules found
-              </p>
-              <p className="mt-1 text-sm text-slate-400">
-                Try changing your search or filters.
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+        )}
+      </Card>
+    </Page>
   );
 }

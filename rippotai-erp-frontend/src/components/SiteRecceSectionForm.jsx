@@ -1,35 +1,24 @@
 import React, { useMemo, useState } from "react";
-import {
-  Image as ImageIcon,
-  Pencil,
-  Plus,
-  Ruler,
-  Save,
-  Trash2,
-  Upload,
-  X,
-} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Image as ImageIcon, Pencil, Ruler, Upload, X, ShieldCheck } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button, Field, TextInput, TextArea, FormActions } from "@/components/inos";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-import { Shell } from "../hooks/shared";
+  DocFormLayout,
+  DocSection,
+  ProjectPicker,
+  Choices,
+  OptionSelect,
+  RowCard,
+  IconButton,
+  AddRowButton,
+  EmptyRows,
+  KV,
+  SubHead,
+  isFilled,
+  slugId,
+  useAutosaveNote,
+} from "@/components/forms/crm-form-ui";
 
 // ============================================================
 // EMPTY VALUES
@@ -92,55 +81,8 @@ const isEmpty = (value) => {
   return false;
 };
 
-// ============================================================
-// INFO
-// ============================================================
-
-function Info({ label, value }) {
-  if (value === null || value === undefined || String(value).trim() === "") {
-    return null;
-  }
-
-  return (
-    <div>
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-        {label}
-      </div>
-
-      <div className="text-sm text-foreground mt-1 whitespace-pre-wrap">
-        {value}
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// MEASUREMENT
-// ============================================================
-
-function Measurement({ label, value, unit }) {
-  const hasValue =
-    value !== null && value !== undefined && String(value).trim() !== "";
-
-  return (
-    <div className="rounded-lg bg-muted/50 p-3">
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-        {label}
-      </div>
-
-      <div className="text-sm font-medium text-foreground mt-1">
-        {hasValue ? (
-          <>
-            {value}
-            {unit ? ` ${unit}` : ""}
-          </>
-        ) : (
-          <span className="text-muted-foreground">Not recorded</span>
-        )}
-      </div>
-    </div>
-  );
-}
+const withUnit = (value, unit) =>
+  isEmpty(value) ? "" : `${value}${unit ? ` ${String(unit).toLowerCase()}` : ""}`;
 
 // ============================================================
 // PREVIEW
@@ -150,22 +92,45 @@ function Preview({ label, url }) {
   if (!url) return null;
 
   return (
-    <div className="border rounded-xl overflow-hidden bg-muted/30">
-      <div className="px-3 py-2 border-b text-xs font-medium text-muted-foreground">
-        {label}
-      </div>
-
-      <div className="aspect-video bg-muted">
+    <div className="crmf-thumb">
+      <div className="crmf-thumb__img">
         <img
           src={url}
           alt={label}
-          className="w-full h-full object-cover"
           onError={(event) => {
             event.currentTarget.style.display = "none";
           }}
         />
       </div>
+      <div className="crmf-thumb__foot inos-hint">{label}</div>
     </div>
+  );
+}
+
+// ============================================================
+// UPLOAD BUTTON (file input styled as a secondary button)
+// ============================================================
+
+function UploadButton({ label, busy, disabled, accept, onFile }) {
+  return (
+    <label
+      className="inos-btn inos-btn--secondary"
+      style={{ width: "fit-content", opacity: disabled ? 0.5 : 1, cursor: disabled ? "not-allowed" : "pointer" }}
+    >
+      <Upload aria-hidden />
+      <span>{busy ? "Uploading…" : label}</span>
+      <input
+        type="file"
+        accept={accept}
+        hidden
+        disabled={disabled}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onFile(file);
+          e.target.value = "";
+        }}
+      />
+    </label>
   );
 }
 
@@ -182,42 +147,27 @@ function RoomEditor({ room, onChange, onCancel, onSave }) {
   };
 
   return (
-    <div className="border rounded-xl bg-muted/20 p-5">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <div className="font-semibold text-foreground">
-            {room?.id ? "Edit Room" : "Add Room"}
-          </div>
-
-          <div className="text-xs text-muted-foreground mt-1">
-            Enter the room information and site measurements.
-          </div>
-        </div>
-
-        <Button variant="ghost" size="icon" onClick={onCancel} title="Close">
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-4">
-        {/* ROOM NAME */}
-        <div className="space-y-2">
-          <Label>
-            Room Name <span className="text-destructive">*</span>
-          </Label>
-
-          <Input
+    <RowCard
+      title={room?.id ? "Edit room" : "New room"}
+      meta="Name the room and record its measurements"
+      actions={
+        <IconButton label="Close" onClick={onCancel}>
+          <X />
+        </IconButton>
+      }
+    >
+      <div className="inos-form-grid">
+        <Field label="Room name" required>
+          <TextInput
             value={room.room_name || ""}
-            placeholder="e.g. Master Bedroom"
+            placeholder="e.g. Master bedroom"
+            autoFocus
             onChange={(e) => update("room_name", e.target.value)}
           />
-        </div>
+        </Field>
 
-        {/* ROOM NUMBER */}
-        <div className="space-y-2">
-          <Label>Room Number</Label>
-
-          <Input
+        <Field label="Room number" optional>
+          <TextInput
             type="number"
             min="0"
             step="1"
@@ -225,137 +175,84 @@ function RoomEditor({ room, onChange, onCancel, onSave }) {
             placeholder="e.g. 1"
             onChange={(e) => update("room_number", e.target.value)}
           />
-        </div>
+        </Field>
 
-        {/* ROOM TYPE */}
-        <div className="space-y-2">
-          <Label>Room Type</Label>
-
-          <Select
+        <Field label="Room type" full>
+          <Choices
+            name="Room type"
             value={room.room_type || "OTHER"}
-            onValueChange={(value) => update("room_type", value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select type" />
-            </SelectTrigger>
+            options={ROOM_TYPE_OPTIONS}
+            onChange={(value) => update("room_type", value)}
+          />
+        </Field>
 
-            <SelectContent>
-              {ROOM_TYPE_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* UNIT */}
-        <div className="space-y-2">
-          <Label>Measurement Unit</Label>
-
-          <Select
+        <Field label="Measurement unit" full>
+          <Choices
+            name="Measurement unit"
             value={room.measurement_unit || "FT"}
-            onValueChange={(value) => update("measurement_unit", value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select unit" />
-            </SelectTrigger>
-
-            <SelectContent>
-              {MEASUREMENT_UNIT_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* LENGTH */}
-        <div className="space-y-2">
-          <Label>Length</Label>
-
-          <Input
-            type="number"
-            step="0.01"
-            min="0"
-            value={room.length ?? ""}
-            onChange={(e) => update("length", e.target.value)}
+            options={MEASUREMENT_UNIT_OPTIONS}
+            columns={4}
+            onChange={(value) => update("measurement_unit", value)}
           />
-        </div>
+        </Field>
+      </div>
 
-        {/* WIDTH */}
-        <div className="space-y-2">
-          <Label>Width</Label>
+      <div className="inos-form-grid inos-form-grid--3">
+        {[
+          ["length", "Length", "e.g. 14"],
+          ["width", "Width", "e.g. 12"],
+          ["height", "Height", "e.g. 10"],
+        ].map(([key, label, ph]) => (
+          <Field key={key} label={label} hint={`In ${(MEASUREMENT_UNIT_OPTIONS.find((o) => o.value === (room.measurement_unit || "FT"))?.label || "feet").toLowerCase()}`}>
+            <TextInput
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min="0"
+              value={room[key] ?? ""}
+              placeholder={ph}
+              onChange={(e) => update(key, e.target.value)}
+            />
+          </Field>
+        ))}
+      </div>
 
-          <Input
-            type="number"
-            step="0.01"
-            min="0"
-            value={room.width ?? ""}
-            onChange={(e) => update("width", e.target.value)}
-          />
-        </div>
-
-        {/* HEIGHT */}
-        <div className="space-y-2">
-          <Label>Height</Label>
-
-          <Input
-            type="number"
-            step="0.01"
-            min="0"
-            value={room.height ?? ""}
-            onChange={(e) => update("height", e.target.value)}
-          />
-        </div>
-
-        {/* FLOORING */}
-        <div className="space-y-2">
-          <Label>Existing Flooring</Label>
-
-          <Input
+      <div className="inos-form-grid">
+        <Field label="Existing flooring">
+          <TextInput
             value={room.existing_flooring || ""}
             placeholder="e.g. Italian marble"
             onChange={(e) => update("existing_flooring", e.target.value)}
           />
-        </div>
+        </Field>
 
-        {/* CEILING */}
-        <div className="space-y-2">
-          <Label>Existing Ceiling</Label>
-
-          <Input
+        <Field label="Existing ceiling">
+          <TextInput
             value={room.existing_ceiling || ""}
             placeholder="e.g. POP false ceiling"
             onChange={(e) => update("existing_ceiling", e.target.value)}
           />
-        </div>
+        </Field>
 
-        {/* NOTES */}
-        <div className="md:col-span-2 space-y-2">
-          <Label>Notes</Label>
-
-          <Textarea
-            rows={4}
+        <Field label="Notes" full>
+          <TextArea
+            rows={3}
             value={room.notes || ""}
-            placeholder="Any site observations for this room..."
+            placeholder="Site observations for this room, e.g. seepage near window"
             onChange={(e) => update("notes", e.target.value)}
           />
-        </div>
+        </Field>
       </div>
 
-      <div className="flex justify-end gap-2 mt-5 pt-4 border-t">
-        <Button variant="outline" onClick={onCancel}>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        <Button variant="ghost" onClick={onCancel}>
           Cancel
         </Button>
-
-        <Button onClick={onSave} disabled={!room?.room_name?.trim()}>
-          <Save className="mr-2 h-4 w-4" />
-          Save Room
+        <Button variant="primary" onClick={onSave} disabled={!room?.room_name?.trim()}>
+          {room?.id ? "Update room" : "Add room"}
         </Button>
       </div>
-    </div>
+    </RowCard>
   );
 }
 
@@ -426,230 +323,124 @@ function PhotoEditor({
     }
   };
 
+  const roomOptions = rooms.map((room) => ({
+    value: String(room.id),
+    label: `${room.room_name}${room.room_number ? ` · ${room.room_number}` : ""}`,
+  }));
+
   return (
-    <div className="border rounded-xl bg-muted/20 p-5">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <div className="font-semibold text-foreground">
-            {photo?.id ? "Edit Photo / Layout Shot" : "Add Photo / Layout Shot"}
-          </div>
-
-          <div className="text-xs text-muted-foreground mt-1">
-            Associate the shot with a room and record the camera position.
-          </div>
-        </div>
-
-        <Button variant="ghost" size="icon" onClick={onCancel} title="Close">
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-4">
-        {/* ROOM */}
-        <div className="space-y-2">
-          <Label>
-            Room <span className="text-destructive">*</span>
-          </Label>
-
-          <Select
+    <RowCard
+      title={photo?.id ? "Edit photo / layout shot" : "New photo / layout shot"}
+      meta="Link the shot to a room and note where it was taken from"
+      actions={
+        <IconButton label="Close" onClick={onCancel}>
+          <X />
+        </IconButton>
+      }
+    >
+      <div className="inos-form-grid">
+        <Field label="Room" required>
+          <OptionSelect
             value={photo.room_id || ""}
-            onValueChange={(value) => update("room_id", value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Room" />
-            </SelectTrigger>
+            options={roomOptions}
+            placeholder="Select a room"
+            onChange={(value) => update("room_id", value)}
+          />
+        </Field>
 
-            <SelectContent>
-              {rooms.map((room, index) => (
-                <SelectItem key={room.id || index} value={String(room.id)}>
-                  {room.room_name}
-                  {room.room_number ? ` • ${room.room_number}` : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* SHOT NUMBER */}
-        <div className="space-y-2">
-          <Label>
-            Shot Number <span className="text-destructive">*</span>
-          </Label>
-
-          <Input
+        <Field label="Shot number" required hint="Numbering follows the order shots were taken.">
+          <TextInput
             type="number"
             min="1"
             value={photo.shot_number ?? ""}
             onChange={(e) => update("shot_number", e.target.value)}
           />
-        </div>
+        </Field>
 
-        {/* ACTUAL PHOTO */}
-        <div className="space-y-2">
-          <Label>Actual Photo</Label>
-
-          {photo.photo_url && (
-            <div className="mb-2">
-              <Preview label="Current Photo" url={photo.photo_url} />
-            </div>
-          )}
-
-          <Button
-            variant="outline"
-            asChild
+        <Field label="Actual photo" hint={!onFileUpload ? "File upload is not configured." : "JPG or PNG from the site visit."}>
+          {photo.photo_url && <Preview label={photo.photo_file_name || "Current photo"} url={photo.photo_url} />}
+          <UploadButton
+            label={photo.photo_url ? "Replace photo" : "Upload photo"}
+            busy={uploadingPhoto}
             disabled={uploadingPhoto || !onFileUpload}
-          >
-            <label className="cursor-pointer">
-              <Upload className="mr-2 h-4 w-4" />
+            accept="image/*"
+            onFile={(file) => uploadFile(file, "photo")}
+          />
+        </Field>
 
-              {uploadingPhoto ? "Uploading..." : "Upload Photo"}
-
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                disabled={uploadingPhoto || !onFileUpload}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-
-                  if (file) {
-                    uploadFile(file, "photo");
-                  }
-
-                  e.target.value = "";
-                }}
-              />
-            </label>
-          </Button>
-
-          {!onFileUpload && (
-            <p className="text-[11px] text-muted-foreground">
-              File upload callback is not configured.
-            </p>
-          )}
-        </div>
-
-        {/* LAYOUT */}
-        <div className="space-y-2">
-          <Label>Layout Image</Label>
-
-          {photo.layout_image_url && (
-            <div className="mb-2">
-              <Preview label="Current Layout" url={photo.layout_image_url} />
-            </div>
-          )}
-
-          <Button
-            variant="outline"
-            asChild
+        <Field label="Layout image" hint="Marked-up plan showing the camera position. Image or PDF.">
+          {photo.layout_image_url && <Preview label={photo.layout_file_name || "Current layout"} url={photo.layout_image_url} />}
+          <UploadButton
+            label={photo.layout_image_url ? "Replace layout" : "Upload layout"}
+            busy={uploadingLayout}
             disabled={uploadingLayout || !onFileUpload}
-          >
-            <label className="cursor-pointer">
-              <Upload className="mr-2 h-4 w-4" />
-
-              {uploadingLayout ? "Uploading..." : "Upload Layout"}
-
-              <input
-                type="file"
-                accept="image/*,.pdf"
-                className="hidden"
-                disabled={uploadingLayout || !onFileUpload}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-
-                  if (file) {
-                    uploadFile(file, "layout");
-                  }
-
-                  e.target.value = "";
-                }}
-              />
-            </label>
-          </Button>
-        </div>
-
-        {/* PHOTO URL */}
-        <div className="space-y-2">
-          <Label>Photo URL</Label>
-
-          <Input
-            value={photo.photo_url || ""}
-            placeholder="https://..."
-            onChange={(e) => update("photo_url", e.target.value)}
+            accept="image/*,.pdf"
+            onFile={(file) => uploadFile(file, "layout")}
           />
-        </div>
+        </Field>
 
-        {/* LAYOUT URL */}
-        <div className="space-y-2">
-          <Label>Layout URL</Label>
-
-          <Input
-            value={photo.layout_image_url || ""}
-            placeholder="https://..."
-            onChange={(e) => update("layout_image_url", e.target.value)}
-          />
-        </div>
-
-        {/* STANDING POSITION */}
-        <div className="space-y-2">
-          <Label>Standing Position</Label>
-
-          <Input
+        <Field label="Standing position">
+          <TextInput
             value={photo.standing_position || ""}
             placeholder="e.g. Entrance door"
             onChange={(e) => update("standing_position", e.target.value)}
           />
-        </div>
+        </Field>
 
-        {/* CAMERA DIRECTION */}
-        <div className="space-y-2">
-          <Label>Camera Direction</Label>
-
-          <Input
+        <Field label="Camera direction">
+          <TextInput
             value={photo.camera_direction || ""}
-            placeholder="e.g. North / towards TV wall"
+            placeholder="e.g. North, towards TV wall"
             onChange={(e) => update("camera_direction", e.target.value)}
           />
-        </div>
+        </Field>
 
-        {/* FILE NAMES */}
-        <div className="space-y-2">
-          <Label>Photo File Name</Label>
+        <Field label="Photo URL" optional hint="Filled automatically after upload.">
+          <TextInput
+            value={photo.photo_url || ""}
+            placeholder="https://…"
+            onChange={(e) => update("photo_url", e.target.value)}
+          />
+        </Field>
 
-          <Input
+        <Field label="Layout URL" optional hint="Filled automatically after upload.">
+          <TextInput
+            value={photo.layout_image_url || ""}
+            placeholder="https://…"
+            onChange={(e) => update("layout_image_url", e.target.value)}
+          />
+        </Field>
+
+        <Field label="Photo file name" optional>
+          <TextInput
             value={photo.photo_file_name || ""}
             onChange={(e) => update("photo_file_name", e.target.value)}
           />
-        </div>
+        </Field>
 
-        <div className="space-y-2">
-          <Label>Layout File Name</Label>
-
-          <Input
+        <Field label="Layout file name" optional>
+          <TextInput
             value={photo.layout_file_name || ""}
             onChange={(e) => update("layout_file_name", e.target.value)}
           />
-        </div>
+        </Field>
 
-        {/* NOTES */}
-        <div className="md:col-span-2 space-y-2">
-          <Label>Notes</Label>
-
-          <Textarea
-            rows={4}
+        <Field label="Notes" full>
+          <TextArea
+            rows={3}
             value={photo.notes || ""}
-            placeholder="Add observations about this shot..."
+            placeholder="What this shot shows, e.g. existing wiring on east wall"
             onChange={(e) => update("notes", e.target.value)}
           />
-        </div>
+        </Field>
       </div>
 
-      <div className="flex justify-end gap-2 mt-5 pt-4 border-t">
-        <Button variant="outline" onClick={onCancel}>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        <Button variant="ghost" onClick={onCancel}>
           Cancel
         </Button>
-
         <Button
+          variant="primary"
           onClick={onSave}
           disabled={
             !photo?.room_id ||
@@ -658,11 +449,10 @@ function PhotoEditor({
             uploadingLayout
           }
         >
-          <Save className="mr-2 h-4 w-4" />
-          Save Shot
+          {photo?.id ? "Update shot" : "Add shot"}
         </Button>
       </div>
-    </div>
+    </RowCard>
   );
 }
 
@@ -684,7 +474,14 @@ export function SiteRecceSectionForm({
   renderSection,
   children,
   onFileUpload,
+  crumbs,
+  submitLabel,
+  onSaveDraft,
+  onCancel,
 }) {
+  const navigate = useNavigate();
+  const autosaveNote = useAutosaveNote(values);
+
   const [editingRoom, setEditingRoom] = useState(null);
   const [editingPhoto, setEditingPhoto] = useState(null);
 
@@ -915,131 +712,62 @@ export function SiteRecceSectionForm({
     };
 
     return (
-      <div className="space-y-4">
-        {/* EMPTY STATE */}
+      <>
         {restrictions.length === 0 ? (
-          <div className="border border-dashed rounded-xl p-8 text-center">
-            <div className="mx-auto h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
-              <Plus className="h-5 w-5 text-muted-foreground" />
-            </div>
-
-            <div className="font-medium text-foreground">
-              No site restrictions added
-            </div>
-
-            <div className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
-              Add society, RWA, access, working-hour, material movement, utility
-              or other site restrictions found during the recce.
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-4"
-              onClick={handleAddRestriction}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add First Restriction
-            </Button>
-          </div>
+          <EmptyRows
+            icon={ShieldCheck}
+            title="No site restrictions yet"
+            text="Add society, RWA, access, working-hour, material movement or utility rules found during the recce."
+          />
         ) : (
-          <>
-            {/* DESKTOP TABLE */}
-            <div className="border rounded-xl overflow-hidden">
-              <div className="hidden md:grid md:grid-cols-[1fr_1.5fr_auto] gap-4 px-4 py-3 bg-muted/50 border-b">
-                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Restriction Type
-                </div>
-
-                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Details / Notes
-                </div>
-
-                <div className="w-10" />
-              </div>
-
-              <div className="divide-y">
-                {restrictions.map((restriction, index) => (
-                  <div
-                    key={restriction.id || `restriction-${index}`}
-                    className="grid md:grid-cols-[1fr_1.5fr_auto] gap-4 p-4"
-                  >
-                    {/* TYPE */}
-                    <div className="space-y-2">
-                      <Label className="md:hidden">Restriction Type</Label>
-
-                      <Select
-                        value={restriction?.type || ""}
-                        onValueChange={(value) =>
-                          handleUpdateRestriction(index, "type", value)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select restriction" />
-                        </SelectTrigger>
-
-                        <SelectContent>
-                          {(field.restrictionOptions || []).map((option) => (
-                            <SelectItem
-                              key={option.value}
-                              value={String(option.value)}
-                            >
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* DETAILS */}
-                    <div className="space-y-2">
-                      <Label className="md:hidden">Details / Notes</Label>
-
-                      <Input
-                        value={restriction?.details || ""}
-                        placeholder="Enter details / notes"
-                        onChange={(event) =>
-                          handleUpdateRestriction(
-                            index,
-                            "details",
-                            event.target.value,
-                          )
-                        }
-                      />
-                    </div>
-
-                    {/* DELETE */}
-                    <div className="flex items-end justify-end">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleDeleteRestriction(index)}
-                        title="Delete restriction"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* ADD BUTTON */}
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleAddRestriction}
+          <div className="crmf-rows">
+            {restrictions.map((restriction, index) => (
+              <RowCard
+                key={restriction.id || `restriction-${index}`}
+                index={index + 1}
+                title={
+                  (field.restrictionOptions || []).find(
+                    (o) => String(o.value) === String(restriction?.type),
+                  )?.label || "New restriction"
+                }
+                onRemove={() => handleDeleteRestriction(index)}
+                removeLabel="Delete restriction"
               >
-                <Plus className="mr-2 h-4 w-4" />
-                {field.addLabel || "Add Restriction"}
-              </Button>
-            </div>
-          </>
+                <div className="inos-form-grid">
+                  <Field label="Restriction type" required>
+                    <OptionSelect
+                      value={restriction?.type || ""}
+                      options={field.restrictionOptions || []}
+                      placeholder="Select restriction"
+                      onChange={(value) =>
+                        handleUpdateRestriction(index, "type", String(value))
+                      }
+                    />
+                  </Field>
+
+                  <Field label="Details / notes">
+                    <TextInput
+                      value={restriction?.details || ""}
+                      placeholder="e.g. Work allowed 10am–6pm, no Sundays"
+                      onChange={(event) =>
+                        handleUpdateRestriction(
+                          index,
+                          "details",
+                          event.target.value,
+                        )
+                      }
+                    />
+                  </Field>
+                </div>
+              </RowCard>
+            ))}
+          </div>
         )}
-      </div>
+
+        <AddRowButton onClick={handleAddRestriction}>
+          {restrictions.length ? field.addLabel || "Add restriction" : "Add first restriction"}
+        </AddRowButton>
+      </>
     );
   };
 
@@ -1049,163 +777,77 @@ export function SiteRecceSectionForm({
 
   const renderRooms = () => {
     return (
-      <div>
-        {editingRoom ? (
+      <>
+        {rooms.length === 0 && !editingRoom ? (
+          <EmptyRows
+            icon={Ruler}
+            title="No rooms yet"
+            text="Add each room found during the recce with its dimensions."
+          />
+        ) : (
+          <div className="crmf-rows">
+            {rooms.map((room, index) =>
+              editingRoom && editingRoom.id && String(editingRoom.id) === String(room.id) ? (
+                <RoomEditor
+                  key={room.id || index}
+                  room={editingRoom}
+                  onChange={setEditingRoom}
+                  onCancel={() => setEditingRoom(null)}
+                  onSave={handleSaveRoom}
+                />
+              ) : (
+                <RowCard
+                  key={room.id || index}
+                  index={index + 1}
+                  title={room.room_name}
+                  meta={`${getRoomTypeLabel(room.room_type)}${room.room_number ? ` · Room ${room.room_number}` : ""}`}
+                  onRemove={() => handleDeleteRoom(room.id)}
+                  removeLabel="Delete room"
+                  actions={
+                    <IconButton label="Edit room" onClick={() => handleEditRoom(room)}>
+                      <Pencil />
+                    </IconButton>
+                  }
+                >
+                  <KV
+                    items={[
+                      ["Length", withUnit(room.length, room.measurement_unit)],
+                      ["Width", withUnit(room.width, room.measurement_unit)],
+                      ["Height", withUnit(room.height, room.measurement_unit)],
+                      [
+                        "Photos",
+                        String(
+                          photos.filter(
+                            (photo) => String(photo.room_id) === String(room.id),
+                          ).length,
+                        ),
+                      ],
+                      room.existing_flooring && ["Existing flooring", room.existing_flooring],
+                      room.existing_ceiling && ["Existing ceiling", room.existing_ceiling],
+                      room.notes && ["Notes", room.notes],
+                    ]}
+                  />
+                </RowCard>
+              ),
+            )}
+          </div>
+        )}
+
+        {editingRoom && !editingRoom.id && (
           <RoomEditor
             room={editingRoom}
             onChange={setEditingRoom}
             onCancel={() => setEditingRoom(null)}
             onSave={handleSaveRoom}
           />
-        ) : (
-          <>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <div className="font-semibold text-foreground">Rooms</div>
-
-                <div className="text-xs text-muted-foreground mt-1">
-                  {rooms.length} room
-                  {rooms.length !== 1 ? "s" : ""} added
-                </div>
-              </div>
-
-              <Button onClick={handleAddRoom}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Room
-              </Button>
-            </div>
-
-            {rooms.length === 0 ? (
-              <div className="border border-dashed rounded-xl p-8 text-center">
-                <Ruler className="mx-auto h-7 w-7 text-muted-foreground mb-3" />
-
-                <div className="font-medium text-foreground">
-                  No rooms added
-                </div>
-
-                <div className="text-xs text-muted-foreground mt-1">
-                  Add the rooms found during the site recce.
-                </div>
-
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={handleAddRoom}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add First Room
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {rooms.map((room, index) => (
-                  <div
-                    key={room.id || index}
-                    className="border rounded-xl p-4 bg-background"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-3">
-                        <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-primary">
-                          <Ruler className="h-4 w-4" />
-                        </div>
-
-                        <div>
-                          <div className="font-semibold text-foreground">
-                            {room.room_name}
-                          </div>
-
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {getRoomTypeLabel(room.room_type)}
-
-                            {room.room_number
-                              ? ` • Room ${room.room_number}`
-                              : ""}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditRoom(room)}
-                          title="Edit room"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteRoom(room.id)}
-                          title="Delete room"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-                      <Measurement
-                        label="Length"
-                        value={room.length}
-                        unit={room.measurement_unit}
-                      />
-
-                      <Measurement
-                        label="Width"
-                        value={room.width}
-                        unit={room.measurement_unit}
-                      />
-
-                      <Measurement
-                        label="Height"
-                        value={room.height}
-                        unit={room.measurement_unit}
-                      />
-
-                      <Measurement
-                        label="Photos"
-                        value={
-                          photos.filter(
-                            (photo) =>
-                              String(photo.room_id) === String(room.id),
-                          ).length
-                        }
-                      />
-                    </div>
-
-                    {(room.existing_flooring ||
-                      room.existing_ceiling ||
-                      room.notes) && (
-                      <div className="mt-4 pt-4 border-t grid md:grid-cols-3 gap-4">
-                        {room.existing_flooring && (
-                          <Info
-                            label="Existing Flooring"
-                            value={room.existing_flooring}
-                          />
-                        )}
-
-                        {room.existing_ceiling && (
-                          <Info
-                            label="Existing Ceiling"
-                            value={room.existing_ceiling}
-                          />
-                        )}
-
-                        {room.notes && (
-                          <Info label="Notes" value={room.notes} />
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
         )}
-      </div>
+
+        {!editingRoom && (
+          <AddRowButton onClick={handleAddRoom}>
+            {rooms.length ? "Add room" : "Add first room"}
+          </AddRowButton>
+        )}
+      </>
     );
   };
 
@@ -1215,8 +857,76 @@ export function SiteRecceSectionForm({
 
   const renderPhotos = () => {
     return (
-      <div>
-        {editingPhoto ? (
+      <>
+        {rooms.length === 0 ? (
+          <EmptyRows
+            icon={ImageIcon}
+            title="Add rooms first"
+            text="Every photo or layout shot is linked to a room from the section above."
+          />
+        ) : photos.length === 0 && !editingPhoto ? (
+          <EmptyRows
+            icon={ImageIcon}
+            title="No photos or layouts yet"
+            text="Add the photographs and layout references from the site visit."
+          />
+        ) : (
+          <div className="crmf-rows">
+            {photos.map((photo, index) => {
+              const room = rooms.find(
+                (item) => String(item.id) === String(photo.room_id),
+              );
+
+              if (editingPhoto && editingPhoto.id && String(editingPhoto.id) === String(photo.id)) {
+                return (
+                  <PhotoEditor
+                    key={photo.id || index}
+                    photo={editingPhoto}
+                    rooms={rooms}
+                    onChange={setEditingPhoto}
+                    onCancel={() => setEditingPhoto(null)}
+                    onSave={handleSavePhoto}
+                    onFileUpload={onFileUpload}
+                  />
+                );
+              }
+
+              return (
+                <RowCard
+                  key={photo.id || index}
+                  index={photo.shot_number}
+                  title={`Shot ${photo.shot_number}`}
+                  meta={room?.room_name || "Unknown room"}
+                  onRemove={() => handleDeletePhoto(photo.id)}
+                  removeLabel="Delete shot"
+                  actions={
+                    <IconButton label="Edit shot" onClick={() => handleEditPhoto(photo)}>
+                      <Pencil />
+                    </IconButton>
+                  }
+                >
+                  {(photo.photo_url || photo.layout_image_url) && (
+                    <div className="crmf-thumbs">
+                      {photo.photo_url && <Preview label="Actual photo" url={photo.photo_url} />}
+                      {photo.layout_image_url && <Preview label="Layout" url={photo.layout_image_url} />}
+                    </div>
+                  )}
+                  <KV
+                    items={[
+                      ["Standing position", photo.standing_position],
+                      ["Camera direction", photo.camera_direction],
+                      photo.photo_file_name && ["Photo file", photo.photo_file_name],
+                      photo.layout_file_name && ["Layout file", photo.layout_file_name],
+                      photo.notes && ["Notes", photo.notes],
+                    ]}
+                  />
+                </RowCard>
+              );
+            })}
+          </div>
+        )}
+
+        {editingPhoto && !editingPhoto.id && (
           <PhotoEditor
             photo={editingPhoto}
             rooms={rooms}
@@ -1225,166 +935,14 @@ export function SiteRecceSectionForm({
             onSave={handleSavePhoto}
             onFileUpload={onFileUpload}
           />
-        ) : (
-          <>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <div className="font-semibold text-foreground">
-                  Photos & Layout References
-                </div>
-
-                <div className="text-xs text-muted-foreground mt-1">
-                  {photos.length} shot
-                  {photos.length !== 1 ? "s" : ""} added
-                </div>
-              </div>
-
-              <Button onClick={handleAddPhoto} disabled={rooms.length === 0}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Shot
-              </Button>
-            </div>
-
-            {rooms.length === 0 ? (
-              <div className="border border-dashed rounded-xl p-8 text-center">
-                <ImageIcon className="mx-auto h-7 w-7 text-muted-foreground mb-3" />
-
-                <div className="font-medium text-foreground">
-                  Add rooms first
-                </div>
-
-                <div className="text-xs text-muted-foreground mt-1">
-                  Every photo/layout shot must be associated with a room.
-                </div>
-              </div>
-            ) : photos.length === 0 ? (
-              <div className="border border-dashed rounded-xl p-8 text-center">
-                <ImageIcon className="mx-auto h-7 w-7 text-muted-foreground mb-3" />
-
-                <div className="font-medium text-foreground">
-                  No photos or layouts added
-                </div>
-
-                <div className="text-xs text-muted-foreground mt-1">
-                  Add the photographs and layout references from the site visit.
-                </div>
-
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={handleAddPhoto}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add First Shot
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {photos.map((photo, index) => {
-                  const room = rooms.find(
-                    (item) => String(item.id) === String(photo.room_id),
-                  );
-
-                  return (
-                    <div
-                      key={photo.id || index}
-                      className="border rounded-xl p-4 bg-background"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-3">
-                          <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-primary">
-                            <ImageIcon className="h-4 w-4" />
-                          </div>
-
-                          <div>
-                            <div className="font-semibold text-foreground">
-                              Shot #{photo.shot_number}
-                            </div>
-
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {room?.room_name || "Unknown Room"}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEditPhoto(photo)}
-                            title="Edit shot"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleDeletePhoto(photo.id)}
-                            title="Delete shot"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="grid md:grid-cols-2 gap-3 mt-4">
-                        {photo.photo_url && (
-                          <Preview label="Actual Photo" url={photo.photo_url} />
-                        )}
-
-                        {photo.layout_image_url && (
-                          <Preview
-                            label="Layout"
-                            url={photo.layout_image_url}
-                          />
-                        )}
-                      </div>
-
-                      <div className="grid md:grid-cols-2 gap-4 mt-4">
-                        {photo.standing_position && (
-                          <Info
-                            label="Standing Position"
-                            value={photo.standing_position}
-                          />
-                        )}
-
-                        {photo.camera_direction && (
-                          <Info
-                            label="Camera Direction"
-                            value={photo.camera_direction}
-                          />
-                        )}
-
-                        {photo.photo_file_name && (
-                          <Info
-                            label="Photo File"
-                            value={photo.photo_file_name}
-                          />
-                        )}
-
-                        {photo.layout_file_name && (
-                          <Info
-                            label="Layout File"
-                            value={photo.layout_file_name}
-                          />
-                        )}
-                      </div>
-
-                      {photo.notes && (
-                        <div className="mt-4 pt-4 border-t">
-                          <Info label="Notes" value={photo.notes} />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
         )}
-      </div>
+
+        {!editingPhoto && rooms.length > 0 && (
+          <AddRowButton onClick={handleAddPhoto}>
+            {photos.length ? "Add shot" : "Add first shot"}
+          </AddRowButton>
+        )}
+      </>
     );
   };
 
@@ -1393,7 +951,7 @@ export function SiteRecceSectionForm({
   // ============================================================
 
   const renderFields = (section) => (
-    <div className="grid md:grid-cols-2 gap-4">
+    <div className="inos-form-grid">
       {(section.fields || []).map((field) => {
         // restriction-table is handled
         // separately by renderSectionBody
@@ -1402,120 +960,61 @@ export function SiteRecceSectionForm({
         }
 
         const fieldValue = values?.[field.key] ?? "";
+        const set = (value) => handleFieldChange(section.title, field.key, value);
+        const options = field.options || [];
+        const emptyOptions = field.type === "select" && options.length === 0;
 
         return (
-          <div
+          <Field
             key={field.key}
-            className={
-              field.type === "textarea"
-                ? "md:col-span-2 space-y-2"
-                : "space-y-2"
+            label={field.label}
+            required={field.required}
+            full={field.type === "textarea"}
+            hint={
+              emptyOptions && field.key === "site_engineer_id"
+                ? "No site engineers found. Add users with the Site Engineer role in Admin Console."
+                : field.hint
             }
           >
-            <Label>
-              {field.label}
-
-              {field.required && (
-                <span className="text-destructive ml-1">*</span>
-              )}
-            </Label>
-
-            {/* TEXTAREA */}
             {field.type === "textarea" ? (
-              <Textarea
-                rows={field.rows || 4}
+              <TextArea
+                rows={Math.min(field.rows || 3, 4)}
                 value={fieldValue}
                 placeholder={field.placeholder || ""}
-                onChange={(e) =>
-                  handleFieldChange(section.title, field.key, e.target.value)
-                }
+                onChange={(e) => set(e.target.value)}
               />
-            ) : /* DATE */
-            field.type === "date" ? (
-              <Input
-                type="date"
-                value={fieldValue}
-                onChange={(e) =>
-                  handleFieldChange(section.title, field.key, e.target.value)
-                }
-              />
-            ) : /* TIME */
-            field.type === "time" ? (
-              <Input
-                type="time"
-                value={fieldValue}
-                onChange={(e) =>
-                  handleFieldChange(section.title, field.key, e.target.value)
-                }
-              />
-            ) : /* SELECT */
-            field.type === "select" ? (
-              <Select
-                value={
-                  fieldValue === null || fieldValue === undefined
-                    ? ""
-                    : String(fieldValue)
-                }
-                onValueChange={(value) => {
-                  const selectedOption = (field.options || []).find(
-                    (option) => {
-                      if (typeof option === "object" && option !== null) {
-                        return String(option.value) === value;
-                      }
-
-                      return String(option) === value;
-                    },
-                  );
-
-                  const finalValue =
-                    typeof selectedOption === "object" &&
-                    selectedOption !== null
-                      ? selectedOption.value
-                      : value;
-
-                  handleFieldChange(section.title, field.key, finalValue);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-
-                <SelectContent>
-                  {(field.options || []).map((option, index) => {
-                    if (typeof option === "object" && option !== null) {
-                      return (
-                        <SelectItem
-                          key={`${option.value}-${index}`}
-                          value={String(option.value)}
-                        >
-                          {option.label}
-                        </SelectItem>
-                      );
-                    }
-
-                    return (
-                      <SelectItem
-                        key={`${option}-${index}`}
-                        value={String(option)}
-                      >
-                        {option}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+            ) : field.type === "date" ? (
+              <TextInput type="date" value={fieldValue} onChange={(e) => set(e.target.value)} />
+            ) : field.type === "time" ? (
+              <TextInput type="time" value={fieldValue} onChange={(e) => set(e.target.value)} />
+            ) : field.type === "select" ? (
+              options.length > 0 && options.length <= 4 ? (
+                <Choices
+                  name={field.label}
+                  value={fieldValue}
+                  options={options}
+                  columns={options.length}
+                  onChange={set}
+                />
+              ) : (
+                <OptionSelect
+                  value={fieldValue}
+                  options={options}
+                  placeholder={emptyOptions ? "None available" : "Select…"}
+                  disabled={emptyOptions}
+                  onChange={set}
+                />
+              )
             ) : (
-              /* DEFAULT INPUT */
-              <Input
+              <TextInput
                 type={field.type || "text"}
+                inputMode={field.type === "number" ? "decimal" : undefined}
                 value={fieldValue}
                 placeholder={field.placeholder || ""}
-                onChange={(e) =>
-                  handleFieldChange(section.title, field.key, e.target.value)
-                }
+                onChange={(e) => set(e.target.value)}
               />
             )}
-          </div>
+          </Field>
         );
       })}
     </div>
@@ -1546,125 +1045,107 @@ export function SiteRecceSectionForm({
   };
 
   // ============================================================
+  // SECTION COUNTS + COMPLETION
+  // ============================================================
+
+  const sectionCount = (section) => {
+    if (section.type === "rooms") return rooms.length;
+    if (section.type === "roomPhotos") return photos.length;
+    const restrictionField = section.fields?.find(
+      (field) => field.type === "restriction-table",
+    );
+    if (restrictionField) {
+      const v = values?.[restrictionField.key];
+      return Array.isArray(v) ? v.length : 0;
+    }
+    return 0;
+  };
+
+  const sectionDone = (section) => {
+    if (section.type === "rooms" || section.type === "roomPhotos") return sectionCount(section) > 0;
+    if (section.fields?.some((field) => field.type === "restriction-table")) return sectionCount(section) > 0;
+    const fields = section.fields || [];
+    const required = fields.filter((f) => f.required);
+    if (required.length) return required.every((f) => isFilled(values?.[f.key]));
+    return fields.some((f) => isFilled(values?.[f.key]));
+  };
+
+  const projectSectionId = "sec-project";
+  const nav = [
+    { id: projectSectionId, label: "Project", done: Boolean(projectId) },
+    ...(sections || []).map((section, i) => ({
+      id: slugId(section.key || section.title, i),
+      label: section.title,
+      done: sectionDone(section),
+      count: sectionCount(section),
+    })),
+  ];
+
+  // ============================================================
   // RENDER
   // ============================================================
 
   return (
-    <Shell title={title} subtitle={subtitle}>
-      {/* ====================================================== */}
-      {/* PROJECT SELECTOR */}
-      {/* ====================================================== */}
+    <DocFormLayout
+      crumbs={crumbs || [{ label: "CRM", to: "/crm" }, { label: "Forms" }, { label: "Site recce" }]}
+      title={title}
+      subtitle={subtitle}
+      nav={nav}
+    >
+      <DocSection
+        id={projectSectionId}
+        step={1}
+        title="Project"
+        description="Which project was this site visit for?"
+        done={Boolean(projectId)}
+      >
+        <ProjectPicker
+          projects={projects || []}
+          value={projectId}
+          onChange={onProjectChange}
+        />
+      </DocSection>
 
-      <Card>
-        <CardContent className="pt-6">
-          <div className="space-y-2 max-w-lg">
-            <Label>Project *</Label>
+      {(sections || []).map((section, index) => (
+        <DocSection
+          key={section.key || section.title}
+          id={nav[index + 1].id}
+          step={index + 2}
+          title={section.title}
+          description={section.description || SECTION_HINTS[section.title]}
+          done={nav[index + 1].done}
+        >
+          {renderSectionBody(section)}
+        </DocSection>
+      ))}
 
-            <Select value={projectId || ""} onValueChange={onProjectChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Project" />
-              </SelectTrigger>
-
-              <SelectContent>
-                {projects?.map((project) => (
-                  <SelectItem key={project.id} value={String(project.id)}>
-                    {project.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ====================================================== */}
-      {/* ALL SECTIONS */}
-      {/* ====================================================== */}
-
-      <div className="space-y-5 mt-5">
-        {sections.map((section, index) => {
-          let count = 0;
-
-          if (section.type === "rooms") {
-            count = rooms.length;
-          }
-
-          if (section.type === "roomPhotos") {
-            count = photos.length;
-          }
-
-          if (
-            section.fields?.some((field) => field.type === "restriction-table")
-          ) {
-            const restrictionField = section.fields.find(
-              (field) => field.type === "restriction-table",
-            );
-
-            const restrictionValue = values?.[restrictionField?.key];
-
-            if (Array.isArray(restrictionValue)) {
-              count = restrictionValue.length;
-            }
-          }
-
-          return (
-            <Card key={section.key || section.title}>
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">
-                      {index + 1}. {section.title}
-                    </CardTitle>
-
-                    {section.description && (
-                      <CardDescription className="mt-1">
-                        {section.description}
-                      </CardDescription>
-                    )}
-                  </div>
-
-                  {count > 0 && (
-                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-muted text-primary">
-                      {count}
-                    </span>
-                  )}
-                </div>
-              </CardHeader>
-
-              <CardContent>{renderSectionBody(section)}</CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* ====================================================== */}
-      {/* BOTTOM SAVE BUTTON */}
-      {/* ====================================================== */}
-
-      <div className="mt-6 flex justify-end">
-        <Button onClick={onSubmit} disabled={isSubmitting} size="lg">
-          <Save className="mr-2 h-4 w-4" />
-
-          {isSubmitting
-            ? "Saving..."
-            : title?.includes("Recce")
-              ? "Save Site Recce"
-              : "Generate Brief"}
-        </Button>
-      </div>
-
-      {/* ====================================================== */}
-      {/* AUTOSAVE STATUS */}
-      {/* ====================================================== */}
-
-      <div className="mt-4 text-xs text-muted-foreground text-center">
-        Draft autosaved locally • {filledCount} item
-        {filledCount !== 1 ? "s" : ""} completed
-      </div>
+      <FormActions
+        note={autosaveNote || `${filledCount} item${filledCount !== 1 ? "s" : ""} completed`}
+        extra={
+          onSaveDraft && (
+            <Button variant="secondary" onClick={onSaveDraft}>
+              Save draft
+            </Button>
+          )
+        }
+        onCancel={onCancel || (() => navigate(-1))}
+        submitLabel={isSubmitting ? "Saving…" : submitLabel || (title?.includes("Recce") || title?.includes("recce") ? "Save site recce" : "Generate brief")}
+        submitDisabled={isSubmitting}
+        onSubmit={onSubmit}
+      />
 
       {children}
-    </Shell>
+    </DocFormLayout>
   );
 }
+
+// One-line guidance for sections that don't define a description.
+const SECTION_HINTS = {
+  "General Information": "When the visit happened and who was there.",
+  "Property Details": "Size, layout and type of the property.",
+  "Site Access & Material Movement": "How people and material get to the site.",
+  "Site Utilities": "Water, power and drainage available on site.",
+  "Existing Site Condition": "What the site looks like today.",
+};
 
 export default SiteRecceSectionForm;

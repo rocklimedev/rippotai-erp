@@ -1,11 +1,12 @@
-export const redirectRoutes = [
-  // Removed / obsolete apps -> landing
-  { type: "redirect", path: "/inventory/*", to: "/dashboard" },
-  { type: "redirect", path: "/chats/*", to: "/dashboard" },
-  { type: "redirect", path: "/clients/*", to: "/dashboard" },
-  { type: "redirect", path: "/activity/*", to: "/dashboard" },
+import LegacyRedirect from "../LegacyRedirect";
 
-  // Estimate = Quotation (UI rename only; API + routes preserved for data safety)
-  { type: "redirect", path: "/estimates", to: "/quotations" },
-  { type: "redirect", path: "/estimates/*", to: "/quotations" },
+export const redirectRoutes = [
+  // /inventory, /chats, /clients, /activity are real pages now (workspace.routes / inventory.routes).
+
+  // Legacy top-level URLs -> their current app routes (path + query preserved).
+  // Estimate = Quotation: both live under /procurement/estimates.
+  ...["/boq", "/vendors", "/quotations", "/estimates", "/materials", "/documents"].flatMap((p) => [
+    { type: "raw", path: p, element: <LegacyRedirect /> },
+    { type: "raw", path: `${p}/*`, element: <LegacyRedirect /> },
+  ]),
 ];

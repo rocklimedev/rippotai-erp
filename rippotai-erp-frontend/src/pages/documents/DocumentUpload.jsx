@@ -1,9 +1,20 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Upload, FileText } from "lucide-react";
+import { Upload, FileText, Lock, Eye, CloudUpload } from "lucide-react";
 
-import { Shell, Card, Input, TextArea } from "../../hooks/shared";
+import {
+  Page,
+  PageHeader,
+  Button,
+  FormSection,
+  Field,
+  TextInput,
+  SelectInput,
+  TextArea,
+  ChoiceGroup,
+} from "@/components/inos";
+import "@/components/projects/projects-ui.css";
 
 import {
   useCreateDocumentMutation,
@@ -332,284 +343,181 @@ export function DocumentUpload() {
      Render
      ------------------------------------------------------------ */
 
+  const filteredTypes = documentTypes.filter((type) => {
+    const search = documentTypeSearch.toLowerCase().trim();
+    if (!search) return true;
+    return (
+      type.name?.toLowerCase().includes(search) ||
+      type.code?.toLowerCase().includes(search) ||
+      type.phaseName?.toLowerCase().includes(search) ||
+      type.sectionName?.toLowerCase().includes(search)
+    );
+  });
+
+  const selectedProject = projects.find((project) => String(project.id) === String(form.projectId));
+
   return (
-    <Shell
-      title="Upload Document"
-      subtitle="Attach a document to a project — PDF · Excel · Image · Other files (max 500 MB)"
-    >
-      <Card>
-        <form onSubmit={submit} className="grid gap-4 max-w-xl">
-          {/* ====================================================
-              Project
-              ==================================================== */}
+    <Page width="form">
+      <PageHeader
+        crumbs={[
+          { label: "Projects", to: "/projects" },
+          { label: "Documents", to: "/projects/documents/all" },
+          { label: "Upload" },
+        ]}
+        title="Upload document"
+        subtitle="Attach a file to a project checklist — PDF, Excel, images or any other file up to 500 MB."
+      />
 
-          <div>
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Project
-            </label>
-
-            <select
+      <form onSubmit={submit} className="inos-form">
+        <FormSection step={1} title="Where it belongs" description="Pick the project and the checklist item this file satisfies.">
+          <Field label="Project" required full>
+            <SelectInput
               required
               disabled={projectsLoading || uploading}
-              className="bc-input h-10 w-full disabled:opacity-60"
               value={form.projectId}
               onChange={(event) => updateField("projectId", event.target.value)}
             >
-              <option value="">
-                {projectsLoading ? "Loading projects…" : "Select project…"}
-              </option>
-
+              <option value="">{projectsLoading ? "Loading projects…" : "Select project"}</option>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
-                  {project.name ||
-                    project.projectName ||
-                    `Project ${project.id}`}
+                  {project.name || project.projectName || `Project ${project.id}`}
                 </option>
               ))}
-            </select>
-          </div>
+            </SelectInput>
+          </Field>
 
-          {/* ====================================================
-    Document Type - Searchable Dropdown
-    ==================================================== */}
-
-          <div className="relative">
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Document Type
-            </label>
-
-            <div className="relative">
-              <Input
+          <Field
+            label="Document type"
+            required
+            full
+            hint={
+              selectedDocumentType
+                ? [selectedDocumentType.phaseName, selectedDocumentType.code].filter(Boolean).join(" · ") || undefined
+                : "Type to search by name, code or phase."
+            }
+          >
+            <div className="pj-combo">
+              <TextInput
                 required
                 disabled={loadingDocumentTypes || uploading}
                 value={selectedDocumentType?.name || documentTypeSearch}
-                placeholder={
-                  loadingDocumentTypes
-                    ? "Loading document types…"
-                    : "Type to search document type..."
-                }
+                placeholder={loadingDocumentTypes ? "Loading document types…" : "e.g. Site measurement drawing"}
+                role="combobox"
+                aria-expanded={showDocumentTypeDropdown}
                 onChange={(event) => {
                   const value = event.target.value;
-
                   setDocumentTypeSearch(value);
-
-                  // Clear selected document type when user starts typing
-                  if (
-                    selectedDocumentType &&
-                    value !== selectedDocumentType.name
-                  ) {
-                    setForm((current) => ({
-                      ...current,
-                      documentTypeId: "",
-                    }));
+                  if (selectedDocumentType && value !== selectedDocumentType.name) {
+                    setForm((current) => ({ ...current, documentTypeId: "" }));
                   }
-
                   setShowDocumentTypeDropdown(true);
                 }}
-                onFocus={() => {
-                  setShowDocumentTypeDropdown(true);
-                }}
-                onBlur={() => {
-                  // Small delay so option click can fire
-                  setTimeout(() => {
-                    setShowDocumentTypeDropdown(false);
-                  }, 150);
-                }}
+                onFocus={() => setShowDocumentTypeDropdown(true)}
+                onBlur={() => setTimeout(() => setShowDocumentTypeDropdown(false), 150)}
               />
 
               {showDocumentTypeDropdown && documentTypes.length > 0 && (
-                <div className="absolute z-50 mt-1 w-full bg-white border border-[#DDD8CE] rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {documentTypes
-                    .filter((type) => {
-                      const search = documentTypeSearch.toLowerCase().trim();
-
-                      if (!search) return true;
-
-                      return (
-                        type.name?.toLowerCase().includes(search) ||
-                        type.code?.toLowerCase().includes(search) ||
-                        type.phaseName?.toLowerCase().includes(search) ||
-                        type.sectionName?.toLowerCase().includes(search)
-                      );
-                    })
-                    .map((type) => (
-                      <button
-                        key={type.id}
-                        type="button"
-                        className="w-full text-left px-3 py-2.5 hover:bg-[#F5F3EF] border-b border-[#EEEAE3] last:border-b-0"
-                        onMouseDown={(event) => {
-                          event.preventDefault();
-
-                          setForm((current) => ({
-                            ...current,
-                            documentTypeId: type.id,
-                          }));
-
-                          setDocumentTypeSearch(type.name || type.code || "");
-                          setShowDocumentTypeDropdown(false);
-                        }}
-                      >
-                        <div className="text-[14px] font-medium text-[#333333]">
-                          {type.name || type.code}
-                        </div>
-
-                        {type.code && (
-                          <div className="text-[11px] text-[#7A8586] mt-0.5">
-                            {type.code}
-                          </div>
-                        )}
-                      </button>
-                    ))}
-
-                  {documentTypes.filter((type) => {
-                    const search = documentTypeSearch.toLowerCase().trim();
-
-                    if (!search) return true;
-
-                    return (
-                      type.name?.toLowerCase().includes(search) ||
-                      type.code?.toLowerCase().includes(search) ||
-                      type.phaseName?.toLowerCase().includes(search) ||
-                      type.sectionName?.toLowerCase().includes(search)
-                    );
-                  }).length === 0 && (
-                    <div className="px-3 py-3 text-[13px] text-[#7A8586]">
-                      No document types found
-                    </div>
+                <div className="pj-combo__list" role="listbox">
+                  {filteredTypes.map((type) => (
+                    <button
+                      key={type.id}
+                      type="button"
+                      role="option"
+                      aria-selected={String(type.id) === String(form.documentTypeId)}
+                      className="pj-combo__opt"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        setForm((current) => ({ ...current, documentTypeId: type.id }));
+                        setDocumentTypeSearch(type.name || type.code || "");
+                        setShowDocumentTypeDropdown(false);
+                      }}
+                    >
+                      <div className="pj-combo__opt-title">{type.name || type.code}</div>
+                      {(type.code || type.phaseName) && (
+                        <div className="pj-combo__opt-sub">{[type.code, type.phaseName].filter(Boolean).join(" · ")}</div>
+                      )}
+                    </button>
+                  ))}
+                  {filteredTypes.length === 0 && (
+                    <div className="pj-combo__opt pj-combo__opt-sub">No document types found</div>
                   )}
                 </div>
               )}
             </div>
-          </div>
-          {/* ====================================================
-              Title
-              ==================================================== */}
+          </Field>
+        </FormSection>
 
-          <div>
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Title
-            </label>
-
-            <Input
+        <FormSection step={2} title="The file" description="Name it clearly so the team can find it later.">
+          <Field label="Title" required full>
+            <TextInput
               required
               disabled={uploading}
               value={form.title}
-              placeholder={
-                selectedDocumentType
-                  ? `e.g. ${selectedDocumentType.name || "Document"}`
-                  : "Enter document title"
-              }
+              placeholder={selectedDocumentType ? `e.g. ${selectedDocumentType.name || "Document"} — rev A` : "e.g. Ground floor plan — rev A"}
               onChange={(event) => updateField("title", event.target.value)}
             />
-          </div>
+          </Field>
 
-          {/* ====================================================
-              Visibility
-              ==================================================== */}
-
-          <div>
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Visibility
+          <Field label="File" required full hint="Max 500 MB.">
+            <label className="pj-drop" htmlFor="document-file" style={{ position: "relative" }}>
+              <span className="inos-icon-tile">
+                {file ? <FileText aria-hidden /> : <CloudUpload aria-hidden />}
+              </span>
+              <span style={{ minWidth: 0, flex: 1 }}>
+                <span className="pj-cell-title pj-truncate" style={{ display: "block" }}>
+                  {file ? file.name : "Choose a file to upload"}
+                </span>
+                <span className="pj-cell-sub" style={{ display: "block" }}>
+                  {file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB — click to change` : "PDF, Excel, images or other files"}
+                </span>
+              </span>
+              <span className="inos-btn inos-btn--secondary inos-btn--sm">Browse</span>
+              <input id="document-file" type="file" required disabled={uploading} onChange={handleFileChange} />
             </label>
+          </Field>
 
-            <select
-              disabled={uploading}
-              className="bc-input h-10 w-full disabled:opacity-60"
+          <Field label="Who can see it" full>
+            <ChoiceGroup
+              name="Visibility"
               value={form.visibility}
-              onChange={(event) =>
-                updateField("visibility", event.target.value)
-              }
-            >
-              <option value="internal">Internal only</option>
+              onChange={(value) => updateField("visibility", value)}
+              options={[
+                { value: "internal", label: "Internal only", icon: Lock },
+                { value: "client", label: "Visible to client", icon: Eye },
+              ]}
+            />
+          </Field>
 
-              <option value="client">Visible to client</option>
-            </select>
-          </div>
-
-          {/* ====================================================
-              File
-              ==================================================== */}
-
-          <div>
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              File
-            </label>
-
-            <div className="border border-dashed border-[#B5C4B6] rounded-xl p-4 bg-[#FAF8F5]">
-              <input
-                id="document-file"
-                type="file"
-                required
-                disabled={uploading}
-                onChange={handleFileChange}
-                className="text-[14px] w-full disabled:opacity-60"
-              />
-
-              {file && (
-                <div className="flex items-center gap-2 mt-3 text-[12px] text-[#6B7B7C]">
-                  <FileText size={15} />
-
-                  <span className="truncate">{file.name}</span>
-
-                  <span className="shrink-0">
-                    ({(file.size / (1024 * 1024)).toFixed(2)} MB)
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ====================================================
-              Remarks
-              ==================================================== */}
-
-          <div>
-            <label className="text-[13px] font-semibold text-[#333333] mb-1 block">
-              Remarks
-            </label>
-
+          <Field label="Remarks" optional full>
             <TextArea
               rows={3}
               disabled={uploading}
               value={form.remarks}
-              placeholder="Optional remarks..."
+              placeholder="e.g. Revised after client walkthrough on site"
               onChange={(event) => updateField("remarks", event.target.value)}
             />
-          </div>
+          </Field>
+        </FormSection>
 
-          {/* ====================================================
-              Actions
-              ==================================================== */}
-
-          <div className="flex items-center gap-3 pt-1">
-            <button
-              type="button"
-              disabled={uploading}
-              onClick={() => nav("/projects/documents/all")}
-              className="h-11 px-5 rounded-lg border border-[#DDD8CE] text-[#333333] font-semibold disabled:opacity-50"
-            >
+        <div className="inos-form-actions">
+          <span className="inos-form-actions__note">
+            {selectedProject ? `Uploading to ${selectedProject.name}` : "Select a project, document type and file to continue."}
+          </span>
+          <div className="inos-form-actions__buttons">
+            <Button variant="ghost" disabled={uploading} onClick={() => nav("/projects/documents/all")}>
               Cancel
-            </button>
-
-            <button
+            </Button>
+            <Button
               type="submit"
-              disabled={
-                uploading ||
-                projectsLoading ||
-                loadingDocumentTypes ||
-                !form.projectId ||
-                !form.documentTypeId ||
-                !file
-              }
-              className="h-11 px-5 rounded-lg bg-[#1F453B] text-white font-semibold inline-flex items-center gap-2 disabled:opacity-60"
+              variant="primary"
+              icon={Upload}
+              disabled={uploading || projectsLoading || loadingDocumentTypes || !form.projectId || !form.documentTypeId || !file}
             >
-              <Upload size={15} />
-
-              {uploading ? "Uploading…" : "Upload Document"}
-            </button>
+              {uploading ? "Uploading…" : "Upload document"}
+            </Button>
           </div>
-        </form>
-      </Card>
-    </Shell>
+        </div>
+      </form>
+    </Page>
   );
 }

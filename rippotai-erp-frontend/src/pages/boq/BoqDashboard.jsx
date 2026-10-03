@@ -8,8 +8,12 @@ import {
   useLazyGetBoqVersionHistoryQuery,
   useCombineBoqsMutation,
   useDeleteBoqMutation,
-  useExportBoqPdfMutation,
+  useGetBoqSummaryQuery,
+  boqApi,
 } from "../../api/boq/boq.api";
+import { useDispatch } from "react-redux";
+import BoqDocument, { boqFileName } from "@/components/commerce-documents/BoqDocument";
+import { downloadWhenReady, OFFSCREEN_STYLE } from "@/components/print-document/commerce";
 
 import { useCreateBudgetEstimateFromBoqMutation } from "../../api/documents/budget-estimates.api";
 
@@ -146,12 +150,11 @@ export default function BoqDashboard() {
   // SUMMARY
   // ============================================================
 
-  const [summary, setSummary] = useState(null);
-
-  useEffect(() => {
-    // Temporary fallback.
-    // Replace with useGetBoqsSummaryQuery() when available.
-  }, []);
+  // GET /boqs/summary → { total, drafts, awaiting_approval, approved, templates }
+  const { data: summaryRaw } = useGetBoqSummaryQuery();
+  const summary = summaryRaw
+    ? { ...summaryRaw, awaiting: summaryRaw.awaiting ?? summaryRaw.awaiting_approval }
+    : null;
 
   // ============================================================
   // SYNC URL STATUS
@@ -205,7 +208,10 @@ export default function BoqDashboard() {
 
   const [deleteBoq, { isLoading: isDeleting }] = useDeleteBoqMutation();
 
-  const [exportPdf] = useExportBoqPdfMutation();
+  // PDFs use the shared print kit (same document as the BOQ workspace), rendered off-screen.
+  const dispatch = useDispatch();
+  const pdfRef = React.useRef(null);
+  const [pdfBoq, setPdfBoq] = useState(null);
 
   // ============================================================
   // BUDGET ESTIMATE CONVERSION
@@ -414,21 +420,18 @@ export default function BoqDashboard() {
   // ============================================================
 
   const downloadBoq = async (b) => {
-    const filename = `${b.boq_number || b.title || "BOQ"}.pdf`;
-
     setExportingId(b.id);
-
     try {
-      await exportPdf({
-        boqId: b.id,
-        variant: "client",
-        filename,
-      }).unwrap();
-
+      const full = await dispatch(boqApi.endpoints.getBoqById.initiate(b.id)).unwrap();
+      setPdfBoq(full);
+      await downloadWhenReady(() => pdfRef.current, boqFileName(full, "client"), {
+        title: `BOQ — ${full?.project?.name || full?.title || ""}`,
+      });
       toast.success("PDF downloaded");
     } catch (e) {
       toast.error(e?.data?.message || "Failed to export PDF");
     } finally {
+      setPdfBoq(null);
       setExportingId(null);
     }
   };
@@ -1093,6 +1096,12 @@ export default function BoqDashboard() {
           </table>
         </div>
       </section>
+
+      {pdfBoq && (
+        <div style={OFFSCREEN_STYLE} aria-hidden>
+          <BoqDocument ref={pdfRef} boq={pdfBoq} variant="client" />
+        </div>
+      )}
     </div>
   );
 }

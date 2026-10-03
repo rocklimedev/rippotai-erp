@@ -2,48 +2,11 @@ import { baseApi } from "../../store/baseApi";
 
 export const procurementApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    // Material-requirement CRUD lives in material-requirement.api.js and
+    // inventory transactions in inventory.api.js (duplicates here clashed).
     // =====================================================
     // MATERIAL REQUIREMENTS
     // =====================================================
-
-    createMaterialRequirement: builder.mutation({
-      query: (body) => ({
-        url: "/procurement/requirements",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["MaterialRequirement"],
-    }),
-
-    getMaterialRequirements: builder.query({
-      query: (projectId) => ({
-        url: "/procurement/requirements",
-        params: projectId ? { projectId } : undefined,
-      }),
-      providesTags: ["MaterialRequirement"],
-    }),
-
-    getMaterialRequirement: builder.query({
-      query: (id) => `/procurement/requirements/${id}`,
-      providesTags: ["MaterialRequirement"],
-    }),
-
-    updateMaterialRequirement: builder.mutation({
-      query: ({ id, body }) => ({
-        url: `/procurement/requirements/${id}`,
-        method: "PATCH",
-        body,
-      }),
-      invalidatesTags: ["MaterialRequirement"],
-    }),
-
-    deleteMaterialRequirement: builder.mutation({
-      query: (id) => ({
-        url: `/procurement/requirements/${id}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["MaterialRequirement"],
-    }),
 
     // =====================================================
     // SAMPLE BOARDS
@@ -251,11 +214,6 @@ export const procurementApi = baseApi.injectEndpoints({
       providesTags: ["SiteInventory"],
     }),
 
-    getInventoryTransactions: builder.query({
-      query: (id) => `/procurement/site-inventory/${id}/transactions`,
-      providesTags: ["InventoryTransaction"],
-    }),
-
     recordInventoryTransaction: builder.mutation({
       query: (body) => ({
         url: "/procurement/site-inventory/transactions",
@@ -284,11 +242,6 @@ export const {
   // MATERIAL REQUIREMENTS
   // =====================================================
 
-  useCreateMaterialRequirementMutation,
-  useGetMaterialRequirementsQuery,
-  useGetMaterialRequirementQuery,
-  useUpdateMaterialRequirementMutation,
-  useDeleteMaterialRequirementMutation,
 
   // =====================================================
   // SAMPLE BOARDS
@@ -339,7 +292,6 @@ export const {
 
   useGetSiteInventoryQuery,
   useGetSiteInventoryItemQuery,
-  useGetInventoryTransactionsQuery,
   useRecordInventoryTransactionMutation,
   useReconcileInventoryQuery,
 } = procurementApi;

@@ -18,7 +18,9 @@ export function useCliqChat() {
 export function CliqChatProvider({ children, currentCliqUserId }) {
   const [open, setOpen] = useState(false);
 
+  // Not logged in yet -> no owner key -> the URL would be /zoho/cliq//status (404).
   const { data: status } = useGetCliqStatusQuery(undefined, {
+    skip: !currentCliqUserId,
     pollingInterval: open ? 15000 : 60000,
   });
 

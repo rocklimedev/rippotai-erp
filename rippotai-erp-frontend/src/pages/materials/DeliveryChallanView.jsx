@@ -1,4 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
+import { DocumentPreview, usePdfDownload } from "@/components/print-document";
+import DeliveryChallanDocument, { deliveryChallanFileName } from "@/components/commerce-documents/DeliveryChallanDocument";
+import { useGetProjectByIdQuery } from "../../api/projects/project.api";
+import { useGetVendorByIdQuery } from "../../api/vendors/vendor.api";
+import { useGetPurchaseOrderQuery } from "../../api/procuerment/purchase-order.api";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -120,6 +125,14 @@ export default function DeliveryChallanView() {
   }, [response]);
 
   const items = challan?.items || [];
+
+  // Linked records for the printed challan (project, supplier, PO number).
+  const docRef = useRef(null);
+  const { download: downloadDoc, downloading } = usePdfDownload(docRef);
+  const { data: projectRes } = useGetProjectByIdQuery(challan?.project_id, { skip: !challan?.project_id });
+  const { data: vendorRes } = useGetVendorByIdQuery(challan?.vendor_id, { skip: !challan?.vendor_id });
+  const { data: poRes } = useGetPurchaseOrderQuery(challan?.purchase_order_id, { skip: !challan?.purchase_order_id });
+  const unwrap = (r) => (r?.data && !Array.isArray(r.data) ? r.data : r);
 
   /**
    * -------------------------------------------------------------
@@ -332,342 +345,14 @@ export default function DeliveryChallanView() {
    * -------------------------------------------------------------
    * DOWNLOAD A4 PDF
    *
-   * This does NOT use window.print().
-   *
-   * We dynamically import jsPDF so the page itself doesn't need
-   * to be printed.
-   * -------------------------------------------------------------
+   * Captures the A4 pages rendered below (shared Rippotai print kit).
    */
 
-  const downloadPdf = async () => {
-    try {
-      toast.loading("Preparing A4 PDF...", {
-        id: "dc-pdf",
-      });
-
-      const jsPDFModule = await import("jspdf");
-
-      const { default: jsPDF } = jsPDFModule;
-
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-
-      const pageWidth = 210;
-      const pageHeight = 297;
-
-      const margin = 14;
-      const contentWidth = pageWidth - margin * 2;
-
-      let y = 15;
-
-      /**
-       * Header
-       */
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.text("DELIVERY CHALLAN", pageWidth / 2, y, {
-        align: "center",
-      });
-
-      y += 7;
-
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "normal");
-
-      doc.text("MATERIAL", pageWidth / 2, y, {
-        align: "center",
-      });
-
-      y += 4;
-
-      doc.setFontSize(7);
-
-      doc.text("ARCHITECTURE · INTERIORS · TURNKEY", pageWidth / 2, y, {
-        align: "center",
-      });
-
-      y += 10;
-
-      /**
-       * Challan details
-       */
-      doc.setFontSize(8);
-
-      doc.setFont("helvetica", "bold");
-
-      doc.text("CHALLAN NO", margin, y);
-
-      doc.text("DATE", margin + 70, y);
-
-      doc.text("STATUS", margin + 120, y);
-
-      y += 5;
-
-      doc.setFont("helvetica", "normal");
-
-      doc.text(challan?.challan_number || "—", margin, y);
-
-      doc.text(formatDate(challan?.challan_date), margin + 70, y);
-
-      doc.text(currentStatus.label, margin + 120, y);
-
-      y += 9;
-
-      /**
-       * Site address
-       */
-      doc.setFont("helvetica", "bold");
-
-      doc.text("PROJECT SITE ADDRESS", margin, y);
-
-      y += 5;
-
-      doc.setFont("helvetica", "normal");
-
-      const addressLines = doc.splitTextToSize(
-        challan?.site_address || "—",
-        contentWidth,
-      );
-
-      doc.text(addressLines, margin, y);
-
-      y += Math.max(addressLines.length, 1) * 4 + 6;
-
-      /**
-       * Material table
-       */
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-
-      const tableX = margin;
-      const tableY = y;
-
-      const col = {
-        sno: 10,
-        description: 105,
-        unit: 25,
-        qty: 30,
-      };
-
-      const rowHeight = 7;
-
-      doc.rect(tableX, tableY, contentWidth, rowHeight);
-
-      let x = tableX;
-
-      doc.line(x + col.sno, tableY, x + col.sno, tableY + rowHeight);
-
-      doc.line(
-        x + col.sno + col.description,
-        tableY,
-        x + col.sno + col.description,
-        tableY + rowHeight,
-      );
-
-      doc.line(
-        x + col.sno + col.description + col.unit,
-        tableY,
-        x + col.sno + col.description + col.unit,
-        tableY + rowHeight,
-      );
-
-      doc.text("S.No", tableX + 2, tableY + 4.5);
-
-      doc.text("DESCRIPTION OF GOODS", tableX + col.sno + 2, tableY + 4.5);
-
-      doc.text("UNIT", tableX + col.sno + col.description + 2, tableY + 4.5);
-
-      doc.text(
-        "QTY",
-        tableX + col.sno + col.description + col.unit + 2,
-        tableY + 4.5,
-      );
-
-      y += rowHeight;
-
-      doc.setFont("helvetica", "normal");
-
-      /**
-       * Items
-       */
-      items.forEach((item, index) => {
-        const description = item.description || item.material?.name || "—";
-
-        const unit = item.material?.unit?.code || item.unit || "—";
-
-        const qty = number(item.quantity);
-
-        const descriptionLines = doc.splitTextToSize(
-          description,
-          col.description - 4,
-        );
-
-        const currentRowHeight = Math.max(
-          rowHeight,
-          descriptionLines.length * 4 + 4,
-        );
-
-        doc.rect(tableX, y, contentWidth, currentRowHeight);
-
-        doc.line(tableX + col.sno, y, tableX + col.sno, y + currentRowHeight);
-
-        doc.line(
-          tableX + col.sno + col.description,
-          y,
-          tableX + col.sno + col.description,
-          y + currentRowHeight,
-        );
-
-        doc.line(
-          tableX + col.sno + col.description + col.unit,
-          y,
-          tableX + col.sno + col.description + col.unit,
-          y + currentRowHeight,
-        );
-
-        doc.text(String(index + 1), tableX + 2, y + 4.5);
-
-        doc.text(descriptionLines, tableX + col.sno + 2, y + 4.5);
-
-        doc.text(unit, tableX + col.sno + col.description + 2, y + 4.5);
-
-        doc.text(
-          qty,
-          tableX + col.sno + col.description + col.unit + 2,
-          y + 4.5,
-        );
-
-        y += currentRowHeight;
-      });
-
-      /**
-       * Empty rows to retain PDF appearance.
-       */
-      const minimumRows = 10;
-
-      if (items.length < minimumRows) {
-        for (let index = items.length; index < minimumRows; index++) {
-          doc.rect(tableX, y, contentWidth, rowHeight);
-
-          doc.line(tableX + col.sno, y, tableX + col.sno, y + rowHeight);
-
-          doc.line(
-            tableX + col.sno + col.description,
-            y,
-            tableX + col.sno + col.description,
-            y + rowHeight,
-          );
-
-          doc.line(
-            tableX + col.sno + col.description + col.unit,
-            y,
-            tableX + col.sno + col.description + col.unit,
-            y + rowHeight,
-          );
-
-          doc.text(String(index + 1), tableX + 2, y + 4.5);
-
-          y += rowHeight;
-        }
-      }
-
-      y += 8;
-
-      /**
-       * Remarks
-       */
-      doc.setFont("helvetica", "bold");
-
-      doc.text("REMARKS / DISCREPANCY", margin, y);
-
-      y += 5;
-
-      doc.setFont("helvetica", "normal");
-
-      const remarks =
-        challan?.general_remarks || challan?.discrepancy_notes || "—";
-
-      const remarkLines = doc.splitTextToSize(remarks, contentWidth);
-
-      doc.rect(margin, y, contentWidth, 20);
-
-      doc.text(remarkLines, margin + 3, y + 5);
-
-      y += 30;
-
-      /**
-       * Signatures
-       */
-      doc.setFont("helvetica", "bold");
-
-      doc.text("DISPATCHED BY", margin, y);
-
-      doc.text("RECEIVED BY", margin + 100, y);
-
-      y += 9;
-
-      doc.setFont("helvetica", "normal");
-
-      doc.text(
-        `Name · ${challan?.dispatched_by || "____________________"}`,
-        margin,
-        y,
-      );
-
-      doc.text(
-        `Name · ${challan?.received_by || "____________________"}`,
-        margin + 100,
-        y,
-      );
-
-      y += 7;
-
-      doc.text(
-        `Date · ${
-          formatDate(challan?.dispatched_at) === "—"
-            ? "____________________"
-            : formatDate(challan?.dispatched_at)
-        }`,
-        margin,
-        y,
-      );
-
-      doc.text(
-        `Date · ${
-          formatDate(challan?.received_at) === "—"
-            ? "____________________"
-            : formatDate(challan?.received_at)
-        }`,
-        margin + 100,
-        y,
-      );
-
-      /**
-       * Footer
-       */
-      doc.setFontSize(7);
-      doc.setTextColor(120);
-
-      doc.text("Generated from INOS ERP", pageWidth / 2, pageHeight - 8, {
-        align: "center",
-      });
-
-      doc.save(`${challan?.challan_number || "delivery-challan"}.pdf`);
-
-      toast.success("A4 PDF downloaded", {
-        id: "dc-pdf",
-      });
-    } catch (err) {
-      console.error(err);
-
-      toast.error("Unable to generate delivery challan PDF", {
-        id: "dc-pdf",
-      });
-    }
-  };
+  const downloadPdf = () =>
+    downloadDoc(deliveryChallanFileName(challan), {
+      title: `Delivery Challan ${challan?.challan_number || ""}`,
+      label: "delivery challan",
+    });
 
   /**
    * -------------------------------------------------------------
@@ -775,9 +460,9 @@ export default function DeliveryChallanView() {
                 />
               )}
 
-              <Button variant="outline" onClick={downloadPdf}>
+              <Button variant="outline" onClick={downloadPdf} disabled={downloading}>
                 <Download size={16} />
-                Download A4 PDF
+                {downloading ? "Preparing PDF…" : "Download PDF"}
               </Button>
 
               <Button
@@ -887,191 +572,16 @@ export default function DeliveryChallanView() {
                 </Button>
               </CardHeader>
 
-              <CardContent className="p-8 bg-[#EEF1F0]">
-                {/* A4 PAGE */}
-                <div
-                  id="delivery-challan-a4"
-                  className="mx-auto bg-white text-black shadow-xl"
-                  style={{
-                    width: "210mm",
-                    minHeight: "297mm",
-                    maxWidth: "100%",
-                    padding: "14mm",
-                  }}
-                >
-                  {/* PDF HEADER */}
-                  <div className="text-center">
-                    <h2 className="text-[22px] font-bold tracking-wide">
-                      DELIVERY CHALLAN
-                    </h2>
-
-                    <div className="text-[10px] font-medium mt-1">MATERIAL</div>
-
-                    <div className="text-[8px] mt-0.5 tracking-wide">
-                      ARCHITECTURE · INTERIORS · TURNKEY
-                    </div>
-                  </div>
-
-                  <div className="mt-8 grid grid-cols-3 border-t border-black pt-3">
-                    <div>
-                      <div className="text-[9px] font-bold">CHALLAN NO</div>
-
-                      <div className="text-[11px] mt-1">
-                        {challan.challan_number || "—"}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-[9px] font-bold">DATE</div>
-
-                      <div className="text-[11px] mt-1">
-                        {formatDate(challan.challan_date)}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-[9px] font-bold">STATUS</div>
-
-                      <div className="text-[11px] mt-1">
-                        {currentStatus.label}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* SITE */}
-                  <div className="mt-7">
-                    <div className="text-[9px] font-bold">
-                      PROJECT SITE ADDRESS
-                    </div>
-
-                    <div className="border-b border-black/30 pb-3 mt-2 text-[10px] leading-5 min-h-[35px]">
-                      {challan.site_address || "—"}
-                    </div>
-                  </div>
-
-                  {/* MATERIAL */}
-                  <div className="mt-7">
-                    <div className="text-[9px] font-bold mb-2">MATERIAL</div>
-
-                    <table className="w-full border-collapse border border-black text-[9px]">
-                      <thead>
-                        <tr>
-                          <th className="border border-black px-2 py-2 text-left w-[9%]">
-                            S.No
-                          </th>
-
-                          <th className="border border-black px-2 py-2 text-left">
-                            DESCRIPTION OF GOODS
-                          </th>
-
-                          <th className="border border-black px-2 py-2 text-left w-[15%]">
-                            UNIT
-                          </th>
-
-                          <th className="border border-black px-2 py-2 text-right w-[15%]">
-                            QTY
-                          </th>
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        {items.map((item, index) => (
-                          <tr key={item.id || index}>
-                            <td className="border border-black px-2 py-2 align-top">
-                              {index + 1}
-                            </td>
-
-                            <td className="border border-black px-2 py-2 align-top">
-                              <div className="font-medium">
-                                {item.description || item.material?.name || "—"}
-                              </div>
-
-                              {(item.brand || item.specification) && (
-                                <div className="text-[8px] text-black/60 mt-1">
-                                  {item.brand ? `${item.brand}` : ""}
-                                  {item.brand && item.specification
-                                    ? " · "
-                                    : ""}
-                                  {item.specification || ""}
-                                </div>
-                              )}
-                            </td>
-
-                            <td className="border border-black px-2 py-2 align-top">
-                              {item.material?.unit?.code || item.unit || "—"}
-                            </td>
-
-                            <td className="border border-black px-2 py-2 align-top text-right">
-                              {number(item.quantity)}
-                            </td>
-                          </tr>
-                        ))}
-
-                        {Array.from({
-                          length: Math.max(0, 10 - items.length),
-                        }).map((_, index) => (
-                          <tr key={`empty-${index}`} className="h-8">
-                            <td className="border border-black px-2">
-                              {items.length + index + 1}
-                            </td>
-
-                            <td className="border border-black px-2" />
-
-                            <td className="border border-black px-2" />
-
-                            <td className="border border-black px-2" />
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* REMARKS */}
-                  <div className="mt-8">
-                    <div className="text-[9px] font-bold">
-                      REMARKS / DISCREPANCY
-                    </div>
-
-                    <div className="border border-black min-h-[42px] mt-2 p-2 text-[9px] whitespace-pre-wrap">
-                      {challan.general_remarks ||
-                        challan.discrepancy_notes ||
-                        ""}
-                    </div>
-                  </div>
-
-                  {/* SIGNATURES */}
-                  <div className="grid grid-cols-2 gap-12 mt-12">
-                    <div>
-                      <div className="text-[9px] font-bold">DISPATCHED BY</div>
-
-                      <div className="mt-7 text-[9px]">
-                        Name · {challan.dispatched_by || "____________________"}
-                      </div>
-
-                      <div className="mt-5 text-[9px]">
-                        Date ·{" "}
-                        {challan.dispatched_at
-                          ? formatDate(challan.dispatched_at)
-                          : "____________________"}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-[9px] font-bold">RECEIVED BY</div>
-
-                      <div className="mt-7 text-[9px]">
-                        Name · {challan.received_by || "____________________"}
-                      </div>
-
-                      <div className="mt-5 text-[9px]">
-                        Date ·{" "}
-                        {challan.received_at
-                          ? formatDate(challan.received_at)
-                          : "____________________"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <CardContent className="p-6 bg-[#EEF1F0]">
+                <DocumentPreview>
+                  <DeliveryChallanDocument
+                    ref={docRef}
+                    challan={challan}
+                    project={unwrap(projectRes)}
+                    vendor={unwrap(vendorRes)}
+                    purchaseOrder={unwrap(poRes)}
+                  />
+                </DocumentPreview>
               </CardContent>
             </Card>
 

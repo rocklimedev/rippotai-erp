@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import PurchaseOrderForm from "../../components/PurchaseOrderForm";
 
@@ -10,7 +10,8 @@ import { useGetProjectsQuery } from "../../api/projects/project.api";
 import { useGetVendorsQuery } from "../../api/vendors/vendor.api";
 import { useGetMaterialsQuery } from "../../api/procuerment/material-master.api";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Page, Card, Button, EmptyState } from "@/components/inos";
+import { LoadingBlock } from "@/components/forms/commerce-form-ui";
 
 /* ------------------------------------------------------------------
  * Helpers
@@ -66,45 +67,28 @@ const normalizeArray = (value, depth = 0) => {
 
 function PageLoader() {
   return (
-    <div className="flex min-h-[400px] w-full items-center justify-center">
-      <div className="flex flex-col items-center gap-3 text-muted-foreground">
-        <Loader2 className="h-7 w-7 animate-spin" />
-        <p className="text-sm">Loading purchase order...</p>
-      </div>
-    </div>
+    <Page>
+      <LoadingBlock label="Loading purchase order…" />
+    </Page>
   );
 }
 
-/* ------------------------------------------------------------------
- * Error screen
- * ------------------------------------------------------------------ */
-
 function PageError({ message, onBack }) {
   return (
-    <div className="flex min-h-[400px] w-full items-center justify-center px-6">
-      <Card className="w-full max-w-md">
-        <CardContent className="flex flex-col items-center gap-4 py-8 text-center">
-          <div>
-            <h2 className="text-lg font-semibold">
-              Unable to load purchase order
-            </h2>
-
-            <p className="mt-1 text-sm text-muted-foreground">
-              {message ||
-                "Something went wrong while loading this purchase order."}
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={onBack}
-            className="rounded-md bg-[#1F453B] px-4 py-2 text-sm font-medium text-white hover:bg-[#17372f]"
-          >
-            Back to purchase orders
-          </button>
-        </CardContent>
+    <Page width="form">
+      <Card>
+        <EmptyState
+          icon={AlertCircle}
+          title="Unable to load purchase order"
+          text={message || "Something went wrong while loading this purchase order."}
+          action={
+            <Button variant="primary" onClick={onBack}>
+              Back to purchase orders
+            </Button>
+          }
+        />
       </Card>
-    </div>
+    </Page>
   );
 }
 
@@ -269,19 +253,7 @@ export default function CreatePurchaseOrderPage() {
    * --------------------------------------------------------------- */
 
   return (
-    <div
-      className="
-        relative
-        z-0
-        flex
-        min-h-full
-        w-full
-        flex-col
-        overflow-visible
-        bg-background
-        pointer-events-auto
-      "
-    >
+    <div className="relative w-full">
       <PurchaseOrderForm
         initialData={isEdit ? purchaseOrder : null}
         projects={projects}

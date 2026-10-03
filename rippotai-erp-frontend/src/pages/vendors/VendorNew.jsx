@@ -3,7 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
-import { ArrowLeftIcon, CheckCircle2, Plus, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Plus } from "lucide-react";
+import { Page, PageHeader, Button, Field, TextInput, SelectInput, TextArea, FormActions } from "@/components/inos";
+import { DocSection, Grid, Modal, LoadingBlock } from "@/components/forms/commerce-form-ui";
 import {
   useCreateVendorMutation,
   useUpdateVendorMutation,
@@ -197,293 +199,233 @@ export default function VendorNew() {
 
   if (isEdit && vendorLoading && !hydrated) {
     return (
-      <div
-        className="max-w-3xl mx-auto space-y-6"
-        data-testid="vendor-new-form"
-      >
-        <div className="text-[13px] text-[#6B7B7C]">Loading vendor…</div>
-      </div>
+      <Page width="form">
+        <div data-testid="vendor-new-form">
+          <LoadingBlock label="Loading vendor…" />
+        </div>
+      </Page>
     );
   }
 
   const backTarget = isEdit ? `/vendors/${vendorId}` : "/vendors";
+  const categoryName = categories.find((c) => c.id === form.vendor_category_id)?.name;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6" data-testid="vendor-new-form">
-      <button
-        onClick={() => nav(backTarget)}
-        className="text-[13px] text-[#6B7B7C] hover:text-[#333333] flex items-center gap-1"
-      >
-        <ArrowLeftIcon size={14} />{" "}
-        {isEdit ? "Back to Vendor" : "Back to Vendors"}
-      </button>
-      <div>
-        <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6] mb-1.5">
-          {isEdit ? "Edit Vendor" : "Add Vendor"}
-        </div>
-        <h1 className="text-[32px] font-bold text-[#333333]">
-          {isEdit ? "Edit Vendor" : "New Vendor"}
-        </h1>
-      </div>
+    <Page width="form">
+      <div data-testid="vendor-new-form" style={{ display: "contents" }}>
+        <PageHeader
+          crumbs={[
+            { label: "Procurement", to: "/procurement" },
+            { label: "Vendors", to: "/procurement/vendors/directory" },
+            { label: isEdit ? "Edit" : "New" },
+          ]}
+          title={isEdit ? `Edit ${form.company_name || form.name || "vendor"}` : "New vendor"}
+          subtitle="Name and contact number are all you need — the rest can be filled in any time."
+          actions={
+            <Button variant="ghost" icon={ArrowLeft} onClick={() => nav(backTarget)}>
+              {isEdit ? "Back to vendor" : "Back to vendors"}
+            </Button>
+          }
+        />
 
-      <div className="bc-card p-6 space-y-8">
-        {/* Basic */}
-        <div className="space-y-4">
-          <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-            Basic
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-                Name *
-              </label>
-              <input
-                className="bc-input mt-1"
-                value={form.name}
-                onChange={(e) => set("name", e.target.value)}
-                data-testid="w-name"
-              />
-              {errors.name && (
-                <div className="text-[11.5px] text-red-500 mt-1">
-                  {errors.name}
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-                Company Name
-              </label>
-              <input
-                className="bc-input mt-1"
-                value={form.company_name}
-                onChange={(e) => set("company_name", e.target.value)}
-                data-testid="w-company"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-                Position
-              </label>
-              <input
-                className="bc-input mt-1"
-                value={form.position}
-                onChange={(e) => set("position", e.target.value)}
-                data-testid="w-position"
-              />
-            </div>
-          </div>
-        </div>
+        <form
+          className="inos-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit();
+          }}
+        >
+          <DocSection step={1} title="Who they are" description="The person you deal with and their company.">
+            <Grid cols={2}>
+              <Field label="Name" required error={errors.name} htmlFor="w-name">
+                <TextInput
+                  id="w-name"
+                  value={form.name}
+                  onChange={(e) => set("name", e.target.value)}
+                  placeholder="e.g. Rakesh Gupta"
+                  invalid={Boolean(errors.name)}
+                  data-testid="w-name"
+                />
+              </Field>
+              <Field label="Company name" optional htmlFor="w-company">
+                <TextInput
+                  id="w-company"
+                  value={form.company_name}
+                  onChange={(e) => set("company_name", e.target.value)}
+                  placeholder="e.g. Shree Tiles & Co."
+                  data-testid="w-company"
+                />
+              </Field>
+              <Field label="Position" optional full htmlFor="w-position">
+                <TextInput
+                  id="w-position"
+                  value={form.position}
+                  onChange={(e) => set("position", e.target.value)}
+                  placeholder="e.g. Proprietor, Sales manager"
+                  data-testid="w-position"
+                />
+              </Field>
+            </Grid>
+          </DocSection>
 
-        {/* Category & Type */}
-        <div className="space-y-4">
-          <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-            Category &amp; Type
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-                Vendor Category
-              </label>
-              <select
-                className="bc-input mt-1"
-                value={form.vendor_category_id}
-                onChange={(e) => setCategory(e.target.value)}
-                data-testid="w-vendor-category"
-              >
-                <option value="">Select category</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-                  Business Type
-                </label>
-                <button
-                  type="button"
-                  onClick={openBusinessTypeModal}
-                  disabled={!form.vendor_category_id}
-                  className="text-[11.5px] font-semibold text-[#1F453B] hover:text-[#16332B] flex items-center gap-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
-                  data-testid="w-business-type-add"
+          <DocSection step={2} title="What they supply" description="Used to filter vendors when raising quotations.">
+            <Grid cols={2}>
+              <Field label="Vendor category" htmlFor="w-cat">
+                <SelectInput
+                  id="w-cat"
+                  value={form.vendor_category_id}
+                  onChange={(e) => setCategory(e.target.value)}
+                  placeholder="Select category"
+                  data-testid="w-vendor-category"
                 >
-                  <Plus size={12} /> Add
-                </button>
-              </div>
-              <select
-                className="bc-input mt-1"
-                value={form.business_type_id}
-                onChange={(e) => set("business_type_id", e.target.value)}
-                disabled={!form.vendor_category_id}
-                data-testid="w-business-type"
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </SelectInput>
+              </Field>
+              <Field
+                label="Business type"
+                htmlFor="w-bt"
+                hint={form.vendor_category_id ? "Missing one? Add it with the + button." : "Pick a category first."}
               >
-                <option value="">
-                  {form.vendor_category_id
-                    ? "Select business type"
-                    : "Select a category first"}
-                </option>
-                {businessTypes.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Contact */}
-        <div className="space-y-4">
-          <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-            Contact
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-                Contact Number *
-              </label>
-              <input
-                className="bc-input mt-1"
-                value={form.contact_number}
-                onChange={(e) => set("contact_number", e.target.value)}
-                data-testid="w-contact-number"
-              />
-              {errors.contact_number && (
-                <div className="text-[11.5px] text-red-500 mt-1">
-                  {errors.contact_number}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <SelectInput
+                      id="w-bt"
+                      value={form.business_type_id}
+                      onChange={(e) => set("business_type_id", e.target.value)}
+                      disabled={!form.vendor_category_id}
+                      placeholder={form.vendor_category_id ? "Select business type" : "Select a category first"}
+                      data-testid="w-business-type"
+                    >
+                      {businessTypes.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </SelectInput>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    icon={Plus}
+                    onClick={openBusinessTypeModal}
+                    disabled={!form.vendor_category_id}
+                    aria-label="Add business type"
+                    title="Add business type"
+                    data-testid="w-business-type-add"
+                  />
                 </div>
-              )}
-            </div>
-            <div>
-              <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-                Alternate Contact
-              </label>
-              <input
-                className="bc-input mt-1"
-                value={form.alternate_contact}
-                onChange={(e) => set("alternate_contact", e.target.value)}
-                data-testid="w-alt-contact"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-              Address
-            </label>
-            <textarea
-              className="bc-input mt-1 min-h-[70px]"
-              value={form.address}
-              onChange={(e) => set("address", e.target.value)}
-              data-testid="w-address"
-            />
-          </div>
-          <div>
-            <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-              Notes
-            </label>
-            <textarea
-              className="bc-input mt-1 min-h-[80px]"
-              value={form.notes}
-              onChange={(e) => set("notes", e.target.value)}
-              data-testid="w-notes"
-            />
-          </div>
-        </div>
-      </div>
+              </Field>
+            </Grid>
+          </DocSection>
 
-      <div className="flex items-center justify-between">
-        <div className="text-[11.5px] text-[#B5C4B6]">
-          {saving ? "Saving…" : "All changes auto-saved"}
-        </div>
-        <button
-          onClick={submit}
-          disabled={activating}
-          className="h-11 px-6 rounded-xl bg-[#1F453B] hover:bg-[#1F453B] text-white text-[13px] font-semibold flex items-center gap-1 disabled:opacity-50"
-          data-testid="form-submit"
-        >
-          Save Vendor <CheckCircle2 size={14} />
-        </button>
-      </div>
+          <DocSection step={3} title="Contact" description="How your team reaches them.">
+            <Grid cols={2}>
+              <Field label="Contact number" required error={errors.contact_number} htmlFor="w-phone">
+                <TextInput
+                  id="w-phone"
+                  type="tel"
+                  value={form.contact_number}
+                  onChange={(e) => set("contact_number", e.target.value)}
+                  placeholder="e.g. +91 98100 12345"
+                  invalid={Boolean(errors.contact_number)}
+                  data-testid="w-contact-number"
+                />
+              </Field>
+              <Field label="Alternate contact" optional htmlFor="w-alt">
+                <TextInput
+                  id="w-alt"
+                  type="tel"
+                  value={form.alternate_contact}
+                  onChange={(e) => set("alternate_contact", e.target.value)}
+                  placeholder="Another number or email"
+                  data-testid="w-alt-contact"
+                />
+              </Field>
+              <Field label="Address" optional full htmlFor="w-address">
+                <TextArea
+                  id="w-address"
+                  rows={2}
+                  value={form.address}
+                  onChange={(e) => set("address", e.target.value)}
+                  placeholder="Shop / warehouse address"
+                  data-testid="w-address"
+                />
+              </Field>
+              <Field label="Notes" optional full htmlFor="w-notes" hint="Payment terms, lead times, anything worth remembering.">
+                <TextArea
+                  id="w-notes"
+                  rows={3}
+                  value={form.notes}
+                  onChange={(e) => set("notes", e.target.value)}
+                  data-testid="w-notes"
+                />
+              </Field>
+            </Grid>
+          </DocSection>
 
-      {isBusinessTypeModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={closeBusinessTypeModal}
-        >
-          <div
-            className="bc-card w-full max-w-sm p-6 space-y-4"
-            onClick={(e) => e.stopPropagation()}
-            data-testid="business-type-modal"
+          <div className="inos-form-actions">
+            <span className="inos-form-actions__note">
+              {saving ? "Saving…" : vendorId ? "All changes auto-saved as a draft" : "Changes auto-save once you enter a name"}
+            </span>
+            <div className="inos-form-actions__buttons">
+              <Button variant="ghost" onClick={() => nav(backTarget)}>
+                Cancel
+              </Button>
+              <Button variant="primary" type="submit" iconRight={CheckCircle2} disabled={activating} data-testid="form-submit">
+                Save vendor
+              </Button>
+            </div>
+          </div>
+        </form>
+
+        {isBusinessTypeModalOpen && (
+          <Modal
+            title="New business type"
+            subtitle={categoryName ? `Under ${categoryName}` : undefined}
+            onClose={closeBusinessTypeModal}
+            testId="business-type-modal"
+            closeTestId="business-type-modal-close"
+            footer={
+              <>
+                <Button variant="ghost" onClick={closeBusinessTypeModal} data-testid="business-type-cancel">
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleCreateBusinessType}
+                  disabled={creatingBusinessType}
+                  data-testid="business-type-save"
+                >
+                  {creatingBusinessType ? "Saving…" : "Create"}
+                </Button>
+              </>
+            }
           >
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6] mb-1">
-                  New Business Type
-                </div>
-                <div className="text-[15px] font-bold text-[#333333]">
-                  {categories.find((c) => c.id === form.vendor_category_id)
-                    ?.name || "Business Type"}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={closeBusinessTypeModal}
-                className="text-[#B5C4B6] hover:text-[#333333]"
-                data-testid="business-type-modal-close"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div>
-              <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
-                Name *
-              </label>
-              <input
-                className="bc-input mt-1"
+            <Field label="Name" required error={businessTypeError}>
+              <TextInput
                 value={newBusinessTypeName}
                 onChange={(e) => {
                   setNewBusinessTypeName(e.target.value);
                   if (businessTypeError) setBusinessTypeError("");
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleCreateBusinessType();
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleCreateBusinessType();
+                  }
                 }}
+                placeholder="e.g. Marble supplier"
                 autoFocus
+                invalid={Boolean(businessTypeError)}
                 data-testid="business-type-name-input"
               />
-              {businessTypeError && (
-                <div className="text-[11.5px] text-red-500 mt-1">
-                  {businessTypeError}
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={closeBusinessTypeModal}
-                className="h-10 px-4 rounded-xl border border-[#B5C4B6] text-[13px] font-semibold text-[#6B7B7C]"
-                data-testid="business-type-cancel"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleCreateBusinessType}
-                disabled={creatingBusinessType}
-                className="h-10 px-4 rounded-xl bg-[#1F453B] hover:bg-[#1F453B] text-white text-[13px] font-semibold disabled:opacity-50"
-                data-testid="business-type-save"
-              >
-                {creatingBusinessType ? "Saving…" : "Create"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+            </Field>
+          </Modal>
+        )}
+      </div>
+    </Page>
   );
 }

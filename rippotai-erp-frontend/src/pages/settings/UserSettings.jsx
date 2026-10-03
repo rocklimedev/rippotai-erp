@@ -1,15 +1,36 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { ShieldAlert, UserPlus } from "lucide-react";
+import { UserPlus, Users, SearchX } from "lucide-react";
+import {
+  Page,
+  PageHeader,
+  Card,
+  Button,
+  Toolbar,
+  ToolbarSpacer,
+  SearchInput,
+  Segmented,
+  Pill,
+  Avatar,
+} from "@/components/inos";
 import {
   useGetUsersQuery,
   useUpdateUserMutation,
   useDeleteUserMutation,
 } from "../../api/users/user.api";
-import { ROLE_LABEL, fmtDate } from "../../lib/settings.utils";
+import { fmtDate } from "../../lib/settings.utils";
 import InviteUserModal from "../../components/users/InviteUserModal";
 import UserActionsMenu from "../../components/users/UserActionsMenu";
+import {
+  AdminAccessDenied,
+  SkeletonRows,
+  TableEmpty,
+  adminCrumbs,
+  humanize,
+  plural,
+} from "./_admin-ui";
 
 export default function UsersSettings() {
   const { user } = useAuth();
@@ -27,6 +48,20 @@ export default function UsersSettings() {
 
   // null = closed, "new" = invite flow, a user object = edit flow
   const [modalUser, setModalUser] = useState(null);
+
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  // Deep link from the Admin overview: /console/users?invite=1
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    if (params.get("invite") === "1") {
+      setModalUser("new");
+      const next = new URLSearchParams(params);
+      next.delete("invite");
+      setParams(next, { replace: true });
+    }
+  }, [params, setParams]);
 
   useEffect(() => {
     if (usersError) toast.error("Failed to load users");
@@ -59,117 +94,148 @@ export default function UsersSettings() {
     }
   };
 
+  const list = useMemo(() => (Array.isArray(users) ? users : []), [users]);
+  const activeCount = list.filter((u) => u.is_active !== false).length;
+
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return list.filter((u) => {
+      const active = u.is_active !== false;
+      if (statusFilter === "active" && !active) return false;
+      if (statusFilter === "inactive" && active) return false;
+      if (!q) return true;
+      return [u.name, u.email, u.job_title, u.role?.name]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q));
+    });
+  }, [list, search, statusFilter]);
+
   if (!isAdmin) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="w-12 h-12 rounded-full bg-[#F1D9D3] flex items-center justify-center mx-auto mb-4">
-          <ShieldAlert size={22} className="text-[#7A2E1A]" />
-        </div>
-        <div className="text-xl font-semibold mb-2">Access denied</div>
-        <p className="text-[#6B7B7C]">You need admin privileges.</p>
-      </div>
-    );
+    return <AdminAccessDenied crumb="Users" />;
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <h2 className="text-2xl font-semibold text-[#333333]">Users</h2>
-          <p className="text-[#6B7B7C]">
-            Assign roles, activate or deactivate team members.
-          </p>
-        </div>
-        <button
-          onClick={() => setModalUser("new")}
-          className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg text-white text-sm font-semibold"
-          style={{ backgroundColor: "#1F453B" }}
-        >
-          <UserPlus size={15} /> Invite User
-        </button>
-      </div>
+    <Page>
+      <PageHeader
+        crumbs={adminCrumbs("Users")}
+        title="Users"
+        subtitle="Invite team members, set their role and switch access on or off."
+        actions={
+          <Button variant="primary" icon={UserPlus} onClick={() => setModalUser("new")} data-testid="invite-user-btn">
+            Invite user
+          </Button>
+        }
+      />
 
-      <div className="bg-white border border-[#E8EAF0] rounded-2xl overflow-hidden">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-[#F3F3F1] text-xs uppercase tracking-wider text-[#6B7B7C]">
-              <th className="px-5 py-3">Name</th>
-              <th className="px-5 py-3">Email</th>
-              <th className="px-5 py-3">Role</th>
-              <th className="px-5 py-3">Joined</th>
-              <th className="px-5 py-3">Status</th>
-              <th className="px-5 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loadingUsers ? (
+      <Toolbar>
+        <SearchInput value={search} onChange={setSearch} placeholder="Search by name, email or role" />
+        <Segmented
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={[
+            { value: "all", label: `All · ${list.length}` },
+            { value: "active", label: `Active · ${activeCount}` },
+            { value: "inactive", label: `Inactive · ${list.length - activeCount}` },
+          ]}
+        />
+        <ToolbarSpacer />
+      </Toolbar>
+
+      <Card flush>
+        <div className="inos-table-wrap">
+          <table className="inos-table">
+            <thead>
               <tr>
-                <td colSpan={6} className="text-center py-12 text-[#6B7B7C]">
-                  Loading users…
-                </td>
+                <th>User</th>
+                <th className="adm-hide-sm">Email</th>
+                <th>Role</th>
+                <th className="adm-hide-sm">Joined</th>
+                <th>Status</th>
+                <th className="actions" aria-label="Actions" />
               </tr>
-            ) : users.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="text-center py-12 text-[#6B7B7C]">
-                  No users found.
-                </td>
-              </tr>
-            ) : (
-              users.map((u) => {
-                const active = u.is_active !== false;
-                const isSelf = u.id === user.id;
-                return (
-                  <tr
-                    key={u.id}
-                    className="border-t border-[#EFF2F9] hover:bg-[#FAF8F5]"
-                  >
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#1F453B] text-white text-xs font-semibold flex items-center justify-center">
-                          {u.avatar_initials ||
-                            (u.name || "?").slice(0, 2).toUpperCase()}
+            </thead>
+            <tbody>
+              {loadingUsers && list.length === 0 ? (
+                <SkeletonRows cols={6} />
+              ) : list.length === 0 ? (
+                <TableEmpty
+                  cols={6}
+                  icon={Users}
+                  title={usersError ? "Couldn't load users" : "No users yet"}
+                  text={
+                    usersError
+                      ? "The users service didn't respond. Try again in a moment."
+                      : "Invite your first team member to get started."
+                  }
+                  action={
+                    !usersError && (
+                      <Button variant="soft" icon={UserPlus} onClick={() => setModalUser("new")}>
+                        Invite user
+                      </Button>
+                    )
+                  }
+                />
+              ) : visible.length === 0 ? (
+                <TableEmpty cols={6} icon={SearchX} title="No matching users" text="Try a different name, email or filter." />
+              ) : (
+                visible.map((u) => {
+                  const active = u.is_active !== false;
+                  const isSelf = u.id === user.id;
+                  return (
+                    <tr key={u.id}>
+                      <td>
+                        <div className="adm-cell-main">
+                          <Avatar name={u.name} src={u.avatar_url || undefined} size={36} />
+                          <div style={{ minWidth: 0 }}>
+                            <div className="adm-cell-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              {u.name}
+                              {isSelf && (
+                                <Pill tone="brand" dot={false} size="sm">
+                                  You
+                                </Pill>
+                              )}
+                            </div>
+                            <div className="adm-cell-sub">{u.job_title || humanize(u.role?.name) || "Team member"}</div>
+                          </div>
                         </div>
-                        <div className="font-semibold text-[#333333]">
-                          {u.name}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3 text-sm text-[#252525]">
-                      {u.email}
-                    </td>
-                    <td className="px-5 py-3 text-sm text-[#333333]">
-                      {u.role?.name || "-"}
-                    </td>
-                    <td className="px-5 py-3 text-sm text-[#6B7B7C]">
-                      {fmtDate(u.created_at)}
-                    </td>
-                    <td className="px-5 py-3">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${active ? "bg-[#D3E7D3] text-[#2A6B45]" : "bg-[#EAEEF0] text-[#6B7B7C]"}`}
-                      >
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${active ? "bg-[#2A6B45]" : "bg-[#6B7B7C]"}`}
+                      </td>
+                      <td className="adm-cell-2 adm-hide-sm">{u.email}</td>
+                      <td>
+                        {u.role?.name ? (
+                          <Pill tone="brand" dot={false}>
+                            {humanize(u.role.name)}
+                          </Pill>
+                        ) : (
+                          <span className="muted">—</span>
+                        )}
+                      </td>
+                      <td className="adm-cell-2 tabular adm-hide-sm">{fmtDate(u.created_at)}</td>
+                      <td>
+                        <Pill tone={active ? "ok" : "mute"}>{active ? "Active" : "Inactive"}</Pill>
+                      </td>
+                      <td className="actions">
+                        <UserActionsMenu
+                          isSelf={isSelf}
+                          isActive={active}
+                          saving={savingId === u.id}
+                          onEdit={() => setModalUser(u)}
+                          onToggleActive={() => toggleActive(u)}
+                          onDelete={() => deleteUser(u)}
                         />
-                        {active ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <UserActionsMenu
-                        isSelf={isSelf}
-                        isActive={active}
-                        saving={savingId === u.id}
-                        onEdit={() => setModalUser(u)}
-                        onToggleActive={() => toggleActive(u)}
-                        onDelete={() => deleteUser(u)}
-                      />
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+        {list.length > 0 && (
+          <div className="adm-table-foot">
+            {plural(visible.length, "user")} shown · {activeCount} active
+          </div>
+        )}
+      </Card>
 
       {modalUser && (
         <InviteUserModal
@@ -177,6 +243,6 @@ export default function UsersSettings() {
           onClose={() => setModalUser(null)}
         />
       )}
-    </div>
+    </Page>
   );
 }

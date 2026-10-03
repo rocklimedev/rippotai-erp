@@ -11,7 +11,7 @@ import axios from "axios";
 import { toast } from "sonner";
 import { fmtINR, relativeTime } from "@/lib/format";
 
-const API = `${import.meta.env.VITE_BACKEND_URL || ""}/api`;
+const API = `${import.meta.env.VITE_BACKEND_URL || ""}/api/v1`;
 // Public axios instance (no auth header)
 const publicApi = axios.create({ baseURL: API });
 
@@ -208,7 +208,7 @@ function ClientLanding() {
           Project Phases
         </div>
         <div className="flex gap-2">
-          {data.phases.slice(0, 6).map((ph) => (
+          {data.phases.map((ph) => (
             <div key={ph.phase_code} className="flex-1">
               <div
                 className="h-2 rounded-full"

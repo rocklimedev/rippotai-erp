@@ -1,461 +1,253 @@
-import React from "react";
+// Design Studio → single drawing: large preview, details, status and full revision history.
+import { useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { CloudUpload, Download, ExternalLink, FileText, ImageOff } from "lucide-react";
+
+import { Page, PageHeader, Card, Button, Pill, EmptyState } from "@/components/inos";
+import { useGetDrawingByIdQuery, useUpdateDrawingMutation } from "../../api/documents/drawing.api";
+import { useGetProjectsQuery } from "../../api/projects/project.api";
+import { useGetUsersQuery } from "../../api/users/user.api";
+import { FileThumb, Chips } from "../design-studio/DrawingBits";
 import {
-  ArrowLeft,
-  Download,
-  FileText,
-  ImageOff,
-  ExternalLink,
-} from "lucide-react";
-
-import { Shell, Card } from "../../hooks/shared";
-import { useGetDrawingByIdQuery } from "../../api/documents/drawing.api";
-
-const statusBadgeClass = (status) =>
-  String(status || "").toLowerCase() === "superseded"
-    ? "bg-[#EAEEF0] text-[#6B7B7C]"
-    : "bg-[#D8E0DA] text-[#333333]";
-
-const formatBytes = (bytes) => {
-  if (bytes === null || bytes === undefined) return "—";
-
-  if (bytes < 1024) {
-    return `${bytes} B`;
-  }
-
-  const units = ["KB", "MB", "GB"];
-  let value = bytes / 1024;
-  let index = 0;
-
-  while (value >= 1024 && index < units.length - 1) {
-    value /= 1024;
-    index += 1;
-  }
-
-  return `${value.toFixed(1)} ${units[index]}`;
-};
-
-const formatDate = (date) => {
-  if (!date) return "—";
-
-  return String(date).slice(0, 10);
-};
-
-const Field = ({ label, children }) => (
-  <div>
-    <div className="text-[11px] uppercase tracking-[0.14em] text-[#6B7B7C]">
-      {label}
-    </div>
-
-    <div className="text-[14px] text-[#333333] mt-0.5">{children ?? "—"}</div>
-  </div>
-);
+  STATUSES,
+  errMessage,
+  fileKind,
+  formatBytes,
+  formatDate,
+  createdAt,
+  phaseLabel,
+  sortedRevisions,
+  statusTone,
+} from "../design-studio/drawingUtils";
+import "../design-studio/drawings.css";
 
 export default function DrawingsView() {
   const { id } = useParams();
   const nav = useNavigate();
+  const { data: drawing, isLoading, isError } = useGetDrawingByIdQuery(id, { skip: !id });
+  const { data: projects = [] } = useGetProjectsQuery({});
+  const { data: users = [] } = useGetUsersQuery({});
+  const [updateDrawing, { isLoading: saving }] = useUpdateDrawingMutation();
 
-  const {
-    data: drawing,
-    isFetching,
-    isError,
-  } = useGetDrawingByIdQuery(id, {
-    skip: !id,
-  });
+  const revisions = useMemo(() => sortedRevisions(drawing), [drawing]);
+  const latest = revisions[0] || null;
+  const userList = Array.isArray(users) ? users : users?.data || [];
+  const userName = (uid) => userList.find((u) => u.id === uid)?.name || null;
+  const project = projects.find((p) => p.id === drawing?.projectId);
 
-  if (isFetching) {
+  const crumbs = [
+    { label: "Design Studio", to: "/design-studio" },
+    { label: "Drawings", to: "/design-studio/all" },
+    { label: drawing?.drawingNumber || "Drawing" },
+  ];
+
+  if (isLoading) {
     return (
-      <Shell title="Drawing" subtitle="Loading…">
-        <div className="text-[13px] text-[#6B7B7C]">Loading drawing…</div>
-      </Shell>
+      <Page>
+        <PageHeader crumbs={crumbs} title="Drawing" subtitle="Loading…" />
+      </Page>
     );
   }
-
   if (isError || !drawing) {
     return (
-      <Shell title="Drawing" subtitle="Not found">
+      <Page>
+        <PageHeader crumbs={crumbs} title="Drawing" />
         <Card>
-          <div className="text-center text-[#6B7B7C] py-8">
-            Drawing not found, or you don't have access to it.
-          </div>
+          <EmptyState
+            icon={ImageOff}
+            title="Drawing not found"
+            text="It may have been deleted, or you don't have access to it."
+            action={
+              <Button variant="soft" onClick={() => nav("/design-studio/all")}>
+                Back to register
+              </Button>
+            }
+          />
         </Card>
-      </Shell>
+      </Page>
     );
   }
 
-  /*
-   * ---------------------------------------------------------
-   * IMPORTANT
-   * ---------------------------------------------------------
-   * Your API response stores the actual uploaded file inside
-   * drawing.revisions[].
-   *
-   * Example:
-   *
-   * drawing.revisions[0].url
-   * drawing.revisions[0].mime
-   * drawing.revisions[0].filename
-   * drawing.revisions[0].size
-   */
+  const fileUrl = latest?.url || null;
+  const kind = fileKind({ name: latest?.filename, mime: latest?.mime });
 
-  const revisions = Array.isArray(drawing.revisions) ? drawing.revisions : [];
-
-  /*
-   * Prefer the latest revision.
-   *
-   * If your backend guarantees revisions are already sorted,
-   * this is enough. Otherwise, sorting by created_at gives us
-   * the newest uploaded revision.
-   */
-  const latestRevision =
-    revisions.length > 0
-      ? [...revisions].sort((a, b) => {
-          const dateA = new Date(a.created_at || a.createdAt || 0).getTime();
-
-          const dateB = new Date(b.created_at || b.createdAt || 0).getTime();
-
-          return dateB - dateA;
-        })[0]
-      : null;
-
-  /*
-   * File information comes from the revision.
-   */
-  const fileUrl = latestRevision?.url || null;
-  const mime = latestRevision?.mime || "";
-  const filename = latestRevision?.filename || "Drawing file";
-
-  const isImage = mime.startsWith("image/");
-  const isPdf =
-    mime === "application/pdf" || mime.toLowerCase().includes("pdf");
-
-  /*
-   * The document-level status and metadata are here.
-   * Revision-level status and metadata are in latestRevision.
-   */
-  const documentStatus = drawing.status || latestRevision?.status;
-
-  const revision = latestRevision?.revision || drawing.revision || "—";
-
-  const issueDate = latestRevision?.issueDate || drawing.issueDate;
-
-  const issuePurpose = latestRevision?.issuePurpose || drawing.issuePurpose;
-
-  const remarks = latestRevision?.remarks || drawing.remarks;
-
-  const fileSize = latestRevision?.size;
-
-  const createdAt =
-    latestRevision?.created_at ||
-    latestRevision?.createdAt ||
-    drawing.created_at ||
-    drawing.createdAt;
-
-  const updatedAt =
-    latestRevision?.updated_at ||
-    latestRevision?.updatedAt ||
-    drawing.updated_at ||
-    drawing.updatedAt;
-
-  /*
-   * ---------------------------------------------------------
-   * DOWNLOAD
-   * ---------------------------------------------------------
-   */
-
-  const handleDownload = () => {
-    if (!fileUrl) return;
-
-    window.open(fileUrl, "_blank", "noopener,noreferrer");
+  const setStatus = async (status) => {
+    if (!status || status === drawing.status) return;
+    try {
+      await updateDrawing({ id: drawing.id, data: { status } }).unwrap();
+      toast.success(`Marked ${status.toLowerCase()}`);
+    } catch (e) {
+      toast.error(errMessage(e, "Couldn't update status"));
+    }
   };
 
-  /*
-   * ---------------------------------------------------------
-   * RENDER
-   * ---------------------------------------------------------
-   */
+  const kv = [
+    [
+      "Project",
+      project ? (
+        <button type="button" onClick={() => nav(`/projects/${project.id}`)} style={{ color: "var(--brand)", fontWeight: 600, textAlign: "left" }}>
+          {project.name}
+        </button>
+      ) : (
+        "—"
+      ),
+    ],
+    ["Phase", phaseLabel(drawing.phaseCode)],
+    ["Discipline", drawing.discipline || "—"],
+    ["Sheet no.", drawing.sheetNumber || "—"],
+    ["Scale", drawing.scale || "—"],
+    ["Sheet size", drawing.sheetSize || "—"],
+    ["Drawn by", userName(drawing.drawnBy) || latest?.uploadedByName || "—"],
+    ["Checked by", userName(drawing.checkedBy) || "—"],
+    ["Issue purpose", latest?.issuePurpose || drawing.issuePurpose || "—"],
+    ["Issued", formatDate(latest?.issueDate || createdAt(latest))],
+  ];
 
   return (
-    <Shell
-      title={drawing.title || "Untitled Drawing"}
-      subtitle={`${drawing.project_name || "Unassigned"} · Rev. ${revision}`}
-      action={
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => nav("/design-studio/all")}
-            className="h-10 px-4 rounded-lg border border-[#B5C4B6] text-[13px] font-semibold text-[#333333] inline-flex items-center gap-1.5 hover:bg-[#F4F6F7] transition"
-          >
-            <ArrowLeft size={14} />
-            All Drawings
-          </button>
+    <Page>
+      <PageHeader
+        crumbs={crumbs}
+        title={drawing.title || "Untitled drawing"}
+        subtitle={`${drawing.drawingNumber} · Rev ${latest?.revision || "—"} · ${project?.name || "Unassigned project"}`}
+        actions={
+          <>
+            {fileUrl && (
+              <Button
+                variant="secondary"
+                icon={Download}
+                onClick={() => window.open(fileUrl, "_blank", "noopener,noreferrer")}
+                data-testid="drawing-download"
+              >
+                Download
+              </Button>
+            )}
+            <Button variant="primary" icon={CloudUpload} onClick={() => nav(`/design-studio/upload?drawing=${drawing.id}`)}>
+              Upload new revision
+            </Button>
+          </>
+        }
+      />
 
-          {fileUrl && (
-            <button
-              onClick={handleDownload}
-              className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold inline-flex items-center gap-1.5 hover:bg-[#16382F] transition"
-              data-testid="drawing-download"
-            >
-              <Download size={14} />
-              Download
-            </button>
-          )}
-        </div>
-      }
-    >
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* =====================================================
-            PREVIEW
-        ====================================================== */}
-
-        <Card className="lg:col-span-2">
-          <div className="bg-[#F4F6F7] rounded-lg min-h-[420px] flex items-center justify-center overflow-hidden">
+      <div className="ds-view">
+        <Card flush>
+          <div className="ds-preview">
             {!fileUrl ? (
-              <div className="text-center py-16 text-[#6B7B7C]">
-                <ImageOff size={40} className="mx-auto mb-3 text-[#B5C4B6]" />
-
-                <div className="text-[13px]">
-                  No file uploaded for this drawing.
-                </div>
-              </div>
-            ) : isImage ? (
-              /*
-               * =================================================
-               * IMAGE PREVIEW
-               * =================================================
-               */
-
-              <div className="w-full h-full min-h-[420px] flex items-center justify-center p-4">
-                <img
-                  src={fileUrl}
-                  alt={drawing.title || filename}
-                  className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-sm"
-                  onError={(event) => {
-                    console.error("Drawing image failed to load:", fileUrl);
-
-                    event.currentTarget.style.display = "none";
-                  }}
-                />
-              </div>
-            ) : isPdf ? (
-              /*
-               * =================================================
-               * PDF PREVIEW
-               * =================================================
-               */
-
-              <iframe
-                title="drawing-pdf"
-                src={fileUrl}
-                className="w-full h-[70vh] rounded-lg border-0"
-              />
+              <EmptyState icon={ImageOff} title="No file yet" text="Upload a revision to see the drawing here." />
+            ) : kind === "image" ? (
+              <img src={fileUrl} alt={drawing.title} />
+            ) : kind === "pdf" ? (
+              <iframe title="Drawing preview" src={fileUrl} />
             ) : (
-              /*
-               * =================================================
-               * UNSUPPORTED FILE
-               * =================================================
-               */
-
-              <div className="text-center py-16 text-[#6B7B7C]">
-                <FileText size={40} className="mx-auto mb-3 text-[#B5C4B6]" />
-
-                <div className="text-[13px]">
-                  Preview not available for this file type.
-                </div>
-
-                <div className="text-[12px] mt-1">
-                  {mime || "Unknown file type"}
-                </div>
-
-                <a
-                  href={fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1F453B] hover:underline"
-                >
-                  <ExternalLink size={14} />
-                  Open File
-                </a>
+              <div style={{ display: "grid", justifyItems: "center", gap: 12, padding: 32, width: 260 }}>
+                <FileThumb name={latest?.filename} mime={latest?.mime} size="lg" />
+                <p style={{ margin: 0, color: "var(--text-2)", fontSize: 13, textAlign: "center" }}>
+                  CAD files can't be previewed in the browser. Download to open in AutoCAD.
+                </p>
+                <Button variant="soft" icon={ExternalLink} onClick={() => window.open(fileUrl, "_blank", "noopener,noreferrer")}>
+                  Open file
+                </Button>
               </div>
             )}
           </div>
         </Card>
 
-        {/* =====================================================
-            DETAILS
-        ====================================================== */}
-
-        <Card>
-          <div className="space-y-4">
-            {/* FILE NAME */}
-
-            <div className="flex items-center gap-2">
-              <FileText size={16} className="text-[#B5C4B6] shrink-0" />
-
-              <span
-                className="text-[13.5px] font-semibold text-[#333333] truncate"
-                title={filename}
-              >
-                {filename}
-              </span>
-            </div>
-
-            {/* STATUS */}
-
-            <div>
-              <span
-                className={`px-2 py-0.5 rounded-full text-[11.5px] font-semibold ${statusBadgeClass(
-                  documentStatus,
-                )}`}
-              >
-                {documentStatus || "—"}
-              </span>
-            </div>
-
-            {/* BASIC INFORMATION */}
-
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Drawing No.">
-                <span className="font-mono">
-                  {drawing.drawingNumber || "—"}
-                </span>
-              </Field>
-
-              <Field label="Discipline">{drawing.discipline || "—"}</Field>
-
-              <Field label="Revision">{revision}</Field>
-
-              <Field label="Issue Date">{formatDate(issueDate)}</Field>
-
-              <Field label="Project">{drawing.project_name || "—"}</Field>
-
-              <Field label="File Size">{formatBytes(fileSize)}</Field>
-
-              <Field label="Document Type">
-                {drawing.documentType?.name || "—"}
-              </Field>
-
-              <Field label="Phase">
-                {drawing.documentType?.phaseName || drawing.phaseCode || "—"}
-              </Field>
-
-              <Field label="Sheet Number">{drawing.sheetNumber || "—"}</Field>
-
-              <Field label="Scale">{drawing.scale || "—"}</Field>
-            </div>
-
-            {/* ISSUE PURPOSE */}
-
-            <Field label="Issue Purpose">{issuePurpose || "—"}</Field>
-
-            {/* REMARKS */}
-
-            <Field label="Remarks">{remarks || "—"}</Field>
-
-            {/* REVISION INFORMATION */}
-
-            <div className="pt-3 border-t border-[rgba(31,69,59,0.08)]">
-              <div className="text-[11px] uppercase tracking-[0.14em] text-[#6B7B7C] mb-3">
-                Revision Information
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Revision">{revision}</Field>
-
-                <Field label="Revision Status">
-                  {latestRevision?.status || "—"}
-                </Field>
-
-                <Field label="Uploaded By">
-                  {latestRevision?.uploadedByName ||
-                    latestRevision?.uploadedBy ||
-                    "—"}
-                </Field>
-
-                <Field label="Revision Date">
-                  {formatDate(
-                    latestRevision?.issueDate || latestRevision?.created_at,
-                  )}
-                </Field>
-              </div>
-            </div>
-
-            {/* DATES */}
-
-            <div className="pt-3 border-t border-[rgba(31,69,59,0.08)] grid grid-cols-2 gap-4">
-              <Field label="Uploaded">{formatDate(createdAt)}</Field>
-
-              <Field label="Last Updated">{formatDate(updatedAt)}</Field>
-            </div>
-
-            {/* DOCUMENT TYPE DETAILS */}
-
-            {drawing.documentType && (
-              <div className="pt-3 border-t border-[rgba(31,69,59,0.08)]">
-                <div className="text-[11px] uppercase tracking-[0.14em] text-[#6B7B7C] mb-3">
-                  Document Type
-                </div>
-
-                <div className="space-y-3">
-                  <Field label="Code">
-                    <span className="font-mono text-[12px]">
-                      {drawing.documentType.code || "—"}
-                    </span>
-                  </Field>
-
-                  <Field label="Section">
-                    {drawing.documentType.sectionCode
-                      ? `${drawing.documentType.sectionCode} · ${
-                          drawing.documentType.sectionName || ""
-                        }`
-                      : "—"}
-                  </Field>
-
-                  <Field label="Requirement">
-                    {drawing.documentType.requirementType || "—"}
-                  </Field>
-
-                  <Field label="Approval Required">
-                    {drawing.documentType.requiresApproval ? "Yes" : "No"}
-                  </Field>
-                </div>
-              </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
+          <Card title="Status" subtitle="Headline status of this drawing">
+            <Chips value={drawing.status || "Draft"} onChange={setStatus} options={STATUSES} />
+            {saving && (
+              <p className="inos-hint" style={{ margin: "8px 0 0" }}>
+                Saving…
+              </p>
             )}
-
-            {/* ALL REVISIONS */}
-
-            {revisions.length > 1 && (
-              <div className="pt-3 border-t border-[rgba(31,69,59,0.08)]">
-                <div className="text-[11px] uppercase tracking-[0.14em] text-[#6B7B7C] mb-3">
-                  Revisions
+          </Card>
+          <Card title="Details">
+            <dl className="ds-kv" style={{ margin: 0 }}>
+              {kv.map(([k, v]) => (
+                <div key={k}>
+                  <dt>{k}</dt>
+                  <dd>{v}</dd>
                 </div>
-
-                <div className="space-y-2">
-                  {revisions.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between rounded-lg bg-[#F4F6F7] px-3 py-2"
-                    >
-                      <div className="min-w-0">
-                        <div className="text-[13px] font-semibold text-[#333333]">
-                          Rev. {item.revision || "—"}
-                        </div>
-
-                        <div className="text-[11px] text-[#6B7B7C] truncate">
-                          {item.filename || "File"}
-                        </div>
-                      </div>
-
-                      <div className="text-[11px] text-[#6B7B7C] shrink-0 ml-3">
-                        {formatDate(item.issueDate || item.created_at)}
-                      </div>
-                    </div>
-                  ))}
+              ))}
+              {(drawing.remarks || latest?.remarks) && (
+                <div className="span-full">
+                  <dt>Notes</dt>
+                  <dd style={{ color: "var(--text-2)" }}>{latest?.remarks || drawing.remarks}</dd>
                 </div>
-              </div>
-            )}
-          </div>
-        </Card>
+              )}
+            </dl>
+          </Card>
+        </div>
       </div>
-    </Shell>
+
+      <Card flush title="Revision history" subtitle={`${revisions.length} revision${revisions.length === 1 ? "" : "s"} · newest first`}>
+        {!revisions.length ? (
+          <EmptyState icon={FileText} title="No revisions uploaded" />
+        ) : (
+          <div className="inos-table-wrap">
+            <table className="inos-table">
+              <thead>
+                <tr>
+                  <th />
+                  <th>Rev</th>
+                  <th>File</th>
+                  <th>Status</th>
+                  <th>Issue purpose</th>
+                  <th>Issued</th>
+                  <th>Uploaded by</th>
+                  <th className="num">Size</th>
+                  <th className="actions" />
+                </tr>
+              </thead>
+              <tbody>
+                {revisions.map((r, i) => (
+                  <tr key={r.id}>
+                    <td style={{ width: 56 }}>
+                      <FileThumb name={r.filename} mime={r.mime} src={r.url} size="sm" />
+                    </td>
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      <span className="ds-rev">{r.revision}</span>
+                      {i === 0 && (
+                        <span style={{ marginLeft: 8 }}>
+                          <Pill tone="brand" size="sm" dot={false}>
+                            Current
+                          </Pill>
+                        </span>
+                      )}
+                    </td>
+                    <td
+                      style={{ fontWeight: 600, maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                      title={r.filename}
+                    >
+                      {r.filename || "—"}
+                    </td>
+                    <td>
+                      <Pill tone={statusTone(r.status)} size="sm">
+                        {r.status || "Draft"}
+                      </Pill>
+                    </td>
+                    <td className="muted">{r.issuePurpose || "—"}</td>
+                    <td className="muted">{formatDate(r.issueDate || createdAt(r))}</td>
+                    <td className="muted">{r.uploadedByName || "—"}</td>
+                    <td className="num muted">{formatBytes(r.size)}</td>
+                    <td className="actions">
+                      {r.url && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          icon={Download}
+                          aria-label={`Download revision ${r.revision}`}
+                          onClick={() => window.open(r.url, "_blank", "noopener,noreferrer")}
+                        />
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+    </Page>
   );
 }

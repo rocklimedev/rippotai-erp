@@ -18,6 +18,7 @@ export type DrawingStatus =
   | 'Draft'
   | 'For Review'
   | 'Approved'
+  | 'For Construction'
   | 'Rejected'
   | 'Superseded';
 
@@ -95,6 +96,12 @@ export class Drawing extends Model<Drawing> {
     allowNull: true,
   })
   declare scale: string | null;
+
+  @Column({
+    type: DataType.STRING(20),
+    allowNull: true,
+  })
+  declare sheetSize: string | null;
 
   @Column({
     type: DataType.STRING(255),

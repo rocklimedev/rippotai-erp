@@ -1,0 +1,27 @@
+/* Commerce add-on (docs-commerce). Scoped to .pd-doc--commerce so other documents are untouched.
+   Denser item tables for quotations / POs / work orders / BOQs on A4 portrait. */
+
+.pd-doc--commerce .pd-rows__head,
+.pd-doc--commerce .pd-row { gap: 3mm; }
+.pd-doc--commerce .pd-rows__head { font-size: 6.8pt; letter-spacing: 0.1em; }
+.pd-doc--commerce .pd-row { font-size: 9pt; line-height: 1.45; padding: 2.2mm 0; }
+.pd-doc--commerce .pd-row__sub { font-size: 7.8pt; }
+.pd-doc--commerce .pd-row__num { white-space: nowrap; }
+.pd-doc--commerce .pd-row--group { padding: 1.8mm 2mm; margin-top: 3mm; }
+.pd-doc--commerce .pd-row--group > span { font-size: 8.5pt; }
+.pd-doc--commerce .pd-totals { width: 92mm; }
+
+/* Parties */
+.pd-parties { display: grid; gap: 8mm; }
+.pd-party { min-width: 0; }
+.pd-party__title {
+  display: block; font-size: 7pt; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--pd-green-2); margin-bottom: 2mm; padding-bottom: 1.6mm; border-bottom: 0.6pt solid var(--pd-line);
+}
+.pd-party__name { font-size: 10.5pt; font-weight: 700; color: var(--pd-ink); line-height: 1.35; }
+.pd-party__line { font-size: 9pt; color: var(--pd-text); line-height: 1.5; overflow-wrap: anywhere; }
+.pd-party__kv { margin: 1.6mm 0 0; display: grid; gap: 0.6mm; }
+.pd-party__kv > div { display: grid; grid-template-columns: 13mm 1fr; gap: 2mm; font-size: 8.5pt; line-height: 1.45; }
+.pd-party__kv dt { color: var(--pd-muted); }
+.pd-party__kv dd { margin: 0; color: var(--pd-ink); overflow-wrap: anywhere; }
+

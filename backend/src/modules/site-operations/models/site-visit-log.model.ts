@@ -18,10 +18,10 @@ import {
 @Table({ tableName: 'site_visit_logs', timestamps: true })
 export class SiteVisitLog extends Model<SiteVisitLog> {
   @ForeignKey(() => Project)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  projectId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  projectId: string;
 
-  @BelongsTo(() => Project)
+  @BelongsTo(() => Project, { constraints: false })
   project: Project;
 
   /** Optional link to the recurring assignment this visit fulfils. Null = ad hoc/unscheduled visit. */

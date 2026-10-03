@@ -6,12 +6,13 @@ import {
   IsArray,
   MaxLength,
   IsDateString,
+  IsUUID,
 } from 'class-validator';
 import { MockupStatus } from '../../../common/enums/site-operations.enums';
 
 export class ProposeMockupDto {
-  @IsInt()
-  projectId: number;
+  @IsUUID()
+  projectId: string;
 
   @IsOptional()
   @IsInt()

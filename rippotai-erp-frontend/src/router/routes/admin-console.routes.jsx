@@ -10,7 +10,8 @@ import DocumentTypes from "../../pages/documents/DocumentTypes";
 import ProjectPhases from "../../pages/projects/ProjectPhases";
 import ProjectStructure from "../../pages/projects/ProjectStructure";
 
-import AppDashboard from "@/components/dashboard/AppDashboard";
+import AdminOverview from "@/pages/settings/AdminOverview";
+import CompanyProfile from "@/pages/settings/CompanyProfile";
 
 export const adminConsoleRoutes = [
   {
@@ -40,6 +41,7 @@ export const adminConsoleRoutes = [
         "estimate-signature",
         "terms-and-conditions",
         "super-admin",
+        "company-profile",
       ],
     },
 
@@ -52,7 +54,7 @@ export const adminConsoleRoutes = [
 
       {
         index: true,
-        element: <AppDashboard appKey="adminConsole" />,
+        element: <AdminOverview />,
       },
 
       // =========================================================
@@ -106,6 +108,11 @@ export const adminConsoleRoutes = [
       {
         path: "super-admin",
         element: <SuperAdmin />,
+      },
+
+      {
+        path: "company-profile",
+        element: <CompanyProfile />,
       },
     ],
   },

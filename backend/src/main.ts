@@ -1,8 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 
+import * as express from 'express';
+import * as fs from 'fs';
 import { AppModule } from './app.module';
 import { RedisIoAdapter } from './redis-io.adapter';
+import { StripSecretsInterceptor } from './common/interceptors/strip-secrets.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -20,6 +23,9 @@ async function bootstrap() {
     console.log('⚠️ Development mode - Redis Socket.IO Adapter Disabled');
   }
 
+  // Never serialise password hashes / tokens, whatever a query included.
+  app.useGlobalInterceptors(new StripSecretsInterceptor());
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -27,6 +33,19 @@ async function bootstrap() {
       forbidNonWhitelisted: false,
     }),
   );
+
+  // Local CDN fallback (no SFTP host configured): serve uploaded files from disk.
+  if (!process.env.CDN_HOST) {
+    const cdnDir = process.env.CDN_UPLOAD_PATH || '/tmp/inos-cdn';
+    fs.mkdirSync(cdnDir, { recursive: true });
+    // CORS on static files so PDF export (html2canvas useCORS) can draw uploaded photos.
+    app.use(
+      '/cdn',
+      express.static(cdnDir, {
+        setHeaders: (res) => res.setHeader('Access-Control-Allow-Origin', '*'),
+      }),
+    );
+  }
 
   app.setGlobalPrefix('api/v1');
 

@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
-import { fn, col, Transaction } from 'sequelize';
+import { fn, col, literal, Op, Transaction } from 'sequelize';
 import { Boq } from './models/boq.model';
 import { BoqCategory } from './models/boq-category.model';
 import { BoqItem } from './models/boq-item.model';
@@ -115,9 +115,28 @@ export class BoqService {
     private readonly termsService: TermsService,
   ) {}
 
-  async findAll(project_id?: string) {
+  /** BOQ list with category / item counts (list page columns) and optional status / text filters. */
+  async findAll(project_id?: string, status?: string, q?: string) {
+    const where: any = {};
+    if (project_id) where.project_id = project_id;
+    if (status) where.status = status;
+    if (q?.trim()) where.title = { [Op.like]: `%${q.trim()}%` };
     return this.boqModel.findAll({
-      where: project_id ? { project_id } : undefined,
+      where,
+      attributes: {
+        include: [
+          [
+            literal('(SELECT COUNT(*) FROM boq_categories bc WHERE bc.boq_id = `Boq`.`id`)'),
+            'category_count',
+          ],
+          [
+            literal(
+              '(SELECT COUNT(*) FROM boq_items bi JOIN boq_categories bc ON bc.id = bi.boq_category_id WHERE bc.boq_id = `Boq`.`id`)',
+            ),
+            'item_count',
+          ],
+        ],
+      },
       include: [
         {
           model: Project,

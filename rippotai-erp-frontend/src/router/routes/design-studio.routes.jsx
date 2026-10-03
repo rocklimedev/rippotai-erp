@@ -1,10 +1,12 @@
 import AppLayout from "@/layouts/AppLayout";
 import AppDashboard from "@/components/dashboard/AppDashboard";
-import { DrawingUpload, DrawingsAll } from "@/pages/documents/DocumentsRoutes";
+import { DrawingUpload } from "@/pages/documents/DocumentsRoutes";
+import DrawingUploadPage from "@/pages/design-studio/DrawingUploadPage";
+import DrawingsRegister from "@/pages/design-studio/DrawingsRegister";
+import DrawingIntegrations from "@/pages/design-studio/DrawingIntegrations";
 
 import DrawingsView from "@/pages/documents/DrawingsView";
 import DesignStudioDashboard from "../../pages/dashboard/DesignStudioDashboard";
-import ZohoWorkDriveTestPanel from "../../pages/UploadPanel";
 export const designStudioRoutes = [
   {
     type: "layout",
@@ -15,7 +17,7 @@ export const designStudioRoutes = [
 
     dynamicSections: {
       appKey: "design_studio",
-      exclude: ["all", "new"],
+      exclude: ["all", "new", "upload", "integrations"],
     },
 
     children: [
@@ -34,16 +36,21 @@ export const designStudioRoutes = [
 
       {
         path: "all",
-        element: <DrawingsAll />,
+        element: <DrawingsRegister />,
       },
 
       {
         path: "new",
-        element: <DrawingUpload />,
+        element: <DrawingUploadPage />,
       },
       {
         path: "upload",
-        element: <ZohoWorkDriveTestPanel />,
+        element: <DrawingUploadPage />,
+      },
+      {
+        // WorkDrive test panel moved off the upload page
+        path: "integrations",
+        element: <DrawingIntegrations />,
       },
       // =========================================================
       // DRAWING DETAIL / EDIT

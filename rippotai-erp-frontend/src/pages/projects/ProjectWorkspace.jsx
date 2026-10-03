@@ -2,25 +2,59 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   AlertCircle,
-  ArrowLeft,
   ArrowRight,
-  BriefcaseBusiness,
-  CalendarDays,
   CheckCircle2,
-  Clock3,
   Copy,
-  DollarSign,
   FileText,
+  FolderOpen,
+  GitCommitHorizontal,
+  IndianRupee,
   ListChecks,
+  Package,
+  Pencil,
   RefreshCw,
   Share2,
-  ShieldAlert,
+  Activity,
   Users,
+  LayoutDashboard,
+  Receipt,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import api from "@/lib/api";
 import { fmtINR, relativeTime } from "@/lib/format";
+
+import {
+  Page,
+  PageHeader,
+  Card,
+  Button,
+  Stats,
+  StatTile,
+  Tabs,
+  Pill,
+  StatusPill,
+  EmptyState,
+  Progress,
+  Field,
+  TextInput,
+  ChoiceGroup,
+  prettyStatus,
+} from "@/components/inos";
+import {
+  PhaseTrack,
+  PhaseLegend,
+  Skeleton,
+  Modal,
+  formatDate,
+  normalizeTreePhases,
+  normalizeWorkspacePhases,
+  normalizeCommandCenterPhases,
+  commandCenterProgress,
+  phaseProgress,
+} from "@/components/projects/_projects-ui";
+import { useGetProjectPhasesQuery as useGetCommandCenterPhasesQuery } from "@/api/projects/command-center.api";
 
 import { useGetProjectByIdQuery } from "../../api/projects/project.api";
 import { useGetBoqsQuery } from "../../api/boq/boq.api";
@@ -28,785 +62,601 @@ import { useGetQuotationsQuery } from "../../api/procuerment/quotation.api";
 import {
   useGetDocumentsQuery,
   useUpdateDocumentMutation,
+  useGetProjectDocumentPhaseTreeQuery,
 } from "../../api/documents/document.api";
-
-const BRAND = {
-  ink: "#19352d",
-  green: "#2f6655",
-  greenSoft: "#eef4f0",
-  line: "#e4e8e5",
-  lineSoft: "#edf0ee",
-  surface: "#f5f7f5",
-};
+import ProjectDrawingsPanel from "../design-studio/ProjectDrawingsPanel";
 
 const WORK_BUCKETS = [
-  ["delayed", "Delayed"],
-  ["due_today", "Due today"],
-  ["due_this_week", "Due this week"],
-  ["awaiting_approval", "Awaiting approval"],
-  ["awaiting_client", "Awaiting client"],
-  ["blocked", "Blocked"],
-  ["upcoming", "Upcoming"],
+  ["delayed", "Delayed", "bad"],
+  ["due_today", "Due today", "warn"],
+  ["due_this_week", "Due this week", "info"],
+  ["awaiting_approval", "Awaiting approval", "warn"],
+  ["awaiting_client", "Awaiting client", "lilac"],
+  ["blocked", "Blocked", "bad"],
+  ["upcoming", "Upcoming", "mute"],
 ];
 
-const cn = (...classes) => classes.filter(Boolean).join(" ");
+const SHARE_PURPOSES = [
+  { value: "project_view", label: "Project view" },
+  { value: "boq_approval", label: "BOQ approval" },
+  { value: "quotation_selection", label: "Quotation selection" },
+  { value: "handover_acceptance", label: "Handover acceptance" },
+];
 
-function getStatusMeta(status) {
-  const key = String(status || "").toLowerCase();
-  if (["delayed", "at_risk", "blocked"].includes(key)) {
-    return {
-      label: key.replace(/_/g, " "),
-      className: "bg-red-50 text-red-700 border-red-200",
-      dot: "bg-red-500",
-    };
-  }
-  if (["completed", "complete", "done"].includes(key)) {
-    return {
-      label: key.replace(/_/g, " "),
-      className: "bg-emerald-50 text-emerald-700 border-emerald-200",
-      dot: "bg-emerald-500",
-    };
-  }
-  if (["on_hold", "hold"].includes(key)) {
-    return {
-      label: key.replace(/_/g, " "),
-      className: "bg-amber-50 text-amber-700 border-amber-200",
-      dot: "bg-amber-500",
-    };
-  }
-  return {
-    label: key.replace(/_/g, " ") || "on track",
-    className: "bg-[#eef4f0] text-[#2f6655] border-[#c9d7cf]",
-    dot: "bg-[#2f6655]",
-  };
-}
+const asArray = (v) => (Array.isArray(v) ? v : Array.isArray(v?.data) ? v.data : []);
+const isMissingDoc = (doc) => doc.status === "MISSING" || doc.required_missing;
 
-function StatusBadge({ status }) {
-  const meta = getStatusMeta(status);
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold capitalize",
-        meta.className,
-      )}
-    >
-      <span className={cn("h-1.5 w-1.5 rounded-full", meta.dot)} />
-      {meta.label}
-    </span>
-  );
-}
-
-function SectionHeader({ eyebrow, title, description, action, onAction }) {
-  return (
-    <div className="mb-3 flex items-end justify-between gap-4">
-      <div>
-        {eyebrow ? (
-          <div className="mb-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            {eyebrow}
-          </div>
-        ) : null}
-        <div className="text-[15px] font-semibold tracking-[-0.02em] text-[#19352d]">
-          {title}
-        </div>
-        {description ? (
-          <div className="mt-0.5 text-[10px] text-slate-400">{description}</div>
-        ) : null}
-      </div>
-      {action ? (
-        <button
-          type="button"
-          onClick={onAction}
-          className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#2f6655] hover:text-[#19352d]"
-        >
-          {action}
-          <ArrowRight size={12} />
-        </button>
-      ) : null}
-    </div>
-  );
-}
-
-function MetricCard({ icon: Icon, label, value, meta, tone = "brand" }) {
-  const iconTone =
-    tone === "danger"
-      ? "bg-red-50 text-red-600"
-      : tone === "warn"
-        ? "bg-amber-50 text-amber-600"
-        : tone === "blue"
-          ? "bg-blue-50 text-blue-600"
-          : "bg-[#f0f5f2] text-[#2f6655]";
-
-  return (
-    <div className="rounded-xl border border-[#e4e8e5] bg-white p-4 shadow-none">
-      <div
-        className={cn(
-          "flex h-8 w-8 items-center justify-center rounded-lg",
-          iconTone,
-        )}
-      >
-        <Icon size={15} strokeWidth={1.8} />
-      </div>
-      <div className="mt-3 text-[22px] font-semibold tracking-[-0.04em] text-[#19352d]">
-        {value}
-      </div>
-      <div className="mt-0.5 text-[10px] font-medium text-slate-500">
-        {label}
-      </div>
-      {meta ? (
-        <div className="mt-2 text-[9px] text-slate-400">{meta}</div>
-      ) : null}
-    </div>
-  );
-}
-
-function EmptyState({ children }) {
-  return (
-    <div className="px-4 py-8 text-center text-[10px] text-slate-400">
-      {children}
-    </div>
-  );
-}
-
-function ProjectProgress({ data }) {
-  if (!data) return <EmptyState>Loading project phases…</EmptyState>;
-
-  const currentPhase =
-    data.phases?.find((phase) => !phase.complete) ||
-    data.phases?.[data.phases.length - 1];
-
-  return (
-    <div className="rounded-xl border border-[#e4e8e5] bg-white p-4">
-      <div className="mb-4 flex flex-col justify-between gap-3 md:flex-row md:items-start">
-        <div>
-          <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Current execution position
-          </div>
-          <div className="mt-1 text-[16px] font-semibold text-[#19352d]">
-            {currentPhase?.name || "Project phases"}
-          </div>
-          <div className="mt-1 text-[10px] text-slate-400">
-            {data.completed_subphases || 0} of {data.total_subphases || 0} units
-            complete
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="text-[28px] font-semibold tracking-[-0.04em] text-[#19352d]">
-            {data.progress_pct || 0}%
-          </div>
-          <div className="text-[9px] text-slate-400">Overall progress</div>
-        </div>
-      </div>
-
-      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-        <div
-          className="h-full rounded-full bg-[#2f6655] transition-all"
-          style={{
-            width: `${Math.min(Math.max(data.progress_pct || 0, 0), 100)}%`,
-          }}
-        />
-      </div>
-
-      <div className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-6">
-        {(data.phases || []).map((phase, index) => {
-          const done = !!phase.complete;
-          const active = !done && currentPhase?.key === phase.key;
-          return (
-            <div
-              key={phase.key || index}
-              className={cn(
-                "rounded-lg border p-3",
-                active
-                  ? "border-[#aebfb5] bg-[#f7faf8]"
-                  : done
-                    ? "border-emerald-100 bg-emerald-50/50"
-                    : "border-[#edf0ee] bg-[#fafbfa]",
-              )}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="text-[10px] font-semibold leading-4 text-slate-700">
-                  {phase.name}
-                </div>
-                <span
-                  className={cn(
-                    "mt-0.5 h-2 w-2 flex-shrink-0 rounded-full",
-                    done
-                      ? "bg-emerald-500"
-                      : active
-                        ? "bg-[#2f6655]"
-                        : "bg-slate-300",
-                  )}
-                />
-              </div>
-              <div className="mt-2 text-[8px] uppercase tracking-[0.08em] text-slate-400">
-                {phase.subphase_count
-                  ? `${phase.completed_subphases || 0}/${phase.subphase_count} complete`
-                  : done
-                    ? "Completed"
-                    : active
-                      ? "Current"
-                      : "Pending"}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+/* ============================================================
+   SECTIONS
+============================================================ */
 
 function ActionRequired({ work, docs, onOpenDocuments }) {
-  const delayed = work.delayed || [];
-  const blocked = work.blocked || [];
-  const awaitingApproval = work.awaiting_approval || [];
-  const awaitingClient = work.awaiting_client || [];
-
   const items = [
-    ...delayed.map((item) => ({ ...item, type: "Delayed", severe: true })),
-    ...blocked.map((item) => ({ ...item, type: "Blocked", severe: true })),
-    ...awaitingApproval.map((item) => ({
-      ...item,
-      type: "Approval",
-      severe: false,
-    })),
-    ...awaitingClient.map((item) => ({
-      ...item,
-      type: "Client",
-      severe: false,
-    })),
+    ...(work.delayed || []).map((item) => ({ ...item, type: "Delayed", tone: "bad" })),
+    ...(work.blocked || []).map((item) => ({ ...item, type: "Blocked", tone: "bad" })),
+    ...(work.awaiting_approval || []).map((item) => ({ ...item, type: "Approval", tone: "warn" })),
+    ...(work.awaiting_client || []).map((item) => ({ ...item, type: "Client", tone: "lilac" })),
   ].slice(0, 7);
-
-  const missingDocs = docs.filter(
-    (doc) => doc.status === "MISSING" || doc.required_missing,
-  );
+  const missingDocs = docs.filter(isMissingDoc);
+  const count = items.length + missingDocs.length;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[#e4e8e5] bg-white">
-      <div className="flex items-center justify-between border-b border-[#edf0ee] px-4 py-3">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-50 text-red-500">
-            <AlertCircle size={14} />
-          </div>
-          <div>
-            <div className="text-[12px] font-semibold text-[#19352d]">
-              Action Required
+    <Card
+      flush
+      title="Action required"
+      subtitle="Items that can hold up this project"
+      actions={count ? <Pill tone="bad">{count} open</Pill> : <Pill tone="ok">All clear</Pill>}
+    >
+      {count === 0 ? (
+        <EmptyState icon={CheckCircle2} title="Nothing blocking" text="No blockers, pending approvals or missing documents right now." />
+      ) : (
+        <div className="pj-list">
+          {items.map((item, index) => (
+            <div className="pj-list-item" key={item.id || `${item.type}-${index}`}>
+              <Pill tone={item.tone} size="sm">
+                {item.type}
+              </Pill>
+              <div className="pj-list-item__main">
+                <div className="pj-list-item__title">{item.title || item.name || item.description}</div>
+                <div className="pj-list-item__sub">
+                  {item.assignee ? `${item.assignee} · ` : ""}
+                  {item.due_date ? `Due ${formatDate(item.due_date)}` : "Requires attention"}
+                </div>
+              </div>
             </div>
-            <div className="text-[9px] text-slate-400">
-              Items that can hold up this project
-            </div>
-          </div>
+          ))}
+          {missingDocs.slice(0, 3).map((doc) => (
+            <button type="button" key={doc.id} onClick={onOpenDocuments} className="pj-list-item">
+              <Pill tone="bad" size="sm">
+                Missing
+              </Pill>
+              <div className="pj-list-item__main">
+                <div className="pj-list-item__title">{doc.name}</div>
+                <div className="pj-list-item__sub">Required document not uploaded</div>
+              </div>
+              <ArrowRight size={15} className="pj-muted" aria-hidden />
+            </button>
+          ))}
         </div>
-        <span className="rounded-full bg-red-50 px-2 py-1 text-[9px] font-bold text-red-600">
-          {items.length + missingDocs.length}
-        </span>
-      </div>
-
-      {items.map((item, index) => (
-        <div
-          key={item.id || `${item.type}-${index}`}
-          className="flex gap-3 border-b border-[#edf0ee] px-4 py-3"
-        >
-          <span
-            className={cn(
-              "mt-1 h-2 w-2 flex-shrink-0 rounded-full",
-              item.severe ? "bg-red-500" : "bg-amber-500",
-            )}
-          />
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-[10.5px] font-medium text-slate-700">
-              {item.title || item.name || item.description}
-            </div>
-            <div className="mt-1 text-[9px] text-[#2f6655]">{item.type}</div>
-            <div className="mt-0.5 text-[8px] text-slate-400">
-              {item.assignee ? `${item.assignee} · ` : ""}
-              {item.due_date ? `Due ${item.due_date}` : "Requires attention"}
-            </div>
-          </div>
-        </div>
-      ))}
-
-      {missingDocs.slice(0, 3).map((doc) => (
-        <button
-          type="button"
-          key={doc.id}
-          onClick={onOpenDocuments}
-          className="flex w-full items-start gap-3 border-b border-[#edf0ee] px-4 py-3 text-left hover:bg-[#fbfcfb]"
-        >
-          <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-red-500" />
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-[10.5px] font-medium text-slate-700">
-              {doc.name}
-            </div>
-            <div className="mt-1 text-[9px] text-red-500">Missing document</div>
-          </div>
-          <ArrowRight size={12} className="mt-1 text-slate-300" />
-        </button>
-      ))}
-
-      {items.length === 0 && missingDocs.length === 0 ? (
-        <EmptyState>No blockers or pending approvals right now.</EmptyState>
-      ) : null}
-    </div>
+      )}
+    </Card>
   );
 }
 
 function WorkloadSnapshot({ work }) {
-  const cards = WORK_BUCKETS.map(([key, label]) => ({
-    key,
-    label,
-    count: work[key]?.length || 0,
-  }));
-
   return (
-    <div className="overflow-hidden rounded-xl border border-[#e4e8e5] bg-white">
-      <div className="border-b border-[#edf0ee] px-4 py-3">
-        <div className="text-[12px] font-semibold text-[#19352d]">
-          Work & Commitments
-        </div>
-        <div className="mt-0.5 text-[9px] text-slate-400">
-          Current project workload by urgency
-        </div>
-      </div>
-      <div className="grid grid-cols-2">
-        {cards.map((item, index) => (
-          <div
-            key={item.key}
-            className={cn(
-              "p-3",
-              index % 2 === 0 && "border-r border-[#edf0ee]",
-              index < cards.length - 2 && "border-b border-[#edf0ee]",
-            )}
-          >
-            <div
-              className={cn(
-                "text-[18px] font-semibold",
-                ["delayed", "blocked"].includes(item.key)
-                  ? item.count
-                    ? "text-red-500"
-                    : "text-[#19352d]"
-                  : ["due_today", "awaiting_approval"].includes(item.key)
-                    ? item.count
-                      ? "text-amber-600"
-                      : "text-[#19352d]"
-                    : "text-[#19352d]",
-              )}
-            >
-              {item.count}
+    <Card flush title="Work & commitments" subtitle="Current workload by urgency">
+      <div className="pj-figures pj-figures--end">
+        {WORK_BUCKETS.map(([key, label, tone]) => {
+          const count = work[key]?.length || 0;
+          return (
+            <div className="pj-figure" key={key}>
+              <div className="pj-figure__value" style={count && tone !== "mute" ? { color: `var(--${tone}-fg)` } : undefined}>
+                {count}
+              </div>
+              <div className="pj-figure__label">{label}</div>
             </div>
-            <div className="mt-0.5 text-[9px] text-slate-400">{item.label}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
-    </div>
+    </Card>
   );
 }
 
-function DocumentSnapshot({ docs, loading, onToggleVisibility, onOpenAll }) {
+function DocumentsPanel({ docs, loading, onToggleVisibility, onOpenAll, limit }) {
   const clientVisible = docs.filter((doc) => !!doc.client_visible).length;
-  const missing = docs.filter(
-    (doc) => doc.status === "MISSING" || doc.required_missing,
-  ).length;
+  const missing = docs.filter(isMissingDoc).length;
+  const list = limit ? docs.slice(0, limit) : docs;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[#e4e8e5] bg-white">
-      <div className="flex items-center justify-between border-b border-[#edf0ee] px-4 py-3">
-        <div>
-          <div className="text-[12px] font-semibold text-[#19352d]">
-            Document Control
-          </div>
-          <div className="mt-0.5 text-[9px] text-slate-400">
-            Project evidence and client visibility
-          </div>
+    <Card
+      flush
+      title="Document control"
+      subtitle="Project evidence and what the client can see"
+      actions={
+        <Button variant="secondary" size="sm" iconRight={ArrowRight} onClick={onOpenAll}>
+          Checklist
+        </Button>
+      }
+    >
+      <div className="pj-figures">
+        <div className="pj-figure">
+          <div className="pj-figure__value">{docs.length}</div>
+          <div className="pj-figure__label">Uploaded</div>
         </div>
-        <button
-          type="button"
-          onClick={onOpenAll}
-          className="text-[9px] font-semibold text-[#2f6655]"
-        >
-          Open module
-        </button>
-      </div>
-
-      <div className="grid grid-cols-3 border-b border-[#edf0ee]">
-        <div className="border-r border-[#edf0ee] p-3">
-          <div className="text-[17px] font-semibold text-[#19352d]">
-            {docs.length}
-          </div>
-          <div className="text-[8px] text-slate-400">Uploaded</div>
-        </div>
-        <div className="border-r border-[#edf0ee] p-3">
-          <div className="text-[17px] font-semibold text-emerald-600">
+        <div className="pj-figure">
+          <div className="pj-figure__value" style={clientVisible ? { color: "var(--ok-fg)" } : undefined}>
             {clientVisible}
           </div>
-          <div className="text-[8px] text-slate-400">Client-visible</div>
+          <div className="pj-figure__label">Client-visible</div>
         </div>
-        <div className="p-3">
-          <div className="text-[17px] font-semibold text-red-500">
+        <div className="pj-figure">
+          <div className="pj-figure__value" style={missing ? { color: "var(--bad-fg)" } : undefined}>
             {missing}
           </div>
-          <div className="text-[8px] text-slate-400">Missing</div>
+          <div className="pj-figure__label">Missing</div>
         </div>
       </div>
 
       {loading ? (
-        <EmptyState>Loading documents…</EmptyState>
+        <div style={{ padding: 20, display: "grid", gap: 8 }}>
+          <Skeleton height={40} />
+          <Skeleton height={40} />
+        </div>
       ) : docs.length === 0 ? (
-        <EmptyState>No documents yet.</EmptyState>
+        <EmptyState
+          icon={FileText}
+          title="No documents yet"
+          text="Upload drawings, approvals and site records from the document checklist."
+          action={
+            <Button variant="soft" size="sm" onClick={onOpenAll}>
+              Open checklist
+            </Button>
+          }
+        />
       ) : (
-        docs.slice(0, 5).map((doc) => (
-          <div
-            key={doc.id}
-            className="flex items-center gap-3 border-b border-[#edf0ee] px-4 py-3 last:border-0"
-          >
-            <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-[#f3f6f4] text-[#2f6655]">
-              <FileText size={13} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-[10px] font-medium text-slate-700">
-                {doc.name}
+        <div className="pj-list">
+          {list.map((doc) => (
+            <div key={doc.id} className="pj-list-item">
+              <span className="inos-icon-tile inos-icon-tile--sm">
+                <FileText aria-hidden />
+              </span>
+              <div className="pj-list-item__main">
+                <div className="pj-list-item__title">{doc.name || doc.title}</div>
+                <div className="pj-list-item__sub">
+                  {doc.category || "Document"} · {doc.uploaded_by || "—"}
+                </div>
               </div>
-              <div className="mt-0.5 truncate text-[8px] text-slate-400">
-                {doc.category || "Document"} · {doc.uploaded_by || "—"}
-              </div>
+              <label className="pj-check" title="Visible to client">
+                <input type="checkbox" checked={!!doc.client_visible} onChange={(e) => onToggleVisibility(doc.id, e.target.checked)} />
+                Client
+              </label>
             </div>
-            <label className="flex flex-shrink-0 items-center gap-1.5 text-[8px] text-slate-400">
-              <input
-                type="checkbox"
-                checked={!!doc.client_visible}
-                onChange={(e) => onToggleVisibility(doc.id, e.target.checked)}
-              />
-              Client
-            </label>
-          </div>
-        ))
+          ))}
+        </div>
       )}
-    </div>
+    </Card>
   );
 }
 
-function CommercialSnapshot({
-  financial,
-  boqs,
-  quotes,
-  vendors,
-  onOpenBoq,
-  onOpenQuotes,
-}) {
-  const approvedBoq = financial?.approved_boq_estimate || 0;
-  const committed = financial?.committed_cost || 0;
-  const projected = financial?.projected_final_cost || 0;
+function CommercialFigures({ financial, boqs, quotes, vendors, onOpenBoq, onOpenQuotes }) {
   const variation = financial?.cost_variation_pct;
-
   return (
-    <div className="overflow-hidden rounded-xl border border-[#e4e8e5] bg-white">
-      <div className="border-b border-[#edf0ee] px-4 py-3">
-        <div className="text-[12px] font-semibold text-[#19352d]">
-          Commercial & Procurement
-        </div>
-        <div className="mt-0.5 text-[9px] text-slate-400">
-          BOQ, quotations, commitments and engaged vendors
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4">
+    <Card flush title="Commercial & procurement" subtitle="BOQ, quotations, commitments and engaged vendors">
+      <div className="pj-figures">
         {[
-          ["Approved BOQ", fmtINR(approvedBoq)],
-          ["Committed", fmtINR(committed)],
-          ["Projected Final", fmtINR(projected)],
-          [
-            "Variation",
-            variation == null
-              ? "—"
-              : `${variation > 0 ? "+" : ""}${variation}%`,
-          ],
-        ].map(([label, value], index) => (
-          <div
-            key={label}
-            className={cn(
-              "p-4",
-              index < 3 && "lg:border-r lg:border-[#edf0ee]",
-              index % 2 === 0 && "border-r border-[#edf0ee] lg:border-r",
-              index < 2 && "border-b border-[#edf0ee] lg:border-b-0",
-            )}
-          >
-            <div className="text-[14px] font-semibold text-[#19352d]">
+          ["Approved BOQ", financial ? fmtINR(financial.approved_boq_estimate || 0) : "—"],
+          ["Committed", financial ? fmtINR(financial.committed_cost || 0) : "—"],
+          ["Projected final", financial ? fmtINR(financial.projected_final_cost || 0) : "—"],
+          ["Variation", variation == null ? "—" : `${variation > 0 ? "+" : ""}${variation}%`],
+        ].map(([label, value]) => (
+          <div className="pj-figure" key={label}>
+            <div className="pj-figure__value" style={{ fontSize: 17 }}>
               {value}
             </div>
-            <div className="mt-0.5 text-[8px] text-slate-400">{label}</div>
+            <div className="pj-figure__label">{label}</div>
           </div>
         ))}
       </div>
-
-      <div className="grid grid-cols-1 border-t border-[#edf0ee] md:grid-cols-3">
-        <button
-          type="button"
-          onClick={onOpenBoq}
-          className="flex items-center justify-between border-b border-[#edf0ee] px-4 py-3 text-left hover:bg-[#fbfcfb] md:border-b-0 md:border-r"
-        >
-          <div>
-            <div className="text-[15px] font-semibold text-[#19352d]">
-              {boqs.length}
-            </div>
-            <div className="text-[8px] text-slate-400">BOQ versions</div>
+      <div className="pj-list">
+        <button type="button" className="pj-list-item" onClick={onOpenBoq}>
+          <span className="inos-icon-tile inos-icon-tile--sm">
+            <ListChecks aria-hidden />
+          </span>
+          <div className="pj-list-item__main">
+            <div className="pj-list-item__title">BOQ versions</div>
           </div>
-          <ArrowRight size={13} className="text-slate-300" />
+          <span className="pj-list-item__end">{boqs.length}</span>
+          <ArrowRight size={15} className="pj-muted" aria-hidden />
         </button>
-        <button
-          type="button"
-          onClick={onOpenQuotes}
-          className="flex items-center justify-between border-b border-[#edf0ee] px-4 py-3 text-left hover:bg-[#fbfcfb] md:border-b-0 md:border-r"
-        >
-          <div>
-            <div className="text-[15px] font-semibold text-[#19352d]">
-              {quotes.length}
-            </div>
-            <div className="text-[8px] text-slate-400">Quotations</div>
+        <button type="button" className="pj-list-item" onClick={onOpenQuotes}>
+          <span className="inos-icon-tile inos-icon-tile--sm inos-icon-tile--info">
+            <Receipt aria-hidden />
+          </span>
+          <div className="pj-list-item__main">
+            <div className="pj-list-item__title">Quotations</div>
           </div>
-          <ArrowRight size={13} className="text-slate-300" />
+          <span className="pj-list-item__end">{quotes.length}</span>
+          <ArrowRight size={15} className="pj-muted" aria-hidden />
         </button>
-        <div className="px-4 py-3">
-          <div className="text-[15px] font-semibold text-[#19352d]">
-            {vendors.engaged?.length || 0}
+        <div className="pj-list-item">
+          <span className="inos-icon-tile inos-icon-tile--sm inos-icon-tile--lilac">
+            <Users aria-hidden />
+          </span>
+          <div className="pj-list-item__main">
+            <div className="pj-list-item__title">Engaged vendors</div>
           </div>
-          <div className="text-[8px] text-slate-400">Engaged vendors</div>
+          <span className="pj-list-item__end">{vendors.engaged?.length || 0}</span>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
-function RecentActivity({ rows }) {
+function BoqList({ boqs, loading, onViewAll }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-[#e4e8e5] bg-white">
-      <div className="flex items-center justify-between border-b border-[#edf0ee] px-4 py-3">
-        <div>
-          <div className="text-[12px] font-semibold text-[#19352d]">
-            Recent Activity
-          </div>
-          <div className="mt-0.5 text-[9px] text-slate-400">
-            Latest changes on this project
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 text-[8px] text-emerald-600">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          Live record
-        </div>
-      </div>
-      {rows.length === 0 ? (
-        <EmptyState>No activity yet.</EmptyState>
-      ) : (
-        rows.slice(0, 8).map((row, index) => (
-          <div
-            key={row.id || index}
-            className="flex gap-3 border-b border-[#edf0ee] px-4 py-3 last:border-0"
-          >
-            <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-[#f3f6f4] text-[#2f6655]">
-              <RefreshCw size={12} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-[10px] font-medium text-slate-700">
-                {row.description || row.action}
-              </div>
-              <div className="mt-0.5 text-[8px] text-slate-400">
-                {row.actor || row.user || "—"} ·{" "}
-                {relativeTime(row.at || row.created_at)}
-              </div>
-            </div>
-          </div>
-        ))
-      )}
-    </div>
-  );
-}
-
-function ShareClientModal({
-  open,
-  onClose,
-  form,
-  setForm,
-  createdLink,
-  onCreate,
-  onCopy,
-  onDone,
-}) {
-  if (!open) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#19352d]/40 p-4"
-      onClick={onClose}
+    <Card
+      flush
+      title="BOQ versions"
+      subtitle="Budget and costing history"
+      actions={
+        <Button variant="ghost" size="sm" iconRight={ArrowRight} onClick={onViewAll}>
+          View all
+        </Button>
+      }
     >
-      <div
-        className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="text-[16px] font-semibold text-[#19352d]">
-          Share with Client
+      {loading ? (
+        <div style={{ padding: 20 }}>
+          <Skeleton height={40} />
         </div>
-        <div className="mt-1 text-[10px] text-slate-400">
-          Generate a controlled client link for this project.
+      ) : boqs.length === 0 ? (
+        <EmptyState icon={ListChecks} title="No BOQs yet" text="Bills of quantities for this project will be listed here." />
+      ) : (
+        <div className="pj-list">
+          {boqs.slice(0, 5).map((boq) => (
+            <Link key={boq.id} to={`/ledger/boq/${boq.id}`} className="pj-list-item">
+              <div className="pj-list-item__main">
+                <div className="pj-list-item__title">BOQ v{boq.version}</div>
+                <div className="pj-list-item__sub">{relativeTime(boq.updated_at || boq.created_at)}</div>
+              </div>
+              <StatusPill status={boq.status} size="sm" />
+              <span className="pj-list-item__end">{fmtINR(boq.total_amount || 0)}</span>
+            </Link>
+          ))}
         </div>
+      )}
+    </Card>
+  );
+}
 
-        {!createdLink ? (
+function QuoteList({ quotes, loading, onViewAll }) {
+  return (
+    <Card
+      flush
+      title="Quotations"
+      subtitle="Vendor estimates and selection"
+      actions={
+        <Button variant="ghost" size="sm" iconRight={ArrowRight} onClick={onViewAll}>
+          View all
+        </Button>
+      }
+    >
+      {loading ? (
+        <div style={{ padding: 20 }}>
+          <Skeleton height={40} />
+        </div>
+      ) : quotes.length === 0 ? (
+        <EmptyState icon={Receipt} title="No quotations yet" text="Vendor quotations linked to this project will be listed here." />
+      ) : (
+        <div className="pj-list">
+          {quotes.slice(0, 5).map((quote) => (
+            <Link key={quote.id} to={`/procurement/estimates/${quote.id}`} className="pj-list-item">
+              <div className="pj-list-item__main">
+                <div className="pj-list-item__title">
+                  {quote.quotationNumber || quote.quotation_number || "Quotation"} · {quote.vendor?.name || quote.vendor_name || "Vendor"}
+                </div>
+                <div className="pj-list-item__sub">{quote.vendor?.vendorCategory?.name || quote.work_category || "—"}</div>
+              </div>
+              {quote.status && <StatusPill status={quote.status} size="sm" />}
+              <span className="pj-list-item__end">
+                {fmtINR(quote.totalAmount || quote.subtotal || quote.subtotals?.total || 0)}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function RecentActivity({ rows, limit }) {
+  const list = limit ? rows.slice(0, limit) : rows;
+  return (
+    <Card flush title="Recent activity" subtitle="Latest changes on this project">
+      {rows.length === 0 ? (
+        <EmptyState icon={Activity} title="No activity yet" text="Uploads, approvals and edits on this project will show up here." />
+      ) : (
+        <div className="pj-list">
+          {list.map((row, index) => (
+            <div key={row.id || index} className="pj-list-item">
+              <span className="inos-icon-tile inos-icon-tile--sm">
+                <RefreshCw aria-hidden />
+              </span>
+              <div className="pj-list-item__main">
+                <div className="pj-list-item__title" style={{ fontWeight: 550 }}>
+                  {row.description || row.action}
+                </div>
+                <div className="pj-list-item__sub">
+                  {row.actor || row.user || "—"} · {relativeTime(row.at || row.created_at)}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function PhasesCard({ phases, progress, detailed }) {
+  return (
+    <Card
+      title="Phases"
+      subtitle={
+        progress.total
+          ? `${progress.done} of ${progress.total} phases completed${progress.current ? ` · now in ${progress.current.name}` : ""}`
+          : "Delivery phases for this project"
+      }
+      actions={progress.total ? <PhaseLegend /> : null}
+    >
+      {!phases.length ? (
+        <EmptyState icon={GitCommitHorizontal} title="Phases not configured" text="Once phases are set up in the Admin Console, progress will show here." />
+      ) : (
+        <div style={{ display: "grid", gap: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ flex: 1 }}>
+              <Progress value={progress.percent} />
+            </div>
+            <span className="tabular" style={{ fontWeight: 700, fontSize: 15 }}>
+              {progress.percent}%
+            </span>
+          </div>
+          <PhaseTrack phases={phases} />
+          {detailed && (
+            <div className="inos-table-wrap" style={{ margin: "0 -20px -20px", borderTop: "1px solid var(--line)" }}>
+              <table className="inos-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 56 }}>#</th>
+                    <th>Phase</th>
+                    <th>Status</th>
+                    <th className="num">Documents</th>
+                    <th>Next up</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {phases.map((p, i) => (
+                    <tr key={p.id}>
+                      <td className="muted tabular">{String(i + 1).padStart(2, "0")}</td>
+                      <td style={{ fontWeight: 600 }}>{p.name}</td>
+                      <td>
+                        <Pill tone={p.status === "done" ? "ok" : p.status === "current" ? "brand" : "mute"} size="sm">
+                          {p.status === "done" ? "Completed" : p.status === "current" ? "In progress" : "Upcoming"}
+                        </Pill>
+                      </td>
+                      <td className="num">
+                        {p.docCounts ? (
+                          p.docCounts.total ? (
+                            `${p.docCounts.uploaded}/${p.docCounts.total}`
+                          ) : (
+                            <span className="muted">None set</span>
+                          )
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="muted">{p.pendingDocumentName || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+const PURPOSE_LABEL = Object.fromEntries(SHARE_PURPOSES.map((p) => [p.value, p.label]));
+
+/** Existing links for the project — copy again or revoke. */
+function ClientLinksList({ projectId, refreshKey, onCopy }) {
+  const [links, setLinks] = useState(null);
+  const load = () =>
+    api
+      .get(`/v1/client-links`, { params: { project_id: projectId } })
+      .then((r) => setLinks(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setLinks([]));
+  useEffect(() => {
+    if (projectId) load();
+  }, [projectId, refreshKey]); // eslint-disable-line
+  const revoke = async (id) => {
+    try {
+      await api.post(`/v1/client-links/${id}/revoke`);
+      toast.success("Link revoked — it no longer opens");
+      load();
+    } catch {
+      toast.error("Couldn't revoke the link");
+    }
+  };
+  const active = (links || []).filter((l) => l.state === "active");
+  if (!active.length) return null;
+  return (
+    <Field label={`Active links (${active.length})`}>
+      <div style={{ display: "grid", gap: 8 }}>
+        {active.slice(0, 5).map((l) => (
+          <div key={l.id} className="inos-card inos-card--inset" style={{ padding: "8px 12px", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>{PURPOSE_LABEL[l.purpose] || l.purpose}</div>
+              <div className="pj-muted" style={{ fontSize: 12 }}>
+                {l.client_name || l.client_email || "Client"} · expires {new Date(l.expires_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                {l.open_count ? ` · opened ${l.open_count}×` : " · not opened yet"}
+              </div>
+            </div>
+            {l.url && (
+              <Button variant="ghost" size="sm" icon={Copy} onClick={() => onCopy(l.url)}>
+                Copy
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" onClick={() => revoke(l.id)}>
+              Revoke
+            </Button>
+          </div>
+        ))}
+      </div>
+    </Field>
+  );
+}
+
+function ShareClientModal({ open, onClose, form, setForm, createdLink, onCreate, onCopy, onDone, projectId }) {
+  const [creating, setCreating] = useState(false);
+  const create = async () => {
+    setCreating(true);
+    try {
+      await onCreate();
+    } finally {
+      setCreating(false);
+    }
+  };
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Share with client"
+      description="Generate a controlled, read-only link for this project. Links expire after 30 days."
+      width={520}
+      footer={
+        !createdLink ? (
           <>
-            <label className="mt-4 block text-[9px] font-semibold uppercase tracking-[0.1em] text-slate-400">
-              Purpose
-            </label>
-            <select
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button variant="primary" icon={Share2} onClick={create} loading={creating}>
+              Create link
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="secondary" icon={Copy} onClick={() => onCopy(createdLink.url)}>
+              Copy
+            </Button>
+            <a href={createdLink.url} target="_blank" rel="noreferrer" className="inos-btn inos-btn--secondary">
+              <ExternalLink aria-hidden />
+              <span>Open</span>
+            </a>
+            <Button variant="primary" onClick={onDone}>
+              Done
+            </Button>
+          </>
+        )
+      }
+    >
+      {!createdLink ? (
+        <>
+          <Field label="Purpose">
+            <div className="pj-choices-2">
+            <ChoiceGroup
+              name="Purpose"
               value={form.purpose}
-              onChange={(e) =>
-                setForm((current) => ({ ...current, purpose: e.target.value }))
-              }
-              className="mt-1.5 h-9 w-full rounded-lg border border-[#dfe5e1] bg-white px-3 text-[11px] text-slate-700 outline-none"
-            >
-              <option value="project_view">Project View</option>
-              <option value="boq_approval">BOQ Approval</option>
-              <option value="quotation_selection">Quotation Selection</option>
-              <option value="handover_acceptance">Handover Acceptance</option>
-            </select>
-
-            <label className="mt-3 block text-[9px] font-semibold uppercase tracking-[0.1em] text-slate-400">
-              Client Name
-            </label>
-            <input
-              value={form.client_name}
-              onChange={(e) =>
-                setForm((current) => ({
-                  ...current,
-                  client_name: e.target.value,
-                }))
-              }
-              className="mt-1.5 h-9 w-full rounded-lg border border-[#dfe5e1] px-3 text-[11px] outline-none focus:border-[#2f6655]"
+              onChange={(purpose) => setForm((current) => ({ ...current, purpose }))}
+              options={SHARE_PURPOSES}
             />
-
-            <label className="mt-3 block text-[9px] font-semibold uppercase tracking-[0.1em] text-slate-400">
-              Client Email
-            </label>
-            <input
-              type="email"
-              value={form.client_email}
-              onChange={(e) =>
-                setForm((current) => ({
-                  ...current,
-                  client_email: e.target.value,
-                }))
-              }
-              className="mt-1.5 h-9 w-full rounded-lg border border-[#dfe5e1] px-3 text-[11px] outline-none focus:border-[#2f6655]"
-            />
-
-            <div className="mt-4 space-y-2 text-[10px] text-slate-600">
+            </div>
+          </Field>
+          <div className="inos-form-grid">
+            <Field label="Client name">
+              <TextInput
+                value={form.client_name}
+                onChange={(e) => setForm((current) => ({ ...current, client_name: e.target.value }))}
+                placeholder="e.g. Sagar Mehta"
+              />
+            </Field>
+            <Field label="Client email">
+              <TextInput
+                type="email"
+                value={form.client_email}
+                onChange={(e) => setForm((current) => ({ ...current, client_email: e.target.value }))}
+                placeholder="name@company.com"
+              />
+            </Field>
+          </div>
+          <ClientLinksList projectId={projectId} refreshKey={open} onCopy={onCopy} />
+          <Field label="The client can see">
+            <div style={{ display: "grid", gap: 10 }}>
               {[
-                ["show_rates", "Show rates on BOQ"],
-                ["show_vendor_names", "Show vendor names"],
-                ["show_ratings", "Show vendor ratings"],
+                ["show_rates", "Rates on the BOQ"],
+                ["show_vendor_names", "Vendor names"],
+                ["show_ratings", "Vendor ratings"],
               ].map(([key, label]) => (
-                <label key={key} className="flex items-center gap-2">
+                <label key={key} className="pj-check">
                   <input
                     type="checkbox"
                     checked={!!form[key]}
-                    onChange={(e) =>
-                      setForm((current) => ({
-                        ...current,
-                        [key]: e.target.checked,
-                      }))
-                    }
+                    onChange={(e) => setForm((current) => ({ ...current, [key]: e.target.checked }))}
                   />
                   {label}
                 </label>
               ))}
             </div>
-
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-lg border border-[#dfe5e1] px-3 py-2 text-[10px] font-semibold text-slate-500"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={onCreate}
-                className="rounded-lg bg-[#19352d] px-4 py-2 text-[10px] font-semibold text-white"
-              >
-                Create Link
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="mt-4">
-            <div className="mb-2 text-[11px] font-semibold text-emerald-600">
-              Link generated
-            </div>
-            <div className="break-all rounded-lg border border-[#e4e8e5] bg-[#f7f9f7] p-3 text-[10px] text-slate-500">
-              {createdLink.url}
-            </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => onCopy(createdLink.url)}
-                className="inline-flex items-center gap-1 rounded-lg border border-[#dfe5e1] px-3 py-2 text-[10px] font-semibold text-slate-600"
-              >
-                <Copy size={11} /> Copy
-              </button>
-              <a
-                href={createdLink.url}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-lg bg-[#19352d] px-3 py-2 text-[10px] font-semibold text-white"
-              >
-                Open
-              </a>
-              <button
-                type="button"
-                onClick={onDone}
-                className="rounded-lg bg-[#19352d] px-3 py-2 text-[10px] font-semibold text-white"
-              >
-                Done
-              </button>
-            </div>
+          </Field>
+        </>
+      ) : (
+        <>
+          <Pill tone="ok">Link generated</Pill>
+          <div className="inos-card inos-card--inset" style={{ padding: 12, fontSize: 13, color: "var(--text-2)", overflowWrap: "anywhere" }}>
+            {createdLink.url}
           </div>
-        )}
-      </div>
-    </div>
+        </>
+      )}
+    </Modal>
   );
 }
+
+/* ============================================================
+   PAGE
+============================================================ */
 
 export default function ProjectWorkspace() {
   const { id } = useParams();
   const nav = useNavigate();
+  const [tab, setTab] = useState("overview");
 
-  const {
-    data: projectData,
-    isLoading,
-    error,
-    refetch: refetchProject,
-  } = useGetProjectByIdQuery(id, { skip: !id });
+  const { data: projectData, isLoading, error, refetch: refetchProject } = useGetProjectByIdQuery(id, { skip: !id });
 
-  const {
-    data: boqs = [],
-    isFetching: boqsLoading,
-    refetch: refetchBoqs,
-  } = useGetBoqsQuery({ project_id: id }, { skip: !id });
+  const { data: boqsRaw = [], isFetching: boqsLoading, refetch: refetchBoqs } = useGetBoqsQuery({ project_id: id }, { skip: !id });
 
-  const {
-    data: docs = [],
-    isFetching: docsLoading,
-    refetch: refetchDocs,
-  } = useGetDocumentsQuery({ project_id: id }, { skip: !id });
+  const { data: docsRaw = [], isFetching: docsLoading, refetch: refetchDocs } = useGetDocumentsQuery({ project_id: id }, { skip: !id });
 
   const [updateDocument] = useUpdateDocumentMutation();
 
   const {
-    data: quotesFromApi = [],
+    data: quotesRaw = [],
     isFetching: quotesLoading,
     refetch: refetchQuotes,
   } = useGetQuotationsQuery({ project_id: id }, { skip: !id });
 
-  const quotes =
-    quotesFromApi.length > 0 ? quotesFromApi : projectData?.quotations || [];
+  // Phase + progress come from the Command Center rollup (same numbers as the Command Center);
+  // the document phase tree is only a fallback if that call fails.
+  const { data: ccPhases, isError: ccError } = useGetCommandCenterPhasesQuery(id, { skip: !id });
+  const { data: phaseTree } = useGetProjectDocumentPhaseTreeQuery(undefined, { skip: !id || !ccError });
+
+  const boqs = asArray(boqsRaw);
+  const docs = asArray(docsRaw);
+  const quotesFromApi = asArray(quotesRaw);
+  const quotes = quotesFromApi.length > 0 ? quotesFromApi : projectData?.quotations || [];
 
   const [phaseData, setPhaseData] = useState(null);
-
   const [work, setWork] = useState({});
   const [vendors, setVendors] = useState({ engaged: [], attached: [] });
   const [financial, setFinancial] = useState(null);
@@ -826,38 +676,32 @@ export default function ProjectWorkspace() {
 
   const loadSupplementary = async () => {
     if (!id) return;
+    const safe = (p, fallback) => p.then((r) => r ?? { data: fallback }).catch(() => ({ data: fallback }));
 
-    const [phase, ms, wk, vd, fn, activity] = await Promise.all([
-      api.get(`/projects/${id}/phases`).catch(() => ({ data: null })),
-
-      api.get(`/projects/${id}/pending-work`).catch(() => ({ data: {} })),
-      api
-        .get(`/projects/${id}/vendors`)
-        .catch(() => ({ data: { engaged: [], attached: [] } })),
-      api.get(`/projects/${id}/financial`).catch(() => ({ data: null })),
-      api
-        .get(`/projects/activity?limit=50&project_id=${id}`)
-        .catch(() => ({ data: projectData?.recent_activity || [] })),
+    // v1 rollups (ProjectOverviewController). Phase progress comes from the
+    // document phase tree below — there is no /projects/:id/phases route.
+    const [phase, wk, vd, fn, activity] = await Promise.all([
+      Promise.resolve({ data: null }),
+      safe(api.get(`/v1/projects/${id}/pending-work`), {}),
+      safe(api.get(`/v1/projects/${id}/vendors`), { engaged: [], attached: [] }),
+      safe(api.get(`/v1/projects/${id}/financial`), null),
+      safe(api.get(`/v1/projects/${id}/activity?limit=50`), projectData?.recent_activity || []),
     ]);
 
-    setPhaseData(phase.data);
-
-    setWork(wk.data || {});
-    setVendors(vd.data || { engaged: [], attached: [] });
-    setFinancial(fn.data);
-    setActivityRows(activity.data || projectData?.recent_activity || []);
+    setPhaseData(phase?.data || null);
+    setWork(wk?.data && typeof wk.data === "object" ? wk.data : {});
+    setVendors(vd?.data || { engaged: [], attached: [] });
+    setFinancial(fn?.data || null);
+    setActivityRows(Array.isArray(activity?.data) ? activity.data : projectData?.recent_activity || []);
   };
 
   useEffect(() => {
     if (!id || !projectData) return;
-
     loadSupplementary();
-
     setShareForm((current) => ({
       ...current,
       client_email: projectData.client?.email || "",
-      client_name:
-        projectData.client?.name || projectData.client?.contact_person || "",
+      client_name: projectData.client?.name || projectData.client?.contact_person || "",
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, projectData]);
@@ -873,13 +717,7 @@ export default function ProjectWorkspace() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.allSettled([
-        refetchProject(),
-        refetchBoqs(),
-        refetchDocs(),
-        refetchQuotes(),
-        loadSupplementary(),
-      ]);
+      await Promise.allSettled([refetchProject(), refetchBoqs(), refetchDocs(), refetchQuotes(), loadSupplementary()]);
       toast.success("Project dashboard refreshed");
     } finally {
       setRefreshing(false);
@@ -899,13 +737,12 @@ export default function ProjectWorkspace() {
         show_ratings: shareForm.show_ratings,
       },
     };
-
     try {
-      const { data } = await api.post("/client-links", payload);
+      const { data } = await api.post("/v1/client-links", payload);
       setCreatedLink(data);
       toast.success("Client link created");
-    } catch {
-      toast.error("Failed to create client link");
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to create client link");
     }
   };
 
@@ -914,331 +751,203 @@ export default function ProjectWorkspace() {
     toast.success("Copied");
   };
 
+  /* -------------------------------------------------- phases */
+
+  const phases = useMemo(() => {
+    if (ccPhases?.phases?.length) return normalizeCommandCenterPhases(ccPhases);
+    if (phaseData?.phases?.length) return normalizeWorkspacePhases(phaseData);
+    const entries = Array.isArray(phaseTree?.projects) ? phaseTree.projects : [];
+    const entry = entries.find((e) => String(e?.id) === String(id));
+    return normalizeTreePhases(entry?.phases || []);
+  }, [ccPhases, phaseData, phaseTree, id]);
+
+  const progress = useMemo(() => {
+    if (ccPhases?.phases?.length) return commandCenterProgress(ccPhases, phases);
+    const base = phaseProgress(phases);
+    if (phaseData?.progress_pct != null) return { ...base, percent: Math.round(Number(phaseData.progress_pct) || 0) };
+    return base;
+  }, [phases, phaseData, ccPhases]);
+
   const stats = useMemo(() => {
     const delayed = work.delayed?.length || 0;
     const blocked = work.blocked?.length || 0;
     const approvals = work.awaiting_approval?.length || 0;
-    const missingDocs = docs.filter(
-      (doc) => doc.status === "MISSING" || doc.required_missing,
-    ).length;
-
+    const missingDocs = docs.filter(isMissingDoc).length;
     return {
-      progress: phaseData?.progress_pct ?? projectData?.progress ?? 0,
       openActions: delayed + blocked + approvals + missingDocs,
       docs: docs.length,
       quotes: quotes.length,
       vendors: vendors.engaged?.length || 0,
     };
-  }, [work, docs, phaseData, projectData, quotes, vendors]);
+  }, [work, docs, quotes, vendors]);
+
+  /* -------------------------------------------------- states */
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f5f7f5] p-8 text-[12px] text-slate-400">
-        Loading project dashboard…
-      </div>
+      <Page className="pj-page">
+        <PageHeader crumbs={[{ label: "Projects", to: "/projects" }, { label: "Loading…" }]} title="Loading project…" />
+        <Stats>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={104} />
+          ))}
+        </Stats>
+        <Skeleton height={220} />
+      </Page>
     );
   }
 
   if (error || !projectData) {
     return (
-      <div className="min-h-screen bg-[#f5f7f5] p-8 text-[12px] text-red-600">
-        Failed to load project.
-      </div>
+      <Page className="pj-page">
+        <PageHeader crumbs={[{ label: "Projects", to: "/projects" }, { label: "Not found" }]} title="Project unavailable" />
+        <Card>
+          <EmptyState
+            icon={FolderOpen}
+            title="This project could not be loaded"
+            text="It may have been deleted or you may not have access. Try again, or go back to all projects."
+            action={
+              <div style={{ display: "flex", gap: 8 }}>
+                <Button variant="secondary" icon={RefreshCw} onClick={() => refetchProject()}>
+                  Retry
+                </Button>
+                <Button variant="primary" onClick={() => nav("/projects")}>
+                  All projects
+                </Button>
+              </div>
+            }
+          />
+        </Card>
+      </Page>
     );
   }
 
   const p = projectData;
-  const projectStatus = p.status?.toLowerCase() || "on_track";
+  const projectStatus = p.status?.toLowerCase() || "active";
+  const clientName = p.client?.name || p.client?.contact_person;
+  const typeName = p.project_type?.name || (typeof p.project_type === "string" ? p.project_type : "");
+  const openDocs = () => nav(`/projects/documents/all?project_id=${id}`);
+  const openBoq = () => nav(`/ledger/boq/all?project=${id}`);
+  const openQuotes = () => nav(`/procurement/estimates/all?project=${id}`);
+  const activity = activityRows.length ? activityRows : p.recent_activity || [];
+
+  const phaseLabel = progress.current?.name || (progress.total && progress.done === progress.total ? "Complete" : "Not started");
 
   return (
-    <div className="min-h-screen bg-[#f5f7f5] text-[#19352d]">
-      <main className="mx-auto max-w-[1700px] px-5 py-6 lg:px-7">
-        <button
-          type="button"
-          onClick={() => nav("/projects")}
-          className="mb-4 inline-flex items-center gap-1.5 text-[10px] font-medium text-slate-400 hover:text-[#19352d]"
-        >
-          <ArrowLeft size={12} />
-          Projects
-        </button>
+    <Page className="pj-page">
+      <PageHeader
+        crumbs={[{ label: "Projects", to: "/projects" }, { label: p.name }]}
+        title={p.name}
+        subtitle={[p.site_location || "No site location", clientName, typeName].filter(Boolean).join(" · ")}
+        actions={
+          <>
+            <Button variant="ghost" icon={RefreshCw} onClick={handleRefresh} disabled={refreshing} aria-label="Refresh" title="Refresh" />
+            <Button variant="secondary" icon={Pencil} onClick={() => nav(`/projects/${id}/edit`)}>
+              Edit
+            </Button>
+            <Button variant="secondary" icon={Package} onClick={() => nav(`/projects/${id}/handover`)}>
+              Handover
+            </Button>
+            <Button variant="primary" icon={Share2} onClick={() => setShareModal(true)}>
+              Share with client
+            </Button>
+          </>
+        }
+      />
 
-        {/* PROJECT HEADER */}
-        <div className="rounded-2xl border border-[#e4e8e5] bg-white p-5">
-          <div className="flex flex-col justify-between gap-5 xl:flex-row xl:items-start">
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <StatusBadge status={projectStatus} />
-                <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-slate-400">
-                  {p.slug?.toUpperCase() || p.id?.slice(0, 8)}
-                </span>
-                <span className="rounded-md bg-[#f1f4f2] px-2 py-1 text-[9px] font-semibold text-slate-500">
-                  {p.priority || "Medium"} priority
-                </span>
-              </div>
+      <div className="pj-chip-row" style={{ marginTop: -12 }}>
+        <StatusPill status={projectStatus} />
+        {p.priority && (
+          <Pill tone={p.priority === "CRITICAL" ? "bad" : p.priority === "HIGH" ? "peach" : "mute"} dot={false}>
+            {prettyStatus(String(p.priority).toLowerCase())} priority
+          </Pill>
+        )}
+        {p.expected_completion_date && (
+          <Pill tone="mute" dot={false}>
+            ECD {formatDate(p.expected_completion_date)}
+          </Pill>
+        )}
+        {p.slug && <span className="pj-code">{p.slug}</span>}
+      </div>
 
-              <h1 className="mt-3 text-[28px] font-semibold tracking-[-0.04em] text-[#19352d] lg:text-[32px]">
-                {p.name}
-              </h1>
+      <Stats>
+        <StatTile
+          label="Progress"
+          value={`${progress.percent}%`}
+          meta={progress.total ? `${progress.done} of ${progress.total} phases` : "Phases not configured"}
+          icon={<GitCommitHorizontal />}
+        />
+        <StatTile label="Current phase" value={<span style={{ fontSize: 20 }}>{phaseLabel}</span>} meta={progress.current?.pendingDocumentName || (progress.currentNumber ? `Phase ${progress.currentNumber}` : "Nothing uploaded yet")} icon={<LayoutDashboard />} tone="info" />
+        <StatTile
+          label="Open actions"
+          value={stats.openActions}
+          meta="Blockers, approvals, missing docs"
+          icon={<AlertCircle />}
+          tone={stats.openActions ? "bad" : "ok"}
+          onClick={() => setTab("overview")}
+        />
+        <StatTile label="Documents" value={stats.docs} meta={docsLoading ? "Refreshing…" : "Uploaded to this project"} icon={<FileText />} tone="lilac" onClick={() => setTab("documents")} />
+        <StatTile
+          label="Approved BOQ"
+          value={financial ? fmtINR(financial.approved_boq_estimate || 0) : "—"}
+          meta={`${boqs.length} BOQ version${boqs.length === 1 ? "" : "s"} · ${stats.quotes} quote${stats.quotes === 1 ? "" : "s"}`}
+          icon={<IndianRupee />}
+          tone="peach"
+          onClick={() => setTab("commercial")}
+        />
+      </Stats>
 
-              <div className="mt-1.5 text-[11px] text-slate-400">
-                {p.client?.name || p.client?.contact_person || "No client"} ·{" "}
-                {p.site_location || "No site location"} ·{" "}
-                {p.project_type?.name || p.project_type || "Project"}
-              </div>
+      <Tabs
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: "overview", label: "Overview", icon: LayoutDashboard },
+          { value: "phases", label: "Phases", icon: GitCommitHorizontal, count: progress.total || undefined },
+          { value: "documents", label: "Documents", icon: FileText, count: docs.length },
+          { value: "drawings", label: "Drawings", icon: FolderOpen },
+          { value: "commercial", label: "Commercial", icon: IndianRupee },
+          { value: "activity", label: "Activity", icon: Activity },
+        ]}
+      />
 
-              <div className="mt-5 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShareModal(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#19352d] px-3 py-2 text-[10px] font-semibold text-white hover:bg-[#0f231d]"
-                >
-                  <Share2 size={12} />
-                  Share with Client
-                </button>
-                <button
-                  type="button"
-                  onClick={() => nav(`/projects/${id}/handover`)}
-                  className="rounded-lg border border-[#dfe5e1] bg-white px-3 py-2 text-[10px] font-semibold text-slate-600 hover:border-[#aebfb5]"
-                >
-                  Handover Package
-                </button>
-                <button
-                  type="button"
-                  onClick={handleRefresh}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-[#dfe5e1] bg-white px-3 py-2 text-[10px] font-semibold text-slate-500 hover:border-[#aebfb5]"
-                >
-                  <RefreshCw
-                    size={12}
-                    className={refreshing ? "animate-spin" : ""}
-                  />
-                  Refresh
-                </button>
-              </div>
-            </div>
-
-            <div className="grid w-full grid-cols-2 gap-2 md:grid-cols-4 xl:w-auto xl:min-w-[540px]">
-              {[
-                ["Current phase", (p.phase || "—").replace(/_/g, " ")],
-                ["Progress", `${stats.progress}%`],
-                ["ECD", p.expected_completion_date || "—"],
-                ["Open actions", stats.openActions],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-xl bg-[#f7f9f7] p-3">
-                  <div className="text-[8px] font-semibold uppercase tracking-[0.1em] text-slate-400">
-                    {label}
-                  </div>
-                  <div className="mt-1 text-[13px] font-semibold text-[#19352d]">
-                    {value}
-                  </div>
-                </div>
-              ))}
-            </div>
+      {tab === "overview" && (
+        <>
+          <PhasesCard phases={phases} progress={progress} />
+          <div className="pj-two-col">
+            <ActionRequired work={work} docs={docs} onOpenDocuments={openDocs} />
+            <WorkloadSnapshot work={work} />
           </div>
-        </div>
-
-        {/* KPI STRIP */}
-        <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
-          <MetricCard
-            icon={BriefcaseBusiness}
-            label="Project Progress"
-            value={`${stats.progress}%`}
-            meta="Across configured phases"
-          />
-          <MetricCard
-            icon={AlertCircle}
-            label="Action Required"
-            value={stats.openActions}
-            meta="Blockers, approvals, missing docs"
-            tone={stats.openActions ? "danger" : "brand"}
-          />
-          <MetricCard
-            icon={FileText}
-            label="Documents"
-            value={stats.docs}
-            meta={docsLoading ? "Refreshing…" : "Project documents"}
-          />
-          <MetricCard
-            icon={DollarSign}
-            label="Approved BOQ"
-            value={
-              financial ? fmtINR(financial.approved_boq_estimate || 0) : "—"
-            }
-            meta={`${boqs.length} BOQ version${boqs.length === 1 ? "" : "s"}`}
-          />
-          <MetricCard
-            icon={ListChecks}
-            label="Quotations"
-            value={stats.quotes}
-            meta={quotesLoading ? "Refreshing…" : "Project estimates"}
-            tone="blue"
-          />
-          <MetricCard
-            icon={Users}
-            label="Engaged Vendors"
-            value={stats.vendors}
-            meta="Selected / engaged"
-          />
-        </div>
-
-        {/* EXECUTION POSITION */}
-        <section className="mt-7">
-          <SectionHeader
-            eyebrow="Execution"
-            title="Project Progress & Phases"
-            description="Single view of the project's current execution position"
-          />
-          <ProjectProgress data={phaseData} />
-        </section>
-
-        {/* PRIORITY ROW */}
-        <section className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-[1.45fr_0.8fr]">
-          <ActionRequired
-            work={work}
-            docs={docs}
-            onOpenDocuments={() => nav(`/documents?project=${id}`)}
-          />
-          <WorkloadSnapshot work={work} />
-        </section>
-
-        {/* CONTROL ROW */}
-        <section className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <DocumentSnapshot
-            docs={docs}
-            loading={docsLoading}
-            onToggleVisibility={toggleDocVisibility}
-            onOpenAll={() => nav(`/documents?project=${id}`)}
-          />
-          <CommercialSnapshot
-            financial={financial}
-            boqs={boqs}
-            quotes={quotes}
-            vendors={vendors}
-            onOpenBoq={() => nav(`/boq?project=${id}`)}
-            onOpenQuotes={() => nav(`/quotations?project=${id}`)}
-          />
-        </section>
-
-        {/* M ACTIVITY */}
-        <section className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-[0.85fr_1.15fr]">
-          <RecentActivity
-            rows={activityRows.length ? activityRows : p.recent_activity || []}
-          />
-        </section>
-
-        {/* DETAIL LISTS */}
-        <section className="mt-7">
-          <SectionHeader
-            eyebrow="Commercial detail"
-            title="Latest BOQ & Quotations"
-            description="Fast access without leaving the project dashboard"
-          />
-
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <div className="overflow-hidden rounded-xl border border-[#e4e8e5] bg-white">
-              <div className="flex items-center justify-between border-b border-[#edf0ee] px-4 py-3">
-                <div>
-                  <div className="text-[12px] font-semibold text-[#19352d]">
-                    BOQ Versions
-                  </div>
-                  <div className="mt-0.5 text-[9px] text-slate-400">
-                    Budget and costing history
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => nav(`/boq?project=${id}`)}
-                  className="text-[9px] font-semibold text-[#2f6655]"
-                >
-                  View all
-                </button>
-              </div>
-
-              {boqsLoading ? (
-                <EmptyState>Loading BOQs…</EmptyState>
-              ) : boqs.length === 0 ? (
-                <EmptyState>No BOQs for this project.</EmptyState>
-              ) : (
-                boqs.slice(0, 5).map((boq) => (
-                  <Link
-                    key={boq.id}
-                    to={`/boq/${boq.id}`}
-                    className="flex items-center justify-between gap-4 border-b border-[#edf0ee] px-4 py-3 last:border-0 hover:bg-[#fbfcfb]"
-                  >
-                    <div className="min-w-0">
-                      <div className="truncate text-[10px] font-semibold text-slate-700">
-                        BOQ V{boq.version} · {boq.status}
-                      </div>
-                      <div className="mt-0.5 text-[8px] text-slate-400">
-                        {relativeTime(boq.updated_at || boq.created_at)}
-                      </div>
-                    </div>
-                    <div className="text-[10px] font-semibold text-[#19352d]">
-                      {fmtINR(boq.total_amount || 0)}
-                    </div>
-                  </Link>
-                ))
-              )}
-            </div>
-
-            <div className="overflow-hidden rounded-xl border border-[#e4e8e5] bg-white">
-              <div className="flex items-center justify-between border-b border-[#edf0ee] px-4 py-3">
-                <div>
-                  <div className="text-[12px] font-semibold text-[#19352d]">
-                    Quotations
-                  </div>
-                  <div className="mt-0.5 text-[9px] text-slate-400">
-                    Vendor estimates and selection
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => nav(`/quotations?project=${id}`)}
-                  className="text-[9px] font-semibold text-[#2f6655]"
-                >
-                  View all
-                </button>
-              </div>
-
-              {quotesLoading ? (
-                <EmptyState>Loading quotations…</EmptyState>
-              ) : quotes.length === 0 ? (
-                <EmptyState>No quotations for this project.</EmptyState>
-              ) : (
-                quotes.slice(0, 5).map((quote) => (
-                  <Link
-                    key={quote.id}
-                    to={`/quotations/${quote.id}`}
-                    className="flex items-center justify-between gap-4 border-b border-[#edf0ee] px-4 py-3 last:border-0 hover:bg-[#fbfcfb]"
-                  >
-                    <div className="min-w-0">
-                      <div className="truncate text-[10px] font-semibold text-slate-700">
-                        {quote.quotationNumber ||
-                          quote.quotation_number ||
-                          "Quotation"}{" "}
-                        · {quote.vendor?.name || quote.vendor_name || "Vendor"}
-                      </div>
-                      <div className="mt-0.5 text-[8px] text-slate-400">
-                        {quote.vendor?.vendorCategory?.name ||
-                          quote.work_category ||
-                          "—"}{" "}
-                        · {quote.status || "—"}
-                      </div>
-                    </div>
-                    <div className="text-[10px] font-semibold text-[#19352d]">
-                      {fmtINR(
-                        quote.totalAmount ||
-                          quote.subtotal ||
-                          quote.subtotals?.total ||
-                          0,
-                      )}
-                    </div>
-                  </Link>
-                ))
-              )}
-            </div>
+          <div className="pj-two-col pj-two-col--even">
+            <DocumentsPanel docs={docs} loading={docsLoading} onToggleVisibility={toggleDocVisibility} onOpenAll={openDocs} limit={5} />
+            <RecentActivity rows={activity} limit={6} />
           </div>
-        </section>
-      </main>
+          {p.description && (
+            <Card title="Brief">
+              <p style={{ margin: 0, color: "var(--text-2)" }}>{p.description}</p>
+            </Card>
+          )}
+        </>
+      )}
+
+      {tab === "phases" && <PhasesCard phases={phases} progress={progress} detailed />}
+
+      {tab === "documents" && (
+        <DocumentsPanel docs={docs} loading={docsLoading} onToggleVisibility={toggleDocVisibility} onOpenAll={openDocs} />
+      )}
+
+      {tab === "drawings" && <ProjectDrawingsPanel projectId={id} />}
+
+      {tab === "commercial" && (
+        <>
+          <CommercialFigures financial={financial} boqs={boqs} quotes={quotes} vendors={vendors} onOpenBoq={openBoq} onOpenQuotes={openQuotes} />
+          <div className="pj-two-col pj-two-col--even">
+            <BoqList boqs={boqs} loading={boqsLoading} onViewAll={openBoq} />
+            <QuoteList quotes={quotes} loading={quotesLoading} onViewAll={openQuotes} />
+          </div>
+        </>
+      )}
+
+      {tab === "activity" && <RecentActivity rows={activity} />}
 
       <ShareClientModal
         open={shareModal}
@@ -1248,11 +957,12 @@ export default function ProjectWorkspace() {
         createdLink={createdLink}
         onCreate={createLink}
         onCopy={copyUrl}
+        projectId={id}
         onDone={() => {
           setCreatedLink(null);
           setShareModal(false);
         }}
       />
-    </div>
+    </Page>
   );
 }

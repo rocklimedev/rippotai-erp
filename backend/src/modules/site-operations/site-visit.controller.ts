@@ -1,64 +1,67 @@
 import {
-  Body,
   Controller,
-  Delete,
   Get,
-  Param,
-  ParseUUIDPipe,
-  Patch,
   Post,
+  Patch,
+  Body,
+  Param,
   Query,
-  Req,
+  ParseIntPipe,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { SiteVisitService } from './site-visit.service';
 import {
-  CreateSiteVisitDto,
-  GenerateProjectVisitsDto,
-  QuerySiteVisitDto,
+  CreateVisitAssignmentDto,
+  LogSiteVisitDto,
   UpdateSiteVisitDto,
-} from './dto/site-visit.dto';
+} from './dto/visit.dto';
 
-// TODO: add your AuthGuard / PermissionsGuard
-@Controller('architect/visits')
+@Controller('site-ops/visits')
 export class SiteVisitController {
-  constructor(private readonly service: SiteVisitService) {}
+  constructor(private readonly visitService: SiteVisitService) {}
 
-  @Post()
-  create(@Body() dto: CreateSiteVisitDto, @Req() req: any) {
-    return this.service.create(dto, req.user?.id);
+  // Central assignment
+  @Post('assignments')
+  createAssignment(@Body() dto: CreateVisitAssignmentDto) {
+    return this.visitService.createAssignment(dto);
   }
 
-  @Post('generate')
-  generate(@Body() dto: GenerateProjectVisitsDto, @Req() req: any) {
-    return this.service.generateForProject(dto, req.user?.id);
+  @Get('assignments/projects/:projectId')
+  listAssignments(@Param('projectId', ParseUUIDPipe) projectId: string) {
+    return this.visitService.listAssignments(projectId);
   }
 
-  @Get()
-  findAll(@Query() q: QuerySiteVisitDto) {
-    return this.service.findAll(q);
+  @Patch('assignments/:id/deactivate')
+  deactivateAssignment(@Param('id', ParseIntPipe) id: number) {
+    return this.visitService.deactivateAssignment(id);
   }
 
-  @Get('progress/:projectId')
-  progress(@Param('projectId', ParseUUIDPipe) projectId: string) {
-    return this.service.projectProgress(projectId);
+  // Logging
+  @Post('log')
+  logVisit(@Body() dto: LogSiteVisitDto) {
+    return this.visitService.logVisit(dto);
   }
 
-  @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.service.findOne(id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id', ParseUUIDPipe) id: string,
+  @Patch('log/:id')
+  updateVisit(
+    @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateSiteVisitDto,
-    @Req() req: any,
   ) {
-    return this.service.update(id, dto, req.user?.id);
+    return this.visitService.updateVisit(id, dto);
   }
 
-  @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.service.remove(id);
+  @Post('log/:id/check-in')
+  checkIn(@Param('id', ParseIntPipe) id: number) {
+    return this.visitService.checkIn(id);
+  }
+
+  /** GET /site-ops/visits/log/projects/:projectId?from=2026-08-01&to=2026-08-31 */
+  @Get('log/projects/:projectId')
+  getVisitLog(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.visitService.getVisitLog(projectId, from, to);
   }
 }

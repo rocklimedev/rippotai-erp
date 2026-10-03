@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "@/lib/api";
-import { relativeTime } from "@/lib/format";
 import { LogOut } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -9,12 +8,21 @@ export default function ClientHome() {
   const [data, setData] = useState(null);
   const { logout, user } = useAuth();
 
+  const [failed, setFailed] = useState(false);
+
   useEffect(() => {
     api
-      .get("/client-home")
+      .get("/v1/client-home")
       .then((r) => setData(r.data))
-      .catch(() => {});
+      .catch(() => setFailed(true));
   }, []);
+
+  if (failed)
+    return (
+      <div className="min-h-screen bg-[#EAEEF0] flex items-center justify-center text-[#6B7B7C]">
+        Couldn't load your projects. Please refresh, or contact the Rippotai team.
+      </div>
+    );
 
   if (!data)
     return (
@@ -80,6 +88,13 @@ export default function ClientHome() {
           </div>
         )}
 
+        {!data.projects.length && !data.magic_links.length && (
+          <div className="mt-8 bg-white/70 border border-[#B5C4B6] rounded-xl p-6 text-[13.5px] text-[#6B7B7C]">
+            Nothing to review right now. When the Rippotai team shares a BOQ, a vendor comparison or your
+            handover package, it will appear here.
+          </div>
+        )}
+
         {data.magic_links.length > 0 && (
           <div className="mt-8">
             <div className="text-[12px] font-bold uppercase tracking-wider text-[#B5C4B6] mb-2">
@@ -98,7 +113,7 @@ export default function ClientHome() {
                       {l.purpose.replace(/_/g, " ")}
                     </div>
                     <div className="text-[11.5px] text-[#6B7B7C]">
-                      {l.project_name} · Expires {relativeTime(l.expires_at)}
+                      {l.project_name} · Valid until {new Date(l.expires_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                     </div>
                   </div>
                   <div className="text-[#333333] font-semibold">Open →</div>

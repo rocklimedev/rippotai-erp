@@ -53,6 +53,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { useGetQcHandoffStatusQuery } from "@/api/procuerment/site-ops.api";
+import { useSiteProjects, useProjectParam, ProjectPicker, rowProjectName } from "./siteProjects";
 
 /**
  * PAGE 7 — QC HANDOFF STATUS
@@ -142,24 +143,17 @@ function SummaryCard({
 }
 
 export default function QcHandoffStatus() {
-  const [projectId, setProjectId] = useState("");
+  const [projectId, setProjectId] = useProjectParam();
+  const { projects, nameOf } = useSiteProjects();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [expandedRows, setExpandedRows] = useState({});
 
-  /*
-   * Replace this with your actual project selector/query.
-   *
-   * The API requires:
-   * GET /site-ops/qc/projects/:projectId/handoff-status
-   */
-  const selectedProjectId = projectId ? Number(projectId) : undefined;
+  // GET /site-ops/qc/handoff-status?projectId= — every project when none is picked
+  const selectedProjectId = projectId || "ALL";
 
   const { data, isLoading, isFetching, refetch } = useGetQcHandoffStatusQuery(
-    selectedProjectId,
-    {
-      skip: !selectedProjectId,
-    },
+    projectId || undefined,
   );
 
   /*
@@ -201,6 +195,7 @@ export default function QcHandoffStatus() {
     return rows.filter((row) => {
       const searchableText = [
         row.stepName,
+        rowProjectName(row, nameOf),
         row.phaseName,
         row.tradeName,
         row.tradeTeamName,
@@ -223,7 +218,7 @@ export default function QcHandoffStatus() {
 
       return matchesSearch && matchesStatus;
     });
-  }, [rows, search, statusFilter]);
+  }, [rows, search, statusFilter, nameOf]);
 
   const summary = useMemo(() => {
     const total = rows.length;
@@ -334,19 +329,10 @@ export default function QcHandoffStatus() {
                   Project
                 </label>
 
-                {/*
-                  Replace this with useGetProjectsQuery()
-                  when the project selector is connected.
-                */}
-                <Input
-                  value={projectId}
-                  onChange={(event) => setProjectId(event.target.value)}
-                  placeholder="Enter project ID"
-                  type="number"
-                />
+                <ProjectPicker value={projectId} onChange={setProjectId} projects={projects} />
               </div>
 
-              {!selectedProjectId && (
+              {false && (
                 <Alert className="border-amber-200 bg-amber-50 lg:flex-1">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
 
@@ -485,7 +471,7 @@ export default function QcHandoffStatus() {
                       <TableRow className="bg-muted/40">
                         <TableHead className="w-[40px]" />
 
-                        <TableHead>Phase / Step</TableHead>
+                        <TableHead>Step · Project</TableHead>
 
                         <TableHead>Trade</TableHead>
 
@@ -563,11 +549,9 @@ export default function QcHandoffStatus() {
                                 <div>
                                   <p className="font-medium">{phaseName}</p>
 
-                                  {row.stepId && (
-                                    <p className="text-xs text-muted-foreground">
-                                      Step #{row.stepId}
-                                    </p>
-                                  )}
+                                  <p className="text-xs font-medium text-[#1F453B]">
+                                    {rowProjectName(row, nameOf)}
+                                  </p>
                                 </div>
                               </TableCell>
 

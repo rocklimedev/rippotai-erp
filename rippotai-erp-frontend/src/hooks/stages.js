@@ -1,98 +1,75 @@
 // src/hooks/stages.js
 //
-// Single source of truth for the Zoho Bigin "Pipelines" stage
-// picklist used by the Leads board. This mirrors the stages
-// configured on the Bigin pipeline itself (Settings > Pipelines):
-// Qualification -> Needs Analysis -> Proposal/Price Quote ->
-// Negotiation/Review -> Closed Won -> Closed Lost.
+// Single source of truth for the INOS CRM pipeline stages (the Bigin-style
+// board at /crm/pipeline). Ids match the backend `LeadStage` enum
+// (capture → qual → disc → prop → nego → contract → handoff, plus the
+// parked/closed columns nurture and lost).
 //
-// If the pipeline is edited in Bigin (stage renamed/added/reordered),
-// update this list — the board columns, accent colors, and labels
-// all derive from it.
+// Colours are Quiet Studio pastel tokens only: `tone` maps to the
+// --{tone}-bg / --{tone}-fg / --{tone}-dot variables in inos-theme.css.
 
-// `accent` is the solid color used on the board (column header dot +
-// top border), matching Bigin's own board where every open stage
-// shares one accent and only Closed Won/Lost stand out (green/red).
-//
-// `bg`/`fg` are a softer pastel pair used for badges/pills elsewhere
-// (e.g. the Pipeline column on ContactsView) — these vary per stage
-// so a Qualification badge doesn't look identical to a Negotiation
-// one in a plain list view. Purely a display choice; change freely.
+const toneVars = (tone) => ({
+  tone,
+  accent: `var(--${tone}-dot)`,
+  fg: `var(--${tone}-fg)`,
+  bg: `var(--${tone}-bg)`,
+});
+
 export const STAGES = [
-  {
-    id: "Qualification",
-    label: "Qualification",
-    accent: "#3f6d8a",
-    fg: "#3f6d8a",
-    bg: "#eaf1f5",
-  },
-  {
-    id: "Needs Analysis",
-    label: "Needs Analysis",
-    accent: "#3f6d8a",
-    fg: "#6b7f68",
-    bg: "#eef3ec",
-  },
-  {
-    id: "Proposal/Price Quote",
-    label: "Proposal/Price Quote",
-    accent: "#3f6d8a",
-    fg: "#8a6b3f",
-    bg: "#f5efe3",
-  },
-  {
-    id: "Negotiation/Review",
-    label: "Negotiation/Review",
-    accent: "#3f6d8a",
-    fg: "#6c5b7c",
-    bg: "#f1ecf5",
-  },
-  {
-    id: "Closed Won",
-    label: "Closed Won",
-    accent: "#3f6d5f",
-    fg: "#3f6d5f",
-    bg: "#eaf3ee",
-  },
-  {
-    id: "Closed Lost",
-    label: "Closed Lost",
-    accent: "#a54536",
-    fg: "#a54536",
-    bg: "#fbeae6",
-  },
+  { id: "capture", label: "Lead Capture", short: "Capture", ...toneVars("mute") },
+  { id: "qual", label: "Qualification", short: "Qualify", ...toneVars("info") },
+  { id: "disc", label: "Discovery / Site Visit", short: "Discovery", ...toneVars("lilac") },
+  { id: "prop", label: "Proposal", short: "Proposal", ...toneVars("peach") },
+  { id: "nego", label: "Negotiation", short: "Negotiate", ...toneVars("warn") },
+  { id: "contract", label: "Contract Signed", short: "Contract", won: true, ...toneVars("ok") },
+  { id: "handoff", label: "Handoff to Execution", short: "Handoff", won: true, ...toneVars("ok") },
+  { id: "nurture", label: "Nurture", short: "Nurture", closed: true, ...toneVars("mute") },
+  { id: "lost", label: "Closed Lost", short: "Lost", closed: true, ...toneVars("bad") },
 ];
 
+// The linear pipeline shown in the stage stepper (no parked/closed columns)
+export const PIPELINE_STEPS = STAGES.filter((s) => !s.closed);
+export const OPEN_STAGE_IDS = ["capture", "qual", "disc", "prop", "nego"];
+
+// Older records / Zoho Bigin stage names → INOS stage ids
+const LEGACY = {
+  Qualification: "qual",
+  "Needs Analysis": "disc",
+  "Proposal/Price Quote": "prop",
+  "Negotiation/Review": "nego",
+  "Closed Won": "contract",
+  "Closed Lost": "lost",
+};
+
 export const stageOf = (id) =>
-  STAGES.find((s) => s.id === id) || {
+  STAGES.find((s) => s.id === id) ||
+  STAGES.find((s) => s.id === LEGACY[id]) || {
     id,
     label: id || "Unknown",
-    accent: "var(--ink-green)",
-    fg: "var(--muted)",
-    bg: "var(--mist)",
+    short: id || "Unknown",
+    ...toneVars("mute"),
   };
 
 export const getStageAccent = (id) => stageOf(id).accent;
 
 // ----------------------------------------------------------------
-// Card color dots (LeadCard "Card color" menu <-> Card_Color field)
+// Card colour rail (Card colour menu <-> `color` field)
 // ----------------------------------------------------------------
 export const LEAD_COLORS = {
-  Green: { rail: "#1f453b" },
-  Red: { rail: "#a54536" },
-  Yellow: { rail: "#c98f2b" },
-  Blue: { rail: "#3f6d8a" },
+  Green: { rail: "var(--ok-dot)" },
+  Red: { rail: "var(--bad-dot)" },
+  Yellow: { rail: "var(--warn-dot)" },
+  Blue: { rail: "var(--info-dot)" },
 };
 
 // ----------------------------------------------------------------
-// Tag pill colors — rename/extend to match your Tag picklist values
-// in Bigin's Pipelines module.
+// Tag pill colours
 // ----------------------------------------------------------------
 export const TAG_COLORS = {
-  Hot: { fg: "#a54536", bg: "#fbeae6" },
-  Warm: { fg: "#a3701a", bg: "#f7f0e1" },
-  Cold: { fg: "#3f6d8a", bg: "#eaf1f5" },
-  VIP: { fg: "#6c5b7c", bg: "#f1ecf5" },
+  Hot: { fg: "var(--bad-fg)", bg: "var(--bad-bg)", tone: "bad" },
+  Warm: { fg: "var(--warn-fg)", bg: "var(--warn-bg)", tone: "warn" },
+  Cold: { fg: "var(--info-fg)", bg: "var(--info-bg)", tone: "info" },
+  VIP: { fg: "var(--lilac-fg)", bg: "var(--lilac-bg)", tone: "lilac" },
 };
 
 export const pill = (fg, bg) => ({
@@ -106,4 +83,18 @@ export const labelStyle = {
   letterSpacing: "0.06em",
   textTransform: "uppercase",
   color: "var(--muted)",
+};
+
+// ----------------------------------------------------------------
+// Money in Indian units: ₹45 L, ₹1.2 Cr
+// ----------------------------------------------------------------
+export const formatINR = (value, { compact = true } = {}) => {
+  const n = typeof value === "number" ? value : Number(String(value ?? "").replace(/[₹,\s]/g, ""));
+  if (value == null || value === "" || !Number.isFinite(n)) return "—";
+  if (!compact) return `₹${Math.round(n).toLocaleString("en-IN")}`;
+  const trim = (x) => x.toFixed(2).replace(/\.?0+$/, "");
+  if (n >= 1e7) return `₹${trim(n / 1e7)} Cr`;
+  if (n >= 1e5) return `₹${trim(n / 1e5)} L`;
+  if (n === 0) return "₹0";
+  return `₹${Math.round(n).toLocaleString("en-IN")}`;
 };

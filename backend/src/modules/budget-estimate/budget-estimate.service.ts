@@ -495,15 +495,77 @@ export class BudgetEstimateService {
       throw new BadRequestException('Budget estimate is locked');
     }
 
-    await estimate.update({
-      ...dto,
+    const { categories, miscellaneous, ...header } = dto as any;
 
-      categories: undefined,
+    // Totals are always recomputed server-side; never trust client values.
+    delete header.subtotal;
+    delete header.misc_amount;
+    delete header.tax_amount;
+    delete header.total_amount;
+    delete header.locked;
 
-      miscellaneous: undefined,
+    if (header.project_id && header.project_id !== estimate.project_id) {
+      const project = await this.projectModel.findByPk(header.project_id);
+      if (!project) throw new NotFoundException('Project not found');
+    } else {
+      delete header.project_id;
+    }
 
-      updated_by: userId || estimate.updated_by,
-    });
+    const transaction = await this.sequelize.transaction();
+
+    try {
+      await estimate.update(
+        {
+          ...header,
+          updated_by: userId || estimate.updated_by,
+        },
+        { transaction },
+      );
+
+      // Child collections are replaced wholesale when sent (edit form posts the full set).
+      if (Array.isArray(categories)) {
+        await this.itemModel.destroy({ where: { estimate_id: id }, transaction });
+        await this.categoryModel.destroy({ where: { estimate_id: id }, transaction });
+
+        for (const [ci, categoryDto] of categories.entries()) {
+          const category = await this.categoryModel.create(
+            {
+              estimate_id: id,
+              library_category_id: categoryDto.library_category_id || null,
+              name: categoryDto.name,
+              sort_order: categoryDto.sort_order ?? ci,
+            } as any,
+            { transaction },
+          );
+
+          for (const itemDto of categoryDto.items || []) {
+            await this.createItem(id, category.id, itemDto, transaction);
+          }
+        }
+      }
+
+      if (Array.isArray(miscellaneous)) {
+        await this.miscellaneousModel.destroy({ where: { estimate_id: id }, transaction });
+
+        if (miscellaneous.length) {
+          await this.miscellaneousModel.bulkCreate(
+            miscellaneous.map((item: any, i: number) => ({
+              estimate_id: id,
+              name: item.name,
+              value: item.value ?? 0,
+              notes: item.notes || null,
+              sort_order: item.sort_order ?? i,
+            })),
+            { transaction },
+          );
+        }
+      }
+
+      await transaction.commit();
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
 
     await this.recalculate(id);
 

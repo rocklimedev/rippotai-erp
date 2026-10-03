@@ -22,6 +22,8 @@ export interface MicrosoftTokenCreationAttributes {
 
 @Table({
   tableName: 'microsoft_tokens',
+  // DB columns are camelCase (override global underscored:true)
+  underscored: false,
   timestamps: true,
 })
 export class MicrosoftToken extends Model<

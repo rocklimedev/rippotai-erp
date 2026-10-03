@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Upload,
@@ -21,13 +21,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -36,11 +29,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -48,7 +36,24 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
-import { Shell, downloadDocument } from "../../hooks/shared";
+import { downloadDocument } from "../../hooks/shared";
+import {
+  Page,
+  PageHeader,
+  Card,
+  Button as InosButton,
+  Stats,
+  StatTile,
+  Toolbar,
+  ToolbarSpacer,
+  SearchInput,
+  SelectInput,
+  Pill,
+  EmptyState,
+  Progress,
+  folderToneFor,
+} from "@/components/inos";
+import { Skeleton as PjSkeleton, cleanPhaseName } from "@/components/projects/_projects-ui";
 
 import {
   useGetProjectDocumentPhasesQuery,
@@ -60,12 +65,6 @@ import {
 
 import { useGetProjectsQuery } from "../../api/projects/project.api";
 
-/* ------------------------------------------------------------------
- * Brand — centralised until these live in the tailwind theme.
- * ------------------------------------------------------------------ */
-const BRAND = "bg-[#1F453B] hover:bg-[#17372f] text-white";
-const BRAND_TEXT = "text-[#1F453B]";
-const BRAND_SOFT = "bg-[#E7F1EA] text-[#1F453B]";
 const ALL_PROJECTS = "__all__";
 
 /* ============================================================
@@ -154,31 +153,20 @@ const clampPercent = (value) => Math.min(Math.max(value, 0), 100);
    SHARED BITS
 ============================================================ */
 
-function StatPill({ label, value, sub, tone }) {
+function ProgressStat({ percentage }) {
   return (
-    <div className="text-right">
-      <div
-        className={cn(
-          "text-xs font-semibold tabular-nums",
-          tone === "warning" ? "text-[#A34D27]" : "text-foreground",
-        )}
-      >
-        {value}
-      </div>
-      <div className="text-[10px] text-muted-foreground">{label}</div>
-      {sub}
+    <div className="pj-progress-cell" style={{ minWidth: 120 }}>
+      <Progress value={clampPercent(percentage)} tone={percentage >= 100 ? "ok" : undefined} />
+      <span>{percentage}%</span>
     </div>
   );
 }
 
-function ProgressStat({ percentage, width = "w-[90px]" }) {
+function Stat({ label, value, warn }) {
   return (
-    <div className={width}>
-      <div className="mb-1 flex justify-between text-[10px] text-muted-foreground">
-        <span>Progress</span>
-        <span>{percentage}%</span>
-      </div>
-      <Progress value={clampPercent(percentage)} className="h-1.5" />
+    <div className="pj-collapse-stat">
+      <b style={warn ? { color: "var(--bad-fg)" } : undefined}>{value}</b>
+      {label}
     </div>
   );
 }
@@ -196,170 +184,84 @@ function DocumentTypeRow({ documentType, projectId, onUpload, onDownload }) {
   const latestDocumentId = getLatestDocumentId(documentType);
 
   return (
-    <div className="border-t px-4 py-3 transition-colors hover:bg-muted/40">
-      <div className="flex items-center gap-3">
-        <div className="shrink-0">
-          {isUploaded ? (
-            <CheckCircle2
-              className="h-[18px] w-[18px] text-emerald-600"
-              aria-label="Uploaded"
-            />
-          ) : (
-            <Circle
-              className={cn(
-                "h-[18px] w-[18px]",
-                isRequired ? "text-[#B04D26]" : "text-muted-foreground",
-              )}
-              aria-label={isRequired ? "Required, pending" : "Pending"}
-            />
-          )}
-        </div>
-
-        <div
-          className={cn(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-            isUploaded ? "bg-[#E7F1EA]" : "bg-muted",
-          )}
+    <>
+      <div className="pj-doc-row">
+        <span
+          className={cn("inos-icon-tile inos-icon-tile--sm", isUploaded ? "inos-icon-tile--ok" : isRequired ? "inos-icon-tile--peach" : "")}
+          aria-label={isUploaded ? "Uploaded" : isRequired ? "Required, pending" : "Pending"}
         >
-          <FileText
-            className={cn(
-              "h-[15px] w-[15px]",
-              isUploaded ? BRAND_TEXT : "text-muted-foreground",
-            )}
-          />
-        </div>
+          {isUploaded ? <CheckCircle2 aria-hidden /> : <FileText aria-hidden />}
+        </span>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[13.5px] font-semibold">
+        <div className="pj-list-item__main">
+          <div className="pj-chip-row" style={{ gap: 8 }}>
+            <span className="pj-cell-title" style={{ fontSize: 14 }}>
               {documentType?.name || "Untitled document"}
             </span>
-
-            {documentType?.code && (
-              <span className="text-[10.5px] text-muted-foreground">
-                {documentType.code}
-              </span>
-            )}
-
+            {documentType?.code && <span className="pj-code">{documentType.code}</span>}
             {isRequired ? (
-              <Badge className="h-4 rounded-full bg-[#F4E1D6] px-1.5 text-[10px] font-bold text-[#8A4B2A] hover:bg-[#F4E1D6]">
+              <Pill tone="peach" size="sm" dot={false}>
                 Required
-              </Badge>
+              </Pill>
             ) : (
-              <Badge
-                variant="secondary"
-                className="h-4 rounded-full px-1.5 text-[10px] font-semibold"
-              >
+              <Pill tone="mute" size="sm" dot={false}>
                 Optional
-              </Badge>
+              </Pill>
             )}
           </div>
-
-          {documentType?.description && (
-            <div className="mt-0.5 truncate text-[11.5px] text-muted-foreground">
-              {documentType.description}
-            </div>
-          )}
-
-          <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
-            <span>
-              {isUploaded
-                ? `${uploadCount} upload${uploadCount !== 1 ? "s" : ""}`
-                : "Not uploaded"}
-            </span>
-            {documentType?.latestUploadedAt && (
-              <span>Latest: {formatDate(documentType.latestUploadedAt)}</span>
-            )}
-            {allowsMultiple && <span>Multiple allowed</span>}
+          <div className="pj-list-item__sub">
+            {[
+              documentType?.description,
+              isUploaded ? `${uploadCount} upload${uploadCount !== 1 ? "s" : ""}` : "Not uploaded",
+              documentType?.latestUploadedAt && `Latest ${formatDate(documentType.latestUploadedAt)}`,
+              allowsMultiple && "Multiple allowed",
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </div>
         </div>
 
-        <div className="hidden min-w-[90px] shrink-0 md:block">
-          {isUploaded ? (
-            <Badge className="rounded-full bg-[#E7F1EA] text-[11px] font-semibold text-[#2F6B3F] hover:bg-[#E7F1EA]">
-              Uploaded
-            </Badge>
-          ) : (
-            <Badge
-              className={cn(
-                "rounded-full text-[11px] font-semibold",
-                isRequired
-                  ? "bg-[#F4E1D6] text-[#A34D27] hover:bg-[#F4E1D6]"
-                  : "bg-muted text-muted-foreground hover:bg-muted",
-              )}
-            >
-              Pending
-            </Badge>
-          )}
-        </div>
-
-        <div className="shrink-0">
+        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
           {!isUploaded ? (
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => onUpload(documentType, projectId)}
-              className={BRAND}
-            >
-              <Upload className="h-[13px] w-[13px]" />
-              <span className="hidden sm:inline">Make / upload</span>
-              <span className="sm:hidden">Upload</span>
-            </Button>
+            <InosButton size="sm" variant="primary" icon={Upload} onClick={() => onUpload(documentType, projectId)}>
+              Upload
+            </InosButton>
           ) : (
-            <div className="flex items-center gap-1">
-              <Button
-                type="button"
+            <>
+              <InosButton
                 size="sm"
-                variant="outline"
+                variant="secondary"
+                icon={Upload}
                 onClick={() => onUpload(documentType, projectId)}
-                title="Upload another file"
+                title={allowsMultiple ? "Upload another file" : "Replace file"}
               >
-                <Upload className="h-[13px] w-[13px]" />
-                <span className="hidden lg:inline">
-                  {allowsMultiple ? "Add" : "Replace"}
-                </span>
-              </Button>
-
+                {allowsMultiple ? "Add" : "Replace"}
+              </InosButton>
               {latestDocumentId && (
-                <Button
-                  type="button"
+                <InosButton
                   size="sm"
-                  variant="outline"
+                  variant="ghost"
+                  icon={Download}
                   onClick={() => onDownload(latestDocumentId)}
+                  aria-label="Download latest document"
                   title="Download latest document"
-                >
-                  <Download className="h-[13px] w-[13px]" />
-                  <span className="hidden lg:inline">Download</span>
-                </Button>
+                />
               )}
-            </div>
+            </>
           )}
         </div>
       </div>
 
       {allowsMultiple && documentIds.length > 1 && (
-        <div className="ml-[76px] mt-2 border-l-2 pl-3">
-          <div className="mb-1.5 text-[10.5px] uppercase tracking-[0.12em] text-muted-foreground">
-            Uploaded files
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {documentIds.map((documentId, index) => (
-              <Button
-                key={documentId}
-                type="button"
-                variant="secondary"
-                size="sm"
-                className="h-7 gap-1.5 px-2 text-[11px]"
-                onClick={() => onDownload(documentId)}
-              >
-                <Download className="h-[11px] w-[11px]" />
-                File {index + 1}
-              </Button>
-            ))}
-          </div>
+        <div className="pj-doc-files">
+          {documentIds.map((documentId, index) => (
+            <InosButton key={documentId} size="sm" variant="soft" icon={Download} onClick={() => onDownload(documentId)}>
+              File {index + 1}
+            </InosButton>
+          ))}
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -367,144 +269,63 @@ function DocumentTypeRow({ documentType, projectId, onUpload, onDownload }) {
    PHASE CARD
 ============================================================ */
 
-function DocumentPhaseCard({
-  phase,
-  projectId,
-  collapsed,
-  onToggle,
-  onUpload,
-  onDownload,
-}) {
+function DocumentPhaseCard({ phase, projectId, collapsed, onToggle, onUpload, onDownload, nested }) {
   const documents = getPhaseDocuments(phase);
   const summary = phase?.summary || {};
 
-  const total =
-    typeof summary.total === "number" ? summary.total : documents.length;
-
-  const uploaded =
-    typeof summary.uploaded === "number"
-      ? summary.uploaded
-      : documents.filter((item) => item?.isUploaded).length;
-
-  const pending =
-    typeof summary.pending === "number"
-      ? summary.pending
-      : Math.max(total - uploaded, 0);
-
-  const required =
-    typeof summary.required === "number"
-      ? summary.required
-      : documents.filter(isRequiredDocument).length;
-
+  const total = typeof summary.total === "number" ? summary.total : documents.length;
+  const uploaded = typeof summary.uploaded === "number" ? summary.uploaded : documents.filter((item) => item?.isUploaded).length;
+  const pending = typeof summary.pending === "number" ? summary.pending : Math.max(total - uploaded, 0);
+  const required = typeof summary.required === "number" ? summary.required : documents.filter(isRequiredDocument).length;
   const uploadedRequired =
     typeof summary.uploadedRequired === "number"
       ? summary.uploadedRequired
-      : documents.filter((item) => isRequiredDocument(item) && item?.isUploaded)
-          .length;
-
+      : documents.filter((item) => isRequiredDocument(item) && item?.isUploaded).length;
   const pendingRequired =
-    typeof summary.pendingRequired === "number"
-      ? summary.pendingRequired
-      : Math.max(required - uploadedRequired, 0);
+    typeof summary.pendingRequired === "number" ? summary.pendingRequired : Math.max(required - uploadedRequired, 0);
+  const completionPercentage = total > 0 ? Math.round((uploaded / total) * 100) : 0;
 
-  const completionPercentage =
-    typeof summary.completionPercentage === "number"
-      ? summary.completionPercentage
-      : total > 0
-        ? Math.round((uploaded / total) * 100)
-        : 100;
-
-  const isComplete =
-    typeof phase?.isComplete === "boolean"
-      ? phase.isComplete
-      : pendingRequired === 0;
+  // A phase with nothing configured is not "complete" — it's empty.
+  const isEmpty = total === 0;
+  const isComplete = !isEmpty && (typeof phase?.isComplete === "boolean" ? phase.isComplete : pendingRequired === 0) && uploaded > 0;
 
   return (
-    <Collapsible open={!collapsed} onOpenChange={onToggle} asChild>
-      <Card className="overflow-hidden py-0">
-        <CollapsibleTrigger asChild>
-          <button
-            type="button"
-            className="w-full bg-muted/60 px-4 py-3 text-left transition-colors hover:bg-muted"
-          >
-            <div className="flex items-center gap-3">
-              <div className={cn("shrink-0", BRAND_TEXT)}>
-                {collapsed ? (
-                  <ChevronRight className="h-[18px] w-[18px]" />
-                ) : (
-                  <ChevronDown className="h-[18px] w-[18px]" />
-                )}
-              </div>
+    <section className={nested ? "inos-card inos-card--flat" : "inos-card"} style={{ overflow: "hidden" }}>
+      <button type="button" className="pj-collapse-head" aria-expanded={!collapsed} onClick={onToggle}>
+        <ChevronRight className="pj-chevron" aria-hidden />
+        <span className="inos-icon-tile inos-icon-tile--sm tabular" style={{ fontSize: 12, fontWeight: 700 }}>
+          {phase?.phaseNumber || phase?.phase_number || "—"}
+        </span>
+        <div className="pj-list-item__main">
+          <div className="pj-chip-row" style={{ gap: 8 }}>
+            <span className="pj-cell-title">{phase?.title ? cleanPhaseName(phase.title) : "Untitled phase"}</span>
+            {isEmpty ? (
+              <Pill tone="mute" size="sm">
+                No documents set
+              </Pill>
+            ) : isComplete ? (
+              <Pill tone="ok" size="sm">
+                Complete
+              </Pill>
+            ) : (
+              <Pill tone="warn" size="sm">
+                {pendingRequired > 0 ? `${pendingRequired} required pending` : "Pending"}
+              </Pill>
+            )}
+          </div>
+          {phase?.description && <div className="pj-list-item__sub">{phase.description}</div>}
+        </div>
+        {!isEmpty && (
+          <div className="pj-collapse-stats">
+            <Stat label="uploaded" value={`${uploaded}/${total}`} />
+            <Stat label="required" value={`${uploadedRequired}/${required}`} warn={pendingRequired > 0} />
+            <ProgressStat percentage={completionPercentage} />
+          </div>
+        )}
+      </button>
 
-              <div
-                className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-background text-xs font-bold",
-                  BRAND_TEXT,
-                )}
-              >
-                {phase?.phaseNumber || phase?.phase_number || "—"}
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-bold">
-                    {phase?.title || "Untitled phase"}
-                  </span>
-
-                  {(phase?.phaseCode || phase?.phase_code) && (
-                    <span className="text-[10.5px] text-muted-foreground">
-                      {phase?.phaseCode || phase?.phase_code}
-                    </span>
-                  )}
-
-                  {isComplete ? (
-                    <Badge className="h-4 rounded-full bg-[#E7F1EA] px-1.5 text-[10px] font-bold text-[#2F6B3F] hover:bg-[#E7F1EA]">
-                      Complete
-                    </Badge>
-                  ) : (
-                    <Badge className="h-4 rounded-full bg-[#F4E1D6] px-1.5 text-[10px] font-bold text-[#A34D27] hover:bg-[#F4E1D6]">
-                      Pending
-                    </Badge>
-                  )}
-                </div>
-
-                {phase?.description && (
-                  <div className="mt-0.5 truncate text-[11.5px] text-muted-foreground">
-                    {phase.description}
-                  </div>
-                )}
-              </div>
-
-              <div className="hidden shrink-0 items-center gap-4 sm:flex">
-                <StatPill label="uploaded" value={`${uploaded}/${total}`} />
-                <StatPill
-                  label="required"
-                  value={`${uploadedRequired}/${required}`}
-                  tone={pendingRequired > 0 ? "warning" : "default"}
-                />
-                <ProgressStat percentage={completionPercentage} />
-              </div>
-            </div>
-
-            <div className="ml-12 mt-3 sm:hidden">
-              <div className="mb-1 flex items-center justify-between text-[10.5px] text-muted-foreground">
-                <span>
-                  {uploaded}/{total} uploaded
-                </span>
-                <span>
-                  Required: {uploadedRequired}/{required}
-                </span>
-                <span>{completionPercentage}%</span>
-              </div>
-              <Progress
-                value={clampPercent(completionPercentage)}
-                className="h-1.5"
-              />
-            </div>
-          </button>
-        </CollapsibleTrigger>
-
-        <CollapsibleContent>
+      {!collapsed && (
+        <div>
           {documents.length ? (
             documents.map((documentType) => (
               <DocumentTypeRow
@@ -516,30 +337,23 @@ function DocumentPhaseCard({
               />
             ))
           ) : (
-            <div className="px-4 py-8 text-center text-xs text-muted-foreground">
-              No document types configured for this phase.
+            <div className="pj-doc-row pj-muted" style={{ justifyContent: "center", fontSize: 13 }}>
+              No document types configured for this phase yet.
             </div>
           )}
-
-          <div className="flex items-center justify-between border-t bg-muted/30 px-4 py-2.5 text-[11px]">
-            <span className="text-muted-foreground">
-              {pending} pending document{pending !== 1 ? "s" : ""}
-            </span>
-            <span
-              className={
-                pendingRequired > 0
-                  ? "font-semibold text-[#A34D27]"
-                  : "font-semibold text-[#2F6B3F]"
-              }
-            >
-              {pendingRequired > 0
-                ? `${pendingRequired} required pending`
-                : "All required documents uploaded"}
-            </span>
-          </div>
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
+          {!isEmpty && (
+            <div className="pj-doc-row" style={{ justifyContent: "space-between", background: "var(--surface-2)", fontSize: 12.5 }}>
+              <span className="pj-muted">
+                {pending} pending document{pending !== 1 ? "s" : ""}
+              </span>
+              <span style={{ fontWeight: 600, color: pendingRequired > 0 ? "var(--warn-fg)" : "var(--ok-fg)" }}>
+                {pendingRequired > 0 ? `${pendingRequired} required pending` : "All required documents uploaded"}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -550,125 +364,48 @@ function DocumentPhaseCard({
 function ProjectTreeCard({ project, collapsed, onToggle, children }) {
   const projectId = getProjectId(project);
   const projectName = getProjectName(project, projectId || "Project");
-  const summary = project?.summary || {};
+  const phases = Array.isArray(project?.phases) ? project.phases : [];
 
-  const totalPhases = summary.totalPhases ?? project?.phases?.length ?? 0;
-
-  const completedPhases =
-    summary.completedPhases ??
-    project?.phases?.filter((phase) => phase?.isComplete).length ??
-    0;
-
-  const totalDocuments =
-    summary.totalDocuments ??
-    project?.phases?.reduce(
-      (total, phase) => total + getPhaseDocuments(phase).length,
-      0,
-    ) ??
-    0;
-
-  const uploadedDocuments =
-    summary.uploadedDocuments ??
-    project?.phases?.reduce(
-      (total, phase) =>
-        total +
-        getPhaseDocuments(phase).filter(
-          (documentType) => documentType?.isUploaded,
-        ).length,
-      0,
-    ) ??
-    0;
-
-  const completionPercentage =
-    summary.completionPercentage ??
-    (totalDocuments > 0
-      ? Math.round((uploadedDocuments / totalDocuments) * 100)
-      : 100);
-
-  return (
-    <Collapsible open={!collapsed} onOpenChange={onToggle} asChild>
-      <Card className="overflow-hidden py-0">
-        <CollapsibleTrigger asChild>
-          <button
-            type="button"
-            className="w-full bg-background px-4 py-3 text-left transition-colors hover:bg-muted/40"
-          >
-            <div className="flex items-center gap-3">
-              <div className={cn("shrink-0", BRAND_TEXT)}>
-                {collapsed ? (
-                  <ChevronRight className="h-5 w-5" />
-                ) : (
-                  <ChevronDown className="h-5 w-5" />
-                )}
-              </div>
-
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E7F1EA]">
-                {collapsed ? (
-                  <Folder className={cn("h-[18px] w-[18px]", BRAND_TEXT)} />
-                ) : (
-                  <FolderOpen className={cn("h-[18px] w-[18px]", BRAND_TEXT)} />
-                )}
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[15px] font-bold">{projectName}</span>
-                  {project?.code && (
-                    <span className="text-[10.5px] text-muted-foreground">
-                      {project.code}
-                    </span>
-                  )}
-                </div>
-                <div className="mt-0.5 text-[11.5px] text-muted-foreground">
-                  {projectId}
-                </div>
-              </div>
-
-              <div className="hidden shrink-0 items-center gap-5 md:flex">
-                <StatPill
-                  label="phases"
-                  value={`${completedPhases}/${totalPhases}`}
-                />
-                <StatPill
-                  label="documents"
-                  value={`${uploadedDocuments}/${totalDocuments}`}
-                />
-                <ProgressStat percentage={completionPercentage} />
-              </div>
-            </div>
-          </button>
-        </CollapsibleTrigger>
-
-        <CollapsibleContent>
-          <div className="space-y-3 border-t bg-muted/20 p-3">{children}</div>
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
+  const totalPhases = phases.length;
+  const completedPhases = phases.filter((phase) => {
+    const t = phase?.summary?.total ?? getPhaseDocuments(phase).length;
+    const u = phase?.summary?.uploaded ?? getPhaseDocuments(phase).filter((d) => d?.isUploaded).length;
+    return phase?.isComplete && t > 0 && u > 0;
+  }).length;
+  const totalDocuments = phases.reduce((total, phase) => total + (phase?.summary?.total ?? getPhaseDocuments(phase).length), 0);
+  const uploadedDocuments = phases.reduce(
+    (total, phase) =>
+      total + (phase?.summary?.uploaded ?? getPhaseDocuments(phase).filter((documentType) => documentType?.isUploaded).length),
+    0,
   );
-}
+  const completionPercentage = totalDocuments > 0 ? Math.round((uploadedDocuments / totalDocuments) * 100) : 0;
 
-/* ============================================================
-   SUMMARY CARD
-============================================================ */
-
-function SummaryCard({
-  label,
-  value,
-  sub,
-  valueClassName,
-  subClassName,
-  className,
-}) {
   return (
-    <Card className={cn("p-3", className)}>
-      <div className="text-[11px] text-muted-foreground">{label}</div>
-      <div className={cn("mt-1 text-xl font-bold", valueClassName)}>
-        {value}
-      </div>
-      <div className={cn("text-[10.5px] text-muted-foreground", subClassName)}>
-        {sub}
-      </div>
-    </Card>
+    <section className="inos-card" style={{ overflow: "hidden" }}>
+      <button type="button" className="pj-collapse-head" aria-expanded={!collapsed} onClick={onToggle} style={{ padding: "16px 20px" }}>
+        <ChevronRight className="pj-chevron" aria-hidden />
+        <span className={cn("inos-icon-tile", folderToneFor(projectId) !== "brand" && `inos-icon-tile--${folderToneFor(projectId)}`)}>
+          {collapsed ? <Folder aria-hidden /> : <FolderOpen aria-hidden />}
+        </span>
+        <div className="pj-list-item__main">
+          <div className="pj-cell-title" style={{ fontSize: 15.5 }}>
+            {projectName}
+          </div>
+          <div className="pj-list-item__sub">{project?.site_location || project?.code || `${totalPhases} phases`}</div>
+        </div>
+        <div className="pj-collapse-stats">
+          <Stat label="phases" value={`${completedPhases}/${totalPhases}`} />
+          <Stat label="documents" value={`${uploadedDocuments}/${totalDocuments}`} />
+          <ProgressStat percentage={completionPercentage} />
+        </div>
+      </button>
+
+      {!collapsed && (
+        <div style={{ display: "grid", gap: 10, padding: 12, background: "var(--surface-2)", borderTop: "1px solid var(--line)" }}>
+          {children}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -678,6 +415,7 @@ function SummaryCard({
 
 export function DocumentsAll() {
   const nav = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
 
   const urlProjectId =
@@ -791,7 +529,7 @@ export function DocumentsAll() {
     }
 
     const query = params.toString();
-    nav(query ? `/projects/documents?${query}` : "/projects/documents", {
+    nav(query ? `${location.pathname}?${query}` : location.pathname, {
       replace: true,
     });
   };
@@ -1106,6 +844,13 @@ export function DocumentsAll() {
       [phaseKey]: !current[phaseKey],
     }));
 
+  // In the all-projects tree, phases start closed so the page stays scannable.
+  const togglePhaseDefaultClosed = (phaseKey) =>
+    setCollapsedPhases((current) => ({
+      ...current,
+      [phaseKey]: current[phaseKey] === undefined ? false : !current[phaseKey],
+    }));
+
   const collapseAll = () => {
     if (selectedProjectId) {
       const next = {};
@@ -1134,8 +879,24 @@ export function DocumentsAll() {
   };
 
   const expandAll = () => {
-    setCollapsedProjects({});
-    setCollapsedPhases({});
+    const projectOpen = {};
+    visibleProjects.forEach((project) => {
+      const projectId = getProjectId(project);
+      if (projectId) projectOpen[projectId] = false;
+    });
+    setCollapsedProjects(projectOpen);
+    if (selectedProjectId) {
+      setCollapsedPhases({});
+    } else {
+      const phaseNext = {};
+      visibleProjects.forEach((project) => {
+        const projectId = getProjectId(project);
+        (Array.isArray(project?.phases) ? project.phases : []).forEach((phase, index) => {
+          phaseNext[`${projectId}:${getPhaseId(phase, index)}`] = false;
+        });
+      });
+      setCollapsedPhases(phaseNext);
+    }
   };
 
   /* -------------------------------------------------- Query state */
@@ -1151,304 +912,195 @@ export function DocumentsAll() {
   /* -------------------------------------------------- Render */
 
   return (
-    <Shell
-      title="Project documents"
-      subtitle={
-        selectedProjectId
-          ? `${selectedProjectName} — document checklist`
-          : "All projects — document control and checklist"
-      }
-      action={
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => refetch()}
-            disabled={isFetching}
-          >
-            <RefreshCw
-              className={cn("h-[14px] w-[14px]", isFetching && "animate-spin")}
+    <Page className="pj-page">
+      <PageHeader
+        crumbs={[{ label: "Projects", to: "/projects" }, { label: "Documents" }]}
+        title="Project documents"
+        subtitle={
+          selectedProjectId
+            ? `${selectedProjectName} — phase-wise document checklist`
+            : "Document control across every project, phase by phase."
+        }
+        actions={
+          <>
+            <InosButton
+              variant="ghost"
+              icon={RefreshCw}
+              onClick={() => refetch()}
+              disabled={isFetching}
+              aria-label="Refresh"
+              title="Refresh"
             />
-            Refresh
-          </Button>
-
-          <Button
-            type="button"
-            className={BRAND}
-            onClick={() => {
-              if (!selectedProjectId) {
-                toast.info("Select a project before uploading a document.");
-                return;
-              }
-              nav(`/projects/documents/upload?project_id=${selectedProjectId}`);
-            }}
-          >
-            <Upload className="h-[14px] w-[14px]" />
-            Upload document
-          </Button>
-        </div>
-      }
-    >
-      <div className="space-y-4">
-        {/* -------------------------------------------- Project selector */}
-        <Card className="p-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
-            <div className="max-w-xl flex-1 space-y-1.5">
-              <Label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Project
-              </Label>
-
-              <Select
-                value={selectedProjectId || ALL_PROJECTS}
-                onValueChange={handleProjectChange}
-              >
-                <SelectTrigger className="h-11 font-semibold">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL_PROJECTS}>All projects</SelectItem>
-                  {projects.map((project) => {
-                    const projectId = getProjectId(project);
-                    if (!projectId) return null;
-                    return (
-                      <SelectItem key={projectId} value={String(projectId)}>
-                        {getProjectName(project, projectId)}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <p className="text-[11.5px] text-muted-foreground">
-              {selectedProjectId
-                ? "Showing document phases for the selected project."
-                : "Showing the document phase tree for every project."}
-            </p>
-          </div>
-        </Card>
-
-        {/* -------------------------------------------- Summary */}
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
-          <SummaryCard
-            label="Projects"
-            value={selectedProjectId ? 1 : totalProjects}
-            sub="in view"
-          />
-          <SummaryCard
-            label="Phases"
-            value={`${completedPhases}/${totalPhases}`}
-            sub="completed"
-          />
-          <SummaryCard
-            label="Documents"
-            value={`${uploadedDocuments}/${totalDocuments}`}
-            sub="uploaded"
-          />
-          <SummaryCard
-            label="Pending"
-            value={pendingDocuments}
-            valueClassName="text-[#A34D27]"
-            sub="document types"
-          />
-          <SummaryCard
-            label="Required"
-            value={`${uploadedRequiredDocuments}/${requiredDocuments}`}
-            sub="uploaded"
-          />
-          <SummaryCard
-            label="Required completion"
-            value={`${requiredCompletionPercentage}%`}
-            valueClassName={BRAND_TEXT}
-            sub={`${pendingRequiredDocuments} required pending`}
-            subClassName="text-[#A34D27]"
-            className="col-span-2 lg:col-span-1"
-          />
-        </div>
-
-        {/* -------------------------------------------- Filters */}
-        <div className="flex flex-wrap items-center gap-3">
-          <Input
-            placeholder="Search project, phase, document type, code..."
-            value={q}
-            onChange={(event) => setQ(event.target.value)}
-            className="max-w-md"
-          />
-
-          <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold">
-            <Checkbox
-              checked={showCompleted}
-              onCheckedChange={(checked) => setShowCompleted(Boolean(checked))}
-            />
-            Show completed phases
-          </label>
-
-          <div className="ml-auto flex items-center gap-1">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={expandAll}
+            <InosButton
+              variant="primary"
+              icon={Upload}
+              onClick={() => {
+                if (!selectedProjectId) {
+                  toast.info("Select a project before uploading a document.");
+                  return;
+                }
+                nav(`/projects/documents/upload?project_id=${selectedProjectId}`);
+              }}
             >
-              Expand all
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={collapseAll}
-            >
-              Collapse all
-            </Button>
+              Upload document
+            </InosButton>
+          </>
+        }
+      />
+
+      <Stats>
+        <StatTile label="Projects" value={selectedProjectId ? 1 : totalProjects} meta="In view" icon={<FolderOpen />} />
+        <StatTile label="Documents" value={`${uploadedDocuments}/${totalDocuments}`} meta="Uploaded" icon={<FileText />} tone="info" />
+        <StatTile label="Pending" value={pendingDocuments} meta="Document types" icon={<Upload />} tone="peach" />
+        <StatTile
+          label="Required uploaded"
+          value={`${uploadedRequiredDocuments}/${requiredDocuments}`}
+          meta={requiredDocuments ? `${requiredCompletionPercentage}% · ${pendingRequiredDocuments} pending` : "None configured"}
+          icon={<CheckCircle2 />}
+          tone="ok"
+        />
+      </Stats>
+
+      <Toolbar>
+        <SelectInput
+          value={selectedProjectId || ALL_PROJECTS}
+          onChange={(e) => handleProjectChange(e.target.value)}
+          aria-label="Project"
+          style={{ width: 260, fontWeight: 600 }}
+        >
+          <option value={ALL_PROJECTS}>All projects</option>
+          {projects.map((project) => {
+            const projectId = getProjectId(project);
+            if (!projectId) return null;
+            return (
+              <option key={projectId} value={String(projectId)}>
+                {getProjectName(project, projectId)}
+              </option>
+            );
+          })}
+        </SelectInput>
+        <SearchInput value={q} onChange={setQ} placeholder="Search phase, document type, code…" />
+        <label className="pj-check">
+          <input type="checkbox" checked={showCompleted} onChange={(e) => setShowCompleted(e.target.checked)} />
+          Show completed phases
+        </label>
+        <ToolbarSpacer />
+        <InosButton variant="ghost" size="sm" onClick={expandAll}>
+          Expand all
+        </InosButton>
+        <InosButton variant="ghost" size="sm" onClick={collapseAll}>
+          Collapse all
+        </InosButton>
+      </Toolbar>
+
+      {!isLoading && !isError && pendingRequiredDocuments > 0 && (
+        <div className="pj-callout" role="status">
+          <AlertTriangle aria-hidden />
+          <div>
+            <b>Required documents are still pending</b>
+            {pendingRequiredDocuments} required document{pendingRequiredDocuments !== 1 ? "s" : ""} must be uploaded before the
+            checklist is complete.
           </div>
         </div>
+      )}
 
-        {/* -------------------------------------------- Error */}
-        {isError && (
-          <Card>
-            <CardContent className="py-10 text-center">
-              <p className="text-sm font-semibold text-destructive">
-                Failed to load document checklist
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {error?.data?.message ||
-                  error?.data?.detail ||
-                  "Please try again."}
-              </p>
-              <Button
-                type="button"
-                size="sm"
-                className={cn(BRAND, "mt-4")}
-                onClick={() => refetch()}
-              >
+      {isError && (
+        <Card>
+          <EmptyState
+            icon={AlertTriangle}
+            title="Failed to load document checklist"
+            text={error?.data?.message || error?.data?.detail || "Please try again."}
+            action={
+              <InosButton variant="secondary" icon={RefreshCw} onClick={() => refetch()}>
                 Retry
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+              </InosButton>
+            }
+          />
+        </Card>
+      )}
 
-        {/* -------------------------------------------- Loading */}
-        {isLoading && (
-          <div className="space-y-3">
-            <Skeleton className="h-16 w-full rounded-xl" />
-            <Skeleton className="h-16 w-full rounded-xl" />
-            <Skeleton className="h-16 w-full rounded-xl" />
-          </div>
-        )}
+      {isLoading && (
+        <div style={{ display: "grid", gap: 10 }}>
+          <PjSkeleton height={64} />
+          <PjSkeleton height={64} />
+          <PjSkeleton height={64} />
+        </div>
+      )}
 
-        {/* -------------------------------------------- All projects */}
-        {!isLoading && !isError && !selectedProjectId && (
-          <div className="space-y-3">
-            {visibleProjects.length ? (
-              visibleProjects.map((project) => {
-                const projectId = getProjectId(project);
-                if (!projectId) return null;
+      {!isLoading && !isError && !selectedProjectId && (
+        <div style={{ display: "grid", gap: 12 }}>
+          {visibleProjects.length ? (
+            visibleProjects.map((project, projectIndex) => {
+              const projectId = getProjectId(project);
+              if (!projectId) return null;
+              // First project open, the rest folded — keeps long workspaces scannable.
+              const projectCollapsed = collapsedProjects[projectId] ?? projectIndex > 0;
+              const phases = Array.isArray(project?.phases) ? project.phases : [];
 
-                const projectCollapsed = Boolean(collapsedProjects[projectId]);
-                const phases = Array.isArray(project?.phases)
-                  ? project.phases
-                  : [];
+              return (
+                <ProjectTreeCard key={projectId} project={project} collapsed={projectCollapsed} onToggle={() =>
+                    setCollapsedProjects((current) => ({ ...current, [projectId]: !(current[projectId] ?? projectIndex > 0) }))
+                  }>
+                  {phases.length ? (
+                    phases.map((phase, index) => {
+                      const phaseId = getPhaseId(phase, index);
+                      const phaseKey = `${projectId}:${phaseId}`;
+                      return (
+                        <DocumentPhaseCard
+                          key={phaseKey}
+                          nested
+                          phase={phase}
+                          projectId={projectId}
+                          collapsed={collapsedPhases[phaseKey] === undefined ? true : Boolean(collapsedPhases[phaseKey])}
+                          onToggle={() => togglePhaseDefaultClosed(phaseKey)}
+                          onUpload={handleUpload}
+                          onDownload={handleDownload}
+                        />
+                      );
+                    })
+                  ) : (
+                    <EmptyState icon={FileText} title="No document phases" text="No document phases are configured for this project." />
+                  )}
+                </ProjectTreeCard>
+              );
+            })
+          ) : (
+            <Card>
+              <EmptyState icon={FolderOpen} title="No projects found" text={q ? "Try a different search." : "No projects are available."} />
+            </Card>
+          )}
+        </div>
+      )}
 
-                return (
-                  <ProjectTreeCard
-                    key={projectId}
-                    project={project}
-                    collapsed={projectCollapsed}
-                    onToggle={() => toggleProject(projectId)}
-                  >
-                    {phases.length ? (
-                      phases.map((phase, index) => {
-                        const phaseId = getPhaseId(phase, index);
-                        const phaseKey = `${projectId}:${phaseId}`;
-
-                        return (
-                          <DocumentPhaseCard
-                            key={phaseKey}
-                            phase={phase}
-                            projectId={projectId}
-                            collapsed={Boolean(collapsedPhases[phaseKey])}
-                            onToggle={() => togglePhase(phaseKey)}
-                            onUpload={handleUpload}
-                            onDownload={handleDownload}
-                          />
-                        );
-                      })
-                    ) : (
-                      <div className="px-4 py-10 text-center text-xs text-muted-foreground">
-                        No document phases configured for this project.
-                      </div>
-                    )}
-                  </ProjectTreeCard>
-                );
-              })
-            ) : (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <FolderOpen className="mx-auto mb-3 h-9 w-9 text-muted-foreground/50" />
-                  <p className="text-sm font-semibold">No projects found</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {q
-                      ? "Try a different search."
-                      : "No projects are available."}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
-
-        {/* -------------------------------------------- Selected project */}
-        {!isLoading && !isError && Boolean(selectedProjectId) && (
-          <div className="space-y-3">
-            {visiblePhases.length ? (
-              visiblePhases.map((phase, index) => {
-                const phaseId = getPhaseId(phase, index);
-                return (
-                  <DocumentPhaseCard
-                    key={phaseId}
-                    phase={phase}
-                    projectId={selectedProjectId}
-                    collapsed={Boolean(collapsedPhases[phaseId])}
-                    onToggle={() => togglePhase(phaseId)}
-                    onUpload={handleUpload}
-                    onDownload={handleDownload}
-                  />
-                );
-              })
-            ) : (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <FileText className="mx-auto mb-3 h-9 w-9 text-muted-foreground/50" />
-                  <p className="text-sm font-semibold">
-                    No document phases found
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {q
-                      ? "Try a different search."
-                      : "No document phases are configured for this project."}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
-
-        {/* -------------------------------------------- Required warning */}
-        {!isLoading && !isError && pendingRequiredDocuments > 0 && (
-          <Alert className="border-[rgba(176,77,38,0.18)] bg-[#FFF8F4]">
-            <AlertTriangle className="h-4 w-4 text-[#B04D26]" />
-            <AlertTitle className="text-[#7D3C22]">
-              Required documents are still pending
-            </AlertTitle>
-            <AlertDescription className="text-[#8A6B5D]">
-              {pendingRequiredDocuments} required document
-              {pendingRequiredDocuments !== 1 ? "s" : ""} must be uploaded
-              before the document checklist is complete.
-            </AlertDescription>
-          </Alert>
-        )}
-      </div>
-    </Shell>
+      {!isLoading && !isError && Boolean(selectedProjectId) && (
+        <div style={{ display: "grid", gap: 10 }}>
+          {visiblePhases.length ? (
+            visiblePhases.map((phase, index) => {
+              const phaseId = getPhaseId(phase, index);
+              return (
+                <DocumentPhaseCard
+                  key={phaseId}
+                  phase={phase}
+                  projectId={selectedProjectId}
+                  collapsed={Boolean(collapsedPhases[phaseId])}
+                  onToggle={() => togglePhase(phaseId)}
+                  onUpload={handleUpload}
+                  onDownload={handleDownload}
+                />
+              );
+            })
+          ) : (
+            <Card>
+              <EmptyState
+                icon={FileText}
+                title="No document phases found"
+                text={q ? "Try a different search." : "No document phases are configured for this project."}
+              />
+            </Card>
+          )}
+        </div>
+      )}
+    </Page>
   );
 }
 
@@ -1629,7 +1281,7 @@ export function EditDocumentModal({ doc, onClose }) {
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={savingAny} className={BRAND}>
+            <Button type="submit" disabled={savingAny}>
               {savingAny ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
@@ -1651,7 +1303,7 @@ function DocumentTypeInfo({ documentTypes, documentTypeId }) {
   if (!type) return null;
 
   return (
-    <div className="rounded-lg border bg-[#F4F8F5] px-3 py-2.5">
+    <div className="rounded-lg border bg-[var(--sage-50)] px-3 py-2.5">
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
         {type.phaseName && (
           <div>

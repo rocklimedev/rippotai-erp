@@ -17,7 +17,31 @@ import { useGetUnitsQuery } from "../../api/meta/unit.api"; // adjust import pat
 import NewVendorModal from "../../components/vendors/AddVendorModal";
 import NewProjectModal from "../../components/projects/CreateNewProject"; // adjust import path
 import { AddUnitModal } from "../../components/boqs/AddUnitModal"; // adjust import path
-import { X, Plus, Copy, Trash2, GripVertical, Search } from "lucide-react";
+import { ArrowLeft, Plus, Copy, Trash2, GripVertical, Search, Send, Save } from "lucide-react";
+import {
+  Page,
+  PageHeader,
+  Button,
+  Field as InosField,
+  TextInput,
+  SelectInput,
+  TextArea,
+  FormActions,
+  Card as InosCard,
+  EmptyState,
+} from "@/components/inos";
+import {
+  DocSection,
+  DocLayout,
+  Grid,
+  LineTable,
+  IconAction,
+  AddRow,
+  TotalsCard,
+  Callout,
+  LoadingBlock,
+  inr,
+} from "@/components/forms/commerce-form-ui";
 import {
   DndContext,
   PointerSensor,
@@ -50,39 +74,13 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const fmt = (n) =>
   (n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 
-function Card({ label, children }) {
-  return (
-    <div className="bg-white border border-[#DDD8CE] rounded-2xl p-5 shadow-[0_1px_2px_rgba(20,20,20,.04)]">
-      {label && (
-        <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6] font-semibold mb-3">
-          {label}
-        </div>
-      )}
-      {children}
-    </div>
-  );
-}
-const Field = ({ label, required, children }) => (
-  <div>
-    <label className="text-[12px] font-semibold text-[#333333] mb-1 block">
-      {label}
-      {required && <span className="text-[#B04D26] ml-0.5">*</span>}
-    </label>
+const Field = ({ label, required, children, hint, full }) => (
+  <InosField label={label} required={required} hint={hint} full={full}>
     {children}
-  </div>
+  </InosField>
 );
-const Input = (props) => (
-  <input
-    {...props}
-    className={`h-10 w-full px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13.5px] disabled:opacity-70 disabled:cursor-not-allowed ${props.className || ""}`}
-  />
-);
-const Select = (props) => (
-  <select
-    {...props}
-    className={`h-10 w-full px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13.5px] disabled:opacity-70 disabled:cursor-not-allowed ${props.className || ""}`}
-  />
-);
+const Input = (props) => <TextInput {...props} />;
+const Select = ({ children, ...props }) => <SelectInput {...props}>{children}</SelectInput>;
 
 function ItemRow({
   item,
@@ -110,120 +108,116 @@ function ItemRow({
   };
   const amount = Number(item.rate || 0) * Number(item.qty || 0);
   return (
-    <tr
-      ref={setNodeRef}
-      style={style}
-      className="border-t border-[#EAEEF0]"
-      data-testid={`estimate-row-${item.id}`}
-    >
-      <td className="px-1 py-1.5 text-center align-middle">
+    <tr ref={setNodeRef} style={style} data-testid={`estimate-row-${item.id}`}>
+      <td style={{ paddingLeft: 12, paddingRight: 0, paddingTop: 16, width: 28 }}>
         <button
+          type="button"
           {...attributes}
           {...listeners}
           disabled={disabled}
-          className="p-1 cursor-grab text-[#B5C4B6] hover:text-[#333333]"
+          className="cf-icon-btn"
+          style={{ width: 24, height: 24, cursor: "grab" }}
           data-testid={`row-drag-${item.id}`}
           aria-label="Drag to reorder"
         >
-          <GripVertical size={14} />
+          <GripVertical aria-hidden />
         </button>
       </td>
-      <td className="px-1 py-1.5 text-[12.5px] text-[#6B7B7C] text-center align-middle">
-        {index + 1}
-      </td>
-      <td className="px-1 py-1.5">
+      <td className="cf-idx">{index + 1}</td>
+      <td>
         <Input
           disabled={disabled}
           value={item.particular}
           onChange={(e) => onChange(item.id, { particular: e.target.value })}
-          placeholder="Item description"
+          placeholder="e.g. Supply & fix 12mm gypsum false ceiling"
           data-testid={`row-particular-${item.id}`}
         />
       </td>
-      <td className="px-1 py-1.5">
+      <td className="num">
         <Input
           disabled={disabled}
           type="number"
           step="0.01"
+          inputMode="decimal"
           value={item.rate}
-          onChange={(e) =>
-            onChange(item.id, { rate: parseFloat(e.target.value) || 0 })
-          }
-          className="text-right"
+          onChange={(e) => onChange(item.id, { rate: parseFloat(e.target.value) || 0 })}
           data-testid={`row-rate-${item.id}`}
+          aria-label={`Rate line ${index + 1}`}
         />
       </td>
-      <td className="px-1 py-1.5">
+      <td className="num">
         <Input
           disabled={disabled}
           type="number"
           step="0.01"
+          inputMode="decimal"
           value={item.qty}
-          onChange={(e) =>
-            onChange(item.id, { qty: parseFloat(e.target.value) || 0 })
-          }
-          className="text-right"
+          onChange={(e) => onChange(item.id, { qty: parseFloat(e.target.value) || 0 })}
           data-testid={`row-qty-${item.id}`}
+          aria-label={`Quantity line ${index + 1}`}
         />
       </td>
-      <td className="px-1 py-1.5">
-        <select
+      <td>
+        <SelectInput
           disabled={disabled || unitsLoading}
           value={item.unit_id || ""}
           onChange={(e) => {
             const val = e.target.value;
             if (val === "__new__") {
               // Open the "Add Unit" modal for this specific row instead of
-              // treating "__new__" as a real unit id. The row's unit_id is
-              // left untouched until the modal reports back a created unit.
+              // treating "__new__" as a real unit id.
               onAddUnit(item.id);
               return;
             }
             onChange(item.id, { unit_id: val || null });
           }}
-          className="h-10 w-full px-2 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13px]"
           data-testid={`row-unit-${item.id}`}
+          aria-label={`Unit line ${index + 1}`}
         >
-          <option value="">{unitsLoading ? "Loading…" : "Select unit"}</option>
+          <option value="">{unitsLoading ? "Loading…" : "Unit"}</option>
           {units.map((u) => (
             <option key={u.id} value={u.id}>
               {u.name}
             </option>
           ))}
-          <option value="__new__">+ Add New Unit</option>
-        </select>
+          <option value="__new__">+ Add new unit</option>
+        </SelectInput>
       </td>
-      <td className="px-2 py-1.5 text-right text-[13px] font-semibold text-[#333333] whitespace-nowrap">
-        ₹ {fmt(amount)}
-      </td>
-      <td className="px-1 py-1.5">
+      <td className="cf-amount">{inr(amount)}</td>
+      <td>
         <Input
           disabled={disabled}
           value={item.remarks}
           onChange={(e) => onChange(item.id, { remarks: e.target.value })}
-          placeholder="Remarks"
+          placeholder="Optional"
           data-testid={`row-remarks-${item.id}`}
         />
       </td>
-      <td className="px-1 py-1.5 text-center whitespace-nowrap">
-        <button
-          disabled={disabled}
-          onClick={() => onDup(item.id)}
-          className="p-1 text-[#6B7B7C] hover:text-[#333333] disabled:opacity-40"
-          title="Duplicate row"
-          data-testid={`row-dup-${item.id}`}
-        >
-          <Copy size={14} />
-        </button>
-        <button
-          disabled={disabled}
-          onClick={() => onDel(item.id)}
-          className="p-1 text-[#B04D26] hover:text-[#7A2E1A] disabled:opacity-40"
-          title="Delete row"
-          data-testid={`row-del-${item.id}`}
-        >
-          <Trash2 size={14} />
-        </button>
+      <td className="actions">
+        <div style={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onDup(item.id)}
+            className="cf-icon-btn"
+            title="Duplicate row"
+            aria-label="Duplicate row"
+            data-testid={`row-dup-${item.id}`}
+          >
+            <Copy aria-hidden />
+          </button>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onDel(item.id)}
+            className="cf-icon-btn cf-icon-btn--danger"
+            title="Delete row"
+            aria-label="Delete row"
+            data-testid={`row-del-${item.id}`}
+          >
+            <Trash2 aria-hidden />
+          </button>
+        </div>
       </td>
     </tr>
   );
@@ -549,422 +543,436 @@ export default function EstimateForm() {
 
   // Block rendering the form with stale/empty state while the existing
   // quotation + items are still loading in edit mode.
-  if (isEdit && (quotationLoading || itemsLoading || !hydrated)) {
+  if (isEdit && (quotationLoading || itemsLoading || !hydrated) && !quotationError) {
     return (
-      <div className="max-w-[1200px] mx-auto py-10 px-4 text-center text-[#6B7B7C]">
-        Loading estimate…
-      </div>
+      <Page>
+        <LoadingBlock label="Loading estimate…" />
+      </Page>
     );
   }
 
   if (isEdit && quotationError) {
     return (
-      <div className="max-w-[1200px] mx-auto py-10 px-4 text-center text-red-600">
-        Failed to load estimate.
-      </div>
+      <Page width="form">
+        <InosCard>
+          <EmptyState
+            title="Couldn't load this estimate"
+            text="It may have been deleted, or the server is unreachable."
+            action={
+              <Button variant="primary" onClick={() => nav("/procurement/estimates/all")}>
+                Back to estimates
+              </Button>
+            }
+          />
+        </InosCard>
+      </Page>
     );
   }
 
+  const cancel = () => nav(isEdit ? `/procurement/estimates/${id}` : "/procurement/estimates/");
+  const filledLines = items.filter((i) => i.particular?.trim()).length;
+  const missing = [!project && "project", !vendor && "vendor", !filledLines && "at least one item"].filter(Boolean);
+  const toggleStyle = { width: 40, flexShrink: 0 };
+
   return (
-    <div
-      className="max-w-[1200px] mx-auto py-6 px-4 space-y-4"
-      data-testid="create-estimate-page"
-    >
-      <div className="flex items-center justify-between">
-        <h1 className="text-[40px] font-bold text-[#333333]">
-          {isEdit ? "Edit Estimate" : "Create Estimate"}
-        </h1>
-        <button
-          onClick={() =>
-            nav(
-              isEdit
-                ? `/procurement/estimates/${id}`
-                : "/procurement/estimates/",
-            )
+    <Page>
+      <div data-testid="create-estimate-page" style={{ display: "contents" }}>
+        <PageHeader
+          crumbs={[
+            { label: "Procurement", to: "/procurement" },
+            { label: "Estimates", to: "/procurement/estimates/all" },
+            { label: isEdit ? "Edit" : "New" },
+          ]}
+          title={isEdit ? `Edit estimate${estimateNumber ? ` ${estimateNumber}` : ""}` : "New estimate"}
+          subtitle="Choose the project and vendor, list the items, then save a draft or submit for approval."
+          actions={
+            <Button variant="ghost" icon={ArrowLeft} onClick={cancel} data-testid="cancel-btn">
+              Cancel
+            </Button>
           }
-          className="text-[13px] text-[#6B7B7C] hover:text-[#333333] inline-flex items-center gap-1"
-          data-testid="cancel-btn"
+        />
+
+        {readOnly && (
+          <Callout tone="info" title="Approved — read only">
+            Only an admin can edit an approved estimate.
+          </Callout>
+        )}
+
+        <form
+          className="inos-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit(QUOTATION_STATUS.SUBMITTED);
+          }}
         >
-          <X size={14} /> Cancel
-        </button>
-      </div>
-
-      {/* Card A — Basic */}
-      <Card label="Basic Information">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Estimate Number">
-            <Input
-              disabled
-              value={estimateNumber}
-              placeholder="Auto-generated after project & date"
-              data-testid="estimate-number"
-            />
-          </Field>
-          <Field label="Estimate Date" required>
-            <Input
-              type="date"
-              value={estimateDate}
-              onChange={(e) => setEstimateDate(e.target.value)}
-              disabled={readOnly}
-              data-testid="estimate-date"
-            />
-          </Field>
-          <div className="md:col-span-2">
-            <Field label="Vendor" required>
-              {vendor ? (
-                <div className="flex items-center gap-2">
-                  <div
-                    className="flex-1 h-10 px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13.5px] flex items-center font-semibold"
-                    data-testid="vendor-selected"
-                  >
-                    {vendor.company || vendor.name}{" "}
-                    <span className="text-[#6B7B7C] ml-2 font-normal">
-                      · {vendor.primary_category || vendor.category || "—"}
-                    </span>
-                  </div>
-                  <button
-                    disabled={readOnly}
-                    onClick={() => {
-                      setVendor(null);
-                      setVendorSearch("");
-                    }}
-                    className="h-10 px-3 rounded-lg border border-[#DDD8CE] text-[12.5px] font-semibold text-[#333333]"
-                  >
-                    Change
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 relative">
-                    <Search
-                      size={14}
-                      className="absolute top-3 left-3 text-[#B5C4B6]"
-                    />
-                    <input
+          {/* 1 — Vendor & project */}
+          <DocSection step={1} title="Vendor & project" description="Who is quoting, and which project it is for.">
+            <Grid cols={2}>
+              <Field label="Vendor" required full>
+                {vendor ? (
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <div
+                      className="inos-input"
+                      style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--surface-2)", minWidth: 0 }}
+                      data-testid="vendor-selected"
+                    >
+                      <strong style={{ fontWeight: 650 }} className="truncate">
+                        {vendor.company || vendor.name}
+                      </strong>
+                      <span className="truncate" style={{ color: "var(--text-3)" }}>
+                        {vendor.primary_category || vendor.category || ""}
+                      </span>
+                    </div>
+                    <Button
+                      variant="secondary"
                       disabled={readOnly}
-                      value={vendorSearch}
-                      onChange={(e) => setVendorSearch(e.target.value)}
-                      placeholder="Search vendor…"
-                      className="h-10 w-full pl-9 pr-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13.5px]"
-                      data-testid="vendor-search"
-                    />
-                    {vendorResults.length > 0 && vendorSearch && (
-                      <div className="absolute z-10 top-11 left-0 right-0 max-h-[240px] overflow-y-auto bg-white border border-[#DDD8CE] rounded-lg shadow-md">
-                        {vendorResults.slice(0, 8).map((v) => (
-                          <button
-                            key={v.id}
-                            onClick={() => {
-                              setVendor({
-                                id: v.id,
-                                company: v.company_name || v.name,
-                                name: v.name,
-                                primary_category: v.vendorCategory?.name,
-                                category: v.businessType?.name,
-                                city: v.address || "", // vendor model has no dedicated city field
-                              });
-                              setVendorSearch("");
-                            }}
-                            className="w-full text-left px-3 py-2 hover:bg-[#EAEEF0] border-b border-[#EAEEF0] text-[13px]"
-                            data-testid={`vendor-opt-${v.id}`}
-                          >
-                            <div className="font-semibold text-[#333333]">
-                              {v.company_name || v.name}
-                            </div>
-                            <div className="text-[11.5px] text-[#6B7B7C]">
-                              {v.vendorCategory?.name ||
-                                v.businessType?.name ||
-                                "—"}
-                              {v.address ? ` · ${v.address}` : ""}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                      onClick={() => {
+                        setVendor(null);
+                        setVendorSearch("");
+                      }}
+                    >
+                      Change
+                    </Button>
                   </div>
-                  <button
-                    disabled={readOnly}
-                    onClick={() => setShowNewVendor(true)}
-                    className="h-10 px-3 rounded-lg border border-[#1F453B] text-[#333333] hover:bg-[#EAEEF0] text-[13px] font-semibold inline-flex items-center gap-1"
-                    data-testid="new-vendor-btn"
-                  >
-                    <Plus size={14} /> New Vendor
-                  </button>
-                </div>
-              )}
-            </Field>
-          </div>
-        </div>
-      </Card>
-
-      {/* Card B — Project */}
-      <Card label="Project Information">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Project" required>
-            <Select
-              disabled={readOnly || projectsLoading}
-              value={project?.id || ""}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val === "__new__") {
-                  // Open the "Add Project" modal instead of treating
-                  // "__new__" as a real project id; current selection (if
-                  // any) is left untouched until the modal creates one.
-                  setShowNewProject(true);
-                  return;
-                }
-                const selected = projects.find((p) => String(p.id) === val);
-                setProject(selected || null);
-              }}
-              data-testid="project-select"
-            >
-              <option value="">
-                {projectsLoading ? "Loading projects…" : "Select a project…"}
-              </option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-              {/* Keep a just-created project visible/selected even before
-                  the projects list has refetched from the server. */}
-              {project &&
-                !projects.some((p) => String(p.id) === String(project.id)) && (
-                  <option value={project.id}>{project.name}</option>
+                ) : (
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <div className="inos-search" style={{ maxWidth: "none", minWidth: 0 }}>
+                      <Search aria-hidden />
+                      <input
+                        disabled={readOnly}
+                        value={vendorSearch}
+                        onChange={(e) => setVendorSearch(e.target.value)}
+                        placeholder="Search vendors by name…"
+                        className="inos-input"
+                        data-testid="vendor-search"
+                      />
+                      {vendorResults.length > 0 && vendorSearch && (
+                        <div
+                          style={{
+                            position: "absolute", zIndex: 20, top: 44, left: 0, right: 0, maxHeight: 260, overflowY: "auto",
+                            background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 12, boxShadow: "var(--shadow-md)", padding: 4,
+                          }}
+                        >
+                          {vendorResults.slice(0, 8).map((v) => (
+                            <button
+                              type="button"
+                              key={v.id}
+                              onClick={() => {
+                                setVendor({
+                                  id: v.id,
+                                  company: v.company_name || v.name,
+                                  name: v.name,
+                                  primary_category: v.vendorCategory?.name,
+                                  category: v.businessType?.name,
+                                  city: v.address || "", // vendor model has no dedicated city field
+                                });
+                                setVendorSearch("");
+                              }}
+                              className="cf-option"
+                              style={{ flexDirection: "column", gap: 0 }}
+                              data-testid={`vendor-opt-${v.id}`}
+                            >
+                              <span style={{ fontWeight: 600 }}>{v.company_name || v.name}</span>
+                              <span className="cf-option__meta">
+                                {v.vendorCategory?.name || v.businessType?.name || "—"}
+                                {v.address ? ` · ${v.address}` : ""}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {vendorSearch && debouncedVendorSearch && vendorResults.length === 0 && (
+                        <span className="inos-hint" style={{ position: "absolute", top: 44, left: 2 }}>
+                          No vendor matches — add it as a new vendor.
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      variant="secondary"
+                      icon={Plus}
+                      disabled={readOnly}
+                      onClick={() => setShowNewVendor(true)}
+                      data-testid="new-vendor-btn"
+                    >
+                      New vendor
+                    </Button>
+                  </div>
                 )}
-              <option value="__new__">+ Add New Project</option>
-            </Select>
-          </Field>
-          <Field label="Site Location">
-            <Input
-              disabled
-              value={project?.location || ""}
-              placeholder="Auto-populated from project"
-              data-testid="site-location"
-            />
-          </Field>
-        </div>
-      </Card>
+              </Field>
 
-      {/* Card C — Items */}
-      <Card label="Estimate Items">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-[13px] min-w-[900px]">
-            <thead>
-              <tr className="text-[10.5px] uppercase tracking-widest text-[#B5C4B6] bg-[#F3F3F1]">
-                <th className="w-8"></th>
-                <th className="w-8 text-center py-2">#</th>
-                <th className="py-2">Particular</th>
-                <th className="w-28 py-2 text-right">Rate (₹)</th>
-                <th className="w-24 py-2 text-right">Qty</th>
-                <th className="w-24 py-2">Unit</th>
-                <th className="w-32 py-2 text-right">Amount (₹)</th>
-                <th className="py-2">Remarks</th>
-                <th className="w-20"></th>
-              </tr>
-            </thead>
-            <DndContext
-              sensors={sensors}
-              onDragEnd={onDragEnd}
-              collisionDetection={closestCenter}
-            >
-              <SortableContext
-                items={items.map((i) => i.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <tbody>
-                  {items.map((it, idx) => (
-                    <ItemRow
-                      key={it.id}
-                      item={it}
-                      index={idx}
-                      disabled={readOnly}
-                      units={units}
-                      unitsLoading={unitsLoading}
-                      onChange={setItem}
-                      onDup={dupItem}
-                      onDel={delItem}
-                      onAddUnit={setNewUnitRowId}
-                    />
+              <Field label="Project" required>
+                <Select
+                  disabled={readOnly || projectsLoading}
+                  value={project?.id || ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "__new__") {
+                      setShowNewProject(true);
+                      return;
+                    }
+                    const selected = projects.find((p) => String(p.id) === val);
+                    setProject(selected || null);
+                  }}
+                  data-testid="project-select"
+                >
+                  <option value="">{projectsLoading ? "Loading projects…" : "Select project"}</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
                   ))}
-                </tbody>
+                  {project && !projects.some((p) => String(p.id) === String(project.id)) && (
+                    <option value={project.id}>{project.name}</option>
+                  )}
+                  <option value="__new__">+ Add new project</option>
+                </Select>
+              </Field>
+              <Field label="Site location" hint="Taken from the project.">
+                <Input disabled value={project?.location || ""} placeholder="—" data-testid="site-location" />
+              </Field>
+              <Field label="Estimate number" hint="Generated from the project and date.">
+                <Input disabled value={estimateNumber} placeholder="Pick a project first" data-testid="estimate-number" />
+              </Field>
+              <Field label="Estimate date" required>
+                <Input
+                  type="date"
+                  value={estimateDate}
+                  onChange={(e) => setEstimateDate(e.target.value)}
+                  disabled={readOnly}
+                  data-testid="estimate-date"
+                />
+              </Field>
+            </Grid>
+          </DocSection>
+
+          {/* 2 — Line items */}
+          <DocSection
+            step={2}
+            flush
+            title="Line items"
+            description="Drag the handle to reorder. Amount = rate × quantity."
+            actions={
+              <Button variant="secondary" size="sm" icon={Plus} onClick={addItem} disabled={readOnly}>
+                Add item
+              </Button>
+            }
+            footer={
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={Plus}
+                  disabled={readOnly}
+                  onClick={addItem}
+                  className="cf-add-row"
+                  data-testid="add-row-btn"
+                >
+                  Add item
+                </Button>
+                <span className="inos-hint tabular">
+                  {filledLines} of {items.length} {items.length === 1 ? "line" : "lines"} · Subtotal{" "}
+                  <strong style={{ color: "var(--text)" }}>{inr(subtotal)}</strong>
+                </span>
+              </>
+            }
+          >
+            <DndContext sensors={sensors} onDragEnd={onDragEnd} collisionDetection={closestCenter}>
+              <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+                <LineTable minWidth={980}>
+                  <thead>
+                    <tr>
+                      <th aria-label="Reorder" style={{ width: 28, paddingLeft: 12 }} />
+                      <th>#</th>
+                      <th style={{ minWidth: 260 }}>Particular</th>
+                      <th className="num" style={{ width: 120 }}>Rate (₹)</th>
+                      <th className="num" style={{ width: 96 }}>Qty</th>
+                      <th style={{ width: 120 }}>Unit</th>
+                      <th className="num" style={{ width: 130 }}>Amount</th>
+                      <th style={{ minWidth: 140 }}>Remarks</th>
+                      <th className="actions" aria-label="Row actions" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((it, idx) => (
+                      <ItemRow
+                        key={it.id}
+                        item={it}
+                        index={idx}
+                        disabled={readOnly}
+                        units={units}
+                        unitsLoading={unitsLoading}
+                        onChange={setItem}
+                        onDup={dupItem}
+                        onDel={delItem}
+                        onAddUnit={setNewUnitRowId}
+                      />
+                    ))}
+                  </tbody>
+                </LineTable>
               </SortableContext>
             </DndContext>
-          </table>
-        </div>
-        <button
-          disabled={readOnly}
-          onClick={addItem}
-          className="mt-3 text-[13px] font-semibold text-[#333333] hover:underline inline-flex items-center gap-1"
-          data-testid="add-row-btn"
-        >
-          <Plus size={14} /> Add Row
-        </button>
+          </DocSection>
 
-        {/* Totals — right aligned */}
-        <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div />
-          <div className="space-y-2 text-[13.5px]" data-testid="totals-block">
-            <div className="flex items-center justify-between border-b border-[#EAEEF0] pb-2">
-              <div className="text-[#6B7B7C]">Subtotal</div>
-              <div className="font-semibold text-[#333333]">
-                ₹ {fmt(subtotal)}
-              </div>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-[#6B7B7C]">Additional Charges</div>
-              <div className="flex items-center gap-1">
-                <button
-                  disabled={readOnly}
-                  onClick={() => setAddlIsPct((v) => !v)}
-                  className="h-8 w-10 rounded-md border border-[#DDD8CE] text-[12px] font-semibold text-[#333333]"
-                  data-testid="addl-toggle"
-                >
-                  {addlIsPct ? "%" : "₹"}
-                </button>
-                <input
-                  disabled={readOnly}
-                  type="number"
-                  value={addlAmt}
-                  onChange={(e) => setAddlAmt(parseFloat(e.target.value) || 0)}
-                  className="h-8 w-28 px-2 rounded-md border border-[#DDD8CE] bg-[#FAF8F5] text-[13px] text-right"
-                  data-testid="addl-input"
-                />
-              </div>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-[#6B7B7C]">Discount</div>
-              <div className="flex items-center gap-1">
-                <button
-                  disabled={readOnly}
-                  onClick={() => setDiscIsPct((v) => !v)}
-                  className="h-8 w-10 rounded-md border border-[#DDD8CE] text-[12px] font-semibold text-[#333333]"
-                  data-testid="disc-toggle"
-                >
-                  {discIsPct ? "%" : "₹"}
-                </button>
-                <input
-                  disabled={readOnly}
-                  type="number"
-                  value={discAmt}
-                  onChange={(e) => setDiscAmt(parseFloat(e.target.value) || 0)}
-                  className="h-8 w-28 px-2 rounded-md border border-[#DDD8CE] bg-[#FAF8F5] text-[13px] text-right"
-                  data-testid="disc-input"
-                />
-              </div>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-[#6B7B7C]">Tax (%)</div>
-              <input
-                disabled={readOnly}
-                type="number"
-                value={taxPct}
-                onChange={(e) => setTaxPct(parseFloat(e.target.value) || 0)}
-                className="h-8 w-28 px-2 rounded-md border border-[#DDD8CE] bg-[#FAF8F5] text-[13px] text-right"
-                data-testid="tax-input"
-              />
-            </div>
-            <div className="flex items-center justify-between text-[#333333]">
-              <div>Tax amount</div>
-              <div>₹ {fmt(taxAmount)}</div>
-            </div>
-            <div className="flex items-center justify-between border-t-2 border-[#333333] pt-2 text-[16px]">
-              <div className="font-bold text-[#333333]">Grand Total</div>
-              <div
-                className="font-bold text-[#333333]"
-                data-testid="grand-total"
-              >
-                ₹ {fmt(grandTotal)}
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Card D — Terms */}
-      <Card label="Terms & Conditions">
-        <textarea
-          disabled={readOnly}
-          value={terms}
-          onChange={(e) => setTerms(e.target.value)}
-          rows={5}
-          placeholder="Enter terms and conditions…"
-          className="w-full px-3 py-2 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-[13.5px] leading-relaxed"
-          data-testid="terms"
-        />
-      </Card>
-
-      {/* Card E — Approval. On create the quotation is always draft, so this
-          block never has data to show yet — real values (reviewedAt /
-          reviewedBy / reviewRemarks) only exist on the model once a
-          reviewer acts on the quotation from the detail/review screen. */}
-      <Card label="Approval & Signature">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <div className="text-[12px] font-semibold text-[#333333] mb-2">
-              Reviewer
-            </div>
-            <div
-              className="border border-[#DDD8CE] rounded-lg p-4 min-h-[120px] bg-[#FAF8F5]"
-              data-testid="approved-by-block"
-            >
-              {existingQuotation?.reviewedBy ||
-              existingQuotation?.reviewed_by ? (
-                <div className="text-[13px] text-[#333333]">
-                  <div className="font-semibold">
-                    {existingQuotation.reviewedBy?.name ||
-                      existingQuotation.reviewed_by}
+          {/* 3 — Terms, 4 — Review */}
+          <DocLayout
+            aside={
+              <DocSection step={4} title="Review" description="Charges and discount can be ₹ or %.">
+                <div className="cf-totals cf-totals--plain" data-testid="totals-block">
+                  <div className="cf-totals__row">
+                    <span>Subtotal</span>
+                    <span>{inr(subtotal)}</span>
                   </div>
-                  {(existingQuotation.reviewRemarks ||
-                    existingQuotation.review_remarks) && (
-                    <div className="text-[12px] text-[#6B7B7C] mt-1">
-                      {existingQuotation.reviewRemarks ||
-                        existingQuotation.review_remarks}
+                  <div className="cf-totals__row">
+                    <span>Additional charges</span>
+                    <span style={{ display: "flex", gap: 6 }}>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        disabled={readOnly}
+                        onClick={() => setAddlIsPct((v) => !v)}
+                        style={toggleStyle}
+                        data-testid="addl-toggle"
+                        title="Switch between ₹ and %"
+                      >
+                        {addlIsPct ? "%" : "₹"}
+                      </Button>
+                      <input
+                        disabled={readOnly}
+                        type="number"
+                        inputMode="decimal"
+                        value={addlAmt}
+                        onChange={(e) => setAddlAmt(parseFloat(e.target.value) || 0)}
+                        className="inos-input"
+                        aria-label="Additional charges"
+                        data-testid="addl-input"
+                      />
+                    </span>
+                  </div>
+                  <div className="cf-totals__row">
+                    <span>Discount</span>
+                    <span style={{ display: "flex", gap: 6 }}>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        disabled={readOnly}
+                        onClick={() => setDiscIsPct((v) => !v)}
+                        style={toggleStyle}
+                        data-testid="disc-toggle"
+                        title="Switch between ₹ and %"
+                      >
+                        {discIsPct ? "%" : "₹"}
+                      </Button>
+                      <input
+                        disabled={readOnly}
+                        type="number"
+                        inputMode="decimal"
+                        value={discAmt}
+                        onChange={(e) => setDiscAmt(parseFloat(e.target.value) || 0)}
+                        className="inos-input"
+                        aria-label="Discount"
+                        data-testid="disc-input"
+                      />
+                    </span>
+                  </div>
+                  <div className="cf-totals__row">
+                    <span>Tax (%)</span>
+                    <input
+                      disabled={readOnly}
+                      type="number"
+                      inputMode="decimal"
+                      value={taxPct}
+                      onChange={(e) => setTaxPct(parseFloat(e.target.value) || 0)}
+                      className="inos-input"
+                      aria-label="Tax percent"
+                      data-testid="tax-input"
+                    />
+                  </div>
+                  <div className="cf-totals__row">
+                    <span>Tax amount</span>
+                    <span>{inr(taxAmount)}</span>
+                  </div>
+                  <div className="cf-totals__grand">
+                    <span>Grand total</span>
+                    <strong data-testid="grand-total">{inr(grandTotal)}</strong>
+                  </div>
+                </div>
+                {missing.length > 0 && (
+                  <Callout tone="warn" title="Before saving">
+                    Add {missing.join(", ")}.
+                  </Callout>
+                )}
+              </DocSection>
+            }
+          >
+            <DocSection step={3} title="Terms & approval" description="Printed on the estimate. Review details appear once it's reviewed.">
+              <Grid cols={1}>
+                <Field label="Terms & conditions">
+                  <TextArea
+                    disabled={readOnly}
+                    value={terms}
+                    onChange={(e) => setTerms(e.target.value)}
+                    rows={6}
+                    placeholder="One term per line"
+                    data-testid="terms"
+                  />
+                </Field>
+                <div className="cf-block" data-testid="approved-by-block">
+                  <div className="cf-block__head">
+                    <p className="cf-block__title">Reviewer</p>
+                  </div>
+                  {existingQuotation?.reviewedBy || existingQuotation?.reviewed_by ? (
+                    <div>
+                      <div style={{ fontWeight: 600 }}>
+                        {existingQuotation.reviewedBy?.name || existingQuotation.reviewed_by}
+                      </div>
+                      {(existingQuotation.reviewRemarks || existingQuotation.review_remarks) && (
+                        <div className="inos-hint">
+                          {existingQuotation.reviewRemarks || existingQuotation.review_remarks}
+                        </div>
+                      )}
                     </div>
+                  ) : (
+                    <span className="inos-hint">Available after this estimate is submitted and reviewed. The contractor signature block is added on print.</span>
                   )}
                 </div>
-              ) : (
-                <div className="text-[13px] text-[#B5C4B6] italic">
-                  Available after this estimate is submitted and reviewed
-                </div>
-              )}
-            </div>
-          </div>
-          <div>
-            <div className="text-[12px] font-semibold text-[#333333] mb-2">
-              Contractor&apos;s Sign
-            </div>
-            <div className="border border-[#DDD8CE] rounded-lg p-4 min-h-[120px] bg-[#FAF8F5] flex items-end">
-              <div className="text-[11.5px] text-[#B5C4B6]">
-                Signature block for print
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
+              </Grid>
+            </DocSection>
+          </DocLayout>
 
-      {/* Bottom actions */}
-      <div className="flex items-center gap-3 pt-2">
-        <button
-          disabled={busy || readOnly}
-          onClick={() => submit(QUOTATION_STATUS.SUBMITTED)}
-          className="h-11 px-6 rounded-xl bg-[#1F453B] text-white text-[13.5px] font-semibold disabled:opacity-60"
-          data-testid="submit-approval-btn"
-        >
-          {busy
-            ? "Saving…"
-            : isEdit && status !== QUOTATION_STATUS.DRAFT
-              ? "Save Changes"
-              : "Submit for Approval"}
-        </button>
-        <button
-          disabled={busy || readOnly}
-          onClick={() => submit(QUOTATION_STATUS.DRAFT)}
-          className="text-[13px] font-semibold text-[#6B7B7C] hover:text-[#333333] hover:underline"
-          data-testid="save-draft-btn"
-        >
-          Save as Draft
-        </button>
-      </div>
+          <div className="inos-form-actions">
+            <span className="inos-form-actions__note tabular">
+              {filledLines} {filledLines === 1 ? "item" : "items"} · Grand total{" "}
+              <strong style={{ color: "var(--brand)" }}>{inr(grandTotal)}</strong>
+            </span>
+            <div className="inos-form-actions__buttons">
+              <Button variant="ghost" onClick={cancel}>
+                Cancel
+              </Button>
+              <Button
+                variant="secondary"
+                icon={Save}
+                disabled={busy || readOnly}
+                onClick={() => submit(QUOTATION_STATUS.DRAFT)}
+                data-testid="save-draft-btn"
+              >
+                Save draft
+              </Button>
+              <Button
+                variant="primary"
+                type="submit"
+                icon={Send}
+                disabled={busy || readOnly}
+                data-testid="submit-approval-btn"
+              >
+                {busy
+                  ? "Saving…"
+                  : isEdit && status !== QUOTATION_STATUS.DRAFT
+                    ? "Save changes"
+                    : "Submit for approval"}
+              </Button>
+            </div>
+          </div>
+        </form>
 
       {showNewVendor && (
         <NewVendorModal
@@ -1001,6 +1009,7 @@ export default function EstimateForm() {
           }}
         />
       )}
-    </div>
+      </div>
+    </Page>
   );
 }

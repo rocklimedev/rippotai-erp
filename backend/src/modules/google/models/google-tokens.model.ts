@@ -22,6 +22,8 @@ export interface GoogleTokenCreationAttributes {
 
 @Table({
   tableName: 'google_tokens',
+  // DB columns are camelCase (override global underscored:true)
+  underscored: false,
   timestamps: true,
 })
 export class GoogleToken extends Model<

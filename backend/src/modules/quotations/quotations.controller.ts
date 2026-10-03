@@ -11,7 +11,10 @@ import {
   HttpStatus,
   UseGuards,
   BadRequestException,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
+import { QuotationExportService } from './quotation-export.service';
 
 import { QuotationsService } from './quotations.service';
 import { QuotationDashboardService } from './quotation-dashboard.service';
@@ -33,6 +36,7 @@ export class QuotationsController {
   constructor(
     private readonly quotationsService: QuotationsService,
     private readonly quotationDashboardService: QuotationDashboardService,
+    private readonly quotationExportService: QuotationExportService,
   ) {}
 
   // =========================
@@ -133,6 +137,17 @@ export class QuotationsController {
   // =========================
   // SINGLE QUOTATION ROUTES
   // =========================
+  @Get(':id/export/excel')
+  async exportExcel(@Param('id') id: string, @Res() res: Response) {
+    const { buffer, filename } = await this.quotationExportService.toExcel(id);
+    res.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
+    res.send(buffer);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.quotationsService.findOne(id);

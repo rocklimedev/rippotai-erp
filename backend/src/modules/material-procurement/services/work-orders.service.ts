@@ -104,7 +104,8 @@ export class WorkOrdersService {
       ),
     ];
 
-    if (unitIds.length !== dto.items.length) {
+    // Items may share a unit — only require that every item has one.
+    if (dto.items.some((item) => !item.unit_id)) {
       throw new BadRequestException(
         'Unit is required for every work order item',
       );
@@ -552,7 +553,8 @@ export class WorkOrdersService {
         ),
       ];
 
-      if (unitIds.length !== dto.items.length) {
+      // Items may share a unit — only require that every item has one.
+      if (dto.items.some((item) => !item.unit_id)) {
         throw new BadRequestException(
           'Unit is required for every work order item',
         );

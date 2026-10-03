@@ -1,40 +1,23 @@
 import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
-import {
-  Plus,
-  Search,
-  Pencil,
-  Trash2,
-  X,
-  FileText,
-  RefreshCw,
-  CheckCircle2,
-  XCircle,
-} from "lucide-react";
+import { Plus, Pencil, Trash2, FileText, RefreshCw, SearchX, PenTool } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+  Page,
+  PageHeader,
+  Card,
+  Button,
+  Toolbar,
+  ToolbarSpacer,
+  SearchInput,
+  Segmented,
+  Pill,
+  Field,
+  TextInput,
+  TextArea,
+  SelectInput,
+  ChoiceGroup,
+} from "@/components/inos";
 
 import {
   useGetDocumentTypesQuery,
@@ -42,6 +25,17 @@ import {
   useUpdateDocumentTypeMutation,
   useDeleteDocumentTypeMutation,
 } from "../../api/documents/document.api";
+import { useGetProjectPhasesQuery } from "../../api/projects/project.api";
+import {
+  AdminModal,
+  ModalActions,
+  SkeletonRows,
+  TableEmpty,
+  ToggleRow,
+  adminCrumbs,
+  humanize,
+  plural,
+} from "../settings/_admin-ui";
 
 const EMPTY_FORM = {
   name: "",
@@ -49,22 +43,42 @@ const EMPTY_FORM = {
   description: "",
   phaseCode: "",
   projectPhaseId: "",
-  targetType: "",
+  targetType: "DOCUMENT",
   isActive: true,
 };
 
+const TARGETS = [
+  { value: "DOCUMENT", label: "Document", icon: FileText },
+  { value: "DRAWING", label: "Drawing", icon: PenTool },
+];
+
+const toCode = (s) =>
+  String(s || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
 const DocumentTypes = () => {
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [codeTouched, setCodeTouched] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const {
     data: documentTypes = [],
     isLoading,
     isFetching,
+    isError,
     refetch,
   } = useGetDocumentTypesQuery({});
+
+  const { data: phasesData = [] } = useGetProjectPhasesQuery({});
+  const phases = Array.isArray(phasesData) ? phasesData : [];
+  const phaseById = useMemo(() => Object.fromEntries(phases.map((p) => [p.id, p])), [phases]);
 
   const [createDocumentType, { isLoading: isCreating }] =
     useCreateDocumentTypeMutation();
@@ -75,23 +89,29 @@ const DocumentTypes = () => {
   const [deleteDocumentType, { isLoading: isDeleting }] =
     useDeleteDocumentTypeMutation();
 
-  const filteredDocumentTypes = useMemo(() => {
-    if (!Array.isArray(documentTypes)) return [];
+  const allTypes = Array.isArray(documentTypes) ? documentTypes : [];
+  const activeCount = allTypes.filter((t) => t.isActive !== false).length;
 
+  const filteredDocumentTypes = useMemo(() => {
+    const list = Array.isArray(documentTypes) ? documentTypes : [];
     const value = search.trim().toLowerCase();
 
-    if (!value) return documentTypes;
-
-    return documentTypes.filter((item) =>
-      [item.name, item.code, item.description, item.phaseCode, item.targetType]
+    return list.filter((item) => {
+      const active = item.isActive !== false;
+      if (statusFilter === "active" && !active) return false;
+      if (statusFilter === "inactive" && active) return false;
+      if (!value) return true;
+      return [item.name, item.code, item.description, item.phaseCode, item.targetType]
         .filter(Boolean)
-        .some((field) => String(field).toLowerCase().includes(value)),
-    );
-  }, [documentTypes, search]);
+        .some((field) => String(field).toLowerCase().includes(value));
+    });
+  }, [documentTypes, search, statusFilter]);
 
   const openCreate = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setCodeTouched(false);
+    setErrors({});
     setShowModal(true);
   };
 
@@ -104,13 +124,14 @@ const DocumentTypes = () => {
       description: item.description || "",
       phaseCode: item.phaseCode || "",
       projectPhaseId: item.projectPhaseId || "",
-      targetType: item.targetType || "",
+      targetType: item.targetType || "DOCUMENT",
       isActive:
         item.isActive === undefined || item.isActive === null
           ? true
           : Boolean(item.isActive),
     });
-
+    setCodeTouched(true);
+    setErrors({});
     setShowModal(true);
   };
 
@@ -122,32 +143,40 @@ const DocumentTypes = () => {
     setForm(EMPTY_FORM);
   };
 
-  const handleChange = (event) => {
-    const { name, value, type } = event.target;
-    const checked = type === "checkbox" ? event.target.checked : undefined;
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+  const setField = (name, value) => {
+    setForm((prev) => {
+      const next = { ...prev, [name]: value };
+      if (name === "name" && !codeTouched) next.code = toCode(value);
+      if (name === "projectPhaseId") next.phaseCode = phaseById[value]?.phase_code || phaseById[value]?.code || "";
+      return next;
+    });
+    if (name === "code") setCodeTouched(true);
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
+
+  const handleChange = (event) => setField(event.target.name, event.target.value);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!form.name.trim()) {
-      toast.error("Document type name is required");
-      return;
-    }
+    const next = {};
+    if (!form.name.trim()) next.name = "Document type name is required.";
+    if (!form.code.trim()) next.code = "A short code is required.";
+    if (!form.projectPhaseId) next.projectPhaseId = "Choose the phase this document belongs to.";
+    setErrors(next);
+    if (Object.keys(next).length) return;
+
+    const phase = phaseById[form.projectPhaseId];
 
     try {
       const payload = {
         name: form.name.trim(),
-        code: form.code.trim() || undefined,
+        code: toCode(form.code) || undefined,
         description: form.description.trim() || undefined,
-        phaseCode: form.phaseCode.trim() || undefined,
+        phaseCode: form.phaseCode.trim() || phase?.phase_code || undefined,
+        phaseName: phase?.title || phase?.name || undefined,
         projectPhaseId: form.projectPhaseId || undefined,
-        targetType: form.targetType.trim() || undefined,
+        targetType: form.targetType || undefined,
         isActive: form.isActive,
       };
 
@@ -164,10 +193,13 @@ const DocumentTypes = () => {
         toast.success("Document type created successfully");
       }
 
-      closeModal();
+      setShowModal(false);
+      setEditingId(null);
+      setForm(EMPTY_FORM);
     } catch (error) {
+      const msg = error?.data?.message;
       toast.error(
-        error?.data?.message ||
+        (Array.isArray(msg) ? msg.join(" ") : msg) ||
           error?.message ||
           "Unable to save document type",
       );
@@ -193,294 +225,168 @@ const DocumentTypes = () => {
     }
   };
 
+  const saving = isCreating || isUpdating;
+
   return (
-    <div className="min-h-full bg-muted/40 p-6">
-      {/* Header */}
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <FileText className="h-5 w-5" />
-          </div>
+    <Page>
+      <PageHeader
+        crumbs={adminCrumbs("Document types")}
+        title="Document types"
+        subtitle="The kinds of documents and drawings each project phase expects — briefs, recce reports, GFC drawings and more."
+        actions={
+          <Button variant="primary" icon={Plus} onClick={openCreate} data-testid="add-doc-type-btn">
+            Add document type
+          </Button>
+        }
+      />
 
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">
-              Document Types
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Manage document categories and document type configuration.
-            </p>
-          </div>
-        </div>
-
-        <Button onClick={openCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Document Type
+      <Toolbar>
+        <SearchInput value={search} onChange={setSearch} placeholder="Search name, code or phase" />
+        <Segmented
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={[
+            { value: "all", label: `All · ${allTypes.length}` },
+            { value: "active", label: `Active · ${activeCount}` },
+            { value: "inactive", label: `Inactive · ${allTypes.length - activeCount}` },
+          ]}
+        />
+        <ToolbarSpacer />
+        <Button variant="ghost" icon={RefreshCw} onClick={() => refetch()} disabled={isFetching}>
+          {isFetching ? "Refreshing…" : "Refresh"}
         </Button>
-      </div>
+      </Toolbar>
 
-      {/* Toolbar */}
-      <Card className="mb-5">
-        <CardContent className="p-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="relative w-full md:max-w-md">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search document types..."
-                className="pl-10"
-              />
-            </div>
+      <Card flush>
+        <div className="inos-table-wrap">
+          <table className="inos-table">
+            <thead>
+              <tr>
+                <th>Document type</th>
+                <th>Code</th>
+                <th className="adm-hide-sm">Phase</th>
+                <th className="adm-hide-sm">Kind</th>
+                <th>Status</th>
+                <th className="actions" aria-label="Actions" />
+              </tr>
+            </thead>
 
-            <Button
-              variant="outline"
-              onClick={() => refetch()}
-              disabled={isFetching}
-            >
-              <RefreshCw
-                className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-              />
-              Refresh
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Table */}
-      <Card>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Document Type</TableHead>
-                <TableHead>Code</TableHead>
-                <TableHead>Phase</TableHead>
-                <TableHead>Target Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
+            <tbody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    Loading document types...
-                  </TableCell>
-                </TableRow>
+                <SkeletonRows cols={6} rows={3} />
+              ) : allTypes.length === 0 ? (
+                <TableEmpty
+                  cols={6}
+                  icon={FileText}
+                  title={isError ? "Couldn't load document types" : "No document types yet"}
+                  text={
+                    isError
+                      ? "The documents service didn't respond. Try refreshing."
+                      : "Define what each phase should produce — e.g. Site recce report under 02 Recce — and projects will track them automatically."
+                  }
+                  action={!isError && <Button variant="soft" icon={Plus} onClick={openCreate}>Add document type</Button>}
+                />
               ) : filteredDocumentTypes.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    No document types found.
-                  </TableCell>
-                </TableRow>
+                <TableEmpty cols={6} icon={SearchX} title="No matching document types" text="Try a different search or filter." />
               ) : (
-                filteredDocumentTypes.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <div className="font-medium text-foreground">
-                        {item.name || "—"}
-                      </div>
-                      {item.description && (
-                        <div className="mt-1 max-w-md truncate text-xs text-muted-foreground">
-                          {item.description}
+                filteredDocumentTypes.map((item) => {
+                  const phase = phaseById[item.projectPhaseId];
+                  const active = item.isActive !== false;
+                  return (
+                    <tr key={item.id}>
+                      <td>
+                        <div className="adm-cell-main">
+                          <span className="inos-icon-tile inos-icon-tile--sm">
+                            {item.targetType === "DRAWING" ? <PenTool aria-hidden /> : <FileText aria-hidden />}
+                          </span>
+                          <div style={{ minWidth: 0 }}>
+                            <div className="adm-cell-title">{item.name || "Untitled"}</div>
+                            {item.description && <div className="adm-cell-sub">{item.description}</div>}
+                          </div>
                         </div>
-                      )}
-                    </TableCell>
-
-                    <TableCell>
-                      <Badge variant="secondary" className="font-mono">
-                        {item.code || "—"}
-                      </Badge>
-                    </TableCell>
-
-                    <TableCell className="text-muted-foreground">
-                      {item.phaseCode || "—"}
-                    </TableCell>
-
-                    <TableCell className="text-muted-foreground">
-                      {item.targetType || "—"}
-                    </TableCell>
-
-                    <TableCell>
-                      {item.isActive ? (
-                        <Badge
-                          variant="outline"
-                          className="border-emerald-200 bg-emerald-50 text-emerald-700"
-                        >
-                          <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-                          Active
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary">
-                          <XCircle className="mr-1 h-3.5 w-3.5" />
-                          Inactive
-                        </Badge>
-                      )}
-                    </TableCell>
-
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => openEdit(item)}
-                          title="Edit"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => handleDelete(item)}
-                          disabled={isDeleting}
-                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          title="Delete"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </td>
+                      <td>{item.code ? <span className="adm-code">{item.code}</span> : <span className="muted">—</span>}</td>
+                      <td className="adm-cell-2 adm-hide-sm">{phase?.title || item.phaseName || item.phaseCode || <span className="muted">—</span>}</td>
+                      <td className="adm-hide-sm">
+                        {item.targetType ? <Pill tone={item.targetType === "DRAWING" ? "lilac" : "info"} dot={false}>{humanize(item.targetType)}</Pill> : <span className="muted">—</span>}
+                      </td>
+                      <td>
+                        <Pill tone={active ? "ok" : "mute"}>{active ? "Active" : "Inactive"}</Pill>
+                      </td>
+                      <td className="actions">
+                        <div className="adm-icon-btns">
+                          <Button variant="ghost" size="sm" icon={Pencil} onClick={() => openEdit(item)} title="Edit" aria-label={`Edit ${item.name}`} />
+                          <Button variant="ghost" size="sm" icon={Trash2} onClick={() => handleDelete(item)} disabled={isDeleting} title="Delete" aria-label={`Delete ${item.name}`} />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
+        {allTypes.length > 0 && <div className="adm-table-foot">{plural(filteredDocumentTypes.length, "document type")} shown</div>}
       </Card>
 
-      {/* Modal */}
-      <Dialog
+      <AdminModal
         open={showModal}
-        onOpenChange={(open) => {
-          if (!open) closeModal();
-        }}
+        as="form"
+        onSubmit={handleSubmit}
+        onClose={closeModal}
+        busy={saving}
+        icon={FileText}
+        title={editingId ? "Edit document type" : "Add document type"}
+        subtitle="Document types sit under a project phase and appear in every project's checklist."
+        width={620}
+        testId="doc-type-modal"
+        footer={<ModalActions onCancel={closeModal} submitting={saving} submitLabel={editingId ? "Save changes" : "Add document type"} />}
       >
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {editingId ? "Edit Document Type" : "Create Document Type"}
-            </DialogTitle>
-            <DialogDescription>
-              Configure the document type used across INOS.
-            </DialogDescription>
-          </DialogHeader>
+        <div className="inos-form-grid">
+          <Field label="Name" required full error={errors.name} htmlFor="dt-name">
+            <TextInput id="dt-name" name="name" autoFocus value={form.name} invalid={!!errors.name} onChange={handleChange} placeholder="e.g. Site recce report" />
+          </Field>
 
-          <form onSubmit={handleSubmit}>
-            <div className="grid gap-5 py-4 md:grid-cols-2">
-              <div className="md:col-span-2 space-y-2">
-                <Label>
-                  Name <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  name="name"
-                  value={form.name}
-                  onChange={handleChange}
-                  placeholder="e.g. Architectural Drawing"
-                />
-              </div>
+          <Field label="Project phase" required error={errors.projectPhaseId} htmlFor="dt-phase">
+            <SelectInput
+              id="dt-phase"
+              name="projectPhaseId"
+              value={form.projectPhaseId}
+              invalid={!!errors.projectPhaseId}
+              onChange={handleChange}
+              placeholder={phases.length ? "Choose a phase" : "No phases yet"}
+            >
+              {phases.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title || p.name}
+                </option>
+              ))}
+            </SelectInput>
+          </Field>
 
-              <div className="space-y-2">
-                <Label>Code</Label>
-                <Input
-                  name="code"
-                  value={form.code}
-                  onChange={handleChange}
-                  placeholder="e.g. ARCH_DRAWING"
-                />
-              </div>
+          <Field label="Code" required error={errors.code} htmlFor="dt-code" hint="Filled in from the name.">
+            <TextInput id="dt-code" name="code" value={form.code} invalid={!!errors.code} onChange={handleChange} placeholder="e.g. SITE_RECCE_REPORT" className="adm-upper" />
+          </Field>
 
-              <div className="space-y-2">
-                <Label>Phase Code</Label>
-                <Input
-                  name="phaseCode"
-                  value={form.phaseCode}
-                  onChange={handleChange}
-                  placeholder="e.g. DESIGN"
-                />
-              </div>
+          <Field label="Kind" full>
+            <ChoiceGroup name="Kind" value={form.targetType} onChange={(v) => setField("targetType", v)} options={TARGETS} />
+          </Field>
 
-              <div className="space-y-2">
-                <Label>Project Phase ID</Label>
-                <Input
-                  name="projectPhaseId"
-                  value={form.projectPhaseId}
-                  onChange={handleChange}
-                  placeholder="Project phase UUID"
-                />
-              </div>
+          <Field label="Description" optional full htmlFor="dt-desc">
+            <TextArea id="dt-desc" name="description" value={form.description} onChange={handleChange} rows={3} placeholder="What this document contains and who prepares it." />
+          </Field>
 
-              <div className="space-y-2">
-                <Label>Target Type</Label>
-                <Input
-                  name="targetType"
-                  value={form.targetType}
-                  onChange={handleChange}
-                  placeholder="e.g. PROJECT"
-                />
-              </div>
-
-              <div className="md:col-span-2 space-y-2">
-                <Label>Description</Label>
-                <Textarea
-                  name="description"
-                  value={form.description}
-                  onChange={handleChange}
-                  rows={3}
-                  placeholder="Describe this document type..."
-                />
-              </div>
-
-              <div className="md:col-span-2 flex items-start gap-3 rounded-lg border bg-muted/40 p-3">
-                <Checkbox
-                  id="isActive"
-                  checked={form.isActive}
-                  onCheckedChange={(checked) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      isActive: Boolean(checked),
-                    }))
-                  }
-                />
-                <div className="grid gap-1.5 leading-none">
-                  <Label htmlFor="isActive" className="cursor-pointer">
-                    Active
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Allow this document type to be used in the system.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={closeModal}
-                disabled={isCreating || isUpdating}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isCreating || isUpdating}>
-                {isCreating || isUpdating
-                  ? "Saving..."
-                  : editingId
-                    ? "Update Document Type"
-                    : "Create Document Type"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
+          <div className="span-full">
+            <ToggleRow
+              label="Active"
+              hint="Inactive types stay on record but aren't offered for new projects."
+              checked={form.isActive}
+              onChange={(v) => setField("isActive", v)}
+            />
+          </div>
+        </div>
+      </AdminModal>
+    </Page>
   );
 };
 

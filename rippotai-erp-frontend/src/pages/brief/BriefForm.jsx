@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { Loader2, AlertCircle } from "lucide-react";
+import { Page, EmptyState, Button } from "@/components/inos";
 import { useAuth } from "../../context/AuthContext";
 import { BriefSectionForm } from "../../components/BriefSectionForm";
 
@@ -21,67 +23,20 @@ import {
   todayISO,
 } from "../../hooks/brief-form-helpers"; // adjust import path
 
-// ============================================================
-// OCCUPANT -> SPACE AUTO-SYNC HELPERS
-// ============================================================
-
-const uid = () =>
-  globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
-
-const autoSpaceName = (occupant, index) =>
-  occupant?.name?.trim()
-    ? `${occupant.name.trim()}'s Room`
-    : `Occupant ${index + 1}'s Room`;
-
-// Keeps the Space Requirements table in step with the Occupants table.
-// - New occupant  -> new space row (tagged with autoFor = occupant._id)
-// - Removed       -> its auto-created space row is removed
-// - Renamed       -> its auto-created space row is renamed (unless the user
-//                    edited the space name by hand)
-const syncSpacesWithOccupants = (prev, next) => {
-  const prevOcc = Array.isArray(prev.occupants) ? prev.occupants : [];
-  const nextOcc = Array.isArray(next.occupants) ? next.occupants : [];
-  let spaces = Array.isArray(next.spaceRequirements)
-    ? [...next.spaceRequirements]
-    : [];
-
-  // 1. Tag new occupants and add a space row for each
-  const occupants = nextOcc.map((occ, i) => {
-    if (occ._id) return occ;
-    const _id = uid();
-    spaces.push({
-      spaceName: autoSpaceName(occ, i),
-      requirements: "",
-      autoFor: _id,
-    });
-    return { ...occ, _id };
-  });
-
-  // 2. Remove auto-created spaces of deleted occupants
-  const liveIds = new Set(occupants.map((o) => o._id));
-  spaces = spaces.filter((s) => !s.autoFor || liveIds.has(s.autoFor));
-
-  // 3. Rename auto-created spaces when the occupant's name changes
-  spaces = spaces.map((s) => {
-    if (!s.autoFor) return s;
-    const idx = occupants.findIndex((o) => o._id === s.autoFor);
-    if (idx < 0) return s;
-    const prevIdx = prevOcc.findIndex((o) => o._id === s.autoFor);
-    const prevAuto =
-      prevIdx >= 0 ? autoSpaceName(prevOcc[prevIdx], prevIdx) : null;
-    if (s.spaceName === prevAuto) {
-      return { ...s, spaceName: autoSpaceName(occupants[idx], idx) };
-    }
-    return s;
-  });
-
-  return {
-    ...next,
-    occupants,
-    spaceRequirements: spaces,
-    hasSpaceRequirements:
-      occupants.length > 0 ? "Yes" : next.hasSpaceRequirements,
-  };
+// One-line guidance shown under each section title.
+const SECTION_DESCRIPTIONS = {
+  clientProject: "Who the client is and how they reached us.",
+  siteProperty: "Where the site is and what exists there today.",
+  scope: "What we are being hired to do and what we will procure.",
+  occupants: "Who will live or work in the space and their needs.",
+  spaceRequirementsSection: "Rooms or areas with specific requirements.",
+  designDirection: "Style, colours, materials and must-haves.",
+  references: "Links, images or projects the client likes.",
+  projectPhasing: "Whether the work happens in phases, and when.",
+  budget: "The budget the client has in mind and how firm it is.",
+  timeline: "Target start and handover dates.",
+  siteRestrictions: "Society, access and working-hour rules at the site.",
+  notes: "Anything still to be confirmed with the client.",
 };
 
 // ============================================================
@@ -91,6 +46,7 @@ const syncSpacesWithOccupants = (prev, next) => {
 export function BriefForm() {
   const nav = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const isEditMode = Boolean(id);
 
@@ -151,7 +107,10 @@ export function BriefForm() {
   // STATE
   // ==========================================================
 
-  const [projectId, setProjectId] = useState("");
+  // Preselect the project when opened from a project (?project_id=…)
+  const [projectId, setProjectId] = useState(
+    () => searchParams.get("project_id") || searchParams.get("projectId") || "",
+  );
 
   const [values, setValues] = useState({});
 
@@ -173,7 +132,6 @@ export function BriefForm() {
       briefTakenBy: current.briefTakenBy || user?.id || "",
     }));
   }, [isEditMode, initialized, user?.id]);
-
   // ==========================================================
   // LOAD EXISTING BRIEF INTO FORM
   // ==========================================================
@@ -193,14 +151,6 @@ export function BriefForm() {
 
     const normalized = normalizeProjectBrief(existingBrief);
 
-    // Tag loaded occupants so they don't get a duplicate space auto-added
-    if (Array.isArray(normalized.occupants)) {
-      normalized.occupants = normalized.occupants.map((o) => ({
-        ...o,
-        _id: o._id || uid(),
-      }));
-    }
-
     setProjectId(existingBrief.projectId ?? "");
     setValues(normalized);
     setInitialized(true);
@@ -218,7 +168,6 @@ export function BriefForm() {
     console.error("Failed to load project brief:", briefError);
     toast.error(briefError?.data?.message || "Failed to load project brief");
   }, [briefError]);
-
   // ==========================================================
   // AUTO-FILL SITE ADDRESS + PROJECT TYPE FROM SELECTED PROJECT
   // ==========================================================
@@ -239,30 +188,15 @@ export function BriefForm() {
         "",
     }));
   }, [projectId, projects]);
-
   // ==========================================================
   // FIELD CHANGE
   // ==========================================================
 
   const handleFieldChange = (section, key, value) => {
-    setValues((current) => {
-      let next = { ...current, [key]: value };
-
-      // Occupants -> auto-manage Space Requirements rows
-      if (key === "occupants") {
-        next = syncSpacesWithOccupants(current, next);
-      }
-
-      // "Material Procurement" unticked in Services -> clear its categories
-      if (
-        key === "services" &&
-        !(Array.isArray(value) && value.includes("MATERIAL_PROCUREMENT"))
-      ) {
-        next.procurementCategories = [];
-      }
-
-      return next;
-    });
+    setValues((current) => ({
+      ...current,
+      [key]: value,
+    }));
   };
 
   // ==========================================================
@@ -270,16 +204,7 @@ export function BriefForm() {
   // ==========================================================
 
   const buildPayload = () => {
-    // Strip internal helper keys (_id, autoFor) before sending to the API
-    const cleaned = {
-      ...values,
-      occupants: (values.occupants || []).map(({ _id, ...row }) => row),
-      spaceRequirements: (values.spaceRequirements || []).map(
-        ({ autoFor, ...row }) => row,
-      ),
-    };
-
-    return buildProjectBriefPayload(projectId, cleaned);
+    return buildProjectBriefPayload(projectId, values);
   };
 
   // ==========================================================
@@ -311,7 +236,7 @@ export function BriefForm() {
           } updated successfully`,
         );
 
-        nav(`/crm/brief/${data?.id ?? id}`);
+        nav(`/documents/brief/${data?.id ?? id}`);
         return;
       }
 
@@ -325,7 +250,7 @@ export function BriefForm() {
         `Project brief v${data?.version ?? 1} created successfully`,
       );
 
-      nav(`/brief/${data.id}`);
+      nav(`/documents/brief/${data.id}`);
     } catch (error) {
       console.error(
         isEditMode
@@ -350,30 +275,38 @@ export function BriefForm() {
 
   if (isEditMode && (briefLoading || briefFetching) && !initialized) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="text-sm text-muted-foreground">
-          Loading project brief...
-        </div>
-      </div>
+      <Page width="form">
+        <EmptyState icon={Loader2} title="Loading project brief…" />
+      </Page>
     );
   }
 
   if (isEditMode && briefError && !initialized) {
     return (
-      <div role="alert" className="p-8 text-sm text-destructive">
-        Unable to load this brief. Reload the page to try again.
-      </div>
+      <Page width="form">
+        <EmptyState
+          icon={AlertCircle}
+          title="Unable to load this brief"
+          text="Reload the page to try again."
+          action={<Button onClick={() => window.location.reload()}>Reload</Button>}
+        />
+      </Page>
     );
   }
 
-  const title = isEditMode ? "Edit Project Brief" : "Project Brief";
+  const title = isEditMode ? "Edit project brief" : "Project brief";
 
   const subtitle = isEditMode
-    ? "Update the client brief, project requirements, design direction, budget, timeline and site constraints."
-    : "Capture the complete client brief, project requirements, design direction, budget, timeline and site constraints.";
+    ? "Update the client brief. Saving creates a new version of the brief document."
+    : "Capture the client's requirements in one place. Produces a versioned project brief document.";
 
   // Inject live project type options into the sections config
-  const sectionsWithProjectTypes = BRIEF_SECTIONS.map((section) => {
+  const sectionsWithProjectTypes = BRIEF_SECTIONS.map((baseSection) => {
+    const section = {
+      ...baseSection,
+      description:
+        baseSection.description || SECTION_DESCRIPTIONS[baseSection.key],
+    };
     if (section.key !== "siteProperty") return section;
 
     return {
@@ -406,6 +339,12 @@ export function BriefForm() {
         onFieldChange={handleFieldChange}
         projects={projects}
         projectsLoading={projectsLoading}
+        crumbs={[
+          { label: "CRM", to: "/crm" },
+          { label: "Forms" },
+          { label: isEditMode ? "Edit project brief" : "Project brief" },
+        ]}
+        submitLabel={isEditMode ? "Update brief" : "Save brief"}
         projectId={projectId}
         onProjectChange={setProjectId}
         onAddProject={() => setShowNewProjectModal(true)}

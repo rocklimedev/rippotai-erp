@@ -23,6 +23,7 @@ import { MaterialQuotationService } from './services/material-quotation.service'
 import { PurchaseOrderService } from './services/purchase-order.service';
 import { DeliveryChallanService } from './services/delivery-challan.service';
 import { InventoryService } from './services/inventory.service';
+import { InventoryController } from './controllers/inventory.controller';
 import { MaterialMasterService } from './services/material-master.service';
 
 import { MaterialRequirementController } from './controllers/material-requirement.controller';
@@ -46,13 +47,6 @@ import { WorkOrderTerm } from './models/work-order-term.model';
 import { Project } from '../projects/models/projects.model';
 import { TermsTemplate } from '../metas/models/terms-templates.model';
 import { Quotation } from '../quotations/models/quotations.model';
-
-import { MaterialProcurementController } from './controllers/material-procurement.controller';
-import { MaterialProcurementService } from './services/material-procurement.service';
-
-import { MaterialProcurement } from './models/material-procurement.model';
-import { MaterialProcurementItem } from './models/material-procurement-item.model';
-import { InventoryController } from './controllers/inventory.controller';
 
 /**
  * Material & Procurement module — Sequelize (MySQL) edition.
@@ -97,8 +91,6 @@ import { InventoryController } from './controllers/inventory.controller';
       WorkOrderTerm,
       Quotation,
       TermsTemplate,
-      MaterialProcurement,
-      MaterialProcurementItem,
     ]),
   ],
 
@@ -111,10 +103,10 @@ import { InventoryController } from './controllers/inventory.controller';
     PurchaseOrderController,
     DeliveryChallanController,
     WorkOrdersController,
-    InventoryController,
+    InventoryController, // site inventory ledger (was not registered → every /inventory/* call 404'd)
+
     // Material Master
     MaterialMasterController,
-    MaterialProcurementController,
   ],
 
   providers: [
@@ -126,7 +118,6 @@ import { InventoryController } from './controllers/inventory.controller';
     MaterialQuotationService,
     DeliveryChallanService,
     PurchaseOrderService,
-    MaterialProcurementService,
     InventoryService,
 
     // Material Master
@@ -139,7 +130,6 @@ import { InventoryController } from './controllers/inventory.controller';
     MaterialRateSheetService,
     MaterialEstimateService,
     DeliveryChallanService,
-    MaterialProcurementService,
     MaterialQuotationService,
     WorkOrdersService,
     InventoryService,

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { MODULE_ICONS } from "@/components/icons/ModuleIcons";
 import { APP_META, APP_MENUS } from "@/config/appNav";
@@ -15,6 +15,7 @@ import { useCliqChat } from "../cliq/context";
 
 export default function TopHeader({ app }) {
   const nav = useNavigate();
+  const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const Icon = MODULE_ICONS[app];
@@ -30,65 +31,38 @@ export default function TopHeader({ app }) {
 
   return (
     <>
-      <header
-        data-testid={`topheader-${app}`}
-        className="sticky top-0 z-30 h-16 bg-white flex items-center gap-2 px-4 lg:px-6"
-        style={{
-          boxShadow: "0 4px 12px rgba(15,31,26,0.06)",
-        }}
-      >
+      <header data-testid={`topheader-${app}`} className="inos-topbar">
         {/* MOBILE MENU BUTTON */}
         <button
           type="button"
           onClick={() => setMobileMenuOpen(true)}
           aria-label="Open navigation"
-          className="lg:hidden flex h-9 w-9 shrink-0 items-center justify-center rounded-lg hover:bg-[#F4F6F7]"
+          className="inos-topbar__icon-btn inos-topbar__menu-btn"
         >
-          <Menu size={21} color="#1F453B" />
+          <Menu size={20} />
         </button>
 
         {/* APP SWITCHER */}
         <AppSwitcher currentApp={app} />
 
         {/* APP NAME */}
-        <button
-          onClick={() => nav(meta.base)}
-          className="flex items-center gap-2 shrink-0 pr-3 lg:border-r border-[rgba(31,69,59,0.10)] lg:mr-2 h-9"
-        >
-          <div style={{ width: 28, height: 28 }}>
+        <button onClick={() => nav(meta.base)} className="inos-topbar__app" title={`${meta.name} home`}>
+          <span className="inos-topbar__app-icon">
             <Icon />
-          </div>
-
-          <div
-            className="hidden md:block text-[17px] font-semibold"
-            style={{
-              color: "#333333",
-              fontFamily: "Poppins",
-            }}
-          >
-            {meta.name}
-          </div>
+          </span>
+          <span className="inos-topbar__app-name hidden md:inline">{meta.name}</span>
         </button>
 
         {/* DESKTOP NAVIGATION */}
-        <nav className="hidden lg:flex items-center gap-1 flex-shrink min-w-0 overflow-hidden">
+        <nav className="hidden lg:flex items-center gap-0.5 flex-shrink min-w-0 overflow-hidden">
           {menus.map((g) =>
             g.items ? (
-              <MenuDropdown
-                key={g.label}
-                app={app}
-                label={g.label}
-                items={g.items}
-              />
+              <MenuDropdown key={g.label} app={app} label={g.label} items={g.items} />
             ) : (
               <button
                 key={g.label}
                 onClick={() => navigateTo(g.slug)}
-                className="h-9 px-3 rounded-lg text-[15px] font-semibold hover:bg-[#F4F6F7]"
-                style={{
-                  color: "#1F453B",
-                  fontFamily: "Poppins",
-                }}
+                className={`inos-nav-btn ${location.pathname === `${meta.base}/${g.slug}` ? "is-active" : ""}`}
               >
                 {g.label}
               </button>
@@ -108,18 +82,13 @@ export default function TopHeader({ app }) {
           aria-label="Toggle Cliq chat"
           aria-pressed={open}
           title={cliqConnected ? "Cliq" : "Cliq (not connected)"}
-          className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg hover:bg-[#F4F6F7] transition-colors"
-          style={{
-            color: open ? "#1F453B" : "#5B6B66",
-          }}
+          className="inos-topbar__icon-btn"
+          style={open ? { color: "var(--brand)", background: "var(--brand-50)" } : undefined}
         >
-          <CliqIcon size={19} />
-
+          <CliqIcon size={18} />
           <span
             className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full ring-2 ring-white"
-            style={{
-              background: cliqConnected ? "#3f6d5f" : "#a54536",
-            }}
+            style={{ background: cliqConnected ? "var(--ok-dot)" : "var(--bad-dot)" }}
           />
         </button>
 

@@ -8,46 +8,53 @@ import {
   AlertCircle,
   ArrowRight,
   BriefcaseBusiness,
+  ChevronDown,
+  CircleCheck,
+  CloudOff,
   Clock3,
   Construction,
-  DollarSign,
+  FileCheck2,
   FileText,
+  FolderSearch,
+  History,
+  IndianRupee,
   ListChecks,
+  Loader2,
   MessageCircle,
   Plus,
   RefreshCw,
-  Search,
   ShieldAlert,
   ShieldCheck,
   UploadCloud,
   Users,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+import {
+  Page,
+  PageHeader,
+  Card,
+  Button,
+  Stats,
+  StatTile,
+  SearchInput,
+  Segmented,
+  Tabs,
+  Pill,
+  EmptyState,
+  Progress,
+  Field,
+  TextArea,
+} from "@/components/inos";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // ------------------------------------------------------------
-// LIVE API — everything below used to be read out of local mock
-// arrays (PHASE_MASTER / DOC_MASTER / TASK_MASTER / PROJECTS) and
-// rolled up client-side. That is gone: every number on screen now
-// comes from CommandCenterService via commandCenterApi.js.
-//
-// ADJUST THIS IMPORT PATH to wherever commandCenterApi.js actually
-// lives in your app (it injects endpoints into the same `baseApi`
-// used by projectsApi.js).
+// LIVE API — every number on screen comes from CommandCenterService
+// via command-center.api.js.
 // ------------------------------------------------------------
 import {
   commandCenterApi,
@@ -71,15 +78,14 @@ import {
 const ROUTES = {
   projects: "/projects",
   project: (id) => `/projects/${id}`,
-  boq: "/boq",
-  tasks: "/tasks",
-  taskProject: (id) => `/tasks?project=${id}`,
-  documents: "/documents",
+  boq: "/ledger/boq/all",
+  tasks: "/tasks/all",
+  taskProject: (id) => `/tasks/all?project=${encodeURIComponent(id)}`,
+  documents: "/projects/documents/all",
   documentsProject: (id) =>
-    `/documents/all?project_id=${encodeURIComponent(id)}`,
+    `/projects/documents/all?project_id=${encodeURIComponent(id)}`,
   procurement: "/procurement",
   calendar: "/calendar",
-  reports: "/reports",
 };
 
 const REFRESH_TAGS = [
@@ -89,14 +95,8 @@ const REFRESH_TAGS = [
   "CommandCenterGates",
 ];
 
-// ------------------------------------------------------------
-// PEOPLE — the backend's team-workload rollup only returns
-// { role, count } (TaskDefinition/DocumentType have no "who is
-// this person" column yet). We keep a local role -> display name
-// map purely for presentation. Swap/remove once the API returns
-// a real assignee.
-// ------------------------------------------------------------
-
+// The backend's team-workload rollup only returns { role, count }.
+// Local role -> display name map purely for presentation.
 const PEOPLE_BY_ROLE = {};
 
 // ------------------------------------------------------------
@@ -112,15 +112,18 @@ const formatINR = (value) => {
   return `₹ ${n.toLocaleString("en-IN")}`;
 };
 
-// Backend enum string values might come back as "AWAITING_GATE",
-// "Awaiting Gate", "awaiting-gate", etc depending on how the enum is
-// serialized. Normalize to a single SCREAMING_SNAKE key so the UI
-// doesn't silently fall through to the "unknown state" style.
+// Backend enum values may arrive as "AWAITING_GATE", "Awaiting Gate",
+// "awaiting-gate"… normalise to one SCREAMING_SNAKE key.
 const normalizeKey = (v) =>
   String(v ?? "")
     .trim()
     .toUpperCase()
     .replace(/[\s-]+/g, "_");
+
+const sentence = (v) => {
+  const s = String(v ?? "").replace(/_/g, " ").trim().toLowerCase();
+  return s ? s[0].toUpperCase() + s.slice(1) : "";
+};
 
 function useDebouncedValue(value, delayMs = 300) {
   const [debounced, setDebounced] = useState(value);
@@ -145,9 +148,8 @@ function timeAgo(dateLike) {
   return `${diffDay}d ago`;
 }
 
-// Turns an ActivityLog row (user_id, user_email, action, entity_type,
-// entity_label, changes, created_at, ...) into the {type, title,
-// detail, time} shape ActivityTimeline already knows how to render.
+// Turns an ActivityLog row into the {type, title, detail, time} shape
+// ActivityTimeline renders.
 function mapActivityLog(row) {
   const action = normalizeKey(row.action);
   const ICON_TYPE = {
@@ -178,119 +180,61 @@ function mapActivityLog(row) {
     GATE_OVERRIDDEN: "Gate force-approved",
   };
   return {
-    type: ICON_TYPE[action] || "SCAN",
-    title: TITLE[action] || action.replace(/_/g, " ").toLowerCase(),
+    type: ICON_TYPE[action] || (action.endsWith("_CREATED") ? "PROJECT_CREATED" : "SCAN"),
+    title: TITLE[action] || sentence(action),
     detail: row.entity_label || row.user_email || "",
     time: timeAgo(row.created_at),
   };
 }
 
-const STATE_META = {
-  COMPLETE: {
-    badge: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    dot: "bg-emerald-500",
-    indicator: "bg-emerald-500",
-  },
-  AWAITING_GATE: {
-    badge: "bg-blue-50 text-blue-700 border-blue-200",
-    dot: "bg-blue-500",
-    indicator: "bg-blue-500",
-  },
-  IN_PROGRESS: {
-    badge: "bg-[#eef4f0] text-[#2f6655] border-[#c9d7cf]",
-    dot: "bg-[#2f6655]",
-    indicator: "bg-[#2f6655]",
-  },
-  STALLED: {
-    badge: "bg-amber-50 text-amber-700 border-amber-200",
-    dot: "bg-amber-500",
-    indicator: "bg-amber-500",
-  },
-  QC_FAILED: {
-    badge: "bg-red-50 text-red-700 border-red-200",
-    dot: "bg-red-500",
-    indicator: "bg-red-500",
-  },
-  NOT_STARTED: {
-    badge: "bg-slate-50 text-slate-400 border-slate-200",
-    dot: "bg-slate-300",
-    indicator: "bg-slate-300",
-  },
+// Phase state -> pastel tone (drives stepper dots, pills and legend)
+const STATE_TONE = {
+  COMPLETE: "ok",
+  AWAITING_GATE: "info",
+  IN_PROGRESS: "brand",
+  STALLED: "peach",
+  QC_FAILED: "bad",
+  NOT_STARTED: "mute",
 };
-const stateMeta = (state) =>
-  STATE_META[normalizeKey(state)] || STATE_META.NOT_STARTED;
-const stateLabel = (state) => normalizeKey(state).replace(/_/g, " ");
+const stateTone = (state) => STATE_TONE[normalizeKey(state)] || "mute";
+const stateLabel = (state) => sentence(normalizeKey(state));
 
-const HEALTH_META = {
-  DANGER: "bg-red-50 text-red-700 border-red-200",
-  GATE: "bg-blue-50 text-blue-700 border-blue-200",
-  PROGRESS: "bg-[#eef4f0] text-[#2f6655] border-[#c9d7cf]",
-  COMPLETE: "bg-emerald-50 text-emerald-700 border-emerald-200",
+const LEGEND = [
+  ["COMPLETE", "Gate cleared"],
+  ["AWAITING_GATE", "Awaiting approval"],
+  ["IN_PROGRESS", "In progress"],
+  ["STALLED", "Stalled"],
+  ["QC_FAILED", "QC failed"],
+  ["NOT_STARTED", "Not started"],
+];
+
+const HEALTH_TONE = {
+  DANGER: "bad",
+  GATE: "info",
+  PROGRESS: "ok",
+  COMPLETE: "brand",
 };
-const healthMeta = (key) =>
-  HEALTH_META[normalizeKey(key)] || HEALTH_META.PROGRESS;
+const healthTone = (key) => HEALTH_TONE[normalizeKey(key)] || "ok";
+
+// "01 BRIEF" -> "Brief", "A VENDOR TRADES" -> "A Vendor Trades"
+const phaseTitle = (name) => {
+  const raw = String(name ?? "").replace(/^\d+\s+/, "").trim();
+  if (!raw || raw !== raw.toUpperCase()) return raw || String(name ?? "");
+  return raw.toLowerCase().replace(/\b\w/g, (m) => m.toUpperCase());
+};
+const gateTitle = (code) => sentence(code);
+
+const isDone = (s) => s === "DONE" || s === "Done";
+const isFailed = (s) => s === "FAILED" || s === "Failed";
 
 // ------------------------------------------------------------
-// SMALL UI COMPONENTS
+// SMALL UI PIECES (local to this module)
 // ------------------------------------------------------------
-
-function SectionHeader({ eyebrow, title, action, onAction }) {
-  return (
-    <div className="flex items-end justify-between gap-4 mb-4">
-      <div>
-        {eyebrow && (
-          <div className="text-[10px] font-semibold tracking-[0.16em] uppercase text-slate-400 mb-1">
-            {eyebrow}
-          </div>
-        )}
-        <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[#19352d]">
-          {title}
-        </h2>
-      </div>
-      {action && (
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={onAction}
-          className="h-auto p-0 text-[11px] font-medium text-slate-500 hover:text-[#19352d] hover:bg-transparent flex items-center gap-1"
-        >
-          {action}
-          <ArrowRight size={13} />
-        </Button>
-      )}
-    </div>
-  );
-}
-
-function ProgressBar({ value, tone = "brand" }) {
-  return (
-    <Progress
-      value={Math.min(Math.max(value || 0, 0), 100)}
-      className={cn(
-        "cc-progress",
-        `cc-progress-${tone}`,
-      )}
-    />
-  );
-}
-
-function KPI({
-  label,
-  value,
-  meta,
-  tone,
-  onClick,
-  loading
-}) {
-  return <button type="button" className={cn("cc-kpi", tone && `cc-kpi-${tone}`)} onClick={onClick} title={meta}>
-    <strong>{loading ? "—" : value}</strong><span>{label}</span>
-  </button>;
-}
 
 function Toast({ message }) {
   if (!message) return null;
   return (
-    <div role="status" className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#19352d] text-white text-[12px] px-5 py-3 rounded-lg shadow-lg z-[200]">
+    <div role="status" className="cc-toast">
       {message}
     </div>
   );
@@ -298,7 +242,8 @@ function Toast({ message }) {
 
 function LoadingRow({ label = "Loading…" }) {
   return (
-    <div className="px-4 py-8 text-center text-[11px] text-slate-400">
+    <div className="cc-loading" role="status">
+      <Loader2 className="cc-spin" aria-hidden />
       {label}
     </div>
   );
@@ -306,51 +251,100 @@ function LoadingRow({ label = "Loading…" }) {
 
 function ErrorRow({ error, onRetry }) {
   return (
-    <div className="px-4 py-8 text-center">
-      <div className="text-[11px] text-red-500 mb-2">
-        Couldn't load this data{error?.status ? ` (HTTP ${error.status})` : ""}.
-      </div>
-      {onRetry && (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onRetry}
-          className="h-auto px-3 py-1.5 text-[10px] font-semibold"
-        >
-          Retry
-        </Button>
+    <EmptyState
+      icon={CloudOff}
+      title="Couldn't load this data"
+      text={`The server didn't respond as expected${error?.status ? ` (HTTP ${error.status})` : ""}. Try again in a moment.`}
+      action={
+        onRetry && (
+          <Button size="sm" icon={RefreshCw} onClick={onRetry}>
+            Retry
+          </Button>
+        )
+      }
+    />
+  );
+}
+
+/** Clickable list row used across the tab panels. */
+function ListRow({ icon: Icon, tone, title, tag, sub, meta, right, onClick }) {
+  const Tag = onClick ? "button" : "div";
+  return (
+    <Tag
+      type={onClick ? "button" : undefined}
+      className={cn("cc-row", onClick && "cc-row--link")}
+      onClick={onClick}
+    >
+      {Icon && (
+        <span className={cn("inos-icon-tile inos-icon-tile--sm", tone && `inos-icon-tile--${tone}`)}>
+          <Icon aria-hidden />
+        </span>
       )}
+      <span className="cc-row__text">
+        <span className="cc-row__title">
+          <span className="cc-truncate">{title}</span>
+          {tag}
+        </span>
+        {sub && <span className="cc-row__sub">{sub}</span>}
+        {meta && <span className="cc-row__meta">{meta}</span>}
+      </span>
+      {right}
+      {onClick && !right && <ArrowRight className="cc-row__chev" aria-hidden />}
+    </Tag>
+  );
+}
+
+/** Small figure block used inside cards (no nested cards). */
+function Figures({ items }) {
+  return (
+    <div className="cc-figures" style={{ "--cols": items.length }}>
+      {items.map(({ label, value, tone }) => (
+        <div key={label} className="cc-figure">
+          <span className={cn("cc-figure__value tabular", tone && `cc-tone-${tone}`)}>{value}</span>
+          <span className="cc-figure__label">{label}</span>
+        </div>
+      ))}
     </div>
   );
 }
 
 // ------------------------------------------------------------
-// PROJECT BOARD — expandable rows with a per-project gate ladder
+// PROJECT BOARD — expandable rows with a per-project phase stepper
 // ------------------------------------------------------------
 
-// ------------------------------------------------------------
-// PROJECT BOARD — expandable rows with a per-project gate ladder
-// ------------------------------------------------------------
-
-function PhaseLadder({
-  phases,
-  activeSeq
-}) {
-  return <div className="cc-ladder" aria-label="Project phase status">
-    {phases.map((phase, index) => <div key={phase.id} className={cn("cc-rung", `cc-state-${normalizeKey(phase.state).toLowerCase()}`)} title={`${phase.gate?.code || ""} · ${phase.name} — ${stateLabel(phase.state)}`}>
-      <span className={cn("cc-diamond", phase.phaseNumber === activeSeq && "cc-current")} />
-      {index < phases.length - 1 && <span className="cc-link" />}
-    </div>)}
-  </div>;
+function PhaseStepper({ phases, activeSeq }) {
+  return (
+    <div className="cc-stepper" aria-label="Project phase status">
+      {phases.map((phase, index) => (
+        <span key={phase.id} className="cc-step">
+          <span
+            className={cn(
+              "cc-step__dot",
+              `cc-dot--${stateTone(phase.state)}`,
+              phase.phaseNumber === activeSeq && "is-current",
+            )}
+            title={`${phase.phaseNumber}. ${phaseTitle(phase.name)} — ${stateLabel(phase.state)}${phase.gate?.code ? ` · Gate ${gateTitle(phase.gate.code)}` : ""}`}
+          />
+          {index < phases.length - 1 && (
+            <span className={cn("cc-step__line", normalizeKey(phase.state) === "COMPLETE" && "is-done")} />
+          )}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 function PhaseLegend() {
-  return <div className="cc-legend" aria-label="Phase status legend">
-    {[["complete", "Gate cleared"], ["awaiting_gate", "Awaiting approval"], ["in_progress", "In progress"], ["stalled", "Stalled"], ["qc_failed", "QC failed"], ["not_started", "Not started"]].map(([state, label]) => <span className={`cc-state-${state}`} key={state}>
-    <i className="cc-diamond" />
-    {label}
-  </span>)}
-  </div>;
+  return (
+    <div className="cc-legend" aria-label="Phase status legend">
+      <span className="cc-legend__label">Phase status</span>
+      {LEGEND.map(([state, label]) => (
+        <Pill key={state} tone={STATE_TONE[state]} size="sm">
+          {label}
+        </Pill>
+      ))}
+    </div>
+  );
 }
 
 function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlash }) {
@@ -382,172 +376,127 @@ function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlash }) {
   };
 
   return (
-    <Card className="cc-phase-detail shadow-none">
-      {isLoading && <LoadingRow label="Loading documents & checks…" />}
+    <div className="cc-phase-detail">
+      {isLoading && <LoadingRow label="Loading documents and checks…" />}
       {isError && <ErrorRow error={error} onRetry={refetch} />}
 
       {detail && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="cc-detail-grid">
           <div>
-            <div className="text-[9px] uppercase tracking-[0.1em] text-slate-400 font-semibold mb-1.5">
-              Documents
-            </div>
-            <div className="space-y-1">
-              {detail.docs.map((d) => (
-                <div
-                  key={d.id}
-                  className="flex items-center justify-between gap-2 text-[10.5px]"
-                >
-                  <span
-                    className={cn(
-                      "flex items-center gap-1.5 min-w-0",
-                      d.status === "MISSING"
-                        ? "text-slate-500"
-                        : "text-slate-700",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "w-1.5 h-1.5 rounded-full flex-shrink-0",
-                        d.status === "UPLOADED" || d.status === "approved"
-                          ? "bg-emerald-500"
-                          : "bg-slate-300",
-                      )}
-                    />
-                    <span className="truncate">{d.name}</span>
-                    {!d.mandatory && (
-                      <span className="text-slate-400 flex-shrink-0">
-                        (optional)
+            <p className="cc-detail-head">
+              <FileText aria-hidden /> Documents
+            </p>
+            <ul className="cc-checklist">
+              {detail.docs.map((d) => {
+                const ok = d.status === "UPLOADED" || d.status === "approved";
+                return (
+                  <li key={d.id}>
+                    <span className={cn("cc-bullet", ok ? "cc-dot--ok" : "cc-dot--mute")} />
+                    <span className="cc-checklist__name">
+                      <span className="cc-truncate">{d.name}</span>
+                      {!d.mandatory && <span className="cc-muted">optional</span>}
+                    </span>
+                    {d.evidence?.source === "DATABASE" ? (
+                      <span className="cc-checklist__side">
+                        <span className="cc-muted">
+                          {d.evidence.sourceLabel} · {d.evidence.status}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onOpen?.navigate(d.evidence.actionUrl)}
+                        >
+                          Open record
+                        </Button>
                       </span>
-                    )}
-                  </span>
-                  {d.evidence?.source === "DATABASE" ? (
-                    <span className="text-right text-[10px]">
-                      <span className="block text-slate-500">
-                        {d.evidence.sourceLabel} · {d.evidence.status}
-                      </span>
-                      <button
-                        type="button"
-                        className="text-emerald-700 underline"
-                        onClick={() => onOpen?.navigate(d.evidence.actionUrl)}
+                    ) : d.status === "MISSING" ? (
+                      <Button
+                        variant="soft"
+                        size="sm"
+                        icon={UploadCloud}
+                        disabled={d.targetType === "DRAWING"}
+                        title={
+                          d.targetType === "DRAWING"
+                            ? "Submit and review this item through the drawings workflow"
+                            : undefined
+                        }
+                        onClick={() =>
+                          onOpen?.uploadDoc?.({
+                            documentTypeId: d.id,
+                            name: d.name,
+                            role: d.role,
+                            projectId: project.id,
+                            projectCode: project.code,
+                            projectName: project.name,
+                            phaseName: phaseTitle(phase.name),
+                          })
+                        }
                       >
-                        Open source record
-                      </button>
-                    </span>
-                  ) : d.status === "MISSING" ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      disabled={d.targetType === "DRAWING"}
-                      title={
-                        d.targetType === "DRAWING"
-                          ? "Submit and review this item through the drawings workflow"
-                          : undefined
-                      }
-                      onClick={() =>
-                        onOpen?.uploadDoc?.({
-                          documentTypeId: d.id,
-                          name: d.name,
-                          role: d.role,
-                          projectId: project.id,
-                          projectCode: project.code,
-                          projectName: project.name,
-                          phaseName: phase.name,
-                        })
-                      }
-                      className="flex-shrink-0 h-auto inline-flex items-center gap-1 px-1.5 py-1 rounded bg-[#19352d] text-white text-[8.5px] font-semibold hover:bg-[#0f231d]"
-                    >
-                      <UploadCloud size={10} />
-                      {d.targetType === "DRAWING"
-                        ? "Drawing required"
-                        : "Upload"}
-                    </Button>
-                  ) : (
-                    <span className="text-emerald-600 flex-shrink-0">
-                      {d.status}
-                    </span>
-                  )}
-                </div>
-              ))}
+                        {d.targetType === "DRAWING" ? "Drawing required" : "Upload"}
+                      </Button>
+                    ) : (
+                      <Pill tone="ok" size="sm">{sentence(d.status)}</Pill>
+                    )}
+                  </li>
+                );
+              })}
               {detail.docs.length === 0 && (
-                <div className="text-[10px] text-slate-400">
-                  No documents configured for this phase.
-                </div>
+                <li className="cc-muted">No documents configured for this phase.</li>
               )}
-            </div>
+            </ul>
           </div>
           <div>
-            <div className="text-[9px] uppercase tracking-[0.1em] text-slate-400 font-semibold mb-1.5">
-              Execution &amp; QC checks
-            </div>
-            <div className="space-y-1">
+            <p className="cc-detail-head">
+              <ListChecks aria-hidden /> Execution and QC checks
+            </p>
+            <ul className="cc-checklist">
               {detail.tasks.map((t) => (
-                <div
-                  key={t.id}
-                  className="flex items-center justify-between text-[10.5px]"
-                >
-                  <span className="flex items-center gap-1.5 text-slate-700 min-w-0">
-                    <span
-                      className={cn(
-                        "w-1.5 h-1.5 rounded-full flex-shrink-0",
-                        t.status === "DONE" || t.status === "Done"
-                          ? "bg-emerald-500"
-                          : t.status === "FAILED" || t.status === "Failed"
-                            ? "bg-red-500"
-                            : "bg-slate-300",
-                      )}
-                    />
-                    <span className="truncate">{t.name}</span>
-                    {t.type === "QC" && (
-                      <span className="text-[8px] font-semibold text-slate-400 flex-shrink-0">
-                        QC
-                      </span>
+                <li key={t.id}>
+                  <span
+                    className={cn(
+                      "cc-bullet",
+                      isDone(t.status) ? "cc-dot--ok" : isFailed(t.status) ? "cc-dot--bad" : "cc-dot--mute",
+                    )}
+                  />
+                  <span className="cc-checklist__name">
+                    <span className="cc-truncate">{t.name}</span>
+                    {t.type === "QC" && <Pill tone="lilac" size="sm" dot={false}>QC</Pill>}
+                  </span>
+                  <span className="cc-checklist__side">
+                    <Pill
+                      size="sm"
+                      tone={isDone(t.status) ? "ok" : isFailed(t.status) ? "bad" : "warn"}
+                    >
+                      {sentence(t.status)}
+                    </Pill>
+                    {canUpdateTasks && !isDone(t.status) && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={completingTask}
+                          onClick={() => handleTaskStatus(t.id, "DONE")}
+                        >
+                          Mark done
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="cc-btn-bad"
+                          disabled={completingTask}
+                          onClick={() => handleTaskStatus(t.id, "FAILED")}
+                        >
+                          Fail
+                        </Button>
+                      </>
                     )}
                   </span>
-                  <span className="flex items-center gap-1.5 flex-shrink-0">
-                    <span
-                      className={cn(
-                        "font-medium",
-                        t.status === "DONE" || t.status === "Done"
-                          ? "text-emerald-600"
-                          : t.status === "FAILED" || t.status === "Failed"
-                            ? "text-red-500"
-                            : "text-slate-500",
-                      )}
-                    >
-                      {t.status}
-                    </span>
-                    {canUpdateTasks &&
-                      t.status !== "DONE" &&
-                      t.status !== "Done" && (
-                        <span className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            disabled={completingTask}
-                            onClick={() => handleTaskStatus(t.id, "DONE")}
-                            className="text-[8px] font-semibold text-emerald-600 hover:underline disabled:opacity-40"
-                          >
-                            Mark done
-                          </button>
-                          <button
-                            type="button"
-                            disabled={completingTask}
-                            onClick={() => handleTaskStatus(t.id, "FAILED")}
-                            className="text-[8px] font-semibold text-red-500 hover:underline disabled:opacity-40"
-                          >
-                            Fail
-                          </button>
-                        </span>
-                      )}
-                  </span>
-                </div>
+                </li>
               ))}
               {detail.tasks.length === 0 && (
-                <div className="text-[10px] text-slate-400">
-                  No checks configured for this phase.
-                </div>
+                <li className="cc-muted">No checks configured for this phase.</li>
               )}
-            </div>
+            </ul>
           </div>
         </div>
       )}
@@ -564,22 +513,21 @@ function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlash }) {
             />
           ))
         ) : (
-          <p className="mt-4 text-xs text-slate-500">
+          <p className="cc-muted cc-gate-none">
             No sign-off gate is configured for this phase.
           </p>
         ))}
-      <Separator className="mt-4 mb-3 bg-[#edf0ee]" />
-      <div className="flex items-center justify-between">
+      <div className="cc-phase-detail__foot">
         <Button
-          type="button"
           variant="ghost"
+          size="sm"
+          iconRight={ArrowRight}
           onClick={() => onOpen?.navigate(ROUTES.documentsProject(project.id))}
-          className="h-auto p-0 text-[10px] font-semibold text-[#2f6655] hover:bg-transparent hover:text-[#19352d]"
         >
-          Open in Documents →
+          Open in Documents
         </Button>
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -590,68 +538,134 @@ function ProjectExecutionBoard({
   onOpenProject,
   canUpdateTasks,
   onOpen,
-  onFlash
+  onFlash,
+  onClearFilters,
 }) {
   const [selectedPhases, setSelectedPhases] = useState({});
-  return <div className="cc-project-board">
-    {rows.map(row => {
-      const isOpen = expanded === row.code;
-      const activePhase = row.phases.find(phase => phase.phaseNumber === row.currentPhaseSeq);
-      const selected = selectedPhases[row.code] === undefined ? activePhase?.id : selectedPhases[row.code];
-      const completed = row.phases.filter(phase => normalizeKey(phase.state) === "COMPLETE").length;
-      return <article className="cc-project" key={row.code}>
-        <div className="cc-project-header">
-          <button type="button" className="cc-project-toggle" aria-expanded={isOpen} aria-controls={`cc-project-${row.id}`} onClick={() => onToggle(row.code)}>
-            <div className="cc-project-info">
-          <span className="cc-project-code">{row.code}</span>
-          <h3>{row.name}</h3>
-          <p>
-            {row.location || "Location not set"}
-            {row.lastActivity ? ` · ${timeAgo(row.lastActivity)}` : ""}
-            {row.daysIdle > 0 ? ` · ${row.daysIdle}d idle` : ""}
-          </p>
-        </div>
-            <PhaseLadder phases={row.phases} activeSeq={row.currentPhaseSeq} />
-            <div className="cc-project-percent">
-          <strong>{row.pct}%</strong>
-          <small>{completed}/{row.phases.length} phases</small>
-        </div>
-          </button>
-          <div className="cc-project-links">
-        <Badge variant="outline" className={cn("cc-health", healthMeta(row.health?.key))}>{row.health?.label}</Badge>
-        <Button type="button" variant="ghost" onClick={() => onOpenProject(row.code)} className="cc-open-project">Open <ArrowRight size={12} /></Button>
-      </div>
-        </div>
-        {isOpen && <div className="cc-project-detail" id={`cc-project-${row.id}`}>
-          {row.phases.map(phase => <div className="cc-phase-group" key={phase.id}>
-            <div className="cc-phase-row">
-              <span className="cc-phase-number">{String(phase.phaseNumber).padStart(2, "0")}</span>
-              <div>
-            <h4>{phase.name}</h4>
-            <p>docs {phase.docsDone}/{phase.docsTotal} · checks {phase.tasksDone}/{phase.tasksTotal}{phase.gate?.code ? ` · ${phase.gate.code}` : ""}</p>
-          </div>
-              <div className="cc-phase-progress">
-            <ProgressBar value={phase.pct} />
-            <small>{phase.pct}%</small>
-          </div>
-              <Badge variant="outline" className={`cc-state-tag cc-state-${normalizeKey(phase.state).toLowerCase()}`}>{stateLabel(phase.state)}</Badge>
-              <Button type="button" variant="outline" className="cc-phase-button" aria-expanded={selected === phase.id} aria-controls={`cc-phase-${row.id}-${phase.id}`} onClick={() => setSelectedPhases(previous => ({
-                ...previous,
-                [row.code]: selected === phase.id ? null : phase.id
-              }))}>{selected === phase.id ? "Hide details" : "View details"}</Button>
+  if (rows.length === 0) {
+    return (
+      <EmptyState
+        icon={FolderSearch}
+        title="No projects match this view"
+        text="Try another health filter or clear the search to see the whole portfolio."
+        action={
+          onClearFilters && (
+            <Button size="sm" onClick={onClearFilters}>
+              Clear filters
+            </Button>
+          )
+        }
+      />
+    );
+  }
+  return (
+    <div className="cc-board">
+      {rows.map((row) => {
+        const isOpen = expanded === row.code;
+        const activePhase = row.phases.find((phase) => phase.phaseNumber === row.currentPhaseSeq);
+        const selected = selectedPhases[row.code] === undefined ? activePhase?.id : selectedPhases[row.code];
+        const completed = row.phases.filter((phase) => normalizeKey(phase.state) === "COMPLETE").length;
+        return (
+          <article className={cn("cc-project", isOpen && "is-open")} key={row.code}>
+            <div className="cc-project__head">
+              <button
+                type="button"
+                className="cc-project__toggle"
+                aria-expanded={isOpen}
+                aria-controls={`cc-project-${row.id}`}
+                onClick={() => onToggle(row.code)}
+              >
+                <span className="cc-project__info">
+                  <ChevronDown className="cc-project__chev" aria-hidden />
+                  <span style={{ minWidth: 0 }}>
+                    <span className="cc-project__name">{row.name}</span>
+                    <span className="cc-project__meta">
+                      {row.location || "Location not set"}
+                      {row.lastActivity ? ` · ${timeAgo(row.lastActivity)}` : ""}
+                      {row.daysIdle > 0 ? ` · ${row.daysIdle}d idle` : ""}
+                    </span>
+                  </span>
+                </span>
+                <span className="cc-project__phase">
+                  <PhaseStepper phases={row.phases} activeSeq={row.currentPhaseSeq} />
+                  <span className="cc-project__phase-label">
+                    {activePhase ? `Phase ${activePhase.phaseNumber} of ${row.phases.length} · ${phaseTitle(activePhase.name)}` : "Not started"}
+                  </span>
+                </span>
+                <span className="cc-project__pct">
+                  <span className="cc-project__pct-top">
+                    <strong className="tabular">{row.pct}%</strong>
+                    <span className="cc-muted tabular">
+                      {completed}/{row.phases.length} phases
+                    </span>
+                  </span>
+                  <Progress value={row.pct} />
+                </span>
+              </button>
+              <div className="cc-project__links">
+                <Pill tone={healthTone(row.health?.key)}>{sentence(row.health?.label)}</Pill>
+                <Button variant="ghost" size="sm" iconRight={ArrowRight} onClick={() => onOpenProject(row.id)}>
+                  Open
+                </Button>
+              </div>
             </div>
-            {selected === phase.id && <div id={`cc-phase-${row.id}-${phase.id}`}><PhaseDetailCard project={row} phase={phase} canUpdateTasks={canUpdateTasks} onOpen={onOpen} onFlash={onFlash} /></div>}
-          </div>)}
-        </div>}
-      </article>;
-    })}
-    {rows.length === 0 && <Card className="cc-empty"><LoadingRow label="No projects match this view." /></Card>}
-  </div>;
+            {isOpen && (
+              <div className="cc-project__detail" id={`cc-project-${row.id}`}>
+                {row.phases.map((phase) => (
+                  <div className="cc-phase" key={phase.id}>
+                    <div className="cc-phase__row">
+                      <span className={cn("cc-phase__num tabular", `cc-num--${stateTone(phase.state)}`)}>
+                        {String(phase.phaseNumber).padStart(2, "0")}
+                      </span>
+                      <div className="cc-phase__text">
+                        <p className="cc-phase__name">{phaseTitle(phase.name)}</p>
+                        <p className="cc-phase__meta">
+                          Docs {phase.docsDone}/{phase.docsTotal} · Checks {phase.tasksDone}/{phase.tasksTotal}
+                          {phase.gate?.code ? ` · Gate: ${gateTitle(phase.gate.code)}` : ""}
+                        </p>
+                      </div>
+                      <div className="cc-phase__progress">
+                        <Progress value={phase.pct} tone={["mute", "brand"].includes(stateTone(phase.state)) ? undefined : stateTone(phase.state)} />
+                        <span className="tabular">{phase.pct}%</span>
+                      </div>
+                      <Pill tone={stateTone(phase.state)} size="sm">{stateLabel(phase.state)}</Pill>
+                      <Button
+                        variant={selected === phase.id ? "soft" : "secondary"}
+                        size="sm"
+                        className="cc-phase__btn"
+                        aria-expanded={selected === phase.id}
+                        aria-controls={`cc-phase-${row.id}-${phase.id}`}
+                        onClick={() =>
+                          setSelectedPhases((previous) => ({
+                            ...previous,
+                            [row.code]: selected === phase.id ? null : phase.id,
+                          }))
+                        }
+                      >
+                        {selected === phase.id ? "Hide details" : "View details"}
+                      </Button>
+                    </div>
+                    {selected === phase.id && (
+                      <div id={`cc-phase-${row.id}-${phase.id}`}>
+                        <PhaseDetailCard
+                          project={row}
+                          phase={phase}
+                          canUpdateTasks={canUpdateTasks}
+                          onOpen={onOpen}
+                          onFlash={onFlash}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </article>
+        );
+      })}
+    </div>
+  );
 }
-
-// ------------------------------------------------------------
-// ACTION REQUIRED — GET /command-center/actions
-// ------------------------------------------------------------
 
 // ------------------------------------------------------------
 // ACTION REQUIRED — GET /command-center/actions
@@ -662,74 +676,41 @@ function ActionRequired({ onOpen }) {
     useGetCommandCenterActionsQuery();
   const actions = data || [];
 
-  // The service doesn't currently tag each item with a "kind", so we
-  // route generically to the project page. If you add a `route` (or
-  // `kind`) field to CommandCenterService#getActionRequired, wire it
-  // in here instead of this fallback.
-  const routeFor = (item) => ROUTES.project(item.projectCode);
+  // The service doesn't tag each item with a "kind" yet, so route
+  // generically to the project page.
+  const routeFor = (item) => ROUTES.project(item.projectId || item.projectCode);
 
   return (
-    <Card className="cc-panel bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
-      <div className="px-4 py-3 border-b border-[#edf0ee] flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
-            <AlertCircle size={14} />
-          </div>
-          <div>
-            <div className="text-[12px] font-semibold text-[#19352d]">
-              Action Required
-            </div>
-            <div className="text-[9px] text-slate-400">
-              Open mandatory items blocking a gate
-            </div>
-          </div>
-        </div>
-        <Badge className="text-[10px] font-bold px-2 py-1 rounded-full bg-red-50 text-red-600 hover:bg-red-50">
-          {actions.length}
-        </Badge>
-      </div>
-      <div>
-        {isLoading && <LoadingRow />}
-        {isError && <ErrorRow error={error} onRetry={refetch} />}
-        {!isLoading &&
-          !isError &&
-          actions.map((item, i) => (
-            <Button
+    <Card
+      flush
+      title="Action required"
+      subtitle="Open mandatory items that are blocking a gate"
+      actions={!isLoading && !isError && actions.length > 0 && <Pill tone="bad">{actions.length} open</Pill>}
+    >
+      {isLoading && <LoadingRow />}
+      {isError && <ErrorRow error={error} onRetry={refetch} />}
+      {!isLoading && !isError && actions.length > 0 && (
+        <div className="cc-list">
+          {actions.map((item, i) => (
+            <ListRow
               key={i}
-              type="button"
-              variant="ghost"
+              icon={item.severe ? ShieldAlert : AlertCircle}
+              tone={item.severe ? "bad" : "warn"}
+              title={item.title}
+              sub={item.project}
+              meta={item.meta}
               onClick={() => onOpen(routeFor(item))}
-              className="w-full h-auto justify-start text-left px-4 py-3 border-b last:border-b-0 border-[#edf0ee] hover:bg-[#fbfcfb] rounded-none"
-            >
-              <div className="flex items-start gap-3 w-full">
-                <span
-                  className={cn(
-                    "mt-1 w-2 h-2 rounded-full flex-shrink-0",
-                    item.severe ? "bg-red-500" : "bg-amber-500",
-                  )}
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="text-[11px] font-medium text-slate-700 truncate">
-                    {item.title}
-                  </div>
-                  <div className="text-[10px] text-[#2f6655] mt-1">
-                    {item.project}
-                  </div>
-                  <div className="text-[9px] text-slate-400 mt-0.5">
-                    {item.meta}
-                  </div>
-                </div>
-                <ArrowRight
-                  size={13}
-                  className="mt-1 flex-shrink-0 text-slate-300"
-                />
-              </div>
-            </Button>
+            />
           ))}
-        {!isLoading && !isError && actions.length === 0 && (
-          <LoadingRow label="No blockers right now." />
-        )}
-      </div>
+        </div>
+      )}
+      {!isLoading && !isError && actions.length === 0 && (
+        <EmptyState
+          icon={CircleCheck}
+          title="No blockers right now"
+          text="Every mandatory item on the open gates is in place."
+        />
+      )}
     </Card>
   );
 }
@@ -746,84 +727,51 @@ function DocumentControl({ onOpen, onUploadDoc }) {
   const missingDocs = data?.missingDocs || [];
 
   return (
-    <Card className="cc-panel bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
-      <div className="px-4 py-3 border-b border-[#edf0ee] flex items-center justify-between">
-        <div>
-          <div className="text-[12px] font-semibold text-[#19352d]">
-            Document Control
-          </div>
-          <div className="text-[9px] text-slate-400 mt-0.5">
-            Mandatory evidence in open phases
-          </div>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => onOpen(ROUTES.documents)}
-          className="h-auto p-0 text-[10px] text-[#2f6655] font-semibold hover:bg-transparent"
-        >
-          View all
+    <Card
+      flush
+      title="Document control"
+      subtitle="Mandatory evidence in open phases"
+      actions={
+        <Button variant="ghost" size="sm" iconRight={ArrowRight} onClick={() => onOpen(ROUTES.documents)}>
+          Open documents
         </Button>
-      </div>
+      }
+    >
+      <Figures
+        items={[
+          { label: "Required now", value: docStats.required },
+          { label: "Evidence satisfied", value: docStats.uploaded, tone: "ok" },
+          { label: "Missing", value: docStats.missing, tone: docStats.missing ? "bad" : undefined },
+        ]}
+      />
 
-      <div className="grid grid-cols-3 border-b border-[#edf0ee]">
-        <div className="px-4 py-3 border-r border-[#edf0ee]">
-          <div className="text-[17px] font-semibold text-[#19352d]">
-            {docStats.required}
-          </div>
-          <div className="text-[9px] text-slate-400">Required now</div>
-        </div>
-        <div className="px-4 py-3 border-r border-[#edf0ee]">
-          <div className="text-[17px] font-semibold text-emerald-600">
-            {docStats.uploaded}
-          </div>
-          <div className="text-[9px] text-slate-400">Evidence satisfied</div>
-        </div>
-        <div className="px-4 py-3">
-          <div className="text-[17px] font-semibold text-red-500">
-            {docStats.missing}
-          </div>
-          <div className="text-[9px] text-slate-400">Missing</div>
-        </div>
-      </div>
-
-      <div>
-        {isLoading && <LoadingRow />}
-        {isError && <ErrorRow error={error} onRetry={refetch} />}
-        {!isLoading &&
-          !isError &&
-          missingDocs.map((doc, i) => (
-            <div
-              key={i}
-              className="w-full px-4 py-3 flex items-center gap-3 border-b last:border-b-0 border-[#edf0ee] hover:bg-[#fbfcfb] transition"
-            >
-              <div className="w-7 h-7 rounded-lg bg-[#f3f6f4] text-[#2f6655] flex items-center justify-center flex-shrink-0">
-                <FileText size={13} />
-              </div>
-              <Button
+      {isLoading && <LoadingRow />}
+      {isError && <ErrorRow error={error} onRetry={refetch} />}
+      {!isLoading && !isError && missingDocs.length > 0 && (
+        <div className="cc-list">
+          {missingDocs.map((doc, i) => (
+            <div key={i} className="cc-row">
+              <span className="inos-icon-tile inos-icon-tile--sm inos-icon-tile--bad">
+                <FileText aria-hidden />
+              </span>
+              <button
                 type="button"
-                variant="ghost"
+                className="cc-row__text cc-row__text--link"
                 onClick={() => onOpen(ROUTES.documentsProject(doc.projectId))}
-                className="h-auto p-0 min-w-0 flex-1 justify-start text-left hover:bg-transparent"
               >
-                <div>
-                  <div className="text-[10px] font-medium text-slate-700 truncate">
-                    {doc.name}
-                  </div>
-                  <div className="text-[9px] text-slate-400 mt-0.5">
-                    {doc.project} · {doc.phase} · owner {doc.role}
-                  </div>
-                </div>
-              </Button>
-              <div className="text-[8px] font-semibold text-red-500 flex-shrink-0">
-                MISSING
-              </div>
+                <span className="cc-row__title">
+                  <span className="cc-truncate">{doc.name}</span>
+                </span>
+                <span className="cc-row__meta">
+                  {doc.project} · {doc.phase} · Owner {doc.role}
+                </span>
+              </button>
+              <Pill tone="bad" size="sm">Missing</Pill>
               <Button
-                type="button"
-                disabled={
-                  doc.evidence?.source !== "DATABASE" &&
-                  doc.targetType === "DRAWING"
-                }
+                variant="soft"
+                size="sm"
+                icon={doc.evidence?.source === "DATABASE" ? ArrowRight : UploadCloud}
+                disabled={doc.evidence?.source !== "DATABASE" && doc.targetType === "DRAWING"}
                 title={
                   doc.targetType === "DRAWING"
                     ? "Submit and review this item through the drawings workflow"
@@ -842,9 +790,7 @@ function DocumentControl({ onOpen, onUploadDoc }) {
                         phaseName: doc.phase,
                       })
                 }
-                className="flex-shrink-0 h-auto inline-flex items-center gap-1 px-2 py-1.5 rounded-md bg-[#19352d] text-white text-[9px] font-semibold hover:bg-[#0f231d]"
               >
-                <UploadCloud size={11} />
                 {doc.evidence?.source === "DATABASE"
                   ? "Open source"
                   : doc.targetType === "DRAWING"
@@ -853,10 +799,15 @@ function DocumentControl({ onOpen, onUploadDoc }) {
               </Button>
             </div>
           ))}
-        {!isLoading && !isError && missingDocs.length === 0 && (
-          <LoadingRow label="Nothing missing right now." />
-        )}
-      </div>
+        </div>
+      )}
+      {!isLoading && !isError && missingDocs.length === 0 && (
+        <EmptyState
+          icon={FileCheck2}
+          title="Nothing missing right now"
+          text="All mandatory documents for the open phases are on file."
+        />
+      )}
     </Card>
   );
 }
@@ -871,78 +822,41 @@ function TaskQCPanel({ onOpen }) {
   const openTasks = data || [];
 
   return (
-    <Card className="cc-panel bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
-      <div className="px-4 py-3 border-b border-[#edf0ee] flex items-center justify-between">
-        <div>
-          <div className="text-[12px] font-semibold text-[#19352d]">
-            Execution &amp; QC Checks
-          </div>
-          <div className="text-[9px] text-slate-400 mt-0.5">
-            Pending or failed checklist items
-          </div>
-        </div>
-        <Badge className="text-[10px] font-bold px-2 py-1 rounded-full bg-[#f0f5f2] text-[#2f6655] hover:bg-[#f0f5f2]">
-          {openTasks.length}
-        </Badge>
-      </div>
-      <div>
-        {isLoading && <LoadingRow />}
-        {isError && <ErrorRow error={error} onRetry={refetch} />}
-        {!isLoading &&
-          !isError &&
-          openTasks.map((t, i) => (
-            <Button
+    <Card
+      flush
+      title="Execution and QC checks"
+      subtitle="Pending or failed checklist items across projects"
+      actions={!isLoading && !isError && openTasks.length > 0 && <Pill tone="warn">{openTasks.length} open</Pill>}
+    >
+      {isLoading && <LoadingRow />}
+      {isError && <ErrorRow error={error} onRetry={refetch} />}
+      {!isLoading && !isError && openTasks.length > 0 && (
+        <div className="cc-list">
+          {openTasks.map((t, i) => (
+            <ListRow
               key={i}
-              type="button"
-              variant="ghost"
-              onClick={() => onOpen(ROUTES.taskProject(t.code))}
-              className="w-full h-auto justify-start px-4 py-3 text-left border-b last:border-b-0 border-[#edf0ee] hover:bg-[#fbfcfb] rounded-none"
-            >
-              <div className="flex items-center gap-3 w-full">
-                <div
-                  className={cn(
-                    "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0",
-                    t.status === "FAILED" || t.status === "Failed"
-                      ? "bg-red-50 text-red-500"
-                      : "bg-[#f3f6f4] text-[#2f6655]",
-                  )}
-                >
-                  {t.status === "FAILED" || t.status === "Failed" ? (
-                    <ShieldAlert size={13} />
-                  ) : (
-                    <ListChecks size={13} />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[10px] font-medium text-slate-700 truncate">
-                    {t.name}{" "}
-                    {t.type === "QC" && (
-                      <span className="text-[8px] font-semibold text-slate-400">
-                        QC
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[9px] text-slate-400 mt-0.5">
-                    {t.project} · {t.phase} · owner {t.role}
-                  </div>
-                </div>
-                <div
-                  className={cn(
-                    "text-[8px] font-semibold flex-shrink-0",
-                    t.status === "FAILED" || t.status === "Failed"
-                      ? "text-red-500"
-                      : "text-amber-600",
-                  )}
-                >
-                  {String(t.status).toUpperCase()}
-                </div>
-              </div>
-            </Button>
+              icon={isFailed(t.status) ? ShieldAlert : ListChecks}
+              tone={isFailed(t.status) ? "bad" : undefined}
+              title={t.name}
+              tag={t.type === "QC" && <Pill tone="lilac" size="sm" dot={false}>QC</Pill>}
+              meta={`${t.project} · ${t.phase} · Owner ${t.role}`}
+              right={
+                <Pill tone={isFailed(t.status) ? "bad" : "warn"} size="sm">
+                  {sentence(t.status)}
+                </Pill>
+              }
+              onClick={() => onOpen(t.href || ROUTES.taskProject(t.projectId || t.code))}
+            />
           ))}
-        {!isLoading && !isError && openTasks.length === 0 && (
-          <LoadingRow label="All checks clear." />
-        )}
-      </div>
+        </div>
+      )}
+      {!isLoading && !isError && openTasks.length === 0 && (
+        <EmptyState
+          icon={ShieldCheck}
+          title="All checks clear"
+          text="No pending or failed execution and QC items right now."
+        />
+      )}
     </Card>
   );
 }
@@ -956,68 +870,40 @@ function CommercialPanel({ onOpen }) {
     useGetCommandCenterCommercialQuery();
 
   return (
-    <Card className="cc-panel bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
-      <div className="px-4 py-3 border-b border-[#edf0ee] flex items-center justify-between">
-        <div>
-          <div className="text-[12px] font-semibold text-[#19352d]">
-            Commercial
-          </div>
-          <div className="text-[9px] text-slate-400 mt-0.5">
-            BOQ & Costing (Phase 5 · G5)
-          </div>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => onOpen(ROUTES.boq)}
-          className="h-auto p-0 text-[10px] text-[#2f6655] font-semibold hover:bg-transparent"
-        >
+    <Card
+      flush
+      title="Commercial"
+      subtitle="BOQ and costing — Phase 5, gate G5"
+      actions={
+        <Button variant="ghost" size="sm" iconRight={ArrowRight} onClick={() => onOpen(ROUTES.boq)}>
           Open BOQ
         </Button>
-      </div>
-
+      }
+    >
       {isLoading && <LoadingRow />}
       {isError && <ErrorRow error={error} onRetry={refetch} />}
 
       {data && (
         <>
-          <div className="grid grid-cols-2">
-            <div className="p-4 border-r border-b border-[#edf0ee]">
-              <div className="text-[17px] font-semibold text-[#19352d]">
-                {data.totalValue ? formatINR(data.totalValue) : "—"}
-              </div>
-              <div className="text-[9px] text-slate-400">
-                Total portfolio value
-              </div>
-            </div>
-            <div className="p-4 border-b border-[#edf0ee]">
-              <div className="text-[17px] font-semibold text-emerald-600">
-                {formatINR(data.approvedValue)}
-              </div>
-              <div className="text-[9px] text-slate-400">
-                Commercially approved (G5)
-              </div>
-            </div>
-          </div>
-
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[9px] uppercase tracking-[0.12em] font-semibold text-slate-400">
-                G5 status across portfolio
-              </span>
-            </div>
-            <div className="flex gap-2">
+          <Figures
+            items={[
+              { label: "Total portfolio value", value: data.totalValue ? formatINR(data.totalValue) : "—" },
+              { label: "Commercially approved (G5)", value: formatINR(data.approvedValue), tone: "ok" },
+            ]}
+          />
+          <div className="cc-section">
+            <p className="cc-detail-head">G5 status across the portfolio</p>
+            <div className="cc-g5">
               {[
-                ["Not reached", data.notReached],
-                ["Costing in progress", data.inProgress],
-                ["Awaiting approval", data.awaiting],
-                ["Approved", data.approved],
-              ].map(([label, value]) => (
-                <div key={label} className="flex-1 bg-[#fafbfa] rounded-lg p-2">
-                  <div className="text-[13px] font-semibold text-[#19352d]">
-                    {value}
-                  </div>
-                  <div className="text-[8px] text-slate-400">{label}</div>
+                ["Not reached", data.notReached, "mute"],
+                ["Costing in progress", data.inProgress, "info"],
+                ["Awaiting approval", data.awaiting, "warn"],
+                ["Approved", data.approved, "ok"],
+              ].map(([label, value, tone]) => (
+                <div key={label} className="cc-g5__item">
+                  <span className={cn("cc-bullet", `cc-dot--${tone}`)} />
+                  <span className="cc-g5__label">{label}</span>
+                  <strong className="tabular">{value ?? 0}</strong>
                 </div>
               ))}
             </div>
@@ -1030,12 +916,12 @@ function CommercialPanel({ onOpen }) {
 
 // ------------------------------------------------------------
 // SITE EXECUTION — derived client-side from the already-loaded
-// portfolio rows (Civil / MEP / Finishes = phase numbers 9–11).
-// No dedicated endpoint needed since getPortfolio() already
-// returns each project's full phase rollup.
+// portfolio rows: projects whose current phase is 08 Execution or
+// 09 Handover. QC failures = open site QC sign-off failures
+// (row.siteQcFailures, from Site Operations) or a failed QC task.
 // ------------------------------------------------------------
 
-const SITE_PHASE_NUMBERS = [9, 10, 11];
+const SITE_PHASE_NUMBERS = [8, 9];
 
 function SiteExecution({ rows, isLoading, isError, error, refetch, onOpen }) {
   const inSitePhase = rows.filter((r) =>
@@ -1048,114 +934,69 @@ function SiteExecution({ rows, isLoading, isError, error, refetch, onOpen }) {
         normalizeKey(ph.state) === "STALLED",
     ),
   );
-  const qcFailed = inSitePhase.filter((r) =>
-    r.phases.some(
-      (ph) =>
-        SITE_PHASE_NUMBERS.includes(ph.phaseNumber) &&
-        normalizeKey(ph.state) === "QC_FAILED",
-    ),
+  const qcFailed = rows.filter(
+    (r) =>
+      (r.siteQcFailures || 0) > 0 ||
+      r.phases.some(
+        (ph) =>
+          SITE_PHASE_NUMBERS.includes(ph.phaseNumber) &&
+          normalizeKey(ph.state) === "QC_FAILED",
+      ),
   );
 
   return (
-    <Card className="cc-panel bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
-      <div className="px-4 py-3 border-b border-[#edf0ee] flex items-center justify-between">
-        <div>
-          <div className="text-[12px] font-semibold text-[#19352d]">
-            Site Execution
-          </div>
-          <div className="text-[9px] text-slate-400 mt-0.5">
-            Civil · MEP · Finishes (Phases 9–11)
-          </div>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => onOpen(ROUTES.tasks)}
-          className="h-auto p-0 text-[10px] text-[#2f6655] font-semibold hover:bg-transparent"
-        >
+    <Card
+      flush
+      title="Site execution"
+      subtitle="Projects in execution or handover"
+      actions={
+        <Button variant="ghost" size="sm" iconRight={ArrowRight} onClick={() => onOpen(ROUTES.tasks)}>
           Open execution
         </Button>
-      </div>
-
+      }
+    >
       {isLoading && <LoadingRow />}
       {isError && <ErrorRow error={error} onRetry={refetch} />}
 
       {!isLoading && !isError && (
         <>
-          <div className="grid grid-cols-3 border-b border-[#edf0ee]">
-            <div className="p-4 border-r border-[#edf0ee]">
-              <Construction size={14} className="text-[#2f6655]" />
-              <div className="text-[20px] font-semibold text-[#19352d] mt-3">
-                {inSitePhase.length}
-              </div>
-              <div className="text-[9px] text-slate-400 mt-0.5">
-                Projects on site
-              </div>
+          <Figures
+            items={[
+              { label: "Projects on site", value: inSitePhase.length },
+              { label: "Projects with QC failures", value: qcFailed.length, tone: qcFailed.length ? "bad" : undefined },
+              { label: "Stalled on site", value: stalled.length, tone: stalled.length ? "peach" : undefined },
+            ]}
+          />
+          {inSitePhase.length > 0 ? (
+            <div className="cc-list">
+              {inSitePhase.map((row) => {
+                const ph = row.phases.find((x) => x.phaseNumber === row.currentPhaseSeq);
+                if (!ph) return null;
+                return (
+                  <ListRow
+                    key={row.code}
+                    icon={Construction}
+                    title={row.name}
+                    meta={`${ph.name} · ${ph.docsDone}/${ph.docsTotal} docs${row.siteQcFailures ? ` · ${row.siteQcFailures} open QC failure${row.siteQcFailures > 1 ? "s" : ""}` : ""}`}
+                    right={
+                      row.siteQcFailures ? (
+                        <Pill tone="bad" size="sm">QC failed</Pill>
+                      ) : (
+                        <Pill tone={stateTone(ph.state)} size="sm">{stateLabel(ph.state)}</Pill>
+                      )
+                    }
+                    onClick={() => onOpen(ROUTES.taskProject(row.id))}
+                  />
+                );
+              })}
             </div>
-            <div className="p-4 border-r border-[#edf0ee]">
-              <ShieldAlert size={14} className="text-red-500" />
-              <div className="text-[20px] font-semibold text-red-500 mt-3">
-                {qcFailed.length}
-              </div>
-              <div className="text-[9px] text-slate-400 mt-0.5">
-                QC failures on site
-              </div>
-            </div>
-            <div className="p-4">
-              <Clock3 size={14} className="text-amber-500" />
-              <div className="text-[20px] font-semibold text-amber-600 mt-3">
-                {stalled.length}
-              </div>
-              <div className="text-[9px] text-slate-400 mt-0.5">
-                Stalled on site
-              </div>
-            </div>
-          </div>
-
-          <div>
-            {inSitePhase.map((row) => {
-              const ph = row.phases.find(
-                (x) => x.phaseNumber === row.currentPhaseSeq,
-              );
-              if (!ph) return null;
-              return (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  key={row.code}
-                  onClick={() => onOpen(ROUTES.taskProject(row.code))}
-                  className="w-full h-auto justify-start px-4 py-3 border-b last:border-b-0 border-[#edf0ee] text-left hover:bg-[#fbfcfb] rounded-none"
-                >
-                  <div className="flex items-center gap-3 w-full">
-                    <div className="w-7 h-7 rounded-lg bg-[#f3f6f4] flex items-center justify-center text-[#2f6655]">
-                      <Construction size={13} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-semibold text-slate-700">
-                        {row.name}
-                      </div>
-                      <div className="text-[9px] text-slate-400 mt-0.5 truncate">
-                        {ph.name} · {ph.tasksDone}/{ph.tasksTotal} checks ·{" "}
-                        {ph.docsDone}/{ph.docsTotal} docs
-                      </div>
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-[8px] font-semibold px-1.5 py-0.5 rounded",
-                        stateMeta(ph.state).badge,
-                      )}
-                    >
-                      {stateLabel(ph.state)}
-                    </Badge>
-                  </div>
-                </Button>
-              );
-            })}
-            {inSitePhase.length === 0 && (
-              <LoadingRow label="No project on site right now." />
-            )}
-          </div>
+          ) : (
+            <EmptyState
+              icon={Construction}
+              title="No project on site yet"
+              text="Projects appear here once they reach civil, MEP or finishes."
+            />
+          )}
         </>
       )}
     </Card>
@@ -1171,63 +1012,40 @@ function TeamWorkload({ onOpen }) {
     useGetCommandCenterTeamWorkloadQuery();
   const roleLoad = data || [];
   const maxCount = Math.max(1, ...roleLoad.map((r) => r.count));
+  const loadTone = (count) => (count >= 3 ? "bad" : count > 0 ? "warn" : "ok");
 
   return (
-    <Card className="cc-panel bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
-      <div className="px-4 py-3 border-b border-[#edf0ee] flex items-center justify-between">
-        <div>
-          <div className="text-[12px] font-semibold text-[#19352d]">
-            Team Workload
-          </div>
-          <div className="text-[9px] text-slate-400 mt-0.5">
-            Open items by role, this week
-          </div>
-        </div>
-        <Users size={14} className="text-slate-400" />
-      </div>
-      <div>
-        {isLoading && <LoadingRow />}
-        {isError && <ErrorRow error={error} onRetry={refetch} />}
-        {!isLoading &&
-          !isError &&
-          roleLoad.map((r) => (
-            <Button
-              type="button"
-              variant="ghost"
-              key={r.role}
-              onClick={() => onOpen(ROUTES.tasks)}
-              className="w-full h-auto flex-col items-stretch justify-start px-4 py-3 border-b last:border-b-0 border-[#edf0ee] text-left hover:bg-[#fbfcfb] rounded-none"
-            >
-              <div className="flex items-center justify-between mb-1.5 w-full">
-                <span className="text-[10px] font-medium text-slate-700">
-                  {r.role}
-                </span>
-                <span
-                  className={cn(
-                    "text-[9px] font-semibold",
-                    r.count >= 3
-                      ? "text-red-500"
-                      : r.count > 0
-                        ? "text-amber-600"
-                        : "text-emerald-600",
-                  )}
-                >
-                  {r.count} open
-                </span>
-              </div>
-              <ProgressBar
-                value={(r.count / maxCount) * 100}
-                tone={r.count >= 3 ? "danger" : r.count > 0 ? "warn" : "brand"}
-              />
-              <div className="text-[8px] text-slate-400 mt-1">
-                {PEOPLE_BY_ROLE[r.role] || "Unassigned"}
-              </div>
-            </Button>
+    <Card flush title="Team workload" subtitle="Open items by role this week">
+      {isLoading && <LoadingRow />}
+      {isError && <ErrorRow error={error} onRetry={refetch} />}
+      {!isLoading && !isError && roleLoad.length > 0 && (
+        <div className="cc-list">
+          {roleLoad.map((r) => (
+            <button type="button" key={r.role} className="cc-row cc-row--link cc-load" onClick={() => onOpen(ROUTES.tasks)}>
+              <span className="inos-icon-tile inos-icon-tile--sm">
+                <Users aria-hidden />
+              </span>
+              <span className="cc-row__text">
+                <span className="cc-row__title">{r.role}</span>
+                <span className="cc-row__meta">{PEOPLE_BY_ROLE[r.role] || "Unassigned"}</span>
+              </span>
+              <span className="cc-load__bar">
+                <Progress value={(r.count / maxCount) * 100} tone={loadTone(r.count) === "ok" ? undefined : loadTone(r.count)} />
+              </span>
+              <Pill tone={loadTone(r.count)} size="sm">
+                {r.count} open
+              </Pill>
+            </button>
           ))}
-        {!isLoading && !isError && roleLoad.length === 0 && (
-          <LoadingRow label="No open work right now." />
-        )}
-      </div>
+        </div>
+      )}
+      {!isLoading && !isError && roleLoad.length === 0 && (
+        <EmptyState
+          icon={Users}
+          title="No open work right now"
+          text="Open documents and checks will be grouped here by role."
+        />
+      )}
     </Card>
   );
 }
@@ -1249,60 +1067,47 @@ function ActivityTimeline() {
     if (type === "DOC") return FileText;
     return ListChecks;
   };
+  const toneFor = (type) =>
+    type === "GATE_APPROVED" ? "ok" : type === "DOC" ? "info" : type === "TASK" ? "lilac" : undefined;
 
   return (
-    <Card className="cc-panel bg-white border border-[#e4e8e5] rounded-xl overflow-hidden shadow-none p-0">
-      <div className="px-4 py-3 border-b border-[#edf0ee] flex items-center justify-between">
-        <div>
-          <div className="text-[12px] font-semibold text-[#19352d]">
-            Live Activity
-          </div>
-          <div className="text-[9px] text-slate-400 mt-0.5">
-            From the activity log
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 text-[9px] text-emerald-600">
-          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-          Live
-        </div>
-      </div>
-      <div>
-        {isLoading && <LoadingRow />}
-        {isError && <ErrorRow error={error} onRetry={refetch} />}
-        {!isLoading &&
-          !isError &&
-          activities.map((a, index) => {
+    <Card
+      flush
+      title="Live activity"
+      subtitle="Latest 20 events from the activity log"
+      actions={<Pill tone="ok">Live</Pill>}
+    >
+      {isLoading && <LoadingRow />}
+      {isError && <ErrorRow error={error} onRetry={refetch} />}
+      {!isLoading && !isError && activities.length > 0 && (
+        <ol className="cc-timeline">
+          {activities.map((a, index) => {
             const Icon = iconFor(a.type);
+            const tone = toneFor(a.type);
             return (
-              <div key={index} className="px-4 py-3 flex gap-3">
-                <div className="flex flex-col items-center">
-                  <div className="w-7 h-7 rounded-lg bg-[#f3f6f4] text-[#2f6655] flex items-center justify-center">
-                    <Icon size={12} />
+              <li key={index} className="cc-timeline__item">
+                <span className={cn("inos-icon-tile inos-icon-tile--sm", tone && `inos-icon-tile--${tone}`)}>
+                  <Icon aria-hidden />
+                </span>
+                <div className="cc-timeline__body">
+                  <div className="cc-timeline__top">
+                    <span className="cc-row__title">{a.title}</span>
+                    <span className="cc-muted cc-nowrap">{a.time}</span>
                   </div>
-                  {index !== activities.length - 1 && (
-                    <div className="w-px flex-1 bg-[#edf0ee] mt-1" />
-                  )}
+                  {a.detail && <span className="cc-row__meta">{a.detail}</span>}
                 </div>
-                <div className="flex-1 min-w-0 pb-1">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-[10px] font-medium text-slate-700 truncate">
-                      {a.title}
-                    </div>
-                    <span className="text-[8px] text-slate-400 whitespace-nowrap">
-                      {a.time}
-                    </span>
-                  </div>
-                  <div className="text-[9px] text-[#2f6655] mt-1">
-                    {a.detail}
-                  </div>
-                </div>
-              </div>
+              </li>
             );
           })}
-        {!isLoading && !isError && activities.length === 0 && (
-          <LoadingRow label="No activity yet." />
-        )}
-      </div>
+        </ol>
+      )}
+      {!isLoading && !isError && activities.length === 0 && (
+        <EmptyState
+          icon={History}
+          title="No activity yet"
+          text="Uploads, gate sign-offs and check updates will stream in here."
+        />
+      )}
     </Card>
   );
 }
@@ -1310,20 +1115,6 @@ function ActivityTimeline() {
 // ------------------------------------------------------------
 // UPLOAD DOCUMENT MODAL — POST /command-center/projects/:id/documents/upload
 // ------------------------------------------------------------
-
-function Field({ label, children }) {
-  return (
-    <div className="mb-3.5">
-      <Label className="block text-[9px] uppercase tracking-[0.1em] font-semibold text-slate-400 mb-1.5">
-        {label}
-      </Label>
-      {children}
-    </div>
-  );
-}
-
-const inputClass =
-  "text-[13px] border-[#dfe5e1] focus-visible:border-[#2f6655] focus-visible:ring-[#2f6655]";
 
 function UploadDocumentModal({ target, onClose, onUploaded, onFlash }) {
   const [file, setFile] = useState(null);
@@ -1360,26 +1151,24 @@ function UploadDocumentModal({ target, onClose, onUploaded, onFlash }) {
 
   return (
     <Dialog open={!!target} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="cc-upload-modal sm:max-w-lg p-0 gap-0 overflow-hidden rounded-none border-[#e4dfd6]">
-        <DialogHeader className="px-5 py-4 border-b border-[#edf0ee]">
-          <DialogTitle className="text-[15px] font-semibold text-[#19352d]">
-            Upload document
-          </DialogTitle>
+      <DialogContent className="cc-upload-modal sm:max-w-lg p-0 gap-0 overflow-hidden">
+        <DialogHeader className="cc-upload-modal__head">
+          <DialogTitle className="inos-section-title">Upload document</DialogTitle>
         </DialogHeader>
-        <div className="p-5">
-          <div className="mb-4 bg-[#fafbfa] border border-[#edf0ee] rounded-lg p-3">
-            <div className="text-[9px] uppercase tracking-[0.1em] font-semibold text-slate-400 mb-1">
-              {target.projectName} · {target.phaseName}
-            </div>
-            <div className="text-[13px] font-semibold text-[#19352d]">
-              {target.name}
-            </div>
-            <div className="text-[10px] text-slate-400 mt-0.5">
-              Owner: {target.role}
+        <div className="cc-upload-modal__body inos-modal-body">
+          <div className="cc-upload-target">
+            <span className="inos-icon-tile">
+              <FileText aria-hidden />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <p className="cc-row__title">{target.name}</p>
+              <p className="cc-row__meta">
+                {target.projectName} · {target.phaseName} · Owner {target.role}
+              </p>
             </div>
           </div>
 
-          <Field label="File">
+          <Field label="File" required hint="PDF, image or Office document">
             <label
               onDragOver={(e) => {
                 e.preventDefault();
@@ -1391,81 +1180,47 @@ function UploadDocumentModal({ target, onClose, onUploaded, onFlash }) {
                 setDragOver(false);
                 handleFiles(e.dataTransfer.files);
               }}
-              className={cn(
-                "flex flex-col items-center justify-center gap-2 border border-dashed rounded-lg py-8 px-4 cursor-pointer transition text-center",
-                dragOver
-                  ? "border-[#2f6655] bg-[#f0f5f2]"
-                  : "border-[#dfe5e1] hover:border-[#b9c9c1]",
-              )}
+              className={cn("cc-drop", dragOver && "is-over", file && "has-file")}
             >
-              <div className="w-9 h-9 rounded-lg bg-[#f0f5f2] text-[#2f6655] flex items-center justify-center">
-                <UploadCloud size={16} />
-              </div>
+              <span className="inos-icon-tile">
+                <UploadCloud aria-hidden />
+              </span>
               {file ? (
-                <div className="text-[11px] font-medium text-slate-700">
-                  {file.name}
-                </div>
+                <span className="cc-row__title">{file.name}</span>
               ) : (
-                <>
-                  <div className="text-[11px] font-medium text-slate-600">
-                    Drag a file here, or click to browse
-                  </div>
-                  <div className="text-[9px] text-slate-400">
-                    PDF, image, or Office document
-                  </div>
-                </>
+                <span className="cc-drop__text">
+                  Drag a file here, or <u>browse</u>
+                </span>
               )}
               <input
                 type="file"
-                className="hidden"
+                className="sr-only"
                 onChange={(e) => handleFiles(e.target.files)}
               />
             </label>
           </Field>
 
-          <Field label="Notes (optional)">
-            <Textarea
+          <Field label="Notes" optional>
+            <TextArea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              placeholder="Anything the reviewer should know about this file..."
-              className={cn(inputClass, "resize-none")}
+              placeholder="Anything the reviewer should know about this file"
             />
           </Field>
-
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={onClose}
-              className="px-3.5 py-2 h-auto rounded-lg text-[11px] font-semibold text-slate-500 hover:bg-slate-50"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={!file || submitting}
-              onClick={handleSubmit}
-              className={cn(
-                "px-4 py-2 h-auto rounded-lg text-[11px] font-semibold inline-flex items-center gap-1.5",
-                file && !submitting
-                  ? "bg-[#19352d] text-white hover:bg-[#0f231d]"
-                  : "bg-slate-100 text-slate-400 hover:bg-slate-100 cursor-not-allowed",
-              )}
-            >
-              {submitting ? (
-                <>
-                  <RefreshCw size={12} className="animate-spin" />
-                  Uploading…
-                </>
-              ) : (
-                <>
-                  <UploadCloud size={12} />
-                  Upload document
-                </>
-              )}
-            </Button>
-          </div>
+        </div>
+        <div className="cc-upload-modal__foot">
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            icon={submitting ? undefined : UploadCloud}
+            disabled={!file || submitting}
+            onClick={handleSubmit}
+          >
+            {submitting ? "Uploading…" : "Upload document"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -1478,55 +1233,41 @@ function UploadDocumentModal({ target, onClose, onUploaded, onFlash }) {
 
 const TABS = [
   { id: "portfolio", label: "Portfolio", icon: BriefcaseBusiness },
-  { id: "actions", label: "Action Required", icon: AlertCircle },
-  { id: "documents", label: "Document Control", icon: FileText },
-  { id: "execution", label: "Site Execution", icon: Construction },
-  { id: "qc", label: "Execution & QC Checks", icon: ListChecks },
-  { id: "commercial", label: "Commercial", icon: DollarSign },
-  { id: "team", label: "Team Workload", icon: Users },
-  { id: "activity", label: "Live Activity", icon: RefreshCw },
+  { id: "actions", label: "Action required", icon: AlertCircle },
+  { id: "documents", label: "Document control", icon: FileText },
+  { id: "execution", label: "Site execution", icon: Construction },
+  { id: "qc", label: "Execution & QC checks", icon: ListChecks },
+  { id: "commercial", label: "Commercial", icon: IndianRupee },
+  { id: "team", label: "Team workload", icon: Users },
+  { id: "activity", label: "Live activity", icon: History },
 ];
 
 function TabNav({ active, onChange, counts }) {
   return (
-    <Tabs value={active} onValueChange={onChange} className="cc-tabs">
-      <TabsList className="w-full justify-start h-auto bg-transparent p-0 border-b border-[#e4e8e5] rounded-none overflow-x-auto">
-        {TABS.map((tab) => {
-          const Icon = tab.icon;
+    <div className="cc-tabs">
+      <Tabs
+        value={active}
+        onChange={onChange}
+        options={TABS.map((tab) => {
           const count = counts?.[tab.id];
-          return (
-            <TabsTrigger
-              key={tab.id}
-              value={tab.id}
-              className={cn(
-                "relative flex items-center gap-1.5 px-3.5 py-2.5 text-[11px] font-semibold whitespace-nowrap rounded-none bg-transparent shadow-none",
-                "data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-[#19352d]",
-                "text-slate-400 hover:text-slate-600",
-                "after:absolute after:left-0 after:right-0 after:-bottom-px after:h-[2px] after:rounded-full",
-                "data-[state=active]:after:bg-[#19352d]",
-              )}
-            >
-              <Icon size={13} />
-              {tab.label}
-              {typeof count === "number" && count > 0 && (
-                <Badge
-                  className={cn(
-                    "ml-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full pointer-events-none",
-                    active === tab.id
-                      ? "bg-[#19352d] text-white hover:bg-[#19352d]"
-                      : "bg-[#f0f5f2] text-[#2f6655] hover:bg-[#f0f5f2]",
-                  )}
-                >
-                  {count}
-                </Badge>
-              )}
-            </TabsTrigger>
-          );
+          return {
+            value: tab.id,
+            label: tab.label,
+            icon: tab.icon,
+            count: typeof count === "number" && count > 0 ? count : undefined,
+          };
         })}
-      </TabsList>
-    </Tabs>
+      />
+    </div>
   );
 }
+
+const HEALTH_FILTERS = [
+  { value: "all", label: "All" },
+  { value: "progress", label: "On track" },
+  { value: "gate", label: "Gate pending" },
+  { value: "danger", label: "Attention" },
+];
 
 // ------------------------------------------------------------
 // MAIN PAGE
@@ -1574,13 +1315,11 @@ export default function CommandCenter() {
     error: portfolioErrorObj,
     refetch: refetchPortfolio,
   } = useGetCommandCenterPortfolioQuery({
-    health: healthFilter === "all" ? undefined : healthFilter.toUpperCase(),
+    health: healthFilter === "all" ? undefined : healthFilter,
     search: debouncedSearch || undefined,
   });
 
-  // ---- Portfolio, unfiltered (drives Site Execution + tab badges
-  // that need the whole book of work regardless of the board's
-  // filter/search state) ----
+  // ---- Portfolio, unfiltered (Site Execution + tab badges) ----
   const { data: allRows = [], refetch: refetchAllRows } =
     useGetCommandCenterPortfolioQuery({});
 
@@ -1598,9 +1337,7 @@ export default function CommandCenter() {
   }, [live, dispatch]);
 
   const handleRescan = () => {
-    // No dedicated rescan endpoint is exposed yet — this refreshes
-    // every live query on the page. Wire a real POST /command-center/rescan
-    // (or similar) here once the backend has one.
+    // No dedicated rescan endpoint yet — refresh every live query on the page.
     refetchKpis();
     refetchPortfolio();
     refetchAllRows();
@@ -1615,149 +1352,141 @@ export default function CommandCenter() {
 
   const tabCounts = useMemo(
     () => ({
+      portfolio: allRows.length,
       actions: actionsData?.length ?? 0,
       documents: documentsData?.stats?.missing ?? 0,
       qc: tasksData?.length ?? 0,
     }),
-    [actionsData, documentsData, tasksData],
+    [allRows, actionsData, documentsData, tasksData],
   );
 
-  return (
-    <div className="command-center">
-      <header className="cc-topbar">
-        <h1>Command <span>Centre</span></h1>
-        <div className="cc-header-actions">
-          <span className="cc-stamp">RIPPOTAI · {updatedAt ? `UPDATED ${new Date(updatedAt).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})}` : "LOADING RECORDS"}{user?.email ? ` · ${user.email}` : ""}</span>
-          <Button type="button" className="cc-header-button" aria-pressed={live} onClick={() => setLive(value => !value)}><span className={cn("cc-pulse",live && "cc-pulse-on")}/>{live ? "Live" : "Paused"}</Button>
-          <Button type="button" className="cc-header-button" onClick={handleRescan} disabled={kpiLoading}><RefreshCw size={12} className={kpiLoading ? "animate-spin" : ""}/>{kpiLoading ? "Refreshing" : "Rescan"}</Button>
-          {user?.permissions?.includes("projects:create") && <Button type="button" className="cc-header-button cc-header-solid" onClick={() => navigate("/projects/new")}><Plus size={12}/>New project</Button>}
-        </div>
-      </header>
-        {/* KPI STRIP */}
-        <div className="cc-kpis">
-          <KPI
-            label="Live Projects"
-            value={kpi.live}
-            loading={kpiLoading}
-            meta="Active projects"
-            icon={BriefcaseBusiness}
-            onClick={() => setActiveTab("portfolio")}
-          />
-          <KPI
-            label="Gates Awaiting Approval"
-            value={kpi.awaiting}
-            loading={kpiLoading}
-            meta="100% complete, unsigned"
-            icon={ShieldCheck}
-            tone="gate"
-            onClick={() => {
-              setActiveTab("portfolio");
-              setHealthFilter("gate");
-            }}
-          />
-          <KPI
-            label="Stalled Phases"
-            value={kpi.stalled}
-            loading={kpiLoading}
-            meta="7+ days no activity"
-            icon={Clock3}
-            tone={kpi.stalled ? "danger" : undefined}
-            onClick={() => setActiveTab("actions")}
-          />
-          <KPI
-            label="QC Failures"
-            value={kpi.failed}
-            loading={kpiLoading}
-            meta="Failed checklist items"
-            icon={ShieldAlert}
-            tone={kpi.failed ? "danger" : undefined}
-            onClick={() => setActiveTab("qc")}
-          />
-          <KPI
-            label="Documents Pending"
-            value={kpi.docsMissing}
-            loading={kpiLoading}
-            meta="Mandatory, in open phases"
-            icon={FileText}
-            tone={kpi.docsMissing ? "danger" : undefined}
-            onClick={() => setActiveTab("documents")}
-          />
-          <KPI
-            label="Portfolio Value"
-            value={formatINR(kpi.value)}
-            loading={kpiLoading}
-            meta="Across active projects"
-            icon={DollarSign}
-            onClick={() => setActiveTab("commercial")}
-          />
-        </div>
+  const updatedLabel = updatedAt
+    ? new Date(updatedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+    : null;
 
-      <main className="cc-main">
+  const kpiValue = (v) => (kpiLoading && v == null ? "—" : v);
+
+  return (
+    <Page className="command-center">
+      <PageHeader
+        crumbs={[{ label: "Command Center" }]}
+        title="Command Center"
+        subtitle="Live health of every project — gates, evidence, site checks and money in one calm view."
+        actions={
+          <>
+            <button
+              type="button"
+              className={cn("cc-live", live && "is-live")}
+              aria-pressed={live}
+              title={live ? "Auto-refreshing every 30 seconds. Click to pause." : "Auto-refresh paused. Click to resume."}
+              onClick={() => setLive((value) => !value)}
+            >
+              <span className="cc-live__dot" aria-hidden />
+              {live ? "Live" : "Paused"}
+              <span className="cc-live__time">
+                {updatedLabel ? `Updated ${updatedLabel}` : "Loading…"}
+              </span>
+            </button>
+            <Button icon={RefreshCw} onClick={handleRescan} disabled={kpiLoading} className={kpiLoading ? "cc-refreshing" : undefined}>
+              {kpiLoading ? "Refreshing" : "Rescan"}
+            </Button>
+            {user?.permissions?.includes("projects:create") && (
+              <Button variant="primary" icon={Plus} onClick={() => navigate("/projects/new")}>
+                New project
+              </Button>
+            )}
+          </>
+        }
+      />
+
+      {/* KPI STRIP */}
+      <Stats>
+        <StatTile
+          label="Live projects"
+          value={kpiValue(kpi.live)}
+          meta="Active projects"
+          icon={<BriefcaseBusiness />}
+          active={activeTab === "portfolio" && healthFilter === "all"}
+          onClick={() => {
+            setActiveTab("portfolio");
+            setHealthFilter("all");
+          }}
+        />
+        <StatTile
+          label="Awaiting sign-off"
+          value={kpiValue(kpi.awaiting)}
+          meta="Complete, not yet signed"
+          icon={<ShieldCheck />}
+          tone="warn"
+          active={activeTab === "portfolio" && healthFilter === "gate"}
+          onClick={() => {
+            setActiveTab("portfolio");
+            setHealthFilter("gate");
+          }}
+        />
+        <StatTile
+          label="Stalled phases"
+          value={kpiValue(kpi.stalled)}
+          meta="7+ days without activity"
+          icon={<Clock3 />}
+          tone="peach"
+          active={activeTab === "actions"}
+          onClick={() => setActiveTab("actions")}
+        />
+        <StatTile
+          label="QC failures"
+          value={kpiValue(kpi.failed)}
+          meta={kpi.siteQcFailed ? `${kpi.siteQcFailed} open on site` : "Failed checklist items"}
+          icon={<ShieldAlert />}
+          tone="bad"
+          active={activeTab === "qc"}
+          onClick={() => setActiveTab("qc")}
+        />
+        <StatTile
+          label="Documents pending"
+          value={kpiValue(kpi.docsMissing)}
+          meta="Mandatory, in open phases"
+          icon={<FileText />}
+          tone="info"
+          active={activeTab === "documents"}
+          onClick={() => setActiveTab("documents")}
+        />
+        <StatTile
+          label="Portfolio value"
+          value={kpiLoading && kpi.value == null ? "—" : formatINR(kpi.value)}
+          meta="Across active projects"
+          icon={<IndianRupee />}
+          active={activeTab === "commercial"}
+          onClick={() => setActiveTab("commercial")}
+        />
+      </Stats>
+
+      <div className="cc-main">
         {/* TABS */}
         <TabNav active={activeTab} onChange={setActiveTab} counts={tabCounts} />
 
         {/* PORTFOLIO TAB */}
         {activeTab === "portfolio" && (
-          <section className="mb-6">
-            <SectionHeader
-              eyebrow="Portfolio"
-              title="Project Execution"
-              action="View all projects"
-              onAction={() => navigate(ROUTES.projects)}
-            />
+          <Card
+            flush
+            title="Project execution"
+            subtitle="Open a project to see its phases, evidence and gate sign-offs."
+            actions={
+              <Button variant="ghost" size="sm" iconRight={ArrowRight} onClick={() => navigate(ROUTES.projects)}>
+                All projects
+              </Button>
+            }
+            footer={<PhaseLegend />}
+          >
+            <div className="cc-board-toolbar">
+              <SearchInput value={search} onChange={setSearch} placeholder="Search projects" />
+              <Segmented value={healthFilter} onChange={setHealthFilter} options={HEALTH_FILTERS} />
+            </div>
 
-            <Card className="cc-filters">
-              <div className="relative flex-1 max-w-[360px]">
-                <Search
-                  size={13}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  aria-label="Search projects"
-                  placeholder="Search projects..."
-                  className="w-full h-8 pl-8 pr-3 rounded-lg bg-[#fafbfa] border-[#edf0ee] text-[10px] text-slate-700 placeholder:text-slate-400 focus-visible:border-[#b9c9c1] focus-visible:ring-0"
-                />
-              </div>
-              <div className="cc-filter-buttons">
-                {[
-                  ["all", "All Projects"],
-                  ["progress", "On Track"],
-                  ["gate", "Gate Pending"],
-                  ["danger", "Attention"],
-                ].map(([value, label]) => (
-                  <Button
-                    type="button"
-                    key={value}
-                    onClick={() => setHealthFilter(value)}
-                    className={cn(
-                      "whitespace-nowrap px-3 h-8 rounded-lg text-[9px] font-semibold transition",
-                      healthFilter === value
-                        ? "bg-[#19352d] text-white hover:bg-[#0f231d]"
-                        : "bg-[#f7f9f7] text-slate-500 hover:bg-[#eef3ef]",
-                    )}
-                  >
-                    {label}
-                  </Button>
-                ))}
-              </div>
-            </Card>
-
-            {portfolioLoading && (
-              <Card className="cc-panel bg-white border border-[#e4e8e5] rounded-xl shadow-none p-0">
-                <LoadingRow label="Loading portfolio…" />
-              </Card>
-            )}
+            {portfolioLoading && <LoadingRow label="Loading portfolio…" />}
             {portfolioError && (
-              <Card className="cc-panel bg-white border border-[#e4e8e5] rounded-xl shadow-none p-0">
-                <ErrorRow
-                  error={portfolioErrorObj}
-                  onRetry={refetchPortfolio}
-                />
-              </Card>
+              <ErrorRow error={portfolioErrorObj} onRetry={refetchPortfolio} />
             )}
-            <PhaseLegend />
             {!portfolioLoading && !portfolioError && (
               <ProjectExecutionBoard
                 rows={filteredRows}
@@ -1769,72 +1498,44 @@ export default function CommandCenter() {
                 canUpdateTasks={canUpdateTasks}
                 onOpen={{ navigate, uploadDoc: setUploadTarget }}
                 onFlash={flashToast}
+                onClearFilters={
+                  healthFilter !== "all" || search
+                    ? () => {
+                        setHealthFilter("all");
+                        setSearch("");
+                      }
+                    : undefined
+                }
               />
             )}
-          </section>
+          </Card>
         )}
 
         {/* ACTION REQUIRED TAB */}
-        {activeTab === "actions" && (
-          <section className="mb-6">
-            <SectionHeader eyebrow="Blockers" title="Action Required" />
-            <ActionRequired onOpen={navigate} />
-          </section>
-        )}
+        {activeTab === "actions" && <ActionRequired onOpen={navigate} />}
 
         {/* DOCUMENT CONTROL TAB */}
         {activeTab === "documents" && (
-          <section className="mb-6">
-            <SectionHeader
-              eyebrow="Evidence"
-              title="Document Control"
-              action="Open documents module"
-              onAction={() => navigate(ROUTES.documents)}
-            />
-            <DocumentControl onOpen={navigate} onUploadDoc={setUploadTarget} />
-          </section>
+          <DocumentControl onOpen={navigate} onUploadDoc={setUploadTarget} />
         )}
 
         {/* SITE EXECUTION TAB */}
         {activeTab === "execution" && (
-          <section className="mb-6">
-            <SectionHeader eyebrow="On site" title="Site Execution" />
-            <SiteExecution rows={allRows} onOpen={navigate} />
-          </section>
+          <SiteExecution rows={allRows} onOpen={navigate} />
         )}
 
         {/* EXECUTION & QC CHECKS TAB */}
-        {activeTab === "qc" && (
-          <section className="mb-6">
-            <SectionHeader eyebrow="Checklist" title="Execution & QC Checks" />
-            <TaskQCPanel onOpen={navigate} />
-          </section>
-        )}
+        {activeTab === "qc" && <TaskQCPanel onOpen={navigate} />}
 
         {/* COMMERCIAL TAB */}
-        {activeTab === "commercial" && (
-          <section className="mb-6">
-            <SectionHeader eyebrow="BOQ & Costing" title="Commercial" />
-            <CommercialPanel onOpen={navigate} />
-          </section>
-        )}
+        {activeTab === "commercial" && <CommercialPanel onOpen={navigate} />}
 
         {/* TEAM WORKLOAD TAB */}
-        {activeTab === "team" && (
-          <section className="mb-6">
-            <SectionHeader eyebrow="Roles" title="Team Workload" />
-            <TeamWorkload onOpen={navigate} />
-          </section>
-        )}
+        {activeTab === "team" && <TeamWorkload onOpen={navigate} />}
 
         {/* LIVE ACTIVITY TAB */}
-        {activeTab === "activity" && (
-          <section className="mb-6">
-            <SectionHeader eyebrow="Activity log" title="Live Activity" />
-            <ActivityTimeline />
-          </section>
-        )}
-      </main>
+        {activeTab === "activity" && <ActivityTimeline />}
+      </div>
 
       {uploadTarget && (
         <UploadDocumentModal
@@ -1846,6 +1547,6 @@ export default function CommandCenter() {
       )}
 
       <Toast message={toast} />
-    </div>
+    </Page>
   );
 }

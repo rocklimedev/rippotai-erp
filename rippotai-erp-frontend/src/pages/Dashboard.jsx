@@ -1,100 +1,123 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import { MODULE_ICONS } from "@/components/icons/ModuleIcons";
 import { APP_META, LANDING_ORDER } from "@/config/appNav";
 import NotificationsBell from "../components/dashboard/NotificationsBell";
 import UserMenu from "../components/users/UserMenu";
 
 const BADGE_MAP = {
-  boq: "boq",
-  quotations: "quotations",
+  ledger: "boq",
+  procurement: "quotations",
   calendar: "calendar",
 };
 
+// One line under each tile so new team members know where things live.
+const APP_BLURB = {
+  projects: "Workspaces & planner",
+  design_studio: "Drawings & revisions",
+  crm: "Leads to contract",
+  ledger: "BOQs, budgets, payments",
+  siteOperations: "Reports, QC, RFIs",
+  procurement: "Vendors to delivery",
+  inventory: "Site stock",
+  tasks: "Your to-dos",
+  calendar: "Visits & meetings",
+  commandCenter: "Live portfolio view",
+  adminConsole: "Users, roles, setup",
+  automation: "Rules & escalations",
+};
+
+function greeting(d = new Date()) {
+  const h = d.getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [badges, setBadges] = useState({});
 
   useEffect(() => {
     api
-      .get("/dashboard/app-badges")
+      .get("/v1/dashboard/app-badges")
       .then((r) => setBadges(r.data || {}))
       .catch(() => {});
   }, []);
 
+  const firstName = (user?.name || "").split(" ")[0];
+  const today = useMemo(
+    () =>
+      new Date().toLocaleDateString("en-IN", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+      }),
+    [],
+  );
+
   return (
-    <div className="min-h-screen bg-page" data-testid="landing-page">
-      <header
-        className="h-16 px-6 lg:px-10 flex items-center justify-between"
-        data-testid="landing-header"
-      >
-        {/* Logo top-left */}
-        <button
-          onClick={() => navigate("/dashboard")}
-          data-testid="rippotai-logo"
-          className="flex items-center"
-        >
-          <img
-            src="/rippotai_logo.png"
-            alt="Rippotai ERP"
-            className="h-10 w-auto object-contain"
-          />
+    <div className="inos-launcher" data-testid="landing-page">
+      <header className="inos-launcher__bar" data-testid="landing-header" style={{ borderBottom: 0 }}>
+        <button onClick={() => navigate("/dashboard")} data-testid="rippotai-logo" className="flex items-center gap-3">
+          <img src="/rippotai_logo.png" alt="Rippotai" className="h-9 w-auto object-contain" />
+          <span className="hidden sm:inline text-[15px] font-bold tracking-tight" style={{ color: "var(--text)" }}>
+            INOS
+          </span>
         </button>
-        {/* Notifications + avatar top-right */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <NotificationsBell />
           <UserMenu />
         </div>
       </header>
 
-      {/* Centered 2×5 tile grid */}
-      <main
-        className="flex items-center justify-center px-6"
-        style={{ minHeight: "calc(100vh - 64px)" }}
-      >
-        <section
-          data-testid="app-grid"
-          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-8 gap-y-10 justify-items-center"
-        >
+      <main className="inos-launcher__main">
+        <div className="inos-launcher__hello">
+          <span className="inos-eyebrow" style={{ justifyContent: "center" }}>
+            {today}
+          </span>
+          <h1>
+            {greeting()}
+            {firstName ? `, ${firstName}` : ""}
+          </h1>
+          <p>Pick up where you left off.</p>
+        </div>
+
+        <nav data-testid="app-grid" className="inos-launcher__grid" aria-label="Apps">
           {LANDING_ORDER.map((key) => {
             const Icon = MODULE_ICONS[key];
             const meta = APP_META[key];
             const bkey = BADGE_MAP[key];
             const badge = bkey ? badges[bkey] || 0 : 0;
             return (
-              <div key={key} className="flex flex-col items-center">
-                <button
-                  data-testid={`app-card-${key}`}
-                  onClick={() => navigate(meta.base)}
-                  aria-label={meta.name}
-                  className="app-tile relative flex items-center justify-center focus:outline-none"
-                  style={{ width: 108, height: 108 }}
-                >
-                  <div style={{ width: 90, height: 90 }}>
+              <button
+                key={key}
+                type="button"
+                data-testid={`app-card-${key}`}
+                onClick={() => navigate(meta.base)}
+                className="inos-app"
+              >
+                <span className="inos-app__tile">
+                  <div>
                     <Icon />
                   </div>
                   {badge > 0 && (
-                    <span
-                      data-testid={`app-badge-${key}`}
-                      className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1.5 rounded-full text-[11px] font-semibold flex items-center justify-center"
-                      style={{ background: "#1F453B", color: "#FFF" }}
-                    >
+                    <span data-testid={`app-badge-${key}`} className="inos-app__badge">
                       {badge}
                     </span>
                   )}
-                </button>
-                <div
-                  data-testid={`app-label-${key}`}
-                  className="mt-3 text-[15px] font-semibold text-center"
-                  style={{ color: "#333333", fontFamily: "Poppins" }}
-                >
+                </span>
+                <span data-testid={`app-label-${key}`} className="inos-app__name">
                   {meta.name}
-                </div>
-              </div>
+                </span>
+                {APP_BLURB[key] && <span className="inos-app__desc">{APP_BLURB[key]}</span>}
+              </button>
             );
           })}
-        </section>
+        </nav>
       </main>
     </div>
   );

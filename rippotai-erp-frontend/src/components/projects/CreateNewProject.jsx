@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
-import { X, Plus } from "lucide-react";
+import { UserPlus } from "lucide-react";
+
+import { Button, Field, TextInput, SelectInput, TextArea, ChoiceGroup } from "@/components/inos";
+import { Modal } from "./_projects-ui";
 
 import { useCreateProjectMutation } from "../../api/projects/project.api";
 import { useGetProjectTypesQuery } from "../../api/projects/project-type.api";
@@ -139,206 +142,111 @@ export default function NewProjectModal({ open, onClose, onCreated }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bc-card w-full max-w-lg p-6 relative">
-        <button
-          type="button"
-          onClick={handleClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-black"
-          aria-label="Close"
-        >
-          <X size={18} />
-        </button>
+    <Modal
+      open
+      onClose={handleClose}
+      title="New project"
+      description="Only the name and site location are required."
+      width={560}
+      footer={
+        <>
+          <Button variant="ghost" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button variant="primary" type="submit" form="create-project-modal-form" loading={busy}>
+            Create project
+          </Button>
+        </>
+      }
+    >
+      <form id="create-project-modal-form" onSubmit={submit} className="inos-form-grid">
+        <Field label="Project name" required full>
+          <TextInput
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Riverside Tower"
+            required
+          />
+        </Field>
 
-        <p className="uppercase tracking-widest text-xs text-gray-400">
-          New Project
-        </p>
-        <h2 className="text-xl font-bold mt-1 mb-5">Create Project</h2>
+        <Field label="Site location" required full>
+          <TextInput
+            value={siteLocation}
+            onChange={(e) => setSiteLocation(e.target.value)}
+            placeholder="e.g. Sector 21, Gurugram"
+            required
+          />
+        </Field>
 
-        <form onSubmit={submit} className="space-y-4">
-          <div>
-            <label className="block mb-2 text-sm font-medium">
-              Project Name *
-            </label>
-            <input
-              className="bc-input"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Riverside Tower"
-              required
-            />
-          </div>
+        <Field label="Client" optional>
+          <SelectInput value={showNewClient ? "__new__" : clientId} onChange={handleClientSelectChange} disabled={clientsLoading}>
+            <option value="">{clientsLoading || clientsFetching ? "Loading…" : "Select client"}</option>
+            {clients.map((client) => (
+              <option key={client.id} value={client.id}>
+                {client.name}
+              </option>
+            ))}
+            <option value="__new__">+ Add new client</option>
+          </SelectInput>
+        </Field>
 
-          <div>
-            <label className="block mb-2 text-sm font-medium">
-              Site Location *
-            </label>
-            <input
-              className="bc-input"
-              value={siteLocation}
-              onChange={(e) => setSiteLocation(e.target.value)}
-              placeholder="e.g. Sector 21, Gurugram"
-              required
-            />
-          </div>
+        <Field label="Project type" optional>
+          <SelectInput value={projectTypeId} onChange={(e) => setProjectTypeId(e.target.value)} disabled={projectTypesLoading}>
+            <option value="">{projectTypesLoading ? "Loading…" : "Select type"}</option>
+            {projectTypes.map((type) => (
+              <option key={type.id} value={type.id}>
+                {type.name}
+              </option>
+            ))}
+          </SelectInput>
+        </Field>
 
-          <div className="grid grid-cols-2 gap-4">
+        {showNewClient && (
+          <div className="pj-inline-panel">
+            <div className="pj-inline-panel__head">
+              <span className="pj-inline-panel__title">
+                <UserPlus size={15} aria-hidden /> New client
+              </span>
+              <Button variant="ghost" size="sm" onClick={cancelNewClient}>
+                Cancel
+              </Button>
+            </div>
+            <TextInput value={newClientName} onChange={(e) => setNewClientName(e.target.value)} placeholder="Client name" aria-label="Client name" />
+            <div className="inos-form-grid">
+              <TextInput value={newClientEmail} onChange={(e) => setNewClientEmail(e.target.value)} placeholder="Email (optional)" type="email" aria-label="Client email" />
+              <TextInput value={newClientPhone} onChange={(e) => setNewClientPhone(e.target.value)} placeholder="Phone (optional)" aria-label="Client phone" />
+            </div>
             <div>
-              <label className="block mb-2 text-sm font-medium">Client</label>
-              <select
-                className="bc-input"
-                value={showNewClient ? "__new__" : clientId}
-                onChange={handleClientSelectChange}
-                disabled={clientsLoading}
-              >
-                <option value="">
-                  {clientsLoading || clientsFetching
-                    ? "Loading..."
-                    : "Select Client"}
-                </option>
-
-                {clients.map((client) => (
-                  <option key={client.id} value={client.id}>
-                    {client.name}
-                  </option>
-                ))}
-
-                <option value="__new__">+ Add New Client</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium">
-                Project Type
-              </label>
-              <select
-                className="bc-input"
-                value={projectTypeId}
-                onChange={(e) => setProjectTypeId(e.target.value)}
-                disabled={projectTypesLoading}
-              >
-                <option value="">
-                  {projectTypesLoading ? "Loading..." : "Select Type"}
-                </option>
-
-                {projectTypes.map((type) => (
-                  <option key={type.id} value={type.id}>
-                    {type.name}
-                  </option>
-                ))}
-              </select>
+              <Button variant="soft" onClick={saveNewClient} loading={creatingClient}>
+                Save client
+              </Button>
             </div>
           </div>
+        )}
 
-          {showNewClient && (
-            <div className="rounded-xl border border-dashed p-4 space-y-3 bg-gray-50">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium flex items-center gap-1.5">
-                  <Plus size={14} /> New Client
-                </p>
-                <button
-                  type="button"
-                  onClick={cancelNewClient}
-                  className="text-xs text-gray-400 hover:text-black"
-                >
-                  Cancel
-                </button>
-              </div>
+        <Field label="Priority" full>
+          <ChoiceGroup
+            name="Priority"
+            value={priority}
+            onChange={setPriority}
+            options={[
+              { value: "LOW", label: "Low" },
+              { value: "MEDIUM", label: "Medium" },
+              { value: "HIGH", label: "High" },
+              { value: "CRITICAL", label: "Critical" },
+            ]}
+          />
+        </Field>
 
-              <input
-                className="bc-input"
-                value={newClientName}
-                onChange={(e) => setNewClientName(e.target.value)}
-                placeholder="Client name *"
-              />
+        <Field label="Expected completion" optional>
+          <TextInput type="date" value={expectedCompletionDate} onChange={(e) => setExpectedCompletionDate(e.target.value)} />
+        </Field>
 
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  className="bc-input"
-                  value={newClientEmail}
-                  onChange={(e) => setNewClientEmail(e.target.value)}
-                  placeholder="Email (optional)"
-                  type="email"
-                />
-                <input
-                  className="bc-input"
-                  value={newClientPhone}
-                  onChange={(e) => setNewClientPhone(e.target.value)}
-                  placeholder="Phone (optional)"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={saveNewClient}
-                disabled={creatingClient}
-                className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-sm"
-              >
-                {creatingClient ? "Saving..." : "Save Client"}
-              </button>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block mb-2 text-sm font-medium">Priority</label>
-              <select
-                className="bc-input"
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-              >
-                <option value="LOW">Low</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="HIGH">High</option>
-                <option value="URGENT">Urgent</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium">
-                Expected Completion
-              </label>
-              <input
-                type="date"
-                className="bc-input"
-                value={expectedCompletionDate}
-                onChange={(e) => setExpectedCompletionDate(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block mb-2 text-sm font-medium">
-              Description
-            </label>
-            <textarea
-              className="bc-input"
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional notes about this project"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="h-11 px-5 rounded-xl border"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              disabled={busy}
-              className="flex-1 h-11 rounded-xl bg-[#1F453B] text-white flex items-center justify-center gap-2"
-            >
-              {busy ? "Creating..." : "Create Project"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <Field label="Description" optional full>
+          <TextArea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short brief for the team" />
+        </Field>
+      </form>
+    </Modal>
   );
 }

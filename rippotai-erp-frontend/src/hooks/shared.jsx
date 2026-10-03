@@ -6,7 +6,7 @@ import { toast } from "sonner";
 // hits the endpoint anonymously and gets 401 + JSON body that fails to open.
 export async function downloadDocument(docId, filename) {
   try {
-    const res = await api.get(`/documents/${docId}/download`, {
+    const res = await api.get(`/v1/documents/${docId}/download`, {
       responseType: "blob",
     });
     const mime = res.headers?.["content-type"] || "application/octet-stream";

@@ -1,50 +1,68 @@
-import React, { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Input } from "../../hooks/shared";
+import { Plus } from "lucide-react";
+import { Button, TextInput, EmptyState } from "@/components/inos";
+import {
+  LineTable,
+  RemoveRow,
+  AddRow,
+  TotalsCard,
+  Affix,
+  inr,
+  todayISO,
+} from "@/components/forms/commerce-form-ui";
 import BudgetSectionForm from "../../components/budget-estimates/BudgetSectionForm";
 import { useAutoSave } from "../../hooks/use-autosave";
 import { useGetProjectsQuery } from "../../api/projects/project.api";
-import { useCreateBudgetEstimateMutation } from "../../api/documents/budget-estimates.api";
+import {
+  useCreateBudgetEstimateMutation,
+  useGetBudgetEstimateQuery,
+  useUpdateBudgetEstimateMutation,
+} from "../../api/documents/budget-estimates.api";
 
 const SAVE_KEY = "bc.budget-estimate.draft";
 
 const BUDGET_SECTIONS = [
   {
     key: "basic",
-    title: "Basic Information",
+    title: "Estimate details",
+    description: "Name the estimate and who it is for.",
     fields: [
       {
         key: "estimate_number",
-        label: "Estimate Number",
+        label: "Estimate number",
+        description: "Leave blank to auto-generate.",
         type: "text",
-        placeholder: "Auto-generated if left blank",
+        placeholder: "e.g. EST-2026-031",
       },
       {
         key: "title",
-        label: "Estimate Title",
+        label: "Estimate title",
         type: "text",
-        placeholder: "Enter estimate title",
+        placeholder: "e.g. Kapoor Farmhouse — interiors budget",
         required: true,
       },
       {
         key: "estimate_date",
-        label: "Estimate Date",
+        label: "Estimate date",
         type: "date",
       },
       {
         key: "client_name",
-        label: "Client Name",
+        label: "Client name",
         type: "text",
+        placeholder: "e.g. Mr. & Mrs. Kapoor",
       },
       {
         key: "location",
         label: "Location",
         type: "text",
+        placeholder: "e.g. Chhatarpur, New Delhi",
       },
       {
         key: "prepared_by",
-        label: "Prepared By",
+        label: "Prepared by",
         type: "text",
       },
     ],
@@ -52,49 +70,57 @@ const BUDGET_SECTIONS = [
 
   {
     key: "amounts",
-    title: "Estimate Amounts",
+    title: "Amounts",
+    description: "Headline figures. Miscellaneous % and tax % apply on top; discount comes off before tax.",
     fields: [
       {
         key: "design_amount",
-        label: "Design Amount",
+        label: "Design",
+        affix: "₹",
         type: "number",
         step: "0.01",
       },
       {
         key: "execution_amount",
-        label: "Execution Amount",
+        label: "Execution",
+        affix: "₹",
         type: "number",
         step: "0.01",
       },
       {
         key: "supervisor_amount",
-        label: "Supervisor Amount",
+        label: "Supervision",
+        affix: "₹",
         type: "number",
         step: "0.01",
       },
       {
         key: "additional_amount",
-        label: "Additional Amount",
+        label: "Additional",
+        affix: "₹",
         type: "number",
         step: "0.01",
       },
       {
         key: "misc_percentage",
-        label: "Miscellaneous %",
+        label: "Miscellaneous",
+        affix: "%",
         type: "number",
         min: 0,
         step: "0.01",
       },
       {
         key: "tax_percentage",
-        label: "Tax %",
+        label: "Tax",
+        affix: "%",
         type: "number",
         min: 0,
         step: "0.01",
       },
       {
         key: "discount_amount",
-        label: "Discount Amount",
+        label: "Discount",
+        affix: "₹",
         type: "number",
         min: 0,
         step: "0.01",
@@ -104,24 +130,28 @@ const BUDGET_SECTIONS = [
 
   {
     key: "categories",
-    title: "Estimate Categories",
+    title: "Categories & items",
+    description: "Break the estimate into categories with quantity × rate lines.",
     type: "categories",
   },
 
   {
     key: "miscellaneous",
-    title: "Miscellaneous",
+    title: "Miscellaneous charges",
+    description: "One-off charges listed separately on the estimate.",
     type: "miscellaneous",
   },
 
   {
     key: "terms",
-    title: "Terms & Conditions",
+    title: "Terms & conditions",
+    description: "Printed at the end of the estimate.",
     fields: [
       {
         key: "terms_html",
-        label: "Terms & Conditions",
+        label: "Terms",
         type: "textarea",
+        placeholder: "e.g. Rates valid for 30 days. GST extra as applicable.",
         rows: 8,
         fullWidth: true,
       },
@@ -147,15 +177,77 @@ const nullableValue = (value) => {
   return value;
 };
 
+const dateOnly = (v) => (v ? String(v).slice(0, 10) : "");
+
+/** Server estimate → form values (edit mode). */
+function estimateToValues(e) {
+  const bySort = (a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0);
+  return {
+    project_id: e.project_id || "",
+    boq_id: e.boq_id || "",
+    source_template_id: e.source_template_id || "",
+    estimate_number: e.estimate_number || "",
+    title: e.title || "",
+    client_name: e.client_name || "",
+    location: e.location || "",
+    prepared_by: e.prepared_by || "",
+    estimate_date: dateOnly(e.estimate_date),
+    misc_percentage: Number(e.misc_percentage || 0),
+    design_amount: Number(e.design_amount || 0),
+    execution_amount: Number(e.execution_amount || 0),
+    supervisor_amount: Number(e.supervisor_amount || 0),
+    additional_amount: Number(e.additional_amount || 0),
+    tax_percentage: Number(e.tax_percentage || 0),
+    discount_amount: Number(e.discount_amount || 0),
+    terms_html: e.terms_html || "",
+    terms_template_id: e.terms_template_id || "",
+    terms_template_version: e.terms_template_version ?? null,
+    categories: [...(e.categories || [])].sort(bySort).map((c) => ({
+      library_category_id: c.library_category_id || null,
+      name: c.name || "",
+      sort_order: c.sort_order ?? 0,
+      items: [...(c.items || [])].sort(bySort).map((i) => ({
+        library_item_id: i.library_item_id || null,
+        boq_item_id: i.boq_item_id || null,
+        name: i.name || i.libraryItem?.name || "",
+        unit_id: i.unit_id || null,
+        unit: i.unit || null,
+        quantity: Number(i.quantity || 0),
+        rate: Number(i.rate || 0),
+        amount: i.amount != null ? Number(i.amount) : Number(i.quantity || 0) * Number(i.rate || 0),
+        calc_type: i.calc_type || "M",
+        location: i.location || null,
+        detail: i.detail || null,
+        notes: i.notes || null,
+        hidden: Boolean(i.hidden),
+        sort_order: i.sort_order ?? 0,
+      })),
+    })),
+    miscellaneous: [...(e.miscellaneous || [])].sort(bySort).map((m) => ({
+      name: m.name || "",
+      value: Number(m.value || 0),
+      notes: m.notes || "",
+      sort_order: m.sort_order ?? 0,
+    })),
+  };
+}
+
 export function BudgetEstimateForm() {
   const navigate = useNavigate();
+  const { id: editId } = useParams();
+  const isEdit = Boolean(editId);
 
   const { data: projects = [] } = useGetProjectsQuery();
 
-  const [createBudgetEstimate, { isLoading: isSubmitting }] =
+  const [createBudgetEstimate, { isLoading: isCreating }] =
     useCreateBudgetEstimateMutation();
+  const [updateBudgetEstimate, { isLoading: isUpdating }] =
+    useUpdateBudgetEstimateMutation();
+  const isSubmitting = isCreating || isUpdating;
 
-  const [values, setValues] = useAutoSave(SAVE_KEY, {
+  const { data: existing, isLoading: loadingExisting, isError: loadError } = useGetBudgetEstimateQuery(editId, { skip: !isEdit });
+
+  const [values, setValues] = useAutoSave(isEdit ? `${SAVE_KEY}.${editId}` : SAVE_KEY, {
     project_id: "",
     boq_id: "",
     source_template_id: "",
@@ -166,7 +258,7 @@ export function BudgetEstimateForm() {
     client_name: "",
     location: "",
     prepared_by: "",
-    estimate_date: "",
+    estimate_date: todayISO(),
 
     misc_percentage: 0,
 
@@ -187,6 +279,15 @@ export function BudgetEstimateForm() {
   });
 
   const projectId = values?.project_id || "";
+
+  // Edit mode: load the saved estimate into the form once (server copy wins over any local draft).
+  const loadedFor = useRef(null);
+  useEffect(() => {
+    if (isEdit && existing && loadedFor.current !== existing.id) {
+      loadedFor.current = existing.id;
+      setValues(estimateToValues(existing));
+    }
+  }, [isEdit, existing, setValues]);
 
   // ============================================================
   // FIELD CHANGE
@@ -279,7 +380,7 @@ export function BudgetEstimateForm() {
 
       title: values.title,
 
-      status: "draft",
+      ...(isEdit ? {} : { status: "draft" }),
 
       // --------------------------------------------------------
       // SNAPSHOT
@@ -415,7 +516,13 @@ export function BudgetEstimateForm() {
     try {
       const payload = buildPayload();
 
-      console.log("Creating Budget Estimate:", payload);
+      if (isEdit) {
+        const data = await updateBudgetEstimate({ id: editId, body: payload }).unwrap();
+        toast.success(`Budget estimate ${data?.estimate_number || ""} updated`);
+        localStorage.removeItem(`${SAVE_KEY}.${editId}`);
+        navigate(`/ledger/budget-estimate/${editId}`);
+        return;
+      }
 
       const data = await createBudgetEstimate(payload).unwrap();
 
@@ -428,17 +535,15 @@ export function BudgetEstimateForm() {
       localStorage.removeItem(SAVE_KEY);
 
       if (data?.id) {
-        navigate(`/budget-estimates/${data.id}`);
+        navigate(`/ledger/budget-estimate/${data.id}`);
       } else {
-        navigate("/budget-estimates");
+        navigate("/ledger/budget-estimates/all");
       }
     } catch (error) {
-      console.error("Budget estimate creation failed:", error);
-
       toast.error(
         error?.data?.message ||
           error?.message ||
-          "Failed to create budget estimate",
+          (isEdit ? "Failed to update budget estimate" : "Failed to create budget estimate"),
       );
     }
   };
@@ -447,411 +552,296 @@ export function BudgetEstimateForm() {
   // CUSTOM SECTIONS
   // ============================================================
 
+  const setCategories = (updater) =>
+    setValues((current) => ({ ...current, categories: updater([...(current.categories || [])]) }));
+
+  const setCategoryItem = (categoryIndex, itemIndex, patch) =>
+    setCategories((categories) => {
+      const items = [...(categories[categoryIndex].items || [])];
+      items[itemIndex] = patch(items[itemIndex]);
+      categories[categoryIndex] = { ...categories[categoryIndex], items };
+      return categories;
+    });
+
+  const addCategory = () =>
+    setValues((current) => ({
+      ...current,
+      categories: [
+        ...(current.categories || []),
+        {
+          library_category_id: null,
+          name: "",
+          sort_order: current.categories?.length || 0,
+          items: [],
+        },
+      ],
+    }));
+
+  const addCategoryItem = (categoryIndex) =>
+    setCategories((categories) => {
+      const category = categories[categoryIndex];
+      categories[categoryIndex] = {
+        ...category,
+        items: [
+          ...(category.items || []),
+          {
+            library_item_id: null,
+            boq_item_id: null,
+            name: "",
+            unit_id: null,
+            unit: null,
+            quantity: 0,
+            rate: 0,
+            amount: 0,
+            calc_type: "M",
+            location: null,
+            detail: null,
+            notes: null,
+            hidden: false,
+            sort_order: category.items?.length || 0,
+          },
+        ],
+      };
+      return categories;
+    });
+
+  const addMisc = () =>
+    setValues((current) => ({
+      ...current,
+      miscellaneous: [
+        ...(current.miscellaneous || []),
+        {
+          name: "",
+          value: 0,
+          notes: "",
+          sort_order: current.miscellaneous?.length || 0,
+        },
+      ],
+    }));
+
+  const setMisc = (index, patch) =>
+    setValues((current) => {
+      const miscellaneous = [...(current.miscellaneous || [])];
+      miscellaneous[index] = { ...miscellaneous[index], ...patch };
+      return { ...current, miscellaneous };
+    });
+
+  const removeMisc = (index) =>
+    setValues((current) => {
+      const miscellaneous = [...(current.miscellaneous || [])];
+      miscellaneous.splice(index, 1);
+      return { ...current, miscellaneous };
+    });
+
+  const categoriesTotal = (values.categories || []).reduce(
+    (sum, category) =>
+      sum + (category.items || []).reduce((s, item) => s + Number(item.amount || 0), 0),
+    0,
+  );
+
+  const miscTotal = (values.miscellaneous || []).reduce(
+    (sum, item) => sum + Number(item.value || 0),
+    0,
+  );
+
   const renderSection = (section) => {
     if (section.type === "categories") {
-      return (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-[#333333]">
-                Estimate Categories
-              </h3>
+      const categories = values.categories || [];
 
-              <p className="text-xs text-[#6B7B7C] mt-1">
-                Add categories and their estimate items.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setValues((current) => ({
-                  ...current,
-                  categories: [
-                    ...(current.categories || []),
-                    {
-                      library_category_id: null,
-                      name: "",
-                      sort_order: current.categories?.length || 0,
-                      items: [],
-                    },
-                  ],
-                }));
-              }}
-              className="h-9 px-3 rounded-lg bg-[#1F453B] text-white text-sm font-medium"
-            >
-              + Add Category
-            </button>
+      if (!categories.length) {
+        return (
+          <div className="cf-block">
+            <EmptyState
+              title="No categories yet"
+              text="Add a category such as Flooring or Carpentry, then its line items."
+              action={
+                <Button variant="soft" icon={Plus} onClick={addCategory}>
+                  Add category
+                </Button>
+              }
+            />
           </div>
+        );
+      }
 
-          {(values.categories || []).length === 0 ? (
-            <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
-              <p className="text-sm text-gray-500">No categories added yet.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {(values.categories || []).map((category, categoryIndex) => (
-                <div
-                  key={categoryIndex}
-                  className="rounded-xl border border-gray-200 p-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <Input
-                      value={category.name || ""}
-                      placeholder="Category name"
-                      onChange={(event) => {
-                        const categories = [...(values.categories || [])];
-
-                        categories[categoryIndex] = {
-                          ...categories[categoryIndex],
-                          name: event.target.value,
-                        };
-
-                        setValues((current) => ({
-                          ...current,
-                          categories,
-                        }));
-                      }}
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const categories = [...(values.categories || [])];
-
-                        categories.splice(categoryIndex, 1);
-
-                        setValues((current) => ({
-                          ...current,
-                          categories,
-                        }));
-                      }}
-                      className="h-10 px-3 rounded-lg border border-red-200 text-red-600 text-sm"
-                    >
-                      Remove
-                    </button>
-                  </div>
-
-                  <div className="mt-4 text-xs uppercase tracking-wide text-[#6B7B7C]">
-                    Items
-                  </div>
-
-                  <div className="mt-2 space-y-2">
-                    {(category.items || []).map((item, itemIndex) => (
-                      <div key={itemIndex} className="grid grid-cols-12 gap-2">
-                        <div className="col-span-4">
-                          <Input
-                            placeholder="Item name"
-                            value={item.name || ""}
-                            onChange={(event) => {
-                              const categories = [...(values.categories || [])];
-
-                              const items = [
-                                ...(categories[categoryIndex].items || []),
-                              ];
-
-                              items[itemIndex] = {
-                                ...items[itemIndex],
-                                name: event.target.value,
-                              };
-
-                              categories[categoryIndex] = {
-                                ...categories[categoryIndex],
-                                items,
-                              };
-
-                              setValues((current) => ({
-                                ...current,
-                                categories,
-                              }));
-                            }}
-                          />
-                        </div>
-
-                        <div className="col-span-2">
-                          <Input
-                            type="number"
-                            placeholder="Qty"
-                            value={item.quantity ?? ""}
-                            onChange={(event) => {
-                              const categories = [...(values.categories || [])];
-
-                              const items = [
-                                ...(categories[categoryIndex].items || []),
-                              ];
-
-                              const quantity = Number(event.target.value || 0);
-
-                              items[itemIndex] = {
-                                ...items[itemIndex],
-                                quantity,
-                                amount:
-                                  quantity * Number(items[itemIndex].rate || 0),
-                              };
-
-                              categories[categoryIndex] = {
-                                ...categories[categoryIndex],
-                                items,
-                              };
-
-                              setValues((current) => ({
-                                ...current,
-                                categories,
-                              }));
-                            }}
-                          />
-                        </div>
-
-                        <div className="col-span-2">
-                          <Input
-                            type="number"
-                            placeholder="Rate"
-                            value={item.rate ?? ""}
-                            onChange={(event) => {
-                              const categories = [...(values.categories || [])];
-
-                              const items = [
-                                ...(categories[categoryIndex].items || []),
-                              ];
-
-                              const rate = Number(event.target.value || 0);
-
-                              items[itemIndex] = {
-                                ...items[itemIndex],
-                                rate,
-                                amount:
-                                  Number(items[itemIndex].quantity || 0) * rate,
-                              };
-
-                              categories[categoryIndex] = {
-                                ...categories[categoryIndex],
-                                items,
-                              };
-
-                              setValues((current) => ({
-                                ...current,
-                                categories,
-                              }));
-                            }}
-                          />
-                        </div>
-
-                        <div className="col-span-3">
-                          <Input
-                            type="number"
-                            placeholder="Amount"
-                            value={item.amount ?? 0}
-                            readOnly
-                          />
-                        </div>
-
-                        <div className="col-span-1 flex items-center">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const categories = [...(values.categories || [])];
-
-                              const items = [
-                                ...(categories[categoryIndex].items || []),
-                              ];
-
-                              items.splice(itemIndex, 1);
-
-                              categories[categoryIndex] = {
-                                ...categories[categoryIndex],
-                                items,
-                              };
-
-                              setValues((current) => ({
-                                ...current,
-                                categories,
-                              }));
-                            }}
-                            className="text-red-500 text-sm"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const categories = [...(values.categories || [])];
-
-                      const category = categories[categoryIndex];
-
-                      categories[categoryIndex] = {
-                        ...category,
-                        items: [
-                          ...(category.items || []),
-                          {
-                            library_item_id: null,
-                            boq_item_id: null,
-                            name: "",
-                            unit_id: null,
-                            unit: null,
-                            quantity: 0,
-                            rate: 0,
-                            amount: 0,
-                            calc_type: "M",
-                            location: null,
-                            detail: null,
-                            notes: null,
-                            hidden: false,
-                            sort_order: category.items?.length || 0,
-                          },
-                        ],
-                      };
-
-                      setValues((current) => ({
-                        ...current,
-                        categories,
-                      }));
+      return (
+        <div style={{ display: "grid", gap: 14 }}>
+          {categories.map((category, categoryIndex) => {
+            const categorySum = (category.items || []).reduce((s, item) => s + Number(item.amount || 0), 0);
+            return (
+              <div key={categoryIndex} className="cf-block" style={{ padding: 0, gap: 0, overflow: "hidden" }}>
+                <div style={{ display: "flex", gap: 10, alignItems: "center", padding: "12px 14px" }}>
+                  <TextInput
+                    value={category.name || ""}
+                    placeholder="Category name, e.g. Flooring"
+                    aria-label={`Category ${categoryIndex + 1} name`}
+                    onChange={(event) => {
+                      const name = event.target.value;
+                      setCategories((list) => {
+                        list[categoryIndex] = { ...list[categoryIndex], name };
+                        return list;
+                      });
                     }}
-                    className="mt-3 text-sm font-medium text-[#1F453B]"
-                  >
-                    + Add Item
-                  </button>
+                    style={{ fontWeight: 600, maxWidth: 420 }}
+                  />
+                  <span className="tabular" style={{ marginLeft: "auto", fontWeight: 650, whiteSpace: "nowrap" }}>
+                    {inr(categorySum)}
+                  </span>
+                  <RemoveRow
+                    label="Remove category"
+                    onClick={() =>
+                      setCategories((list) => {
+                        list.splice(categoryIndex, 1);
+                        return list;
+                      })
+                    }
+                  />
                 </div>
-              ))}
-            </div>
-          )}
+                {(category.items || []).length > 0 && (
+                  <LineTable minWidth={560}>
+                    <thead>
+                      <tr>
+                        <th>Item</th>
+                        <th className="num" style={{ width: 110 }}>Qty</th>
+                        <th className="num" style={{ width: 140 }}>Rate</th>
+                        <th className="num" style={{ width: 140 }}>Amount</th>
+                        <th className="actions" aria-label="Row actions" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(category.items || []).map((item, itemIndex) => (
+                        <tr key={itemIndex}>
+                          <td>
+                            <TextInput
+                              placeholder="e.g. Italian marble laying"
+                              value={item.name || ""}
+                              onChange={(event) => {
+                                const name = event.target.value;
+                                setCategoryItem(categoryIndex, itemIndex, (it) => ({ ...it, name }));
+                              }}
+                            />
+                          </td>
+                          <td className="num">
+                            <TextInput
+                              type="number"
+                              inputMode="decimal"
+                              placeholder="0"
+                              value={item.quantity ?? ""}
+                              onChange={(event) => {
+                                const quantity = Number(event.target.value || 0);
+                                setCategoryItem(categoryIndex, itemIndex, (it) => ({
+                                  ...it,
+                                  quantity,
+                                  amount: quantity * Number(it.rate || 0),
+                                }));
+                              }}
+                            />
+                          </td>
+                          <td className="num">
+                            <Affix pre="₹">
+                              <TextInput
+                                type="number"
+                                inputMode="decimal"
+                                placeholder="0"
+                                value={item.rate ?? ""}
+                                onChange={(event) => {
+                                  const rate = Number(event.target.value || 0);
+                                  setCategoryItem(categoryIndex, itemIndex, (it) => ({
+                                    ...it,
+                                    rate,
+                                    amount: Number(it.quantity || 0) * rate,
+                                  }));
+                                }}
+                              />
+                            </Affix>
+                          </td>
+                          <td className="cf-amount">{inr(item.amount ?? 0)}</td>
+                          <td className="actions">
+                            <RemoveRow
+                              onClick={() =>
+                                setCategories((list) => {
+                                  const items = [...(list[categoryIndex].items || [])];
+                                  items.splice(itemIndex, 1);
+                                  list[categoryIndex] = { ...list[categoryIndex], items };
+                                  return list;
+                                })
+                              }
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </LineTable>
+                )}
+                <div className="cf-section__footer" style={{ background: "transparent" }}>
+                  <AddRow onClick={() => addCategoryItem(categoryIndex)}>Add item</AddRow>
+                </div>
+              </div>
+            );
+          })}
+          <div>
+            <Button variant="secondary" size="sm" icon={Plus} onClick={addCategory}>
+              Add category
+            </Button>
+          </div>
         </div>
       );
     }
 
     if (section.type === "miscellaneous") {
+      const misc = values.miscellaneous || [];
       return (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-[#333333]">
-                Miscellaneous Charges
-              </h3>
-
-              <p className="text-xs text-[#6B7B7C] mt-1">
-                Add additional miscellaneous estimate values.
-              </p>
+        <div style={{ display: "grid", gap: 10 }}>
+          {misc.length > 0 && (
+            <div className="cf-block" style={{ padding: 0, overflow: "hidden" }}>
+              <LineTable minWidth={560}>
+                <thead>
+                  <tr>
+                    <th>Charge</th>
+                    <th className="num" style={{ width: 160 }}>Value</th>
+                    <th>Notes</th>
+                    <th className="actions" aria-label="Row actions" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {misc.map((item, index) => (
+                    <tr key={index}>
+                      <td>
+                        <TextInput
+                          value={item.name || ""}
+                          placeholder="e.g. Debris removal"
+                          onChange={(event) => setMisc(index, { name: event.target.value })}
+                        />
+                      </td>
+                      <td className="num">
+                        <Affix pre="₹">
+                          <TextInput
+                            type="number"
+                            inputMode="decimal"
+                            value={item.value ?? 0}
+                            onChange={(event) => setMisc(index, { value: Number(event.target.value || 0) })}
+                          />
+                        </Affix>
+                      </td>
+                      <td>
+                        <TextInput
+                          value={item.notes || ""}
+                          placeholder="Optional"
+                          onChange={(event) => setMisc(index, { notes: event.target.value })}
+                        />
+                      </td>
+                      <td className="actions">
+                        <RemoveRow onClick={() => removeMisc(index)} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </LineTable>
             </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setValues((current) => ({
-                  ...current,
-                  miscellaneous: [
-                    ...(current.miscellaneous || []),
-                    {
-                      name: "",
-                      value: 0,
-                      notes: "",
-                      sort_order: current.miscellaneous?.length || 0,
-                    },
-                  ],
-                }));
-              }}
-              className="h-9 px-3 rounded-lg bg-[#1F453B] text-white text-sm font-medium"
-            >
-              + Add
-            </button>
+          )}
+          <div>
+            <AddRow onClick={addMisc}>Add charge</AddRow>
           </div>
-
-          {(values.miscellaneous || []).map((item, index) => (
-            <div
-              key={index}
-              className="grid md:grid-cols-[1fr_180px_1fr_auto] gap-3 items-end rounded-lg border border-gray-200 p-3"
-            >
-              <div>
-                <label className="text-xs font-semibold block mb-1">Name</label>
-
-                <Input
-                  value={item.name || ""}
-                  placeholder="Charge name"
-                  onChange={(event) => {
-                    const miscellaneous = [...(values.miscellaneous || [])];
-
-                    miscellaneous[index] = {
-                      ...miscellaneous[index],
-                      name: event.target.value,
-                    };
-
-                    setValues((current) => ({
-                      ...current,
-                      miscellaneous,
-                    }));
-                  }}
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold block mb-1">
-                  Value
-                </label>
-
-                <Input
-                  type="number"
-                  value={item.value ?? 0}
-                  onChange={(event) => {
-                    const miscellaneous = [...(values.miscellaneous || [])];
-
-                    miscellaneous[index] = {
-                      ...miscellaneous[index],
-                      value: Number(event.target.value || 0),
-                    };
-
-                    setValues((current) => ({
-                      ...current,
-                      miscellaneous,
-                    }));
-                  }}
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold block mb-1">
-                  Notes
-                </label>
-
-                <Input
-                  value={item.notes || ""}
-                  placeholder="Optional notes"
-                  onChange={(event) => {
-                    const miscellaneous = [...(values.miscellaneous || [])];
-
-                    miscellaneous[index] = {
-                      ...miscellaneous[index],
-                      notes: event.target.value,
-                    };
-
-                    setValues((current) => ({
-                      ...current,
-                      miscellaneous,
-                    }));
-                  }}
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  const miscellaneous = [...(values.miscellaneous || [])];
-
-                  miscellaneous.splice(index, 1);
-
-                  setValues((current) => ({
-                    ...current,
-                    miscellaneous,
-                  }));
-                }}
-                className="h-10 px-3 rounded-lg border border-red-200 text-red-600 text-sm"
-              >
-                Remove
-              </button>
-            </div>
-          ))}
         </div>
       );
     }
@@ -859,10 +849,34 @@ export function BudgetEstimateForm() {
     return null;
   };
 
+  if (isEdit && (loadingExisting || loadError || existing?.locked)) {
+    return (
+      <div className="inos-page inos-page--narrow" style={{ paddingTop: 32 }}>
+        <EmptyState
+          title={loadingExisting ? "Loading estimate…" : loadError ? "Estimate not found" : "This estimate is locked"}
+          text={existing?.locked ? "Unlock it from the estimate page before editing." : undefined}
+          action={
+            !loadingExisting && (
+              <Button variant="soft" onClick={() => navigate(`/ledger/budget-estimate/${editId}`)}>
+                Back to estimate
+              </Button>
+            )
+          }
+        />
+      </div>
+    );
+  }
+
   return (
     <BudgetSectionForm
-      title="Budget Estimate"
-      subtitle="Create and manage project budget estimates, categories, quantities, rates, taxes and miscellaneous charges."
+      title={isEdit ? `Edit ${existing?.estimate_number || "budget estimate"}` : "New budget estimate"}
+      subtitle="Headline amounts, category lines and charges — totals update as you type."
+      crumbs={[
+        { label: "Ledger", to: "/ledger" },
+        { label: "Budget estimates", to: "/ledger/budget-estimates/all" },
+        ...(isEdit ? [{ label: existing?.estimate_number || "Estimate", to: `/ledger/budget-estimate/${editId}` }, { label: "Edit" }] : [{ label: "New" }]),
+      ]}
+      onCancel={() => navigate(-1)}
       sections={BUDGET_SECTIONS}
       values={values}
       onFieldChange={handleFieldChange}
@@ -872,58 +886,26 @@ export function BudgetEstimateForm() {
       onSubmit={handleSubmit}
       isSubmitting={isSubmitting}
       renderSection={renderSection}
-      submitLabel="Save Estimate"
-    >
-      {/* ======================================================
-          TOTAL SUMMARY
-      ======================================================= */}
-
-      <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <div className="text-xs text-[#6B7B7C]">Subtotal</div>
-
-          <div className="mt-1 text-lg font-semibold">
-            ₹
-            {totals.subtotal.toLocaleString("en-IN", {
-              minimumFractionDigits: 2,
-            })}
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <div className="text-xs text-[#6B7B7C]">Miscellaneous</div>
-
-          <div className="mt-1 text-lg font-semibold">
-            ₹
-            {totals.miscAmount.toLocaleString("en-IN", {
-              minimumFractionDigits: 2,
-            })}
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <div className="text-xs text-[#6B7B7C]">Tax</div>
-
-          <div className="mt-1 text-lg font-semibold">
-            ₹
-            {totals.taxAmount.toLocaleString("en-IN", {
-              minimumFractionDigits: 2,
-            })}
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-[#1F453B]/20 bg-[#1F453B]/5 p-4">
-          <div className="text-xs text-[#6B7B7C]">Total Estimate</div>
-
-          <div className="mt-1 text-xl font-bold text-[#1F453B]">
-            ₹
-            {totals.total.toLocaleString("en-IN", {
-              minimumFractionDigits: 2,
-            })}
-          </div>
-        </div>
-      </div>
-    </BudgetSectionForm>
+      submitLabel={isEdit ? "Save changes" : "Save estimate"}
+      aside={
+        <TotalsCard
+          title="Summary"
+          rows={[
+            { label: "Subtotal", value: inr(totals.subtotal) },
+            { label: `Miscellaneous${Number(values.misc_percentage) ? ` (${values.misc_percentage}%)` : ""}`, value: inr(totals.miscAmount) },
+            { label: "Discount", value: `− ${inr(values.discount_amount || 0)}` },
+            { label: `Tax${Number(values.tax_percentage) ? ` (${values.tax_percentage}%)` : ""}`, value: inr(totals.taxAmount) },
+          ]}
+          totalLabel="Total estimate"
+          total={inr(totals.total)}
+          meta={
+            categoriesTotal || miscTotal
+              ? `Category lines ${inr(categoriesTotal)} · Charges ${inr(miscTotal)}`
+              : null
+          }
+        />
+      }
+    />
   );
 }
 

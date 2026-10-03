@@ -13,6 +13,8 @@ import { Project } from '@/modules/projects/models/projects.model';
 
 @Table({
   tableName: 'quotation_comparisons',
+  // DB columns are camelCase (override global underscored:true)
+  underscored: false,
   timestamps: true,
   paranoid: false,
 })
