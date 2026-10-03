@@ -1,198 +1,119 @@
-// src/pages/automation/AutomationRunDetails.jsx
-
+// Automation — one run: the record it matched, conditions checked, actions taken.
 import React from "react";
-import {
-  ArrowLeft,
-  CheckCircle2,
-  Clock3,
-  Copy,
-  RefreshCcw,
-  Terminal,
-  XCircle,
-  Zap,
-} from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Activity, CheckCircle2, Circle, XCircle } from "lucide-react";
+import { Page, PageHeader, Card, Button, EmptyState, Pill } from "@/components/inos";
+import { useGetAutomationRunQuery } from "@/api/automation/automation.api";
+import { autoCrumbs, RunStatus, fmtWhen } from "./_automation-ui";
 
-import { automationRuns } from "../../data/automationMockData";
+const ICON = {
+  SUCCESS: <CheckCircle2 size={18} style={{ color: "var(--ok-dot)" }} aria-label="Done" />,
+  FAILED: <XCircle size={18} style={{ color: "var(--bad-dot)" }} aria-label="Failed" />,
+  SKIPPED: <Circle size={18} style={{ color: "var(--line-strong)" }} aria-label="Skipped" />,
+};
+const SOURCE = { schedule: "Scheduled check", event: "Event hook", manual: "Run now", test: "Test" };
+
+const Row = ({ label, children }) => (
+  <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: 12, fontSize: 14, padding: "6px 0" }}>
+    <span style={{ color: "var(--text-3)" }}>{label}</span>
+    <span>{children ?? "—"}</span>
+  </div>
+);
+
+const pretty = (k) => k.replace(/_/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^\w/, (c) => c.toUpperCase());
 
 export default function AutomationRunDetails() {
-  const run = automationRuns[3];
+  const { id } = useParams();
+  const nav = useNavigate();
+  const { data: run, isLoading, isError } = useGetAutomationRunQuery(id);
+
+  if (isLoading)
+    return (
+      <Page width="narrow">
+        <PageHeader crumbs={autoCrumbs({ label: "Run log", to: "/automation/runs" }, { label: "Run" })} title="Run" subtitle="Loading…" />
+      </Page>
+    );
+  if (isError || !run)
+    return (
+      <Page width="narrow">
+        <PageHeader crumbs={autoCrumbs({ label: "Run log", to: "/automation/runs" }, { label: "Run" })} title="Run" />
+        <Card>
+          <EmptyState icon={Activity} title="Run not found" action={<Button onClick={() => nav("/automation/runs")}>Back to run log</Button>} />
+        </Card>
+      </Page>
+    );
+
+  const payload = Object.entries(run.payload || {}).filter(
+    ([k, v]) => v !== null && v !== "" && !["entity_id", "project_id", "assigneeId", "entity_label"].includes(k),
+  );
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-6">
-      <div className="mx-auto max-w-[1400px] space-y-6">
-        <button className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900">
-          <ArrowLeft size={16} />
-          Back to Run Logs
-        </button>
+    <Page width="narrow">
+      <PageHeader
+        crumbs={autoCrumbs({ label: "Run log", to: "/automation/runs" }, { label: run.number })}
+        title={run.rule || "Deleted rule"}
+        subtitle={
+          <span style={{ display: "inline-flex", gap: 10, alignItems: "center" }}>
+            {run.number} · {run.entity} <RunStatus status={run.status} />
+          </span>
+        }
+        actions={
+          run.ruleId && (
+            <Button variant="secondary" onClick={() => nav(`/automation/rules/${run.ruleId}/edit`)}>
+              Open rule
+            </Button>
+          )
+        }
+      />
 
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <div className="mb-2 flex items-center gap-2 text-sm text-slate-500">
-              <Zap size={16} />
-              Automation Center / Run Details
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl font-bold text-slate-900">{run.rule}</h1>
-
-              <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-bold text-red-700">
-                FAILED
-              </span>
-            </div>
-
-            <p className="mt-2 font-mono text-xs text-slate-400">{run.id}</p>
+      {run.error && (
+        <Card inset>
+          <div style={{ color: "var(--bad-fg)", fontSize: 14 }}>
+            <b>Error:</b> {run.error}
           </div>
+        </Card>
+      )}
 
-          <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm">
-            <RefreshCcw size={16} />
-            Retry Execution
-          </button>
-        </div>
+      <Card title="Summary">
+        <Row label="Trigger">{run.trigger}</Row>
+        <Row label="Record">{run.entity}</Row>
+        <Row label="Project">{run.project}</Row>
+        <Row label="Started by">{SOURCE[run.source] || run.source}</Row>
+        <Row label="When">{fmtWhen(run.startedAt)}</Row>
+        <Row label="Duration">{run.durationMs != null ? `${run.durationMs} ms` : "—"}</Row>
+      </Card>
 
-        {/* Summary */}
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-xs font-semibold uppercase text-slate-400">
-              Project
-            </p>
-            <p className="mt-2 font-semibold text-slate-800">{run.project}</p>
+      <Card title="Conditions" subtitle={run.conditions?.length ? "All must pass." : "No conditions — every matching record runs."}>
+        {(run.conditions || []).map((c, i) => (
+          <div key={i} style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14, padding: "6px 0" }}>
+            {c.passed ? ICON.SUCCESS : ICON.FAILED}
+            {c.label}
           </div>
+        ))}
+      </Card>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-xs font-semibold uppercase text-slate-400">
-              Phase
-            </p>
-            <p className="mt-2 font-semibold text-slate-800">{run.phase}</p>
+      <Card title="Actions">
+        {(run.actions || []).map((a, i) => (
+          <div key={i} style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14, padding: "6px 0" }}>
+            {ICON[a.status] || ICON.SKIPPED}
+            <span style={{ flex: 1 }}>{a.label}</span>
+            {a.detail && !/^[0-9a-f-]{36}$/.test(a.detail) && <span style={{ color: "var(--text-3)", fontSize: 13 }}>{a.detail}</span>}
+            <Pill size="sm" tone={a.status === "SUCCESS" ? "ok" : a.status === "FAILED" ? "bad" : "mute"}>
+              {String(a.status).toLowerCase()}
+            </Pill>
           </div>
+        ))}
+      </Card>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-xs font-semibold uppercase text-slate-400">
-              Trigger
-            </p>
-            <p className="mt-2 font-semibold text-slate-800">{run.trigger}</p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-xs font-semibold uppercase text-slate-400">
-              Duration
-            </p>
-            <p className="mt-2 flex items-center gap-2 font-semibold text-slate-800">
-              <Clock3 size={16} />
-              {run.duration}ms
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-xs font-semibold uppercase text-slate-400">
-              Started
-            </p>
-            <p className="mt-2 font-semibold text-slate-800">{run.startedAt}</p>
-          </div>
-        </div>
-
-        {/* Error */}
-        {run.error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
-            <div className="flex items-start gap-3">
-              <XCircle className="mt-0.5 shrink-0 text-red-600" size={20} />
-
-              <div>
-                <p className="font-semibold text-red-900">
-                  Automation execution failed
-                </p>
-
-                <p className="mt-1 text-sm leading-6 text-red-700">
-                  {run.error}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="grid gap-6 xl:grid-cols-2">
-          {/* Conditions */}
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 p-5">
-              <h2 className="font-semibold text-slate-900">
-                Conditions Evaluated
-              </h2>
-            </div>
-
-            <div className="divide-y divide-slate-100">
-              {run.conditions.map((condition) => (
-                <div
-                  key={condition.label}
-                  className="flex items-center gap-3 p-4"
-                >
-                  <CheckCircle2
-                    size={18}
-                    className={
-                      condition.passed ? "text-emerald-500" : "text-red-500"
-                    }
-                  />
-
-                  <span className="text-sm text-slate-700">
-                    {condition.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 p-5">
-              <h2 className="font-semibold text-slate-900">Actions Executed</h2>
-            </div>
-
-            <div className="divide-y divide-slate-100">
-              {run.actions.map((action) => (
-                <div
-                  key={action.label}
-                  className="flex items-center justify-between gap-4 p-4"
-                >
-                  <div className="flex items-center gap-3">
-                    {action.status === "SUCCESS" ? (
-                      <CheckCircle2 size={18} className="text-emerald-500" />
-                    ) : action.status === "FAILED" ? (
-                      <XCircle size={18} className="text-red-500" />
-                    ) : (
-                      <Clock3 size={18} className="text-slate-400" />
-                    )}
-
-                    <span className="text-sm text-slate-700">
-                      {action.label}
-                    </span>
-                  </div>
-
-                  <span className="text-xs font-semibold text-slate-500">
-                    {action.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Payload */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 p-5">
-            <div className="flex items-center gap-2">
-              <Terminal size={18} className="text-[#1F453B]" />
-              <h2 className="font-semibold text-slate-900">Event Payload</h2>
-            </div>
-
-            <button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100">
-              <Copy size={14} />
-              Copy JSON
-            </button>
-          </div>
-
-          <pre className="overflow-x-auto bg-slate-950 p-5 text-sm leading-6 text-slate-200">
-            {JSON.stringify(run.payload, null, 2)}
-          </pre>
-        </div>
-      </div>
-    </div>
+      {payload.length > 0 && (
+        <Card title="Record data" subtitle="The values the conditions and messages used.">
+          {payload.map(([k, v]) => (
+            <Row key={k} label={pretty(k)}>
+              {typeof v === "object" ? JSON.stringify(v) : String(v)}
+            </Row>
+          ))}
+        </Card>
+      )}
+    </Page>
   );
 }

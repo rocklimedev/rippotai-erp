@@ -35,6 +35,11 @@ export class MicrosoftOneDriveController {
   // CENTRAL DRIVE
   // ============================================================
 
+  @Get('status')
+  async getStatus(@Req() req: RequestWithUser) {
+    return this.oneDriveService.getStatus(req.user.id);
+  }
+
   @Get()
   async getDrive(@Req() req: RequestWithUser) {
     return this.oneDriveService.getDrive(req.user.id);

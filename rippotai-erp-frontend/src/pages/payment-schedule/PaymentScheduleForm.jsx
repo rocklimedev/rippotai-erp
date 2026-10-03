@@ -1,7 +1,18 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus, Trash2, Wand2, Pencil, Eye, Code, Loader2 } from "lucide-react";
+import { Plus, Trash2, Wand2, Pencil, Eye, Code, Loader2, ArrowUp, ArrowDown } from "lucide-react";
+import { Button, Field, TextInput, SelectInput, TextArea, EmptyState, Page } from "@/components/inos";
+import {
+  Grid,
+  Affix,
+  TotalsCard,
+  Callout,
+  IconAction,
+  RemoveRow,
+  LoadingBlock,
+  inr,
+} from "@/components/forms/commerce-form-ui";
 
 import { PaymentSectionForm } from "../../components/payments/PaymentSectionForm";
 import { useAutoSave } from "../../hooks/use-autosave";
@@ -126,7 +137,10 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
   // PROJECT
   // ============================================================
 
-  const [projectId, setProjectId] = React.useState("");
+  const [searchParams] = useSearchParams();
+  const [projectId, setProjectId] = React.useState(
+    () => (!isEdit && (searchParams.get("projectId") || searchParams.get("project_id"))) || "",
+  );
 
   // ============================================================
   // FORM STATE
@@ -340,200 +354,88 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
 
   const renderOverviewSection = () => {
     return (
-      <div className="space-y-6">
-        <div>
-          <h3 className="text-lg font-semibold">Overview</h3>
-          <p className="text-sm text-[#6B7B7C] mt-1">
-            Total contract value, GST and terms for this payment schedule.
-            Milestone amounts are calculated from the percentages (or vice
-            versa) set on the next section.
-          </p>
-        </div>
+      <Grid cols={2}>
+        <Field label="Title" full htmlFor="ps-title">
+          <TextInput
+            id="ps-title"
+            value={overview.title || ""}
+            onChange={(e) => handleFieldChange("Overview", "title", e.target.value)}
+            placeholder="e.g. Payment schedule — interiors"
+          />
+        </Field>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* TITLE */}
-          <div className="md:col-span-2">
-            <label className="bc-label">Title</label>
-            <input
-              type="text"
-              value={overview.title || ""}
-              onChange={(e) =>
-                handleFieldChange("Overview", "title", e.target.value)
-              }
-              placeholder="Payment Schedule"
-              className="bc-input w-full"
-            />
-          </div>
-
-          {/* TERMS TEMPLATE + ACTIONS */}
-          <div className="md:col-span-2">
-            <div className="flex items-center justify-between mb-1">
-              <label className="bc-label">Terms & Conditions</label>
-
-              <div className="flex items-center gap-2">
-                {selectedTermsTemplate && (
-                  <button
-                    type="button"
-                    onClick={() => openEditContent(selectedTermsTemplate)}
-                    className="flex items-center gap-1.5 text-xs font-medium text-[#1F453B] hover:underline"
-                  >
-                    <Pencil size={13} />
-                    Edit
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => setCreateOpen(true)}
-                  className="flex items-center gap-1.5 text-xs font-medium text-[#1F453B] hover:underline"
-                >
-                  <Plus size={13} />
-                  New Template
-                </button>
-              </div>
-            </div>
-
-            <select
-              className="bc-input w-full"
-              value={overview.terms_template_id || ""}
-              onChange={(e) => handleTermsTemplateChange(e.target.value)}
-              disabled={isTermsLoading}
-            >
-              <option value="">
-                {isTermsLoading
-                  ? "Loading terms templates..."
-                  : "Select Terms Template"}
-              </option>
-
-              {termsTemplates.map((template) => (
-                <option key={template.id} value={template.id}>
-                  {template.name}
-                  {template.is_default ? " (Default)" : ""}
-                  {` — v${template.current_version}`}
-                </option>
-              ))}
-            </select>
-
-            <p className="text-[11px] text-[#94A3A5] mt-1">
-              Select the terms and conditions that will be attached to this
-              payment schedule. You can also create a new template or edit the
-              selected one.
-            </p>
-
-            {!isTermsLoading && termsTemplates.length === 0 && (
-              <p className="text-[11px] text-amber-600 mt-1">
-                No active terms templates are available. Create one with “New
-                Template”.
-              </p>
-            )}
-          </div>
-
-          {/* TERMS VERSION */}
-          {overview.terms_template_id && (
-            <div className="md:col-span-2">
-              <label className="bc-label">Terms Version</label>
-              <input
-                type="text"
-                readOnly
-                value={
-                  overview.terms_version
-                    ? `Version ${overview.terms_version}`
-                    : ""
-                }
-                className="bc-input w-full bg-gray-50 text-[#6B7B7C]"
-              />
-              <p className="text-[11px] text-[#94A3A5] mt-1">
-                The template's current version is automatically selected. The
-                payment schedule stores this version so historical schedules
-                remain unchanged if the template is updated later.
-              </p>
-
-              {selectedTermsTemplate && (
-                <p className="text-[11px] text-[#6B7B7C] mt-1">
-                  Selected:{" "}
-                  <span className="font-medium">
-                    {selectedTermsTemplate.name}
-                  </span>
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* CONTRACT VALUE */}
-          <div>
-            <label className="bc-label">Total Contract Value</label>
-            <input
+        <Field label="Total contract value" required hint="Excluding GST and variations." htmlFor="ps-cv">
+          <Affix pre="₹">
+            <TextInput
+              id="ps-cv"
               type="number"
               min="0"
               step="0.01"
+              inputMode="decimal"
               value={overview.total_contract_value || ""}
-              onChange={(e) =>
-                handleFieldChange(
-                  "Overview",
-                  "total_contract_value",
-                  e.target.value,
-                )
-              }
-              placeholder="0.00"
-              className="bc-input w-full"
+              onChange={(e) => handleFieldChange("Overview", "total_contract_value", e.target.value)}
+              placeholder="e.g. 2500000"
             />
-            <p className="text-[11px] text-[#94A3A5] mt-1">
-              Exclusive of GST and variations
-            </p>
-          </div>
+          </Affix>
+        </Field>
 
-          {/* GST RATE */}
-          <div>
-            <label className="bc-label">GST Rate</label>
-            <input
+        <Field label="GST rate" optional hint="Leave blank if not yet applicable." htmlFor="ps-gst">
+          <Affix post="%">
+            <TextInput
+              id="ps-gst"
               type="number"
               min="0"
               step="0.01"
+              inputMode="decimal"
               value={overview.gst_rate || ""}
-              onChange={(e) =>
-                handleFieldChange("Overview", "gst_rate", e.target.value)
-              }
+              onChange={(e) => handleFieldChange("Overview", "gst_rate", e.target.value)}
               placeholder="e.g. 18"
-              className="bc-input w-full"
             />
-            <p className="text-[11px] text-[#94A3A5] mt-1">
-              Percent. Leave blank if not yet applicable.
-            </p>
-          </div>
+          </Affix>
+        </Field>
 
-          {/* GST AMOUNT */}
-          <div>
-            <label className="bc-label">GST Amount</label>
-            <input
-              type="text"
-              readOnly
-              value={gstAmount.toLocaleString("en-IN", {
-                minimumFractionDigits: 2,
-              })}
-              className="bc-input w-full bg-gray-50 text-[#6B7B7C]"
-            />
-            <p className="text-[11px] text-[#94A3A5] mt-1">
-              Calculated from contract value × GST rate
-            </p>
+        <Field
+          label="Terms & conditions"
+          optional
+          full
+          htmlFor="ps-terms"
+          hint={
+            !isTermsLoading && termsTemplates.length === 0
+              ? "No terms templates yet — create one with “New template”."
+              : overview.terms_template_id && overview.terms_version
+                ? `Locked to version ${overview.terms_version} — later edits to the template won't change this schedule.`
+                : "Attach a terms template. Its current version is stored with the schedule."
+          }
+        >
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ flex: "1 1 260px", minWidth: 0 }}>
+              <SelectInput
+                id="ps-terms"
+                value={overview.terms_template_id || ""}
+                onChange={(e) => handleTermsTemplateChange(e.target.value)}
+                disabled={isTermsLoading}
+                placeholder={isTermsLoading ? "Loading terms templates…" : "Select terms template"}
+              >
+                {termsTemplates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name}
+                    {template.is_default ? " (default)" : ""}
+                    {` — v${template.current_version}`}
+                  </option>
+                ))}
+              </SelectInput>
+            </div>
+            {selectedTermsTemplate && (
+              <Button variant="secondary" icon={Pencil} onClick={() => openEditContent(selectedTermsTemplate)}>
+                Edit
+              </Button>
+            )}
+            <Button variant="ghost" icon={Plus} onClick={() => setCreateOpen(true)}>
+              New template
+            </Button>
           </div>
-
-          {/* TOTAL PAYABLE */}
-          <div>
-            <label className="bc-label">Total Payable</label>
-            <input
-              type="text"
-              readOnly
-              value={totalPayable.toLocaleString("en-IN", {
-                minimumFractionDigits: 2,
-              })}
-              className="bc-input w-full bg-gray-50 text-[#6B7B7C]"
-            />
-            <p className="text-[11px] text-[#94A3A5] mt-1">
-              Contract value + GST amount
-            </p>
-          </div>
-        </div>
-      </div>
+        </Field>
+      </Grid>
     );
   };
 
@@ -627,255 +529,147 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
     const percentageIsValid = Math.abs(totalPercentage - 100) < 0.01;
 
     return (
-      <div className="space-y-6">
-        {/* HEADER */}
-        <div className="flex justify-between items-center flex-wrap gap-3">
-          <div>
-            <h3 className="text-lg font-semibold">Payment Milestones</h3>
-            <p className="text-sm text-[#6B7B7C] mt-1">
-              Define the release schedule from booking to handover. Enter either
-              the share (%) or the amount — the other is calculated
-              automatically from the contract value.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span
-              className={`text-sm font-semibold px-3 py-1.5 rounded-lg ${
-                percentageIsValid
-                  ? "bg-green-50 text-green-700"
-                  : "bg-amber-50 text-amber-700"
-              }`}
-            >
-              {totalPercentage}% of 100%
-            </span>
-          </div>
-        </div>
-
-        {/* ACTIONS */}
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={addMilestone}
-            className="flex items-center gap-2 bg-[#1F453B] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#1a3a32]"
-          >
-            <Plus size={16} />
-            Add Milestone
-          </button>
-
-          <button
-            type="button"
+      <div style={{ display: "grid", gap: 14 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <Button variant="secondary" size="sm" icon={Plus} onClick={addMilestone}>
+            Add milestone
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={Wand2}
             onClick={loadStandardMilestones}
             disabled={milestones.length > 0}
-            className="flex items-center gap-2 border border-[#1F453B] text-[#1F453B] px-4 py-2 rounded-lg text-sm hover:bg-[#F4F6F7] disabled:opacity-40 disabled:cursor-not-allowed"
             title={
               milestones.length > 0
                 ? "Clear existing milestones first to load the template"
                 : "Load the standard 7-phase milestone template"
             }
           >
-            <Wand2 size={16} />
-            Load Standard Milestones
-          </button>
+            Load standard 7 phases
+          </Button>
+          <span style={{ marginLeft: "auto" }} className={`inos-pill ${percentageIsValid ? "inos-pill--ok" : "inos-pill--warn"}`}>
+            <span className="inos-pill__dot" aria-hidden />
+            <span className="tabular">{totalPercentage}% of 100%</span>
+          </span>
         </div>
 
-        {/* EMPTY STATE */}
         {milestones.length === 0 ? (
-          <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl">
-            <p className="text-gray-500">No milestones added yet.</p>
-            <p className="text-xs text-[#94A3A5] mt-1">
-              Add milestones one at a time, or load the standard template.
-            </p>
+          <div className="cf-block">
+            <EmptyState
+              icon={Wand2}
+              title="No milestones yet"
+              text="Start from the standard 7-phase template (booking to handover), or add milestones one at a time."
+              action={
+                <Button variant="soft" icon={Wand2} onClick={loadStandardMilestones}>
+                  Load standard milestones
+                </Button>
+              }
+            />
           </div>
         ) : (
-          <div className="space-y-4">
-            {milestones.map((milestone, index) => {
-              const pct = Number(milestone.percentage) || 0;
-              const amount =
-                milestone.amount !== "" && milestone.amount !== undefined
-                  ? Number(milestone.amount)
-                  : calcAmountFromPct(contractValue, pct);
+          milestones.map((milestone, index) => {
+            const pct = Number(milestone.percentage) || 0;
+            const amount =
+              milestone.amount !== "" && milestone.amount !== undefined
+                ? Number(milestone.amount)
+                : calcAmountFromPct(contractValue, pct);
 
-              const missingTitle = !milestone.title;
-              const missingCode = !milestone.milestone_code;
-
-              return (
-                <div
-                  key={milestone.id}
-                  className="border border-gray-200 rounded-xl bg-white overflow-hidden"
-                >
-                  {/* MILESTONE HEADER */}
-                  <div className="p-4 border-b border-gray-200">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-[#1F453B] text-white flex items-center justify-center font-semibold shrink-0">
-                        {index + 1}
-                      </div>
-
-                      <div className="flex-1 min-w-[140px] max-w-[140px]">
-                        <input
-                          type="text"
-                          value={milestone.milestone_code}
-                          onChange={(e) =>
-                            updateMilestone(
-                              index,
-                              "milestone_code",
-                              e.target.value,
-                            )
-                          }
-                          placeholder="M1"
-                          className={`bc-input h-9 w-full font-semibold ${
-                            missingCode ? "border-red-400" : ""
-                          }`}
-                        />
-                      </div>
-
-                      <div className="flex-1 min-w-[200px]">
-                        <input
-                          type="text"
-                          value={milestone.title}
-                          onChange={(e) =>
-                            updateMilestone(index, "title", e.target.value)
-                          }
-                          placeholder="Milestone title"
-                          className={`bc-input h-9 w-full ${
-                            missingTitle ? "border-red-400" : ""
-                          }`}
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          disabled={index === 0}
-                          onClick={() => moveMilestone(index, "up")}
-                          className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30"
-                          title="Move up"
-                        >
-                          ↑
-                        </button>
-                        <button
-                          type="button"
-                          disabled={index === milestones.length - 1}
-                          onClick={() => moveMilestone(index, "down")}
-                          className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30"
-                          title="Move down"
-                        >
-                          ↓
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeMilestone(index)}
-                          className="text-red-500 hover:text-red-700 p-2"
-                          title="Remove milestone"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* MILESTONE BODY */}
-                  <div className="p-5 bg-gray-50">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="bc-label">
-                          Coverage & Release Trigger
-                        </label>
-                        <textarea
-                          rows={3}
-                          value={milestone.description}
-                          onChange={(e) =>
-                            updateMilestone(
-                              index,
-                              "description",
-                              e.target.value,
-                            )
-                          }
-                          placeholder="What this milestone covers"
-                          className="bc-input w-full"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="bc-label">Release Trigger Note</label>
-                        <textarea
-                          rows={3}
-                          value={milestone.release_trigger}
-                          onChange={(e) =>
-                            updateMilestone(
-                              index,
-                              "release_trigger",
-                              e.target.value,
-                            )
-                          }
-                          placeholder="e.g. DUE ON SIGNING — BEFORE SITE START"
-                          className="bc-input w-full"
-                        />
-                      </div>
-                    </div>
-
-                    {/* SHARE (%) ↔ AMOUNT (bidirectional) */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-                      {/* SHARE */}
-                      <div>
-                        <label className="bc-label">Share</label>
-                        <div className="relative">
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            value={milestone.percentage}
-                            onChange={(e) =>
-                              updateMilestone(
-                                index,
-                                "percentage",
-                                e.target.value,
-                              )
-                            }
-                            placeholder="0"
-                            className="bc-input w-full pr-7"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3A5] text-sm">
-                            %
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-[#94A3A5] mt-1">
-                          Enter % → amount is calculated
-                        </p>
-                      </div>
-
-                      {/* AMOUNT */}
-                      <div className="col-span-2">
-                        <label className="bc-label">Amount</label>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={
-                            milestone.amount !== undefined &&
-                            milestone.amount !== ""
-                              ? milestone.amount
-                              : amount || ""
-                          }
-                          onChange={(e) =>
-                            updateMilestone(index, "amount", e.target.value)
-                          }
-                          placeholder="0.00"
-                          className="bc-input w-full"
-                          disabled={contractValue <= 0}
-                        />
-                        <p className="text-[11px] text-[#94A3A5] mt-1">
-                          {contractValue > 0
-                            ? "Enter amount → % is calculated"
-                            : "Set Total Contract Value first to enable amount entry"}
-                        </p>
-                      </div>
-                    </div>
+            return (
+              <div key={milestone.id} className="cf-block">
+                <div className="cf-ms-row">
+                  <span className="inos-form-section__step" aria-hidden>
+                    {index + 1}
+                  </span>
+                  <Field label="Code" required>
+                    <TextInput
+                      value={milestone.milestone_code}
+                      onChange={(e) => updateMilestone(index, "milestone_code", e.target.value)}
+                      placeholder="M1"
+                      invalid={!milestone.milestone_code}
+                    />
+                  </Field>
+                  <Field label="Milestone" required>
+                    <TextInput
+                      value={milestone.title}
+                      onChange={(e) => updateMilestone(index, "title", e.target.value)}
+                      placeholder="e.g. Booking & mobilisation"
+                      invalid={!milestone.title}
+                    />
+                  </Field>
+                  <Field label="Share" required>
+                    <Affix post="%">
+                      <TextInput
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        inputMode="decimal"
+                        value={milestone.percentage}
+                        onChange={(e) => updateMilestone(index, "percentage", e.target.value)}
+                        placeholder="0"
+                        style={{ textAlign: "right" }}
+                        invalid={milestone.percentage === ""}
+                      />
+                    </Affix>
+                  </Field>
+                  <Field label="Amount">
+                    <Affix pre="₹">
+                      <TextInput
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        inputMode="decimal"
+                        value={
+                          milestone.amount !== undefined && milestone.amount !== ""
+                            ? milestone.amount
+                            : amount || ""
+                        }
+                        onChange={(e) => updateMilestone(index, "amount", e.target.value)}
+                        placeholder={contractValue > 0 ? "0.00" : "Set contract value"}
+                        disabled={contractValue <= 0}
+                        style={{ textAlign: "right" }}
+                      />
+                    </Affix>
+                  </Field>
+                  <div className="cf-ms-actions">
+                    <IconAction icon={ArrowUp} label="Move up" disabled={index === 0} onClick={() => moveMilestone(index, "up")} />
+                    <IconAction
+                      icon={ArrowDown}
+                      label="Move down"
+                      disabled={index === milestones.length - 1}
+                      onClick={() => moveMilestone(index, "down")}
+                    />
+                    <RemoveRow label="Remove milestone" onClick={() => removeMilestone(index)} />
                   </div>
                 </div>
-              );
-            })}
+                <Grid cols={2}>
+                  <Field label="What it covers" optional>
+                    <TextArea
+                      rows={2}
+                      value={milestone.description}
+                      onChange={(e) => updateMilestone(index, "description", e.target.value)}
+                      placeholder="e.g. Design sign-off, site mobilisation"
+                    />
+                  </Field>
+                  <Field label="Release trigger" optional>
+                    <TextArea
+                      rows={2}
+                      value={milestone.release_trigger}
+                      onChange={(e) => updateMilestone(index, "release_trigger", e.target.value)}
+                      placeholder="e.g. Due on signing, before site start"
+                    />
+                  </Field>
+                </Grid>
+              </div>
+            );
+          })
+        )}
+        {milestones.length > 0 && (
+          <div>
+            <Button variant="ghost" size="sm" icon={Plus} onClick={addMilestone} className="cf-add-row">
+              Add milestone
+            </Button>
           </div>
         )}
       </div>
@@ -997,10 +791,9 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
 
   if (isEdit && isLoadingExisting) {
     return (
-      <div className="flex items-center justify-center py-20 text-[#6B7B7C]">
-        <Loader2 size={20} className="animate-spin mr-2" />
-        Loading payment schedule…
-      </div>
+      <Page width="form">
+        <LoadingBlock label="Loading payment schedule…" />
+      </Page>
     );
   }
 
@@ -1011,12 +804,47 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
   return (
     <>
       <PaymentSectionForm
-        title={isEdit ? "Edit Payment Schedule" : "Payment Schedule"}
-        subtitle="Define contract value, GST, terms and milestone-based payment releases for this project"
-        submitLabel={
-          isEdit ? "Update Payment Schedule" : "Save Payment Schedule"
+        title={isEdit ? "Edit payment schedule" : "New payment schedule"}
+        subtitle="Set the contract value and GST, then split payments into milestones that add up to 100%."
+        crumbs={[
+          { label: "Ledger", to: "/ledger" },
+          { label: "Payment schedules", to: "/ledger/payment-schedule/all" },
+          { label: isEdit ? "Edit" : "New" },
+        ]}
+        onCancel={() => navigate(-1)}
+        submitLabel={isEdit ? "Update schedule" : "Save schedule"}
+        sections={PAYMENT_SCHEDULE_SECTIONS.map((section) => ({
+          ...section,
+          label: section.type === "overview" ? "Contract & terms" : section.type === "milestones" ? "Payment milestones" : section.title,
+          description:
+            section.type === "overview"
+              ? "Contract value, GST and the terms that go with this schedule."
+              : section.type === "milestones"
+                ? "Enter the share (%) or the amount — the other is calculated from the contract value."
+                : undefined,
+        }))}
+        aside={
+          <>
+            <TotalsCard
+              title="Summary"
+              rows={[
+                { label: "Contract value", value: inr(contractValue) },
+                { label: `GST${gstRate ? ` (${gstRate}%)` : ""}`, value: inr(gstAmount) },
+                { label: "Milestones", value: milestones.length },
+                { label: "Shares allocated", value: `${totalPercentage}%` },
+              ]}
+              totalLabel="Total payable"
+              total={inr(totalPayable)}
+            />
+            {milestones.length > 0 && Math.abs(totalPercentage - 100) > 0.01 && (
+              <Callout tone="warn" title="Shares must add up to 100%">
+                {totalPercentage < 100
+                  ? `${round2(100 - totalPercentage)}% still to allocate.`
+                  : `Over by ${round2(totalPercentage - 100)}%.`}
+              </Callout>
+            )}
+          </>
         }
-        sections={PAYMENT_SCHEDULE_SECTIONS}
         values={values}
         onFieldChange={handleFieldChange}
         projects={projects}
@@ -1081,7 +909,7 @@ function CreateTermsTemplateDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>New Terms Template</DialogTitle>
+          <DialogTitle>New terms template</DialogTitle>
           <DialogDescription>
             This becomes v1. You can edit the wording later — each edit creates
             a new version rather than overwriting this one.
@@ -1091,11 +919,11 @@ function CreateTermsTemplateDialog({
         <div className="space-y-4">
           {/* Name */}
           <div>
-            <label className="text-xs uppercase tracking-widest text-[#6B7B7C] font-semibold">
-              Template Name
+            <label className="inos-label">
+              Template name
             </label>
             <input
-              className="mt-2 w-full h-10 px-3 rounded-lg border border-[#E2E8E6] text-sm focus:outline-none focus:ring-2 focus:ring-[#E2E8E6]"
+              className="inos-input" style={{ marginTop: 6 }}
               placeholder="e.g. Standard Payment Schedule Terms"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -1104,11 +932,11 @@ function CreateTermsTemplateDialog({
 
           {/* Scope */}
           <div>
-            <label className="text-xs uppercase tracking-widest text-[#6B7B7C] font-semibold">
+            <label className="inos-label">
               Scope
             </label>
             <select
-              className="mt-2 w-full h-10 px-3 rounded-lg border border-[#E2E8E6] text-sm focus:outline-none focus:ring-2 focus:ring-[#E2E8E6]"
+              className="inos-select" style={{ marginTop: 6 }}
               value={form.scope}
               onChange={(e) =>
                 setForm((f) => ({ ...f, scope: e.target.value }))
@@ -1125,13 +953,13 @@ function CreateTermsTemplateDialog({
           {/* Content */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs uppercase tracking-widest text-[#6B7B7C] font-semibold">
-                Terms Content
+              <label className="inos-label">
+                Terms content
               </label>
               <button
                 type="button"
                 onClick={() => setPreviewMode(!previewMode)}
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                className="inos-btn inos-btn--ghost inos-btn--sm"
               >
                 {previewMode ? <Code size={14} /> : <Eye size={14} />}
                 {previewMode ? "Edit" : "Preview"}
@@ -1139,21 +967,21 @@ function CreateTermsTemplateDialog({
             </div>
 
             {previewMode ? (
-              <div className="w-full min-h-[160px] p-3 rounded-lg border border-[#E2E8E6] bg-[#F5F9F8] overflow-y-auto">
+              <div className="cf-block" style={{ minHeight: 160, overflowY: "auto" }}>
                 {form.content_html.trim() ? (
                   <TermsPreview
                     htmlContent={form.content_html}
                     maxPreview={10}
                   />
                 ) : (
-                  <p className="text-sm text-[#6B7B7C] italic">
+                  <p className="inos-hint">
                     Enter content to see preview…
                   </p>
                 )}
               </div>
             ) : (
               <textarea
-                className="w-full min-h-[160px] px-3 py-2 rounded-lg border border-[#E2E8E6] text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#E2E8E6] font-mono text-xs"
+                className="inos-textarea" style={{ minHeight: 160, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 12.5 }}
                 placeholder={`<ol>
   <li>All quantities are approximate and subject to site verification.</li>
   <li>Rates include labour, material, tools, and equipment unless otherwise specified.</li>
@@ -1168,7 +996,7 @@ function CreateTermsTemplateDialog({
                 }
               />
             )}
-            <p className="text-xs text-[#6B7B7C] mt-1">
+            <p className="inos-hint" style={{ display: "block", marginTop: 4 }}>
               Paste HTML list format or plain text with line breaks
             </p>
           </div>
@@ -1178,7 +1006,7 @@ function CreateTermsTemplateDialog({
           <button
             type="button"
             onClick={handleClose}
-            className="h-10 px-4 rounded-xl border border-[#E2E8E6] text-[13px] font-semibold hover:bg-[#F5F9F8]"
+            className="inos-btn inos-btn--ghost"
           >
             Cancel
           </button>
@@ -1186,14 +1014,14 @@ function CreateTermsTemplateDialog({
             type="button"
             onClick={onCreate}
             disabled={isCreating}
-            className="h-10 px-4 rounded-xl text-white text-[13px] font-semibold disabled:opacity-50 bg-[#1F453B]"
+            className="inos-btn inos-btn--primary"
           >
             {isCreating ? (
               <span className="flex items-center gap-2">
                 <Loader2 size={14} className="animate-spin" /> Creating…
               </span>
             ) : (
-              "Create Template"
+              "Create template"
             )}
           </button>
         </DialogFooter>
@@ -1233,13 +1061,13 @@ function EditTermsTemplateDialog({
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <label className="text-xs uppercase tracking-widest text-[#6B7B7C] font-semibold">
+            <label className="inos-label">
               Content
             </label>
             <button
               type="button"
               onClick={() => setPreviewMode(!previewMode)}
-              className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+              className="inos-btn inos-btn--ghost inos-btn--sm"
             >
               {previewMode ? <Code size={14} /> : <Eye size={14} />}
               {previewMode ? "Edit" : "Preview"}
@@ -1247,28 +1075,28 @@ function EditTermsTemplateDialog({
           </div>
 
           {previewMode ? (
-            <div className="w-full min-h-[240px] p-4 rounded-lg border border-[#E2E8E6] bg-[#F5F9F8] overflow-y-auto">
+            <div className="cf-block" style={{ minHeight: 240, overflowY: "auto" }}>
               <TermsFullDisplay htmlContent={editContent} />
             </div>
           ) : (
             <textarea
-              className="w-full min-h-[240px] px-3 py-2 rounded-lg border border-[#E2E8E6] text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#E2E8E6] font-mono text-xs"
+              className="inos-textarea" style={{ minHeight: 240, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 12.5 }}
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
             />
           )}
 
           <div>
-            <label className="text-xs uppercase tracking-widest text-[#6B7B7C] font-semibold">
-              Change Note (optional)
+            <label className="inos-label">
+              Change note (optional)
             </label>
             <input
-              className="mt-2 w-full h-10 px-3 rounded-lg border border-[#E2E8E6] text-sm focus:outline-none focus:ring-2 focus:ring-[#E2E8E6]"
+              className="inos-input" style={{ marginTop: 6 }}
               placeholder="e.g. Updated payment terms clause"
               value={changeNote}
               onChange={(e) => setChangeNote(e.target.value)}
             />
-            <p className="text-xs text-[#6B7B7C] mt-1">
+            <p className="inos-hint" style={{ display: "block", marginTop: 4 }}>
               Describe what changed for version history
             </p>
           </div>
@@ -1278,7 +1106,7 @@ function EditTermsTemplateDialog({
           <button
             type="button"
             onClick={onClose}
-            className="h-10 px-4 rounded-xl border border-[#E2E8E6] text-[13px] font-semibold hover:bg-[#F5F9F8]"
+            className="inos-btn inos-btn--ghost"
           >
             Cancel
           </button>
@@ -1286,7 +1114,7 @@ function EditTermsTemplateDialog({
             type="button"
             onClick={onSave}
             disabled={isSaving}
-            className="h-10 px-4 rounded-xl text-white text-[13px] font-semibold disabled:opacity-50 bg-[#1F453B]"
+            className="inos-btn inos-btn--primary"
           >
             {isSaving ? (
               <span className="flex items-center gap-2">

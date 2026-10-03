@@ -10,6 +10,8 @@ import {
   UseGuards,
   HttpStatus,
   HttpCode,
+  ParseEnumPipe,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { QualityChecklistService } from './quality-checklist.service';
 import {
@@ -24,6 +26,7 @@ import {
   QualityChecklistItemResponseDto,
   PaginatedQualityChecklistDto,
   ChecklistSummaryDto,
+  CreateQualityChecklistFromTemplateDto,
 } from './dto/quality-checklist.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
@@ -68,7 +71,9 @@ export class QualityChecklistController {
    * GET /quality-checklists/templates/:workHead
    */
   @Get('templates/:workHead')
-  getWorkHeadTemplate(@Param('workHead') workHead: WorkHead) {
+  getWorkHeadTemplate(
+    @Param('workHead', new ParseEnumPipe(WorkHead)) workHead: WorkHead,
+  ) {
     return this.qualityChecklistService.getWorkHeadTemplate(workHead);
   }
 
@@ -80,7 +85,7 @@ export class QualityChecklistController {
   @Post('from-template')
   @HttpCode(HttpStatus.CREATED)
   async createFromWorkHead(
-    @Body() body: { project_id: string; work_head: WorkHead; description?: string },
+    @Body() body: CreateQualityChecklistFromTemplateDto,
     @CurrentUser() user: any,
   ): Promise<QualityChecklistResponseDto> {
     return this.qualityChecklistService.createFromWorkHead(
@@ -214,7 +219,7 @@ export class QualityChecklistController {
   @Get(':checklistId/items/phase/:phase')
   async getItemsByPhase(
     @Param('checklistId') checklistId: string,
-    @Param('phase') phase: CheckpointPhase,
+    @Param('phase', new ParseEnumPipe(CheckpointPhase)) phase: CheckpointPhase,
   ): Promise<QualityChecklistItemResponseDto[]> {
     return this.qualityChecklistService.getItemsByPhase(checklistId, phase);
   }
@@ -223,6 +228,23 @@ export class QualityChecklistController {
    * Update checklist item
    * PUT /quality-checklists/items/:itemId
    */
+  // Static bulk route must precede the item-ID route.
+  @Put('items/bulk-update')
+  async bulkUpdateChecklistItems(
+    @Body() bulkUpdateDto: BulkUpdateChecklistItemsDto,
+    @CurrentUser() user: any,
+  ): Promise<QualityChecklistItemResponseDto[]> {
+    return this.qualityChecklistService.bulkUpdateChecklistItems(
+      bulkUpdateDto,
+      user.id,
+    );
+  }
+
+  @Get('project/:projectId/export-workbook')
+  exportProjectWorkbook(@Param('projectId', ParseUUIDPipe) projectId: string) {
+    return this.qualityChecklistService.exportProjectWorkbook(projectId);
+  }
+
   @Put('items/:itemId')
   async updateChecklistItem(
     @Param('itemId') itemId: string,
@@ -232,21 +254,6 @@ export class QualityChecklistController {
     return this.qualityChecklistService.updateChecklistItem(
       itemId,
       updateItemDto,
-      user.id,
-    );
-  }
-
-  /**
-   * Bulk update checklist items
-   * PUT /quality-checklists/items/bulk-update
-   */
-  @Put('items/bulk-update')
-  async bulkUpdateChecklistItems(
-    @Body() bulkUpdateDto: BulkUpdateChecklistItemsDto,
-    @CurrentUser() user: any,
-  ): Promise<QualityChecklistItemResponseDto[]> {
-    return this.qualityChecklistService.bulkUpdateChecklistItems(
-      bulkUpdateDto,
       user.id,
     );
   }

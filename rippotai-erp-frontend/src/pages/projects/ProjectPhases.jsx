@@ -1,29 +1,20 @@
 import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Search, Pencil, Trash2, Layers3, RefreshCw } from "lucide-react";
+import { Plus, Pencil, Trash2, Layers3, RefreshCw, SearchX } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Page,
+  PageHeader,
+  Card,
+  Button,
+  Toolbar,
+  ToolbarSpacer,
+  SearchInput,
+  Pill,
+  Field,
+  TextInput,
+  TextArea,
+} from "@/components/inos";
 
 import {
   useGetProjectPhasesQuery,
@@ -31,11 +22,34 @@ import {
   useUpdateProjectPhaseMutation,
   useDeleteProjectPhaseMutation,
 } from "../../api/projects/project.api";
+import {
+  AdminModal,
+  ModalActions,
+  SkeletonRows,
+  TableEmpty,
+  adminCrumbs,
+  humanize,
+  plural,
+} from "../settings/_admin-ui";
 
 const EMPTY_FORM = {
   name: "",
   code: "",
   description: "",
+  phase_number: "",
+};
+
+const toCode = (s) =>
+  String(s || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+/** "01 BRIEF" -> "Brief" — the number already has its own column */
+const phaseLabel = (item) => {
+  const raw = String(item.title || item.name || "").replace(/^\d+[\s._-]+/, "");
+  return humanize(raw) || item.title || item.name || "Untitled phase";
 };
 
 const ProjectPhases = () => {
@@ -43,11 +57,14 @@ const ProjectPhases = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [codeTouched, setCodeTouched] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const {
     data: projectPhases = [],
     isLoading,
     isFetching,
+    isError,
     refetch,
   } = useGetProjectPhasesQuery({
     search: search.trim() || undefined,
@@ -62,23 +79,29 @@ const ProjectPhases = () => {
   const [deleteProjectPhase, { isLoading: isDeleting }] =
     useDeleteProjectPhaseMutation();
 
-  const normalizedPhases = useMemo(() => {
-    if (!Array.isArray(projectPhases)) return [];
+  const allPhases = Array.isArray(projectPhases) ? projectPhases : [];
 
+  const normalizedPhases = useMemo(() => {
+    const list = Array.isArray(projectPhases) ? projectPhases : [];
     const value = search.trim().toLowerCase();
 
-    if (!value) return projectPhases;
+    if (!value) return list;
 
-    return projectPhases.filter((item) =>
-      [item.title, item.code, item.description]
+    return list.filter((item) =>
+      [item.title, item.name, item.code, item.phase_code, item.description]
         .filter(Boolean)
         .some((field) => String(field).toLowerCase().includes(value)),
     );
   }, [projectPhases, search]);
 
+  const nextNumber =
+    allPhases.reduce((m, p) => Math.max(m, Number(p.phase_number) || 0), 0) + 1;
+
   const openCreate = () => {
     setEditingId(null);
-    setForm(EMPTY_FORM);
+    setForm({ ...EMPTY_FORM, phase_number: String(nextNumber) });
+    setCodeTouched(false);
+    setErrors({});
     setShowModal(true);
   };
 
@@ -86,11 +109,13 @@ const ProjectPhases = () => {
     setEditingId(item.id);
 
     setForm({
-      name: item.title || "",
-      code: item.code || item.phaseCode || "",
+      name: item.title || item.name || "",
+      code: item.phase_code || item.code || item.phaseCode || "",
       description: item.description || "",
+      phase_number: item.phase_number != null ? String(item.phase_number) : "",
     });
-
+    setCodeTouched(true);
+    setErrors({});
     setShowModal(true);
   };
 
@@ -105,24 +130,37 @@ const ProjectPhases = () => {
   const handleChange = (event) => {
     const { name, value } = event.target;
 
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setForm((prev) => {
+      const next = { ...prev, [name]: value };
+      // Suggest a code from the name until the user edits the code themselves
+      if (name === "name" && !codeTouched) next.code = toCode(value);
+      return next;
+    });
+    if (name === "code") setCodeTouched(true);
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!form.title.trim()) {
-      toast.error("Project phase name is required");
-      return;
-    }
+    const next = {};
+    if (!form.name.trim()) next.name = "Phase name is required.";
+    if (!form.code.trim()) next.code = "A short code is required.";
+    const num = Number(form.phase_number);
+    if (!Number.isInteger(num) || num < 1) next.phase_number = "Use a whole number from 1.";
+    setErrors(next);
+    if (Object.keys(next).length) return;
 
     try {
+      const title = form.name.trim();
+      const code = toCode(form.code);
       const payload = {
-        name: form.title.trim(),
-        code: form.code.trim() || undefined,
+        // API fields (title / phase_code / phase_number) + legacy aliases
+        title,
+        name: title,
+        phase_code: code,
+        code,
+        phase_number: num,
         description: form.description.trim() || undefined,
       };
 
@@ -139,10 +177,13 @@ const ProjectPhases = () => {
         toast.success("Project phase created successfully");
       }
 
-      closeModal();
+      setShowModal(false);
+      setEditingId(null);
+      setForm(EMPTY_FORM);
     } catch (error) {
+      const msg = error?.data?.message;
       toast.error(
-        error?.data?.message ||
+        (Array.isArray(msg) ? msg.join(" ") : msg) ||
           error?.message ||
           "Unable to save project phase",
       );
@@ -169,261 +210,171 @@ const ProjectPhases = () => {
     }
   };
 
+  const saving = isCreating || isUpdating;
+
   return (
-    <div className="min-h-full bg-muted/40 p-6">
-      {/* Header */}
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Layers3 className="h-5 w-5" />
-          </div>
+    <Page>
+      <PageHeader
+        crumbs={adminCrumbs("Project phases")}
+        title="Project phases"
+        subtitle="The master stages every project moves through, from brief to handover."
+        actions={
+          <Button variant="primary" icon={Plus} onClick={openCreate} data-testid="add-phase-btn">
+            Add phase
+          </Button>
+        }
+      />
 
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">
-              Project Phases
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Manage the master phases used throughout project workflows.
-            </p>
-          </div>
-        </div>
-
-        <Button onClick={openCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Project Phase
+      <Toolbar>
+        <SearchInput value={search} onChange={setSearch} placeholder="Search phases" />
+        <ToolbarSpacer />
+        <Button variant="ghost" icon={RefreshCw} onClick={() => refetch()} disabled={isFetching}>
+          {isFetching ? "Refreshing…" : "Refresh"}
         </Button>
-      </div>
+      </Toolbar>
 
-      {/* Toolbar */}
-      <Card className="mb-5">
-        <CardContent className="p-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="relative w-full md:max-w-md">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search project phases..."
-                className="pl-10"
-              />
-            </div>
+      <Card flush>
+        <div className="inos-table-wrap">
+          <table className="inos-table">
+            <thead>
+              <tr>
+                <th style={{ width: 64 }}>No.</th>
+                <th>Phase</th>
+                <th>Code</th>
+                <th className="adm-hide-sm">Module</th>
+                <th className="actions" aria-label="Actions" />
+              </tr>
+            </thead>
 
-            <Button
-              variant="outline"
-              onClick={() => refetch()}
-              disabled={isFetching}
-            >
-              <RefreshCw
-                className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-              />
-              Refresh
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Stats */}
-      <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Total Phases
-            </div>
-            <div className="mt-2 text-2xl font-semibold text-foreground">
-              {normalizedPhases.length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Master Configuration
-            </div>
-            <div className="mt-2 text-sm font-medium text-primary">
-              Project Workflow
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Search Result
-            </div>
-            <div className="mt-2 text-2xl font-semibold text-foreground">
-              {normalizedPhases.length}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Table */}
-      <Card>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Phase</TableHead>
-                <TableHead>Code</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
+            <tbody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={4}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    Loading project phases...
-                  </TableCell>
-                </TableRow>
+                <SkeletonRows cols={5} rows={4} />
+              ) : allPhases.length === 0 && !search ? (
+                <TableEmpty
+                  cols={5}
+                  icon={Layers3}
+                  title={isError ? "Couldn't load phases" : "No phases yet"}
+                  text={isError ? "The phases service didn't respond. Try refreshing." : "Add the stages your projects move through — for example Brief, Design, Execution."}
+                  action={!isError && <Button variant="soft" icon={Plus} onClick={openCreate}>Add phase</Button>}
+                />
               ) : normalizedPhases.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={4}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    No project phases found.
-                  </TableCell>
-                </TableRow>
+                <TableEmpty cols={5} icon={SearchX} title="No matching phases" text="Try a different name or code." />
               ) : (
                 normalizedPhases.map((item, index) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-sm font-semibold text-primary">
-                          {index + 1}
-                        </div>
-                        <div>
-                          <div className="font-medium text-foreground">
-                            {item.title || "—"}
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <Badge variant="secondary" className="font-mono">
-                        {item.phase_code || "—"}
-                      </Badge>
-                    </TableCell>
-
-                    <TableCell className="max-w-lg text-muted-foreground">
-                      <div className="truncate">
-                        {item.description || "No description"}
-                      </div>
-                    </TableCell>
-
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                  <tr key={item.id}>
+                    <td>
+                      <span className="adm-num">{item.phase_number ?? index + 1}</span>
+                    </td>
+                    <td>
+                      <div className="adm-cell-title">{phaseLabel(item)}</div>
+                      {item.description && <div className="adm-cell-sub">{item.description}</div>}
+                    </td>
+                    <td>
+                      {item.phase_code || item.code ? (
+                        <span className="adm-code">{item.phase_code || item.code}</span>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
+                    <td className="adm-hide-sm">
+                      {item.module ? <Pill tone="info" dot={false}>{humanize(item.module)}</Pill> : <span className="muted">—</span>}
+                    </td>
+                    <td className="actions">
+                      <div className="adm-icon-btns">
+                        <Button variant="ghost" size="sm" icon={Pencil} onClick={() => openEdit(item)} title="Edit" aria-label={`Edit ${item.title}`} />
                         <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => openEdit(item)}
-                          title="Edit"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-
-                        <Button
-                          variant="outline"
-                          size="icon"
+                          variant="ghost"
+                          size="sm"
+                          icon={Trash2}
                           onClick={() => handleDelete(item)}
                           disabled={isDeleting}
-                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                           title="Delete"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                          aria-label={`Delete ${item.title}`}
+                        />
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ))
               )}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
+        {allPhases.length > 0 && (
+          <div className="adm-table-foot">
+            {search ? `${plural(normalizedPhases.length, "phase")} match` : plural(allPhases.length, "phase")}
+          </div>
+        )}
       </Card>
 
-      {/* Modal */}
-      <Dialog
+      <AdminModal
         open={showModal}
-        onOpenChange={(open) => {
-          if (!open) closeModal();
-        }}
+        as="form"
+        onSubmit={handleSubmit}
+        onClose={closeModal}
+        busy={saving}
+        icon={Layers3}
+        title={editingId ? "Edit phase" : "Add phase"}
+        subtitle="Phases order the project workflow and group its documents."
+        width={560}
+        testId="phase-modal"
+        footer={
+          <ModalActions
+            onCancel={closeModal}
+            submitting={saving}
+            submitLabel={editingId ? "Save changes" : "Add phase"}
+          />
+        }
       >
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>
-              {editingId ? "Edit Project Phase" : "Create Project Phase"}
-            </DialogTitle>
-            <DialogDescription>
-              Define a phase for the project workflow.
-            </DialogDescription>
-          </DialogHeader>
+        <div className="inos-form-grid">
+          <Field label="Phase name" required full error={errors.name} htmlFor="ph-name">
+            <TextInput
+              id="ph-name"
+              name="name"
+              autoFocus
+              value={form.name}
+              invalid={!!errors.name}
+              onChange={handleChange}
+              placeholder="e.g. Design development"
+            />
+          </Field>
 
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-5 py-2">
-              <div className="space-y-2">
-                <Label>
-                  Phase Name <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  name="name"
-                  value={form.title}
-                  onChange={handleChange}
-                  placeholder="e.g. Design Development"
-                />
-              </div>
+          <Field label="Code" required error={errors.code} htmlFor="ph-code" hint="Filled in from the name — edit if you like.">
+            <TextInput
+              id="ph-code"
+              name="code"
+              value={form.code}
+              invalid={!!errors.code}
+              onChange={handleChange}
+              placeholder="e.g. 05_DESIGN"
+              className="adm-upper"
+            />
+          </Field>
 
-              <div className="space-y-2">
-                <Label>Phase Code</Label>
-                <Input
-                  name="code"
-                  value={form.code}
-                  onChange={handleChange}
-                  placeholder="e.g. DESIGN"
-                  className="uppercase"
-                />
-              </div>
+          <Field label="Order" required error={errors.phase_number} htmlFor="ph-num" hint="Position in the workflow.">
+            <TextInput
+              id="ph-num"
+              name="phase_number"
+              type="number"
+              min={1}
+              value={form.phase_number}
+              invalid={!!errors.phase_number}
+              onChange={handleChange}
+            />
+          </Field>
 
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea
-                  name="description"
-                  value={form.description}
-                  onChange={handleChange}
-                  rows={4}
-                  placeholder="Describe what this project phase represents..."
-                />
-              </div>
-            </div>
-
-            <DialogFooter className="mt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={closeModal}
-                disabled={isCreating || isUpdating}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isCreating || isUpdating}>
-                {isCreating || isUpdating
-                  ? "Saving..."
-                  : editingId
-                    ? "Update Project Phase"
-                    : "Create Project Phase"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
+          <Field label="Description" optional full htmlFor="ph-desc">
+            <TextArea
+              id="ph-desc"
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              rows={3}
+              placeholder="What happens in this phase and what it delivers."
+            />
+          </Field>
+        </div>
+      </AdminModal>
+    </Page>
   );
 };
 

@@ -1,1550 +1,964 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
-
-import {
-  ArrowLeft,
-  Download,
-  Send,
-  CheckCircle2,
-  XCircle,
-  Trash2,
-  ChevronDown,
-  ChevronRight,
-  RotateCcw,
-  X,
-  FileText,
-} from "lucide-react";
-
 import { useAuth } from "@/context/AuthContext";
 import { fmtINR, relativeTime, StatusChip } from "@/lib/format";
-
+// Excel export (blob download) isn't covered by the RTK Query slice below,
+// so that call still goes through the plain axios client.
+import api, { API } from "@/lib/api";
+import QuotationDocument, { quotationFileName } from "../../components/commerce-documents/QuotationDocument";
+import { DocumentPreview, downloadDocumentPdf } from "@/components/print-document";
+import { OFFSCREEN_STYLE } from "@/components/print-document/commerce";
 import {
   useGetQuotationByIdQuery,
   useSubmitQuotationMutation,
   useApproveQuotationMutation,
   useReturnQuotationMutation,
   useDeclineQuotationMutation,
+  useCancelQuotationMutation,
+  useRestoreQuotationMutation,
   useSoftDeleteQuotationMutation,
-} from "../../api/procuerment/quotation.api";
+  useCreateQuotationItemMutation,
+  useUpdateQuotationItemMutation,
+  useDeleteQuotationItemMutation,
+  useGetQuotationVersionsQuery,
+  useCreateQuotationVersionMutation,
+  useRestoreQuotationVersionMutation,
+  useDeleteQuotationVersionMutation,
+} from "../../api/procuerment/quotation.api"; // adjust path if needed
+import {
+  ArrowLeft,
+  Download,
+  Copy,
+  Send,
+  CheckCircle2,
+  XCircle,
+  Trash2,
+  Upload,
+  FileText,
+  ChevronDown,
+  ChevronRight,
+  RotateCcw,
+  Archive,
+} from "lucide-react";
 
-import html2pdf from "html2pdf.js";
+const TABS = ["Items", "Commercial Terms", "Document", "Approval History", "Versions"];
 
-import PrintableQuotation from "../../components/quotations/PrintableQuotation";
-
-/* ============================================================
-   CONSTANTS
-============================================================ */
-
-const TABS = ["Items", "Commercial Terms", "Approval History", "Versions"];
-
-/* ============================================================
-   SMALL HELPERS
-============================================================ */
-
-function safeNumber(value) {
-  const number = Number(value);
-
-  return Number.isFinite(number) ? number : 0;
-}
-
-function safeArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-function quotationNumberOf(quotation, fallback = "") {
-  return quotation?.quotationNumber || quotation?.quotation_number || fallback;
-}
-
-function getErrorMessage(error, fallback) {
-  return error?.data?.message || error?.data?.error || error?.error || fallback;
-}
-
-/* ============================================================
-   PREVIEW MODAL
-============================================================ */
-
-function QuotationPreviewModal({
-  quotation,
-  adminSignature,
-  quotationNumber,
-  onClose,
-}) {
-  const [downloading, setDownloading] = useState(false);
-
-  const downloadPdf = async () => {
-    const source = document.getElementById("quotation-preview-document");
-
-    if (!source) {
-      toast.error("Quotation preview is not ready");
-      return;
-    }
-
-    setDownloading(true);
-
-    try {
-      /* --------------------------------------------------------
-         Wait for images
-      -------------------------------------------------------- */
-
-      const images = Array.from(source.querySelectorAll("img"));
-
-      await Promise.all(
-        images.map((img) => {
-          if (img.complete) {
-            return Promise.resolve();
-          }
-
-          return new Promise((resolve) => {
-            img.onload = resolve;
-            img.onerror = resolve;
-          });
-        }),
-      );
-
-      /* --------------------------------------------------------
-         Wait for browser layout / paint
-      -------------------------------------------------------- */
-
-      await new Promise((resolve) => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(resolve);
-        });
-      });
-
-      const filenameNumber = quotationNumber || "quotation";
-
-      const options = {
-        margin: 0,
-
-        filename: `Quotation_${filenameNumber}.pdf`,
-
-        image: {
-          type: "jpeg",
-          quality: 0.96,
-        },
-
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: "#ffffff",
-          logging: false,
-
-          scrollX: 0,
-          scrollY: 0,
-
-          windowWidth: source.scrollWidth,
-          width: source.scrollWidth,
-        },
-
-        jsPDF: {
-          unit: "mm",
-          format: "a4",
-          orientation: "portrait",
-          compress: true,
-        },
-
-        pagebreak: {
-          mode: ["css", "legacy", "avoid-all"],
-
-          avoid: [
-            "tr",
-            "td",
-            "th",
-            ".quotation-items",
-            ".quotation-totals",
-            ".terms-box",
-            ".signature-row",
-            ".no-break",
-          ],
-        },
-      };
-
-      await html2pdf().set(options).from(source).save();
-
-      toast.success("Quotation PDF downloaded");
-    } catch (error) {
-      console.error("Quotation PDF export error:", error);
-
-      toast.error("Failed to generate quotation PDF");
-    } finally {
-      setDownloading(false);
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-[100] bg-black/70 flex flex-col"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
-      }}
-    >
-      {/* ======================================================
-          PREVIEW HEADER
-      ====================================================== */}
-
-      <div className="h-14 shrink-0 bg-white border-b border-[#D5DDD7] px-4 sm:px-6 flex items-center justify-between">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-[#103E31] text-white flex items-center justify-center shrink-0">
-            <FileText size={15} />
-          </div>
-
-          <div className="min-w-0">
-            <div className="text-[14px] font-bold text-[#202724] truncate">
-              Quotation Preview
-            </div>
-
-            <div className="text-[10.5px] text-[#748078] truncate">
-              {quotationNumber || "Quotation"}
-            </div>
-          </div>
-
-          <span className="hidden sm:inline-flex px-2 py-1 rounded-full bg-[#EEF3EF] text-[#103E31] text-[9px] font-bold tracking-[0.12em] uppercase">
-            A4
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={downloadPdf}
-            disabled={downloading}
-            className="
-              h-9
-              px-3.5
-              rounded-lg
-              bg-[#103E31]
-              text-white
-              text-[11.5px]
-              font-semibold
-              inline-flex
-              items-center
-              gap-2
-              shadow-sm
-              hover:bg-[#0B3026]
-              disabled:opacity-50
-              disabled:cursor-not-allowed
-            "
-          >
-            <Download size={14} />
-
-            {downloading ? "Generating PDF…" : "Download PDF"}
-          </button>
-
-          <button
-            type="button"
-            onClick={onClose}
-            title="Close preview"
-            className="
-              w-9
-              h-9
-              rounded-lg
-              border
-              border-[#C8D1CA]
-              bg-white
-              text-[#333]
-              inline-flex
-              items-center
-              justify-center
-              hover:bg-[#F3F5F3]
-            "
-          >
-            <X size={17} />
-          </button>
-        </div>
-      </div>
-
-      {/* ======================================================
-          PREVIEW CANVAS
-      ====================================================== */}
-
-      <div
-        className="
-          flex-1
-          overflow-auto
-          bg-[#525659]
-          px-3
-          py-5
-          sm:px-6
-          sm:py-8
-        "
-      >
-        <div className="min-w-fit flex justify-center items-start pb-12">
-          <div
-            id="quotation-preview-document"
-            className="bg-white shadow-[0_12px_45px_rgba(0,0,0,0.30)]"
-            style={{
-              width: "210mm",
-              minHeight: "297mm",
-              background: "#ffffff",
-            }}
-          >
-            <PrintableQuotation
-              quotation={quotation}
-              termsConditions={quotation.terms_conditions}
-              adminSignature={adminSignature}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ============================================================
-   MAIN COMPONENT
-============================================================ */
 
 export default function QuotationDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const nav = useNavigate();
   const { user } = useAuth();
-
-  const [tab, setTab] = useState("Items");
-
-  const [remarkModal, setRemarkModal] = useState(null);
-
-  const [remark, setRemark] = useState("");
-
-  const [previewOpen, setPreviewOpen] = useState(false);
-
-  const [expandedItems, setExpandedItems] = useState({});
-
-  /* ==========================================================
-     QUOTATION QUERY
-  ========================================================== */
+  const isAdmin = user?.role === "admin";
 
   const {
-    data: quotationResponse,
+    data: q,
     isLoading,
-    isFetching,
-    error: quotationError,
-  } = useGetQuotationByIdQuery(id, {
-    skip: !id,
-  });
+    isError,
+  } = useGetQuotationByIdQuery(id, { skip: !id });
 
-  /*
-   * Supports both:
-   *
-   * {
-   *   data: quotation
-   * }
-   *
-   * and:
-   *
-   * quotation
-   */
-
-  const q =
-    quotationResponse?.data?.data ??
-    quotationResponse?.data ??
-    quotationResponse ??
-    null;
-
-  /* ==========================================================
-     MUTATIONS
-  ========================================================== */
-
-  const [submitQuotation, { isLoading: isSubmitting }] =
+  const [submitQuotation, { isLoading: submitting }] =
     useSubmitQuotationMutation();
-
-  const [approveQuotationMutation, { isLoading: isApproving }] =
+  const [approveQuotation, { isLoading: approving }] =
     useApproveQuotationMutation();
-
-  const [returnQuotationMutation, { isLoading: isReturning }] =
+  const [returnQuotation, { isLoading: returning }] =
     useReturnQuotationMutation();
-
-  const [declineQuotationMutation, { isLoading: isDeclining }] =
+  const [declineQuotation, { isLoading: declining }] =
     useDeclineQuotationMutation();
+  const [cancelQuotation, { isLoading: cancelling }] =
+    useCancelQuotationMutation();
+  const [restoreQuotation] = useRestoreQuotationMutation();
+  const [softDeleteQuotation] = useSoftDeleteQuotationMutation();
 
-  const [softDeleteQuotation, { isLoading: isDeleting }] =
-    useSoftDeleteQuotationMutation();
+  const [createQuotationItem] = useCreateQuotationItemMutation();
+  const [updateQuotationItem] = useUpdateQuotationItemMutation();
+  const [deleteQuotationItem] = useDeleteQuotationItemMutation();
 
-  /* ==========================================================
-     QUERY ERROR
-  ========================================================== */
+  const [tab, setTab] = useState("Items");
+  const [remarkModal, setRemarkModal] = useState(null); // { label, onConfirm(remarks) }
+  const [remark, setRemark] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const busy = submitting || approving || returning || declining || cancelling;
 
-  useEffect(() => {
-    if (!quotationError) {
-      return;
-    }
-
-    console.error("Failed to load quotation:", quotationError);
-
-    toast.error(getErrorMessage(quotationError, "Failed to load quotation"));
-  }, [quotationError]);
-
-  /* ==========================================================
-     DERIVED DATA
-  ========================================================== */
-
+  // --- Derived values, mapped from the real payload shape ---
+  // (Declared before the early returns below so hook order stays stable —
+  // useMemo further down depends on these.)
+  // NOTE: the live payload nests both a flat convenience object (q.vendor /
+  // q.project) AND a point-in-time snapshot (q.vendorSnapshot /
+  // q.projectSnapshot) captured when the quotation was created. They're
+  // usually identical; we prefer the flat one and fall back to the snapshot.
   const vendor = q?.vendor || q?.vendorSnapshot || {};
-
   const project = q?.project || q?.projectSnapshot || {};
-
-  const isAdmin =
-    user?.role === "ADMIN" ||
-    user?.roleName === "ADMIN" ||
-    user?.isAdmin === true;
-
   const readOnly = q?.status === "approved" && !isAdmin;
-
   const editable = !readOnly && ["draft", "returned"].includes(q?.status);
-
   const isDeleted = !!q?.deletedAt;
 
-  const items = safeArray(q?.items);
+  const subtotal = Number(q?.subtotal || 0);
+  const taxAmount = Number(q?.taxAmount || 0);
+  const additionalCharges = Number(q?.additionalCharges || 0);
+  const discountValue = Number(q?.discount ?? q?.globalDiscountValue ?? 0);
+  const total = Number(q?.totalAmount || 0);
 
-  const subtotal = safeNumber(q?.subtotal);
+  const docRef = useRef(null);
 
-  const taxAmount = safeNumber(q?.taxAmount);
+  if (isLoading) return <div className="p-8 text-[#6B7B7C]">Loading…</div>;
+  if (isError || !q)
+    return (
+      <div className="p-8 text-[#6B7B7C]">Couldn't load this quotation.</div>
+    );
 
-  const additionalCharges = safeNumber(q?.additionalCharges);
-
-  const discountValue = safeNumber(q?.discount ?? q?.globalDiscountValue);
-
-  const total = safeNumber(q?.totalAmount);
-
-  /* ==========================================================
-     PRINTABLE NORMALIZATION
-  ========================================================== */
-
-  const printableQuotation = useMemo(() => {
-    if (!q) {
-      return null;
-    }
-
-    const quotationItems = safeArray(q.items);
-
-    return {
-      quotation_number: q.quotationNumber || q.quotation_number || "",
-
-      quotation_date: q.quotationDate || q.quotation_date || "",
-
-      status: q.status || "",
-
-      vendor_type:
-        vendor.businessType?.name || vendor.vendorCategory?.name || "",
-
-      vendor_name: vendor.name || "",
-
-      phone_number: vendor.contact_number || vendor.phone || "",
-
-      address: vendor.address || "",
-
-      project_name: project.name || "",
-
-      project_address: project.site_location || project.address || "",
-
-      client_name: q.client_name || q.clientName || "",
-
-      client_phone: q.client_phone || q.clientPhone || "",
-
-      client_address: q.client_address || q.clientAddress || "",
-
-      items: quotationItems.map((item, index) => ({
-        id: item.id,
-
-        sno: item.sno || index + 1,
-
-        particular: item.particular || item.description || item.name || "",
-
-        rate: safeNumber(item.rate),
-
-        quantity: safeNumber(item.quantity),
-
-        amount: safeNumber(item.amount),
-
-        remarks: item.remarks || "",
-      })),
-
-      subtotal: safeNumber(q.subtotal),
-
-      tax_percent: safeNumber(q.taxPercent),
-
-      tax_amount: safeNumber(q.taxAmount),
-
-      additional_charges: safeNumber(q.additionalCharges),
-
-      discount: safeNumber(q.discount ?? q.globalDiscountValue),
-
-      discount_type: q.globalDiscountType || "fixed",
-
-      grand_total: safeNumber(q.totalAmount),
-
-      payment_terms: q.paymentTerms || q.payment_terms || [],
-
-      terms_conditions: q.termsConditions || q.terms_conditions || "",
-    };
-  }, [q, vendor, project]);
-
-  /* ==========================================================
-     ACTION STATE
-  ========================================================== */
-
-  const actionLoading =
-    isSubmitting || isApproving || isReturning || isDeclining || isDeleting;
-
-  /* ==========================================================
-     SUBMIT / SEND FOR APPROVAL
-  ========================================================== */
-
-  const handleSubmitQuotation = async () => {
-    if (!id) {
-      return;
-    }
-
+  const runAction = async (mutationFn, args, successMsg = "Done") => {
     try {
-      await submitQuotation({
-        id,
-        submitted_by: user?.id,
-      }).unwrap();
-
-      toast.success("Quotation submitted for approval");
-    } catch (error) {
-      console.error("Submit quotation error:", error);
-
-      toast.error(getErrorMessage(error, "Failed to submit quotation"));
-    }
-  };
-
-  /* ==========================================================
-     APPROVE
-  ========================================================== */
-
-  const handleApproveQuotation = async () => {
-    if (!id) {
-      return;
-    }
-
-    try {
-      await approveQuotationMutation({
-        id,
-      }).unwrap();
-
-      toast.success("Quotation approved");
-    } catch (error) {
-      console.error("Approve quotation error:", error);
-
-      toast.error(getErrorMessage(error, "Failed to approve quotation"));
-    }
-  };
-
-  /* ==========================================================
-     DECLINE
-  ========================================================== */
-
-  const handleDeclineQuotation = async () => {
-    if (!id) {
-      return;
-    }
-
-    try {
-      await declineQuotationMutation({
-        id,
-        remark: remark.trim(),
-      }).unwrap();
-
-      toast.success("Quotation declined");
-
+      await mutationFn(args).unwrap();
+      toast.success(successMsg);
       setRemarkModal(null);
       setRemark("");
-    } catch (error) {
-      console.error("Decline quotation error:", error);
-
-      toast.error(getErrorMessage(error, "Failed to decline quotation"));
+    } catch (e) {
+      toast.error(e?.data?.detail || e?.error || "Action failed");
     }
   };
 
-  /* ==========================================================
-     RETURN
-  ========================================================== */
-
-  const handleReturnQuotation = async () => {
-    if (!id) {
-      return;
-    }
-
-    try {
-      await returnQuotationMutation({
-        id,
-        remark: remark.trim(),
-      }).unwrap();
-
-      toast.success("Quotation returned");
-
-      setRemarkModal(null);
-      setRemark("");
-    } catch (error) {
-      console.error("Return quotation error:", error);
-
-      toast.error(getErrorMessage(error, "Failed to return quotation"));
-    }
-  };
-
-  /* ==========================================================
-     DELETE
-  ========================================================== */
-
-  const handleDeleteQuotation = async () => {
-    if (!id) {
-      return;
-    }
-
-    const confirmed = window.confirm("Delete this quotation?");
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      await softDeleteQuotation({
-        id,
-        deleted_by: user?.id,
-      }).unwrap();
-
-      toast.success("Quotation deleted");
-
-      navigate("/quotations");
-    } catch (error) {
-      console.error("Delete quotation error:", error);
-
-      toast.error(getErrorMessage(error, "Failed to delete quotation"));
-    }
-  };
-
-  /* ==========================================================
-     TOGGLE ITEM
-  ========================================================== */
-
-  const toggleItem = (itemId) => {
-    setExpandedItems((current) => ({
-      ...current,
-      [itemId]: !current[itemId],
-    }));
-  };
-
-  /* ==========================================================
-     LOADING
-  ========================================================== */
-
-  if (isLoading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="text-[13px] text-[#66736B]">Loading quotation…</div>
-      </div>
+  const handleSubmit = () =>
+    runAction(
+      submitQuotation,
+      { id, submitted_by: user?.id },
+      "Sent for review",
     );
-  }
-
-  /* ==========================================================
-     NOT FOUND
-  ========================================================== */
-
-  if (!q) {
-    return (
-      <div className="p-6">
-        <button
-          type="button"
-          onClick={() => navigate("/quotations")}
-          className="inline-flex items-center gap-2 text-[13px] font-semibold text-[#103E31]"
-        >
-          <ArrowLeft size={15} />
-          Back to quotations
-        </button>
-
-        <div className="mt-8 rounded-xl border border-[#D5DDD7] bg-white p-8 text-center">
-          <div className="text-[15px] font-semibold text-[#333]">
-            Quotation not found
-          </div>
-        </div>
-      </div>
+  const handleApprove = (remarks) =>
+    runAction(approveQuotation, { id, remarks }, "Approved");
+  const handleReturn = (remarks) =>
+    runAction(returnQuotation, { id, remarks }, "Returned for revision");
+  const handleDecline = (remarks) =>
+    runAction(declineQuotation, { id, remarks }, "Declined");
+  const handleCancel = () =>
+    runAction(cancelQuotation, { id, updated_by: user?.id }, "Cancelled");
+  const handleRestore = () => runAction(restoreQuotation, id, "Restored");
+  const handleSoftDelete = () =>
+    runAction(
+      softDeleteQuotation,
+      { id, deleted_by: user?.id },
+      "Moved to trash",
     );
-  }
 
-  /* ==========================================================
-     MAIN UI
-  ========================================================== */
+  const addItem = async () => {
+    try {
+      await createQuotationItem({
+        quotationId: id,
+        particular: "New item",
+        quantity: 1,
+        rate: 0,
+        remarks: "",
+      }).unwrap();
+    } catch {
+      toast.error("Failed to add item");
+    }
+  };
+  const patchItem = async (itemId, patch) => {
+    try {
+      await updateQuotationItem({ itemId, ...patch }).unwrap();
+    } catch {
+      toast.error("Failed to update item");
+    }
+  };
+  const delItem = async (itemId) => {
+    try {
+      await deleteQuotationItem(itemId).unwrap();
+    } catch {
+      toast.error("Failed to delete item");
+    }
+  };
+
+  // PDF export — the same A4 pages shown on the Document tab (shared Rippotai print kit).
+  const exportPdf = async () => {
+    if (!docRef.current) {
+      toast.error("Document is not ready yet");
+      return;
+    }
+    setExporting(true);
+    try {
+      await downloadDocumentPdf(docRef.current, quotationFileName(q), {
+        title: `Quotation ${q.quotationNumber || ""} — ${project.name || ""}`,
+      });
+      toast.success("PDF exported");
+    } catch (err) {
+      console.error("PDF export error:", err);
+      toast.error("Couldn't create the PDF. Try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const exportXlsx = async () => {
+    try {
+      // Absolute /api/v1 URL — the legacy axios base is /api (no /v1).
+      const res = await api.get(`${API}/v1/quotations/${id}/export/excel`, {
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Quotation_${String(q.quotationNumber || id).replace(/[^A-Za-z0-9_-]+/g, "-")}.xlsx`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      toast.error("Couldn't export the Excel file. Try again.");
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[#F7F8F7]">
-      {/* ======================================================
-          HEADER
-      ====================================================== */}
+    <div className="max-w-[1440px] mx-auto p-6">
+      <button
+        onClick={() => nav("/procurement/estimates/all")}
+        className="text-[13px] text-[#6B7B7C] hover:text-[#333333] inline-flex items-center gap-1 mb-3"
+        data-testid="btn-back-quotations"
+      >
+        <ArrowLeft size={14} /> Estimates
+      </button>
 
-      <div className="sticky top-0 z-30 bg-white border-b border-[#D9E0DA]">
-        <div className="px-4 sm:px-6 py-3">
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <button
-                type="button"
-                onClick={() => navigate("/quotations")}
-                className="inline-flex items-center gap-1.5 text-[11px] text-[#6D7871] hover:text-[#103E31] mb-1"
-              >
-                <ArrowLeft size={13} />
-                Quotations
-              </button>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-[18px] font-bold text-[#202724]">
-                  {quotationNumberOf(q, id)}
-                </h1>
-
-                <StatusChip status={q.status} />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap justify-end">
-              {/* ==================================================
-                  PDF PREVIEW
-              ================================================== */}
-
-              <button
-                type="button"
-                onClick={() => setPreviewOpen(true)}
-                disabled={!printableQuotation}
-                data-testid="btn-export-pdf"
-                className="
-                  px-3
-                  py-1.5
-                  rounded-lg
-                  border
-                  border-[#B5C4B6]
-                  text-[12px]
-                  font-semibold
-                  inline-flex
-                  items-center
-                  gap-1.5
-                  bg-white
-                  hover:bg-[#F2F5F2]
-                  disabled:opacity-50
-                  disabled:cursor-not-allowed
-                "
-              >
-                <FileText size={13} />
-                PDF Preview
-              </button>
-
-              {editable && (
-                <Link
-                  to={`/quotations/${id}/edit`}
-                  className="
-                    px-3
-                    py-1.5
-                    rounded-lg
-                    bg-[#103E31]
-                    text-white
-                    text-[12px]
-                    font-semibold
-                  "
-                >
-                  Edit
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* ====================================================
-            TABS
-        ==================================================== */}
-
-        <div className="px-4 sm:px-6 flex gap-5 overflow-x-auto">
-          {TABS.map((name) => (
+      {isDeleted && (
+        <div className="mb-3 flex items-center justify-between bg-[#EAEEF0] border border-[#B5C4B6] rounded-lg px-4 py-2 text-[13px]">
+          <span className="text-[#333333]">
+            This quotation was deleted{q.deletedBy ? ` by ${q.deletedBy}` : ""}.
+          </span>
+          {isAdmin && (
             <button
-              key={name}
-              type="button"
-              onClick={() => setTab(name)}
-              className={`
-                py-2.5
-                text-[12px]
-                font-semibold
-                whitespace-nowrap
-                border-b-2
-                ${
-                  tab === name
-                    ? "border-[#103E31] text-[#103E31]"
-                    : "border-transparent text-[#748078]"
-                }
-              `}
+              onClick={handleRestore}
+              className="inline-flex items-center gap-1 font-semibold text-[#1F453B]"
             >
-              {name}
+              <RotateCcw size={13} /> Restore
             </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ======================================================
-          PAGE CONTENT
-      ====================================================== */}
-
-      <div className="p-4 sm:p-6 max-w-[1500px] mx-auto">
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-5">
-          <div className="space-y-5">
-            {/* =================================================
-                QUOTATION INFO
-            ================================================= */}
-
-            <div className="bg-white border border-[#D9E0DA] rounded-xl">
-              <div className="px-5 py-4 border-b border-[#E2E7E3]">
-                <h2 className="text-[14px] font-bold text-[#25302B]">
-                  Quotation Details
-                </h2>
-              </div>
-
-              <div className="p-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                <Info
-                  label="Quotation Number"
-                  value={quotationNumberOf(q, "—")}
-                />
-
-                <Info
-                  label="Quotation Date"
-                  value={q.quotationDate || q.quotation_date || "—"}
-                />
-
-                <Info label="Status" value={<StatusChip status={q.status} />} />
-
-                <Info label="Vendor" value={vendor.name || "—"} />
-
-                <Info
-                  label="Vendor Type"
-                  value={
-                    vendor.businessType?.name ||
-                    vendor.vendorCategory?.name ||
-                    "—"
-                  }
-                />
-
-                <Info
-                  label="Vendor Phone"
-                  value={vendor.contact_number || vendor.phone || "—"}
-                />
-
-                <Info label="Project" value={project.name || "—"} />
-
-                <Info
-                  label="Project Address"
-                  value={project.site_location || project.address || "—"}
-                />
-
-                <Info
-                  label="Client"
-                  value={q.client_name || q.clientName || "—"}
-                />
-              </div>
-            </div>
-
-            {/* =================================================
-                ITEMS
-            ================================================= */}
-
-            {tab === "Items" && (
-              <div className="bg-white border border-[#D9E0DA] rounded-xl overflow-hidden">
-                <div className="px-5 py-4 border-b border-[#E2E7E3] flex items-center justify-between">
-                  <div>
-                    <h2 className="text-[14px] font-bold text-[#25302B]">
-                      Items
-                    </h2>
-
-                    <div className="text-[11px] text-[#78837D] mt-0.5">
-                      {items.length} item
-                      {items.length === 1 ? "" : "s"}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="bg-[#F5F7F5] border-b border-[#D9E0DA]">
-                        <th className="px-4 py-3 text-[10px] uppercase tracking-wide text-[#6F7A73]">
-                          #
-                        </th>
-
-                        <th className="px-4 py-3 text-[10px] uppercase tracking-wide text-[#6F7A73]">
-                          Particular
-                        </th>
-
-                        <th className="px-4 py-3 text-[10px] uppercase tracking-wide text-[#6F7A73] text-right">
-                          Qty
-                        </th>
-
-                        <th className="px-4 py-3 text-[10px] uppercase tracking-wide text-[#6F7A73] text-right">
-                          Rate
-                        </th>
-
-                        <th className="px-4 py-3 text-[10px] uppercase tracking-wide text-[#6F7A73] text-right">
-                          Amount
-                        </th>
-
-                        <th className="w-10" />
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {items.map((item, index) => {
-                        const itemId = item.id || index;
-
-                        const expanded = expandedItems[itemId];
-
-                        return (
-                          <React.Fragment key={itemId}>
-                            <tr className="border-b border-[#E7EBE8]">
-                              <td className="px-4 py-3 text-[12px] text-[#68736D]">
-                                {item.sno || index + 1}
-                              </td>
-
-                              <td className="px-4 py-3">
-                                <div className="text-[12px] font-semibold text-[#29332E]">
-                                  {item.particular ||
-                                    item.description ||
-                                    item.name ||
-                                    "—"}
-                                </div>
-
-                                {item.remarks && (
-                                  <div className="text-[10.5px] text-[#78837D] mt-1">
-                                    {item.remarks}
-                                  </div>
-                                )}
-                              </td>
-
-                              <td className="px-4 py-3 text-[12px] text-right">
-                                {safeNumber(item.quantity)}
-                              </td>
-
-                              <td className="px-4 py-3 text-[12px] text-right">
-                                {fmtINR(safeNumber(item.rate))}
-                              </td>
-
-                              <td className="px-4 py-3 text-[12px] font-semibold text-right">
-                                {fmtINR(safeNumber(item.amount))}
-                              </td>
-
-                              <td className="px-2">
-                                {item.remarks && (
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleItem(itemId)}
-                                    className="w-7 h-7 flex items-center justify-center"
-                                  >
-                                    {expanded ? (
-                                      <ChevronDown size={14} />
-                                    ) : (
-                                      <ChevronRight size={14} />
-                                    )}
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-
-                            {expanded && item.remarks && (
-                              <tr className="bg-[#FAFBFA]">
-                                <td />
-
-                                <td colSpan={5} className="px-4 py-3">
-                                  <div className="text-[10px] uppercase tracking-wide font-semibold text-[#718078] mb-1">
-                                    Remarks
-                                  </div>
-
-                                  <div className="text-[12px] text-[#3B4640]">
-                                    {item.remarks}
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                          </React.Fragment>
-                        );
-                      })}
-
-                      {items.length === 0 && (
-                        <tr>
-                          <td
-                            colSpan={6}
-                            className="px-5 py-10 text-center text-[12px] text-[#78837D]"
-                          >
-                            No quotation items found.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* =================================================
-                COMMERCIAL TERMS
-            ================================================= */}
-
-            {tab === "Commercial Terms" && (
-              <div className="bg-white border border-[#D9E0DA] rounded-xl">
-                <div className="px-5 py-4 border-b border-[#E2E7E3]">
-                  <h2 className="text-[14px] font-bold text-[#25302B]">
-                    Commercial Terms
-                  </h2>
-                </div>
-
-                <div className="p-5 space-y-5">
-                  <Info
-                    label="Payment Terms"
-                    value={
-                      Array.isArray(q.paymentTerms || q.payment_terms)
-                        ? (q.paymentTerms || q.payment_terms || [])
-                            .map((term) =>
-                              typeof term === "string"
-                                ? term
-                                : term?.label || term?.name || "",
-                            )
-                            .filter(Boolean)
-                            .join(", ") || "—"
-                        : q.paymentTerms || q.payment_terms || "—"
-                    }
-                  />
-
-                  <div>
-                    <div className="text-[10px] uppercase tracking-wide font-semibold text-[#758078] mb-2">
-                      Terms & Conditions
-                    </div>
-
-                    <div className="rounded-lg bg-[#F7F9F7] border border-[#E0E6E1] p-4 whitespace-pre-wrap text-[12px] leading-6 text-[#354039]">
-                      {q.termsConditions ||
-                        q.terms_conditions ||
-                        "No terms and conditions specified."}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* =================================================
-                APPROVAL HISTORY
-            ================================================= */}
-
-            {tab === "Approval History" && (
-              <div className="bg-white border border-[#D9E0DA] rounded-xl">
-                <div className="px-5 py-4 border-b border-[#E2E7E3]">
-                  <h2 className="text-[14px] font-bold text-[#25302B]">
-                    Approval History
-                  </h2>
-                </div>
-
-                <div className="p-5">
-                  {safeArray(q.approvalHistory || q.approval_history).length ===
-                  0 ? (
-                    <div className="text-[12px] text-[#78837D]">
-                      No approval history available.
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {safeArray(q.approvalHistory || q.approval_history).map(
-                        (history, index) => (
-                          <div key={history.id || index} className="flex gap-3">
-                            <div className="w-7 h-7 rounded-full bg-[#EEF3EF] flex items-center justify-center text-[#103E31] shrink-0">
-                              <CheckCircle2 size={14} />
-                            </div>
-
-                            <div>
-                              <div className="text-[12px] font-semibold text-[#303A34]">
-                                {history.action || history.status || "Updated"}
-                              </div>
-
-                              <div className="text-[10.5px] text-[#7B857F] mt-0.5">
-                                {history.user?.name ||
-                                  history.userName ||
-                                  history.actorName ||
-                                  "System"}
-
-                                {" · "}
-
-                                {history.createdAt
-                                  ? relativeTime(history.createdAt)
-                                  : ""}
-                              </div>
-
-                              {history.remark && (
-                                <div className="mt-2 text-[11.5px] text-[#4C5750]">
-                                  {history.remark}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ),
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* =================================================
-                VERSIONS
-            ================================================= */}
-
-            {tab === "Versions" && (
-              <div className="bg-white border border-[#D9E0DA] rounded-xl">
-                <div className="px-5 py-4 border-b border-[#E2E7E3]">
-                  <h2 className="text-[14px] font-bold text-[#25302B]">
-                    Versions
-                  </h2>
-                </div>
-
-                <div className="p-5">
-                  {safeArray(q.versions).length === 0 ? (
-                    <div className="text-[12px] text-[#78837D]">
-                      No versions available.
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {safeArray(q.versions).map((version, index) => (
-                        <div
-                          key={version.id || index}
-                          className="border border-[#E2E7E3] rounded-lg p-4"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="text-[12px] font-semibold">
-                              Version {version.version || index + 1}
-                            </div>
-
-                            <div className="text-[10.5px] text-[#7A847E]">
-                              {version.createdAt
-                                ? relativeTime(version.createdAt)
-                                : ""}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* ==================================================
-              RIGHT SUMMARY
-          ================================================== */}
-
-          <div className="space-y-5">
-            {/* =================================================
-                COMMERCIAL SUMMARY
-            ================================================= */}
-
-            <div className="bg-white border border-[#D9E0DA] rounded-xl overflow-hidden">
-              <div className="px-5 py-4 border-b border-[#E2E7E3]">
-                <h2 className="text-[14px] font-bold text-[#25302B]">
-                  Commercial Summary
-                </h2>
-              </div>
-
-              <div className="p-5 space-y-3">
-                <SummaryRow label="Subtotal" value={fmtINR(subtotal)} />
-
-                <SummaryRow
-                  label={`Tax ${safeNumber(q.taxPercent)}%`}
-                  value={fmtINR(taxAmount)}
-                />
-
-                <SummaryRow
-                  label="Additional Charges"
-                  value={fmtINR(additionalCharges)}
-                />
-
-                <SummaryRow
-                  label="Discount"
-                  value={`- ${fmtINR(discountValue)}`}
-                />
-
-                <div className="pt-3 mt-3 border-t border-[#DCE3DD]">
-                  <SummaryRow
-                    label="Grand Total"
-                    value={fmtINR(total)}
-                    strong
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* =================================================
-                ACTIONS
-            ================================================= */}
-
-            {!isDeleted && (
-              <div className="bg-white border border-[#D9E0DA] rounded-xl p-5">
-                <div className="text-[11px] uppercase tracking-wide font-bold text-[#758078] mb-3">
-                  Actions
-                </div>
-
-                <div className="space-y-2">
-                  {/* ------------------------------------------------
-                      DRAFT → SUBMIT
-                  ------------------------------------------------ */}
-
-                  {q.status === "draft" && (
-                    <button
-                      type="button"
-                      onClick={handleSubmitQuotation}
-                      disabled={actionLoading}
-                      className="
-                        w-full
-                        h-9
-                        rounded-lg
-                        bg-[#103E31]
-                        text-white
-                        text-[12px]
-                        font-semibold
-                        inline-flex
-                        items-center
-                        justify-center
-                        gap-2
-                        disabled:opacity-50
-                        disabled:cursor-not-allowed
-                      "
-                    >
-                      <Send size={14} />
-
-                      {isSubmitting ? "Submitting…" : "Send for Approval"}
-                    </button>
-                  )}
-
-                  {/* ------------------------------------------------
-                      PENDING APPROVAL
-                  ------------------------------------------------ */}
-
-                  {q.status === "pending_approval" && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={handleApproveQuotation}
-                        disabled={actionLoading}
-                        className="
-                          w-full
-                          h-9
-                          rounded-lg
-                          bg-[#103E31]
-                          text-white
-                          text-[12px]
-                          font-semibold
-                          inline-flex
-                          items-center
-                          justify-center
-                          gap-2
-                          disabled:opacity-50
-                          disabled:cursor-not-allowed
-                        "
-                      >
-                        <CheckCircle2 size={14} />
-
-                        {isApproving ? "Approving…" : "Approve"}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setRemarkModal("reject")}
-                        disabled={actionLoading}
-                        className="
-                          w-full
-                          h-9
-                          rounded-lg
-                          border
-                          border-[#D8BABA]
-                          text-[#8B3434]
-                          text-[12px]
-                          font-semibold
-                          inline-flex
-                          items-center
-                          justify-center
-                          gap-2
-                          disabled:opacity-50
-                        "
-                      >
-                        <XCircle size={14} />
-                        Reject
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setRemarkModal("return")}
-                        disabled={actionLoading}
-                        className="
-                          w-full
-                          h-9
-                          rounded-lg
-                          border
-                          border-[#C9D3CB]
-                          text-[#3C4942]
-                          text-[12px]
-                          font-semibold
-                          inline-flex
-                          items-center
-                          justify-center
-                          gap-2
-                          disabled:opacity-50
-                        "
-                      >
-                        <RotateCcw size={14} />
-                        Return
-                      </button>
-                    </>
-                  )}
-
-                  {/* ------------------------------------------------
-                      RETURNED
-                  ------------------------------------------------ */}
-
-                  {q.status === "returned" && (
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/quotations/${id}/edit`)}
-                      className="
-                        w-full
-                        h-9
-                        rounded-lg
-                        bg-[#103E31]
-                        text-white
-                        text-[12px]
-                        font-semibold
-                        inline-flex
-                        items-center
-                        justify-center
-                        gap-2
-                      "
-                    >
-                      <RotateCcw size={14} />
-                      Revise Quotation
-                    </button>
-                  )}
-
-                  {/* ------------------------------------------------
-                      ADMIN DELETE
-                  ------------------------------------------------ */}
-
-                  {isAdmin && !isDeleted && (
-                    <button
-                      type="button"
-                      onClick={handleDeleteQuotation}
-                      disabled={actionLoading}
-                      className="
-                          w-full
-                          h-9
-                          rounded-lg
-                          border
-                          border-[#E1CACA]
-                          text-[#913B3B]
-                          text-[12px]
-                          font-semibold
-                          inline-flex
-                          items-center
-                          justify-center
-                          gap-2
-                          disabled:opacity-50
-                          disabled:cursor-not-allowed
-                        "
-                    >
-                      <Trash2 size={14} />
-
-                      {isDeleting ? "Deleting…" : "Delete"}
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ======================================================
-          BACKGROUND FETCH INDICATOR
-      ====================================================== */}
-
-      {isFetching && !isLoading && (
-        <div className="fixed bottom-4 right-4 z-40">
-          <div className="px-3 py-2 rounded-lg bg-[#103E31] text-white text-[11px] font-semibold shadow-lg">
-            Updating quotation…
-          </div>
+          )}
         </div>
       )}
 
-      {/* ======================================================
-          REMARK MODAL
-      ====================================================== */}
-
-      {remarkModal && (
-        <div className="fixed inset-0 z-[90] bg-black/40 flex items-center justify-center p-4">
-          <div className="w-full max-w-[520px] rounded-xl bg-white shadow-2xl border border-[#D7DED8]">
-            <div className="px-5 py-4 border-b border-[#E1E6E2] flex items-center justify-between">
-              <div>
-                <div className="text-[14px] font-bold text-[#29332E]">
-                  {remarkModal === "reject"
-                    ? "Reject Quotation"
-                    : "Return Quotation"}
-                </div>
-
-                <div className="text-[11px] text-[#7B857F] mt-0.5">
-                  Add a remark for the quotation.
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setRemarkModal(null);
-
-                  setRemark("");
-                }}
-                className="
-                  w-8
-                  h-8
-                  rounded-lg
-                  border
-                  border-[#D6DED7]
-                  flex
-                  items-center
-                  justify-center
-                "
-              >
-                <X size={15} />
-              </button>
+      {/* Header */}
+      <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
+        <div className="flex flex-wrap justify-between gap-4">
+          <div className="flex-1 min-w-[300px]">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] uppercase tracking-widest text-[#B5C4B6] font-semibold">
+                QUOTATION
+              </span>
+              <StatusChip status={q.status} />
+              <span className="text-[11px] font-semibold text-[#333333] bg-[#EAEEF0] px-1.5 py-0.5 rounded">
+                V{q.currentVersion ?? 1}
+              </span>
             </div>
+            <h1
+              className="text-[36px] font-bold text-[#333333] mt-1.5"
+              data-testid="quotation-title"
+            >
+              {project.name || "Untitled Project"}
+            </h1>
+            <div className="text-[13px] text-[#6B7B7C] mt-1 space-x-3">
+              <Link
+                to={`/vendors/${q.vendorId || q.vendor_id}`}
+                className="hover:text-[#333333]"
+              >
+                <span className="font-semibold">{vendor.name || "—"}</span>
+              </Link>
+              {vendor.company_name && (
+                <>
+                  <span className="text-[#B5C4B6]">·</span>
+                  <span>{vendor.company_name}</span>
+                </>
+              )}
+              {(vendor.businessType?.name || vendor.vendorCategory?.name) && (
+                <>
+                  <span className="text-[#B5C4B6]">·</span>
+                  <span>
+                    {vendor.businessType?.name || vendor.vendorCategory?.name}
+                  </span>
+                </>
+              )}
+            </div>
+            <div className="text-[12px] text-[#B5C4B6] mt-1">
+              {q.quotationNumber} · {q.quotationDate}
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
+              Estimate Total
+            </div>
+            <div
+              className="text-[34px] font-bold text-[#333333] leading-none mt-1"
+              data-testid="quotation-total"
+            >
+              {fmtINR(total)}
+            </div>
+            <div className="text-[11px] text-[#6B7B7C] mt-1">
+              Subtotal {fmtINR(subtotal)} · Tax ({q.taxPercent || 0}%){" "}
+              {fmtINR(taxAmount)}
+            </div>
+            {(discountValue > 0 || additionalCharges > 0) && (
+              <div className="text-[11px] text-[#6B7B7C] mt-0.5">
+                {discountValue > 0 &&
+                  `Discount ${q.globalDiscountType === "percent" ? `${discountValue}%` : fmtINR(discountValue)}`}
+                {discountValue > 0 && additionalCharges > 0 && " · "}
+                {additionalCharges > 0 &&
+                  `Additional charges ${fmtINR(additionalCharges)}`}
+              </div>
+            )}
+          </div>
+        </div>
 
-            <div className="p-5">
-              <textarea
-                value={remark}
-                onChange={(event) => setRemark(event.target.value)}
-                rows={5}
-                placeholder="Enter remark…"
-                className="
-                  w-full
-                  rounded-lg
-                  border
-                  border-[#CBD5CE]
-                  px-3
-                  py-2.5
-                  text-[12px]
-                  outline-none
-                  focus:border-[#103E31]
-                  resize-none
-                "
-              />
-
-              <div className="mt-4 flex justify-end gap-2">
+        {/* Actions */}
+        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[#B5C4B6]">
+          <button
+            onClick={exportPdf}
+            disabled={exporting}
+            data-testid="btn-export-pdf"
+            className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px] font-semibold inline-flex items-center gap-1 disabled:opacity-50"
+          >
+            <Download size={13} /> {exporting ? "Exporting…" : "PDF"}
+          </button>
+          <button
+            onClick={exportXlsx}
+            data-testid="btn-export-excel"
+            className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px] font-semibold inline-flex items-center gap-1"
+          >
+            <Download size={13} /> Excel
+          </button>
+          <div className="ml-auto flex flex-wrap gap-2">
+            {!readOnly && !isDeleted && q.status === "draft" && (
+              <button
+                onClick={handleSubmit}
+                disabled={busy}
+                className="px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold inline-flex items-center gap-1"
+                data-testid="btn-submit"
+              >
+                <Send size={13} /> Submit for Review
+              </button>
+            )}
+            {!readOnly &&
+              !isDeleted &&
+              ["submitted", "under_review", "awaiting_approval"].includes(
+                q.status,
+              ) && (
+                <>
+                  <button
+                    onClick={() =>
+                      setRemarkModal({
+                        label: "Approve",
+                        onConfirm: handleApprove,
+                      })
+                    }
+                    disabled={busy}
+                    className="px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold inline-flex items-center gap-1"
+                    data-testid="btn-approve"
+                  >
+                    <CheckCircle2 size={13} /> Approve
+                  </button>
+                  <button
+                    onClick={() =>
+                      setRemarkModal({
+                        label: "Return for Revision",
+                        onConfirm: handleReturn,
+                      })
+                    }
+                    disabled={busy}
+                    className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px] font-semibold"
+                  >
+                    Return
+                  </button>
+                  <button
+                    onClick={() =>
+                      setRemarkModal({
+                        label: "Decline",
+                        onConfirm: handleDecline,
+                      })
+                    }
+                    disabled={busy}
+                    className="px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold inline-flex items-center gap-1"
+                  >
+                    <XCircle size={13} /> Decline
+                  </button>
+                </>
+              )}
+            {!isDeleted &&
+              ["approved", "submitted", "under_review"].includes(q.status) && (
                 <button
-                  type="button"
-                  onClick={() => {
-                    setRemarkModal(null);
-
-                    setRemark("");
-                  }}
-                  className="
-                    px-3
-                    py-2
-                    rounded-lg
-                    border
-                    border-[#CBD5CE]
-                    text-[12px]
-                    font-semibold
-                  "
+                  onClick={handleCancel}
+                  disabled={busy}
+                  className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px] font-semibold"
                 >
                   Cancel
                 </button>
+              )}
+            {isAdmin && !isDeleted && (
+              <button
+                onClick={handleSoftDelete}
+                className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px] font-semibold inline-flex items-center gap-1 text-[#333333]"
+                title="Move to trash"
+              >
+                <Archive size={13} /> Delete
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
-                <button
-                  type="button"
-                  disabled={actionLoading}
-                  onClick={
-                    remarkModal === "reject"
-                      ? handleDeclineQuotation
-                      : handleReturnQuotation
-                  }
-                  className="
-                    px-3
-                    py-2
-                    rounded-lg
-                    bg-[#103E31]
-                    text-white
-                    text-[12px]
-                    font-semibold
-                    disabled:opacity-50
-                    disabled:cursor-not-allowed
-                  "
-                >
-                  {remarkModal === "reject"
-                    ? isDeclining
-                      ? "Rejecting…"
-                      : "Reject"
-                    : isReturning
-                      ? "Returning…"
-                      : "Return"}
-                </button>
+      {/* Tabs */}
+      <div className="mt-6 flex gap-1 border-b border-[#B5C4B6] overflow-x-auto">
+        {TABS.map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            data-testid={`detail-tab-${t.replace(/\s+/g, "-").toLowerCase()}`}
+            className={`px-4 py-2 text-[13px] font-semibold whitespace-nowrap ${
+              tab === t
+                ? "text-[#333333] border-b-2 border-[#1F453B]"
+                : "text-[#6B7B7C]"
+            }`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-4">
+        {tab === "Items" && (
+          <div className="bg-white border border-[#B5C4B6] rounded-xl p-4">
+            <div className="flex justify-between mb-3">
+              <div className="text-[13px] font-semibold text-[#333333]">
+                {q.items?.length || 0} items
               </div>
+              {editable && (
+                <button
+                  onClick={addItem}
+                  className="px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12px] font-semibold"
+                  data-testid="btn-add-item"
+                >
+                  + Add Item
+                </button>
+              )}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-[12.5px]">
+                <thead className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
+                  <tr className="border-b border-[#B5C4B6]">
+                    <th className="text-left py-2 pr-2">#</th>
+                    <th className="text-left py-2 pr-2">Particular</th>
+                    <th className="text-right py-2 pr-2">Qty</th>
+                    <th className="text-right py-2 pr-2">Rate</th>
+                    <th className="text-right py-2 pr-2">Amount</th>
+                    <th className="text-left py-2 pr-2">Remarks</th>
+                    {editable && <th></th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(q.items || []).map((it) => (
+                    <tr key={it.id} className="border-b border-[#EAEEF0]">
+                      <td className="py-2 pr-2 text-[#B5C4B6]">{it.sno}</td>
+                      <td className="py-2 pr-2">
+                        {editable ? (
+                          <input
+                            value={it.particular || ""}
+                            onChange={(e) =>
+                              patchItem(it.id, { particular: e.target.value })
+                            }
+                            className="w-full px-2 py-1 border border-transparent hover:border-[#B5C4B6] rounded"
+                          />
+                        ) : (
+                          it.particular
+                        )}
+                      </td>
+                      <td className="py-2 pr-2 text-right">
+                        {editable ? (
+                          <input
+                            type="number"
+                            value={it.quantity}
+                            onChange={(e) =>
+                              patchItem(it.id, {
+                                quantity: parseFloat(e.target.value) || 0,
+                              })
+                            }
+                            className="w-20 px-2 py-1 border border-transparent hover:border-[#B5C4B6] rounded text-right"
+                          />
+                        ) : (
+                          Number(it.quantity)
+                        )}
+                      </td>
+                      <td className="py-2 pr-2 text-right">
+                        {editable ? (
+                          <input
+                            type="number"
+                            value={it.rate}
+                            onChange={(e) =>
+                              patchItem(it.id, {
+                                rate: parseFloat(e.target.value) || 0,
+                              })
+                            }
+                            className="w-24 px-2 py-1 border border-transparent hover:border-[#B5C4B6] rounded text-right"
+                          />
+                        ) : (
+                          fmtINR(it.rate)
+                        )}
+                      </td>
+                      <td className="py-2 pr-2 text-right font-semibold">
+                        {fmtINR(it.amount || 0)}
+                      </td>
+                      <td className="py-2 pr-2">
+                        {editable ? (
+                          <input
+                            value={it.remarks || ""}
+                            onChange={(e) =>
+                              patchItem(it.id, { remarks: e.target.value })
+                            }
+                            className="w-full px-2 py-1 border border-transparent hover:border-[#B5C4B6] rounded"
+                          />
+                        ) : (
+                          it.remarks || "—"
+                        )}
+                      </td>
+                      {editable && (
+                        <td className="py-2">
+                          <button
+                            onClick={() => delItem(it.id)}
+                            className="text-[#333333]"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="text-[12.5px]">
+                    <td
+                      colSpan={4}
+                      className="py-2 pr-2 text-right font-semibold text-[#6B7B7C]"
+                    >
+                      Subtotal
+                    </td>
+                    <td className="py-2 pr-2 text-right font-semibold">
+                      {fmtINR(subtotal)}
+                    </td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {tab === "Commercial Terms" && (
+          <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[13px]">
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
+                  Tax
+                </div>
+                <div className="text-[#333333] font-semibold">
+                  {q.taxPercent || 0}% ({fmtINR(taxAmount)})
+                </div>
+              </div>
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
+                  Discount
+                </div>
+                <div className="text-[#333333] font-semibold">
+                  {discountValue > 0
+                    ? q.globalDiscountType === "percent"
+                      ? `${discountValue}%`
+                      : fmtINR(discountValue)
+                    : "—"}
+                </div>
+              </div>
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
+                  Additional Charges
+                </div>
+                <div className="text-[#333333] font-semibold">
+                  {fmtINR(additionalCharges)}
+                </div>
+              </div>
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
+                  Created
+                </div>
+                <div className="text-[#333333] font-semibold">
+                  {relativeTime(q.created_at)}
+                </div>
+              </div>
+              <div className="md:col-span-2">
+                <div className="text-[11px] uppercase tracking-wider text-[#B5C4B6]">
+                  Terms &amp; Conditions
+                </div>
+                <div className="text-[#333333] whitespace-pre-wrap">
+                  {q.termsConditions || "—"}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tab === "Approval History" && (
+          <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
+            <ApprovalHistory q={q} />
+          </div>
+        )}
+
+        {tab === "Versions" && (
+          <VersionsTab
+            id={id}
+            currentVersion={q.currentVersion}
+            isAdmin={isAdmin}
+          />
+        )}
+      </div>
+
+      {remarkModal && (
+        <div
+          className="fixed inset-0 z-50 bg-[#1F453B]/40 flex items-center justify-center p-4"
+          onClick={() => setRemarkModal(null)}
+        >
+          <div
+            className="bg-white rounded-xl max-w-md w-full p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-[15px] font-bold mb-2">
+              {remarkModal.label}
+            </div>
+            <textarea
+              autoFocus
+              value={remark}
+              onChange={(e) => setRemark(e.target.value)}
+              rows={4}
+              placeholder="Add remarks (optional)…"
+              className="w-full px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
+              data-testid="remark-input"
+            />
+            <div className="flex justify-end gap-2 mt-3">
+              <button
+                onClick={() => setRemarkModal(null)}
+                className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => remarkModal.onConfirm(remark)}
+                disabled={busy}
+                className="px-4 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold"
+                data-testid="btn-confirm-remark"
+              >
+                Confirm
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ======================================================
-          VISIBLE QUOTATION PREVIEW
-      ====================================================== */}
+      {/* The client-ready document: shown on the Document tab, kept laid out off-screen otherwise
+          so "PDF" always captures the same pages. */}
+      <div style={tab === "Document" ? { marginTop: 16 } : OFFSCREEN_STYLE} aria-hidden={tab !== "Document"}>
+        <DocumentPreview>
+          <QuotationDocument ref={docRef} quotation={q} />
+        </DocumentPreview>
+      </div>
+    </div>
+  );
+}
 
-      {previewOpen && printableQuotation && (
-        <QuotationPreviewModal
-          quotation={printableQuotation}
-          adminSignature={q.adminSignature}
-          quotationNumber={quotationNumberOf(q, id)}
-          onClose={() => setPreviewOpen(false)}
-        />
+function ApprovalHistory({ q }) {
+  const events = [];
+  if (q.submittedAt) {
+    events.push({
+      id: "submitted",
+      action: "submitted",
+      actor: q.submittedBy,
+      at: q.submittedAt,
+    });
+  }
+  if (q.reviewedAt) {
+    events.push({
+      id: "reviewed",
+      action: q.status === "approved" ? "approved" : "reviewed",
+      actor: q.reviewedBy,
+      at: q.reviewedAt,
+      remarks: q.reviewRemarks,
+    });
+  }
+
+  if (events.length === 0) {
+    return (
+      <div className="text-[#B5C4B6] text-center py-6">
+        No approval events yet.
+      </div>
+    );
+  }
+
+  return (
+    <ol className="space-y-3">
+      {events.map((a) => (
+        <li key={a.id} className="flex gap-3">
+          <div className="w-2 h-2 rounded-full bg-[#1F453B] mt-1.5" />
+          <div className="flex-1">
+            <div className="text-[13px] font-semibold text-[#333333]">
+              {a.action.replace(/_/g, " ")}
+            </div>
+            <div className="text-[12px] text-[#6B7B7C]">
+              {a.actor || "—"} · {relativeTime(a.at)}
+            </div>
+            {a.remarks && (
+              <div className="text-[12px] text-[#6B7B7C] mt-1">
+                &ldquo;{a.remarks}&rdquo;
+              </div>
+            )}
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function VersionsTab({ id, currentVersion, isAdmin }) {
+  const { data: rows = [], isLoading } = useGetQuotationVersionsQuery(id, {
+    skip: !id,
+  });
+  const [createQuotationVersion, { isLoading: creating }] =
+    useCreateQuotationVersionMutation();
+  const [restoreQuotationVersion] = useRestoreQuotationVersionMutation();
+  const [deleteQuotationVersion] = useDeleteQuotationVersionMutation();
+  const { user } = useAuth();
+
+  const [openId, setOpenId] = useState(null);
+  const [remarkModal, setRemarkModal] = useState(false);
+  const [remark, setRemark] = useState("");
+
+  const handleCreateVersion = async () => {
+    try {
+      await createQuotationVersion({
+        quotationId: id,
+        created_by: user?.id,
+        remarks: remark,
+      }).unwrap();
+      toast.success("Version saved");
+      setRemarkModal(false);
+      setRemark("");
+    } catch {
+      toast.error("Failed to save version");
+    }
+  };
+
+  const handleRestoreVersion = async (versionId) => {
+    try {
+      await restoreQuotationVersion({
+        id: versionId,
+        restored_by: user?.id,
+      }).unwrap();
+      toast.success("Version restored");
+    } catch {
+      toast.error("Failed to restore version");
+    }
+  };
+
+  const handleDeleteVersion = async (versionId) => {
+    try {
+      await deleteQuotationVersion(versionId).unwrap();
+      toast.success("Version deleted");
+    } catch {
+      toast.error("Failed to delete version");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
+        <div className="text-[#B5C4B6] text-center py-6">Loading versions…</div>
+      </div>
+    );
+  }
+
+  const sorted = [...rows].sort((a, b) => b.version - a.version);
+
+  return (
+    <div className="bg-white border border-[#B5C4B6] rounded-xl p-5">
+      <div className="flex justify-between items-center mb-3">
+        <div className="text-[13px] font-semibold text-[#333333]">
+          {rows.length} version{rows.length === 1 ? "" : "s"}
+        </div>
+        <button
+          onClick={() => setRemarkModal(true)}
+          disabled={creating}
+          className="px-3 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12px] font-semibold inline-flex items-center gap-1"
+        >
+          <Copy size={12} /> Save Version
+        </button>
+      </div>
+
+      {sorted.length === 0 ? (
+        <div className="text-[#B5C4B6] text-center py-6">No versions yet.</div>
+      ) : (
+        <div className="space-y-2">
+          {sorted.map((r) => {
+            const isOpen = openId === r.id;
+            const snap = r.snapshot || {};
+            return (
+              <div
+                key={r.id}
+                className="border border-[#B5C4B6] rounded-lg overflow-hidden"
+              >
+                <div className="w-full flex justify-between items-center p-3 hover:bg-[#FAF8F5]">
+                  <button
+                    onClick={() => setOpenId(isOpen ? null : r.id)}
+                    className="flex items-center gap-2 text-left flex-1"
+                  >
+                    {isOpen ? (
+                      <ChevronDown size={14} className="text-[#B5C4B6]" />
+                    ) : (
+                      <ChevronRight size={14} className="text-[#B5C4B6]" />
+                    )}
+                    <div>
+                      <div className="text-[13px] font-semibold text-[#333333] flex items-center gap-2">
+                        V{r.version}
+                        {r.version === currentVersion && (
+                          <span className="text-[10px] font-semibold text-[#1F453B] bg-[#EAEEF0] px-1.5 py-0.5 rounded-full">
+                            Current
+                          </span>
+                        )}
+                        <StatusChip status={snap.status} />
+                      </div>
+                      <div className="text-[12px] text-[#6B7B7C]">
+                        {r.remarks || "No remarks"} ·{" "}
+                        {relativeTime(r.created_at)}
+                      </div>
+                    </div>
+                  </button>
+                  <div className="flex items-center gap-3">
+                    <div className="text-[14px] font-bold text-[#333333]">
+                      {fmtINR(snap.totalAmount || 0)}
+                    </div>
+                    {isAdmin && (
+                      <>
+                        <button
+                          onClick={() => handleRestoreVersion(r.id)}
+                          title="Restore this version"
+                          className="text-[#6B7B7C] hover:text-[#1F453B]"
+                        >
+                          <RotateCcw size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteVersion(r.id)}
+                          title="Delete this version"
+                          className="text-[#6B7B7C] hover:text-[#333333]"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {isOpen && (
+                  <div className="border-t border-[#EAEEF0] p-3 bg-[#FAF8F5]">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[12px] mb-3">
+                      <div>
+                        <div className="text-[10px] uppercase text-[#B5C4B6]">
+                          Subtotal
+                        </div>
+                        <div className="font-semibold text-[#333333]">
+                          {fmtINR(snap.subtotal || 0)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase text-[#B5C4B6]">
+                          Tax
+                        </div>
+                        <div className="font-semibold text-[#333333]">
+                          {fmtINR(snap.taxAmount || 0)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase text-[#B5C4B6]">
+                          Discount
+                        </div>
+                        <div className="font-semibold text-[#333333]">
+                          {snap.discount ? fmtINR(snap.discount) : "—"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase text-[#B5C4B6]">
+                          Items
+                        </div>
+                        <div className="font-semibold text-[#333333]">
+                          {snap.items?.length || 0}
+                        </div>
+                      </div>
+                    </div>
+                    <table className="w-full text-[12px]">
+                      <thead className="text-[10px] uppercase text-[#B5C4B6]">
+                        <tr className="border-b border-[#B5C4B6]">
+                          <th className="text-left py-1">#</th>
+                          <th className="text-left py-1">Particular</th>
+                          <th className="text-right py-1">Qty</th>
+                          <th className="text-right py-1">Rate</th>
+                          <th className="text-right py-1">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(snap.items || []).map((it) => (
+                          <tr key={it.id} className="border-b border-[#EAEEF0]">
+                            <td className="py-1 text-[#B5C4B6]">{it.sno}</td>
+                            <td className="py-1">{it.particular}</td>
+                            <td className="py-1 text-right">
+                              {Number(it.quantity)}
+                            </td>
+                            <td className="py-1 text-right">
+                              {fmtINR(it.rate)}
+                            </td>
+                            <td className="py-1 text-right font-semibold">
+                              {fmtINR(it.amount)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
-    </div>
-  );
-}
 
-/* ============================================================
-   INFO COMPONENT
-============================================================ */
-
-function Info({ label, value }) {
-  return (
-    <div className="min-w-0">
-      <div className="text-[10px] uppercase tracking-wide font-semibold text-[#78837D] mb-1">
-        {label}
-      </div>
-
-      <div className="text-[12px] font-medium text-[#303A34] break-words">
-        {value}
-      </div>
-    </div>
-  );
-}
-
-/* ============================================================
-   SUMMARY ROW
-============================================================ */
-
-function SummaryRow({ label, value, strong = false }) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <div
-        className={
-          strong
-            ? "text-[13px] font-bold text-[#26322C]"
-            : "text-[11.5px] text-[#68736D]"
-        }
-      >
-        {label}
-      </div>
-
-      <div
-        className={
-          strong
-            ? "text-[15px] font-bold text-[#103E31]"
-            : "text-[12px] font-semibold text-[#354039]"
-        }
-      >
-        {value}
-      </div>
+      {remarkModal && (
+        <div
+          className="fixed inset-0 z-50 bg-[#1F453B]/40 flex items-center justify-center p-4"
+          onClick={() => setRemarkModal(false)}
+        >
+          <div
+            className="bg-white rounded-xl max-w-md w-full p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-[15px] font-bold mb-2">Save Version</div>
+            <textarea
+              autoFocus
+              value={remark}
+              onChange={(e) => setRemark(e.target.value)}
+              rows={4}
+              placeholder="Add remarks (optional)…"
+              className="w-full px-3 py-2 border border-[#B5C4B6] rounded-lg text-[13px] bg-[#EAEEF0]"
+            />
+            <div className="flex justify-end gap-2 mt-3">
+              <button
+                onClick={() => setRemarkModal(false)}
+                className="px-3 py-1.5 rounded-lg border border-[#B5C4B6] text-[12.5px]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateVersion}
+                disabled={creating}
+                className="px-4 py-1.5 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

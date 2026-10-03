@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import BoqDocument, { boqFileName } from "@/components/commerce-documents/BoqDocument";
+import { downloadWhenReady, OFFSCREEN_STYLE } from "@/components/print-document/commerce";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
@@ -68,6 +70,9 @@ export default function BoqTemplateEditor() {
   const [detailItem, setDetailItem] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [pickerFor, setPickerFor] = useState(null);
+  // PDF: the template rendered with the shared print kit, off-screen, then captured.
+  const pdfRef = useRef(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
 
   const withSaveChip = async (promise) => {
     setSaveState("saving");
@@ -290,6 +295,21 @@ export default function BoqTemplateEditor() {
   }
 
   const categories = template.categories || [];
+
+  const downloadTemplatePdf = async () => {
+    const tid = `tpl-pdf-${Date.now()}`;
+    setPdfBusy(true);
+    toast.loading("Preparing the template PDF…", { id: tid });
+    try {
+      await downloadWhenReady(() => pdfRef.current, boqFileName(template, "client", true), { title: `BOQ Template — ${template.name}` });
+      toast.success("Template PDF downloaded", { id: tid });
+    } catch (e) {
+      console.error("Template PDF failed", e);
+      toast.error("Couldn't create the PDF. Try again.", { id: tid });
+    } finally {
+      setPdfBusy(false);
+    }
+  };
   const allItems = categories.flatMap((c) => c.items || []);
   const existingCategories = new Set(
     categories.map((c) => c.name.toLowerCase().trim()),
@@ -342,8 +362,8 @@ export default function BoqTemplateEditor() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem onClick={() => window.print()}>
-                  Print
+                <DropdownMenuItem disabled={pdfBusy} onClick={downloadTemplatePdf}>
+                  {pdfBusy ? "Preparing PDF…" : "Download PDF"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -582,6 +602,12 @@ export default function BoqTemplateEditor() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {pdfBusy && (
+        <div style={OFFSCREEN_STYLE} aria-hidden>
+          <BoqDocument ref={pdfRef} boq={template} variant="internal" template />
+        </div>
+      )}
 
       <ItemDetailDrawer
         open={!!detailItem}

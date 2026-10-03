@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { CircleCheck, CircleDashed, RefreshCw, ShieldCheck } from "lucide-react";
+import { Button, Pill, TextArea } from "@/components/inos";
 import {
   useGetCommandCenterGateReadinessQuery,
   useClearCommandCenterGateMutation,
@@ -74,103 +74,106 @@ export default function GateChecklist({ projectId, gate, onFlash }) {
     }
   }
 
+  const statusTone = cleared ? "ok" : readiness?.isReady ? "info" : "warn";
+  const statusText = cleared
+    ? "Cleared"
+    : readiness?.isReady
+      ? "Ready for sign-off"
+      : String(gate.status ?? "Pending").replace(/_/g, " ").toLowerCase().replace(/^\w/, (m) => m.toUpperCase());
+
   return (
-    <section
-      className="mt-4 rounded-lg border border-slate-200 bg-white p-3"
-      aria-label={gate.gateName}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <h4 className="text-sm font-semibold">{gate.gateName}</h4>
-        <span className="text-xs">
-          {cleared
-            ? "Cleared"
-            : readiness?.isReady
-              ? "Ready for sign-off"
-              : gate.status}
+    <section className="cc-gate" aria-label={gate.gateName}>
+      <div className="cc-gate__head">
+        <span className={`inos-icon-tile inos-icon-tile--sm inos-icon-tile--${statusTone}`}>
+          <ShieldCheck aria-hidden />
         </span>
+        <h4 className="cc-gate__title">{gate.gateName}</h4>
+        <Pill tone={statusTone} size="sm">{statusText}</Pill>
+        {canRead && (
+          <Button variant="ghost" size="sm" icon={RefreshCw} disabled={busy} onClick={refetch}>
+            {isFetching ? "Checking…" : "Refresh"}
+          </Button>
+        )}
       </div>
       {!canRead ? (
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="cc-gate__note">
           Gate read permission is required to view the checklist.
         </p>
       ) : (
         <>
-          <Button variant="ghost" size="sm" disabled={busy} onClick={refetch}>
-            {isFetching ? "Checking…" : "Refresh readiness"}
-          </Button>
           {error && (
-            <p role="alert" className="text-sm text-red-600">
+            <p role="alert" className="cc-gate__error">
               {message(error)}
             </p>
           )}
           {readiness && !error && (
             <>
               {!readiness.unlockedByPreviousGate && (
-                <p className="text-xs text-amber-700">
+                <p className="cc-gate__warn">
                   Clear {readiness.previousGateCode} first.
                 </p>
               )}
-              <ul className="my-2 space-y-2">
+              <ul className="cc-gate__list">
                 {readiness.conditions.map((condition) => (
-                  <li key={condition.conditionId} className="text-xs">
-                    <div
-                      className={
-                        condition.passed ? "text-emerald-700" : "text-amber-800"
-                      }
-                    >
-                      {condition.passed ? "Passed" : "Pending"} ·{" "}
-                      {condition.label}
-                      {condition.optional && " (one alternative must pass)"}
+                  <li key={condition.conditionId} className="cc-gate__cond">
+                    {condition.passed ? (
+                      <CircleCheck className="cc-gate__icon is-ok" aria-hidden />
+                    ) : (
+                      <CircleDashed className="cc-gate__icon" aria-hidden />
+                    )}
+                    <div className="cc-gate__cond-body">
+                      <p className="cc-gate__cond-title">
+                        {condition.label}
+                        {condition.optional && (
+                          <span className="cc-gate__opt"> · one alternative must pass</span>
+                        )}
+                      </p>
+                      {condition.detail && <p className="cc-gate__note">{condition.detail}</p>}
+                      {condition.meta?.evidence?.map((item) => (
+                        <p key={item.code} className="cc-gate__evidence">
+                          <span className={`cc-bullet ${item.satisfied ? "cc-dot--ok" : "cc-dot--warn"}`} />
+                          {item.name}: {item.sourceLabel} · {item.status}
+                        </p>
+                      ))}
                     </div>
-                    <p className="text-slate-500">{condition.detail}</p>
-                    {condition.meta?.evidence?.map((item) => (
-                      <p
-                        key={item.code}
-                        className={
-                          item.satisfied ? "text-emerald-700" : "text-amber-800"
+                    {condition.type === "MANUAL_APPROVAL" && canClear && !cleared && (
+                      <Button
+                        variant={condition.passed ? "ghost" : "secondary"}
+                        size="sm"
+                        disabled={busy || !readiness.unlockedByPreviousGate}
+                        onClick={() =>
+                          act(
+                            tick,
+                            { ticked: !condition.passed, remarks },
+                            condition.conditionId,
+                          )
                         }
                       >
-                        {item.name}: {item.sourceLabel} · {item.status}
-                      </p>
-                    ))}
-                    {condition.type === "MANUAL_APPROVAL" &&
-                      canClear &&
-                      !cleared && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={busy || !readiness.unlockedByPreviousGate}
-                          onClick={() =>
-                            act(
-                              tick,
-                              { ticked: !condition.passed, remarks },
-                              condition.conditionId,
-                            )
-                          }
-                        >
-                          {condition.passed ? "Remove confirmation" : "Confirm"}
-                        </Button>
-                      )}
+                        {condition.passed ? "Remove confirmation" : "Confirm"}
+                      </Button>
+                    )}
                   </li>
                 ))}
               </ul>
               {!readiness.conditions.length && (
-                <p className="text-xs text-amber-700">
+                <p className="cc-gate__warn">
                   No conditions configured. Gate clearance is blocked.
                 </p>
               )}
               {(canClear || permissions.includes("gates:reopen")) && (
-                <Textarea
+                <TextArea
                   aria-label={`Reason for ${gate.gateName}`}
-                  placeholder="Sign-off notes; a reason is required for reopening or overriding"
+                  placeholder="Sign-off notes. A reason is required to reopen or override."
                   value={remarks}
                   maxLength={2000}
                   disabled={busy}
+                  rows={2}
+                  style={{ minHeight: 72 }}
                   onChange={(event) => setRemarks(event.target.value)}
                 />
               )}
               {canOverride && !cleared && !readiness.isReady && (
-                <label className="my-2 flex items-center gap-2 text-xs">
+                <label className="cc-gate__check">
                   <input
                     type="checkbox"
                     checked={override}
@@ -180,9 +183,10 @@ export default function GateChecklist({ projectId, gate, onFlash }) {
                   Override unmet conditions with the reason above
                 </label>
               )}
-              <div className="mt-2 flex gap-2">
+              <div className="cc-gate__actions">
                 {!cleared && canClear && (
                   <Button
+                    variant="primary"
                     size="sm"
                     disabled={busy || !readyToClear}
                     onClick={() =>
@@ -197,7 +201,7 @@ export default function GateChecklist({ projectId, gate, onFlash }) {
                 )}
                 {cleared && permissions.includes("gates:reopen") && (
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     disabled={busy || !remarks.trim()}
                     onClick={() => act(reopen, { remarks: remarks.trim() })}
@@ -206,7 +210,7 @@ export default function GateChecklist({ projectId, gate, onFlash }) {
                   </Button>
                 )}
                 {!canClear && !cleared && (
-                  <p className="text-xs text-slate-500">
+                  <p className="cc-gate__note">
                     Gate clear permission is required for sign-off.
                   </p>
                 )}
@@ -216,7 +220,7 @@ export default function GateChecklist({ projectId, gate, onFlash }) {
         </>
       )}
       {actionError && (
-        <p role="alert" className="mt-2 text-sm text-red-600">
+        <p role="alert" className="cc-gate__error">
           {actionError}
         </p>
       )}

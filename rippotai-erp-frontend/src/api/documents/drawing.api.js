@@ -9,11 +9,12 @@ export const drawingApi = baseApi.injectEndpoints({
     // =========================================================
     getDrawings: builder.query({
       query: (params = {}) => {
-        const { discipline, status, phaseCode } = params;
+        const { projectId, discipline, status, phaseCode } = params || {};
 
         return {
           url: "/drawings",
           params: {
+            ...(projectId ? { projectId } : {}),
             ...(discipline ? { discipline } : {}),
             ...(status ? { status } : {}),
             ...(phaseCode ? { phaseCode } : {}),
@@ -111,7 +112,11 @@ export const drawingApi = baseApi.injectEndpoints({
           body: formData,
         };
       },
-      invalidatesTags: (result, error, { id }) => [{ type: "Drawing", id }],
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Drawing", id },
+        { type: "Drawing", id: "LIST" },
+        { type: "DrawingRevision", id: `DRAWING-${id}` },
+      ],
     }),
 
     // =========================================================

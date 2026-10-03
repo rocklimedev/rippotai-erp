@@ -33,6 +33,12 @@ export class QualityCheckHead extends Model<QualityCheckHead> {
   @Column({ type: DataType.STRING(255), allowNull: false })
   declare name: string;
 
+  @Column({ type: DataType.STRING(50), allowNull: true })
+  declare work_head: string | null;
+
+  @Column({ type: DataType.INTEGER, allowNull: true })
+  declare template_serial_number: number | null;
+
   @Column({ type: DataType.INTEGER, allowNull: false, unique: true })
   declare sort_order: number;
 

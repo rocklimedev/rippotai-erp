@@ -2,54 +2,167 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op, Transaction } from 'sequelize';
+import { Sequelize } from 'sequelize-typescript';
 import { DailySiteReport } from './models/daily-site-report.model';
 import { ManpowerEntry } from './models/manpower-entry.model';
-import { Team } from '../process-workflow/models/team.model';
+import { Project } from '@/modules/projects/models/projects.model';
+import { Client } from '@/modules/clients/models/client.model';
 import {
   CreateDailySiteReportDto,
   UpdateDailySiteReportDto,
 } from './dto/daily-report.dto';
+
+export interface ListReportsFilter {
+  projectId?: string;
+  from?: string;
+  to?: string;
+  status?: string;
+  hasIssues?: boolean;
+  limit?: number;
+}
 
 @Injectable()
 export class DailySiteReportService {
   constructor(
     @InjectModel(DailySiteReport) private reportModel: typeof DailySiteReport,
     @InjectModel(ManpowerEntry) private manpowerModel: typeof ManpowerEntry,
-    @InjectModel(Team) private teamModel: typeof Team,
+    @InjectModel(Project) private projectModel: typeof Project,
+    private readonly sequelize: Sequelize,
   ) {}
 
-  async createReport(dto: CreateDailySiteReportDto): Promise<DailySiteReport> {
-    const existing = await this.reportModel.findOne({
-      where: { projectId: dto.projectId, reportDate: dto.reportDate },
+  private get include() {
+    return [
+      { model: this.manpowerModel },
+      {
+        model: this.projectModel,
+        attributes: ['id', 'name', 'site_location', 'client_id', 'status'],
+        include: [{ model: Client, as: 'client', attributes: ['id', 'name'] }],
+      },
+    ];
+  }
+
+  /** Fields shared by create + update, normalised from the DTO. */
+  private fieldsFrom(dto: UpdateDailySiteReportDto) {
+    const out: Record<string, unknown> = {};
+    const copy = [
+      'reportDate',
+      'weatherCondition',
+      'weatherNotes',
+      'siteCondition',
+      'workCompleted',
+      'workItems',
+      'materials',
+      'equipment',
+      'issueItems',
+      'issues',
+      'safetyIncident',
+      'safetyNotes',
+      'photos',
+      'nextDayPlan',
+      'reportedBy',
+      'shareWithClient',
+    ] as const;
+    for (const k of copy) {
+      if ((dto as any)[k] !== undefined) out[k] = (dto as any)[k];
+    }
+    if (dto.issueItems !== undefined) {
+      out.needsAttention = dto.issueItems.some((i) => !!i.needsAttention);
+    }
+    return out;
+  }
+
+  /** Status transition + the "shared" fact that follows a submit with shareWithClient. */
+  private applyStatus(
+    target: Record<string, unknown>,
+    status: string | undefined,
+    current?: DailySiteReport,
+  ) {
+    if (!status) return;
+    target.status = status;
+    if (status === 'SUBMITTED' && current?.status !== 'SUBMITTED') {
+      target.submittedAt = new Date();
+    }
+    if (status === 'DRAFT') target.submittedAt = null;
+    const share =
+      (target.shareWithClient as boolean | undefined) ??
+      current?.shareWithClient ??
+      false;
+    if (status === 'SUBMITTED' && share && !current?.isShared) {
+      target.isShared = true;
+      target.sharedAt = new Date();
+    }
+  }
+
+  private async replaceManpower(
+    reportId: number,
+    rows: CreateDailySiteReportDto['manpower'],
+    transaction: Transaction,
+  ) {
+    await this.manpowerModel.destroy({
+      where: { dailySiteReportId: reportId },
+      transaction,
     });
-    if (existing) {
-      throw new ConflictException(
-        `A report for ${dto.reportDate} already exists for this project — use update instead`,
+    const clean = (rows || []).filter((r) => r.trade && r.headcount >= 0);
+    if (clean.length) {
+      await this.manpowerModel.bulkCreate(
+        clean.map((r) => ({
+          dailySiteReportId: reportId,
+          trade: r.trade,
+          contractorName: r.contractorName || null,
+          headcount: r.headcount,
+        })) as any,
+        { transaction },
       );
     }
+  }
 
-    const report = await this.reportModel.create({
-      projectId: dto.projectId,
-      reportDate: dto.reportDate,
-      weatherCondition: dto.weatherCondition ?? null,
-      weatherNotes: dto.weatherNotes ?? null,
-      workCompleted: dto.workCompleted,
-      issues: dto.issues ?? null,
-      reportedBy: dto.reportedBy,
-    } as any);
-
-    if (dto.manpower?.length) {
-      for (const entry of dto.manpower) {
-        await this.manpowerModel.create({
-          ...entry,
-          dailySiteReportId: report.id,
-        } as any);
-      }
+  private async assertDateFree(
+    projectId: string,
+    reportDate: string,
+    exceptId?: number,
+  ) {
+    const existing = await this.reportModel.findOne({
+      where: {
+        projectId,
+        reportDate,
+        ...(exceptId ? { id: { [Op.ne]: exceptId } } : {}),
+      },
+      attributes: ['id'],
+    });
+    if (existing) {
+      throw new ConflictException({
+        message: `A report for ${reportDate} already exists for this project — open it and edit instead`,
+        existingId: existing.id,
+      });
     }
+  }
 
-    return this.getReportOrThrow(report.id);
+  async createReport(dto: CreateDailySiteReportDto): Promise<DailySiteReport> {
+    const project = await this.projectModel.findByPk(dto.projectId, {
+      attributes: ['id'],
+    });
+    if (!project) throw new BadRequestException('Project not found');
+    await this.assertDateFree(dto.projectId, dto.reportDate);
+
+    const id = await this.sequelize.transaction(async (transaction) => {
+      const values: Record<string, unknown> = {
+        projectId: dto.projectId,
+        status: 'DRAFT',
+        ...this.fieldsFrom(dto),
+      };
+      this.applyStatus(values, dto.status ?? 'DRAFT');
+      const report = await this.reportModel.create(values as any, {
+        transaction,
+      });
+      await this.replaceManpower(report.id, dto.manpower, transaction);
+      return report.id;
+    });
+
+    return this.getReportOrThrow(id);
   }
 
   async updateReport(
@@ -57,36 +170,50 @@ export class DailySiteReportService {
     dto: UpdateDailySiteReportDto,
   ): Promise<DailySiteReport> {
     const report = await this.getReportOrThrow(id);
-    await report.update({
-      weatherCondition: dto.weatherCondition ?? report.weatherCondition,
-      weatherNotes: dto.weatherNotes ?? report.weatherNotes,
-      workCompleted: dto.workCompleted ?? report.workCompleted,
-      issues: dto.issues ?? report.issues,
-    } as any);
-
-    if (dto.manpower?.length) {
-      await this.manpowerModel.destroy({ where: { dailySiteReportId: id } });
-      for (const entry of dto.manpower) {
-        await this.manpowerModel.create({
-          ...entry,
-          dailySiteReportId: id,
-        } as any);
-      }
+    // Model fields are plain class properties, so read values through get() (dataValues).
+    const cur = report.get({ plain: true }) as DailySiteReport;
+    if (dto.reportDate && dto.reportDate !== String(cur.reportDate).slice(0, 10)) {
+      await this.assertDateFree(cur.projectId, dto.reportDate, id);
     }
+
+    await this.sequelize.transaction(async (transaction) => {
+      const values = this.fieldsFrom(dto);
+      this.applyStatus(values, dto.status, cur);
+      await report.update(values as any, { transaction });
+      if (dto.manpower !== undefined) {
+        await this.replaceManpower(id, dto.manpower, transaction);
+      }
+    });
 
     return this.getReportOrThrow(id);
   }
 
-  /** Marks the report as shared with the whole team (e.g. after an email/notification goes out). */
+  /** Marks the report as shared with the client (e.g. after an email/notification goes out). */
   async markShared(id: number): Promise<DailySiteReport> {
     const report = await this.getReportOrThrow(id);
-    await report.update({ isShared: true, sharedAt: new Date() } as any);
-    return report;
+    await report.update({
+      isShared: true,
+      shareWithClient: true,
+      sharedAt: new Date(),
+    } as any);
+    return this.getReportOrThrow(id);
+  }
+
+  async deleteReport(id: number): Promise<{ id: number; deleted: true }> {
+    const report = await this.getReportOrThrow(id);
+    await this.sequelize.transaction(async (transaction) => {
+      await this.manpowerModel.destroy({
+        where: { dailySiteReportId: id },
+        transaction,
+      });
+      await report.destroy({ transaction });
+    });
+    return { id, deleted: true };
   }
 
   async getReportOrThrow(id: number): Promise<DailySiteReport> {
     const report = await this.reportModel.findByPk(id, {
-      include: [{ model: this.manpowerModel, include: [this.teamModel] }],
+      include: this.include,
     });
     if (!report)
       throw new NotFoundException(`Daily site report ${id} not found`);
@@ -94,31 +221,39 @@ export class DailySiteReportService {
   }
 
   async getReportByDate(
-    projectId: number,
+    projectId: string,
     reportDate: string,
   ): Promise<DailySiteReport | null> {
     return this.reportModel.findOne({
       where: { projectId, reportDate },
-      include: [{ model: this.manpowerModel, include: [this.teamModel] }],
+      include: this.include,
     });
   }
 
-  async listReports(
-    projectId: number,
-    from?: string,
-    to?: string,
-  ): Promise<DailySiteReport[]> {
-    const where: any = { projectId };
-    if (from || to) {
-      const { Op } = require('sequelize');
+  async listReports(filter: ListReportsFilter): Promise<DailySiteReport[]> {
+    const where: any = {};
+    if (filter.projectId) where.projectId = filter.projectId;
+    if (filter.status) where.status = filter.status;
+    if (filter.hasIssues) {
+      where[Op.and] = [
+        Sequelize.literal(
+          "COALESCE(JSON_LENGTH(`DailySiteReport`.`issue_items`), 0) > 0 OR (`DailySiteReport`.`issues` IS NOT NULL AND `DailySiteReport`.`issues` <> '')",
+        ),
+      ];
+    }
+    if (filter.from || filter.to) {
       where.reportDate = {};
-      if (from) where.reportDate[Op.gte] = from;
-      if (to) where.reportDate[Op.lte] = to;
+      if (filter.from) where.reportDate[Op.gte] = filter.from;
+      if (filter.to) where.reportDate[Op.lte] = filter.to;
     }
     return this.reportModel.findAll({
       where,
-      order: [['reportDate', 'DESC']],
-      include: [{ model: this.manpowerModel, include: [this.teamModel] }],
+      order: [
+        ['reportDate', 'DESC'],
+        ['id', 'DESC'],
+      ],
+      include: this.include,
+      limit: filter.limit && filter.limit > 0 ? filter.limit : 500,
     });
   }
 }

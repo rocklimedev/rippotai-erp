@@ -32,6 +32,10 @@ export interface QualityChecklistAttributes {
   project_id: string;
   checklist_name: string;
   description: string | null;
+  work_head?: string | null;
+  template_version?: string | null;
+  template_title?: string | null;
+  template_sheet_name?: string | null;
   status: ChecklistStatus;
   completion_percentage: number;
   created_by: string | null;
@@ -78,6 +82,18 @@ export class QualityChecklist extends Model<
 
   @Column({ type: DataType.TEXT, allowNull: true })
   declare description: string | null;
+
+  @Column({ type: DataType.STRING(50), allowNull: true })
+  declare work_head: string | null;
+
+  @Column({ type: DataType.STRING(30), allowNull: true })
+  declare template_version: string | null;
+
+  @Column({ type: DataType.STRING(255), allowNull: true })
+  declare template_title: string | null;
+
+  @Column({ type: DataType.STRING(100), allowNull: true })
+  declare template_sheet_name: string | null;
 
   @Column({
     type: DataType.ENUM(...Object.values(ChecklistStatus)),

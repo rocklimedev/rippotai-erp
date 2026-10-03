@@ -1,13 +1,11 @@
 import React, { useMemo, useState } from "react";
 import {
   Plus,
-  Search,
   RefreshCw,
-  ChevronDown,
   ChevronRight,
   FolderKanban,
   FileText,
-  MoreVertical,
+  MoreHorizontal,
   Pencil,
   Trash2,
   CheckCircle2,
@@ -16,42 +14,30 @@ import {
   Copy,
   Settings2,
   Layers3,
-  X,
-  Save,
   AlertTriangle,
   FilePlus2,
   FolderPlus,
+  SearchX,
+  PenTool,
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Page,
+  PageHeader,
+  Card,
+  Button,
+  Stats,
+  StatTile,
+  SearchInput,
+  EmptyState,
+  Pill,
+  Field,
+  TextInput,
+  TextArea,
+  SelectInput,
+  ChoiceGroup,
+} from "@/components/inos";
 
 import {
   useGetProjectPhasesQuery,
@@ -66,6 +52,16 @@ import {
   useUpdateDocumentTypeMutation,
   useDeleteDocumentTypeMutation,
 } from "../../api/documents/document.api";
+
+import {
+  AdminModal,
+  ModalActions,
+  RowMenu,
+  ToggleRow,
+  adminCrumbs,
+  humanize,
+  plural,
+} from "../settings/_admin-ui";
 
 /* =========================================================
    Helpers
@@ -86,7 +82,20 @@ const getName = (item) =>
   item?.name || item?.title || item?.label || item?.code || "Untitled";
 
 const getCode = (item) =>
-  item?.code || item?.phaseCode || item?.documentCode || "";
+  item?.code || item?.phase_code || item?.phaseCode || item?.documentCode || "";
+
+/** "01 BRIEF" -> "Brief" (the number is shown separately) */
+const phaseLabel = (phase) => {
+  const raw = getName(phase).replace(/^\d+[\s._-]+/, "");
+  return humanize(raw) || getName(phase);
+};
+
+const toCode = (s) =>
+  String(s || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 
 const getDescription = (item) => item?.description || "";
 
@@ -173,6 +182,8 @@ export default function ProjectStructure() {
   });
 
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [phaseErrors, setPhaseErrors] = useState({});
+  const [documentErrors, setDocumentErrors] = useState({});
 
   const selectedPhase = useMemo(() => {
     return phases.find((phase) => getId(phase) === selectedPhaseId) || null;
@@ -255,32 +266,47 @@ export default function ProjectStructure() {
 
   const openCreatePhase = () => {
     setPhaseForm({ name: "", code: "", description: "" });
+    setPhaseErrors({});
     setModal("create-phase");
   };
 
   const openEditPhase = (phase) => {
     setPhaseForm({
-      name: phase?.name || "",
-      code: phase?.code || "",
+      name: getName(phase) === "Untitled" ? "" : getName(phase),
+      code: getCode(phase),
       description: phase?.description || "",
     });
+    setPhaseErrors({});
     setSelectedPhaseId(getId(phase));
     setModal("edit-phase");
   };
 
   const submitPhase = async (event) => {
     event.preventDefault();
-    if (!phaseForm.name.trim()) {
-      toast.error("Phase name is required");
-      return;
-    }
+    const errs = {};
+    if (!phaseForm.name.trim()) errs.name = "Phase name is required.";
+    if (!toCode(phaseForm.code || phaseForm.name)) errs.code = "A short code is required.";
+    setPhaseErrors(errs);
+    if (Object.keys(errs).length) return;
+
+    // API expects title / phase_code / phase_number; legacy aliases kept
+    const title = phaseForm.name.trim();
+    const code = toCode(phaseForm.code || phaseForm.name);
+    const phasePayload = {
+      title,
+      name: title,
+      phase_code: code,
+      code,
+      description: phaseForm.description.trim() || undefined,
+    };
 
     try {
       if (modal === "create-phase") {
+        const nextNumber =
+          phases.reduce((m, p) => Math.max(m, Number(p.phase_number) || 0), 0) + 1;
         const response = await createProjectPhase({
-          name: phaseForm.name.trim(),
-          code: phaseForm.code.trim() || undefined,
-          description: phaseForm.description.trim() || undefined,
+          ...phasePayload,
+          phase_number: nextNumber,
         }).unwrap();
 
         const createdPhase =
@@ -302,11 +328,7 @@ export default function ProjectStructure() {
         }
         await updateProjectPhase({
           id: selectedPhaseId,
-          data: {
-            name: phaseForm.name.trim(),
-            code: phaseForm.code.trim() || undefined,
-            description: phaseForm.description.trim() || undefined,
-          },
+          ...phasePayload,
         }).unwrap();
         toast.success("Project phase updated");
       }
@@ -336,10 +358,11 @@ export default function ProjectStructure() {
       code: "",
       description: "",
       projectPhaseId: phaseId || "",
-      phaseCode: selectedPhaseForDocument?.code || "",
-      targetType: "",
+      phaseCode: getCode(selectedPhaseForDocument),
+      targetType: "DOCUMENT",
       isActive: true,
     });
+    setDocumentErrors({});
     setModal("create-document");
   };
 
@@ -353,6 +376,7 @@ export default function ProjectStructure() {
       targetType: documentType?.targetType || "",
       isActive: getActive(documentType),
     });
+    setDocumentErrors({});
     setSelectedDocumentId(getId(documentType));
     setSelectedPhaseId(getPhaseIdFromDocument(documentType));
     setModal("edit-document");
@@ -360,22 +384,23 @@ export default function ProjectStructure() {
 
   const submitDocument = async (event) => {
     event.preventDefault();
-    if (!documentForm.name.trim()) {
-      toast.error("Document type name is required");
-      return;
-    }
-    if (!documentForm.projectPhaseId) {
-      toast.error("Please select a project phase");
-      return;
-    }
+    const errs = {};
+    if (!documentForm.name.trim()) errs.name = "Document type name is required.";
+    if (!toCode(documentForm.code || documentForm.name)) errs.code = "A short code is required.";
+    if (!documentForm.projectPhaseId) errs.projectPhaseId = "Choose a project phase.";
+    setDocumentErrors(errs);
+    if (Object.keys(errs).length) return;
+
+    const docPhase = phases.find((p) => getId(p) === documentForm.projectPhaseId);
 
     try {
       const payload = {
         name: documentForm.name.trim(),
-        code: documentForm.code.trim() || undefined,
+        code: toCode(documentForm.code || documentForm.name) || undefined,
         description: documentForm.description.trim() || undefined,
         projectPhaseId: documentForm.projectPhaseId,
-        phaseCode: documentForm.phaseCode || undefined,
+        phaseCode: documentForm.phaseCode || getCode(docPhase) || undefined,
+        phaseName: docPhase ? getName(docPhase) : undefined,
         targetType: documentForm.targetType || undefined,
         isActive: documentForm.isActive,
       };
@@ -452,7 +477,8 @@ export default function ProjectStructure() {
         id: selectedDocumentId,
         data: {
           projectPhaseId: documentForm.projectPhaseId,
-          phaseCode: destinationPhase?.code || undefined,
+          phaseCode: getCode(destinationPhase) || undefined,
+          phaseName: destinationPhase ? getName(destinationPhase) : undefined,
         },
       }).unwrap();
 
@@ -569,1410 +595,678 @@ export default function ProjectStructure() {
   const activeDocuments = documentTypes.filter(getActive).length;
   const inactiveDocuments = documentTypes.length - activeDocuments;
 
+
   /* =======================================================
      Render
   ======================================================= */
 
+  const phaseOf = (documentType) =>
+    phases.find((phase) => getId(phase) === getPhaseIdFromDocument(documentType)) || null;
+
   return (
-    <div className="min-h-screen bg-muted/40">
-      {/* HEADER */}
-      <div className="border-b bg-background">
-        <div className="px-6 py-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                <Layers3 className="h-5 w-5" />
-              </div>
+    <Page>
+      <PageHeader
+        crumbs={adminCrumbs("Project structure")}
+        title="Project structure"
+        subtitle="Phases and the document types inside them — the skeleton every new project is built on."
+        actions={
+          <>
+            <Button variant="ghost" icon={RefreshCw} onClick={handleRefresh} disabled={isRefreshing}>
+              {isRefreshing ? "Refreshing…" : "Refresh"}
+            </Button>
+            <Button variant="primary" icon={FolderPlus} onClick={openCreatePhase} data-testid="ps-add-phase-btn">
+              Add phase
+            </Button>
+          </>
+        }
+      />
+
+      <Stats>
+        <StatTile label="Phases" value={phases.length} icon={<FolderKanban />} />
+        <StatTile label="Document types" value={documentTypes.length} icon={<FileText />} tone="info" />
+        <StatTile label="Active" value={activeDocuments} icon={<CheckCircle2 />} tone="ok" />
+        <StatTile label="Inactive" value={inactiveDocuments} icon={<XCircle />} tone="peach" />
+      </Stats>
+
+      <div className="adm-split adm-split--wide">
+        {/* LEFT TREE */}
+        <section className="inos-card adm-sticky">
+          <div className="inos-card__header" style={{ flexDirection: "column", alignItems: "stretch", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
               <div>
-                <h1 className="text-xl font-bold text-foreground">
-                  Project Structure
-                </h1>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  Manage project phases, document types and workflow structure
-                  from one place.
+                <h2 className="inos-section-title">Structure</h2>
+                <p className="inos-section-sub">
+                  {plural(phases.length, "phase")} · {plural(documentTypes.length, "document type")}
                 </p>
               </div>
+              <Button variant="ghost" size="sm" icon={Plus} onClick={openCreatePhase} aria-label="Add phase" title="Add phase" />
             </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-              >
-                <RefreshCw
-                  className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-                />
-                Refresh
-              </Button>
-              <Button onClick={openCreatePhase}>
-                <FolderPlus className="mr-2 h-4 w-4" />
-                Add Phase
-              </Button>
-            </div>
+            <SearchInput value={search} onChange={setSearch} placeholder="Search phases or documents" />
           </div>
 
-          {/* Stats */}
-          <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
-            <StatCard
-              icon={<FolderKanban className="h-4 w-4" />}
-              label="Phases"
-              value={phases.length}
+          {isLoading ? (
+            <div className="adm-tree">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="adm-tree__row" style={{ padding: 10 }}>
+                  <div className="adm-skel" style={{ width: `${80 - i * 6}%` }} />
+                </div>
+              ))}
+            </div>
+          ) : filteredPhases.length === 0 ? (
+            <EmptyState
+              icon={search ? SearchX : FolderKanban}
+              title={search ? "Nothing matches" : "No phases yet"}
+              text={search ? "Try another search term." : "Create your first phase to start building the tree."}
+              action={
+                !search && (
+                  <Button variant="soft" icon={Plus} onClick={openCreatePhase}>
+                    Add phase
+                  </Button>
+                )
+              }
             />
-            <StatCard
-              icon={<FileText className="h-4 w-4" />}
-              label="Document Types"
-              value={documentTypes.length}
-            />
-            <StatCard
-              icon={<CheckCircle2 className="h-4 w-4" />}
-              label="Active Documents"
-              value={activeDocuments}
-            />
-            <StatCard
-              icon={<XCircle className="h-4 w-4" />}
-              label="Inactive Documents"
-              value={inactiveDocuments}
-            />
-          </div>
-        </div>
-      </div>
+          ) : (
+            <div className="adm-tree" role="tree" aria-label="Project structure">
+              {filteredPhases.map((phase) => {
+                const phaseId = getId(phase);
+                const phaseDocuments = documentsByPhase[phaseId] || [];
+                const isExpanded = expandedPhases[phaseId] || !!search;
+                const isSelected = selectedPhaseId === phaseId && !selectedDocumentId;
 
-      {/* SEARCH */}
-      <div className="border-b bg-background px-6 py-3">
-        <div className="relative max-w-xl">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search phases or document types..."
-            className="pl-10 pr-10"
-          />
-          {search && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"
-              onClick={() => setSearch("")}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+                return (
+                  <div key={phaseId} role="treeitem" aria-expanded={isExpanded}>
+                    <div className="adm-tree__row" aria-current={isSelected}>
+                      <button
+                        type="button"
+                        className="adm-tree__caret"
+                        aria-expanded={isExpanded}
+                        aria-label={isExpanded ? "Collapse" : "Expand"}
+                        onClick={() => togglePhase(phaseId)}
+                      >
+                        <ChevronRight aria-hidden />
+                      </button>
+
+                      <button type="button" onClick={() => handleSelectPhase(phase)} className="adm-tree__main">
+                        <span className="adm-num" style={{ width: 28, height: 28, fontSize: 11.5 }}>
+                          {phase.phase_number ?? "•"}
+                        </span>
+                        <span style={{ minWidth: 0 }}>
+                          <span className="adm-tree__name" style={{ display: "block" }}>
+                            {phaseLabel(phase)}
+                          </span>
+                          <span className="adm-tree__meta" style={{ display: "block" }}>
+                            {plural(phaseDocuments.length, "document")}
+                          </span>
+                        </span>
+                      </button>
+
+                      <span className="adm-tree__more">
+                        <RowMenu
+                          label={`Actions for ${getName(phase)}`}
+                          items={[
+                            { label: "Add document type", icon: FilePlus2, onClick: () => openCreateDocument(phase) },
+                            { label: "Edit phase", icon: Pencil, onClick: () => openEditPhase(phase) },
+                            "sep",
+                            { label: "Delete phase", icon: Trash2, danger: true, onClick: () => requestDeletePhase(phase) },
+                          ]}
+                        />
+                      </span>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="adm-tree__children" role="group">
+                        {phaseDocuments.map((documentType) => {
+                          const documentId = getId(documentType);
+                          const documentSelected = selectedDocumentId === documentId;
+                          const DocIcon = documentType?.targetType === "DRAWING" ? PenTool : FileText;
+
+                          return (
+                            <div key={documentId} className="adm-tree__row" aria-current={documentSelected} role="treeitem">
+                              <button type="button" onClick={() => handleSelectDocument(documentType)} className="adm-tree__main" style={{ paddingLeft: 6 }}>
+                                <DocIcon size={15} style={{ color: "var(--text-3)", flexShrink: 0 }} aria-hidden />
+                                <span style={{ minWidth: 0 }}>
+                                  <span className="adm-tree__name" style={{ display: "block" }}>
+                                    {getName(documentType)}
+                                  </span>
+                                  <span className="adm-tree__meta" style={{ display: "block" }}>
+                                    {getCode(documentType) || "No code"}
+                                    {!getActive(documentType) && " · Inactive"}
+                                  </span>
+                                </span>
+                              </button>
+
+                              <span className="adm-tree__more">
+                                <RowMenu
+                                  label={`Actions for ${getName(documentType)}`}
+                                  items={[
+                                    { label: "Edit", icon: Pencil, onClick: () => openEditDocument(documentType) },
+                                    { label: "Move to phase", icon: Move, onClick: () => openMoveDocument(documentType) },
+                                    { label: "Duplicate", icon: Copy, onClick: () => duplicateDocument(documentType) },
+                                    {
+                                      label: getActive(documentType) ? "Deactivate" : "Activate",
+                                      icon: getActive(documentType) ? XCircle : CheckCircle2,
+                                      onClick: () => toggleDocumentStatus(documentType),
+                                    },
+                                    "sep",
+                                    { label: "Delete", icon: Trash2, danger: true, onClick: () => requestDeleteDocument(documentType) },
+                                  ]}
+                                />
+                              </span>
+                            </div>
+                          );
+                        })}
+
+                        <button type="button" className="adm-tree__add" onClick={() => openCreateDocument(phase)}>
+                          <Plus aria-hidden />
+                          Add document type
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* RIGHT DETAIL */}
+        <div style={{ minWidth: 0 }}>
+          {selectedDocument ? (
+            <DocumentDetails
+              documentType={selectedDocument}
+              phase={phaseOf(selectedDocument)}
+              onEdit={() => openEditDocument(selectedDocument)}
+              onMove={() => openMoveDocument(selectedDocument)}
+              onDuplicate={() => duplicateDocument(selectedDocument)}
+              onToggle={() => toggleDocumentStatus(selectedDocument)}
+              onDelete={() => requestDeleteDocument(selectedDocument)}
+              onBack={() => setSelectedDocumentId(null)}
+            />
+          ) : selectedPhase ? (
+            <PhaseDetails
+              phase={selectedPhase}
+              documents={documentsByPhase[selectedPhaseId] || []}
+              onEdit={() => openEditPhase(selectedPhase)}
+              onDelete={() => requestDeletePhase(selectedPhase)}
+              onAddDocument={() => openCreateDocument(selectedPhase)}
+              onSelectDocument={handleSelectDocument}
+            />
+          ) : (
+            <WelcomePanel
+              phases={phases}
+              documents={documentTypes}
+              onAddPhase={openCreatePhase}
+              onAddDocument={() => openCreateDocument(null)}
+            />
           )}
         </div>
-      </div>
-
-      {/* MAIN */}
-      <div className="p-6">
-        {isLoading ? (
-          <LoadingState />
-        ) : (
-          <div className="grid min-h-[650px] grid-cols-1 overflow-hidden rounded-xl border bg-background shadow-sm xl:grid-cols-[360px_minmax(0,1fr)_330px]">
-            {/* LEFT TREE */}
-            <div className="border-b xl:border-b-0 xl:border-r">
-              <div className="flex items-center justify-between border-b px-4 py-3">
-                <div>
-                  <h2 className="text-sm font-bold text-foreground">
-                    Project Tree
-                  </h2>
-                  <p className="text-xs text-muted-foreground">
-                    Phases & document types
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={openCreatePhase}
-                  title="Add phase"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="max-h-[650px] overflow-y-auto p-2">
-                {filteredPhases.length === 0 ? (
-                  <EmptyTree search={search} onAddPhase={openCreatePhase} />
-                ) : (
-                  filteredPhases.map((phase) => {
-                    const phaseId = getId(phase);
-                    const phaseDocuments = documentsByPhase[phaseId] || [];
-                    const isExpanded = expandedPhases[phaseId] || !!search;
-                    const isSelected =
-                      selectedPhaseId === phaseId && !selectedDocumentId;
-
-                    return (
-                      <div key={phaseId} className="mb-1">
-                        <div
-                          className={`group flex items-center gap-1 rounded-lg border px-2 py-1.5 transition ${
-                            isSelected
-                              ? "border-primary/20 bg-muted"
-                              : "border-transparent hover:bg-muted/50"
-                          }`}
-                        >
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 shrink-0"
-                            onClick={() => togglePhase(phaseId)}
-                          >
-                            {isExpanded ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                          </Button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleSelectPhase(phase)}
-                            className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                          >
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                              <FolderKanban className="h-4 w-4" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="truncate text-sm font-semibold">
-                                {getName(phase)}
-                              </div>
-                              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                                {getCode(phase) && (
-                                  <span>{getCode(phase)}</span>
-                                )}
-                                <span>
-                                  {phaseDocuments.length} document
-                                  {phaseDocuments.length === 1 ? "" : "s"}
-                                </span>
-                              </div>
-                            </div>
-                          </button>
-
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 opacity-0 group-hover:opacity-100"
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuItem
-                                onClick={() => openCreateDocument(phase)}
-                              >
-                                <FilePlus2 className="mr-2 h-4 w-4" />
-                                Add Document Type
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => openEditPhase(phase)}
-                              >
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Edit Phase
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
-                                onClick={() => requestDeletePhase(phase)}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Phase
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-
-                        {isExpanded && (
-                          <div className="ml-6 border-l pl-2">
-                            {phaseDocuments.length === 0 ? (
-                              <Button
-                                variant="ghost"
-                                className="my-1 h-auto w-full justify-start gap-2 px-3 py-2 text-xs text-muted-foreground"
-                                onClick={() => openCreateDocument(phase)}
-                              >
-                                <FilePlus2 className="h-3.5 w-3.5" />
-                                Add document type
-                              </Button>
-                            ) : (
-                              phaseDocuments.map((documentType) => {
-                                const documentId = getId(documentType);
-                                const documentSelected =
-                                  selectedDocumentId === documentId;
-
-                                return (
-                                  <div
-                                    key={documentId}
-                                    className={`group relative mb-1 flex items-center gap-2 rounded-lg border px-2 py-2 transition ${
-                                      documentSelected
-                                        ? "border-amber-500/40 bg-amber-500/10"
-                                        : "border-transparent hover:bg-muted/50"
-                                    }`}
-                                  >
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleSelectDocument(documentType)
-                                      }
-                                      className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                                    >
-                                      <FileText
-                                        className={`h-4 w-4 ${
-                                          documentSelected
-                                            ? "text-amber-600"
-                                            : "text-muted-foreground"
-                                        }`}
-                                      />
-                                      <div className="min-w-0 flex-1">
-                                        <div className="truncate text-sm font-medium">
-                                          {getName(documentType)}
-                                        </div>
-                                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                                          {getCode(documentType) && (
-                                            <span>{getCode(documentType)}</span>
-                                          )}
-                                          {!getActive(documentType) && (
-                                            <span className="text-destructive">
-                                              Inactive
-                                            </span>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </button>
-
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-7 w-7 opacity-0 group-hover:opacity-100"
-                                        >
-                                          <MoreVertical className="h-3.5 w-3.5" />
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent
-                                        align="end"
-                                        className="w-48"
-                                      >
-                                        <DropdownMenuItem
-                                          onClick={() =>
-                                            openEditDocument(documentType)
-                                          }
-                                        >
-                                          <Pencil className="mr-2 h-4 w-4" />
-                                          Edit
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                          onClick={() =>
-                                            openMoveDocument(documentType)
-                                          }
-                                        >
-                                          <Move className="mr-2 h-4 w-4" />
-                                          Move to Phase
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                          onClick={() =>
-                                            duplicateDocument(documentType)
-                                          }
-                                        >
-                                          <Copy className="mr-2 h-4 w-4" />
-                                          Duplicate
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                          onClick={() =>
-                                            toggleDocumentStatus(documentType)
-                                          }
-                                        >
-                                          {getActive(documentType) ? (
-                                            <XCircle className="mr-2 h-4 w-4" />
-                                          ) : (
-                                            <CheckCircle2 className="mr-2 h-4 w-4" />
-                                          )}
-                                          {getActive(documentType)
-                                            ? "Deactivate"
-                                            : "Activate"}
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem
-                                          className="text-destructive focus:text-destructive"
-                                          onClick={() =>
-                                            requestDeleteDocument(documentType)
-                                          }
-                                        >
-                                          <Trash2 className="mr-2 h-4 w-4" />
-                                          Delete
-                                        </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                  </div>
-                                );
-                              })
-                            )}
-
-                            {phaseDocuments.length > 0 && (
-                              <Button
-                                variant="ghost"
-                                className="my-1 h-auto w-full justify-start gap-2 px-3 py-2 text-xs font-medium"
-                                onClick={() => openCreateDocument(phase)}
-                              >
-                                <Plus className="h-3.5 w-3.5" />
-                                Add document type
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-            {/* CENTER */}
-            <div className="min-w-0 border-b xl:border-b-0 xl:border-r">
-              {selectedDocument ? (
-                <DocumentDetails
-                  documentType={selectedDocument}
-                  phase={
-                    phases.find(
-                      (phase) =>
-                        getId(phase) ===
-                        getPhaseIdFromDocument(selectedDocument),
-                    ) || null
-                  }
-                  onEdit={() => openEditDocument(selectedDocument)}
-                  onMove={() => openMoveDocument(selectedDocument)}
-                  onDuplicate={() => duplicateDocument(selectedDocument)}
-                  onToggle={() => toggleDocumentStatus(selectedDocument)}
-                  onDelete={() => requestDeleteDocument(selectedDocument)}
-                />
-              ) : selectedPhase ? (
-                <PhaseDetails
-                  phase={selectedPhase}
-                  documents={documentsByPhase[selectedPhaseId] || []}
-                  onEdit={() => openEditPhase(selectedPhase)}
-                  onDelete={() => requestDeletePhase(selectedPhase)}
-                  onAddDocument={() => openCreateDocument(selectedPhase)}
-                  onSelectDocument={handleSelectDocument}
-                />
-              ) : (
-                <WelcomePanel
-                  phases={phases}
-                  documents={documentTypes}
-                  onAddPhase={openCreatePhase}
-                  onAddDocument={() => openCreateDocument(null)}
-                />
-              )}
-            </div>
-
-            {/* RIGHT */}
-            <div className="min-w-0">
-              {selectedDocument ? (
-                <DocumentConfiguration
-                  documentType={selectedDocument}
-                  phase={
-                    phases.find(
-                      (phase) =>
-                        getId(phase) ===
-                        getPhaseIdFromDocument(selectedDocument),
-                    ) || null
-                  }
-                  onEdit={() => openEditDocument(selectedDocument)}
-                />
-              ) : selectedPhase ? (
-                <PhaseConfiguration
-                  phase={selectedPhase}
-                  documents={documentsByPhase[selectedPhaseId] || []}
-                  onEdit={() => openEditPhase(selectedPhase)}
-                />
-              ) : (
-                <StructureInfo />
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* MODALS */}
-      <Dialog
+      <AdminModal
         open={modal === "create-phase" || modal === "edit-phase"}
-        onOpenChange={(open) => !open && setModal(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {modal === "create-phase"
-                ? "Create Project Phase"
-                : "Edit Project Phase"}
-            </DialogTitle>
-            <DialogDescription>
-              {modal === "create-phase"
-                ? "Create a new phase in the project workflow."
-                : "Update the selected project phase."}
-            </DialogDescription>
-          </DialogHeader>
-          <PhaseForm
-            form={phaseForm}
-            setForm={setPhaseForm}
-            onSubmit={submitPhase}
+        as="form"
+        onSubmit={submitPhase}
+        onClose={() => setModal(null)}
+        busy={isSaving}
+        icon={FolderKanban}
+        title={modal === "create-phase" ? "Add phase" : "Edit phase"}
+        subtitle={modal === "create-phase" ? "It will be added at the end of the workflow." : "Update the selected project phase."}
+        width={540}
+        footer={
+          <ModalActions
             onCancel={() => setModal(null)}
-            loading={isSaving}
-            submitLabel={
-              modal === "create-phase" ? "Create Phase" : "Save Changes"
-            }
+            submitting={isSaving}
+            submitLabel={modal === "create-phase" ? "Add phase" : "Save changes"}
           />
-        </DialogContent>
-      </Dialog>
+        }
+      >
+        <PhaseForm form={phaseForm} setForm={setPhaseForm} errors={phaseErrors} />
+      </AdminModal>
 
-      <Dialog
+      <AdminModal
         open={modal === "create-document" || modal === "edit-document"}
-        onOpenChange={(open) => !open && setModal(null)}
-      >
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {modal === "create-document"
-                ? "Create Document Type"
-                : "Edit Document Type"}
-            </DialogTitle>
-            <DialogDescription>
-              {modal === "create-document"
-                ? "Add a document type under a project phase."
-                : "Update document type configuration."}
-            </DialogDescription>
-          </DialogHeader>
-          <DocumentForm
-            form={documentForm}
-            setForm={setDocumentForm}
-            phases={phases}
-            onSubmit={submitDocument}
+        as="form"
+        onSubmit={submitDocument}
+        onClose={() => setModal(null)}
+        busy={isSaving}
+        icon={FileText}
+        tone="info"
+        title={modal === "create-document" ? "Add document type" : "Edit document type"}
+        subtitle={modal === "create-document" ? "Add a document type under a project phase." : "Update document type configuration."}
+        width={620}
+        footer={
+          <ModalActions
             onCancel={() => setModal(null)}
-            loading={isSaving}
-            submitLabel={
-              modal === "create-document"
-                ? "Create Document Type"
-                : "Save Changes"
-            }
+            submitting={isSaving}
+            submitLabel={modal === "create-document" ? "Add document type" : "Save changes"}
           />
-        </DialogContent>
-      </Dialog>
+        }
+      >
+        <DocumentForm form={documentForm} setForm={setDocumentForm} phases={phases} errors={documentErrors} />
+      </AdminModal>
 
-      <Dialog
+      <AdminModal
         open={modal === "move-document"}
-        onOpenChange={(open) => !open && setModal(null)}
+        as="form"
+        onSubmit={submitMoveDocument}
+        onClose={() => setModal(null)}
+        busy={updatingDocumentType}
+        icon={Move}
+        title="Move document type"
+        subtitle={`Move “${selectedDocument ? getName(selectedDocument) : "document"}” to another phase.`}
+        width={480}
+        footer={
+          <ModalActions
+            onCancel={() => setModal(null)}
+            submitting={updatingDocumentType}
+            submittingLabel="Moving…"
+            submitLabel="Move"
+            icon={Move}
+          />
+        }
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Move Document Type</DialogTitle>
-            <DialogDescription>
-              Move this document type to another project phase.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={submitMoveDocument}>
-            <div className="space-y-4 py-2">
-              <div className="rounded-lg border bg-muted/50 p-3">
-                <div className="text-xs font-medium text-muted-foreground">
-                  Document
-                </div>
-                <div className="mt-1 font-semibold">
-                  {selectedDocument ? getName(selectedDocument) : "Document"}
-                </div>
-              </div>
+        <Field label="Destination phase" required htmlFor="mv-phase">
+          <SelectInput
+            id="mv-phase"
+            value={documentForm.projectPhaseId || ""}
+            onChange={(e) => setDocumentForm((prev) => ({ ...prev, projectPhaseId: e.target.value }))}
+            placeholder="Choose a phase"
+          >
+            {phases.map((phase) => (
+              <option key={getId(phase)} value={getId(phase)}>
+                {getName(phase)}
+              </option>
+            ))}
+          </SelectInput>
+        </Field>
+      </AdminModal>
 
-              <div className="space-y-2">
-                <Label>
-                  Destination Phase <span className="text-destructive">*</span>
-                </Label>
-                <Select
-                  value={documentForm.projectPhaseId || ""}
-                  onValueChange={(value) =>
-                    setDocumentForm((prev) => ({
-                      ...prev,
-                      projectPhaseId: value,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select phase" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {phases.map((phase) => (
-                      <SelectItem key={getId(phase)} value={getId(phase)}>
-                        {getName(phase)}
-                        {getCode(phase) ? ` (${getCode(phase)})` : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter className="mt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setModal(null)}
-                disabled={updatingDocumentType}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={updatingDocumentType}>
-                {updatingDocumentType ? (
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Move className="mr-2 h-4 w-4" />
-                )}
-                {updatingDocumentType ? "Moving..." : "Move Document"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
+      <AdminModal
         open={!!deleteTarget}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        onClose={() => setDeleteTarget(null)}
+        busy={deletingPhase || deletingDocumentType}
+        icon={AlertTriangle}
+        tone="bad"
+        title={`Delete ${deleteTarget?.type === "phase" ? "phase" : "document type"}?`}
+        subtitle={
+          <>
+            <strong style={{ color: "var(--text)" }}>{getName(deleteTarget?.item)}</strong> will be removed. This may affect
+            existing project configuration and can't easily be undone.
+          </>
+        }
+        width={460}
+        footer={
+          <ModalActions
+            onCancel={() => setDeleteTarget(null)}
+            onSubmit={confirmDelete}
+            submitting={deletingPhase || deletingDocumentType}
+            submittingLabel="Deleting…"
+            submitLabel="Delete"
+            icon={Trash2}
+            danger
+          />
+        }
       >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-destructive/10 text-destructive mb-2">
-              <AlertTriangle className="h-5 w-5" />
-            </div>
-            <DialogTitle>
-              Delete{" "}
-              {deleteTarget?.type === "phase"
-                ? "Project Phase"
-                : "Document Type"}
-              ?
-            </DialogTitle>
-            <DialogDescription className="pt-2">
-              You are about to delete{" "}
-              <strong className="text-foreground">
-                {getName(deleteTarget?.item)}
-              </strong>
-              . This action may affect existing project configuration and cannot
-              be easily reversed.
-            </DialogDescription>
-          </DialogHeader>
-
-          {deleteTarget?.type === "phase" && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
-              Make sure this phase is not being used by active projects before
-              deleting it.
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteTarget(null)}
-              disabled={deletingPhase || deletingDocumentType}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmDelete}
-              disabled={deletingPhase || deletingDocumentType}
-            >
-              {(deletingPhase || deletingDocumentType) && (
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              {deletingPhase || deletingDocumentType ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+        {deleteTarget?.type === "phase" ? (
+          <div className="adm-callout adm-callout--warn">
+            <AlertTriangle aria-hidden />
+            Make sure no active project uses this phase before deleting it.
+          </div>
+        ) : (
+          <p className="adm-section__desc" style={{ margin: 0 }}>
+            Projects that already produced this document keep their files.
+          </p>
+        )}
+      </AdminModal>
+    </Page>
   );
 }
 
 /* =========================================================
-   Sub-components (converted)
+   Sub-components
 ========================================================= */
 
-function StatCard({ icon, label, value }) {
+function DetailHeader({ icon: Icon, tone, title, badges, meta, actions }) {
   return (
-    <div className="rounded-xl border bg-background p-3">
-      <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-primary">
-          {icon}
+    <div className="inos-card__header" style={{ alignItems: "flex-start", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
+        <span className={`inos-icon-tile inos-icon-tile--lg${tone ? ` inos-icon-tile--${tone}` : ""}`}>
+          <Icon aria-hidden />
+        </span>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <h2 className="inos-section-title" style={{ fontSize: 18 }}>
+              {title}
+            </h2>
+            {badges}
+          </div>
+          {meta && <p className="inos-section-sub">{meta}</p>}
         </div>
-        <div>
-          <div className="text-lg font-bold text-foreground">{value}</div>
-          <div className="text-xs text-muted-foreground">{label}</div>
-        </div>
+      </div>
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>{actions}</div>
+    </div>
+  );
+}
+
+function KV({ items }) {
+  return (
+    <div className="adm-kv">
+      {items.map((item) => {
+        const empty = item.value == null || item.value === "";
+        return (
+          <div key={item.label} className="adm-kv__item">
+            <div className="adm-kv__label">{item.label}</div>
+            <div className={`adm-kv__value${empty ? " is-empty" : ""}`}>{empty ? "Not set" : item.value}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ComingSoon({ items }) {
+  return (
+    <div className="adm-soon">
+      <span className="inos-icon-tile inos-icon-tile--sm inos-icon-tile--lilac">
+        <Settings2 aria-hidden />
+      </span>
+      <div>
+        <div className="adm-soon__title">Workflow configuration — coming soon</div>
+        <div className="adm-soon__text">{items.join(", ")} will be configurable here as the project structure evolves.</div>
       </div>
     </div>
   );
 }
 
-function PhaseDetails({
-  phase,
-  documents,
-  onEdit,
-  onDelete,
-  onAddDocument,
-  onSelectDocument,
-}) {
+function PhaseDetails({ phase, documents, onEdit, onDelete, onAddDocument, onSelectDocument }) {
   return (
-    <div className="h-full">
-      <div className="border-b p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <FolderKanban className="h-6 w-6" />
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-bold">{getName(phase)}</h2>
-                {getCode(phase) && (
-                  <Badge variant="secondary" className="text-[10px] uppercase">
-                    {getCode(phase)}
-                  </Badge>
-                )}
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Project phase
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon" onClick={onEdit}>
-              <Pencil className="h-4 w-4" />
+    <section className="inos-card">
+      <DetailHeader
+        icon={FolderKanban}
+        title={phaseLabel(phase)}
+        badges={getCode(phase) && <span className="adm-code">{getCode(phase)}</span>}
+        meta={`Phase ${phase.phase_number ?? ""}${phase.module ? ` · ${humanize(phase.module)}` : ""}`}
+        actions={
+          <>
+            <Button variant="secondary" size="sm" icon={Pencil} onClick={onEdit}>
+              Edit
             </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="text-destructive hover:bg-destructive/10"
-              onClick={onDelete}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+            <Button variant="ghost" size="sm" icon={Trash2} onClick={onDelete} aria-label="Delete phase" title="Delete phase" />
+          </>
+        }
+      />
+
+      {getDescription(phase) && (
+        <div className="adm-section">
+          <p style={{ margin: 0, fontSize: 14, color: "var(--text-2)", lineHeight: 1.6 }}>{getDescription(phase)}</p>
         </div>
+      )}
 
-        {getDescription(phase) && (
-          <div className="mt-5 rounded-xl border bg-muted/50 p-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Description
-            </div>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              {getDescription(phase)}
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="p-5">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="adm-section">
+        <div className="adm-section__head">
           <div>
-            <h3 className="font-bold">Document Types</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Documents belonging to this phase.
-            </p>
+            <h3 className="adm-section__title">Document types</h3>
+            <p className="adm-section__desc">What this phase is expected to produce.</p>
           </div>
-          <Button size="sm" onClick={onAddDocument}>
-            <Plus className="mr-2 h-3.5 w-3.5" />
-            Add Document
+          <Button variant="soft" size="sm" icon={Plus} onClick={onAddDocument}>
+            Add document type
           </Button>
         </div>
 
         {documents.length === 0 ? (
-          <div className="rounded-xl border border-dashed bg-muted/30 p-8 text-center">
-            <FileText className="mx-auto h-7 w-7 text-muted-foreground" />
-            <div className="mt-3 text-sm font-semibold">No document types</div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Add the first document type for this phase.
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-4"
-              onClick={onAddDocument}
-            >
-              <Plus className="mr-2 h-3.5 w-3.5" />
-              Add Document Type
-            </Button>
-          </div>
+          <EmptyState
+            icon={FilePlus2}
+            title="No document types in this phase"
+            text="Add the documents or drawings this phase should deliver, e.g. a site recce report."
+          />
         ) : (
-          <div className="space-y-2">
+          <div style={{ display: "grid", gap: 8 }}>
             {documents.map((documentType) => (
               <button
                 key={getId(documentType)}
                 type="button"
                 onClick={() => onSelectDocument(documentType)}
-                className="group flex w-full items-center gap-3 rounded-xl border bg-background p-3 text-left transition hover:border-primary/30 hover:bg-muted/50"
+                className="adm-list__item"
+                style={{ border: "1px solid var(--line)" }}
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600">
-                  <FileText className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="font-semibold">{getName(documentType)}</div>
-                  <div className="mt-1 flex flex-wrap items-center gap-2">
-                    {getCode(documentType) && (
-                      <span className="text-[11px] text-muted-foreground">
-                        {getCode(documentType)}
-                      </span>
-                    )}
-                    <StatusBadge active={getActive(documentType)} />
-                  </div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+                <span className="inos-icon-tile inos-icon-tile--sm inos-icon-tile--info">
+                  {documentType?.targetType === "DRAWING" ? <PenTool aria-hidden /> : <FileText aria-hidden />}
+                </span>
+                <span style={{ minWidth: 0, flex: 1 }}>
+                  <span className="adm-list__name" style={{ display: "block" }}>
+                    {getName(documentType)}
+                  </span>
+                  <span className="adm-list__sub" style={{ display: "block" }}>
+                    {getCode(documentType) || "No code"}
+                  </span>
+                </span>
+                <StatusBadge active={getActive(documentType)} />
+                <ChevronRight size={16} style={{ color: "var(--text-3)" }} aria-hidden />
               </button>
             ))}
           </div>
         )}
       </div>
-    </div>
-  );
-}
 
-function DocumentDetails({
-  documentType,
-  phase,
-  onEdit,
-  onMove,
-  onDuplicate,
-  onToggle,
-  onDelete,
-}) {
-  return (
-    <div className="h-full">
-      <div className="border-b p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600">
-              <FileText className="h-6 w-6" />
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-bold">{getName(documentType)}</h2>
-                <StatusBadge active={getActive(documentType)} />
-              </div>
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                {getCode(documentType) && (
-                  <span>Code: {getCode(documentType)}</span>
-                )}
-                {phase && (
-                  <>
-                    <span>•</span>
-                    <span>Phase: {getName(phase)}</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center justify-end gap-1">
-            <Button variant="outline" size="icon" onClick={onEdit} title="Edit">
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={onMove} title="Move">
-              <Move className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={onDuplicate}
-              title="Duplicate"
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={onToggle}
-              title={getActive(documentType) ? "Deactivate" : "Activate"}
-            >
-              {getActive(documentType) ? (
-                <XCircle className="h-4 w-4" />
-              ) : (
-                <CheckCircle2 className="h-4 w-4" />
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="text-destructive hover:bg-destructive/10"
-              onClick={onDelete}
-              title="Delete"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {getDescription(documentType) && (
-          <div className="mt-5 rounded-xl border bg-muted/50 p-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Description
-            </div>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              {getDescription(documentType)}
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="grid gap-4 p-5 md:grid-cols-2">
-        <InfoCard
-          label="Target Type"
-          value={documentType?.targetType || "Not configured"}
-        />
-        <InfoCard
-          label="Phase"
-          value={phase ? getName(phase) : "Not assigned"}
-        />
-        <InfoCard
-          label="Phase Code"
-          value={documentType?.phaseCode || phase?.code || "Not configured"}
-        />
-        <InfoCard
-          label="Status"
-          value={getActive(documentType) ? "Active" : "Inactive"}
-        />
-      </div>
-
-      <div className="mx-5 rounded-xl border p-4">
-        <div className="flex items-start gap-3">
-          <Settings2 className="mt-0.5 h-4 w-4 text-primary" />
-          <div>
-            <div className="text-sm font-semibold">Future Configuration</div>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Requirements, approvals, templates, deliverables, checklists and
-              automations can be configured here as the project structure
-              evolves.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PhaseConfiguration({ phase, documents, onEdit }) {
-  return (
-    <div>
-      <div className="border-b p-4">
-        <div className="flex items-center gap-2">
-          <Settings2 className="h-4 w-4 text-primary" />
-          <h3 className="font-bold">Phase Configuration</h3>
-        </div>
-      </div>
-      <div className="space-y-4 p-4">
-        <ConfigSection
-          title="Basic Information"
+      <div className="adm-section">
+        <KV
           items={[
-            { label: "Name", value: getName(phase) },
-            { label: "Code", value: getCode(phase) || "—" },
+            { label: "Code", value: getCode(phase) },
+            { label: "Order", value: phase.phase_number },
             { label: "Documents", value: documents.length },
           ]}
         />
-        <ConfigSection
-          title="Workflow"
-          items={[
-            { label: "Requirements", value: "Not configured" },
-            { label: "Deliverables", value: "Not configured" },
-            { label: "Approvals", value: "Not configured" },
-            { label: "Gates", value: "Not configured" },
-          ]}
-        />
-        <ConfigSection
-          title="Future Actions"
-          items={[
-            { label: "Checklists", value: "Available later" },
-            { label: "Templates", value: "Available later" },
-            { label: "Automations", value: "Available later" },
-          ]}
-        />
-        <Button variant="outline" className="w-full" onClick={onEdit}>
-          <Pencil className="mr-2 h-4 w-4" />
-          Configure Phase
-        </Button>
+        <ComingSoon items={["Requirements", "deliverables", "approvals", "gates", "checklists", "automations"]} />
       </div>
-    </div>
+    </section>
   );
 }
 
-function DocumentConfiguration({ documentType, phase, onEdit }) {
+function DocumentDetails({ documentType, phase, onEdit, onMove, onDuplicate, onToggle, onDelete, onBack }) {
+  const active = getActive(documentType);
   return (
-    <div>
-      <div className="border-b p-4">
-        <div className="flex items-center gap-2">
-          <Settings2 className="h-4 w-4 text-primary" />
-          <h3 className="font-bold">Document Configuration</h3>
+    <section className="inos-card">
+      <DetailHeader
+        icon={documentType?.targetType === "DRAWING" ? PenTool : FileText}
+        tone="info"
+        title={getName(documentType)}
+        badges={<StatusBadge active={active} />}
+        meta={
+          <>
+            {phase ? (
+              <button type="button" className="adm-link-btn" onClick={onBack} style={{ fontSize: 13 }}>
+                {phaseLabel(phase)}
+              </button>
+            ) : (
+              "No phase"
+            )}
+            {getCode(documentType) && <> · {getCode(documentType)}</>}
+          </>
+        }
+        actions={
+          <>
+            <Button variant="secondary" size="sm" icon={Pencil} onClick={onEdit}>
+              Edit
+            </Button>
+            <RowMenu
+              label="More actions"
+              items={[
+                { label: "Move to phase", icon: Move, onClick: onMove },
+                { label: "Duplicate", icon: Copy, onClick: onDuplicate },
+                { label: active ? "Deactivate" : "Activate", icon: active ? XCircle : CheckCircle2, onClick: onToggle },
+                "sep",
+                { label: "Delete", icon: Trash2, danger: true, onClick: onDelete },
+              ]}
+            />
+          </>
+        }
+      />
+
+      {getDescription(documentType) && (
+        <div className="adm-section">
+          <p style={{ margin: 0, fontSize: 14, color: "var(--text-2)", lineHeight: 1.6 }}>{getDescription(documentType)}</p>
         </div>
-      </div>
-      <div className="space-y-4 p-4">
-        <ConfigSection
-          title="Basic Information"
-          items={[
-            { label: "Name", value: getName(documentType) },
-            { label: "Code", value: getCode(documentType) || "—" },
-            {
-              label: "Phase",
-              value: phase ? getName(phase) : "Not assigned",
-            },
-            {
-              label: "Status",
-              value: getActive(documentType) ? "Active" : "Inactive",
-            },
-          ]}
-        />
-        <ConfigSection
-          title="Workflow Configuration"
-          items={[
-            { label: "Requirements", value: "Not configured" },
-            { label: "Approval", value: "Not configured" },
-            { label: "Template", value: "Not configured" },
-            { label: "Deliverables", value: "Not configured" },
-          ]}
-        />
-        <ConfigSection
-          title="Future Actions"
-          items={[
-            { label: "Checklist", value: "Available later" },
-            { label: "Automation", value: "Available later" },
-            { label: "Gate", value: "Available later" },
-          ]}
-        />
-        <Button variant="outline" className="w-full" onClick={onEdit}>
-          <Pencil className="mr-2 h-4 w-4" />
-          Edit Document Type
-        </Button>
-      </div>
-    </div>
-  );
-}
+      )}
 
-function ConfigSection({ title, items }) {
-  return (
-    <div className="rounded-xl border">
-      <div className="border-b px-3 py-2.5">
-        <h4 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-          {title}
-        </h4>
+      <div className="adm-section">
+        <KV
+          items={[
+            { label: "Kind", value: documentType?.targetType ? humanize(documentType.targetType) : "" },
+            { label: "Phase", value: phase ? phaseLabel(phase) : "" },
+            { label: "Phase code", value: documentType?.phaseCode || getCode(phase) },
+            { label: "Status", value: active ? "Active" : "Inactive" },
+          ]}
+        />
+        <ComingSoon items={["Requirements", "approvals", "templates", "deliverables", "checklists"]} />
       </div>
-      <div className="divide-y">
-        {items.map((item) => (
-          <div
-            key={item.label}
-            className="flex items-center justify-between gap-3 px-3 py-2.5"
-          >
-            <span className="text-xs text-muted-foreground">{item.label}</span>
-            <span className="max-w-[160px] truncate text-right text-xs font-medium">
-              {item.value}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
+    </section>
   );
 }
 
 function WelcomePanel({ phases, documents, onAddPhase, onAddDocument }) {
   return (
-    <div className="flex h-full min-h-[600px] items-center justify-center p-8">
-      <div className="max-w-md text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-muted text-primary">
-          <Layers3 className="h-8 w-8" />
-        </div>
-        <h2 className="mt-5 text-xl font-bold">Project Structure</h2>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Manage the structure of your project workflow. Create phases and
-          organize document types inside each phase.
-        </p>
-        <div className="mt-6 grid grid-cols-2 gap-3 text-left">
-          <MiniStat
-            icon={<FolderKanban className="h-4 w-4" />}
-            value={phases.length}
-            label="Phases"
-          />
-          <MiniStat
-            icon={<FileText className="h-4 w-4" />}
-            value={documents.length}
-            label="Documents"
-          />
-        </div>
-        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-          <Button onClick={onAddPhase}>
-            <FolderPlus className="mr-2 h-4 w-4" />
-            Add Phase
-          </Button>
-          <Button variant="outline" onClick={onAddDocument}>
-            <FilePlus2 className="mr-2 h-4 w-4" />
-            Add Document
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StructureInfo() {
-  return (
-    <div>
-      <div className="border-b p-4">
-        <div className="flex items-center gap-2">
-          <Settings2 className="h-4 w-4 text-primary" />
-          <h3 className="font-bold">Structure</h3>
-        </div>
-      </div>
-      <div className="space-y-4 p-4">
-        <InfoBlock
-          icon={<FolderKanban className="h-4 w-4" />}
-          title="Phases"
-          description="Phases represent the major stages of your project workflow."
-        />
-        <InfoBlock
-          icon={<FileText className="h-4 w-4" />}
-          title="Document Types"
-          description="Document types belong to phases and define the documents used during each stage."
-        />
-        <InfoBlock
-          icon={<CheckCircle2 className="h-4 w-4" />}
-          title="Future Configuration"
-          description="Requirements, gates, approvals, checklists, deliverables and automations can be added to this structure."
-        />
-      </div>
-    </div>
-  );
-}
-
-function InfoBlock({ icon, title, description }) {
-  return (
-    <div className="rounded-xl border p-3">
-      <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-primary">
-          {icon}
-        </div>
-        <div>
-          <div className="text-sm font-semibold">{title}</div>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            {description}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MiniStat({ icon, value, label }) {
-  return (
-    <div className="rounded-xl border p-3">
-      <div className="flex items-center gap-2">
-        <div className="text-primary">{icon}</div>
-        <div>
-          <div className="font-bold">{value}</div>
-          <div className="text-[11px] text-muted-foreground">{label}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function InfoCard({ label, value }) {
-  return (
-    <div className="rounded-xl border p-4">
-      <div className="text-xs font-medium text-muted-foreground">{label}</div>
-      <div className="mt-1 truncate text-sm font-semibold">{value}</div>
-    </div>
+    <Card>
+      <EmptyState
+        icon={Layers3}
+        title="Select a phase or document"
+        text={`Pick anything in the tree to see its details. You have ${plural(phases.length, "phase")} and ${plural(
+          documents.length,
+          "document type",
+        )} so far.`}
+        action={
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+            <Button variant="soft" icon={FilePlus2} onClick={onAddDocument} disabled={!phases.length}>
+              Add document type
+            </Button>
+            <Button variant="ghost" icon={FolderPlus} onClick={onAddPhase}>
+              Add phase
+            </Button>
+          </div>
+        }
+      />
+    </Card>
   );
 }
 
 function StatusBadge({ active }) {
   return (
-    <Badge
-      variant="outline"
-      className={
-        active
-          ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300"
-          : "border-red-200 bg-red-50 text-red-600 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
-      }
-    >
-      <span
-        className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
-          active ? "bg-emerald-500" : "bg-red-500"
-        }`}
-      />
+    <Pill tone={active ? "ok" : "mute"} size="sm">
       {active ? "Active" : "Inactive"}
-    </Badge>
+    </Pill>
   );
 }
 
-function PhaseForm({
-  form,
-  setForm,
-  onSubmit,
-  onCancel,
-  loading,
-  submitLabel,
-}) {
+function PhaseForm({ form, setForm, errors = {} }) {
   return (
-    <form onSubmit={onSubmit}>
-      <div className="space-y-4 py-2">
-        <div className="space-y-2">
-          <Label>
-            Phase Name <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            value={form.name}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, name: e.target.value }))
-            }
-            placeholder="e.g. Design"
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Phase Code</Label>
-          <Input
-            value={form.code}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, code: e.target.value }))
-            }
-            placeholder="e.g. DESIGN"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Description</Label>
-          <Textarea
-            value={form.description}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                description: e.target.value,
-              }))
-            }
-            placeholder="Describe this project phase..."
-            rows={4}
-          />
-        </div>
-      </div>
-      <DialogFooter className="mt-6">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={loading}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={loading}>
-          {loading ? (
-            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
-          {loading ? "Saving..." : submitLabel}
-        </Button>
-      </DialogFooter>
-    </form>
-  );
-}
-
-function DocumentForm({
-  form,
-  setForm,
-  phases,
-  onSubmit,
-  onCancel,
-  loading,
-  submitLabel,
-}) {
-  const selectedPhase = phases.find(
-    (phase) => getId(phase) === form.projectPhaseId,
-  );
-
-  return (
-    <form onSubmit={onSubmit}>
-      <div className="grid gap-4 py-2 md:grid-cols-2">
-        <div className="md:col-span-2 space-y-2">
-          <Label>
-            Document Type Name <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            value={form.name}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, name: e.target.value }))
-            }
-            placeholder="e.g. Concept Design"
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Document Code</Label>
-          <Input
-            value={form.code}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, code: e.target.value }))
-            }
-            placeholder="e.g. CONCEPT_DESIGN"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>
-            Project Phase <span className="text-destructive">*</span>
-          </Label>
-          <Select
-            value={form.projectPhaseId || ""}
-            onValueChange={(value) => {
-              const phase = phases.find((item) => getId(item) === value);
-              setForm((prev) => ({
-                ...prev,
-                projectPhaseId: value,
-                phaseCode: phase?.code || "",
-              }));
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select phase" />
-            </SelectTrigger>
-            <SelectContent>
-              {phases.map((phase) => (
-                <SelectItem key={getId(phase)} value={getId(phase)}>
-                  {getName(phase)}
-                  {getCode(phase) ? ` (${getCode(phase)})` : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Target Type</Label>
-          <Input
-            value={form.targetType}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                targetType: e.target.value,
-              }))
-            }
-            placeholder="e.g. PROJECT"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Phase Code</Label>
-          <Input
-            value={selectedPhase?.code || form.phaseCode || ""}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                phaseCode: e.target.value,
-              }))
-            }
-            placeholder="e.g. DESIGN"
-          />
-        </div>
-
-        <div className="md:col-span-2 space-y-2">
-          <Label>Description</Label>
-          <Textarea
-            value={form.description}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                description: e.target.value,
-              }))
-            }
-            placeholder="Describe this document type..."
-            rows={4}
-          />
-        </div>
-
-        <div className="md:col-span-2">
-          <div className="flex items-start justify-between gap-4 rounded-xl border bg-muted/40 p-4">
-            <div>
-              <div className="text-sm font-semibold">Active Document Type</div>
-              <div className="mt-1 text-xs text-muted-foreground">
-                Inactive document types can remain in the system without being
-                used for new workflows.
-              </div>
-            </div>
-            <Checkbox
-              checked={form.isActive}
-              onCheckedChange={(checked) =>
-                setForm((prev) => ({
-                  ...prev,
-                  isActive: Boolean(checked),
-                }))
-              }
-            />
-          </div>
-        </div>
-      </div>
-
-      <DialogFooter className="mt-6">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={loading}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={loading}>
-          {loading ? (
-            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
-          {loading ? "Saving..." : submitLabel}
-        </Button>
-      </DialogFooter>
-    </form>
-  );
-}
-
-function EmptyTree({ search, onAddPhase }) {
-  return (
-    <div className="px-4 py-12 text-center">
-      <FolderKanban className="mx-auto h-8 w-8 text-muted-foreground" />
-      <div className="mt-3 text-sm font-semibold">
-        {search ? "No matching structure" : "No project phases"}
-      </div>
-      <p className="mt-1 text-xs leading-5 text-muted-foreground">
-        {search
-          ? "Try another search term."
-          : "Create your first project phase to start building the tree."}
-      </p>
-      {!search && (
-        <Button size="sm" className="mt-4" onClick={onAddPhase}>
-          <Plus className="mr-2 h-3.5 w-3.5" />
-          Add Phase
-        </Button>
-      )}
+    <div className="inos-form-grid">
+      <Field label="Phase name" required full error={errors.name} htmlFor="psf-name">
+        <TextInput
+          id="psf-name"
+          autoFocus
+          value={form.name}
+          invalid={!!errors.name}
+          onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+          placeholder="e.g. Design development"
+        />
+      </Field>
+      <Field label="Code" required={!form.name} full error={errors.code} htmlFor="psf-code" hint="Leave blank to generate from the name.">
+        <TextInput
+          id="psf-code"
+          value={form.code}
+          invalid={!!errors.code}
+          onChange={(e) => setForm((prev) => ({ ...prev, code: e.target.value }))}
+          placeholder={toCode(form.name) || "e.g. 05_DESIGN"}
+          className="adm-upper"
+        />
+      </Field>
+      <Field label="Description" optional full htmlFor="psf-desc">
+        <TextArea
+          id="psf-desc"
+          value={form.description}
+          onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+          placeholder="What happens in this phase and what it delivers."
+          rows={3}
+        />
+      </Field>
     </div>
   );
 }
 
-function LoadingState() {
+function DocumentForm({ form, setForm, phases, errors = {} }) {
   return (
-    <div className="grid min-h-[650px] grid-cols-1 overflow-hidden rounded-xl border bg-background shadow-sm xl:grid-cols-[360px_minmax(0,1fr)_330px]">
-      <div className="animate-pulse border-b p-4 xl:border-b-0 xl:border-r">
-        <div className="h-5 w-32 rounded bg-muted" />
-        <div className="mt-5 space-y-3">
-          {[1, 2, 3, 4, 5].map((item) => (
-            <div key={item} className="h-12 rounded-lg bg-muted" />
+    <div className="inos-form-grid">
+      <Field label="Name" required full error={errors.name} htmlFor="dsf-name">
+        <TextInput
+          id="dsf-name"
+          autoFocus
+          value={form.name}
+          invalid={!!errors.name}
+          onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+          placeholder="e.g. Concept design presentation"
+        />
+      </Field>
+
+      <Field label="Project phase" required error={errors.projectPhaseId} htmlFor="dsf-phase">
+        <SelectInput
+          id="dsf-phase"
+          value={form.projectPhaseId || ""}
+          invalid={!!errors.projectPhaseId}
+          onChange={(e) => {
+            const value = e.target.value;
+            const phase = phases.find((item) => getId(item) === value);
+            setForm((prev) => ({ ...prev, projectPhaseId: value, phaseCode: getCode(phase) }));
+          }}
+          placeholder="Choose a phase"
+        >
+          {phases.map((phase) => (
+            <option key={getId(phase)} value={getId(phase)}>
+              {getName(phase)}
+            </option>
           ))}
-        </div>
-      </div>
-      <div className="animate-pulse border-b p-6 xl:border-b-0 xl:border-r">
-        <div className="h-7 w-52 rounded bg-muted" />
-        <div className="mt-4 h-24 rounded-xl bg-muted" />
-        <div className="mt-6 space-y-3">
-          {[1, 2, 3].map((item) => (
-            <div key={item} className="h-16 rounded-xl bg-muted" />
-          ))}
-        </div>
-      </div>
-      <div className="animate-pulse p-5">
-        <div className="h-5 w-44 rounded bg-muted" />
-        <div className="mt-5 space-y-3">
-          {[1, 2, 3, 4].map((item) => (
-            <div key={item} className="h-16 rounded-xl bg-muted" />
-          ))}
-        </div>
+        </SelectInput>
+      </Field>
+
+      <Field label="Code" error={errors.code} htmlFor="dsf-code" hint="Leave blank to generate from the name.">
+        <TextInput
+          id="dsf-code"
+          value={form.code}
+          invalid={!!errors.code}
+          onChange={(e) => setForm((prev) => ({ ...prev, code: e.target.value }))}
+          placeholder={toCode(form.name) || "e.g. CONCEPT_DESIGN"}
+          className="adm-upper"
+        />
+      </Field>
+
+      <Field label="Kind" full>
+        <ChoiceGroup
+          name="Kind"
+          value={form.targetType || "DOCUMENT"}
+          onChange={(v) => setForm((prev) => ({ ...prev, targetType: v }))}
+          options={[
+            { value: "DOCUMENT", label: "Document", icon: FileText },
+            { value: "DRAWING", label: "Drawing", icon: PenTool },
+          ]}
+        />
+      </Field>
+
+      <Field label="Description" optional full htmlFor="dsf-desc">
+        <TextArea
+          id="dsf-desc"
+          value={form.description}
+          onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+          placeholder="What this document contains and who prepares it."
+          rows={3}
+        />
+      </Field>
+
+      <div className="span-full">
+        <ToggleRow
+          label="Active"
+          hint="Inactive document types stay on record but aren't used for new workflows."
+          checked={form.isActive}
+          onChange={(v) => setForm((prev) => ({ ...prev, isActive: v }))}
+        />
       </div>
     </div>
   );

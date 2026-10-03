@@ -6,6 +6,13 @@ export const onedriveApi = baseApi.injectEndpoints({
     // ONEDRIVE
     // =========================
 
+    // { configured, connected, connectUrl } — never errors, drives the
+    // "Connect OneDrive" state in the file manager.
+    getOneDriveStatus: builder.query({
+      query: () => ({ url: "/onedrive/status" }),
+      providesTags: ["OneDrive"],
+    }),
+
     getOneDrive: builder.query({
       query: () => ({
         url: "/onedrive",
@@ -132,6 +139,7 @@ export const onedriveApi = baseApi.injectEndpoints({
 });
 
 export const {
+  useGetOneDriveStatusQuery,
   // =========================
   // ONEDRIVE
   // =========================

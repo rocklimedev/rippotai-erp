@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Mockup } from './models/mockup.model';
+import { Project } from '@/modules/projects/models/projects.model';
 import { ProposeMockupDto, ReviewMockupDto } from './dto/mockup.dto';
 import { MockupStatus } from '../../common/enums/site-operations.enums';
 
@@ -50,17 +51,29 @@ export class MockupService {
   }
 
   async getOrThrow(id: number): Promise<Mockup> {
-    const mockup = await this.mockupModel.findByPk(id);
+    const mockup = await this.mockupModel.findByPk(id, {
+      include: [{ model: Project, attributes: ['id', 'name'] }],
+    });
     if (!mockup) throw new NotFoundException(`Mockup ${id} not found`);
     return mockup;
   }
 
   async listForProject(
-    projectId: number,
+    projectId: string,
     status?: MockupStatus,
   ): Promise<Mockup[]> {
-    const where: any = { projectId };
+    return this.list({ projectId, status });
+  }
+
+  /** All mock-ups, optionally for one project (UUID) and/or status, with project name. */
+  async list({ projectId, status }: { projectId?: string; status?: MockupStatus } = {}): Promise<Mockup[]> {
+    const where: any = {};
+    if (projectId) where.projectId = projectId;
     if (status) where.status = status;
-    return this.mockupModel.findAll({ where, order: [['proposedAt', 'DESC']] });
+    return this.mockupModel.findAll({
+      where,
+      order: [['proposedAt', 'DESC']],
+      include: [{ model: Project, attributes: ['id', 'name'] }],
+    });
   }
 }

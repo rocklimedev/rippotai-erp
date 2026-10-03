@@ -1,4 +1,6 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import BoqDocument, { BOQ_VARIANTS, boqFileName } from "@/components/commerce-documents/BoqDocument";
+import { downloadWhenReady, OFFSCREEN_STYLE } from "@/components/print-document/commerce";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
@@ -53,10 +55,10 @@ import {
   useDuplicateBoqVersionMutation,
   useCreateBoqNewVersionMutation,
   useExportBoqExcelMutation,
-  useExportBoqPdfMutation,
   useApplyBoqTermsMutation,
 } from "../../api/boq/boq.api";
 import { isBoqDisabled } from "../../hooks/constants";
+import { useCreateDocumentMutation } from "../../api/documents/document.api";
 import { SaveChip } from "../../components/boqs/StatusIndicators";
 import { LockedEditModal } from "../../components/boqs/LockedEditModal";
 import { AddCategoryPanel } from "../../components/boqs/AddCategoryPanel";
@@ -86,12 +88,16 @@ export default function BoqWorkspace() {
   const [updateMiscellaneous] = useUpdateBoqMiscellaneousMutation();
   const [deleteMiscellaneous] = useDeleteBoqMiscellaneousMutation();
   const [submitForApproval] = useSubmitBoqForApprovalMutation();
-  const [approveBoq] = useApproveBoqMutation();
+  const [approveBoq, { isLoading: approving }] = useApproveBoqMutation();
+  const [createDocument] = useCreateDocumentMutation();
+  const [attaching, setAttaching] = useState(false);
   const [duplicateVersion] = useDuplicateBoqVersionMutation();
   const [createNewVersion, { isLoading: creatingVersion }] =
     useCreateBoqNewVersionMutation();
   const [exportExcel] = useExportBoqExcelMutation();
-  const [exportPdf] = useExportBoqPdfMutation();
+  // PDF copies are rendered with the shared print kit (off-screen) and captured page by page.
+  const pdfRef = useRef(null);
+  const [pdfVariant, setPdfVariant] = useState(null);
   const [applyBoqTerms, { isLoading: applyingTerms }] =
     useApplyBoqTermsMutation();
 
@@ -356,13 +362,51 @@ export default function BoqWorkspace() {
     }
   };
 
+  // Approve → lock, then render the client copy with the print kit (new format) and attach it to
+  // the project's Documents (category "Approvals"). No server-side PDF template is involved.
   const handleApprove = async () => {
+    let approved;
     try {
-      await approveBoq({ id, remarks: "Approved" }).unwrap();
+      approved = await approveBoq({ id, remarks: "Approved" }).unwrap();
       setApprovalOpen(false);
-      toast.success("BOQ approved and locked");
-    } catch {
-      toast.error("Approve failed");
+    } catch (e) {
+      toast.error(e?.data?.message || "Approve failed");
+      return;
+    }
+    const tid = `boq-approve-${Date.now()}`;
+    toast.loading("BOQ approved and locked — attaching the PDF to Documents…", { id: tid });
+    setAttaching(true);
+    try {
+      const doc = approved && approved.id ? { ...boq, ...approved } : boq;
+      setPdfVariant("client");
+      const fileName = boqFileName(doc, "client");
+      const blob = await downloadWhenReady(() => pdfRef.current, fileName, {
+        title: `BOQ — ${doc?.project?.name || doc?.title || ""}`,
+        output: "blob",
+      });
+      const projectId = doc?.project_id || doc?.project?.id;
+      if (!blob || !projectId) throw new Error("No PDF or project");
+      await createDocument({
+        data: {
+          projectId,
+          title: `BOQ ${doc.boq_number || ""} v${doc.version || 1} — approved`.replace(/\s+/g, " ").trim(),
+          category: "Approvals",
+          status: "approved",
+          visibility: "external",
+          docType: "generated",
+          docNo: doc.boq_number,
+          documentDate: new Date().toISOString().slice(0, 10),
+          remarks: "Client copy generated on approval",
+        },
+        file: new File([blob], fileName, { type: "application/pdf" }),
+      }).unwrap();
+      toast.success("BOQ approved — PDF attached to Documents › Approvals", { id: tid });
+    } catch (e) {
+      console.error("Attach approved BOQ PDF failed", e);
+      toast.error("BOQ approved, but the PDF couldn't be attached. Download it from Export instead.", { id: tid });
+    } finally {
+      setPdfVariant(null);
+      setAttaching(false);
     }
   };
 
@@ -379,17 +423,20 @@ export default function BoqWorkspace() {
   };
 
   const doExportPdf = async (variant) => {
+    const id_ = `boq-pdf-${Date.now()}`;
+    setPdfVariant(variant);
+    toast.loading("Preparing the BOQ…", { id: id_ });
     try {
-      const base = boq?.boq_number || `BOQ-V${boq?.version || 1}`;
-      await exportPdf({
-        boqId: id,
-        variant,
-        filename: `${base}-${variant}.pdf`,
-      }).unwrap();
-      toast.success(`PDF (${variant}) downloaded`);
+      await downloadWhenReady(() => pdfRef.current, boqFileName(boq, variant), {
+        title: `BOQ — ${boq?.project?.name || boq?.title || ""} (${BOQ_VARIANTS[variant] || variant})`,
+      });
+      toast.success(`BOQ (${(BOQ_VARIANTS[variant] || variant).toLowerCase()}) downloaded`, { id: id_ });
       setPreExportVariant(null);
-    } catch {
-      toast.error("Export failed");
+    } catch (e) {
+      console.error("BOQ PDF failed", e);
+      toast.error("Couldn't create the PDF. Try again.", { id: id_ });
+    } finally {
+      setPdfVariant(null);
     }
   };
 
@@ -510,7 +557,7 @@ export default function BoqWorkspace() {
               <GitBranch size={13} /> Versions
             </button>
             <button
-              onClick={() => setPreExportVariant("internal")}
+              onClick={() => setPreExportVariant("client")}
               className="h-9 px-3 rounded-lg bg-[#1F453B] hover:opacity-90 text-white text-[12.5px] font-semibold flex items-center gap-1.5"
               data-testid="download-boq-btn"
               title="Download BOQ (PDF)"
@@ -550,8 +597,14 @@ export default function BoqWorkspace() {
                 <DropdownMenuItem onClick={handleExportExcel}>
                   Export Excel
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => window.print()}>
-                  Print
+                <DropdownMenuItem onClick={() => setPreExportVariant("internal")}>
+                  Download internal copy (PDF)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPreExportVariant("quantity_only")}>
+                  Download quantity-only copy (PDF)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPreExportVariant("vendor_enquiry")}>
+                  Download vendor enquiry (PDF)
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -820,8 +873,8 @@ export default function BoqWorkspace() {
           <DialogHeader>
             <DialogTitle>Approve BOQ</DialogTitle>
             <DialogDescription>
-              Approving will lock this version and auto-attach a PDF to
-              Documents.
+              Approving locks this version and attaches the client PDF to the
+              project's Documents (Approvals).
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -833,10 +886,11 @@ export default function BoqWorkspace() {
             </button>
             <button
               onClick={handleApprove}
-              className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold"
+              disabled={approving || attaching}
+              className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold disabled:opacity-60"
               data-testid="approve-confirm"
             >
-              Approve & Lock
+              {approving ? "Approving…" : "Approve & Lock"}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -857,7 +911,23 @@ export default function BoqWorkspace() {
         variant={preExportVariant}
         onClose={() => setPreExportVariant(null)}
         onConfirm={doExportPdf}
+        busy={!!pdfVariant}
+        preview={
+          preExportVariant && boq ? (
+            <div style={{ width: 180, height: 255, overflow: "hidden", borderRadius: 6, boxShadow: "var(--shadow-sm)", background: "#fff" }}>
+              <div style={{ width: "210mm", transform: "scale(0.2268)", transformOrigin: "top left" }}>
+                <BoqDocument boq={boq} variant={preExportVariant} />
+              </div>
+            </div>
+          ) : null
+        }
       />
+
+      {pdfVariant && boq && (
+        <div style={OFFSCREEN_STYLE} aria-hidden>
+          <BoqDocument ref={pdfRef} boq={boq} variant={pdfVariant} />
+        </div>
+      )}
 
       <AddItemPicker
         open={!!pickerFor}

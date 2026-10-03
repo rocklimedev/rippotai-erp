@@ -183,9 +183,22 @@ export class DocumentsController {
       });
     }
 
-    const buffer = await this.documentsService.downloadFile(
-      document.storageFilename,
-    );
+    let buffer: Buffer;
+    try {
+      buffer = await this.documentsService.downloadFile(
+        document.storageFilename,
+      );
+    } catch (e) {
+      // Missing file in storage (e.g. seeded record without an upload)
+      // is a 404, not a server error.
+      if ((e as NodeJS.ErrnoException)?.code === 'ENOENT') {
+        return res.status(404).send({
+          statusCode: 404,
+          message: 'The file for this document is not in storage',
+        });
+      }
+      throw e;
+    }
 
     res.setHeader(
       'Content-Disposition',

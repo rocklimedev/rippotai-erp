@@ -17,6 +17,10 @@ import { ProjectsController } from './projects.controller';
 import { ProjectTypeController } from './project-type.controller';
 import { ProjectPhaseController } from './project-phase.controller';
 import { CommandCenterController } from './command-center.controller';
+import {
+  ProjectOverviewController,
+  AppBadgesController,
+} from './project-overview.controller';
 
 import { ActivityLogsModule } from '../engagement/activity-logs.module';
 import { NotificationsModule } from '../engagement/notifications.module';
@@ -105,6 +109,8 @@ import { CdnModule } from '@/modules/cdn/cdn.module';
 
     // Command Center
     CommandCenterController,
+    ProjectOverviewController,
+    AppBadgesController,
   ],
 
   providers: [

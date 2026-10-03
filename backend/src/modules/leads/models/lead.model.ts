@@ -9,6 +9,7 @@ import {
 } from 'sequelize-typescript';
 import { LeadNote } from './lead-note.model';
 import { LeadActivity } from './lead-activity.model';
+import { LeadTask } from './lead-task.model';
 import {
   LeadStage,
   LeadType,
@@ -38,9 +39,43 @@ export class Lead extends Model<Lead> {
 
   @Column({
     type: DataType.STRING,
-    allowNull: false,
+    allowNull: true,
   })
-  declare phone: string;
+  declare phone: string | null;
+
+  // Deal / project name shown on the pipeline card (Bigin "Deal_Name").
+  @Column({ type: DataType.STRING, allowNull: true, field: 'deal_name' })
+  declare dealName: string | null;
+
+  @Column({ type: DataType.STRING, allowNull: true })
+  declare company: string | null;
+
+  @Column({ type: DataType.UUID, allowNull: true, field: 'client_id' })
+  declare clientId: string | null;
+
+  @Column({ type: DataType.UUID, allowNull: true, field: 'project_id' })
+  declare projectId: string | null;
+
+  @Column({ type: DataType.DECIMAL(15, 2), allowNull: true })
+  declare amount: string | number | null;
+
+  @Column({ type: DataType.DATEONLY, allowNull: true, field: 'expected_close' })
+  declare expectedClose: string | null;
+
+  @Column({ type: DataType.UUID, allowNull: true, field: 'owner_id' })
+  declare ownerId: string | null;
+
+  @Column({ type: DataType.STRING(500), allowNull: true, field: 'lost_reason' })
+  declare lostReason: string | null;
+
+  @Column({ type: DataType.DATE, allowNull: true, field: 'closed_at' })
+  declare closedAt: Date | null;
+
+  @Column({ type: DataType.STRING(64), allowNull: true, field: 'zoho_id' })
+  declare zohoId: string | null;
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare description: string | null;
 
   @Column({
     type: DataType.STRING,
@@ -194,4 +229,13 @@ export class Lead extends Model<Lead> {
     hooks: true,
   })
   declare activity: LeadActivity[];
+
+  @HasMany(() => LeadTask, {
+    onDelete: 'CASCADE',
+    hooks: true,
+  })
+  declare tasks: LeadTask[];
+
+  declare createdAt: Date;
+  declare updatedAt: Date;
 }

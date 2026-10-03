@@ -15,13 +15,18 @@ import { Optional } from 'sequelize';
 import { Project } from '@/modules/projects/models/projects.model';
 import { User } from '@/modules/users/models/user.model';
 
+export type TaskStatusValue = 'todo' | 'in_progress' | 'review' | 'blocked' | 'completed';
+
 export interface TaskAttributes {
   id: string;
   title: string;
   project_id: string | null;
   created_by: string | null;
   priority: 'low' | 'medium' | 'high' | 'critical';
-  status: 'todo' | 'completed';
+  status: TaskStatusValue;
+  description: string | null;
+  assigned_to: string | null;
+  start_date: Date | null;
   due_date: Date | null;
   due_bucket: string | null;
   order_index: number;
@@ -38,6 +43,9 @@ export interface TaskCreationAttributes extends Optional<
   | 'priority'
   | 'status'
   | 'due_date'
+  | 'description'
+  | 'assigned_to'
+  | 'start_date'
   | 'due_bucket'
   | 'order_index'
   | 'workload_estimate_hours'
@@ -98,11 +106,25 @@ export class Task extends Model<TaskAttributes, TaskCreationAttributes> {
   declare priority: 'low' | 'medium' | 'high' | 'critical';
 
   @Column({
-    type: DataType.ENUM('todo', 'completed'),
+    type: DataType.ENUM('todo', 'in_progress', 'review', 'blocked', 'completed'),
     allowNull: false,
     defaultValue: 'todo',
   })
-  declare status: 'todo' | 'completed';
+  declare status: TaskStatusValue;
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare description: string | null;
+
+  // Assignee
+  @ForeignKey(() => User)
+  @Column({ type: DataType.CHAR(36), allowNull: true })
+  declare assigned_to: string | null;
+
+  @BelongsTo(() => User, { foreignKey: 'assigned_to', as: 'assignee' })
+  declare assignee?: User;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare start_date: Date | null;
 
   @Column({
     type: DataType.DATE,

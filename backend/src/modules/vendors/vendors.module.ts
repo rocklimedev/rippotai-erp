@@ -11,6 +11,7 @@ import { Project } from '../projects/models/projects.model';
 import { Quotation } from '../quotations/models/quotations.model';
 
 import { VendorsController } from './vendors.controller';
+import { VendorSavedSearchesController } from './vendor-saved-searches.controller';
 import { VendorCategoriesController } from './vendor-categories.controller';
 import { VendorBusinessTypesController } from './vendor-business-types.controller';
 
@@ -34,6 +35,8 @@ import { ActivityLogsModule } from '../engagement/activity-logs.module';
     ActivityLogsModule,
   ],
   controllers: [
+    // before VendorsController so vendors/:id doesn't shadow it
+    VendorSavedSearchesController,
     VendorsController,
     VendorCategoriesController,
     VendorBusinessTypesController,

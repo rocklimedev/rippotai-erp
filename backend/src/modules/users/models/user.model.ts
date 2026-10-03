@@ -7,6 +7,8 @@ import {
   Default,
   ForeignKey,
   BelongsTo,
+  DefaultScope,
+  Scopes,
 } from 'sequelize-typescript';
 
 import { Optional } from 'sequelize';
@@ -38,6 +40,13 @@ export interface UserCreationAttributes extends Optional<
   | 'created_by'
 > {}
 
+/** Columns that must never leave the API. */
+export const USER_SECRET_FIELDS = ['password_hash'] as const;
+
+// password_hash is excluded everywhere by default (also when User is included
+// from another model). Auth code that needs it uses User.scope('withPassword').
+@DefaultScope(() => ({ attributes: { exclude: [...USER_SECRET_FIELDS] } }))
+@Scopes(() => ({ withPassword: { attributes: { include: ['password_hash'] } } }))
 @Table({
   tableName: 'users',
   timestamps: true,
@@ -127,4 +136,11 @@ export class User extends Model<UserAttributes, UserCreationAttributes> {
     as: 'creator',
   })
   declare creator: User;
+
+  /** Serialisation guard: never emit secrets even if a query selected them. */
+  toJSON(): any {
+    const json: any = super.toJSON();
+    for (const f of USER_SECRET_FIELDS) delete json[f];
+    return json;
+  }
 }

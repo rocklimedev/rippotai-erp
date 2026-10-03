@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useGetWsInventoryOverviewQuery } from "@/api/workspace/workspace.api";
 
 import { relativeTime } from "@/lib/format";
 
@@ -25,273 +26,75 @@ import {
 } from "../common/hooks";
 
 /* ============================================================
-   MOCK INVENTORY DATA
+   LIVE INVENTORY DATA — GET /inventory-overview (inventory_transactions)
+   stock:     per project (site) × material balance (received − issued)
+   movements: latest 300 transactions
+   Low stock: balance at or below 15% of what was received for that site.
 ============================================================ */
 
-const MOCK_INVENTORY = [
-  {
-    id: "INV-001",
-    material_name: "Plywood 18mm",
-    category: "Carpentry",
-    site_id: "SITE-001",
-    site_name: "DLF Phase 1",
-    quantity: 145,
-    unit: "Sheets",
-    minimum_stock: 50,
-    status: "AVAILABLE",
-    createdAt: "2026-09-20T10:30:00",
-  },
-  {
-    id: "INV-002",
-    material_name: "MDF Board 12mm",
-    category: "Carpentry",
-    site_id: "SITE-001",
-    site_name: "DLF Phase 1",
-    quantity: 72,
-    unit: "Sheets",
-    minimum_stock: 30,
-    status: "AVAILABLE",
-    createdAt: "2026-09-19T12:20:00",
-  },
-  {
-    id: "INV-003",
-    material_name: "Wall Paint - White",
-    category: "Painting",
-    site_id: "SITE-002",
-    site_name: "Golf Course Road",
-    quantity: 28,
-    unit: "Ltr",
-    minimum_stock: 40,
-    status: "LOW_STOCK",
-    createdAt: "2026-09-18T09:15:00",
-  },
-  {
-    id: "INV-004",
-    material_name: "Wall Paint - Grey",
-    category: "Painting",
-    site_id: "SITE-002",
-    site_name: "Golf Course Road",
-    quantity: 65,
-    unit: "Ltr",
-    minimum_stock: 30,
-    status: "AVAILABLE",
-    createdAt: "2026-09-17T14:10:00",
-  },
-  {
-    id: "INV-005",
-    material_name: "Electrical Wire 2.5mm",
-    category: "Electrical",
-    site_id: "SITE-003",
-    site_name: "Sohna Road",
-    quantity: 850,
-    unit: "Mtr",
-    minimum_stock: 500,
-    status: "AVAILABLE",
-    createdAt: "2026-09-16T11:40:00",
-  },
-  {
-    id: "INV-006",
-    material_name: "Electrical Wire 1.5mm",
-    category: "Electrical",
-    site_id: "SITE-003",
-    site_name: "Sohna Road",
-    quantity: 320,
-    unit: "Mtr",
-    minimum_stock: 400,
-    status: "LOW_STOCK",
-    createdAt: "2026-09-15T16:20:00",
-  },
-  {
-    id: "INV-007",
-    material_name: "Floor Tile 600x600",
-    category: "Flooring",
-    site_id: "SITE-004",
-    site_name: "Sector 57",
-    quantity: 480,
-    unit: "Sqft",
-    minimum_stock: 200,
-    status: "AVAILABLE",
-    createdAt: "2026-09-14T10:15:00",
-  },
-  {
-    id: "INV-008",
-    material_name: "Wall Tile 300x600",
-    category: "Flooring",
-    site_id: "SITE-004",
-    site_name: "Sector 57",
-    quantity: 165,
-    unit: "Sqft",
-    minimum_stock: 250,
-    status: "LOW_STOCK",
-    createdAt: "2026-09-13T13:30:00",
-  },
-  {
-    id: "INV-009",
-    material_name: "Cement OPC 43",
-    category: "Civil",
-    site_id: "SITE-005",
-    site_name: "MG Road",
-    quantity: 120,
-    unit: "Bags",
-    minimum_stock: 50,
-    status: "AVAILABLE",
-    createdAt: "2026-09-12T09:00:00",
-  },
-  {
-    id: "INV-010",
-    material_name: "Gypsum Board",
-    category: "Civil",
-    site_id: "SITE-005",
-    site_name: "MG Road",
-    quantity: 45,
-    unit: "Sheets",
-    minimum_stock: 60,
-    status: "LOW_STOCK",
-    createdAt: "2026-09-11T15:45:00",
-  },
-  {
-    id: "INV-011",
-    material_name: "PVC Pipe 25mm",
-    category: "Plumbing",
-    site_id: "SITE-006",
-    site_name: "Vasant Kunj",
-    quantity: 210,
-    unit: "Mtr",
-    minimum_stock: 100,
-    status: "AVAILABLE",
-    createdAt: "2026-09-10T10:20:00",
-  },
-  {
-    id: "INV-012",
-    material_name: "CPVC Elbow 25mm",
-    category: "Plumbing",
-    site_id: "SITE-006",
-    site_name: "Vasant Kunj",
-    quantity: 35,
-    unit: "Nos",
-    minimum_stock: 50,
-    status: "LOW_STOCK",
-    createdAt: "2026-09-09T12:10:00",
-  },
-];
+const LOW_STOCK_SHARE = 0.15;
 
-const MOCK_TRANSACTIONS = [
-  {
-    id: "TXN-001",
-    type: "RECEIPT",
-    material_name: "Plywood 18mm",
-    quantity: 50,
-    unit: "Sheets",
-    site_id: "SITE-001",
-    site_name: "DLF Phase 1",
-    reference: "GRN-2026-0912",
-    createdAt: "2026-09-21T10:30:00",
-  },
-  {
-    id: "TXN-002",
-    type: "ISSUE",
-    material_name: "Wall Paint - White",
-    quantity: 20,
-    unit: "Ltr",
-    site_id: "SITE-002",
-    site_name: "Golf Course Road",
-    reference: "ISS-2026-044",
-    createdAt: "2026-09-21T09:20:00",
-  },
-  {
-    id: "TXN-003",
-    type: "RECEIPT",
-    material_name: "Electrical Wire 2.5mm",
-    quantity: 300,
-    unit: "Mtr",
-    site_id: "SITE-003",
-    site_name: "Sohna Road",
-    reference: "GRN-2026-0911",
-    createdAt: "2026-09-20T16:45:00",
-  },
-  {
-    id: "TXN-004",
-    type: "ISSUE",
-    material_name: "Floor Tile 600x600",
-    quantity: 120,
-    unit: "Sqft",
-    site_id: "SITE-004",
-    site_name: "Sector 57",
-    reference: "ISS-2026-043",
-    createdAt: "2026-09-20T13:10:00",
-  },
-  {
-    id: "TXN-005",
-    type: "RECEIPT",
-    material_name: "Cement OPC 43",
-    quantity: 80,
-    unit: "Bags",
-    site_id: "SITE-005",
-    site_name: "MG Road",
-    reference: "GRN-2026-0910",
-    createdAt: "2026-09-19T11:25:00",
-  },
-  {
-    id: "TXN-006",
-    type: "ISSUE",
-    material_name: "PVC Pipe 25mm",
-    quantity: 60,
-    unit: "Mtr",
-    site_id: "SITE-006",
-    site_name: "Vasant Kunj",
-    reference: "ISS-2026-042",
-    createdAt: "2026-09-19T10:15:00",
-  },
-];
-
-const MOCK_MOVEMENT_TREND = [
-  { month: "Apr", received: 680, issued: 420 },
-  { month: "May", received: 820, issued: 510 },
-  { month: "Jun", received: 760, issued: 590 },
-  { month: "Jul", received: 940, issued: 680 },
-  { month: "Aug", received: 1120, issued: 760 },
-  { month: "Sep", received: 980, issued: 720 },
-];
-
-const INVENTORY_STOCK_MIX = [
-  {
-    name: "Healthy Stock",
-    value: MOCK_INVENTORY.filter((item) => item.quantity > item.minimum_stock)
-      .length,
-  },
-  {
-    name: "Low Stock",
-    value: MOCK_INVENTORY.filter((item) => item.quantity <= item.minimum_stock)
-      .length,
-  },
-];
-
-const MOCK_SITES = [
-  {
-    id: "SITE-001",
-    site_name: "DLF Phase 1",
-  },
-  {
-    id: "SITE-002",
-    site_name: "Golf Course Road",
-  },
-  {
-    id: "SITE-003",
-    site_name: "Sohna Road",
-  },
-  {
-    id: "SITE-004",
-    site_name: "Sector 57",
-  },
-  {
-    id: "SITE-005",
-    site_name: "MG Road",
-  },
-  {
-    id: "SITE-006",
-    site_name: "Vasant Kunj",
-  },
-];
+function useInventoryData() {
+  const { data, isLoading } = useGetWsInventoryOverviewQuery(undefined, {
+    pollingInterval: 60000,
+    refetchOnFocus: true,
+  });
+  return useMemo(() => {
+    const stock = Array.isArray(data?.stock) ? data.stock : [];
+    const moves = Array.isArray(data?.movements) ? data.movements : [];
+    const inventory = stock.map((r) => {
+      const received = Number(r.received || 0);
+      const balance = Math.max(0, Math.round(Number(r.balance || 0) * 100) / 100);
+      const minimum = Math.round(received * LOW_STOCK_SHARE * 100) / 100;
+      return {
+        id: `${r.project_id}:${r.material_id}`,
+        material_id: r.material_id,
+        material_name: r.material_name,
+        material_code: r.material_code,
+        category: r.category || "Other",
+        site_id: r.project_id,
+        site_name: r.project_name || "Unassigned",
+        quantity: balance,
+        received,
+        issued: Number(r.issued || 0),
+        unit: r.unit || "",
+        minimum_stock: minimum,
+        status: balance <= minimum ? "LOW_STOCK" : "AVAILABLE",
+        createdAt: r.last_movement,
+      };
+    });
+    const transactions = moves.map((m) => ({
+      id: m.id,
+      type: m.direction === "IN" ? "RECEIPT" : "ISSUE",
+      material_name: m.material_name,
+      quantity: Math.round(Number(m.quantity || 0) * 100) / 100,
+      unit: m.unit || "",
+      site_id: m.project_id,
+      site_name: m.project_name,
+      reference: [m.project_name, m.issued_to || m.storage_location].filter(Boolean).join(" · "),
+      createdAt: m.transaction_date,
+    }));
+    // movement count per month (quantities are in mixed units, so they are not summed)
+    const now = new Date();
+    const trend = [];
+    for (let i = 5; i >= 0; i -= 1) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const inMonth = moves.filter((m) => String(m.transaction_date || "").slice(0, 7) === key);
+      trend.push({
+        month: d.toLocaleDateString("en-IN", { month: "short" }),
+        received: inMonth.filter((m) => m.direction === "IN").length,
+        issued: inMonth.filter((m) => m.direction !== "IN").length,
+      });
+    }
+    const sites = (Array.isArray(data?.projects) ? data.projects : []).map((p) => ({ id: p.id, site_name: p.name }));
+    const stockMix = [
+      { name: "Healthy Stock", value: inventory.filter((i) => i.status !== "LOW_STOCK").length },
+      { name: "Low Stock", value: inventory.filter((i) => i.status === "LOW_STOCK").length },
+    ];
+    return { inventory, transactions, trend, sites, stockMix, isLoading: isLoading && !data };
+  }, [data, isLoading]);
+}
 
 /* ============================================================
    HELPERS
@@ -324,7 +127,8 @@ const getSiteName = (item) =>
 ============================================================ */
 
 export const InventoryTotal = () => {
-  const total = MOCK_INVENTORY.length;
+  const { inventory, transactions, sites } = useInventoryData();
+  const total = inventory.length;
 
   return (
     <WidgetShell title="Total Stock Items">
@@ -338,15 +142,16 @@ export const InventoryTotal = () => {
 ============================================================ */
 
 export const InventoryReceived = () => {
-  const received = MOCK_TRANSACTIONS.filter((item) => {
+  const { inventory, transactions, sites } = useInventoryData();
+  const received = transactions.filter((item) => {
     const type = String(item.type).toUpperCase();
 
     return type === "RECEIPT" || type === "RECEIVED" || type === "IN";
-  }).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  }).length; // entries — quantities are in mixed units
 
   return (
     <WidgetShell title="Stock Received">
-      <Stat value={received} />
+      <Stat value={received} note="receipt entries" />
     </WidgetShell>
   );
 };
@@ -356,15 +161,16 @@ export const InventoryReceived = () => {
 ============================================================ */
 
 export const InventoryIssued = () => {
-  const issued = MOCK_TRANSACTIONS.filter((item) => {
+  const { inventory, transactions, sites } = useInventoryData();
+  const issued = transactions.filter((item) => {
     const type = String(item.type).toUpperCase();
 
     return type === "ISSUE" || type === "ISSUED" || type === "OUT";
-  }).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  }).length; // entries — quantities are in mixed units
 
   return (
     <WidgetShell title="Stock Issued">
-      <Stat value={issued} />
+      <Stat value={issued} note="issue entries" />
     </WidgetShell>
   );
 };
@@ -374,7 +180,8 @@ export const InventoryIssued = () => {
 ============================================================ */
 
 export const InventoryLowStock = () => {
-  const lowStock = MOCK_INVENTORY.filter(
+  const { inventory, transactions, sites } = useInventoryData();
+  const lowStock = inventory.filter(
     (item) =>
       getMinimumStock(item) > 0 && getQuantity(item) <= getMinimumStock(item),
   ).length;
@@ -391,9 +198,10 @@ export const InventoryLowStock = () => {
 ============================================================ */
 
 export const InventoryByCategory = () => {
+  const { inventory, transactions, sites } = useInventoryData();
   const counts = {};
 
-  MOCK_INVENTORY.forEach((item) => {
+  inventory.forEach((item) => {
     const category = getCategory(item);
 
     counts[category] = (counts[category] || 0) + 1;
@@ -441,9 +249,10 @@ export const InventoryByCategory = () => {
 ============================================================ */
 
 export const InventoryRecentlyAdded = () => {
+  const { inventory, transactions, sites } = useInventoryData();
   const navigate = useNavigate();
 
-  const rows = MOCK_INVENTORY.slice(0, 5).map((item) => ({
+  const rows = inventory.slice(0, 5).map((item) => ({
     id: item.id,
 
     title: item.material_name,
@@ -457,7 +266,7 @@ export const InventoryRecentlyAdded = () => {
     <WidgetShell title="Recently Added Inventory">
       <RowList
         rows={rows}
-        onClick={(row) => navigate(`/inventory/site-inventory/${row.id}`)}
+        onClick={(row) => navigate(`/inventory/site-inventory/all?project_id=${encodeURIComponent(String(row.id).split(":")[0])}`)}
         empty="No inventory added recently"
       />
     </WidgetShell>
@@ -469,18 +278,16 @@ export const InventoryRecentlyAdded = () => {
 ============================================================ */
 
 export const InventoryPerformance = () => {
-  const totalQuantity = MOCK_INVENTORY.reduce(
-    (sum, item) => sum + getQuantity(item),
-    0,
-  );
+  const { inventory, transactions, sites } = useInventoryData();
+  const totalQuantity = inventory.length; // site × material lines (units differ, so not summed)
 
-  const lowStock = MOCK_INVENTORY.filter(
+  const lowStock = inventory.filter(
     (item) =>
       getMinimumStock(item) > 0 && getQuantity(item) <= getMinimumStock(item),
   ).length;
 
   const activeSites = new Set(
-    MOCK_INVENTORY.map((item) => item.site_id).filter(Boolean),
+    inventory.map((item) => item.site_id).filter(Boolean),
   ).size;
 
   return (
@@ -491,7 +298,7 @@ export const InventoryPerformance = () => {
       <div className="grid grid-cols-3 gap-3 mt-1 h-full">
         <div>
           <div className="text-[10.5px] text-[#6B7B7C] uppercase font-semibold">
-            Quantity
+            Stock lines
           </div>
 
           <div className="text-[34px] font-bold text-[#333333]">
@@ -526,11 +333,12 @@ export const InventoryPerformance = () => {
 ============================================================ */
 
 export const InventorySiteWise = () => {
+  const { inventory, transactions, sites } = useInventoryData();
   const navigate = useNavigate();
 
   const items = useMemo(() => {
-    return MOCK_SITES.map((site) => {
-      const siteItems = MOCK_INVENTORY.filter(
+    return sites.map((site) => {
+      const siteItems = inventory.filter(
         (item) => item.site_id === site.id,
       );
 
@@ -550,9 +358,10 @@ export const InventorySiteWise = () => {
         item_count: siteItems.length,
         total_quantity: totalQuantity,
         low_stock_count: lowStockCount,
+        last_movement: siteItems.reduce((m, i) => (String(i.createdAt || "") > m ? String(i.createdAt) : m), ""),
       };
     });
-  }, []);
+  }, [inventory, sites]);
 
   return (
     <WidgetShell
@@ -574,7 +383,7 @@ export const InventorySiteWise = () => {
             <tr>
               <th className="text-left py-1.5">Site</th>
               <th className="text-center">Items</th>
-              <th className="text-center">Quantity</th>
+              <th className="text-center">Last movement</th>
               <th className="text-center">Status</th>
             </tr>
           </thead>
@@ -588,7 +397,7 @@ export const InventorySiteWise = () => {
                   key={item.id}
                   onClick={() =>
                     navigate(
-                      `/inventory/site-inventory?site_id=${encodeURIComponent(
+                      `/inventory/site-inventory/all?project_id=${encodeURIComponent(
                         item.id,
                       )}`,
                     )
@@ -608,8 +417,8 @@ export const InventorySiteWise = () => {
                     {item.item_count}
                   </td>
 
-                  <td className="text-center text-[#333333] font-semibold">
-                    {Number(item.total_quantity).toLocaleString()}
+                  <td className="text-center text-[#6B7B7C]">
+                    {item.last_movement ? relativeTime(item.last_movement) : "—"}
                   </td>
 
                   <td className="text-center">
@@ -651,9 +460,10 @@ export const InventorySiteWise = () => {
 ============================================================ */
 
 export const InventoryAttention = () => {
+  const { inventory, transactions, sites } = useInventoryData();
   const navigate = useNavigate();
 
-  const count = MOCK_INVENTORY.filter(
+  const count = inventory.filter(
     (item) =>
       getMinimumStock(item) > 0 && getQuantity(item) <= getMinimumStock(item),
   ).length;
@@ -665,7 +475,7 @@ export const InventoryAttention = () => {
         count > 0 ? (
           <button
             onClick={() =>
-              navigate("/inventory/site-inventory?filter=low_stock")
+              navigate("/inventory/site-inventory/all")
             }
             className="
               text-[10px]
@@ -689,9 +499,10 @@ export const InventoryAttention = () => {
 ============================================================ */
 
 export const InventoryLowStockList = () => {
+  const { inventory, transactions, sites } = useInventoryData();
   const navigate = useNavigate();
 
-  const rows = MOCK_INVENTORY.filter(
+  const rows = inventory.filter(
     (item) =>
       getMinimumStock(item) > 0 && getQuantity(item) <= getMinimumStock(item),
   )
@@ -710,7 +521,7 @@ export const InventoryLowStockList = () => {
     <WidgetShell title="Low Stock Items" subtitle="items below minimum level">
       <RowList
         rows={rows}
-        onClick={(row) => navigate(`/inventory/site-inventory/${row.id}`)}
+        onClick={(row) => navigate(`/inventory/site-inventory/all?project_id=${encodeURIComponent(String(row.id).split(":")[0])}`)}
         empty="No low stock items"
       />
     </WidgetShell>
@@ -721,15 +532,17 @@ export const InventoryLowStockList = () => {
    INVENTORY MOVEMENT TREND
 ============================================================ */
 
-export const InventoryMovementTrend = () => (
+export const InventoryMovementTrend = () => {
+  const { trend } = useInventoryData();
+  return (
   <WidgetShell
     title="Inventory Movement"
-    subtitle="received vs issued · 6 months"
+    subtitle="receipts vs issues (entries) · 6 months"
   >
     <div className="h-full min-h-[180px]">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
-          data={MOCK_MOVEMENT_TREND}
+          data={trend}
           margin={{
             top: 10,
             right: 10,
@@ -785,31 +598,36 @@ export const InventoryMovementTrend = () => (
       </ResponsiveContainer>
     </div>
   </WidgetShell>
-);
+  );
+};
 
 /* ============================================================
    INVENTORY STOCK MIX
 ============================================================ */
 
-export const InventoryStockMix = () => (
-  <DonutMix
-    title="Stock Availability"
-    subtitle="current inventory mix"
-    url="/dashboards/inventory/stock-mix"
-    transform={() => INVENTORY_STOCK_MIX}
-  />
-);
+export const InventoryStockMix = () => {
+  const { stockMix, isLoading } = useInventoryData();
+  return (
+    <DonutMix
+      title="Stock Availability"
+      subtitle="site × material lines"
+      data={stockMix}
+      isLoading={isLoading}
+    />
+  );
+};
 
 /* ============================================================
    CATEGORY BAR CHART
 ============================================================ */
 
 export const InventoryCategoryBar = () => {
+  const { inventory, transactions, sites } = useInventoryData();
   const navigate = useNavigate();
 
   const categoryMap = {};
 
-  MOCK_INVENTORY.forEach((item) => {
+  inventory.forEach((item) => {
     const category = getCategory(item);
 
     categoryMap[category] = (categoryMap[category] || 0) + 1;
@@ -845,9 +663,7 @@ export const InventoryCategoryBar = () => {
 
               if (payload) {
                 navigate(
-                  `/inventory/site-inventory?category=${encodeURIComponent(
-                    payload.category || payload.name,
-                  )}`,
+                  "/inventory/site-inventory/all",
                 );
               }
             }}
@@ -909,17 +725,18 @@ export const InventoryCategoryBar = () => {
 ============================================================ */
 
 export const InventorySiteBar = () => {
+  const { inventory, transactions, sites } = useInventoryData();
   const navigate = useNavigate();
 
-  const data = MOCK_SITES.map((site) => {
-    const siteItems = MOCK_INVENTORY.filter((item) => item.site_id === site.id);
+  const data = sites.map((site) => {
+    const siteItems = inventory.filter((item) => item.site_id === site.id);
 
     return {
       ...site,
       name: site.site_name,
       count: siteItems.length,
     };
-  }).slice(0, 8);
+  }).sort((a, b) => b.count - a.count).slice(0, 8);
 
   return (
     <WidgetShell
@@ -946,7 +763,7 @@ export const InventorySiteBar = () => {
 
               if (siteId) {
                 navigate(
-                  `/inventory/site-inventory?site_id=${encodeURIComponent(
+                  `/inventory/site-inventory/all?project_id=${encodeURIComponent(
                     siteId,
                   )}`,
                 );
@@ -1010,13 +827,14 @@ export const InventorySiteBar = () => {
 ============================================================ */
 
 export const InventoryRecentTransactions = () => {
+  const { inventory, transactions, sites } = useInventoryData();
   const navigate = useNavigate();
 
   return (
     <IconListWidget
       title="Recent Transactions"
       subtitle="latest stock movements"
-      data={MOCK_TRANSACTIONS.slice(0, 5)}
+      data={transactions.slice(0, 5)}
       iconFor={(item) => {
         const type = String(item.type).toUpperCase();
 
@@ -1036,9 +854,9 @@ export const InventoryRecentTransactions = () => {
       right={(item) => `${Number(item.quantity || 0)} ${item.unit || ""}`}
       onClick={(item) => {
         if (item.id) {
-          navigate(`/inventory/transactions/${item.id}`);
+          navigate("/inventory/site-inventory/transactions");
         } else {
-          navigate("/inventory/transactions");
+          navigate("/inventory/site-inventory/transactions");
         }
       }}
     />
@@ -1050,6 +868,7 @@ export const InventoryRecentTransactions = () => {
 ============================================================ */
 
 export const InventoryCategoryWise = () => {
+  const { inventory, transactions, sites } = useInventoryData();
   const navigate = useNavigate();
 
   const [expanded, setExpanded] = useState(false);
@@ -1057,7 +876,7 @@ export const InventoryCategoryWise = () => {
   const items = useMemo(() => {
     const map = {};
 
-    MOCK_INVENTORY.forEach((item) => {
+    inventory.forEach((item) => {
       const category = getCategory(item);
 
       if (!map[category]) {
@@ -1073,7 +892,7 @@ export const InventoryCategoryWise = () => {
     });
 
     return Object.values(map).sort((a, b) => b.count - a.count);
-  }, []);
+  }, [inventory]);
 
   const visible = expanded ? items : items.slice(0, 7);
 
@@ -1095,9 +914,7 @@ export const InventoryCategoryWise = () => {
               key={category}
               onClick={() =>
                 navigate(
-                  `/inventory/site-inventory?category=${encodeURIComponent(
-                    category,
-                  )}`,
+                  "/inventory/site-inventory/all",
                 )
               }
               className="text-left group"
@@ -1166,18 +983,19 @@ export const InventoryCategoryWise = () => {
 ============================================================ */
 
 export const InventoryTransactionsSummary = () => {
-  const received = MOCK_TRANSACTIONS.filter(
+  const { inventory, transactions, sites } = useInventoryData();
+  const received = transactions.filter(
     (item) => String(item.type).toUpperCase() === "RECEIPT",
-  ).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  ).length; // entries — quantities are in mixed units
 
-  const issued = MOCK_TRANSACTIONS.filter(
+  const issued = transactions.filter(
     (item) => String(item.type).toUpperCase() === "ISSUE",
-  ).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  ).length; // entries — quantities are in mixed units
 
   const netMovement = received - issued;
 
   return (
-    <WidgetShell title="Stock Movement" subtitle="current period">
+    <WidgetShell title="Stock Movement" subtitle="entries · last 300 movements">
       <div className="grid grid-cols-3 gap-3 mt-1">
         <div>
           <div className="text-[10.5px] text-[#6B7B7C] uppercase font-semibold">

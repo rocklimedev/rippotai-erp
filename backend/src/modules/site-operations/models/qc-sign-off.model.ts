@@ -23,10 +23,10 @@ import { QcResult } from '../../../common/enums/site-operations.enums';
 @Table({ tableName: 'qc_sign_offs', timestamps: true })
 export class QcSignOff extends Model<QcSignOff> {
   @ForeignKey(() => Project)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  projectId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  projectId: string;
 
-  @BelongsTo(() => Project)
+  @BelongsTo(() => Project, { constraints: false })
   project: Project;
 
   @ForeignKey(() => Step)

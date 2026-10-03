@@ -1,20 +1,15 @@
-import { randomUUID } from 'crypto';
-
 import {
   BadRequestException,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Project } from '@/modules/projects/models/projects.model';
+
 import { InjectModel } from '@nestjs/sequelize';
 
 import {
-  fn,
-  literal,
   Op,
-  QueryTypes,
   Transaction as SequelizeTransaction,
+  WhereOptions,
 } from 'sequelize';
 
 import {
@@ -23,7 +18,6 @@ import {
   InventoryTransactionType,
   InventoryConditionStatus,
   InventoryReferenceType,
-  YesNoNA,
 } from '../models/inventory-transaction.model';
 
 import { MaterialMaster } from '../models/material-master.model';
@@ -34,74 +28,12 @@ import {
   AdjustInventoryDto,
   TransferInventoryDto,
   ReturnInventoryDto,
-  MaterialReceivedRegisterRow,
-  MaterialIssuedRegisterRow,
 } from '../dto/inventory.dto';
 
 import { Unit } from '@/modules/metas/models/unit.model';
 
-// ============================================================
-// TYPES
-// ============================================================
-
-export interface SiteRegisterQuery {
-  projectId: string;
-  /** Free-text site location, e.g. "Main Site" or "Floor 1" */
-  siteLocation?: string;
-  materialId?: string;
-  /** YYYY-MM-DD, inclusive */
-  fromDate?: string;
-  /** YYYY-MM-DD, inclusive */
-  toDate?: string;
-}
-
-export interface ReceiveFromDeliveryParams {
-  project_id: string;
-  site_location?: string;
-  material_id: string;
-  quantity: number;
-  delivery_challan_id: string;
-  delivery_challan_item_id: string;
-  /** Printed challan / bill number shown in the register */
-  challan_bill_no?: string;
-  vendor_id?: string;
-  work_reference?: string;
-  storage_location?: string;
-  gate_pass_received?: YesNoNA;
-  material_checked?: YesNoNA;
-  condition_status?: InventoryConditionStatus;
-  condition_notes?: string;
-  received_by?: string;
-  transaction_date: string;
-  remarks?: string;
-  /** Accepted quantity from the Delivery Challan service, if known */
-  accepted_quantity?: number;
-}
-
-interface ReversalFields {
-  reversal_of_id?: string | null;
-  reversal_reason?: string | null;
-}
-
-/**
- * Tables used ONLY to turn ids into display names in the register.
- * Adjust to your schema. If a lookup fails the register still works and
- * the name is returned as null.
- */
-const NAME_SOURCES = {
-  vendor: { table: 'vendors', nameColumn: 'name' },
-  contractor: { table: 'contractors', nameColumn: 'name' },
-  user: { table: 'users', nameColumn: 'name' },
-} as const;
-
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-const SIGNED_QTY = `CASE WHEN direction = 'IN' THEN quantity ELSE -quantity END`;
-
 @Injectable()
 export class InventoryService {
-  private readonly logger = new Logger(InventoryService.name);
-
   constructor(
     @InjectModel(InventoryTransaction)
     private readonly inventoryModel: typeof InventoryTransaction,
@@ -109,8 +41,6 @@ export class InventoryService {
     @InjectModel(MaterialMaster)
     private readonly materialModel: typeof MaterialMaster,
 
-    @InjectModel(Project)
-    private readonly projectModel: typeof Project,
     @InjectModel(Unit)
     private readonly unitModel: typeof Unit,
   ) {}
@@ -119,7 +49,9 @@ export class InventoryService {
   // PRIVATE HELPERS
   // ============================================================
 
-  /** Determines whether a transaction increases or decreases stock. */
+  /**
+   * Determines whether a transaction increases or decreases stock.
+   */
   private getDirection(type: InventoryTransactionType): InventoryDirection {
     switch (type) {
       case InventoryTransactionType.RECEIPT:
@@ -139,6 +71,9 @@ export class InventoryService {
     }
   }
 
+  /**
+   * Validates quantity.
+   */
   private validateQuantity(quantity: number | string) {
     const value = Number(quantity);
 
@@ -149,69 +84,22 @@ export class InventoryService {
     return value;
   }
 
-  /** Accepts "2026-08-14" or a full ISO string, returns "2026-08-14". */
-  private normalizeDate(value?: string | null): string {
-    if (!value) {
-      return new Date().toISOString().slice(0, 10);
-    }
-
-    const date = String(value).slice(0, 10);
-
-    if (!DATE_RE.test(date)) {
-      throw new BadRequestException(`Invalid date "${value}". Use YYYY-MM-DD`);
-    }
-
-    return date;
-  }
-
-  private assertOptionalDate(value: string | undefined, label: string) {
-    if (value !== undefined && value !== '' && !DATE_RE.test(value)) {
-      throw new BadRequestException(`${label} must be in YYYY-MM-DD format`);
-    }
-  }
-
   /**
-   * Trims and collapses whitespace so "Floor 1" and " Floor  1 " land in
-   * the same stock bucket. Empty values become null.
+   * Validate material and load its configured unit.
    */
-  private normalizeLocation(value?: string | null): string | null {
-    const v = value?.trim().replace(/\s+/g, ' ');
-    return v ? v : null;
-  }
-
-  /** Adds the site_location filter to a where clause when one is given. */
-  private applyLocationFilter(where: any, siteLocation?: string | null) {
-    const location = this.normalizeLocation(siteLocation);
-
-    if (location) where.site_location = location;
-
-    return where;
-  }
-
-  private getSequelize() {
-    const sequelize = this.inventoryModel.sequelize;
-
-    if (!sequelize) {
-      throw new BadRequestException(
-        'Inventory database connection unavailable',
-      );
-    }
-
-    return sequelize;
-  }
-
-  /** Validate material and load its configured unit. */
-  private async getValidMaterial(
-    materialId: string,
-    transaction?: SequelizeTransaction,
-  ): Promise<MaterialMaster> {
+  private async getValidMaterial(materialId: string): Promise<MaterialMaster> {
     if (!materialId) {
       throw new BadRequestException('Material is required');
     }
 
     const material = await this.materialModel.findByPk(materialId, {
-      include: [{ model: Unit, as: 'unit', required: true }],
-      transaction,
+      include: [
+        {
+          model: Unit,
+          as: 'unit',
+          required: true,
+        },
+      ],
     });
 
     if (!material) {
@@ -234,37 +122,22 @@ export class InventoryService {
   }
 
   /**
-   * Takes a row lock on the material so two simultaneous OUT movements
-   * of the same material are processed one after the other. Without this
-   * both could pass the stock check and drive stock negative.
+   * Validate stock for an OUT transaction.
    */
-  private async lockMaterial(
-    materialId: string,
-    transaction: SequelizeTransaction,
-  ) {
-    await this.materialModel.findByPk(materialId, {
-      attributes: ['id'],
-      transaction,
-      lock: transaction.LOCK.UPDATE,
-    });
-  }
-
-  /** Validate stock for an OUT movement. */
   private async validateAvailableStock(
     projectId: string,
     siteLocation: string | undefined,
-    material: MaterialMaster,
+    materialId: string,
     quantity: number,
-    transaction?: SequelizeTransaction,
   ) {
     const available = await this.getCurrentStock(
       projectId,
       siteLocation,
-      material.id,
-      transaction,
+      materialId,
     );
-
     if (quantity > available) {
+      const material = await this.getValidMaterial(materialId);
+
       throw new BadRequestException(
         `Insufficient stock. Available: ${available} ${
           material.unit?.code ?? ''
@@ -275,15 +148,24 @@ export class InventoryService {
     return available;
   }
 
-  /** Common includes used by inventory queries. */
+  /**
+   * Common includes used by inventory queries.
+   */
   private getInventoryIncludes() {
     return [
       {
         model: MaterialMaster,
-        as: 'material',
         required: true,
-        include: [{ model: Unit, as: 'unit', required: true }],
+
+        include: [
+          {
+            model: Unit,
+            as: 'unit',
+            required: true,
+          },
+        ],
       },
+
       {
         model: Unit,
         as: 'unit',
@@ -297,109 +179,120 @@ export class InventoryService {
   // ============================================================
 
   /**
-   * Central method for every stock movement.
+   * Generic inventory transaction creator.
    *
-   * OUT movements run inside a DB transaction with a lock on the
-   * material, so the stock check and the insert are atomic.
+   * This remains the central method used by:
+   *
+   * RECEIPT
+   * ISSUE
+   * ADJUSTMENT_IN
+   * ADJUSTMENT_OUT
+   * RETURN_FROM_CONTRACTOR
+   * RETURN_TO_VENDOR
+   * TRANSFER_IN
+   * TRANSFER_OUT
    */
   async create(
-    dto: CreateInventoryTransactionDto & ReversalFields,
+    dto: CreateInventoryTransactionDto,
     userId?: string,
     dbTransaction?: SequelizeTransaction,
   ) {
+    const material = await this.getValidMaterial(dto.material_id);
+
     const quantity = this.validateQuantity(dto.quantity);
+
     const direction = this.getDirection(dto.transaction_type);
-    const siteLocation = this.normalizeLocation(dto.site_location);
 
-    const run = async (t?: SequelizeTransaction) => {
-      const material = await this.getValidMaterial(dto.material_id, t);
+    // ----------------------------------------------------------
+    // Validate stock for OUT transactions
+    // ----------------------------------------------------------
 
-      if (direction === InventoryDirection.OUT) {
-        if (t) {
-          await this.lockMaterial(dto.material_id, t);
-        }
-
-        await this.validateAvailableStock(
-          dto.project_id,
-          siteLocation ?? undefined,
-          material,
-          quantity,
-          t,
-        );
-      }
-
-      return this.inventoryModel.create(
-        {
-          ...dto,
-
-          quantity,
-
-          site_location: siteLocation,
-
-          transaction_date: this.normalizeDate(dto.transaction_date),
-
-          /** ALWAYS derive unit from MaterialMaster, never from the client. */
-          unit_id: material.unit_id,
-
-          direction,
-
-          reference_type: dto.reference_type ?? null,
-          reference_id: dto.reference_id ?? null,
-          reference_item_id: dto.reference_item_id ?? null,
-
-          reversal_of_id: dto.reversal_of_id ?? null,
-          reversal_reason: dto.reversal_reason ?? null,
-
-          vendor_id: dto.vendor_id ?? null,
-          contractor_id: dto.contractor_id ?? null,
-          trade: dto.trade ?? null,
-
-          work_reference: dto.work_reference ?? null,
-          storage_location: dto.storage_location ?? null,
-
-          // register fields
-          challan_bill_no: dto.challan_bill_no ?? null,
-          gate_pass_received: dto.gate_pass_received ?? YesNoNA.NOT_APPLICABLE,
-          material_checked: dto.material_checked ?? YesNoNA.NOT_APPLICABLE,
-
-          condition_status:
-            dto.condition_status ?? InventoryConditionStatus.NOT_APPLICABLE,
-          condition_notes: dto.condition_notes ?? null,
-
-          issued_to: dto.issued_to ?? null,
-          issued_by: dto.issued_by ?? null,
-          received_by: dto.received_by ?? null,
-
-          remarks: dto.remarks ?? null,
-
-          created_by: userId ?? null,
-        },
-        { transaction: t },
+    if (direction === InventoryDirection.OUT) {
+      await this.validateAvailableStock(
+        dto.project_id,
+        dto.site_location,
+        dto.material_id,
+        quantity,
       );
-    };
-
-    let created: InventoryTransaction;
-
-    if (dbTransaction) {
-      created = await run(dbTransaction);
-    } else if (direction === InventoryDirection.OUT) {
-      created = await this.getSequelize().transaction((t) => run(t));
-    } else {
-      created = await run(undefined);
     }
 
-    return this.findOne(created.id, dbTransaction);
+    // ----------------------------------------------------------
+    // Create transaction
+    // ----------------------------------------------------------
+
+    const transaction = await this.inventoryModel.create(
+      {
+        ...dto,
+
+        quantity,
+
+        site_location: dto.site_location ?? null,
+
+        /**
+         * ALWAYS derive unit from MaterialMaster.
+         *
+         * Never trust a frontend supplied unit_id.
+         */
+        unit_id: material.unit_id,
+
+        direction,
+
+        reference_type: dto.reference_type ?? null,
+
+        reference_id: dto.reference_id ?? null,
+
+        reference_item_id: dto.reference_item_id ?? null,
+
+        vendor_id: dto.vendor_id ?? null,
+
+        contractor_id: dto.contractor_id ?? null,
+
+        trade: dto.trade ?? null,
+
+        work_reference: dto.work_reference ?? null,
+
+        storage_location: dto.storage_location ?? null,
+
+        condition_status:
+          dto.condition_status ?? InventoryConditionStatus.NOT_APPLICABLE,
+
+        condition_notes: dto.condition_notes ?? null,
+
+        issued_to: dto.issued_to ?? null,
+
+        issued_by: dto.issued_by ?? null,
+
+        received_by: dto.received_by ?? null,
+
+        remarks: dto.remarks ?? null,
+
+        created_by: userId ?? null,
+      },
+      {
+        transaction: dbTransaction,
+      },
+    );
+
+    return this.findOne(transaction.id);
   }
 
   // ============================================================
   // ADD / RECEIVE INVENTORY
   // ============================================================
 
+  /**
+   * General purpose inventory receipt.
+   *
+   * Used when material enters project inventory without
+   * necessarily coming through a Delivery Challan.
+   */
   async receive(dto: CreateInventoryTransactionDto, userId?: string) {
     return this.create(
       {
         ...dto,
+
         transaction_type: InventoryTransactionType.RECEIPT,
+
         reference_type: dto.reference_type ?? InventoryReferenceType.MANUAL,
       },
       userId,
@@ -411,13 +304,25 @@ export class InventoryService {
   // ============================================================
 
   async issue(dto: IssueMaterialDto, userId?: string) {
-    // Stock validation happens (atomically) inside create().
+    const quantity = this.validateQuantity(dto.quantity);
+
+    await this.validateAvailableStock(
+      dto.project_id,
+      dto.site_location,
+      dto.material_id,
+      quantity,
+    );
+
     return this.create(
       {
         ...dto,
+
+        quantity,
+
         transaction_type: InventoryTransactionType.ISSUE,
+
         reference_type: InventoryReferenceType.ISSUE,
-      } as CreateInventoryTransactionDto,
+      },
       userId,
     );
   }
@@ -426,7 +331,13 @@ export class InventoryService {
   // ADJUST INVENTORY
   // ============================================================
 
+  /**
+   * Add or remove physical stock after stock counting,
+   * opening stock entry, correction, etc.
+   */
   async adjust(dto: AdjustInventoryDto, userId?: string) {
+    const quantity = this.validateQuantity(dto.quantity);
+
     const direction = dto.direction;
 
     if (
@@ -434,6 +345,15 @@ export class InventoryService {
       direction !== InventoryDirection.OUT
     ) {
       throw new BadRequestException('Adjustment direction must be IN or OUT');
+    }
+
+    if (direction === InventoryDirection.OUT) {
+      await this.validateAvailableStock(
+        dto.project_id,
+        dto.site_location,
+        dto.material_id,
+        quantity,
+      );
     }
 
     const transactionType =
@@ -444,10 +364,15 @@ export class InventoryService {
     return this.create(
       {
         ...dto,
+
+        quantity,
+
         transaction_type: transactionType,
+
         reference_type: InventoryReferenceType.ADJUSTMENT,
+
         remarks: dto.reason ?? dto.remarks ?? 'Inventory adjustment',
-      } as CreateInventoryTransactionDto,
+      },
       userId,
     );
   }
@@ -456,68 +381,26 @@ export class InventoryService {
   // OPENING STOCK
   // ============================================================
 
-  /** Opening inventory is represented as an ADJUSTMENT_IN. */
+  /**
+   * Opening inventory is represented as an adjustment IN.
+   *
+   * This avoids creating a second stock source/table.
+   */
   async addOpeningStock(dto: AdjustInventoryDto, userId?: string) {
+    const quantity = this.validateQuantity(dto.quantity);
+
     return this.create(
       {
         ...dto,
+
+        quantity,
+
         transaction_type: InventoryTransactionType.ADJUSTMENT_IN,
+
         reference_type: InventoryReferenceType.ADJUSTMENT,
+
         remarks: dto.reason ?? dto.remarks ?? 'Opening stock',
-      } as CreateInventoryTransactionDto,
-      userId,
-    );
-  }
-
-  // ============================================================
-  // REVERSAL / CORRECTION
-  // ============================================================
-
-  /**
-   * Posted transactions are never edited or deleted. A mistake is
-   * corrected by posting the opposite movement that points back at
-   * the original via reversal_of_id.
-   */
-  async reverse(id: string, reason: string, userId?: string) {
-    if (!reason || !reason.trim()) {
-      throw new BadRequestException('A reason is required to reverse an entry');
-    }
-
-    const original = await this.findOne(id);
-
-    if (original.reversal_of_id) {
-      throw new BadRequestException('A reversal entry cannot be reversed');
-    }
-
-    const alreadyReversed = await this.inventoryModel.findOne({
-      where: { reversal_of_id: id },
-      attributes: ['id'],
-    });
-
-    if (alreadyReversed) {
-      throw new BadRequestException('This entry has already been reversed');
-    }
-
-    const type =
-      original.direction === InventoryDirection.IN
-        ? InventoryTransactionType.ADJUSTMENT_OUT
-        : InventoryTransactionType.ADJUSTMENT_IN;
-
-    return this.create(
-      {
-        project_id: original.project_id,
-        site_location: original.site_location ?? undefined,
-        material_id: original.material_id,
-        transaction_date: new Date().toISOString().slice(0, 10),
-        transaction_type: type,
-        quantity: Number(original.quantity),
-        reference_type: InventoryReferenceType.ADJUSTMENT,
-        reference_id: original.reference_id ?? undefined,
-        reference_item_id: original.reference_item_id ?? undefined,
-        reversal_of_id: original.id,
-        reversal_reason: reason.trim(),
-        remarks: `Reversal of ${original.transaction_type}: ${reason.trim()}`,
-      } as CreateInventoryTransactionDto & ReversalFields,
+      },
       userId,
     );
   }
@@ -527,100 +410,182 @@ export class InventoryService {
   // ============================================================
 
   /**
-   * TRANSFER_OUT from source + TRANSFER_IN to destination, both with
-   * the same reference_id, in one DB transaction.
+   * Transfers material from one site to another.
+   *
+   * Creates:
+   *
+   * TRANSFER_OUT from source
+   * TRANSFER_IN to destination
+   *
+   * Both transactions use the same reference_id.
    */
   async transfer(dto: TransferInventoryDto, userId?: string) {
-    const fromLocation = this.normalizeLocation(dto.from_site_location);
-    const toLocation = this.normalizeLocation(dto.to_site_location);
-
-    if (!fromLocation || !toLocation) {
+    if (!dto.from_site_location || !dto.to_site_location) {
       throw new BadRequestException(
-        'Both source and destination locations are required',
+        'Both source and destination site locations are required',
       );
     }
 
-    if (fromLocation.toLowerCase() === toLocation.toLowerCase()) {
+    if (dto.from_site_location === dto.to_site_location) {
       throw new BadRequestException(
-        'Source and destination locations must be different',
+        'Source and destination site locations must be different',
       );
     }
 
     const quantity = this.validateQuantity(dto.quantity);
-    const transactionDate = this.normalizeDate(dto.transaction_date);
 
-    return this.getSequelize().transaction(async (transaction) => {
-      const material = await this.getValidMaterial(
-        dto.material_id,
-        transaction,
+    const material = await this.getValidMaterial(dto.material_id);
+
+    await this.validateAvailableStock(
+      dto.project_id,
+      dto.from_site_location,
+      dto.material_id,
+      quantity,
+    );
+
+    const sequelize = this.inventoryModel.sequelize;
+
+    if (!sequelize) {
+      throw new BadRequestException(
+        'Inventory database connection unavailable',
       );
+    }
 
-      await this.lockMaterial(dto.material_id, transaction);
+    return sequelize.transaction(async (transaction) => {
+      const transferId =
+        dto.reference_id ??
+        `TRANSFER-${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2, 8)
+          .toUpperCase()}`;
 
-      await this.validateAvailableStock(
-        dto.project_id,
-        fromLocation,
-        material,
-        quantity,
-        transaction,
-      );
-
-      // reference_id column is a UUID
-      const transferId = dto.reference_id ?? randomUUID();
-
-      const base = {
-        project_id: dto.project_id,
-        material_id: dto.material_id,
-        transaction_date: transactionDate,
-        quantity,
-        unit_id: material.unit_id,
-        reference_type: InventoryReferenceType.TRANSFER,
-        reference_id: transferId,
-        reference_item_id: dto.reference_item_id ?? null,
-        vendor_id: null,
-        contractor_id: null,
-        trade: null,
-        work_reference: dto.work_reference ?? null,
-        condition_status: InventoryConditionStatus.NOT_APPLICABLE,
-        condition_notes: null,
-        issued_to: null,
-        remarks: dto.remarks ?? 'Inventory transfer',
-        created_by: userId ?? null,
-      };
+      // --------------------------------------------------------
+      // TRANSFER OUT
+      // --------------------------------------------------------
 
       const transferOut = await this.inventoryModel.create(
         {
-          ...base,
-          site_location: fromLocation,
+          project_id: dto.project_id,
+
+          site_location: dto.from_site_location,
+
+          material_id: dto.material_id,
+
+          transaction_date: dto.transaction_date ?? new Date().toISOString(),
+
           transaction_type: InventoryTransactionType.TRANSFER_OUT,
+
+          quantity,
+
+          unit_id: material.unit_id,
+
           direction: InventoryDirection.OUT,
+
+          reference_type: InventoryReferenceType.TRANSFER,
+
+          reference_id: transferId,
+
+          reference_item_id: dto.reference_item_id ?? null,
+
+          vendor_id: null,
+
+          contractor_id: null,
+
+          trade: null,
+
+          work_reference: dto.work_reference ?? null,
+
           storage_location: dto.from_storage_location ?? null,
+
+          condition_status: InventoryConditionStatus.NOT_APPLICABLE,
+
+          condition_notes: null,
+
+          issued_to: null,
+
           issued_by: dto.issued_by ?? userId ?? null,
+
           received_by: null,
+
+          remarks: dto.remarks ?? 'Inventory transfer',
+
+          created_by: userId ?? null,
         },
-        { transaction },
+        {
+          transaction,
+        },
       );
+
+      // --------------------------------------------------------
+      // TRANSFER IN
+      // --------------------------------------------------------
 
       const transferIn = await this.inventoryModel.create(
         {
-          ...base,
-          site_location: toLocation,
+          project_id: dto.project_id,
+
+          site_location: dto.to_site_location,
+
+          material_id: dto.material_id,
+
+          transaction_date: dto.transaction_date ?? new Date().toISOString(),
+
           transaction_type: InventoryTransactionType.TRANSFER_IN,
+
+          quantity,
+
+          unit_id: material.unit_id,
+
           direction: InventoryDirection.IN,
+
+          reference_type: InventoryReferenceType.TRANSFER,
+
+          reference_id: transferId,
+
+          reference_item_id: dto.reference_item_id ?? null,
+
+          vendor_id: null,
+
+          contractor_id: null,
+
+          trade: null,
+
+          work_reference: dto.work_reference ?? null,
+
           storage_location: dto.to_storage_location ?? null,
+
+          condition_status: InventoryConditionStatus.NOT_APPLICABLE,
+
+          condition_notes: null,
+
+          issued_to: null,
+
           issued_by: null,
+
           received_by: dto.received_by ?? userId ?? null,
+
+          remarks: dto.remarks ?? 'Inventory transfer',
+
+          created_by: userId ?? null,
         },
-        { transaction },
+        {
+          transaction,
+        },
       );
 
       return {
         transfer_id: transferId,
+
         quantity,
+
         unit: material.unit,
-        from_site_location: fromLocation,
-        to_site_location: toLocation,
+
+        from_site_location: dto.from_site_location,
+
+        to_site_location: dto.to_site_location,
+
         transfer_out: transferOut,
+
         transfer_in: transferIn,
       };
     });
@@ -631,10 +596,17 @@ export class InventoryService {
   // ============================================================
 
   /**
-   * RETURN_FROM_CONTRACTOR increases stock.
-   * RETURN_TO_VENDOR decreases stock (validated in create()).
+   * Return material from contractor or to vendor.
+   *
+   * RETURN_FROM_CONTRACTOR:
+   *   increases project inventory.
+   *
+   * RETURN_TO_VENDOR:
+   *   decreases project inventory.
    */
   async returnMaterial(dto: ReturnInventoryDto, userId?: string) {
+    const quantity = this.validateQuantity(dto.quantity);
+
     if (
       dto.return_type !== InventoryTransactionType.RETURN_FROM_CONTRACTOR &&
       dto.return_type !== InventoryTransactionType.RETURN_TO_VENDOR
@@ -642,12 +614,25 @@ export class InventoryService {
       throw new BadRequestException('Invalid return type');
     }
 
+    if (dto.return_type === InventoryTransactionType.RETURN_TO_VENDOR) {
+      await this.validateAvailableStock(
+        dto.project_id,
+        dto.site_location,
+        dto.material_id,
+        quantity,
+      );
+    }
+
     return this.create(
       {
         ...dto,
+
+        quantity,
+
         transaction_type: dto.return_type,
+
         reference_type: dto.reference_type ?? InventoryReferenceType.RETURN,
-      } as CreateInventoryTransactionDto,
+      },
       userId,
     );
   }
@@ -656,21 +641,71 @@ export class InventoryService {
   // RECEIVE FROM DELIVERY CHALLAN
   // ============================================================
 
+  /**
+   * Receives accepted material from a Delivery Challan.
+   *
+   * IMPORTANT:
+   * Existing receipts linked to the same DC item are checked
+   * before creating another receipt.
+   */
   async receiveFromDelivery(
-    params: ReceiveFromDeliveryParams,
+    params: {
+      project_id: string;
+
+      site_location?: string;
+
+      material_id: string;
+
+      quantity: number;
+
+      delivery_challan_id: string;
+
+      delivery_challan_item_id: string;
+
+      vendor_id?: string;
+
+      storage_location?: string;
+
+      condition_status?: InventoryConditionStatus;
+
+      condition_notes?: string;
+
+      received_by?: string;
+
+      transaction_date: string;
+
+      remarks?: string;
+
+      /**
+       * Optional accepted quantity supplied by the
+       * Delivery Challan service.
+       *
+       * If not provided, only duplicate-reference
+       * protection can be performed here.
+       */
+      accepted_quantity?: number;
+    },
     userId?: string,
   ) {
     const quantity = this.validateQuantity(params.quantity);
 
     await this.getValidMaterial(params.material_id);
 
+    // ----------------------------------------------------------
+    // Check existing receipt transactions
+    // ----------------------------------------------------------
+
     const existingReceipts = await this.inventoryModel.findAll({
       where: {
         reference_type: InventoryReferenceType.DELIVERY_CHALLAN,
+
         reference_id: params.delivery_challan_id,
+
         reference_item_id: params.delivery_challan_item_id,
+
         transaction_type: InventoryTransactionType.RECEIPT,
       },
+
       attributes: ['id', 'quantity', 'transaction_date'],
     });
 
@@ -679,8 +714,13 @@ export class InventoryService {
       0,
     );
 
+    // ----------------------------------------------------------
+    // If accepted quantity is known, enforce it
+    // ----------------------------------------------------------
+
     if (params.accepted_quantity !== undefined) {
       const acceptedQuantity = this.validateQuantity(params.accepted_quantity);
+
       const remaining = acceptedQuantity - alreadyReceived;
 
       if (remaining <= 0) {
@@ -695,7 +735,14 @@ export class InventoryService {
         );
       }
     } else {
-      // Without accepted_quantity we can only stop exact duplicates.
+      /**
+       * Without accepted_quantity we cannot know whether
+       * the DC item is partially accepted.
+       *
+       * The reference check still prevents accidental
+       * duplicate receipts only when the exact quantity
+       * has already been received.
+       */
       const duplicateSameQuantity = existingReceipts.some(
         (item) => Number(item.quantity) === quantity,
       );
@@ -710,25 +757,35 @@ export class InventoryService {
     return this.create(
       {
         project_id: params.project_id,
+
         site_location: params.site_location,
+
         material_id: params.material_id,
+
         transaction_date: params.transaction_date,
+
         transaction_type: InventoryTransactionType.RECEIPT,
+
         quantity,
+
         reference_type: InventoryReferenceType.DELIVERY_CHALLAN,
+
         reference_id: params.delivery_challan_id,
+
         reference_item_id: params.delivery_challan_item_id,
-        challan_bill_no: params.challan_bill_no,
+
         vendor_id: params.vendor_id,
-        work_reference: params.work_reference,
+
         storage_location: params.storage_location,
-        gate_pass_received: params.gate_pass_received,
-        material_checked: params.material_checked,
+
         condition_status: params.condition_status,
+
         condition_notes: params.condition_notes,
+
         received_by: params.received_by,
+
         remarks: params.remarks,
-      } as CreateInventoryTransactionDto,
+      },
       userId,
     );
   }
@@ -739,37 +796,61 @@ export class InventoryService {
 
   async findAll(params?: {
     projectId?: string;
+
     siteLocation?: string;
+
     materialId?: string;
+
     transactionType?: string;
+
     referenceType?: string;
+
     fromDate?: string;
+
     toDate?: string;
   }) {
     const where: any = {};
 
-    if (params?.projectId) where.project_id = params.projectId;
-    this.applyLocationFilter(where, params?.siteLocation);
-    if (params?.materialId) where.material_id = params.materialId;
-    if (params?.transactionType)
-      where.transaction_type = params.transactionType;
-    if (params?.referenceType) where.reference_type = params.referenceType;
+    if (params?.projectId) {
+      where.project_id = params.projectId;
+    }
 
-    this.assertOptionalDate(params?.fromDate, 'fromDate');
-    this.assertOptionalDate(params?.toDate, 'toDate');
+    if (params?.siteLocation) {
+      where.site_location = params.siteLocation;
+    }
+
+    if (params?.materialId) {
+      where.material_id = params.materialId;
+    }
+
+    if (params?.transactionType) {
+      where.transaction_type = params.transactionType;
+    }
+
+    if (params?.referenceType) {
+      where.reference_type = params.referenceType;
+    }
 
     if (params?.fromDate || params?.toDate) {
       where.transaction_date = {};
 
-      if (params.fromDate) where.transaction_date[Op.gte] = params.fromDate;
-      if (params.toDate) where.transaction_date[Op.lte] = params.toDate;
+      if (params.fromDate) {
+        where.transaction_date[Op.gte] = params.fromDate;
+      }
+
+      if (params.toDate) {
+        where.transaction_date[Op.lte] = params.toDate;
+      }
     }
 
     return this.inventoryModel.findAll({
       where,
+
       include: this.getInventoryIncludes(),
+
       order: [
         ['transaction_date', 'DESC'],
+
         ['created_at', 'DESC'],
       ],
     });
@@ -779,46 +860,65 @@ export class InventoryService {
   // FIND ONE
   // ============================================================
 
-  async findOne(id: string, transaction?: SequelizeTransaction) {
-    const row = await this.inventoryModel.findByPk(id, {
+  async findOne(id: string) {
+    const transaction = await this.inventoryModel.findByPk(id, {
       include: this.getInventoryIncludes(),
-      transaction,
     });
 
-    if (!row) {
+    if (!transaction) {
       throw new NotFoundException('Inventory transaction not found');
     }
 
-    return row;
+    return transaction;
   }
 
   // ============================================================
-  // CURRENT STOCK (SQL SUM, no row loading)
+  // CURRENT STOCK
   // ============================================================
 
+  /**
+   * Returns current stock for:
+   *
+   * project + material
+   *
+   * optionally:
+   *
+   * project + site + material
+   */
   async getCurrentStock(
     projectId: string,
     siteLocation: string | undefined,
     materialId: string,
-    transaction?: SequelizeTransaction,
   ): Promise<number> {
     const where: any = {
       project_id: projectId,
+
       material_id: materialId,
     };
 
-    this.applyLocationFilter(where, siteLocation);
+    if (siteLocation) {
+      where.site_location = siteLocation;
+    }
 
-    const row: any = await this.inventoryModel.findOne({
+    const transactions = await this.inventoryModel.findAll({
       where,
-      attributes: [
-        [fn('COALESCE', fn('SUM', literal(SIGNED_QTY)), 0), 'balance'],
-      ],
-      raw: true,
-      transaction,
+
+      attributes: ['direction', 'quantity'],
     });
 
-    return Number(row?.balance ?? 0);
+    let balance = 0;
+
+    for (const transaction of transactions) {
+      const quantity = Number(transaction.quantity);
+
+      if (transaction.direction === InventoryDirection.IN) {
+        balance += quantity;
+      } else if (transaction.direction === InventoryDirection.OUT) {
+        balance -= quantity;
+      }
+    }
+
+    return balance;
   }
 
   // ============================================================
@@ -832,16 +932,22 @@ export class InventoryService {
   ) {
     const where: any = {
       project_id: projectId,
+
       material_id: materialId,
     };
 
-    this.applyLocationFilter(where, siteLocation);
+    if (siteLocation) {
+      where.site_location = siteLocation;
+    }
 
     return this.inventoryModel.findAll({
       where,
+
       include: this.getInventoryIncludes(),
+
       order: [
         ['transaction_date', 'DESC'],
+
         ['created_at', 'DESC'],
       ],
     });
@@ -852,15 +958,22 @@ export class InventoryService {
   // ============================================================
 
   async getProjectStock(projectId: string, siteLocation?: string) {
-    const where: any = { project_id: projectId };
+    const where: WhereOptions<InventoryTransaction> = {
+      project_id: projectId,
+    };
 
-    this.applyLocationFilter(where, siteLocation);
+    if (siteLocation) {
+      where.site_location = siteLocation;
+    }
 
     const transactions = await this.inventoryModel.findAll({
       where,
+
       include: this.getInventoryIncludes(),
+
       order: [
         ['transaction_date', 'ASC'],
+
         ['created_at', 'ASC'],
       ],
     });
@@ -869,50 +982,72 @@ export class InventoryService {
       string,
       {
         material: MaterialMaster;
+
         unit: Unit;
+
         quantity: number;
+
         total_in: number;
+
         total_out: number;
       }
     >();
 
     for (const transaction of transactions) {
       const material = transaction.material;
-      if (!material) continue;
+
+      if (!material) {
+        continue;
+      }
 
       const unit = transaction.unit ?? material.unit;
-      if (!unit) continue;
+
+      if (!unit) {
+        continue;
+      }
 
       const key = transaction.material_id;
 
       if (!balances.has(key)) {
         balances.set(key, {
           material,
+
           unit,
+
           quantity: 0,
+
           total_in: 0,
+
           total_out: 0,
         });
       }
 
       const entry = balances.get(key)!;
+
       const quantity = Number(transaction.quantity);
 
       if (transaction.direction === InventoryDirection.IN) {
         entry.quantity += quantity;
+
         entry.total_in += quantity;
       } else if (transaction.direction === InventoryDirection.OUT) {
         entry.quantity -= quantity;
+
         entry.total_out += quantity;
       }
     }
 
     return Array.from(balances.values()).map((entry) => ({
       material: entry.material,
+
       unit: entry.unit,
+
       quantity: entry.quantity,
+
       total_in: entry.total_in,
+
       total_out: entry.total_out,
+
       stock_status:
         entry.quantity > 0
           ? 'IN_STOCK'
@@ -929,51 +1064,85 @@ export class InventoryService {
   async getInventorySummary(projectId: string, siteLocation?: string) {
     const stock = await this.getProjectStock(projectId, siteLocation);
 
+    let totalMaterials = stock.length;
+
     let materialsWithStock = 0;
+
     let zeroStockMaterials = 0;
+
     let negativeStockMaterials = 0;
+
+    let totalReceipts = 0;
+
+    let totalIssues = 0;
+
     let totalIncoming = 0;
+
     let totalOutgoing = 0;
 
     for (const item of stock) {
       const quantity = Number(item.quantity);
 
-      if (quantity > 0) materialsWithStock++;
-      if (quantity === 0) zeroStockMaterials++;
-      if (quantity < 0) negativeStockMaterials++;
+      if (quantity > 0) {
+        materialsWithStock++;
+      }
+
+      if (quantity === 0) {
+        zeroStockMaterials++;
+      }
+
+      if (quantity < 0) {
+        negativeStockMaterials++;
+      }
 
       totalIncoming += Number(item.total_in ?? 0);
+
       totalOutgoing += Number(item.total_out ?? 0);
     }
 
-    const where: any = { project_id: projectId };
-    this.applyLocationFilter(where, siteLocation);
+    // ----------------------------------------------------------
+    // Get transaction counts separately.
+    // ----------------------------------------------------------
+
+    const where: any = {
+      project_id: projectId,
+    };
+
+    if (siteLocation) {
+      where.site_location = siteLocation;
+    }
 
     const transactions = await this.inventoryModel.findAll({
       where,
+
       attributes: ['transaction_type'],
     });
-
-    let totalReceipts = 0;
-    let totalIssues = 0;
 
     for (const transaction of transactions) {
       if (transaction.transaction_type === InventoryTransactionType.RECEIPT) {
         totalReceipts++;
       }
+
       if (transaction.transaction_type === InventoryTransactionType.ISSUE) {
         totalIssues++;
       }
     }
 
     return {
-      totalMaterials: stock.length,
+      totalMaterials,
+
       materialsWithStock,
+
       zeroStockMaterials,
+
       negativeStockMaterials,
+
       totalReceipts,
+
       totalIssues,
+
       totalIncoming,
+
       totalOutgoing,
     };
   }
@@ -982,12 +1151,16 @@ export class InventoryService {
   // SITE STOCK
   // ============================================================
 
-  async getSiteStock(projectId: string, siteLocation: string) {
-    if (!this.normalizeLocation(siteLocation)) {
-      throw new BadRequestException('Site location is required');
+  /**
+   * Alias/helper for frontend pages that specifically want
+   * site inventory.
+   */
+  async getSiteStock(projectId: string, siteId: string) {
+    if (!siteId) {
+      throw new BadRequestException('Site is required');
     }
 
-    return this.getProjectStock(projectId, siteLocation);
+    return this.getProjectStock(projectId, siteId);
   }
 
   // ============================================================
@@ -997,389 +1170,55 @@ export class InventoryService {
   async getMaterialStockDetails(
     projectId: string,
     materialId: string,
-    siteLocation?: string,
+    siteId?: string,
   ) {
     const material = await this.getValidMaterial(materialId);
 
-    const currentStock = await this.getCurrentStock(
-      projectId,
-      siteLocation,
-      materialId,
-    );
+    const quantity = await this.getCurrentStock(projectId, siteId, materialId);
 
     const history = await this.getMaterialHistory(
       projectId,
       materialId,
-      siteLocation,
+      siteId,
     );
 
     let totalIn = 0;
+
     let totalOut = 0;
 
-    for (const row of history) {
-      const quantity = Number(row.quantity);
+    for (const transaction of history) {
+      const quantity = Number(transaction.quantity);
 
-      if (row.direction === InventoryDirection.IN) {
+      if (transaction.direction === InventoryDirection.IN) {
         totalIn += quantity;
-      } else if (row.direction === InventoryDirection.OUT) {
+      } else if (transaction.direction === InventoryDirection.OUT) {
         totalOut += quantity;
       }
     }
 
     return {
       material,
+
       unit: material.unit,
+
       project_id: projectId,
-      site_location: this.normalizeLocation(siteLocation),
-      current_stock: currentStock,
+
+      site_id: siteId ?? null,
+
+      current_stock: quantity,
+
       total_in: totalIn,
+
       total_out: totalOut,
+
       transaction_count: history.length,
+
       stock_status:
-        currentStock > 0
+        quantity > 0
           ? 'IN_STOCK'
-          : currentStock === 0
+          : quantity === 0
             ? 'OUT_OF_STOCK'
             : 'NEGATIVE_STOCK',
-    };
-  }
-
-  // ============================================================
-  // ============================================================
-  //  SITE INVENTORY REGISTER
-  // ============================================================
-  // ============================================================
-
-  /**
-   * id -> display name using a raw lookup. Never throws: if the table
-   * or column does not exist the register still renders, names are null.
-   */
-  private async lookupNames(
-    source: { table: string; nameColumn: string },
-    ids: Array<string | null | undefined>,
-  ): Promise<Map<string, string>> {
-    const unique = [...new Set(ids.filter(Boolean))] as string[];
-    const result = new Map<string, string>();
-
-    if (!unique.length) return result;
-
-    try {
-      const rows: any[] = await this.getSequelize().query(
-        `SELECT id, ${source.nameColumn} AS name FROM ${source.table} WHERE id IN (:ids)`,
-        { replacements: { ids: unique }, type: QueryTypes.SELECT },
-      );
-
-      for (const row of rows) {
-        result.set(String(row.id), row.name);
-      }
-    } catch (error) {
-      this.logger.warn(
-        `Name lookup on "${source.table}" failed: ${(error as Error).message}`,
-      );
-    }
-
-    return result;
-  }
-
-  private async resolveNames(rows: InventoryTransaction[]) {
-    const [vendor, contractor, user] = await Promise.all([
-      this.lookupNames(
-        NAME_SOURCES.vendor,
-        rows.map((r) => r.vendor_id),
-      ),
-      this.lookupNames(
-        NAME_SOURCES.contractor,
-        rows.map((r) => r.contractor_id),
-      ),
-      this.lookupNames(
-        NAME_SOURCES.user,
-        rows.flatMap((r) => [r.received_by, r.issued_by]),
-      ),
-    ]);
-
-    return { vendor, contractor, user };
-  }
-
-  /** "Vitrified tile 600x600, matte ivory" = name + specification */
-  private materialDescription(material: MaterialMaster) {
-    return [material.name, material.specification].filter(Boolean).join(', ');
-  }
-
-  /**
-   * Loads the ledger up to toDate in chronological order and computes the
-   * running balance per material. The history BEFORE fromDate is loaded
-   * too so balances are right, then the window is applied afterwards.
-   */
-  private async loadLedgerWithBalance(query: SiteRegisterQuery) {
-    this.assertOptionalDate(query.fromDate, 'fromDate');
-    this.assertOptionalDate(query.toDate, 'toDate');
-
-    const where: any = { project_id: query.projectId };
-
-    this.applyLocationFilter(where, query.siteLocation);
-    if (query.materialId) where.material_id = query.materialId;
-    if (query.toDate) where.transaction_date = { [Op.lte]: query.toDate };
-
-    const rows = await this.inventoryModel.findAll({
-      where,
-      include: this.getInventoryIncludes(),
-      order: [
-        ['transaction_date', 'ASC'],
-        ['created_at', 'ASC'],
-      ],
-    });
-
-    const running = new Map<string, number>();
-
-    const withBalance = rows.map((row) => {
-      const quantity = Number(row.quantity);
-      const previous = running.get(row.material_id) ?? 0;
-      const next =
-        row.direction === InventoryDirection.IN
-          ? previous + quantity
-          : previous - quantity;
-
-      running.set(row.material_id, next);
-
-      return { row, balance_after: next };
-    });
-
-    return query.fromDate
-      ? withBalance.filter((x) => x.row.transaction_date >= query.fromDate!)
-      : withBalance;
-  }
-
-  async getReceivedRegister(
-    query: SiteRegisterQuery,
-  ): Promise<MaterialReceivedRegisterRow[]> {
-    const ledger = (await this.loadLedgerWithBalance(query)).filter(
-      (x) => x.row.direction === InventoryDirection.IN,
-    );
-
-    const names = await this.resolveNames(ledger.map((x) => x.row));
-
-    return ledger.map(({ row, balance_after }) => {
-      const condition = [
-        row.condition_status !== InventoryConditionStatus.NOT_APPLICABLE
-          ? row.condition_status
-          : null,
-        row.condition_notes,
-      ]
-        .filter(Boolean)
-        .join(' – ');
-
-      return {
-        id: row.id,
-        date: row.transaction_date,
-        material_id: row.material_id,
-        material_code: row.material?.material_code ?? null,
-        material_description: row.material
-          ? this.materialDescription(row.material)
-          : null,
-        brand: row.material?.brand ?? null,
-        received_from: row.vendor_id
-          ? (names.vendor.get(row.vendor_id) ?? null)
-          : null,
-        vendor_id: row.vendor_id,
-        for_which_work: row.work_reference,
-        qty: Number(row.quantity),
-        unit: row.unit?.code ?? row.material?.unit?.code ?? null,
-        challan_bill_no: row.challan_bill_no,
-        gate_pass_received: row.gate_pass_received,
-        material_checked: row.material_checked,
-        condition_shortage_noted: condition || null,
-        stored_at: row.storage_location,
-        received_by: row.received_by
-          ? (names.user.get(row.received_by) ?? null)
-          : null,
-        remarks: row.remarks,
-        transaction_type: row.transaction_type,
-        reference_type: row.reference_type,
-        reference_id: row.reference_id,
-        reversal_of_id: row.reversal_of_id,
-        balance_after,
-      };
-    });
-  }
-
-  async getIssuedRegister(
-    query: SiteRegisterQuery,
-  ): Promise<MaterialIssuedRegisterRow[]> {
-    const ledger = (await this.loadLedgerWithBalance(query)).filter(
-      (x) => x.row.direction === InventoryDirection.OUT,
-    );
-
-    const names = await this.resolveNames(ledger.map((x) => x.row));
-
-    return ledger.map(({ row, balance_after }) => {
-      const contractorName = row.contractor_id
-        ? (names.contractor.get(row.contractor_id) ?? null)
-        : null;
-
-      return {
-        id: row.id,
-        date: row.transaction_date,
-        material_id: row.material_id,
-        material_code: row.material?.material_code ?? null,
-        material_description: row.material
-          ? this.materialDescription(row.material)
-          : null,
-        qty_issued: Number(row.quantity),
-        unit: row.unit?.code ?? row.material?.unit?.code ?? null,
-        issued_to: row.issued_to ?? contractorName ?? row.trade ?? null,
-        contractor_id: row.contractor_id,
-        trade: row.trade,
-        for_which_work: row.work_reference,
-        issued_by: row.issued_by
-          ? (names.user.get(row.issued_by) ?? null)
-          : null,
-        remarks: row.remarks,
-        transaction_type: row.transaction_type,
-        reference_type: row.reference_type,
-        reference_id: row.reference_id,
-        reversal_of_id: row.reversal_of_id,
-        balance_after,
-      };
-    });
-  }
-
-  /** Balance per material (what is in the store now / at toDate). */
-  async getRegisterBalance(query: SiteRegisterQuery) {
-    this.assertOptionalDate(query.toDate, 'toDate');
-
-    const where: any = { project_id: query.projectId };
-
-    this.applyLocationFilter(where, query.siteLocation);
-    if (query.materialId) where.material_id = query.materialId;
-    if (query.toDate) where.transaction_date = { [Op.lte]: query.toDate };
-
-    const rows: any[] = await this.inventoryModel.findAll({
-      where,
-      attributes: [
-        'material_id',
-        [
-          fn(
-            'SUM',
-            literal(`CASE WHEN direction = 'IN' THEN quantity ELSE 0 END`),
-          ),
-          'total_in',
-        ],
-        [
-          fn(
-            'SUM',
-            literal(`CASE WHEN direction = 'OUT' THEN quantity ELSE 0 END`),
-          ),
-          'total_out',
-        ],
-        [fn('MAX', literal('transaction_date')), 'last_movement'],
-      ],
-      group: ['material_id'],
-      raw: true,
-    });
-
-    if (!rows.length) return [];
-
-    const materials = await this.materialModel.findAll({
-      where: { id: rows.map((r) => r.material_id) },
-      include: [{ model: Unit, as: 'unit' }],
-    });
-
-    const byId = new Map(materials.map((m) => [m.id, m]));
-
-    return rows
-      .map((r) => {
-        const material = byId.get(r.material_id);
-        const received = Number(r.total_in ?? 0);
-        const issued = Number(r.total_out ?? 0);
-        const balance = received - issued;
-
-        return {
-          material_id: r.material_id,
-          material_code: material?.material_code ?? null,
-          material_description: material
-            ? this.materialDescription(material)
-            : null,
-          brand: material?.brand ?? null,
-          unit: material?.unit?.code ?? null,
-          total_received: received,
-          total_issued: issued,
-          balance,
-          last_movement: r.last_movement,
-          stock_status:
-            balance > 0
-              ? 'IN_STOCK'
-              : balance === 0
-                ? 'OUT_OF_STOCK'
-                : 'NEGATIVE_STOCK',
-        };
-      })
-      .sort((a, b) =>
-        (a.material_description ?? '').localeCompare(
-          b.material_description ?? '',
-        ),
-      );
-  }
-
-  /** Everything the register screen needs in one call. */
-  async getSiteRegister(query: SiteRegisterQuery) {
-    if (!query.projectId) {
-      throw new BadRequestException('Project is required');
-    }
-
-    // ------------------------------------------------------------
-    // Resolve site location
-    // ------------------------------------------------------------
-    // If frontend sends siteLocation, use it.
-    // Otherwise fall back to the project's canonical site_location.
-    // ------------------------------------------------------------
-
-    let siteLocation = this.normalizeLocation(query.siteLocation);
-
-    if (!siteLocation) {
-      const project = await this.projectModel.findByPk(query.projectId, {
-        attributes: ['id', 'site_location'],
-      });
-
-      if (!project) {
-        throw new NotFoundException('Project not found');
-      }
-
-      siteLocation = this.normalizeLocation(project.site_location);
-
-      if (!siteLocation) {
-        throw new BadRequestException(
-          'Site location is not configured for this project',
-        );
-      }
-    }
-
-    const normalizedQuery: SiteRegisterQuery = {
-      ...query,
-      siteLocation,
-    };
-
-    const [received, issued, balance] = await Promise.all([
-      this.getReceivedRegister(normalizedQuery),
-      this.getIssuedRegister(normalizedQuery),
-      this.getRegisterBalance(normalizedQuery),
-    ]);
-
-    return {
-      project_id: query.projectId,
-      site_location: siteLocation,
-      from_date: query.fromDate ?? null,
-      to_date: query.toDate ?? null,
-      generated_at: new Date().toISOString(),
-
-      counts: {
-        received: received.length,
-        issued: issued.length,
-        materials: balance.length,
-      },
-
-      received,
-      issued,
-      balance,
     };
   }
 }

@@ -1,39 +1,42 @@
 import React from "react";
-import { Save } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-import { Shell } from "../../hooks/shared";
+  Page,
+  PageHeader,
+  Button,
+  Field,
+  TextInput,
+  SelectInput,
+  TextArea,
+  FormActions,
+} from "@/components/inos";
+import { DocSection, DocLayout, Grid } from "@/components/forms/commerce-form-ui";
 
 /**
  * Generic multi-section form shell.
  *
- * Renders every section stacked vertically as one continuous form.
+ * Renders every section stacked vertically as one continuous form:
+ * numbered sections, labels above fields, one sticky action bar.
+ * Optional: crumbs, onCancel, aside (sticky summary on wide screens).
  */
 export function PaymentSectionForm({
   title,
   subtitle,
+  crumbs,
   sections,
   values,
   onFieldChange,
   projects,
   projectId,
   onProjectChange,
+  disableProject,
   onSubmit,
+  onCancel,
   isSubmitting,
   renderSection,
   submitLabel,
+  aside,
   children,
 }) {
   const filledCount = React.useMemo(() => {
@@ -60,142 +63,114 @@ export function PaymentSectionForm({
 
   // Renders the plain field grid for a given section
   const renderFields = (section) => (
-    <div className="grid gap-4">
+    <Grid cols={2}>
       {(section?.fields || []).map((field) => {
         const sectionData = values?.[section.title] || {};
         const fieldValue = sectionData?.[field.key] ?? "";
+        const onChange = (e) => onFieldChange(section.title, field.key, e.target.value);
 
         return (
-          <div key={field.key} className="space-y-2">
-            <Label className="text-[13px] font-semibold">{field.label}</Label>
-
+          <Field key={field.key} label={field.label} full={field.type === "textarea"}>
             {field.type === "textarea" ? (
-              <Textarea
-                rows={field.rows || 4}
-                value={fieldValue}
-                onChange={(e) =>
-                  onFieldChange(section.title, field.key, e.target.value)
-                }
-              />
-            ) : field.type === "date" ? (
-              <Input
-                type="date"
-                value={fieldValue}
-                onChange={(e) =>
-                  onFieldChange(section.title, field.key, e.target.value)
-                }
-              />
-            ) : field.type === "time" ? (
-              <Input
-                type="time"
-                value={fieldValue}
-                onChange={(e) =>
-                  onFieldChange(section.title, field.key, e.target.value)
-                }
-              />
+              <TextArea rows={field.rows || 4} value={fieldValue} onChange={onChange} placeholder={field.placeholder} />
             ) : field.type === "select" ? (
-              <Select
-                value={fieldValue || ""}
-                onValueChange={(value) =>
-                  onFieldChange(section.title, field.key, value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-
-                <SelectContent>
-                  {(field.options || []).map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SelectInput value={fieldValue || ""} onChange={onChange} placeholder="Select…">
+                {(field.options || []).map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </SelectInput>
             ) : (
-              <Input
-                type={field.type || "text"}
-                value={fieldValue}
-                onChange={(e) =>
-                  onFieldChange(section.title, field.key, e.target.value)
-                }
-              />
+              <TextInput type={field.type || "text"} value={fieldValue} onChange={onChange} placeholder={field.placeholder} />
             )}
-          </div>
+          </Field>
         );
       })}
-    </div>
+    </Grid>
   );
 
   const renderSectionBody = (section) => {
-    // Custom renderer
     if (section?.type && renderSection) {
       return renderSection(section);
     }
-
-    // Simple fields
     return renderFields(section);
   };
 
-  return (
-    <Shell title={title} subtitle={subtitle}>
-      {/* Project Selector */}
+  const offset = projects ? 1 : 0;
+
+  const body = (
+    <>
       {projects && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-2 max-w-lg">
-              <Label className="text-[13px] font-semibold">Project</Label>
-
-              <Select value={projectId || ""} onValueChange={onProjectChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Project" />
-                </SelectTrigger>
-
-                <SelectContent>
-                  {projects?.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        <DocSection step={1} title="Project" description="Which project this document belongs to.">
+          <Grid cols={2}>
+            <Field label="Project" required htmlFor="psf-project" hint={disableProject ? "Can't be changed after creation." : undefined}>
+              <SelectInput
+                id="psf-project"
+                value={projectId || ""}
+                onChange={(e) => onProjectChange?.(e.target.value)}
+                disabled={disableProject}
+                placeholder="Select project"
+              >
+                {projects?.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </SelectInput>
+            </Field>
+          </Grid>
+        </DocSection>
       )}
 
-      {/* All sections */}
-      <div className="space-y-5 mt-5">
-        {sections.map((section, index) => (
-          <Card key={section.title}>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg">
-                {index + 1}. {section.title}
-              </CardTitle>
-            </CardHeader>
+      {sections.map((section, index) => (
+        <DocSection
+          key={section.title}
+          step={index + 1 + offset}
+          title={section.label || section.title}
+          description={section.description}
+          actions={section.actions}
+        >
+          {renderSectionBody(section)}
+        </DocSection>
+      ))}
+    </>
+  );
 
-            <CardContent>{renderSectionBody(section)}</CardContent>
-          </Card>
-        ))}
-      </div>
+  return (
+    <Page width={aside ? undefined : "form"}>
+      <PageHeader
+        crumbs={crumbs}
+        title={title}
+        subtitle={subtitle}
+        actions={
+          onCancel && (
+            <Button variant="ghost" icon={ArrowLeft} onClick={onCancel}>
+              Back
+            </Button>
+          )
+        }
+      />
 
-      {/* Autosave info */}
-      <div className="mt-4 text-xs text-muted-foreground text-center">
-        Draft autosaved locally • {filledCount} field
-        {filledCount !== 1 ? "s" : ""} completed
-      </div>
+      <form
+        className="inos-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSubmit?.();
+        }}
+      >
+        {aside ? <DocLayout aside={aside}>{body}</DocLayout> : body}
 
-      {/* Bottom Save Button */}
-      <div className="flex justify-end mt-6 pb-6">
-        <Button onClick={onSubmit} disabled={isSubmitting} size="lg">
-          <Save className="mr-2 h-4 w-4" />
-
-          {isSubmitting ? "Saving..." : submitLabel || "Save"}
-        </Button>
-      </div>
+        <FormActions
+          note={`Draft autosaves on this device · ${filledCount} field${filledCount !== 1 ? "s" : ""} filled`}
+          onCancel={onCancel}
+          submitLabel={submitLabel || "Save"}
+          submitting={isSubmitting}
+        />
+      </form>
 
       {children}
-    </Shell>
+    </Page>
   );
 }
 

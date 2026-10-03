@@ -33,9 +33,7 @@ import WorkOrderList from "../../pages/materials/WorkOrderList";
 import CreateWorkOrder from "../../pages/materials/CreateWorkOrder";
 import WorkOrderView from "../../pages/materials/WorkOrderView";
 import SingleProjectMaterialRequirements from "../../pages/materials/SingleProjectMaterialRequirements";
-import MaterialProcurementSheetList from "../../pages/materials/MaterialProcurementSheetList";
-import CreateMaterialProcurementSheet from "../../pages/materials/CreateMaterialProcurementSheet";
-import MaterialProcurementSheetView from "../../pages/materials/MaterialProcurementSheetView";
+
 export const materialsRoutes = [
   {
     type: "layout",
@@ -256,22 +254,6 @@ export const materialsRoutes = [
       {
         path: "vendors/:id",
         element: <VendorProfile />,
-      },
-      {
-        path: "material-procurement/list",
-        element: <MaterialProcurementSheetList />,
-      },
-      {
-        path: "material-procurement/:id",
-        element: <MaterialProcurementSheetView />,
-      },
-      {
-        path: "material-procurement/:id/edit",
-        element: <CreateMaterialProcurementSheet />,
-      },
-      {
-        path: "material-procurement/new",
-        element: <CreateMaterialProcurementSheet />,
       },
     ],
   },

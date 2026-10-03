@@ -19,16 +19,33 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Page,
+  PageHeader,
+  Button,
+  Field,
+  TextInput,
+  SelectInput,
+  TextArea,
+  FormActions,
+} from "@/components/inos";
+import {
+  DocSection,
+  DocLayout,
+  Grid,
+  LineTable,
+  IconAction,
+  RemoveRow,
+  AddRow,
+  Affix,
+  TotalsCard,
+  Callout,
+  LoadingBlock,
+  Check as CheckBox,
+  Disclosure,
+  inr,
+  todayISO,
+} from "@/components/forms/commerce-form-ui";
 import {
   Popover,
   PopoverContent,
@@ -269,13 +286,15 @@ const emptyForm = {
 
 export default function PurchaseOrderForm({
   initialData = null,
-  onBack,
+  onBack: onBackProp,
+  onCancel,
   onSuccess,
 }) {
   const isEdit = Boolean(initialData?.id);
+  const onBack = onBackProp || onCancel;
 
   const [form, setForm] = useState(() => {
-    if (!initialData) return emptyForm;
+    if (!initialData) return { ...emptyForm, po_date: todayISO() };
 
     return {
       ...emptyForm,
@@ -622,7 +641,7 @@ export default function PurchaseOrderForm({
      BUILD PO PAYLOAD
      ========================================================= */
 
-  const buildPayload = () => {
+  const buildPayload = (overrides = {}) => {
     return {
       project_id: form.project_id || null,
       site_id: form.site_id || null,
@@ -649,7 +668,7 @@ export default function PurchaseOrderForm({
 
       cartage: Number(cartage.toFixed(2)),
 
-      status: form.status || "DRAFT",
+      status: overrides.status || form.status || "DRAFT",
 
       source_type: form.source_type || "MANUAL",
 
@@ -811,7 +830,7 @@ export default function PurchaseOrderForm({
      SAVE
      ========================================================= */
 
-  const handleSave = async () => {
+  const handleSave = async (overrides = {}) => {
     try {
       if (!form.project_id) {
         toast.error("Please select a project");
@@ -832,7 +851,7 @@ export default function PurchaseOrderForm({
         return;
       }
 
-      const payload = buildPayload();
+      const payload = buildPayload(overrides);
 
       let savedPO;
 
@@ -931,1143 +950,570 @@ export default function PurchaseOrderForm({
     });
   };
 
+
   /* =========================================================
      RENDER
      ========================================================= */
 
+  const findMaterial = (materialId) =>
+    materials.find((material) => String(getId(material)) === String(materialId));
+
+  const hasMasterUpdates = calculatedItems.some(
+    (item) => item.update_master && item.material_id,
+  );
+
+  const missing = [
+    !form.project_id && "project",
+    !form.vendor_id && "vendor",
+    calculatedItems.every((item) => !item.material_id) && "at least one material",
+  ].filter(Boolean);
+
+  const lineCount = calculatedItems.filter((item) => item.material_id).length;
+
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      {/* =====================================================
-          HEADER
-          ===================================================== */}
+    <Page>
+      <PageHeader
+        crumbs={[
+          { label: "Procurement", to: "/procurement" },
+          { label: "Purchase orders", to: "/procurement/purchase-orders" },
+          { label: isEdit ? "Edit" : "New" },
+        ]}
+        title={isEdit ? `Edit purchase order${form.po_number ? ` ${form.po_number}` : ""}` : "New purchase order"}
+        subtitle="Pick the project and vendor, add materials, then review the totals before saving."
+        actions={
+          <Button variant="ghost" icon={ArrowLeft} onClick={onBack} disabled={isSaving}>
+            Back to list
+          </Button>
+        }
+      />
 
-      <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
-        <div className="flex min-h-[72px] items-center justify-between gap-4 px-6">
-          <div className="flex min-w-0 items-center gap-3">
-            <Button type="button" variant="ghost" size="icon" onClick={onBack}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
+      <form
+        className="inos-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          handleSave();
+        }}
+      >
+        {/* 1 — Vendor & project */}
+        <DocSection
+          step={1}
+          title="Vendor & project"
+          description="Who you are ordering from and which project it is charged to."
+        >
+          <Grid cols={4}>
+            <Field label="Project" required htmlFor="po-project">
+              <SelectInput
+                id="po-project"
+                value={form.project_id || ""}
+                onChange={(event) => updateForm("project_id", event.target.value)}
+                disabled={projectsLoading}
+                placeholder={projectsLoading ? "Loading projects…" : "Select project"}
+              >
+                {projects.map((project) => {
+                  const id = getId(project);
+                  if (!id) return null;
+                  return (
+                    <option key={id} value={String(id)}>
+                      {getProjectName(project)}
+                    </option>
+                  );
+                })}
+              </SelectInput>
+            </Field>
 
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#1F453B] text-white">
-              <ShoppingCart className="h-5 w-5" />
-            </div>
-
-            <div className="min-w-0">
-              <h1 className="truncate text-lg font-semibold">
-                {isEdit ? "Edit Purchase Order" : "Create Purchase Order"}
-              </h1>
-
-              <p className="text-xs text-muted-foreground">
-                Procurement / Purchase Orders
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onBack}
-              disabled={isSaving}
+            <Field
+              label="Site"
+              optional
+              htmlFor="po-site"
+              hint={
+                form.project_id && !(selectedProject?.sites || []).length
+                  ? "This project has no sites set up."
+                  : undefined
+              }
             >
-              <X className="mr-2 h-4 w-4" />
-              Cancel
-            </Button>
+              <SelectInput
+                id="po-site"
+                value={form.site_id || ""}
+                onChange={(event) => updateForm("site_id", event.target.value)}
+                disabled={!form.project_id}
+                placeholder={form.project_id ? "Select site" : "Pick a project first"}
+              >
+                {Array.isArray(selectedProject?.sites) &&
+                  selectedProject.sites.map((site) => {
+                    const id = getId(site);
+                    if (!id) return null;
+                    return (
+                      <option key={id} value={String(id)}>
+                        {getSiteName(site)}
+                      </option>
+                    );
+                  })}
+              </SelectInput>
+            </Field>
 
-            <Button
-              type="button"
-              onClick={handleSave}
-              disabled={isSaving}
-              className="bg-[#1F453B] hover:bg-[#17362f]"
-            >
-              {isSaving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-2 h-4 w-4" />
-              )}
-
-              {isEdit ? "Update PO" : "Save PO"}
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* =====================================================
-          BODY
-          ===================================================== */}
-
-      <main className="flex-1 px-6 py-6">
-        <div className="mx-auto max-w-[1800px] space-y-6">
-          {/* =================================================
-              BASIC INFORMATION
-              ================================================= */}
-
-          <section className="rounded-xl border bg-card">
-            <div className="flex items-center gap-3 border-b px-5 py-4">
-              <FileText className="h-5 w-5 text-[#1F453B]" />
-
-              <div>
-                <h2 className="font-semibold">Purchase Order Details</h2>
-
-                <p className="text-xs text-muted-foreground">
-                  Basic PO and procurement information
-                </p>
-              </div>
+            <div className="span-2">
+            <Field label="Vendor" required htmlFor="po-vendor">
+              <SelectInput
+                id="po-vendor"
+                value={form.vendor_id || ""}
+                onChange={(event) => updateForm("vendor_id", event.target.value)}
+                disabled={vendorsLoading}
+                placeholder={vendorsLoading ? "Loading vendors…" : "Select vendor"}
+              >
+                {vendors.map((vendor) => {
+                  const id = getId(vendor);
+                  if (!id) return null;
+                  return (
+                    <option key={id} value={String(id)}>
+                      {getVendorName(vendor)}
+                    </option>
+                  );
+                })}
+              </SelectInput>
+            </Field>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-              {/* PROJECT */}
+            <Field label="PO number" optional hint="Leave blank to auto-generate." htmlFor="po-number">
+              <TextInput
+                id="po-number"
+                value={form.po_number || ""}
+                onChange={(event) => updateForm("po_number", event.target.value)}
+                placeholder="e.g. PO-2026-014"
+              />
+            </Field>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Project
-                  <span className="ml-1 text-destructive">*</span>
-                </label>
+            <Field label="PO date" htmlFor="po-date">
+              <TextInput
+                id="po-date"
+                type="date"
+                value={form.po_date || ""}
+                onChange={(event) => updateForm("po_date", event.target.value)}
+              />
+            </Field>
 
-                <Select
-                  value={form.project_id || ""}
-                  onValueChange={(value) => updateForm("project_id", value)}
-                  disabled={projectsLoading}
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        projectsLoading
-                          ? "Loading projects..."
-                          : "Select project"
-                      }
-                    />
-                  </SelectTrigger>
+            <Field label="Status" htmlFor="po-status">
+              <SelectInput
+                id="po-status"
+                value={form.status || "DRAFT"}
+                onChange={(event) => updateForm("status", event.target.value)}
+              >
+                <option value="DRAFT">Draft</option>
+                <option value="PENDING_APPROVAL">Pending approval</option>
+                <option value="APPROVED">Approved</option>
+                <option value="SENT">Sent</option>
+                <option value="PARTIALLY_RECEIVED">Partially received</option>
+                <option value="RECEIVED">Received</option>
+                <option value="CANCELLED">Cancelled</option>
+                <option value="CLOSED">Closed</option>
+              </SelectInput>
+            </Field>
 
-                  <SelectContent>
-                    {projects.map((project) => {
-                      const id = getId(project);
+            <Field label="Source" htmlFor="po-source">
+              <SelectInput
+                id="po-source"
+                value={form.source_type || "MANUAL"}
+                onChange={(event) => updateForm("source_type", event.target.value)}
+              >
+                {["MANUAL", "ESTIMATE", "BOQ", "QUOTATION"].map((value) => (
+                  <option key={value} value={value}>
+                    {getSourceLabel(value)}
+                  </option>
+                ))}
+              </SelectInput>
+            </Field>
+          </Grid>
 
-                      if (!id) return null;
-
-                      return (
-                        <SelectItem key={id} value={String(id)}>
-                          {getProjectName(project)}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-
-                {selectedProject && (
-                  <p className="text-xs text-muted-foreground">
-                    {getProjectName(selectedProject)}
-                  </p>
-                )}
-              </div>
-
-              {/* SITE */}
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Site</label>
-
-                <Select
-                  value={form.site_id || ""}
-                  onValueChange={(value) => updateForm("site_id", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select site" />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    {Array.isArray(selectedProject?.sites) &&
-                      selectedProject.sites.map((site) => {
-                        const id = getId(site);
-
-                        if (!id) return null;
-
-                        return (
-                          <SelectItem key={id} value={String(id)}>
-                            {getSiteName(site)}
-                          </SelectItem>
-                        );
-                      })}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* VENDOR */}
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Vendor
-                  <span className="ml-1 text-destructive">*</span>
-                </label>
-
-                <Select
-                  value={form.vendor_id || ""}
-                  onValueChange={(value) => updateForm("vendor_id", value)}
-                  disabled={vendorsLoading}
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        vendorsLoading ? "Loading vendors..." : "Select vendor"
-                      }
-                    />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    {vendors.map((vendor) => {
-                      const id = getId(vendor);
-
-                      if (!id) return null;
-
-                      return (
-                        <SelectItem key={id} value={String(id)}>
-                          {getVendorName(vendor)}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* PO NUMBER */}
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">PO Number</label>
-
-                <Input
-                  value={form.po_number || ""}
-                  onChange={(event) =>
-                    updateForm("po_number", event.target.value)
-                  }
-                  placeholder="Auto-generated if blank"
-                />
-              </div>
-
-              {/* PO DATE */}
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">PO Date</label>
-
-                <Input
-                  type="date"
-                  value={form.po_date || ""}
-                  onChange={(event) =>
-                    updateForm("po_date", event.target.value)
-                  }
-                />
-              </div>
-
-              {/* EXPECTED DELIVERY */}
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Expected Delivery</label>
-
-                <Input
-                  type="date"
-                  value={form.expected_delivery_date || ""}
-                  onChange={(event) =>
-                    updateForm("expected_delivery_date", event.target.value)
-                  }
-                />
-              </div>
-
-              {/* STATUS */}
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Status</label>
-
-                <Select
-                  value={form.status || "DRAFT"}
-                  onValueChange={(value) => updateForm("status", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    <SelectItem value="DRAFT">Draft</SelectItem>
-
-                    <SelectItem value="PENDING_APPROVAL">
-                      Pending Approval
-                    </SelectItem>
-
-                    <SelectItem value="APPROVED">Approved</SelectItem>
-
-                    <SelectItem value="SENT">Sent</SelectItem>
-
-                    <SelectItem value="PARTIALLY_RECEIVED">
-                      Partially Received
-                    </SelectItem>
-
-                    <SelectItem value="RECEIVED">Received</SelectItem>
-
-                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
-
-                    <SelectItem value="CLOSED">Closed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* SOURCE */}
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Source</label>
-
-                <Select
-                  value={form.source_type || "MANUAL"}
-                  onValueChange={(value) => updateForm("source_type", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    <SelectItem value="MANUAL">Manual</SelectItem>
-
-                    <SelectItem value="ESTIMATE">Estimate</SelectItem>
-
-                    <SelectItem value="BOQ">BOQ</SelectItem>
-
-                    <SelectItem value="QUOTATION">Quotation</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </section>
-
-          {/* =================================================
-              VENDOR INFORMATION
-              ================================================= */}
-
-          <section className="rounded-xl border bg-card">
-            <div className="flex items-center gap-3 border-b px-5 py-4">
-              <Building2 className="h-5 w-5 text-[#1F453B]" />
-
-              <div>
-                <h2 className="font-semibold">Vendor Information</h2>
-
-                <p className="text-xs text-muted-foreground">
-                  Vendor contact information
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Agency / Company</label>
-
-                <Input
+          <Disclosure
+            title="Vendor contact"
+            icon={Building2}
+            summary={
+              [form.contact_person, form.phone, form.email].filter(Boolean).join(" · ") ||
+              (form.vendor_id ? "No contact details on the vendor record — add them here." : "Fills in when you pick a vendor.")
+            }
+          >
+            <Grid cols={4}>
+              <Field label="Agency / company">
+                <TextInput
                   value={form.agency_name || ""}
-                  onChange={(event) =>
-                    updateForm("agency_name", event.target.value)
-                  }
+                  onChange={(event) => updateForm("agency_name", event.target.value)}
+                  placeholder="e.g. Shree Tiles & Co."
                 />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Contact Person</label>
-
-                <Input
+              </Field>
+              <Field label="Contact person">
+                <TextInput
                   value={form.contact_person || ""}
-                  onChange={(event) =>
-                    updateForm("contact_person", event.target.value)
-                  }
+                  onChange={(event) => updateForm("contact_person", event.target.value)}
+                  placeholder="e.g. Rakesh Gupta"
                 />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Phone</label>
-
-                <Input
+              </Field>
+              <Field label="Phone">
+                <TextInput
+                  type="tel"
                   value={form.phone || ""}
                   onChange={(event) => updateForm("phone", event.target.value)}
+                  placeholder="e.g. 98100 12345"
                 />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Email</label>
-
-                <Input
+              </Field>
+              <Field label="Email">
+                <TextInput
                   type="email"
                   value={form.email || ""}
                   onChange={(event) => updateForm("email", event.target.value)}
+                  placeholder="name@vendor.com"
                 />
-              </div>
-
-              <div className="space-y-2 md:col-span-2 xl:col-span-4">
-                <label className="text-sm font-medium">Address</label>
-
-                <Textarea
+              </Field>
+              <Field label="Address" full>
+                <TextInput
                   value={form.address || ""}
-                  onChange={(event) =>
-                    updateForm("address", event.target.value)
-                  }
-                  rows={2}
+                  onChange={(event) => updateForm("address", event.target.value)}
+                  placeholder="Billing / dispatch address"
                 />
-              </div>
-            </div>
-          </section>
+              </Field>
+            </Grid>
+          </Disclosure>
+        </DocSection>
 
-          {/* =================================================
-              MATERIALS
-              ================================================= */}
+        {/* 2 — Line items */}
+        <DocSection
+          step={2}
+          flush
+          title="Line items"
+          description="Pick a material to fill its unit, brand and master rate. Adjust quantity and rate per line."
+          actions={
+            <Button variant="secondary" size="sm" icon={Plus} onClick={addItem}>
+              Add item
+            </Button>
+          }
+          footer={
+            <>
+              <AddRow onClick={addItem}>Add item</AddRow>
+              <span className="inos-hint tabular">
+                {lineCount} of {calculatedItems.length} {calculatedItems.length === 1 ? "line" : "lines"} with a material · Subtotal{" "}
+                <strong style={{ color: "var(--text)" }}>{inr(subtotal)}</strong>
+              </span>
+            </>
+          }
+        >
+          <LineTable minWidth={1180}>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th style={{ minWidth: 240 }}>Material</th>
+                <th style={{ minWidth: 170 }}>Description</th>
+                <th style={{ minWidth: 110 }}>Brand</th>
+                <th style={{ minWidth: 150 }}>Specification</th>
+                <th style={{ width: 80 }}>Unit</th>
+                <th className="num" style={{ width: 96 }}>Qty</th>
+                <th className="num" style={{ width: 124 }}>Rate</th>
+                <th className="num" style={{ width: 120 }}>Amount</th>
+                <th className="actions" aria-label="Row actions" />
+              </tr>
+            </thead>
+            <tbody>
+              {calculatedItems.map((item, index) => {
+                const filteredMaterials = getFilteredMaterials(index);
+                const selectedMaterial = item.material_id ? findMaterial(item.material_id) : null;
+                const isMasterUpdating =
+                  item.material_id && savingMasterIds.includes(item.material_id);
 
-          <section className="overflow-hidden rounded-xl border bg-card">
-            <div className="flex flex-col gap-3 border-b px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-center gap-3">
-                <Package className="h-5 w-5 text-[#1F453B]" />
+                return (
+                  <tr key={item.id || `new-${index}`} className={item.update_master ? "is-flagged" : undefined}>
+                    <td className="cf-idx">{index + 1}</td>
 
-                <div>
-                  <h2 className="font-semibold">Materials</h2>
-
-                  <p className="text-xs text-muted-foreground">
-                    Add materials and procurement quantities
-                  </p>
-                </div>
-              </div>
-
-              <Button type="button" variant="outline" onClick={addItem}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Material
-              </Button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1500px] border-collapse">
-                <thead>
-                  <tr className="border-b bg-muted/40 text-left text-xs font-medium">
-                    <th className="w-12 px-3 py-3">#</th>
-
-                    <th className="min-w-[280px] px-3 py-3">Material</th>
-
-                    <th className="min-w-[180px] px-3 py-3">Description</th>
-
-                    <th className="min-w-[130px] px-3 py-3">Brand</th>
-
-                    <th className="min-w-[220px] px-3 py-3">Specification</th>
-
-                    <th className="min-w-[100px] px-3 py-3">Unit</th>
-
-                    <th className="min-w-[110px] px-3 py-3">Qty</th>
-
-                    <th className="min-w-[130px] px-3 py-3">Rate</th>
-
-                    <th className="min-w-[130px] px-3 py-3 text-right">
-                      Amount
-                    </th>
-
-                    <th className="min-w-[180px] px-3 py-3">Actions</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {calculatedItems.map((item, index) => {
-                    const filteredMaterials = getFilteredMaterials(index);
-
-                    const isMasterUpdating =
-                      item.material_id &&
-                      savingMasterIds.includes(item.material_id);
-
-                    return (
-                      <tr
-                        key={item.id || `new-${index}`}
-                        className={cn(
-                          "border-b align-top",
-                          item.update_master && "bg-[#1F453B]/[0.025]",
-                        )}
+                    <td>
+                      <Popover
+                        open={Boolean(materialOpen[index])}
+                        onOpenChange={(open) =>
+                          setMaterialOpen((previous) => ({ ...previous, [index]: open }))
+                        }
                       >
-                        {/* NUMBER */}
-
-                        <td className="px-3 py-4">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-xs font-medium">
-                            {index + 1}
-                          </div>
-                        </td>
-
-                        {/* MATERIAL */}
-
-                        <td className="px-3 py-4">
-                          <Popover
-                            open={Boolean(materialOpen[index])}
-                            onOpenChange={(open) =>
-                              setMaterialOpen((previous) => ({
-                                ...previous,
-                                [index]: open,
-                              }))
-                            }
-                          >
-                            <PopoverTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                role="combobox"
-                                className="h-auto min-h-10 w-full justify-between text-left font-normal"
-                              >
-                                <div className="min-w-0">
-                                  {item.material_id ? (
-                                    <div className="min-w-0">
-                                      <div className="truncate font-medium">
-                                        {getMaterialName(
-                                          materials.find(
-                                            (material) =>
-                                              String(getId(material)) ===
-                                              String(item.material_id),
-                                          ),
-                                        ) ||
-                                          item.description ||
-                                          "Selected Material"}
-                                      </div>
-
-                                      {(() => {
-                                        const material = materials.find(
-                                          (material) =>
-                                            String(getId(material)) ===
-                                            String(item.material_id),
-                                        );
-
-                                        const code = getMaterialCode(material);
-
-                                        return code ? (
-                                          <div className="text-[11px] text-muted-foreground">
-                                            {code}
-                                          </div>
-                                        ) : null;
-                                      })()}
-                                    </div>
-                                  ) : (
-                                    <span className="text-muted-foreground">
-                                      Select material
-                                    </span>
-                                  )}
-                                </div>
-
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                              </Button>
-                            </PopoverTrigger>
-
-                            <PopoverContent
-                              align="start"
-                              className="w-[420px] p-2"
-                            >
-                              <div className="space-y-2">
-                                <Input
-                                  autoFocus
-                                  placeholder="Search material, code, brand..."
-                                  value={materialSearch[index] || ""}
-                                  onChange={(event) =>
-                                    setMaterialSearch((previous) => ({
-                                      ...previous,
-                                      [index]: event.target.value,
-                                    }))
-                                  }
-                                />
-
-                                <div className="max-h-[320px] overflow-y-auto">
-                                  {materialsLoading ? (
-                                    <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
-                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                      Loading materials...
-                                    </div>
-                                  ) : filteredMaterials.length === 0 ? (
-                                    <div className="py-8 text-center text-sm text-muted-foreground">
-                                      No materials found
-                                    </div>
-                                  ) : (
-                                    <div className="space-y-1">
-                                      {filteredMaterials.map((material) => {
-                                        const id = getId(material);
-
-                                        const selected =
-                                          String(id) ===
-                                          String(item.material_id);
-
-                                        return (
-                                          <button
-                                            key={id}
-                                            type="button"
-                                            className={cn(
-                                              "flex w-full items-start gap-3 rounded-md p-3 text-left hover:bg-muted",
-                                              selected && "bg-muted",
-                                            )}
-                                            onClick={() =>
-                                              populateMaterial(index, id)
-                                            }
-                                          >
-                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#1F453B]/10 text-[#1F453B]">
-                                              <Package className="h-4 w-4" />
-                                            </div>
-
-                                            <div className="min-w-0 flex-1">
-                                              <div className="flex items-center gap-2">
-                                                <span className="truncate text-sm font-medium">
-                                                  {getMaterialName(material)}
-                                                </span>
-
-                                                {selected && (
-                                                  <Check className="h-4 w-4 shrink-0 text-[#1F453B]" />
-                                                )}
-                                              </div>
-
-                                              <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                                                {getMaterialCode(material) && (
-                                                  <span>
-                                                    Code:{" "}
-                                                    {getMaterialCode(material)}
-                                                  </span>
-                                                )}
-
-                                                {getMaterialBrand(material) && (
-                                                  <span>
-                                                    Brand:{" "}
-                                                    {getMaterialBrand(material)}
-                                                  </span>
-                                                )}
-
-                                                {getMaterialUnitCode(
-                                                  material,
-                                                ) && (
-                                                  <span>
-                                                    Unit:{" "}
-                                                    {getMaterialUnitCode(
-                                                      material,
-                                                    )}
-                                                  </span>
-                                                )}
-
-                                                <span>
-                                                  Rate: ₹
-                                                  {money(
-                                                    getMaterialPrice(material),
-                                                  )}
-                                                </span>
-                                              </div>
-                                            </div>
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-
-                          {/* MASTER UPDATE CHECKBOX */}
-
-                          {item.material_id && (
-                            <label
-                              className={cn(
-                                "mt-2 flex cursor-pointer items-start gap-2 rounded-md border px-2.5 py-2 transition-colors",
-                                item.update_master
-                                  ? "border-[#1F453B]/30 bg-[#1F453B]/5"
-                                  : "border-transparent",
-                              )}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={Boolean(item.update_master)}
-                                onChange={(event) =>
-                                  updateItem(
-                                    index,
-                                    "update_master",
-                                    event.target.checked,
-                                  )
-                                }
-                                className="mt-0.5 h-3.5 w-3.5 rounded border-input accent-[#1F453B]"
-                              />
-
-                              <div>
-                                <div
-                                  className={cn(
-                                    "text-xs font-medium",
-                                    item.update_master
-                                      ? "text-[#1F453B]"
-                                      : "text-muted-foreground",
-                                  )}
-                                >
-                                  Save changes to Material Master
-                                </div>
-
-                                {item.update_master && (
-                                  <div className="mt-0.5 text-[10px] text-muted-foreground">
-                                    Edited master fields will be updated when
-                                    this PO is saved.
-                                  </div>
-                                )}
-                              </div>
-                            </label>
-                          )}
-                        </td>
-
-                        {/* DESCRIPTION */}
-
-                        <td className="px-3 py-4">
-                          <Input
-                            value={item.description || ""}
-                            onChange={(event) =>
-                              updateItem(
-                                index,
-                                "description",
-                                event.target.value,
-                              )
-                            }
-                            className={cn(
-                              item.update_master &&
-                                "border-[#1F453B]/40 ring-1 ring-[#1F453B]/10",
-                            )}
-                            placeholder="Description"
-                          />
-                        </td>
-
-                        {/* BRAND */}
-
-                        <td className="px-3 py-4">
-                          <Input
-                            value={item.brand || ""}
-                            onChange={(event) =>
-                              updateItem(index, "brand", event.target.value)
-                            }
-                            className={cn(
-                              item.update_master &&
-                                "border-[#1F453B]/40 ring-1 ring-[#1F453B]/10",
-                            )}
-                            placeholder="Brand"
-                          />
-                        </td>
-
-                        {/* SPECIFICATION */}
-
-                        <td className="px-3 py-4">
-                          <Input
-                            value={item.specification || ""}
-                            onChange={(event) =>
-                              updateItem(
-                                index,
-                                "specification",
-                                event.target.value,
-                              )
-                            }
-                            className={cn(
-                              item.update_master &&
-                                "border-[#1F453B]/40 ring-1 ring-[#1F453B]/10",
-                            )}
-                            placeholder="Specification"
-                          />
-                        </td>
-
-                        {/* UNIT */}
-
-                        <td className="px-3 py-4">
-                          <Input
-                            value={item.unit || ""}
-                            onChange={(event) =>
-                              updateItem(index, "unit", event.target.value)
-                            }
-                            className={cn(
-                              item.update_master &&
-                                "border-[#1F453B]/40 ring-1 ring-[#1F453B]/10",
-                            )}
-                            placeholder="Nos"
-                          />
-
-                          {item.unit_id && (
-                            <div className="mt-1 text-[10px] text-muted-foreground">
-                              Master Unit Linked
-                            </div>
-                          )}
-                        </td>
-
-                        {/* QUANTITY */}
-
-                        <td className="px-3 py-4">
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.001"
-                            value={item.ordered_quantity ?? ""}
-                            onChange={(event) =>
-                              updateItem(
-                                index,
-                                "ordered_quantity",
-                                event.target.value,
-                              )
-                            }
-                          />
-                        </td>
-
-                        {/* RATE */}
-
-                        <td className="px-3 py-4">
-                          <div className="relative">
-                            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                              ₹
-                            </span>
-
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={item.rate ?? ""}
-                              onChange={(event) =>
-                                updateItem(index, "rate", event.target.value)
-                              }
-                              className={cn(
-                                "pl-7",
-                                item.update_master &&
-                                  "border-[#1F453B]/50 ring-1 ring-[#1F453B]/20",
-                              )}
-                            />
-                          </div>
-
-                          {item.material_id && (
-                            <div className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
-                              <RefreshCw className="h-3 w-3" />
-                              Master: ₹
-                              {money(
-                                getMaterialPrice(
-                                  materials.find(
-                                    (material) =>
-                                      String(getId(material)) ===
-                                      String(item.material_id),
-                                  ),
-                                ),
-                              )}
-                            </div>
-                          )}
-                        </td>
-
-                        {/* AMOUNT */}
-
-                        <td className="px-3 py-4 text-right">
-                          <div className="pt-2 font-medium">
-                            ₹{money(item.amount)}
-                          </div>
-                        </td>
-
-                        {/* ACTIONS */}
-
-                        <td className="px-3 py-4">
-                          <div className="flex items-center gap-1">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => duplicateItem(index)}
-                              title="Duplicate"
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeItem(index)}
-                              className="text-destructive hover:text-destructive"
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-
-                          {item.update_master && item.material_id && (
-                            <div className="mt-2 flex items-center gap-1.5 text-[10px] font-medium text-[#1F453B]">
-                              {isMasterUpdating ? (
+                        <PopoverTrigger asChild>
+                          <button type="button" role="combobox" className="cf-combo" aria-expanded={Boolean(materialOpen[index])}>
+                            <span style={{ minWidth: 0 }}>
+                              {item.material_id ? (
                                 <>
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                  Updating master...
+                                  <span className="block truncate" style={{ fontWeight: 600 }}>
+                                    {getMaterialName(selectedMaterial) || item.description || "Selected material"}
+                                  </span>
+                                  {getMaterialCode(selectedMaterial) && (
+                                    <span className="block cf-option__meta">{getMaterialCode(selectedMaterial)}</span>
+                                  )}
                                 </>
                               ) : (
-                                <>
-                                  <Check className="h-3 w-3" />
-                                  Master update enabled
-                                </>
+                                <span className="cf-combo__placeholder">Search materials…</span>
+                              )}
+                            </span>
+                            <ChevronsUpDown aria-hidden />
+                          </button>
+                        </PopoverTrigger>
+
+                        <PopoverContent align="start" className="w-[400px] p-2">
+                          <div style={{ display: "grid", gap: 8 }}>
+                            <TextInput
+                              autoFocus
+                              placeholder="Search by name, code or brand"
+                              value={materialSearch[index] || ""}
+                              onChange={(event) =>
+                                setMaterialSearch((previous) => ({ ...previous, [index]: event.target.value }))
+                              }
+                            />
+                            <div style={{ maxHeight: 320, overflowY: "auto" }}>
+                              {materialsLoading ? (
+                                <LoadingBlock label="Loading materials…" />
+                              ) : filteredMaterials.length === 0 ? (
+                                <p className="inos-hint" style={{ padding: "24px 8px", textAlign: "center" }}>
+                                  No materials match. Add it in the material master first.
+                                </p>
+                              ) : (
+                                filteredMaterials.map((material) => {
+                                  const id = getId(material);
+                                  const selected = String(id) === String(item.material_id);
+                                  return (
+                                    <button
+                                      key={id}
+                                      type="button"
+                                      className={`cf-option${selected ? " is-selected" : ""}`}
+                                      onClick={() => populateMaterial(index, id)}
+                                    >
+                                      <span className="inos-icon-tile inos-icon-tile--sm">
+                                        <Package aria-hidden />
+                                      </span>
+                                      <span style={{ minWidth: 0, flex: 1 }}>
+                                        <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 600 }}>
+                                          <span className="truncate">{getMaterialName(material)}</span>
+                                          {selected && <Check size={14} color="var(--brand)" aria-hidden />}
+                                        </span>
+                                        <span className="cf-option__meta">
+                                          {getMaterialCode(material) && <span>{getMaterialCode(material)}</span>}
+                                          {getMaterialBrand(material) && <span>{getMaterialBrand(material)}</span>}
+                                          {getMaterialUnitCode(material) && <span>per {getMaterialUnitCode(material)}</span>}
+                                          <span className="tabular">{inr(getMaterialPrice(material))}</span>
+                                        </span>
+                                      </span>
+                                    </button>
+                                  );
+                                })
                               )}
                             </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+
+                      {item.material_id && (
+                        <div style={{ marginTop: 8 }}>
+                          <CheckBox
+                            checked={item.update_master}
+                            onChange={(event) => updateItem(index, "update_master", event.target.checked)}
+                          >
+                            Save edits to material master
+                          </CheckBox>
+                          {item.update_master && (
+                            <div className="cf-sub" style={{ color: "var(--brand)" }}>
+                              {isMasterUpdating ? "Updating master…" : "Description, brand, spec, unit and rate will sync on save."}
+                            </div>
                           )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                      )}
+                    </td>
 
-            {/* EMPTY / ADD */}
+                    <td>
+                      <TextInput
+                        value={item.description || ""}
+                        onChange={(event) => updateItem(index, "description", event.target.value)}
+                        placeholder="e.g. 600×600 matt vitrified"
+                      />
+                    </td>
+                    <td>
+                      <TextInput
+                        value={item.brand || ""}
+                        onChange={(event) => updateItem(index, "brand", event.target.value)}
+                        placeholder="Brand"
+                      />
+                    </td>
+                    <td>
+                      <TextInput
+                        value={item.specification || ""}
+                        onChange={(event) => updateItem(index, "specification", event.target.value)}
+                        placeholder="Size, grade, finish"
+                      />
+                    </td>
+                    <td>
+                      <TextInput
+                        value={item.unit || ""}
+                        onChange={(event) => updateItem(index, "unit", event.target.value)}
+                        placeholder="Nos"
+                      />
+                      {item.unit_id && <div className="cf-sub">Linked to master</div>}
+                    </td>
+                    <td className="num">
+                      <TextInput
+                        type="number"
+                        min="0"
+                        step="0.001"
+                        inputMode="decimal"
+                        value={item.ordered_quantity ?? ""}
+                        onChange={(event) => updateItem(index, "ordered_quantity", event.target.value)}
+                        invalid={item.material_id && toNumber(item.ordered_quantity) <= 0}
+                      />
+                    </td>
+                    <td className="num">
+                      <Affix pre="₹">
+                        <TextInput
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          inputMode="decimal"
+                          value={item.rate ?? ""}
+                          onChange={(event) => updateItem(index, "rate", event.target.value)}
+                          placeholder="0.00"
+                        />
+                      </Affix>
+                      {item.material_id && (
+                        <div className="cf-sub" style={{ textAlign: "right" }}>
+                          Master {inr(getMaterialPrice(selectedMaterial))}
+                        </div>
+                      )}
+                    </td>
+                    <td className="cf-amount">{inr(item.amount)}</td>
+                    <td className="actions">
+                      <div style={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
+                        <IconAction icon={Copy} label="Duplicate line" onClick={() => duplicateItem(index)} />
+                        <RemoveRow onClick={() => removeItem(index)} />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </LineTable>
+        </DocSection>
 
-            <div className="border-t bg-muted/20 px-5 py-3">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={addItem}
-                className="text-[#1F453B]"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add another material
-              </Button>
-            </div>
-          </section>
-
-          {/* =================================================
-              CALCULATIONS
-              ================================================= */}
-
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_420px]">
-            {/* NOTES */}
-
-            <section className="rounded-xl border bg-card">
-              <div className="flex items-center gap-3 border-b px-5 py-4">
-                <FileText className="h-5 w-5 text-[#1F453B]" />
-
-                <div>
-                  <h2 className="font-semibold">Notes & Terms</h2>
-
-                  <p className="text-xs text-muted-foreground">
-                    Additional PO instructions
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-4 p-5">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Notes</label>
-
-                  <Textarea
-                    rows={5}
-                    value={form.notes || ""}
-                    onChange={(event) =>
-                      updateForm("notes", event.target.value)
-                    }
-                    placeholder="Add notes..."
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Terms & Conditions
-                  </label>
-
-                  <Textarea
-                    rows={7}
-                    value={form.terms_and_conditions || ""}
-                    onChange={(event) =>
-                      updateForm("terms_and_conditions", event.target.value)
-                    }
-                    placeholder="Add terms and conditions..."
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* TOTALS */}
-
-            <section className="h-fit rounded-xl border bg-card">
-              <div className="flex items-center gap-3 border-b px-5 py-4">
-                <Calculator className="h-5 w-5 text-[#1F453B]" />
-
-                <div>
-                  <h2 className="font-semibold">Order Summary</h2>
-
-                  <p className="text-xs text-muted-foreground">
-                    PO calculation
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-4 p-5">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
-
-                  <span className="font-medium">₹{money(subtotal)}</span>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <label className="text-muted-foreground">Discount</label>
-
-                    <div className="w-32">
-                      <Input
+        {/* 3 — Terms + 4 — Review */}
+        <DocLayout
+          aside={
+            <DocSection step={4} title="Review" description="Totals update as you edit lines.">
+              <TotalsCard
+                plain
+                title={null}
+                rows={[
+                  { label: "Subtotal", value: inr(subtotal) },
+                  {
+                    label: "Discount (₹)",
+                    control: (
+                      <TextInput
                         type="number"
                         min="0"
                         step="0.01"
+                        inputMode="decimal"
+                        aria-label="Discount in rupees"
                         value={form.discount ?? ""}
-                        onChange={(event) =>
-                          updateForm("discount", event.target.value)
-                        }
-                        className="h-8 text-right"
+                        onChange={(event) => updateForm("discount", event.target.value)}
                       />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Taxable Amount</span>
-
-                  <span>₹{money(taxableAmount)}</span>
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">GST</span>
-
-                    <div className="w-20">
-                      <Input
+                    ),
+                  },
+                  { label: "Taxable amount", value: inr(taxableAmount) },
+                  {
+                    label: "GST",
+                    control: (
+                      <Affix post="%">
+                        <TextInput
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          inputMode="decimal"
+                          aria-label="GST percentage"
+                          value={form.gst_percentage ?? ""}
+                          onChange={(event) => updateForm("gst_percentage", event.target.value)}
+                        />
+                      </Affix>
+                    ),
+                    value: inr(gstAmount),
+                  },
+                  {
+                    label: "Cartage (₹)",
+                    control: (
+                      <TextInput
                         type="number"
                         min="0"
                         step="0.01"
-                        value={form.gst_percentage ?? ""}
-                        onChange={(event) =>
-                          updateForm("gst_percentage", event.target.value)
-                        }
-                        className="h-8 text-right"
+                        inputMode="decimal"
+                        aria-label="Cartage in rupees"
+                        value={form.cartage ?? ""}
+                        onChange={(event) => updateForm("cartage", event.target.value)}
                       />
-                    </div>
-
-                    <span className="text-muted-foreground">%</span>
-                  </div>
-
-                  <span>₹{money(gstAmount)}</span>
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Cartage</span>
-
-                  <div className="w-32">
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={form.cartage ?? ""}
-                      onChange={(event) =>
-                        updateForm("cartage", event.target.value)
-                      }
-                      className="h-8 text-right"
-                    />
-                  </div>
-                </div>
-
-                <div className="border-t pt-4">
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <div className="text-sm text-muted-foreground">
-                        Grand Total
-                      </div>
-
-                      <div className="mt-1 text-2xl font-bold text-[#1F453B]">
-                        ₹{money(grandTotal)}
-                      </div>
-                    </div>
-
-                    <ShoppingCart className="h-6 w-6 text-[#1F453B]" />
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          {/* =================================================
-              MASTER UPDATE INFORMATION
-              ================================================= */}
-
-          {calculatedItems.some(
-            (item) => item.update_master && item.material_id,
-          ) && (
-            <section className="rounded-xl border border-[#1F453B]/20 bg-[#1F453B]/5">
-              <div className="flex gap-3 p-4">
-                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F453B]/10 text-[#1F453B]">
-                  <Check className="h-4 w-4" />
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-semibold text-[#1F453B]">
-                    Material Master updates enabled
-                  </h3>
-
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    The checked material lines will update their Material Master
-                    description, brand, specification, price, unit and HSN when
-                    this Purchase Order is saved.
-                  </p>
-
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    The Purchase Order keeps its own historical rate, so
-                    changing the master later will not change existing PO
-                    values.
-                  </p>
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* =================================================
-              VALIDATION NOTE
-              ================================================= */}
-
-          {!form.project_id ||
-          !form.vendor_id ||
-          calculatedItems.every((item) => !item.material_id) ? (
-            <section className="rounded-xl border border-amber-200 bg-amber-50/60">
-              <div className="flex gap-3 p-4">
-                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-
-                <div>
-                  <h3 className="text-sm font-medium text-amber-900">
-                    Before saving
-                  </h3>
-
-                  <ul className="mt-1 space-y-1 text-xs text-amber-800">
-                    {!form.project_id && <li>Select a project.</li>}
-
-                    {!form.vendor_id && <li>Select a vendor.</li>}
-
-                    {calculatedItems.every((item) => !item.material_id) && (
-                      <li>Add at least one material.</li>
-                    )}
-                  </ul>
-                </div>
-              </div>
-            </section>
-          ) : null}
-        </div>
-      </main>
-
-      {/* =====================================================
-          FOOTER
-          ===================================================== */}
-
-      <footer className="sticky bottom-0 z-20 border-t bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-4 px-6 py-4">
-          <div className="text-xs text-muted-foreground">
-            {calculatedItems.length}{" "}
-            {calculatedItems.length === 1 ? "material" : "materials"} · Subtotal
-            ₹{money(subtotal)}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <div className="text-xs text-muted-foreground">Grand Total</div>
-
-              <div className="text-lg font-bold text-[#1F453B]">
-                ₹{money(grandTotal)}
-              </div>
-            </div>
-
-            <Button
-              type="button"
-              onClick={handleSave}
-              disabled={isSaving}
-              className="bg-[#1F453B] px-6 hover:bg-[#17362f]"
-            >
-              {isSaving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-2 h-4 w-4" />
+                    ),
+                  },
+                ]}
+                totalLabel="Grand total"
+                total={inr(grandTotal)}
+              />
+              {missing.length > 0 && (
+                <Callout tone="warn" title="Before saving">
+                  Add {missing.join(", ")}.
+                </Callout>
               )}
+              {hasMasterUpdates && (
+                <Callout tone="brand" title="Material master will be updated">
+                  Checked lines sync their description, brand, spec, unit and rate to the master. This PO keeps its own
+                  rates.
+                </Callout>
+              )}
+            </DocSection>
+          }
+        >
+          <DocSection
+            step={3}
+            title="Terms & delivery"
+            description="When it should arrive and anything the vendor must follow."
+          >
+            <Grid cols={2}>
+              <Field label="Expected delivery" optional htmlFor="po-delivery">
+                <TextInput
+                  id="po-delivery"
+                  type="date"
+                  min={form.po_date || undefined}
+                  value={form.expected_delivery_date || ""}
+                  onChange={(event) => updateForm("expected_delivery_date", event.target.value)}
+                />
+              </Field>
+              <div />
+              <Field label="Notes" optional full hint="Internal or vendor-facing notes printed on the PO.">
+                <TextArea
+                  rows={3}
+                  value={form.notes || ""}
+                  onChange={(event) => updateForm("notes", event.target.value)}
+                  placeholder="e.g. Deliver to site gate 2, call supervisor on arrival"
+                />
+              </Field>
+              <Field label="Terms & conditions" optional full>
+                <TextArea
+                  rows={5}
+                  value={form.terms_and_conditions || ""}
+                  onChange={(event) => updateForm("terms_and_conditions", event.target.value)}
+                  placeholder={"e.g. 50% advance, balance on delivery\nPrices inclusive of loading\nWarranty as per manufacturer"}
+                />
+              </Field>
+            </Grid>
+          </DocSection>
+        </DocLayout>
 
-              {isEdit ? "Update Purchase Order" : "Create Purchase Order"}
+        <FormActions
+          note={
+            <span className="tabular">
+              {lineCount} {lineCount === 1 ? "item" : "items"} · Grand total{" "}
+              <strong style={{ color: "var(--brand)" }}>{inr(grandTotal)}</strong>
+            </span>
+          }
+          onCancel={onBack}
+          extra={
+            <Button variant="secondary" icon={Save} onClick={() => handleSave({ status: "DRAFT" })} disabled={isSaving}>
+              Save draft
             </Button>
-          </div>
-        </div>
-      </footer>
-    </div>
+          }
+          submitLabel={isEdit ? "Update purchase order" : "Create purchase order"}
+          submitting={isSaving}
+        />
+      </form>
+    </Page>
   );
 }

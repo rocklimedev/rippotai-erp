@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import QuotationComparisonDocument, { comparisonFileName } from "../../components/commerce-documents/QuotationComparisonDocument";
+import { downloadWhenReady, OFFSCREEN_STYLE } from "@/components/print-document/commerce";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { Page, EmptyState, Button } from "@/components/inos";
 import { fmtINR, StatusChip } from "@/lib/format";
 import { ArrowLeft, Download, Save, Star, CheckCircle2 } from "lucide-react";
 import {
@@ -50,6 +53,8 @@ export default function QuotationCompare() {
   const [saveName, setSaveName] = useState("");
   const [saveModal, setSaveModal] = useState(false);
   const [selectingId, setSelectingId] = useState(null);
+  const [exporting, setExporting] = useState(false);
+  const pdfRef = useRef(null);
 
   const { data, isLoading, error, refetch } = useCompareQuotationsQuery(ids, {
     skip: !ids.length,
@@ -63,6 +68,34 @@ export default function QuotationCompare() {
       toast.error("Failed to load comparison");
     }
   }, [error]);
+
+  // Opened without ?ids= (e.g. from the menu): the query is skipped, so
+  // don't sit on "Loading…" forever — explain how to start a comparison.
+  if (!ids.length)
+    return (
+      <Page>
+        <EmptyState
+          title="Pick estimates to compare"
+          text="Select two or more estimates in the Estimates list and choose Compare."
+          action={
+            <Button variant="primary" onClick={() => nav("/procurement/estimates/all")}>
+              Open estimates
+            </Button>
+          }
+        />
+      </Page>
+    );
+
+  if (error && !data)
+    return (
+      <Page>
+        <EmptyState
+          title="Couldn't load this comparison"
+          text={error?.data?.message || "One of the selected estimates may no longer exist."}
+          action={<Button onClick={() => refetch()}>Try again</Button>}
+        />
+      </Page>
+    );
 
   if (isLoading || !data)
     return <div className="p-8 text-[#6B7B7C]">Loading comparison…</div>;
@@ -90,29 +123,21 @@ export default function QuotationCompare() {
     }
   };
 
+  // PDF: the comparison rendered with the shared print kit (off-screen), captured page by page.
   const exportPdf = async () => {
+    const tid = `cmp-pdf-${Date.now()}`;
+    setExporting(true);
+    toast.loading("Preparing the comparison…", { id: tid });
     try {
-      // Keep custom API for blob export unless you add a dedicated RTK endpoint
-      const res = await fetch(
-        `/api/quotations-export-comparison-pdf?ids=${ids.join(",")}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("bc_token")}`,
-          },
-        },
-      );
-
-      if (!res.ok) throw new Error("Export failed");
-
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "quotation_comparison.pdf";
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadWhenReady(() => pdfRef.current, comparisonFileName(data), {
+        title: `Quotation comparison — ${quotes[0]?.project_name || ""}`,
+      });
+      toast.success("Comparison downloaded", { id: tid });
     } catch (e) {
-      toast.error("Failed to export PDF");
+      console.error("Comparison PDF failed", e);
+      toast.error("Failed to export PDF", { id: tid });
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -151,10 +176,11 @@ export default function QuotationCompare() {
         <div className="flex gap-2">
           <button
             onClick={exportPdf}
+            disabled={exporting}
             className="px-3 py-2 rounded-lg border border-[#B5C4B6] text-[13px] font-semibold inline-flex items-center gap-1"
             data-testid="btn-export-comparison-pdf"
           >
-            <Download size={13} /> Export PDF
+            <Download size={13} /> {exporting ? "Preparing…" : "Export PDF"}
           </button>
           <button
             onClick={() => setSaveModal(true)}
@@ -405,6 +431,12 @@ export default function QuotationCompare() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {exporting && (
+        <div style={OFFSCREEN_STYLE} aria-hidden>
+          <QuotationComparisonDocument ref={pdfRef} data={data} />
         </div>
       )}
 

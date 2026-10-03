@@ -1,0 +1,992 @@
+[
+  {
+    "work_head": "EXCAVATION",
+    "label": "Excavation",
+    "serial_number": 1,
+    "sheet_name": "Excavation",
+    "title": "Excavation",
+    "version": "20261003",
+    "checkpoints": []
+  },
+  {
+    "work_head": "PCC_WORK",
+    "label": "PCC work",
+    "serial_number": 2,
+    "sheet_name": "PCC work",
+    "title": "PCC work",
+    "version": "20261003",
+    "checkpoints": []
+  },
+  {
+    "work_head": "FORMWORK_SHUTTERING",
+    "label": "Formwork/ Shuttering",
+    "serial_number": 3,
+    "sheet_name": "Formwork/ Shuttering",
+    "title": "Formwork/ Shuttering",
+    "version": "20261003",
+    "checkpoints": []
+  },
+  {
+    "work_head": "CONCRETING",
+    "label": "Concreting",
+    "serial_number": 4,
+    "sheet_name": "Concreting",
+    "title": "Concreting",
+    "version": "20261003",
+    "checkpoints": []
+  },
+  {
+    "work_head": "BRICKWORK",
+    "label": "Brickwork",
+    "serial_number": 6,
+    "sheet_name": "Brickwork",
+    "title": "Brickwork",
+    "version": "20261003",
+    "checkpoints": []
+  },
+  {
+    "work_head": "WATERPROOFING",
+    "label": "Waterproofing",
+    "serial_number": 7,
+    "sheet_name": "Waterproofing",
+    "title": "INTERIOR WORKS- WATERPROOFING",
+    "version": "20261003",
+    "checkpoints": [
+      {
+        "serial_number": 1,
+        "checkpoint_name": "Approved waterproofing system, product, and application method available.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 2,
+        "checkpoint_name": "Surface is sound, clean, dry as required, and free from loose material.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 3,
+        "checkpoint_name": "Check corners, wall-floor junctions, pipe sleeves, and drain locations.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 4,
+        "checkpoint_name": "Confirm required waterproofing height and upturns as per approved details.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 5,
+        "checkpoint_name": "Check primer and coating application, coverage, and specified number of coats.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 6,
+        "checkpoint_name": "Ensure corners and pipe penetrations receive specified reinforcement and sealing.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 7,
+        "checkpoint_name": "Check continuity around floor traps, sleeves, and thresholds.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 8,
+        "checkpoint_name": "Protect the membrane from damage; ensure correct curing and drying.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 9,
+        "checkpoint_name": "Check completed membrane for visible damage, cracks, pinholes, and missed areas.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 10,
+        "checkpoint_name": "Verify water-retention test is completed for the specified duration and no leakage is observed below or adjacent.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 11,
+        "checkpoint_name": "Check drain position, slope, and waterproofing termination.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 12,
+        "checkpoint_name": "Confirm repairs and retesting are completed before covering.",
+        "phase": "AFTER_EXECUTION"
+      }
+    ]
+  },
+  {
+    "work_head": "PLASTER_WORK",
+    "label": "Plaster work",
+    "serial_number": 8,
+    "sheet_name": "Plaster work",
+    "title": "INTERIOR WORKS- PLASTER WORK",
+    "version": "20261003",
+    "checkpoints": [
+      {
+        "serial_number": 1,
+        "checkpoint_name": "Check wall layout, openings, levels, and service chasing are complete.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 2,
+        "checkpoint_name": "Confirm concealed plumbing/electrical inspections and approvals are recorded.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 3,
+        "checkpoint_name": "Check substrate is clean and prepared; masonry joints and surface defects are addressed.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 4,
+        "checkpoint_name": "Confirm plaster mix, thickness, and corner/bead details as specified.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 5,
+        "checkpoint_name": "Check surface preparation and wetting/bonding as required by the system.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 6,
+        "checkpoint_name": "Check plaster thickness, line, level, plumb, and room corners",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 7,
+        "checkpoint_name": "Ensure mesh/reinforcement is provided at dissimilar-material junctions where specified.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 8,
+        "checkpoint_name": "Check that electrical boxes and plumbing outlets remain at correct depth and position; cure as specified.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 9,
+        "checkpoint_name": "Check wall plumb, flatness, corners, and surface finish under suitable lighting.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 10,
+        "checkpoint_name": "Check for cracks, hollowness, debonding, undulations, and damaged edges.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 11,
+        "checkpoint_name": "Verify openings and finished dimensions for doors, windows, wardrobes, and kitchen.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 12,
+        "checkpoint_name": "Confirm defects are repaired and surface is ready for the next finish.",
+        "phase": "AFTER_EXECUTION"
+      }
+    ]
+  },
+  {
+    "work_head": "PLUMBING",
+    "label": "Plumbing",
+    "serial_number": 9,
+    "sheet_name": "Plumbing",
+    "title": "INTERIOR WORKS- PLUMBING",
+    "version": "20261003",
+    "checkpoints": [
+      {
+        "serial_number": 1,
+        "checkpoint_name": "Approved plumbing layout and fixture schedule available",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 2,
+        "checkpoint_name": "Check pipe material, diameter, fittings, valves and approved brands/ specification as per work order",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 3,
+        "checkpoint_name": "Mark fixture points, heights and connections against sanitary and furniture drawings",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 4,
+        "checkpoint_name": "Confirm sleeve, shaft routes and access for maintenance",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 5,
+        "checkpoint_name": "Check pipe routing, supports, joints, and protection sleeves.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 6,
+        "checkpoint_name": "Verify hot/cold lines, drainage direction, and required slope.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 7,
+        "checkpoint_name": "Check concealed joints and pressure/leak tests before closing walls or floors.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 8,
+        "checkpoint_name": "Ensure traps, cleanouts, valves, and access points remain reachable",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 9,
+        "checkpoint_name": "Check fixture positions and heights against approved drawings.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 10,
+        "checkpoint_name": "Check water supply, hot/cold connections, flow, leaks, and drainage function.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 11,
+        "checkpoint_name": "Check floor traps, basin/kitchen connections, flushing, and water sealing.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 12,
+        "checkpoint_name": "Verify visible pipework, silicone/sealing, and access panels are neat and accessible.",
+        "phase": "AFTER_EXECUTION"
+      }
+    ]
+  },
+  {
+    "work_head": "ELECTRICAL_LIGHTING",
+    "label": "Electrical & Lighting",
+    "serial_number": 10,
+    "sheet_name": "Electrical & lighting",
+    "title": "INTERIOR WORKS- ELECTRICAL & LIGHTING",
+    "version": "20261003",
+    "checkpoints": [
+      {
+        "serial_number": 1,
+        "checkpoint_name": "Check fixture positions and heights against approved drawings.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 2,
+        "checkpoint_name": "Check water supply, hot/cold connections, flow, leaks, and drainage function.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 3,
+        "checkpoint_name": "Check floor traps, basin/kitchen connections, flushing, and water sealing.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 4,
+        "checkpoint_name": "Verify visible pipework, silicone/sealing, and access panels are neat and accessible.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 5,
+        "checkpoint_name": "Check conduit routing, bends, junction boxes, and concealed box levels.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 6,
+        "checkpoint_name": "Ensure wiring is correctly identified, connections are secure, and cables are not damaged.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 7,
+        "checkpoint_name": "Check earthing continuity and required electrical tests before energizing.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 8,
+        "checkpoint_name": "Verify light points, driver locations, and wiring coordination with ceiling and furniture.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 9,
+        "checkpoint_name": "MCB labelling",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 10,
+        "checkpoint_name": "Check switches, sockets, lights, dimmers, fans, and controls alignment and working",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 11,
+        "checkpoint_name": "Check fixture alignment, light colour temperature, and dimming where applicable.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 12,
+        "checkpoint_name": "Check plates, fittings, and cut-outs are undamaged and neatly installed.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 13,
+        "checkpoint_name": "Check plates, fittings, and cut-outs are undamaged and neatly installed.",
+        "phase": "AFTER_EXECUTION"
+      }
+    ]
+  },
+  {
+    "work_head": "HVAC",
+    "label": "HVAC",
+    "serial_number": 11,
+    "sheet_name": "HVAC",
+    "title": "INTERIOR WORKS- HVAC",
+    "version": "20261003",
+    "checkpoints": [
+      {
+        "serial_number": 1,
+        "checkpoint_name": "Approved HVAC layout, equipment schedule, and load/design information available.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 2,
+        "checkpoint_name": "Confirm indoor/outdoor unit locations, service clearances, and maintenance access.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 3,
+        "checkpoint_name": "Check refrigerant pipe, insulation, drain pipe, and electrical requirements.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 4,
+        "checkpoint_name": "Coordinate ducts, diffusers, ceiling heights, curtain pockets, and furniture.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 5,
+        "checkpoint_name": "Check refrigerant pipe routing, jointing, insulation continuity, and support.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 6,
+        "checkpoint_name": "Check condensate drain slope, connections, and water-flow test.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 7,
+        "checkpoint_name": "Verify duct sizes, joints, supports, insulation, and sealing as specified.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 8,
+        "checkpoint_name": "Check sleeves, access panels, diffuser positions, and coordination before ceiling closure.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 9,
+        "checkpoint_name": "Check equipment installation, vibration isolation, and service access.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 10,
+        "checkpoint_name": "Verify condensate drainage and inspect for leaks.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 11,
+        "checkpoint_name": "Test cooling/heating operation as applicable, controls, and airflow/balancing records.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 12,
+        "checkpoint_name": "Check grille alignment, noise/vibration, and clean finished appearance.",
+        "phase": "AFTER_EXECUTION"
+      }
+    ]
+  },
+  {
+    "work_head": "FALSE_CEILING",
+    "label": "False ceiling",
+    "serial_number": 12,
+    "sheet_name": "FALSE CEILING",
+    "title": "INTERIOR WORKS- FALSE CEILING",
+    "version": "20261003",
+    "checkpoints": [
+      {
+        "serial_number": 1,
+        "checkpoint_name": "Approved ceiling plan, sections, levels, cove details, and lighting layout available.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 2,
+        "checkpoint_name": "Confirm all above-ceiling MEP work is inspected and tested before closure.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 3,
+        "checkpoint_name": "Check required ceiling height, hanger/fixing substrate, and framing system.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 4,
+        "checkpoint_name": "Confirm access panels, curtain pockets, AC diffusers, and fixture support provisions.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 5,
+        "checkpoint_name": "Check frame spacing, level, suspension, perimeter support, and fixing as specified.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 6,
+        "checkpoint_name": "Verify openings and supports for lights, fans, AC grilles, and heavy fixtures.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 7,
+        "checkpoint_name": "Check cove/profile alignment, curtain pocket dimensions, and access-panel locations.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 8,
+        "checkpoint_name": "Ensure above-ceiling services remain accessible and are not damaged.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 9,
+        "checkpoint_name": "Check ceiling level, joints, corners, screw marks, cracks, and surface finish.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 10,
+        "checkpoint_name": "Verify cove continuity, access panels, and clean cut-outs.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 11,
+        "checkpoint_name": "Check light/fan/diffuser positions against approved reflected ceiling plan.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 12,
+        "checkpoint_name": "Confirm all defects are rectified before final paint and fixture installation.",
+        "phase": "AFTER_EXECUTION"
+      }
+    ]
+  },
+  {
+    "work_head": "FLOORING_WORK",
+    "label": "Flooring work",
+    "serial_number": 13,
+    "sheet_name": "FLOORING WORK",
+    "title": "INTERIOR WORKS- FLOORING WORK",
+    "version": "20261003",
+    "checkpoints": [
+      {
+        "serial_number": 1,
+        "checkpoint_name": "Confirm waterproofing approval and required tests are complete in wet areas.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 2,
+        "checkpoint_name": "Check floor PCC/screed levels, substrate strength, and surface readiness.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 3,
+        "checkpoint_name": "Verify finished floor levels, slopes, thresholds, and door clearances.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 4,
+        "checkpoint_name": "Approve tile/stone material, shade, batch, pattern, and setting-out.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 5,
+        "checkpoint_name": "Confirm proposed skirting detail",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 6,
+        "checkpoint_name": "Check starting point, layout, joint width, pattern, and cut-piece placement.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 7,
+        "checkpoint_name": "Check adhesive/mortar suitability, coverage, and installation method.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 8,
+        "checkpoint_name": "Verify level, lippage, slope to drain, and alignment at thresholds.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 9,
+        "checkpoint_name": "Protect laid flooring and maintain joints/curing as required.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 10,
+        "checkpoint_name": "Check starting point, layout, joint width, pattern, and cut-piece placement.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 11,
+        "checkpoint_name": "Check adhesive/mortar suitability, coverage, and installation method.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 12,
+        "checkpoint_name": "Verify level, lippage, slope to drain, and alignment at thresholds.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 13,
+        "checkpoint_name": "Protect laid flooring with sheets",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 14,
+        "checkpoint_name": "Finalise grout shade before grouting",
+        "phase": "AFTER_EXECUTION"
+      }
+    ]
+  },
+  {
+    "work_head": "PAINT_WORK",
+    "label": "Paint work",
+    "serial_number": 14,
+    "sheet_name": "PAINT WORK",
+    "title": "INTERIOR WORKS- PAINT WORK",
+    "version": "20261003",
+    "checkpoints": [
+      {
+        "serial_number": 1,
+        "checkpoint_name": "Confirm plaster/putty substrate is dry and accepted; moisture requirements met.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 2,
+        "checkpoint_name": "Check cracks, undulations, dampness, and previous defects are repaired.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 3,
+        "checkpoint_name": "Approve paint system, colour, sheen, sample, and finish schedule.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 4,
+        "checkpoint_name": "Ensure flooring, hardware, glass, and completed work are protected.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 5,
+        "checkpoint_name": "Check surface sanding, putty, primer, and drying between coats.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 6,
+        "checkpoint_name": "Verify approved colour and consistent application/coverage.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 7,
+        "checkpoint_name": "Check edges, corners, cut-ins, and junctions with ceiling, doors, and furniture.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 8,
+        "checkpoint_name": "Protect adjacent finishes and rectify visible defects between coats.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 9,
+        "checkpoint_name": "Check colour consistency, shade, sheen, coverage, and visible roller/brush marks.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 10,
+        "checkpoint_name": "Inspect under normal and suitable grazing light for patches, pinholes, cracks, and unevenness.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 11,
+        "checkpoint_name": "Check edges around switches, frames, skirting, and fixtures.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 12,
+        "checkpoint_name": "Confirm touch-ups are complete and surfaces are clean and undamaged.",
+        "phase": "AFTER_EXECUTION"
+      }
+    ]
+  },
+  {
+    "work_head": "KITCHEN",
+    "label": "Kitchen inspection",
+    "serial_number": 15,
+    "sheet_name": "KITCHEN",
+    "title": "INTERIOR WORKS- KITCHEN",
+    "version": "20261003",
+    "checkpoints": [
+      {
+        "serial_number": 1,
+        "checkpoint_name": "Approved kitchen drawings, elevations, sections, and appliance schedule available.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 2,
+        "checkpoint_name": "Check final site dimensions, wall/floor levels, and service points.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 3,
+        "checkpoint_name": "Confirm appliance sizes, ventilation, electrical loads, water, waste, and gas provision if applicable.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 4,
+        "checkpoint_name": "Verify countertop material, finish, edge profile, hardware, and sample approvals.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 5,
+        "checkpoint_name": "Check cabinet carcass material, thickness, finish, and installation alignment.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 6,
+        "checkpoint_name": "Verify levels, plumb, fixing, shutter gaps, drawer operation, and hardware.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 7,
+        "checkpoint_name": "Check sink cut-out, countertop support, joints, and sealing.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 8,
+        "checkpoint_name": "Confirm appliance clearances, service access, and coordination of plumbing/electrical points.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 9,
+        "checkpoint_name": "Check shutters, drawers, hinges, channels, handles, and soft-close operation.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 10,
+        "checkpoint_name": "Check countertop joints, edges, sink sealing, and water drainage.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 11,
+        "checkpoint_name": "Ensure splashbacks are properly fitted & grouted neatly",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 12,
+        "checkpoint_name": "Test appliances and service connections as applicable; check for leaks.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 13,
+        "checkpoint_name": "Inspect finish, alignment, gaps, scratches, and completeness of accessories.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 14,
+        "checkpoint_name": "Check the cabinet interiors are clean, undamaged, & free of construction dust",
+        "phase": "AFTER_EXECUTION"
+      }
+    ]
+  },
+  {
+    "work_head": "WARDROBE",
+    "label": "Wardrobe inspection",
+    "serial_number": 16,
+    "sheet_name": "WARDROBE",
+    "title": "INTERIOR WORKS- WARDROBE",
+    "version": "20261003",
+    "checkpoints": [
+      {
+        "serial_number": 1,
+        "checkpoint_name": "Approved wardrobe layout, elevations, internal divisions, and hardware schedule available.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 2,
+        "checkpoint_name": "Check final wall-to-wall and floor-to-ceiling dimensions after relevant finishes.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 3,
+        "checkpoint_name": "Confirm electrical points, AC/curtain clearances, skirting, and door swing conflicts.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 4,
+        "checkpoint_name": "Approve board, finish, edge band, mirror/glass, and hardware samples.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 5,
+        "checkpoint_name": "Check carcass material, fixing, plumb, level, and alignment.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 6,
+        "checkpoint_name": "Verify shelf, drawer, hanging-rail, and loft dimensions against drawings.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 7,
+        "checkpoint_name": "Check shutter gaps, edge banding, hinges, channels, and hardware installation.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 8,
+        "checkpoint_name": "Ensure wardrobe does not obstruct switches, sockets, access panels, or ventilation.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 9,
+        "checkpoint_name": "Check shutters open/close freely and do not rub against floor or adjacent elements.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 10,
+        "checkpoint_name": "Check drawer operation, alignment, gaps, handles, and soft-close where specified.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 11,
+        "checkpoint_name": "Inspect finish for scratches, chips, glue marks, and damaged edges.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 12,
+        "checkpoint_name": "Verify mirrors, accessories, internal fittings, and final cleaning.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 13,
+        "checkpoint_name": "Sliding track smoothness",
+        "phase": "AFTER_EXECUTION"
+      }
+    ]
+  },
+  {
+    "work_head": "DOORS",
+    "label": "Doors & Fixed furniture",
+    "serial_number": 17,
+    "sheet_name": "DOORS",
+    "title": "INTERIOR WORKS- DOORS",
+    "version": "20261003",
+    "checkpoints": [
+      {
+        "serial_number": 1,
+        "checkpoint_name": "Check approved door schedule, dimensions, swing direction, and elevations.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 2,
+        "checkpoint_name": "Verify opening dimensions, wall thickness, and finished floor level.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 3,
+        "checkpoint_name": "Confirm door frame and shutter material, thickness, and specifications.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 4,
+        "checkpoint_name": "Check approved veneer sample, species, shade, grain pattern, and finish (PU/polish).",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 5,
+        "checkpoint_name": "Confirm veneer application method, edge detailing, and approved finish sample.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 6,
+        "checkpoint_name": "Check hardware schedule: hinges, locks, handles, stoppers, and other accessories.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 7,
+        "checkpoint_name": "Check frame position, plumb, level, squareness, alignment, and anchoring.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 8,
+        "checkpoint_name": "Ensure frame and shutter are protected from moisture and construction damage.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 9,
+        "checkpoint_name": "Check shutter dimensions, thickness, and surface preparation before veneer application.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 10,
+        "checkpoint_name": "Verify veneer grain direction, matching, alignment, and consistency across panels.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 11,
+        "checkpoint_name": "Check veneer joints, edge banding, corners, and veneer wrapping at shutter edges.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 12,
+        "checkpoint_name": "Ensure veneer is firmly bonded with no bubbles, lifting, open joints, or loose edges.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 13,
+        "checkpoint_name": "Check PU/polish application, sanding, and finish coats as per approved sample.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 14,
+        "checkpoint_name": "Verify hinge positions, hardware installation, and door clearances.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 15,
+        "checkpoint_name": "Check door alignment, uniform gaps, and smooth opening/closing.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 16,
+        "checkpoint_name": "Verify veneer shade, grain direction, and grain matching against the approved sample.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 17,
+        "checkpoint_name": "Inspect veneer for bubbles, peeling, cracks, scratches, dents, and visible joint lines.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 18,
+        "checkpoint_name": "Check PU/polish finish for uniform sheen, colour, smoothness, and surface defects.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 19,
+        "checkpoint_name": "Inspect veneer edges, corners, joints, and frame-to-shutter finish.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 20,
+        "checkpoint_name": "Check hinges, locks, handles, stoppers, and all hardware functionality.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 21,
+        "checkpoint_name": "Verify door clearance from flooring, skirting, and adjacent elements.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 22,
+        "checkpoint_name": "Confirm all doors are clean, undamaged, and protected until handover.",
+        "phase": "AFTER_EXECUTION"
+      }
+    ]
+  },
+  {
+    "work_head": "WINDOWS_GLAZING",
+    "label": "Windows & glazing",
+    "serial_number": 18,
+    "sheet_name": "WINDOWS & GLAZING",
+    "title": "INTERIOR WORKS- WINDOWS & GLAZING",
+    "version": "20261003",
+    "checkpoints": [
+      {
+        "serial_number": 1,
+        "checkpoint_name": "Check approved window schedule, sizes, elevations, and opening direction.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 2,
+        "checkpoint_name": "Verify sill level, lintel level, opening dimensions, and wall thickness.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 3,
+        "checkpoint_name": "Confirm frame material, profile, glass type/thickness, and finish.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 4,
+        "checkpoint_name": "Check safety-glass requirements and hardware specifications.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 5,
+        "checkpoint_name": "Confirm waterproofing, sill slope, drainage, and perimeter sealing details.",
+        "phase": "BEFORE_EXECUTION"
+      },
+      {
+        "serial_number": 6,
+        "checkpoint_name": "Check frame position, plumb, level, squareness, and anchoring.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 7,
+        "checkpoint_name": "Verify frame protection and correct fixing method.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 8,
+        "checkpoint_name": "Check glass installation, gaskets, setting blocks, and glazing beads.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 9,
+        "checkpoint_name": "Ensure sealant is applied continuously at required junctions.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 10,
+        "checkpoint_name": "Check opening/closing mechanism, rollers, hinges, and locks.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 11,
+        "checkpoint_name": "Verify drainage holes and water discharge paths are not blocked.",
+        "phase": "DURING_EXECUTION"
+      },
+      {
+        "serial_number": 12,
+        "checkpoint_name": "Check frame alignment, finish, and uniform perimeter gaps.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 13,
+        "checkpoint_name": "Inspect glass for cracks, chips, scratches, and visible defects.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 14,
+        "checkpoint_name": "Check smooth operation, locking, and handles.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 15,
+        "checkpoint_name": "Verify sealant finish and visible frame-to-wall junctions.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 16,
+        "checkpoint_name": "Check for water ingress where applicable and confirm drainage.",
+        "phase": "AFTER_EXECUTION"
+      },
+      {
+        "serial_number": 17,
+        "checkpoint_name": "Ensure glass and frames are clean, undamaged, and properly protected until handover.",
+        "phase": "AFTER_EXECUTION"
+      }
+    ]
+  }
+]

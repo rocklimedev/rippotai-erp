@@ -8,6 +8,7 @@ import {
   ValidateNested,
   MaxLength,
   IsDateString,
+  IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
@@ -69,8 +70,8 @@ export class QcItemResultInputDto {
 }
 
 export class RecordQcSignOffDto {
-  @IsInt()
-  projectId: number;
+  @IsUUID()
+  projectId: string;
 
   @IsInt()
   stepId: number;

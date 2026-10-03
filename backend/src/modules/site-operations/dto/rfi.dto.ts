@@ -6,12 +6,13 @@ import {
   IsArray,
   MaxLength,
   IsDateString,
+  IsUUID,
 } from 'class-validator';
 import { RfiPriority } from '../../../common/enums/site-operations.enums';
 
 export class RaiseRfiDto {
-  @IsInt()
-  projectId: number;
+  @IsUUID()
+  projectId: string;
 
   @IsOptional()
   @IsInt()

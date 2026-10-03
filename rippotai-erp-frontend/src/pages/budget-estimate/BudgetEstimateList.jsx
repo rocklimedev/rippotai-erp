@@ -185,7 +185,7 @@ const BudgetEstimateList = ({ projectId }) => {
   // ============================================================
 
   const handleEdit = (estimate) => {
-    navigate(`/budget-estimates/${estimate.id}/edit`);
+    navigate(`/ledger/forms/budget-estimate/${estimate.id}/edit`);
   };
 
   // ============================================================

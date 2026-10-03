@@ -11,7 +11,7 @@ import {
   DocumentEvidenceService,
   mandatoryDocument,
 } from '../gates/conditions/document-evidence.service';
-import { Op } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 
 import { Project } from '@/modules/projects/models/projects.model';
 import { ProjectType } from '@/modules/projects/models/project-type.model';
@@ -97,14 +97,31 @@ interface PhaseRollup {
   gateApprovedBy: string | null;
 }
 
+/** Open site QC failure: the latest attempt for a project/step/trade is FAIL or REWORK (site-ops qc_sign_offs). */
+interface SiteQcFailure {
+  id: number;
+  project_id: string;
+  result: string;
+  attempt_number: number;
+  checked_at: Date;
+  notes: string | null;
+  step_name: string | null;
+  team_name: string | null;
+}
+
 interface ProjectRow {
   id: string;
   code: string;
   name: string;
   location: string;
   currentPhaseSeq: number;
+  /** Code + name of the current phase (the gate engine's projects.current_phase). */
+  currentPhaseCode: string;
+  currentPhaseName: string;
   phases: PhaseRollup[];
   pct: number;
+  /** Open site QC failures (latest attempt FAIL/REWORK) from Site Operations. */
+  siteQcFailures: number;
   health: { key: ProjectHealth; label: string };
   daysIdle: number | null;
   lastActivity: Date | null;
@@ -169,8 +186,9 @@ export class CommandCenterService {
       order: [['updated_at', 'DESC']],
     });
 
+    const siteQc = await this.openSiteQcFailures();
     let rows = await Promise.all(
-      projects.map((project) => this.buildProjectRow(project)),
+      projects.map((project) => this.buildProjectRow(project, siteQc)),
     );
 
     if (query.health && query.health !== HealthFilter.ALL) {
@@ -209,8 +227,11 @@ export class CommandCenterService {
       ).length,
       stalled: allPhases.filter((p) => p.state === PhaseRollupState.STALLED)
         .length,
-      failed: allPhases.filter((p) => p.state === PhaseRollupState.QC_FAILED)
-        .length,
+      // failed execution/QC tasks + open site QC sign-off failures (Site Operations)
+      failed:
+        allPhases.filter((p) => p.state === PhaseRollupState.QC_FAILED)
+          .length + rows.reduce((s, r) => s + (r.siteQcFailures || 0), 0),
+      siteQcFailed: rows.reduce((s, r) => s + (r.siteQcFailures || 0), 0),
       docsMissing: allPhases.reduce(
         (s, p) =>
           s +
@@ -312,7 +333,39 @@ export class CommandCenterService {
     };
   }
 
-  private async buildProjectRow(project: Project): Promise<ProjectRow> {
+  /**
+   * Open site QC failures per project: for each project/step/trade the latest
+   * QC sign-off attempt is still FAIL or REWORK. Site-ops tables key projects by UUID.
+   */
+  async openSiteQcFailures(projectId?: string): Promise<SiteQcFailure[]> {
+    try {
+      return (await this.projectModel.sequelize!.query(
+        `SELECT q.id, q.project_id, q.result, q.attempt_number, q.checked_at, q.notes,
+                s.name AS step_name, t.name AS team_name
+           FROM qc_sign_offs q
+           LEFT JOIN steps s ON s.id = q.step_id
+           LEFT JOIN teams t ON t.id = CAST(q.trade_team_id AS CHAR)
+          WHERE q.result IN ('FAIL','REWORK') ${projectId ? 'AND q.project_id = :projectId' : ''}
+            AND q.attempt_number = (SELECT MAX(q2.attempt_number) FROM qc_sign_offs q2
+                                     WHERE q2.project_id = q.project_id AND q2.step_id = q.step_id
+                                       AND q2.trade_team_id = q.trade_team_id)
+          ORDER BY q.checked_at DESC`,
+        { type: QueryTypes.SELECT, replacements: { projectId } },
+      )) as SiteQcFailure[];
+    } catch (e) {
+      this.logger.warn(`site QC rollup failed: ${(e as Error).message}`);
+      return [];
+    }
+  }
+
+  private async buildProjectRow(
+    project: Project,
+    siteQc?: SiteQcFailure[],
+  ): Promise<ProjectRow> {
+    const siteQcRows = siteQc ?? (await this.openSiteQcFailures(project.id));
+    const siteQcFailures = siteQcRows.filter(
+      (q) => q.project_id === project.id,
+    ).length;
     await this.gateEngine.ensureInitialized(project.id);
     const moduleScope = this.getProjectModule(project);
 
@@ -409,7 +462,7 @@ export class CommandCenterService {
         ? Math.floor((Date.now() - lastActivity.getTime()) / 86_400_000)
         : null;
 
-    const phaseRollups = phases.map((phase) =>
+    const rawRollups = phases.map((phase) =>
       this.rollupPhase(
         phase,
         currentPhase,
@@ -435,23 +488,61 @@ export class CommandCenterService {
       ),
     );
 
+    // ONE source of truth for "where is this project": the gate engine's
+    // projects.current_phase. Main-line phases (1-9) before it were passed
+    // through their gates, so they count as complete; the parallel tracks
+    // (A vendor trades / B material, phase numbers > 9) keep their own rollup.
+    // The project page, the projects list and the Command Center all read this.
+    const pointer = project.current_phase
+      ? phases.find((ph) => ph.phase_code === project.current_phase)
+      : undefined;
+    const currentSeq =
+      pointer?.phase_number ??
+      rawRollups.find(
+        (p) => p.phaseNumber <= 9 && p.state !== PhaseRollupState.COMPLETE,
+      )?.phaseNumber ??
+      9;
+    const phaseRollups = rawRollups.map((p) => {
+      if (p.phaseNumber > 9 || p.state === PhaseRollupState.QC_FAILED) return p;
+      if (p.phaseNumber < currentSeq)
+        return { ...p, state: PhaseRollupState.COMPLETE };
+      if (p.phaseNumber > currentSeq && p.state === PhaseRollupState.AWAITING_GATE)
+        return { ...p, state: PhaseRollupState.IN_PROGRESS };
+      return p;
+    });
+
     const pct = Math.round(
-      phaseRollups.reduce((sum, phase) => sum + phase.pct, 0) /
-        phaseRollups.length,
+      phaseRollups.reduce(
+        (sum, phase) =>
+          sum + (phase.state === PhaseRollupState.COMPLETE ? 100 : phase.pct),
+        0,
+      ) / phaseRollups.length,
     );
+    const current = phaseRollups.find((p) => p.phaseNumber === currentSeq);
+
+    // keep projects.progress_pct (read by the projects widgets / client pages)
+    // in step with this rollup without bumping updated_at (used for idle days).
+    if (Number(project.progress_pct ?? -1) !== pct) {
+      this.projectModel.sequelize
+        ?.query(
+          'UPDATE projects SET progress_pct = :pct, updated_at = updated_at WHERE id = :id',
+          { replacements: { pct, id: project.id } },
+        )
+        .catch(() => undefined);
+    }
 
     return {
       id: project.id,
       code: project.slug,
       name: project.name,
       location: project.site_location,
-      currentPhaseSeq:
-        phaseRollups.find(
-          (p) => p.phaseNumber <= 9 && p.state !== PhaseRollupState.COMPLETE,
-        )?.phaseNumber ?? 9,
+      currentPhaseSeq: currentSeq,
+      currentPhaseCode: current?.code ?? '',
+      currentPhaseName: current?.name ?? '',
       phases: phaseRollups,
       pct,
-      health: this.computeHealth(phaseRollups),
+      siteQcFailures,
+      health: this.computeHealth(phaseRollups, siteQcFailures),
       daysIdle,
       lastActivity,
     };
@@ -522,8 +613,11 @@ export class CommandCenterService {
     };
   }
 
-  private computeHealth(phases: PhaseRollup[]) {
-    if (phases.some((p) => p.state === PhaseRollupState.QC_FAILED))
+  private computeHealth(phases: PhaseRollup[], siteQcFailures = 0) {
+    if (
+      siteQcFailures > 0 ||
+      phases.some((p) => p.state === PhaseRollupState.QC_FAILED)
+    )
       return { key: ProjectHealth.DANGER, label: 'QC Failed' };
     if (phases.some((p) => p.state === PhaseRollupState.STALLED))
       return { key: ProjectHealth.DANGER, label: 'Stalled' };
@@ -545,6 +639,7 @@ export class CommandCenterService {
       title: string;
       project: string;
       meta: string;
+      projectId: string;
       projectCode: string;
       phaseCode: string;
     }> = [];
@@ -563,8 +658,9 @@ export class CommandCenterService {
           items.push({
             severe: currentPhase.state === PhaseRollupState.QC_FAILED,
             title: `${d.name} missing`,
-            project: `${row.name} Â· ${currentPhase.name}`,
+            project: `${row.name} · ${currentPhase.name}`,
             meta: `Owner: ${d.role}`,
+            projectId: row.id,
             projectCode: row.code,
             phaseCode: currentPhase.code,
           }),
@@ -575,8 +671,9 @@ export class CommandCenterService {
           items.push({
             severe: t.status === TaskExecutionStatus.FAILED,
             title: `${t.status === TaskExecutionStatus.FAILED ? 'Redo' : 'Complete'}: ${t.name}`,
-            project: `${row.name} Â· ${currentPhase.name}`,
-            meta: `Owner: ${t.role}${row.daysIdle ? ` Â· ${row.daysIdle}d idle` : ''}`,
+            project: `${row.name} · ${currentPhase.name}`,
+            meta: `Owner: ${t.role}${row.daysIdle ? ` · ${row.daysIdle}d idle` : ''}`,
+            projectId: row.id,
             projectCode: row.code,
             phaseCode: currentPhase.code,
           }),
@@ -585,8 +682,9 @@ export class CommandCenterService {
         items.push({
           severe: false,
           title: `${currentPhase.gate.code ?? 'Gate'} awaiting approval`,
-          project: `${row.name} Â· ${currentPhase.name}`,
+          project: `${row.name} · ${currentPhase.name}`,
           meta: 'Owner: Admin',
+          projectId: row.id,
           projectCode: row.code,
           phaseCode: currentPhase.code,
         });
@@ -652,6 +750,7 @@ export class CommandCenterService {
       type: string;
       status: TaskExecutionStatus;
       project: string;
+      projectId: string;
       code: string;
       phase: string;
       role: string;
@@ -672,6 +771,7 @@ export class CommandCenterService {
             type: t.type,
             status: t.status,
             project: row.name,
+            projectId: row.id,
             code: row.code,
             phase: currentPhase.name,
             role: t.role,
@@ -679,7 +779,29 @@ export class CommandCenterService {
         );
     }
 
-    return openTasks.sort(
+    // Open site QC failures (Site Operations sign-offs) count as failed QC checks too.
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    const siteQc = (await this.openSiteQcFailures()).filter((q) =>
+      byId.has(q.project_id),
+    );
+    const siteItems = siteQc.map((q) => {
+      const row = byId.get(q.project_id)!;
+      return {
+        id: `site-qc-${q.id}`,
+        name: `${q.result === 'REWORK' ? 'Rework' : 'Failed'} site QC: ${q.step_name ?? 'Step'}${q.team_name ? ` (${q.team_name})` : ''}`,
+        type: 'QC',
+        status: TaskExecutionStatus.FAILED,
+        project: row.name,
+        projectId: row.id,
+        code: row.code,
+        phase: 'Site QC',
+        role: q.team_name ?? 'Site',
+        notes: q.notes,
+        href: `/site-operations/qc/handoff-status?project=${row.id}`,
+      };
+    });
+
+    return [...openTasks, ...siteItems].sort(
       (a, b) =>
         Number(b.status === TaskExecutionStatus.FAILED) -
         Number(a.status === TaskExecutionStatus.FAILED),
@@ -812,7 +934,7 @@ export class CommandCenterService {
       action: ACTIVITY_ACTIONS.DOCUMENT_UPLOADED,
       entityType: 'Document',
       entityId: document.id,
-      entityLabel: `${docType.name} Â· ${project.name}`,
+      entityLabel: `${docType.name} · ${project.name}`,
       changes: { status: document.status, requirementId: requirement.id },
     });
 
@@ -903,7 +1025,7 @@ export class CommandCenterService {
           : ACTIVITY_ACTIONS.TASK_COMPLETED,
       entityType: 'TaskExecution',
       entityId: execution.id,
-      entityLabel: `${taskDef.name} Â· ${project.name}`,
+      entityLabel: `${taskDef.name} · ${project.name}`,
       changes: { status },
     });
 

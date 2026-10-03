@@ -99,8 +99,12 @@ export class BoqController {
 
   // ==================== LIST & CRUD ====================
   @Get()
-  findAll(@Query('project_id') projectId?: string) {
-    return this.boqService.findAll(projectId);
+  findAll(
+    @Query('project_id') projectId?: string,
+    @Query('status') status?: string,
+    @Query('q') q?: string,
+  ) {
+    return this.boqService.findAll(projectId, status || undefined, q || undefined);
   }
 
   // ==================== VERSION & WORKFLOW ROUTES (more specific first) ====================
@@ -342,6 +346,11 @@ export class BoqController {
     res.send(buffer);
   }
 
+  /**
+   * Legacy server-rendered (puppeteer) BOQ PDF in the old layout. The app no longer calls it:
+   * downloads and the copy attached on approval are produced client-side with the shared
+   * print kit (components/commerce-documents/BoqDocument). Kept for API compatibility only.
+   */
   @Post(':id/export/pdf')
   async exportPdf(
     @Param('id') id: string,

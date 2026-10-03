@@ -52,8 +52,8 @@ const ENVIRONMENTS = [
   {
     id: "local",
     label: "Local",
-    apiBase: "http://localhost:5000/api/v1",
-    callbackUrl: "http://localhost:5000/api/v1/zoho/oauth/callback",
+    apiBase: "http://localhost:5050/api/v1",
+    callbackUrl: "http://localhost:5050/api/v1/zoho/oauth/callback",
   },
   {
     id: "prod",

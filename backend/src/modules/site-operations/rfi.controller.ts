@@ -7,6 +7,7 @@ import {
   Param,
   Query,
   ParseIntPipe,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { RfiService } from './rfi.service';
 import { RaiseRfiDto, RespondToRfiDto, RerouteRfiDto } from './dto/rfi.dto';
@@ -19,6 +20,15 @@ export class RfiController {
   @Post()
   raise(@Body() dto: RaiseRfiDto) {
     return this.rfiService.raise(dto);
+  }
+
+  /** GET /site-ops/rfis?projectId=<uuid>&status=OPEN — all projects when projectId is omitted. */
+  @Get()
+  listAll(
+    @Query('projectId') projectId?: string,
+    @Query('status') status?: RfiStatus,
+  ) {
+    return this.rfiService.list({ projectId: projectId || undefined, status: status || undefined });
   }
 
   @Patch(':id/reroute')
@@ -44,7 +54,7 @@ export class RfiController {
   /** GET /site-ops/rfis/projects/:projectId?status=OPEN */
   @Get('projects/:projectId')
   list(
-    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('projectId', ParseUUIDPipe) projectId: string,
     @Query('status') status?: RfiStatus,
   ) {
     return this.rfiService.listForProject(projectId, status);

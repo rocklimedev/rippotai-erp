@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import {
-  AlertCircle,
+  CloudOff,
   Archive,
   ArrowDownAZ,
   ArrowLeft,
@@ -49,10 +49,10 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { EmptyState, Pill, Segmented, Button as InosButton } from "@/components/inos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -80,7 +80,15 @@ import {
   useUploadLargeOneDriveFileMutation,
   useDeleteOneDriveFileMutation,
   useLazyDownloadOneDriveFileQuery,
+  useGetOneDriveStatusQuery,
 } from "../../api/connectors/onedrive.api";
+import {
+  useGetDocumentsQuery,
+  useLazyDownloadDocumentQuery,
+} from "../../api/documents/document.api";
+import { useGetProjectsQuery } from "../../api/projects/project.api";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 /* ============================================================
    INOS FILE MANAGER — wired to onedriveApi (RTK Query)
@@ -112,9 +120,9 @@ const ROOT = "root";
 /* ------------------------------------------------------------------
  * Brand — centralised until these live in the tailwind theme.
  * ------------------------------------------------------------------ */
-const BRAND = "bg-[#1F453B] hover:bg-[#17372f] text-white";
-const BRAND_TEXT = "text-[#1F453B]";
-const BRAND_SOFT = "bg-[#1F453B]/10 text-[#1F453B]";
+const BRAND = "bg-[var(--brand)] hover:bg-[var(--brand-hover)] text-white";
+const BRAND_TEXT = "text-[var(--brand)]";
+const BRAND_SOFT = "bg-[var(--brand-50)] text-[var(--brand)]";
 
 /* ============================================================
    ADAPTERS — turn raw API payloads into UI-shaped objects
@@ -239,6 +247,75 @@ function normalizeDriveItems(rawData) {
   return { folders, files };
 }
 
+/* ------------------------------------------------------------------
+ * INOS source — the project documents stored in INOS itself
+ * (DB + local storage). Used when OneDrive isn't connected, or when
+ * the user picks "INOS documents". Folder ids:
+ *   root                 -> projects
+ *   <projectId>          -> phase folders of that project
+ *   <projectId>::<phase> -> documents in that phase
+ * ------------------------------------------------------------------ */
+const phaseOf = (doc) =>
+  doc.documentType?.phaseName || doc.category || "General";
+
+function buildInosItems(folderId, projects, docs) {
+  const list = Array.isArray(docs) ? docs : docs?.data ?? [];
+  const projectList = Array.isArray(projects) ? projects : projects?.data ?? projects?.projects ?? [];
+  const toFile = (d) => ({
+    id: d.id,
+    parentId: d.projectId,
+    name: d.filename || d.title,
+    title: d.title,
+    type: getFileTypeFromMime(d.mime, d.filename || d.title),
+    size: formatBytes(d.size),
+    modified: formatDate(d.updatedAt || d.updated_at),
+    owner: d.uploadedByName || "—",
+    starred: false,
+    status: d.status,
+    source: "inos",
+  });
+
+  if (folderId === ROOT) {
+    const counts = new Map();
+    list.forEach((d) => counts.set(d.projectId, (counts.get(d.projectId) || 0) + 1));
+    return {
+      folders: projectList.map((p) => ({
+        id: p.id,
+        parentId: ROOT,
+        name: p.name,
+        itemCount: counts.get(p.id) || 0,
+        modified: formatDate(p.updated_at || p.updatedAt),
+        color: "green",
+      })),
+      files: [],
+    };
+  }
+
+  const [projectId, phase] = folderId.split("::");
+  const projectDocs = list.filter((d) => d.projectId === projectId);
+  if (!phase) {
+    const byPhase = new Map();
+    projectDocs.forEach((d) => {
+      const k = phaseOf(d);
+      byPhase.set(k, (byPhase.get(k) || 0) + 1);
+    });
+    return {
+      folders: [...byPhase.entries()]
+        .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
+        .map(([name, count]) => ({
+          id: `${projectId}::${name}`,
+          parentId: projectId,
+          name,
+          itemCount: count,
+          modified: "",
+          color: "green",
+        })),
+      files: [],
+    };
+  }
+  return { folders: [], files: projectDocs.filter((d) => phaseOf(d) === phase).map(toFile) };
+}
+
 /* ============================================================
    ICONS
 ============================================================ */
@@ -263,15 +340,15 @@ const getFileIcon = (type) => {
 const getFileColor = (type) => {
   switch (type) {
     case "pdf":
-      return "text-red-500";
+      return "text-[var(--bad-fg)]";
     case "excel":
-      return "text-emerald-600";
+      return "text-[var(--ok-fg)]";
     case "image":
-      return "text-purple-500";
+      return "text-[var(--lilac-fg)]";
     case "archive":
-      return "text-amber-500";
+      return "text-[var(--warn-fg)]";
     default:
-      return "text-slate-500";
+      return "text-[var(--text-3)]";
   }
 };
 
@@ -405,8 +482,8 @@ function UploadModal({ open, onClose, onUpload, isUploading }) {
           className={cn(
             "cursor-pointer rounded-xl border-2 border-dashed p-10 text-center transition",
             dragging
-              ? "border-[#1F453B] bg-[#1F453B]/5"
-              : "border-input hover:border-[#1F453B]/40 hover:bg-muted/40",
+              ? "border-[var(--brand)] bg-[var(--brand-50)]"
+              : "border-input hover:border-[var(--sage)] hover:bg-muted/40",
           )}
         >
           <Cloud className={cn("mx-auto h-8 w-8", BRAND_TEXT)} />
@@ -495,7 +572,7 @@ function CreateWorkspaceModal({ open, onClose, onCreate }) {
           <DialogTitle>Create workspace</DialogTitle>
         </DialogHeader>
 
-        <div className={cn("rounded-xl p-4", "bg-[#1F453B]/5")}>
+        <div className={cn("rounded-xl p-4", "bg-[var(--brand-50)]")}>
           <div className="flex items-center gap-3">
             <div
               className={cn(
@@ -548,6 +625,7 @@ function CreateWorkspaceModal({ open, onClose, onCreate }) {
 
 function ItemActionsMenu({
   item,
+  onOpen,
   onDownload,
   onRename,
   onDelete,
@@ -577,10 +655,12 @@ function ItemActionsMenu({
         className="w-48"
         onClick={(event) => event.stopPropagation()}
       >
-        <DropdownMenuItem>
-          <FolderOpen className="mr-2 h-[14px] w-[14px]" />
-          Open
-        </DropdownMenuItem>
+        {onOpen && (
+          <DropdownMenuItem onSelect={() => onOpen(item)}>
+            <FolderOpen className="mr-2 h-[14px] w-[14px]" />
+            {folder ? "Open" : "Details"}
+          </DropdownMenuItem>
+        )}
 
         <DropdownMenuItem
           disabled={folder || isDownloading}
@@ -594,52 +674,23 @@ function ItemActionsMenu({
           Download
         </DropdownMenuItem>
 
-        <DropdownMenuItem>
-          <Share2 className="mr-2 h-[14px] w-[14px]" />
-          Share
-        </DropdownMenuItem>
-
-        <DropdownMenuItem>
-          <Copy className="mr-2 h-[14px] w-[14px]" />
-          Make a copy
-        </DropdownMenuItem>
-
-        <DropdownMenuItem>
-          <Move className="mr-2 h-[14px] w-[14px]" />
-          Move to
-        </DropdownMenuItem>
-
-        <DropdownMenuItem>
-          <Link2 className="mr-2 h-[14px] w-[14px]" />
-          Copy link
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem onSelect={() => onRename(item)}>
-          <Pencil className="mr-2 h-[14px] w-[14px]" />
-          Rename
-        </DropdownMenuItem>
-
-        <DropdownMenuItem>
-          <Pin className="mr-2 h-[14px] w-[14px]" />
-          Add to workspace
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem
-          onSelect={() => onDelete(item)}
-          disabled={isDeleting}
-          className="text-destructive focus:text-destructive"
-        >
-          {isDeleting ? (
-            <Loader2 className="mr-2 h-[14px] w-[14px] animate-spin" />
-          ) : (
-            <Trash2 className="mr-2 h-[14px] w-[14px]" />
-          )}
-          {isDeleting ? "Moving to trash..." : "Move to trash"}
-        </DropdownMenuItem>
+        {onDelete && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={() => onDelete(item)}
+              disabled={isDeleting}
+              className="text-destructive focus:text-destructive"
+            >
+              {isDeleting ? (
+                <Loader2 className="mr-2 h-[14px] w-[14px] animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-[14px] w-[14px]" />
+              )}
+              {isDeleting ? "Moving to trash..." : "Move to trash"}
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -656,7 +707,7 @@ function WorkspaceItem({ icon: Icon, label, count, active, onClick }) {
       onClick={onClick}
       className={cn(
         "group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition",
-        active ? BRAND_SOFT : "text-slate-600 hover:bg-slate-50",
+        active ? BRAND_SOFT : "text-[var(--text-2)] hover:bg-[var(--sage-50)]",
       )}
     >
       <Icon className="h-4 w-4" />
@@ -664,12 +715,12 @@ function WorkspaceItem({ icon: Icon, label, count, active, onClick }) {
         {label}
       </span>
       {count !== undefined && (
-        <span className="text-[10px] text-slate-400">{count}</span>
+        <span className="text-[10px] text-[var(--text-3)]">{count}</span>
       )}
       <ChevronRight
         className={cn(
           "h-[13px] w-[13px] opacity-0 transition group-hover:opacity-100",
-          active ? BRAND_TEXT : "text-slate-300",
+          active ? BRAND_TEXT : "text-[var(--text-3)]",
         )}
       />
     </button>
@@ -689,6 +740,8 @@ function FileSidebar({
   rootFoldersLoading,
   workspaces,
   onCreateWorkspace,
+  sourceLabel = "OneDrive workspace",
+  rootLabel = "My Files",
 }) {
   if (collapsed) {
     return (
@@ -740,7 +793,7 @@ function FileSidebar({
         <div className="min-w-0">
           <p className="text-sm font-semibold">INOS Files</p>
           <p className="text-[10px] text-muted-foreground">
-            OneDrive workspace
+            {sourceLabel}
           </p>
         </div>
       </div>
@@ -753,7 +806,7 @@ function FileSidebar({
         <div className="space-y-0.5">
           <WorkspaceItem
             icon={Home}
-            label="My Files"
+            label={rootLabel}
             active={currentFolder === ROOT}
             onClick={onNavigateRoot}
           />
@@ -811,7 +864,7 @@ function FileSidebar({
               type="button"
               variant="ghost"
               size="icon"
-              className="h-6 w-6 text-muted-foreground hover:text-[#1F453B]"
+              className="h-6 w-6 text-muted-foreground hover:text-[var(--brand)]"
               onClick={onCreateWorkspace}
             >
               <Plus className="h-[14px] w-[14px]" />
@@ -832,20 +885,6 @@ function FileSidebar({
         </div>
       </div>
 
-      <div className="border-t p-3">
-        <div className="rounded-xl bg-muted/50 p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <HardDrive className={cn("h-[15px] w-[15px]", BRAND_TEXT)} />
-              <span className="text-xs font-medium">Storage</span>
-            </div>
-            <span className="text-[10px] text-muted-foreground">
-              42.8 / 100 GB
-            </span>
-          </div>
-          <Progress value={42.8} className="mt-2 h-1.5" />
-        </div>
-      </div>
     </aside>
   );
 }
@@ -859,17 +898,17 @@ function SidebarFolder({ id, label, currentFolder, onNavigate }) {
       onClick={onNavigate}
       className={cn(
         "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition",
-        active ? BRAND_SOFT : "text-slate-600 hover:bg-slate-50",
+        active ? BRAND_SOFT : "text-[var(--text-2)] hover:bg-[var(--sage-50)]",
       )}
     >
       <Folder
         className={cn(
           "h-[15px] w-[15px]",
-          active ? BRAND_TEXT : "text-slate-400",
+          active ? BRAND_TEXT : "text-[var(--text-3)]",
         )}
       />
       <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
-      <ChevronRight className="h-[13px] w-[13px] text-slate-300" />
+      <ChevronRight className="h-[13px] w-[13px] text-[var(--text-3)]" />
     </button>
   );
 }
@@ -881,7 +920,7 @@ function SidebarFolder({ id, label, currentFolder, onNavigate }) {
    API only gives us one folder's children at a time.
 ============================================================ */
 
-function Breadcrumb({ trail, onNavigateRoot, onNavigateIndex }) {
+function Breadcrumb({ trail, onNavigateRoot, onNavigateIndex, rootLabel = "My Files" }) {
   return (
     <div className="flex min-w-0 items-center gap-1 overflow-hidden">
       <button
@@ -892,12 +931,12 @@ function Breadcrumb({ trail, onNavigateRoot, onNavigateIndex }) {
           BRAND_TEXT,
         )}
       >
-        My Files
+        {rootLabel}
       </button>
 
       {trail.map((crumb, index) => (
         <React.Fragment key={crumb.id}>
-          <ChevronRight className="h-[14px] w-[14px] shrink-0 text-slate-300" />
+          <ChevronRight className="h-[14px] w-[14px] shrink-0 text-[var(--text-3)]" />
           <button
             type="button"
             onClick={() => onNavigateIndex(index)}
@@ -932,20 +971,21 @@ function FolderCard({
 }) {
   return (
     <div
+      data-fm-folder={folder.id}
       onClick={() => onSelect(folder)}
       onDoubleClick={() => onOpen(folder)}
       className={cn(
         "group relative cursor-pointer rounded-xl border bg-background p-4 transition",
         selected
-          ? "border-[#1F453B] bg-[#1F453B]/5 ring-2 ring-[#1F453B]/10"
-          : "hover:-translate-y-[1px] hover:border-slate-300 hover:shadow-sm",
+          ? "border-[var(--brand)] bg-[var(--brand-50)] ring-2 ring-[var(--sage-100)]"
+          : "hover:-translate-y-[1px] hover:border-[var(--line-strong)] hover:shadow-sm",
       )}
     >
       <div className="flex items-start justify-between">
         <div
           className={cn(
             "flex h-11 w-11 items-center justify-center rounded-xl",
-            selected ? BRAND_SOFT : "bg-[#F1F5F3]",
+            selected ? BRAND_SOFT : "bg-[var(--sage-50)]",
           )}
         >
           <Folder
@@ -958,6 +998,7 @@ function FolderCard({
 
         <ItemActionsMenu
           item={folder}
+          onOpen={onOpen}
           onDownload={onDownload}
           onRename={onRename}
           onDelete={onDelete}
@@ -1002,8 +1043,8 @@ function FileCard({
       className={cn(
         "group relative cursor-pointer rounded-xl border bg-background p-4 transition",
         selected
-          ? "border-[#1F453B] bg-[#1F453B]/5 ring-2 ring-[#1F453B]/10"
-          : "hover:-translate-y-[1px] hover:border-slate-300 hover:shadow-sm",
+          ? "border-[var(--brand)] bg-[var(--brand-50)] ring-2 ring-[var(--sage-100)]"
+          : "hover:-translate-y-[1px] hover:border-[var(--line-strong)] hover:shadow-sm",
       )}
     >
       <div className="flex items-start justify-between">
@@ -1013,6 +1054,7 @@ function FileCard({
 
         <ItemActionsMenu
           item={file}
+          onOpen={onOpen}
           onDownload={onDownload}
           onRename={onRename}
           onDelete={onDelete}
@@ -1024,7 +1066,7 @@ function FileCard({
       <div className="mt-5">
         <div className="flex items-center gap-1.5">
           {file.starred && (
-            <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-400" />
+            <Star className="h-3 w-3 shrink-0 fill-[var(--gold)] text-[var(--gold)]" />
           )}
           <p className="truncate text-sm font-medium">{file.name}</p>
         </div>
@@ -1070,7 +1112,7 @@ function ListView({
           onDoubleClick={() => onOpen(folder)}
           className={cn(
             "grid cursor-pointer grid-cols-[40px_minmax(300px,1fr)_180px_130px_45px] items-center border-b px-4 py-3 transition hover:bg-muted/40",
-            selectedId === folder.id && "bg-[#1F453B]/5",
+            selectedId === folder.id && "bg-[var(--brand-50)]",
           )}
         >
           <Folder className={cn("h-[19px] w-[19px]", BRAND_TEXT)} />
@@ -1084,6 +1126,7 @@ function ListView({
           <p className="text-xs text-muted-foreground">Folder</p>
           <ItemActionsMenu
             item={folder}
+            onOpen={onOpen}
             onDownload={onDownload}
             onRename={onRename}
             onDelete={onDelete}
@@ -1102,7 +1145,7 @@ function ListView({
             onDoubleClick={() => onOpen(file)}
             className={cn(
               "grid cursor-pointer grid-cols-[40px_minmax(300px,1fr)_180px_130px_45px] items-center border-b px-4 py-3 transition hover:bg-muted/40",
-              selectedId === file.id && "bg-[#1F453B]/5",
+              selectedId === file.id && "bg-[var(--brand-50)]",
             )}
           >
             <Icon
@@ -1110,7 +1153,7 @@ function ListView({
             />
             <div className="flex min-w-0 items-center gap-2">
               {file.starred && (
-                <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-400" />
+                <Star className="h-3 w-3 shrink-0 fill-[var(--gold)] text-[var(--gold)]" />
               )}
               <p className="truncate text-sm font-medium">{file.name}</p>
             </div>
@@ -1118,6 +1161,7 @@ function ListView({
             <p className="text-xs text-muted-foreground">{file.size}</p>
             <ItemActionsMenu
               item={file}
+              onOpen={onOpen}
               onDownload={onDownload}
               onRename={onRename}
               onDelete={onDelete}
@@ -1276,30 +1320,62 @@ export default function OneDriveFileManager() {
     { id: "w4", name: "Contracts", icon: Archive, count: 12 },
   ]);
 
+  /* -------------------------------------------------- Source: OneDrive or INOS */
+
+  const navigate = useNavigate();
+  const { data: odStatus, isLoading: statusLoading } = useGetOneDriveStatusQuery();
+  const oneDriveReady = !!(odStatus?.configured && odStatus?.connected);
+  const [sourcePick, setSourcePick] = useState(null);
+  const source = sourcePick ?? (oneDriveReady ? "onedrive" : "inos");
+  const isInos = source === "inos";
+
+  const switchSource = (next) => {
+    setSourcePick(next);
+    setPathTrail([]);
+    setSelectedItem(null);
+  };
+
   /* -------------------------------------------------- Data — current folder */
 
-  const {
-    data: currentData,
-    isLoading,
-    isFetching,
-    error,
-    refetch,
-  } = useGetOneDriveFilesQuery(currentFolder);
-
-  const { folders: allFolders, files: allFiles } = useMemo(
-    () => normalizeDriveItems(currentData),
-    [currentData],
-  );
-
+  const odQuery = useGetOneDriveFilesQuery(currentFolder, {
+    skip: statusLoading || isInos,
+  });
   // Sidebar's top-level folder shortcuts — fetched independently of
   // wherever the user is currently browsing.
-  const { data: rootData, isFetching: rootFoldersLoading } =
-    useGetOneDriveFilesQuery(ROOT);
+  const { data: rootData, isFetching: odRootLoading } = useGetOneDriveFilesQuery(
+    ROOT,
+    { skip: statusLoading || isInos },
+  );
+
+  const projectsQuery = useGetProjectsQuery(undefined, { skip: !isInos });
+  const docsQuery = useGetDocumentsQuery({}, { skip: !isInos });
+
+  const isLoading = statusLoading || (isInos ? projectsQuery.isLoading || docsQuery.isLoading : odQuery.isLoading);
+  const isFetching = isInos ? projectsQuery.isFetching || docsQuery.isFetching : odQuery.isFetching;
+  const error = isInos ? projectsQuery.error || docsQuery.error : odQuery.error;
+  const refetch = () => {
+    if (isInos) {
+      projectsQuery.refetch();
+      docsQuery.refetch();
+    } else odQuery.refetch();
+  };
+
+  const { folders: allFolders, files: allFiles } = useMemo(
+    () =>
+      isInos
+        ? buildInosItems(currentFolder, projectsQuery.data, docsQuery.data)
+        : normalizeDriveItems(odQuery.data),
+    [isInos, currentFolder, projectsQuery.data, docsQuery.data, odQuery.data],
+  );
 
   const rootFolders = useMemo(
-    () => normalizeDriveItems(rootData).folders,
-    [rootData],
+    () =>
+      isInos
+        ? buildInosItems(ROOT, projectsQuery.data, docsQuery.data).folders
+        : normalizeDriveItems(rootData).folders,
+    [isInos, projectsQuery.data, docsQuery.data, rootData],
   );
+  const rootFoldersLoading = isInos ? projectsQuery.isFetching : odRootLoading;
 
   const currentFolders = useMemo(() => {
     let result = allFolders;
@@ -1338,6 +1414,7 @@ export default function OneDriveFileManager() {
   const [isUploading, setIsUploading] = useState(false);
   const [deleteFile] = useDeleteOneDriveFileMutation();
   const [triggerDownload] = useLazyDownloadOneDriveFileQuery();
+  const [triggerDocDownload] = useLazyDownloadDocumentQuery();
 
   /* -------------------------------------------------- Navigation */
 
@@ -1412,7 +1489,7 @@ export default function OneDriveFileManager() {
     setDownloadingId(item.id);
 
     try {
-      const blob = await triggerDownload(item.id).unwrap();
+      const blob = await (isInos ? triggerDocDownload : triggerDownload)(item.id).unwrap();
       const url = URL.createObjectURL(blob);
 
       const link = document.createElement("a");
@@ -1424,7 +1501,8 @@ export default function OneDriveFileManager() {
 
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("Download failed", err);
+      console.warn("Download failed", err);
+      toast.error(`Couldn't download ${item.name}${err?.status === 404 || /404/.test(String(err?.error || err?.message || "")) ? " — the file isn't in storage" : ""}.`);
     } finally {
       setDownloadingId(null);
     }
@@ -1441,7 +1519,7 @@ export default function OneDriveFileManager() {
       await deleteFile(item.id).unwrap();
       if (selectedItem?.id === item.id) setSelectedItem(null);
     } catch (err) {
-      console.error("Delete failed", err);
+      console.warn("Delete failed", err);
     } finally {
       setDeletingId(null);
     }
@@ -1466,19 +1544,23 @@ export default function OneDriveFileManager() {
 
   /* -------------------------------------------------- Derived labels */
 
+  const rootLabel = isInos ? "INOS projects" : "My Files";
   const currentTitle =
-    pathTrail.length > 0 ? pathTrail[pathTrail.length - 1].name : "My Files";
+    pathTrail.length > 0 ? pathTrail[pathTrail.length - 1].name : rootLabel;
 
   const locationLabel =
     pathTrail.length > 0
-      ? `My Files / ${pathTrail.map((c) => c.name).join(" / ")}`
-      : "My Files";
+      ? `${rootLabel} / ${pathTrail.map((c) => c.name).join(" / ")}`
+      : rootLabel;
+  const canWrite = !isInos;
 
   /* -------------------------------------------------- Render */
 
   return (
-    <div className="flex h-[calc(100vh-32px)] min-h-[700px] overflow-hidden rounded-2xl border bg-muted/20">
+    <div className="flex h-[calc(100vh-128px)] min-h-[560px] overflow-hidden rounded-[var(--r-lg)] border border-[var(--line)] bg-[var(--surface-2)] shadow-[var(--shadow-xs)]">
       <FileSidebar
+        sourceLabel={isInos ? "Project documents in INOS" : "OneDrive workspace"}
+        rootLabel={rootLabel}
         collapsed={sidebarCollapsed}
         currentFolder={currentFolder}
         onNavigateRoot={navigateToRoot}
@@ -1510,6 +1592,7 @@ export default function OneDriveFileManager() {
             <Separator orientation="vertical" className="h-5" />
 
             <Breadcrumb
+              rootLabel={rootLabel}
               trail={pathTrail}
               onNavigateRoot={navigateToRoot}
               onNavigateIndex={navigateToBreadcrumbIndex}
@@ -1560,40 +1643,40 @@ export default function OneDriveFileManager() {
               />
             </div>
 
-            <Button
-              type="button"
-              onClick={() => setCreateFolderOpen(true)}
-              className={BRAND}
-            >
-              <Plus className="h-[15px] w-[15px]" />
-              New
-            </Button>
+            {oneDriveReady && (
+              <Segmented
+                value={source}
+                onChange={switchSource}
+                options={[
+                  { value: "inos", label: "INOS documents" },
+                  { value: "onedrive", label: "OneDrive" },
+                ]}
+              />
+            )}
 
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setUploadOpen(true)}
-            >
-              <Upload className="h-[15px] w-[15px]" />
-              Upload
-            </Button>
+            {canWrite && (
+              <>
+                <Button
+                  type="button"
+                  onClick={() => setCreateFolderOpen(true)}
+                  className={BRAND}
+                >
+                  <Plus className="h-[15px] w-[15px]" />
+                  New
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setUploadOpen(true)}
+                >
+                  <Upload className="h-[15px] w-[15px]" />
+                  Upload
+                </Button>
+              </>
+            )}
 
             <Separator orientation="vertical" className="h-7" />
-
-            <Button type="button" variant="outline">
-              <ArrowDownAZ className="h-[15px] w-[15px]" />
-              Sort
-              <ChevronDown className="h-[13px] w-[13px]" />
-            </Button>
-
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9"
-            >
-              <ListFilter className="h-[17px] w-[17px]" />
-            </Button>
 
             <div className="flex rounded-lg border bg-background p-0.5">
               <Button
@@ -1641,21 +1724,52 @@ export default function OneDriveFileManager() {
                 </p>
               </div>
 
-              <Badge className="gap-1.5 rounded-full bg-emerald-50 text-[10px] font-medium text-emerald-700 hover:bg-emerald-50">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Synced with OneDrive
-              </Badge>
+              {error ? (
+                <Pill tone="bad" size="sm">{isInos ? "Documents unavailable" : "OneDrive unavailable"}</Pill>
+              ) : isFetching ? (
+                <Pill tone="info" size="sm">Syncing…</Pill>
+              ) : isInos ? (
+                <Pill tone="brand" size="sm">INOS documents</Pill>
+              ) : (
+                <Pill tone="ok" size="sm">Synced with OneDrive</Pill>
+              )}
             </div>
 
+            {!statusLoading && !oneDriveReady && (
+              <div className="mb-5 flex flex-wrap items-center gap-3 rounded-[var(--r-lg)] border border-[var(--line)] bg-[var(--surface)] px-4 py-3">
+                <span className="inos-icon-tile inos-icon-tile--sm">
+                  <CloudOff aria-hidden />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">
+                    {odStatus?.configured === false ? "OneDrive isn't set up on this server" : "Connect OneDrive"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {odStatus?.configured === false
+                      ? "Ask an admin to add the OneDrive site and drive settings. Meanwhile you're browsing the project documents stored in INOS."
+                      : "Link your Microsoft account to browse and upload to the shared INOS drive. Meanwhile you're browsing the project documents stored in INOS."}
+                  </p>
+                </div>
+                {odStatus?.configured !== false && (
+                  <InosButton size="sm" variant="primary" icon={Cloud} onClick={() => navigate(odStatus?.connectUrl || "/settings/connectors")}>
+                    Connect OneDrive
+                  </InosButton>
+                )}
+              </div>
+            )}
+
             {error && (
-              <div className="mb-5 flex items-center gap-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
-                <AlertCircle className="h-[18px] w-[18px] shrink-0 text-red-500" />
-                <p className="flex-1 text-xs text-red-600">
-                  This folder could not be loaded. {error?.data?.message || ""}
-                </p>
-                <Button variant="outline" size="sm" onClick={() => refetch()}>
-                  Retry
-                </Button>
+              <div className="rounded-[var(--r-lg)] border border-[var(--line)] bg-[var(--surface)]">
+                <EmptyState
+                  icon={CloudOff}
+                  title={isInos ? "Couldn't load documents" : "Couldn't reach OneDrive"}
+                  text={`This folder could not be loaded${error?.data?.message ? ` (${error.data.message})` : ""}. ${isInos ? "Try again in a moment." : "Check the OneDrive connection in Settings → Connectors, then try again."}`}
+                  action={
+                    <InosButton size="sm" icon={RefreshCw} onClick={() => refetch()}>
+                      Retry
+                    </InosButton>
+                  }
+                />
               </div>
             )}
 
@@ -1692,7 +1806,7 @@ export default function OneDriveFileManager() {
                               onOpen={openItem}
                               onDownload={downloadItem}
                               onRename={renameItem}
-                              onDelete={deleteItem}
+                              onDelete={canWrite ? deleteItem : undefined}
                               isDeleting={deletingId === folder.id}
                             />
                           ))}
@@ -1721,7 +1835,7 @@ export default function OneDriveFileManager() {
                               onOpen={openItem}
                               onDownload={downloadItem}
                               onRename={renameItem}
-                              onDelete={deleteItem}
+                              onDelete={canWrite ? deleteItem : undefined}
                               isDownloading={downloadingId === file.id}
                               isDeleting={deletingId === file.id}
                             />
@@ -1741,40 +1855,29 @@ export default function OneDriveFileManager() {
                     onOpen={openItem}
                     onDownload={downloadItem}
                     onRename={renameItem}
-                    onDelete={deleteItem}
+                    onDelete={canWrite ? deleteItem : undefined}
                     downloadingId={downloadingId}
                     deletingId={deletingId}
                   />
                 )}
 
                 {!currentFolders.length && !currentFiles.length && (
-                  <div className="flex min-h-[440px] flex-col items-center justify-center rounded-2xl border border-dashed bg-background">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50">
-                      <FolderOpen className="h-[30px] w-[30px] text-muted-foreground/60" />
-                    </div>
-                    <h2 className="mt-4 text-sm font-semibold">
-                      This folder is empty
-                    </h2>
-                    <p className="mt-1 max-w-sm text-center text-xs text-muted-foreground">
-                      Create a folder or upload files to start organizing this
-                      workspace.
-                    </p>
-                    <div className="mt-5 flex gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => setCreateFolderOpen(true)}
-                      >
-                        <FolderPlus className="h-[15px] w-[15px]" />
-                        New folder
-                      </Button>
-                      <Button
-                        onClick={() => setUploadOpen(true)}
-                        className={BRAND}
-                      >
-                        <Upload className="h-[15px] w-[15px]" />
-                        Upload
-                      </Button>
-                    </div>
+                  <div className="flex min-h-[420px] items-center justify-center rounded-[var(--r-lg)] border border-dashed border-[var(--line-strong)] bg-[var(--surface)]">
+                    <EmptyState
+                      icon={FolderOpen}
+                      title="This folder is empty"
+                      text={canWrite ? "Create a folder or upload files to start organising this workspace." : "Documents uploaded to this project in INOS will appear here."}
+                      action={canWrite &&
+                        <div className="flex gap-2">
+                          <InosButton icon={FolderPlus} onClick={() => setCreateFolderOpen(true)}>
+                            New folder
+                          </InosButton>
+                          <InosButton variant="primary" icon={Upload} onClick={() => setUploadOpen(true)}>
+                            Upload
+                          </InosButton>
+                        </div>
+                      }
+                    />
                   </div>
                 )}
               </>

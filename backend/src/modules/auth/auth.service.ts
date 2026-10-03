@@ -31,7 +31,7 @@ export class AuthService {
   ) {}
 
   async login(email: string, password: string) {
-    const user = await this.userModel.findOne({
+    const user = await this.userModel.scope('withPassword').findOne({
       where: { email },
       attributes: [
         'id',
@@ -276,7 +276,7 @@ export class AuthService {
     currentPassword: string,
     newPassword: string,
   ): Promise<{ message: string }> {
-    const user = await this.userModel.findByPk(userId, {
+    const user = await this.userModel.scope('withPassword').findByPk(userId, {
       attributes: ['id', 'password_hash'],
     });
 

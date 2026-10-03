@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, FileSpreadsheet } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus } from "lucide-react";
+import { Page, PageHeader, Button, Field, TextInput, SelectInput, FormActions } from "@/components/inos";
+import { DocSection, Grid } from "@/components/forms/commerce-form-ui";
 
 import {
   useCreateBoqMutation,
@@ -15,7 +17,10 @@ export default function BoqNew() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const [projectId, setProjectId] = useState("");
+  // Preselect the project when arriving from a project page (?project_id=…).
+  const [projectId, setProjectId] = useState(
+    () => searchParams.get("project_id") || searchParams.get("projectId") || "",
+  );
   const [title, setTitle] = useState("");
   const [templateId, setTemplateId] = useState("");
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
@@ -108,131 +113,107 @@ export default function BoqNew() {
 
   const selectedProject = projects.find((p) => p.id === projectId);
 
+  const selectedTemplate = templates.find((t) => t.id === templateId);
+
   return (
-    <div className="max-w-2xl mx-auto">
-      <button
-        onClick={() => navigate("/boq")}
-        className="flex items-center gap-2 text-sm text-gray-600 hover:text-black mb-5"
-      >
-        <ArrowLeft size={16} />
-        Back to BOQ Dashboard
-      </button>
+    <Page width="form">
+      <PageHeader
+        crumbs={[
+          { label: "Ledger", to: "/ledger" },
+          { label: "BOQs", to: "/ledger/boq/all" },
+          { label: "New" },
+        ]}
+        title="New bill of quantities"
+        subtitle="Pick the project, optionally start from a template, then continue in the BOQ editor."
+        actions={
+          <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate("/boq")}>
+            Back to BOQs
+          </Button>
+        }
+      />
 
-      <div className="bc-card p-8">
-        <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mb-5">
-          <FileSpreadsheet size={22} />
-        </div>
+      <form onSubmit={submit} className="inos-form">
+        <DocSection step={1} title="Project" description="Every BOQ belongs to one project.">
+          <Grid cols={1}>
+            <Field label="Project" required htmlFor="boq-project" hint="Not listed? Create it without leaving this page.">
+              <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <SelectInput
+                    id="boq-project"
+                    value={projectId}
+                    onChange={handleProjectSelectChange}
+                    disabled={projectsLoading}
+                    required
+                  >
+                    <option value="">{projectsLoading ? "Loading projects…" : "Select project"}</option>
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                    <option value={CREATE_NEW_PROJECT}>+ Create new project…</option>
+                  </SelectInput>
+                </div>
+                <Button variant="secondary" icon={Plus} onClick={() => setShowNewProjectModal(true)}>
+                  New project
+                </Button>
+              </div>
+            </Field>
+          </Grid>
+        </DocSection>
 
-        <p className="uppercase tracking-widest text-xs text-gray-400">
-          Create BOQ
-        </p>
-
-        <h1 className="text-2xl font-bold mt-2">New Bill Of Quantities</h1>
-
-        <p className="text-gray-500 text-sm mt-2 mb-6">
-          Select a project and optionally create this BOQ from an existing
-          template.
-        </p>
-
-        <form onSubmit={submit} className="space-y-5">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium">Project *</label>
-
-              <button
-                type="button"
-                onClick={() => setShowNewProjectModal(true)}
-                className="text-xs font-medium text-[#1F453B] hover:underline"
+        <DocSection step={2} title="Details" description="Both optional — you can change them in the editor.">
+          <Grid cols={2}>
+            <Field label="BOQ title" optional htmlFor="boq-title" hint="Leave blank to name it after the project.">
+              <TextInput
+                id="boq-title"
+                value={title}
+                placeholder={selectedProject ? `e.g. ${selectedProject.name} — interiors BOQ` : "e.g. Interiors BOQ"}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </Field>
+            <Field
+              label="Start from"
+              htmlFor="boq-template"
+              hint={selectedTemplate?.description || (templateId ? "Categories and items are copied from the template." : "An empty BOQ you fill in yourself.")}
+            >
+              <SelectInput
+                id="boq-template"
+                value={templateId}
+                disabled={templatesLoading}
+                onChange={(e) => setTemplateId(e.target.value)}
               >
-                + Create New Project
-              </button>
-            </div>
+                <option value="">{templatesLoading ? "Loading templates…" : "Blank BOQ"}</option>
+                {templates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name}
+                  </option>
+                ))}
+              </SelectInput>
+            </Field>
+          </Grid>
+        </DocSection>
 
-            <select
-              className="bc-input"
-              value={projectId}
-              onChange={handleProjectSelectChange}
-              disabled={projectsLoading}
-              required
-            >
-              <option value="">
-                {projectsLoading ? "Loading projects..." : "Select Project"}
-              </option>
-
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-
-              <option value={CREATE_NEW_PROJECT}>+ Create New Project…</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block mb-2 text-sm font-medium">BOQ Title</label>
-
-            <input
-              className="bc-input"
-              value={title}
-              placeholder="Auto generated from project"
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="block mb-2 text-sm font-medium">Template</label>
-
-            <select
-              className="bc-input"
-              value={templateId}
-              disabled={templatesLoading}
-              onChange={(e) => setTemplateId(e.target.value)}
-            >
-              <option value="">
-                {templatesLoading ? "Loading templates..." : "Start Blank"}
-              </option>
-
-              {templates.map((template) => (
-                <option key={template.id} value={template.id}>
-                  {template.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => navigate("/boq")}
-              className="h-11 px-5 rounded-xl border"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              disabled={busy}
-              className="flex-1 h-11 rounded-xl bg-[#1F453B] text-white flex items-center justify-center gap-2"
-            >
-              {busy ? (
-                "Creating..."
-              ) : (
-                <>
-                  Create & Open Editor
-                  <ArrowRight size={16} />
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
+        <FormActions
+          onCancel={() => navigate("/boq")}
+          submitLabel={
+            busy ? (
+              "Creating…"
+            ) : (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                Create & open editor <ArrowRight size={16} aria-hidden />
+              </span>
+            )
+          }
+          submitting={busy}
+        />
+      </form>
 
       <NewProjectModal
         open={showNewProjectModal}
         onClose={() => setShowNewProjectModal(false)}
         onCreated={handleProjectCreated}
       />
-    </div>
+    </Page>
   );
 }

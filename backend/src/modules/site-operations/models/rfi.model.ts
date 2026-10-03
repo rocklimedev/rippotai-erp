@@ -23,10 +23,10 @@ import {
 @Table({ tableName: 'rfis', timestamps: true })
 export class Rfi extends Model<Rfi> {
   @ForeignKey(() => Project)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  projectId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  projectId: string;
 
-  @BelongsTo(() => Project)
+  @BelongsTo(() => Project, { constraints: false })
   project: Project;
 
   @ForeignKey(() => Step)

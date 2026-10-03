@@ -2,16 +2,15 @@ import AppLayout from "@/layouts/AppLayout";
 import AppDashboard from "@/components/dashboard/AppDashboard";
 
 // Inventory Pages
-import SiteInventoryList from "@/pages/materials/SiteInventoryList";
+import InventoryPage from "@/pages/workspace/InventoryPage";
 import InventoryDashboard from "../../pages/dashboard/InventoryDashboard";
 
 import SiteInventoryView from "@/pages/materials/SiteInventoryView";
-import InventoryTransactions from "../../pages/materials/SiteInventoryTransactions";
+// Legacy per-material ledger (still importable): pages/materials/SiteInventoryTransactions.jsx
 import InventoryTransactionNew from "../../pages/materials/SiteInventoryTransactionForm";
 import InventoryTransactionView from "../../pages/materials/SiteInventoryTransactionView";
 
 import MaterialsDashboard from "../../pages/dashboard/MaterialDashboard";
-import ProjectInventoryRegisterPage from "../../pages/materials/ProjectInventoryRegisterPage";
 
 export const inventoryRoutes = [
   {
@@ -26,7 +25,7 @@ export const inventoryRoutes = [
     dynamicSections: {
       appKey: "inventory",
 
-      exclude: ["inventory", "activity", "roles", "edit-dashboard"],
+      exclude: ["inventory", "edit-dashboard"],
     },
 
     children: [
@@ -45,7 +44,7 @@ export const inventoryRoutes = [
 
       {
         path: "site-inventory/all",
-        element: <SiteInventoryList />,
+        element: <InventoryPage tab="stock" />,
       },
 
       // Material-specific inventory view
@@ -73,8 +72,8 @@ export const inventoryRoutes = [
       // ?to_date=
       //
       {
-        path: "transactions",
-        element: <InventoryTransactions />,
+        path: "site-inventory/transactions",
+        element: <InventoryPage tab="moves" />,
       },
 
       // Create / record inventory transaction
@@ -87,7 +86,7 @@ export const inventoryRoutes = [
       // ?material_id=
       //
       {
-        path: "transactions/new",
+        path: "site-inventory/transactions/new",
         element: <InventoryTransactionNew />,
       },
 
@@ -96,12 +95,8 @@ export const inventoryRoutes = [
       // /materials/inventory/transactions/:id
       //
       {
-        path: "transactions/:id",
+        path: "site-inventory/transactions/:id",
         element: <InventoryTransactionView />,
-      },
-      {
-        path: "site-inventory/register",
-        element: <ProjectInventoryRegisterPage />,
       },
     ],
   },

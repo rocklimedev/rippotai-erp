@@ -33,7 +33,7 @@ export default function AppLayout({ app }) {
   return (
     <div className="min-h-screen bg-page">
       <TopHeader app={app} />
-      <main className="p-6 lg:p-8">
+      <main className="px-5 py-6 lg:px-8 lg:py-8">
         <Outlet />
       </main>
     </div>

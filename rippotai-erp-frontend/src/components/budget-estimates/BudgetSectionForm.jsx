@@ -1,31 +1,26 @@
 import React, { useMemo } from "react";
-import { Save } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Page,
+  PageHeader,
+  Button,
+  Field,
+  TextInput,
+  SelectInput,
+  TextArea,
+  FormActions,
+} from "@/components/inos";
+import { DocSection, DocLayout, Grid, Affix, Check } from "@/components/forms/commerce-form-ui";
 
-import { Shell } from "../../hooks/shared"; // keep your layout Shell
-
+/**
+ * Stacked, numbered-section form shell for budget estimates.
+ * Field config: { key, label, type, placeholder, required, description (hint), fullWidth, options, affix: "₹" | "%" }
+ */
 export function BudgetSectionForm({
   title,
   subtitle,
+  crumbs,
   sections = [],
   values = {},
   onFieldChange,
@@ -33,9 +28,11 @@ export function BudgetSectionForm({
   projectId = "",
   onProjectChange,
   onSubmit,
+  onCancel,
   isSubmitting = false,
   renderSection,
-  submitLabel = "Save Estimate",
+  submitLabel = "Save estimate",
+  aside,
   children,
 }) {
   const filledCount = useMemo(() => {
@@ -60,207 +57,155 @@ export function BudgetSectionForm({
     onFieldChange?.(section.key || section.title, key, value);
   };
 
-  // Renders the plain field grid for a given section
+  const renderControl = (section, field, fieldValue) => {
+    const onChange = (event) => handleFieldChange(section, field.key, event.target.value);
+
+    if (field.type === "textarea") {
+      return <TextArea rows={field.rows || 4} value={fieldValue} placeholder={field.placeholder || ""} onChange={onChange} />;
+    }
+    if (field.type === "select") {
+      return (
+        <SelectInput value={fieldValue || ""} onChange={onChange} placeholder={field.placeholder || "Select…"}>
+          {(field.options || []).map((option) => {
+            const optionValue = typeof option === "object" ? option.value : option;
+            const optionLabel = typeof option === "object" ? option.label : option;
+            return (
+              <option key={optionValue} value={String(optionValue)}>
+                {optionLabel}
+              </option>
+            );
+          })}
+        </SelectInput>
+      );
+    }
+    if (field.type === "checkbox") {
+      return (
+        <div style={{ minHeight: 40, display: "flex", alignItems: "center" }}>
+          <Check checked={Boolean(fieldValue)} onChange={(e) => handleFieldChange(section, field.key, e.target.checked)}>
+            {field.checkboxLabel || field.label}
+          </Check>
+        </div>
+      );
+    }
+    const input = (
+      <TextInput
+        type={field.type || "text"}
+        min={field.min}
+        max={field.max}
+        step={field.type === "number" ? field.step || "0.01" : undefined}
+        inputMode={field.type === "number" ? "decimal" : undefined}
+        value={fieldValue}
+        placeholder={field.placeholder || ""}
+        onChange={onChange}
+        style={field.type === "number" ? { textAlign: "right" } : undefined}
+      />
+    );
+    if (field.affix === "₹") return <Affix pre="₹">{input}</Affix>;
+    if (field.affix === "%") return <Affix post="%">{input}</Affix>;
+    return input;
+  };
+
   const renderFields = (section) => (
-    <div className="grid gap-4 md:grid-cols-2">
+    <Grid cols={section.columns || 2}>
       {(section?.fields || []).map((field) => {
         const sectionKey = section.key || section.title;
         const sectionData = values?.[sectionKey] || {};
-        const fieldValue =
-          sectionData?.[field.key] ?? values?.[field.key] ?? "";
+        const fieldValue = sectionData?.[field.key] ?? values?.[field.key] ?? "";
 
         return (
-          <div
+          <Field
             key={field.key}
-            className={`space-y-2 ${field.fullWidth ? "md:col-span-2" : ""}`}
+            label={field.type === "checkbox" ? null : field.label}
+            required={field.required}
+            hint={field.description}
+            full={field.fullWidth}
           >
-            <Label className="text-[13px] font-semibold">
-              {field.label}
-              {field.required && (
-                <span className="text-destructive ml-1">*</span>
-              )}
-            </Label>
-
-            {field.description && (
-              <p className="text-xs text-muted-foreground">
-                {field.description}
-              </p>
-            )}
-
-            {/* TEXTAREA */}
-            {field.type === "textarea" ? (
-              <Textarea
-                rows={field.rows || 4}
-                value={fieldValue}
-                placeholder={field.placeholder || ""}
-                onChange={(event) =>
-                  handleFieldChange(section, field.key, event.target.value)
-                }
-              />
-            ) : field.type === "date" ? (
-              /* DATE */
-              <Input
-                type="date"
-                value={fieldValue}
-                onChange={(event) =>
-                  handleFieldChange(section, field.key, event.target.value)
-                }
-              />
-            ) : field.type === "number" ? (
-              /* NUMBER */
-              <Input
-                type="number"
-                min={field.min}
-                max={field.max}
-                step={field.step || "0.01"}
-                value={fieldValue}
-                placeholder={field.placeholder || ""}
-                onChange={(event) =>
-                  handleFieldChange(section, field.key, event.target.value)
-                }
-              />
-            ) : field.type === "select" ? (
-              /* SELECT */
-              <Select
-                value={fieldValue || ""}
-                onValueChange={(value) =>
-                  handleFieldChange(section, field.key, value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={field.placeholder || "Select..."} />
-                </SelectTrigger>
-                <SelectContent>
-                  {(field.options || []).map((option) => {
-                    const optionValue =
-                      typeof option === "object" ? option.value : option;
-                    const optionLabel =
-                      typeof option === "object" ? option.label : option;
-
-                    return (
-                      <SelectItem key={optionValue} value={String(optionValue)}>
-                        {optionLabel}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            ) : field.type === "checkbox" ? (
-              /* CHECKBOX */
-              <div className="flex items-center gap-2 h-10">
-                <Checkbox
-                  id={field.key}
-                  checked={Boolean(fieldValue)}
-                  onCheckedChange={(checked) =>
-                    handleFieldChange(section, field.key, checked)
-                  }
-                />
-                <Label
-                  htmlFor={field.key}
-                  className="text-sm font-normal cursor-pointer"
-                >
-                  {field.checkboxLabel || field.label}
-                </Label>
-              </div>
-            ) : (
-              /* DEFAULT INPUT */
-              <Input
-                type={field.type || "text"}
-                value={fieldValue}
-                placeholder={field.placeholder || ""}
-                onChange={(event) =>
-                  handleFieldChange(section, field.key, event.target.value)
-                }
-              />
-            )}
-          </div>
+            {renderControl(section, field, fieldValue)}
+          </Field>
         );
       })}
-    </div>
+    </Grid>
   );
 
   const renderSectionBody = (section) => {
-    // CUSTOM SECTION
     if (section?.type && renderSection) {
       return renderSection(section);
     }
-
-    // STANDARD FIELDS
     return renderFields(section);
   };
 
-  return (
-    <Shell
-      title={title}
-      subtitle={subtitle}
-      action={
-        <Button type="button" onClick={onSubmit} disabled={isSubmitting}>
-          <Save className="mr-2 h-4 w-4" />
-          {isSubmitting ? "Saving..." : submitLabel}
-        </Button>
-      }
-    >
-      {/* =====================================================
-          PROJECT SELECTOR
-      ====================================================== */}
-      {projects?.length > 0 && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-2 max-w-lg">
-              <Label className="text-[13px] font-semibold">Project</Label>
-              <Select
+  const hasProjects = projects?.length > 0;
+  const offset = hasProjects ? 1 : 0;
+
+  const body = (
+    <>
+      {hasProjects && (
+        <DocSection step={1} title="Project" description="Which project this estimate is for.">
+          <Grid cols={2}>
+            <Field label="Project" required htmlFor="bsf-project">
+              <SelectInput
+                id="bsf-project"
                 value={projectId || ""}
-                onValueChange={(value) => onProjectChange?.(value)}
+                onChange={(e) => onProjectChange?.(e.target.value)}
+                placeholder="Select project"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </SelectInput>
+            </Field>
+          </Grid>
+        </DocSection>
       )}
 
-      {/* =====================================================
-          ALL SECTIONS, STACKED — NO TABS / NO PAGER
-      ====================================================== */}
-      <div className="space-y-5 mt-5">
-        {sections.map((section, index) => {
-          const sectionKey = section.key || section.title;
+      {sections.map((section, index) => (
+        <DocSection
+          key={section.key || section.title}
+          step={index + 1 + offset}
+          title={section.title}
+          description={section.description}
+          actions={section.actions}
+        >
+          {renderSectionBody(section)}
+        </DocSection>
+      ))}
+    </>
+  );
 
-          return (
-            <Card key={sectionKey}>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg">
-                  <span className="mr-1">{index + 1}.</span>
-                  {section.title}
-                </CardTitle>
-                {section.description && (
-                  <CardDescription className="mt-1">
-                    {section.description}
-                  </CardDescription>
-                )}
-              </CardHeader>
-              <CardContent>{renderSectionBody(section)}</CardContent>
-            </Card>
-          );
-        })}
-      </div>
+  return (
+    <Page width={aside ? undefined : "form"}>
+      <PageHeader
+        crumbs={crumbs}
+        title={title}
+        subtitle={subtitle}
+        actions={
+          onCancel && (
+            <Button variant="ghost" icon={ArrowLeft} onClick={onCancel}>
+              Back
+            </Button>
+          )
+        }
+      />
 
-      <div className="mt-4 text-xs text-muted-foreground text-center">
-        Draft autosaved locally • {filledCount} field
-        {filledCount !== 1 ? "s" : ""} completed
-      </div>
-
-      {children}
-    </Shell>
+      <form
+        className="inos-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSubmit?.();
+        }}
+      >
+        {aside ? <DocLayout aside={aside}>{body}</DocLayout> : body}
+        {children}
+        <FormActions
+          note={`Draft autosaves on this device · ${filledCount} field${filledCount !== 1 ? "s" : ""} filled`}
+          onCancel={onCancel}
+          submitLabel={submitLabel}
+          submitting={isSubmitting}
+        />
+      </form>
+    </Page>
   );
 }
 

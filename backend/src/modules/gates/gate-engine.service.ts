@@ -247,10 +247,26 @@ export class GateEngineService {
       conditions.map(async (condition) => {
         try {
           const evaluator = this.conditionRegistry.resolve(condition.type);
-          return await evaluator.evaluate(
-            projectId,
-            condition as unknown as GateCondition,
-          );
+          // MariaDB stores JSON columns as LONGTEXT, so params can arrive as a
+          // string; evaluators expect an object (params.phaseCode etc).
+          let params: unknown = (condition as { params?: unknown }).params;
+          if (typeof params === 'string') {
+            try {
+              params = JSON.parse(params);
+            } catch {
+              params = {};
+            }
+          }
+          const c = condition as CachedGateCondition;
+          return await evaluator.evaluate(projectId, {
+            id: c.id,
+            gateDefinitionId: c.gateDefinitionId,
+            type: c.type,
+            label: c.label,
+            optional: c.optional,
+            sortOrder: c.sortOrder,
+            params,
+          } as unknown as GateCondition);
         } catch (error) {
           this.logger.error(`Cannot evaluate condition ${condition.id}`, error);
           return {

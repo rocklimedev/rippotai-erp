@@ -21,8 +21,10 @@ export class CreateBudgetEstimateItemDto {
   @IsUUID()
   boq_item_id?: string;
 
+  // Set server-side when the item is created under its category.
+  @IsOptional()
   @IsUUID()
-  estimate_category_id: string;
+  estimate_category_id?: string;
 
   @IsString()
   name: string;

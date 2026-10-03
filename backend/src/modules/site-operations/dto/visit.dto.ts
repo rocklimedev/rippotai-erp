@@ -7,6 +7,7 @@ import {
   IsArray,
   MaxLength,
   IsDateString,
+  IsUUID,
 } from 'class-validator';
 import {
   VisitorType,
@@ -15,8 +16,8 @@ import {
 } from '../../../common/enums/site-operations.enums';
 
 export class CreateVisitAssignmentDto {
-  @IsInt()
-  projectId: number;
+  @IsUUID()
+  projectId: string;
 
   @IsEnum(VisitorType)
   visitorType: VisitorType;
@@ -39,8 +40,8 @@ export class CreateVisitAssignmentDto {
 }
 
 export class LogSiteVisitDto {
-  @IsInt()
-  projectId: number;
+  @IsUUID()
+  projectId: string;
 
   @IsOptional()
   @IsInt()

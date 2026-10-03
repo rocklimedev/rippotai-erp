@@ -7,16 +7,19 @@ import { LeadsService } from './leads.service';
 import { Lead } from './models/lead.model';
 import { LeadNote } from './models/lead-note.model';
 import { LeadActivity } from './models/lead-activity.model';
+import { LeadTask } from './models/lead-task.model';
 
 import { LeadActivityService } from './lead-activity.service';
 
 import { NotificationsModule } from '../engagement/notifications.module';
 import { ActivityLogsModule } from '../engagement/activity-logs.module';
 import { ZohoModule } from '../zoho/zoho.module';
+import { ClientsModule } from '../clients/clients.module';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Lead, LeadNote, LeadActivity]),
+    SequelizeModule.forFeature([Lead, LeadNote, LeadActivity, LeadTask]),
+    ClientsModule,
     NotificationsModule,
     ActivityLogsModule,
     ZohoModule,

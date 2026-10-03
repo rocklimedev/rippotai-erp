@@ -4,6 +4,7 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  PreconditionFailedException,
 } from '@nestjs/common';
 
 import { ConfigService } from '@nestjs/config';
@@ -25,12 +26,38 @@ export class MicrosoftOneDriveService {
 
     this.driveId = this.config.get<string>('MICROSOFT_ONEDRIVE_DRIVE_ID')!;
 
-    if (!this.siteId) {
-      throw new Error('MICROSOFT_ONEDRIVE_SITE_ID is not configured');
-    }
+    // Missing config must not crash the app: every call checks readiness
+    // and returns a clean 412 (ONEDRIVE_NOT_CONFIGURED / NOT_CONNECTED).
+  }
 
-    if (!this.driveId) {
-      throw new Error('MICROSOFT_ONEDRIVE_DRIVE_ID is not configured');
+  /** Whether OneDrive is configured on the server and connected for this user. */
+  async getStatus(userId: string) {
+    const configured = !!(this.siteId && this.driveId);
+    let connected = false;
+    try {
+      connected = configured && (await this.msAuth.isConnected(userId));
+    } catch {
+      connected = false;
+    }
+    return { configured, connected, connectUrl: '/settings/connectors' };
+  }
+
+  /** Valid Graph access token, or a 412 the UI can turn into a "Connect OneDrive" state. */
+  private async token(userId: string): Promise<string> {
+    if (!this.siteId || !this.driveId) {
+      throw new PreconditionFailedException({
+        code: 'ONEDRIVE_NOT_CONFIGURED',
+        message: 'OneDrive is not configured on this server.',
+      });
+    }
+    try {
+      return await this.msAuth.getValidAccessToken(userId);
+    } catch (e) {
+      throw new PreconditionFailedException({
+        code: 'ONEDRIVE_NOT_CONNECTED',
+        message:
+          (e as Error)?.message || 'Microsoft account is not connected',
+      });
     }
   }
 
@@ -47,7 +74,7 @@ export class MicrosoftOneDriveService {
    * All INOS users operate against this same drive.
    */
   async getDrive(userId: string) {
-    const accessToken = await this.msAuth.getValidAccessToken(userId);
+    const accessToken = await this.token(userId);
 
     return this.request(
       accessToken,
@@ -72,7 +99,7 @@ export class MicrosoftOneDriveService {
    * GET /onedrive/files?folderPath=Projects/Project A
    */
   async listFiles(userId: string, folderPath = 'root') {
-    const accessToken = await this.msAuth.getValidAccessToken(userId);
+    const accessToken = await this.token(userId);
 
     const path =
       folderPath === 'root'
@@ -90,7 +117,7 @@ export class MicrosoftOneDriveService {
    * Get metadata for a file/folder.
    */
   async getFileMetadata(userId: string, itemId: string) {
-    const accessToken = await this.msAuth.getValidAccessToken(userId);
+    const accessToken = await this.token(userId);
 
     return this.request(
       accessToken,
@@ -108,7 +135,7 @@ export class MicrosoftOneDriveService {
    * Download a file from the central INOS drive.
    */
   async downloadFile(userId: string, itemId: string): Promise<Buffer> {
-    const accessToken = await this.msAuth.getValidAccessToken(userId);
+    const accessToken = await this.token(userId);
 
     const response = await fetch(
       `${GRAPH_API}/drives/${encodeURIComponent(
@@ -154,7 +181,7 @@ export class MicrosoftOneDriveService {
     content: Buffer,
     contentType = 'application/octet-stream',
   ) {
-    const accessToken = await this.msAuth.getValidAccessToken(userId);
+    const accessToken = await this.token(userId);
 
     const encodedFileName = encodeURIComponent(fileName);
 
@@ -205,7 +232,7 @@ export class MicrosoftOneDriveService {
     content: Buffer,
     contentType = 'application/octet-stream',
   ) {
-    const accessToken = await this.msAuth.getValidAccessToken(userId);
+    const accessToken = await this.token(userId);
 
     const encodedFileName = encodeURIComponent(fileName);
 
@@ -299,7 +326,7 @@ export class MicrosoftOneDriveService {
    * Create a folder inside the central drive.
    */
   async createFolder(userId: string, parentPath: string, folderName: string) {
-    const accessToken = await this.msAuth.getValidAccessToken(userId);
+    const accessToken = await this.token(userId);
 
     const path =
       parentPath === 'root'
@@ -327,7 +354,7 @@ export class MicrosoftOneDriveService {
    * Delete a file or folder from the central drive.
    */
   async deleteFile(userId: string, itemId: string): Promise<void> {
-    const accessToken = await this.msAuth.getValidAccessToken(userId);
+    const accessToken = await this.token(userId);
 
     const response = await fetch(
       `${GRAPH_API}/drives/${encodeURIComponent(
@@ -368,7 +395,7 @@ export class MicrosoftOneDriveService {
    * GET /onedrive/search?q=boq
    */
   async search(userId: string, query: string) {
-    const accessToken = await this.msAuth.getValidAccessToken(userId);
+    const accessToken = await this.token(userId);
 
     if (!query?.trim()) {
       return {
@@ -392,7 +419,7 @@ export class MicrosoftOneDriveService {
    * Rename a file/folder.
    */
   async renameFile(userId: string, itemId: string, name: string) {
-    const accessToken = await this.msAuth.getValidAccessToken(userId);
+    const accessToken = await this.token(userId);
 
     return this.request(
       accessToken,
@@ -413,7 +440,7 @@ export class MicrosoftOneDriveService {
    * Move an item into another folder.
    */
   async moveFile(userId: string, itemId: string, parentId: string) {
-    const accessToken = await this.msAuth.getValidAccessToken(userId);
+    const accessToken = await this.token(userId);
 
     return this.request(
       accessToken,
@@ -440,7 +467,7 @@ export class MicrosoftOneDriveService {
    * Get root folder metadata.
    */
   async getRoot(userId: string) {
-    const accessToken = await this.msAuth.getValidAccessToken(userId);
+    const accessToken = await this.token(userId);
 
     return this.request(
       accessToken,

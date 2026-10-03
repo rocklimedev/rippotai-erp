@@ -1,1118 +1,265 @@
+// RFIs — site queries routed to a team, answered and closed. All projects by default; ?project=<uuid> filters.
 import React, { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { MessageSquareWarning, Plus, Clock3, CheckCircle2, AlertTriangle, Eye, Send, ArrowRightLeft, XCircle } from "lucide-react";
 import {
-  Search,
-  Filter,
-  Plus,
-  RefreshCw,
-  MessageSquareWarning,
-  Clock3,
-  CheckCircle2,
-  AlertTriangle,
-  XCircle,
-  ArrowRight,
-  Paperclip,
-  MoreHorizontal,
-  Eye,
-  Send,
-  X,
-  Loader2,
-} from "lucide-react";
-
+  Page, PageHeader, Card, Button, Stats, StatTile, Tabs, SearchInput, Field, SelectInput, TextInput, TextArea,
+  Pill, EmptyState, Toolbar, ToolbarSpacer,
+} from "@/components/inos";
+import { Modal } from "@/components/projects/_projects-ui";
+import { useAuth } from "@/context/AuthContext";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-
-import { Button } from "@/components/ui/button";
-
-import { Badge } from "@/components/ui/badge";
-
-import { Input } from "@/components/ui/input";
-
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-
-import { Textarea } from "@/components/ui/textarea";
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
-import {
-  useGetRfisByProjectQuery,
-  useRerouteRfiMutation,
-  useRespondToRfiMutation,
-  useCloseRfiMutation,
+  useListRfisQuery, useRaiseRfiMutation, useRerouteRfiMutation, useRespondToRfiMutation, useCloseRfiMutation,
 } from "@/api/procuerment/site-ops.api";
+import { useSiteProjects, useProjectParam, ProjectPicker, rowProjectName, useTradeTeams } from "./siteProjects";
 
-/* =========================================================
-   STATUS CONFIG
-========================================================= */
-
-const statusConfig = {
-  OPEN: {
-    label: "Open",
-    className: "border-blue-200 bg-blue-50 text-blue-700",
-    icon: MessageSquareWarning,
-  },
-
-  RESPONDED: {
-    label: "Responded",
-    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    icon: CheckCircle2,
-  },
-
-  CLOSED: {
-    label: "Closed",
-    className: "border-slate-200 bg-slate-50 text-slate-600",
-    icon: CheckCircle2,
-  },
-
-  PENDING: {
-    label: "Pending",
-    className: "border-amber-200 bg-amber-50 text-amber-700",
-    icon: Clock3,
-  },
+const PRIORITY_TONE = { URGENT: "bad", HIGH: "peach", NORMAL: "info", LOW: "mute" };
+const STATUS_LABEL = { OPEN: "Open", ANSWERED: "Answered", CLOSED: "Closed" };
+const STATUS_TONE = { OPEN: "warn", ANSWERED: "info", CLOSED: "mute" };
+const cap = (s) => (s ? s[0] + s.slice(1).toLowerCase() : "—");
+const fmt = (d) => (d ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—");
+const rfiNo = (r) => `RFI-${String(r.rfiNumber || r.id).padStart(3, "0")}`;
+const errMsg = (e) => {
+  const m = e?.data?.message;
+  return Array.isArray(m) ? m.join(", ") : m || "Something went wrong";
 };
 
-/* =========================================================
-   PRIORITY CONFIG
-========================================================= */
 
-const priorityConfig = {
-  LOW: {
-    label: "Low",
-    className: "border-slate-200 bg-slate-50 text-slate-600",
-  },
-
-  NORMAL: {
-    label: "Normal",
-    className: "border-blue-200 bg-blue-50 text-blue-700",
-  },
-
-  HIGH: {
-    label: "High",
-    className: "border-amber-200 bg-amber-50 text-amber-700",
-  },
-
-  URGENT: {
-    label: "Urgent",
-    className: "border-red-200 bg-red-50 text-red-700",
-  },
-};
-
-/* =========================================================
-   BADGES
-========================================================= */
-
-function StatusBadge({ status }) {
-  const config = statusConfig[status] || statusConfig.PENDING;
-
-  const Icon = config.icon;
-
-  return (
-    <Badge
-      variant="outline"
-      className={`gap-1.5 rounded-full px-3 py-1 ${config.className}`}
-    >
-      <Icon className="h-3.5 w-3.5" />
-      {config.label}
-    </Badge>
-  );
-}
-
-function PriorityBadge({ priority }) {
-  const config = priorityConfig[priority] || priorityConfig.NORMAL;
-
-  return (
-    <Badge
-      variant="outline"
-      className={`rounded-full px-3 py-1 ${config.className}`}
-    >
-      {config.label}
-    </Badge>
-  );
-}
-
-/* =========================================================
-   SUMMARY CARD
-========================================================= */
-
-function SummaryCard({ title, value, description, icon: Icon }) {
-  return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-
-            <p className="mt-2 text-3xl font-semibold tracking-tight">
-              {value}
-            </p>
-
-            {description && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                {description}
-              </p>
-            )}
-          </div>
-
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1F453B]/10">
-            <Icon className="h-5 w-5 text-[#1F453B]" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-/* =========================================================
-   PAGE
-========================================================= */
+const EMPTY = { projectId: "", subject: "", query: "", priority: "NORMAL", routedToTeamId: "", raisedBy: "" };
 
 export default function RfisPage() {
-  const [projectId, setProjectId] = useState("");
-
-  const [search, setSearch] = useState("");
-
-  const [statusFilter, setStatusFilter] = useState("ALL");
-
-  const [priorityFilter, setPriorityFilter] = useState("ALL");
-
-  const [activeTab, setActiveTab] = useState("all");
-
-  const [selectedRfi, setSelectedRfi] = useState(null);
-
-  const [viewOpen, setViewOpen] = useState(false);
-
-  const [responseOpen, setResponseOpen] = useState(false);
-
-  const [rerouteOpen, setRerouteOpen] = useState(false);
-
+  const { user } = useAuth();
+  const [projectId, setProjectId] = useProjectParam();
+  const { projects, nameOf } = useSiteProjects();
+  const teams = useTradeTeams();
+  const [tab, setTab] = useState("all");
+  const [q, setQ] = useState("");
+  const [priority, setPriority] = useState("");
+  const [view, setView] = useState(null);
+  const [respond, setRespond] = useState(null);
   const [response, setResponse] = useState("");
-
+  const [reroute, setReroute] = useState(null);
   const [teamId, setTeamId] = useState("");
+  const [raiseOpen, setRaiseOpen] = useState(false);
+  const [form, setForm] = useState(EMPTY);
+  const [tried, setTried] = useState(false);
 
-  const selectedProjectId = projectId ? Number(projectId) : undefined;
-
-  /* =========================================================
-     QUERY
-  ========================================================= */
-
-  const { data, isLoading, isFetching, refetch } = useGetRfisByProjectQuery(
-    {
-      projectId: selectedProjectId,
-      status: statusFilter !== "ALL" ? statusFilter : undefined,
-    },
-    {
-      skip: !selectedProjectId,
-    },
-  );
-
-  /* =========================================================
-     MUTATIONS
-  ========================================================= */
-
-  const [rerouteRfi, rerouteState] = useRerouteRfiMutation();
-
+  const { data, isLoading, isError } = useListRfisQuery({ projectId });
+  const [raiseRfi, raiseState] = useRaiseRfiMutation();
   const [respondToRfi, respondState] = useRespondToRfiMutation();
+  const [rerouteRfi, rerouteState] = useRerouteRfiMutation();
+  const [closeRfi] = useCloseRfiMutation();
 
-  const [closeRfi, closeState] = useCloseRfiMutation();
+  const rfis = useMemo(() => (Array.isArray(data) ? data : []), [data]);
+  const teamName = (r) => r.routedToTeamName || r.team?.name || teams.find((t) => String(t.id) === String(r.routedToTeamId))?.name || "—";
 
-  /* =========================================================
-     NORMALIZE RESPONSE
-  ========================================================= */
+  const counts = useMemo(() => ({
+    all: rfis.length,
+    open: rfis.filter((r) => r.status === "OPEN").length,
+    answered: rfis.filter((r) => r.status === "ANSWERED").length,
+    closed: rfis.filter((r) => r.status === "CLOSED").length,
+    urgent: rfis.filter((r) => ["URGENT", "HIGH"].includes(r.priority) && r.status !== "CLOSED").length,
+  }), [rfis]);
 
-  const rfis = useMemo(() => {
-    if (Array.isArray(data)) {
-      return data;
-    }
-
-    if (Array.isArray(data?.data)) {
-      return data.data;
-    }
-
-    if (Array.isArray(data?.rfis)) {
-      return data.rfis;
-    }
-
-    if (Array.isArray(data?.results)) {
-      return data.results;
-    }
-
-    return [];
-  }, [data]);
-
-  /* =========================================================
-     FILTER
-  ========================================================= */
-
-  const filteredRfis = useMemo(() => {
-    const term = search.trim().toLowerCase();
-
-    return rfis.filter((rfi) => {
-      const searchable = [
-        rfi.rfiNumber,
-        rfi.subject,
-        rfi.query,
-        rfi.raisedBy,
-        rfi.routedToTeamName,
-        rfi.routedToTeam?.name,
-        rfi.status,
-        rfi.priority,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      const matchesSearch = !term || searchable.includes(term);
-
-      const matchesPriority =
-        priorityFilter === "ALL" || rfi.priority === priorityFilter;
-
-      const matchesTab =
-        activeTab === "all" ||
-        (activeTab === "open" && rfi.status === "OPEN") ||
-        (activeTab === "responded" && rfi.status === "RESPONDED") ||
-        (activeTab === "closed" && rfi.status === "CLOSED");
-
-      return matchesSearch && matchesPriority && matchesTab;
+  const rows = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    return rfis.filter((r) => {
+      if (tab !== "all" && r.status !== tab.toUpperCase()) return false;
+      if (priority && r.priority !== priority) return false;
+      if (!term) return true;
+      return [rfiNo(r), r.subject, r.query, r.raisedBy, r.routedToTeamName, rowProjectName(r, nameOf)].join(" ").toLowerCase().includes(term);
     });
-  }, [rfis, search, priorityFilter, activeTab]);
+  }, [rfis, tab, priority, q, nameOf]);
 
-  /* =========================================================
-     SUMMARY
-  ========================================================= */
-
-  const summary = useMemo(() => {
-    const open = rfis.filter((r) => r.status === "OPEN").length;
-
-    const responded = rfis.filter((r) => r.status === "RESPONDED").length;
-
-    const closed = rfis.filter((r) => r.status === "CLOSED").length;
-
-    const urgent = rfis.filter(
-      (r) => r.priority === "URGENT" && r.status !== "CLOSED",
-    ).length;
-
-    const high = rfis.filter(
-      (r) => r.priority === "HIGH" && r.status !== "CLOSED",
-    ).length;
-
-    return {
-      total: rfis.length,
-      open,
-      responded,
-      closed,
-      urgent,
-      high,
-    };
-  }, [rfis]);
-
-  /* =========================================================
-     OPEN VIEW
-  ========================================================= */
-
-  const openView = (rfi) => {
-    setSelectedRfi(rfi);
-    setViewOpen(true);
+  const openRaise = () => {
+    setForm({ ...EMPTY, projectId: projectId || "", raisedBy: user?.name || "", routedToTeamId: "9" });
+    setTried(false);
+    setRaiseOpen(true);
   };
-
-  /* =========================================================
-     RESPOND
-  ========================================================= */
-
-  const openResponse = (rfi) => {
-    setSelectedRfi(rfi);
-    setResponse(rfi.response || "");
-    setResponseOpen(true);
-  };
-
-  const handleRespond = async () => {
-    if (!selectedRfi || !response.trim()) {
-      return;
+  const invalid = { projectId: !form.projectId, subject: !form.subject.trim(), query: !form.query.trim(), routedToTeamId: !form.routedToTeamId, raisedBy: !form.raisedBy.trim() };
+  const submitRaise = async () => {
+    setTried(true);
+    if (Object.values(invalid).some(Boolean)) return;
+    try {
+      await raiseRfi({ ...form, subject: form.subject.trim(), query: form.query.trim(), raisedBy: form.raisedBy.trim(), routedToTeamId: Number(form.routedToTeamId) }).unwrap();
+      toast.success("RFI raised");
+      setRaiseOpen(false);
+    } catch (e) {
+      toast.error(errMsg(e));
     }
-
-    await respondToRfi({
-      id: selectedRfi.id,
-      body: {
-        response: response.trim(),
-      },
-    }).unwrap();
-
-    setResponseOpen(false);
-    setResponse("");
-    setSelectedRfi(null);
-    refetch();
   };
-
-  /* =========================================================
-     REROUTE
-  ========================================================= */
-
-  const openReroute = (rfi) => {
-    setSelectedRfi(rfi);
-    setTeamId(rfi.routedToTeamId ? String(rfi.routedToTeamId) : "");
-    setRerouteOpen(true);
-  };
-
-  const handleReroute = async () => {
-    if (!selectedRfi || !teamId) {
-      return;
+  const submitRespond = async () => {
+    if (!response.trim()) return;
+    try {
+      await respondToRfi({ id: respond.id, response: response.trim(), respondedBy: user?.name || "Architect" }).unwrap();
+      toast.success("Response recorded");
+      setRespond(null);
+    } catch (e) {
+      toast.error(errMsg(e));
     }
-
-    await rerouteRfi({
-      id: selectedRfi.id,
-      body: {
-        routedToTeamId: Number(teamId),
-      },
-    }).unwrap();
-
-    setRerouteOpen(false);
-    setTeamId("");
-    setSelectedRfi(null);
-    refetch();
   };
-
-  /* =========================================================
-     CLOSE
-  ========================================================= */
-
-  const handleClose = async (rfi) => {
-    await closeRfi(rfi.id).unwrap();
-
-    refetch();
+  const submitReroute = async () => {
+    if (!teamId) return;
+    try {
+      await rerouteRfi({ id: reroute.id, routedToTeamId: Number(teamId) }).unwrap();
+      toast.success("RFI re-routed");
+      setReroute(null);
+    } catch (e) {
+      toast.error(errMsg(e));
+    }
   };
-
-  /* =========================================================
-     RENDER
-  ========================================================= */
+  const doClose = async (r) => {
+    try {
+      await closeRfi(r.id).unwrap();
+      toast.success(`${rfiNo(r)} closed`);
+      setView(null);
+    } catch (e) {
+      toast.error(errMsg(e));
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[#F8FAF9]">
-      <div className="mx-auto max-w-[1600px] space-y-6 p-6 lg:p-8">
-        {/* ===================================================
-            HEADER
-        =================================================== */}
+    <Page>
+      <PageHeader
+        crumbs={[{ label: "Site Operations", to: "/site-operations" }, { label: "RFIs" }]}
+        title="Requests for information"
+        subtitle="Site queries routed to the right team, answered and closed out."
+        actions={<Button variant="primary" icon={Plus} onClick={openRaise}>Raise RFI</Button>}
+      />
 
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <MessageSquareWarning className="h-4 w-4" />
-              Site Operations
-              <span>/</span>
-              RFIs
-            </div>
+      <Stats>
+        <StatTile label="Open" value={counts.open} meta="Awaiting a response" icon={<Clock3 />} tone="warn" active={tab === "open"} onClick={() => setTab("open")} />
+        <StatTile label="Answered" value={counts.answered} meta="Response given, not closed" icon={<Send />} tone="info" active={tab === "answered"} onClick={() => setTab("answered")} />
+        <StatTile label="Urgent / high" value={counts.urgent} meta="Not yet closed" icon={<AlertTriangle />} tone={counts.urgent ? "bad" : undefined} />
+        <StatTile label="Closed" value={counts.closed} meta={`${counts.all} RFIs in total`} icon={<CheckCircle2 />} tone="ok" active={tab === "closed"} onClick={() => setTab("closed")} />
+      </Stats>
 
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#1F2937]">
-              Requests for Information
-            </h1>
-
-            <p className="mt-1 text-sm text-muted-foreground">
-              Track site queries, route them to the right team, record
-              responses, and close them out.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => refetch()}
-              disabled={!selectedProjectId || isFetching}
-            >
-              {isFetching ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="mr-2 h-4 w-4" />
-              )}
-              Refresh
-            </Button>
-
-            <Button className="bg-[#1F453B] hover:bg-[#16352A]">
-              <Plus className="mr-2 h-4 w-4" />
-              Raise RFI
-            </Button>
-          </div>
+      <Card flush>
+        <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)" }}>
+          <Toolbar>
+            <div style={{ width: 240 }}><ProjectPicker value={projectId} onChange={setProjectId} projects={projects} /></div>
+            <Tabs value={tab} onChange={setTab} options={[
+              { value: "all", label: "All", count: counts.all },
+              { value: "open", label: "Open", count: counts.open },
+              { value: "answered", label: "Answered", count: counts.answered },
+              { value: "closed", label: "Closed", count: counts.closed },
+            ]} />
+            <ToolbarSpacer />
+            <SelectInput value={priority} onChange={(e) => setPriority(e.target.value)} aria-label="Priority" style={{ width: 150 }}>
+              <option value="">All priorities</option>
+              {["URGENT", "HIGH", "NORMAL", "LOW"].map((p) => <option key={p} value={p}>{cap(p)}</option>)}
+            </SelectInput>
+            <div style={{ width: 240 }}><SearchInput value={q} onChange={setQ} placeholder="Search RFIs…" /></div>
+          </Toolbar>
         </div>
 
-        {/* ===================================================
-            PROJECT
-        =================================================== */}
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-              <div className="w-full lg:max-w-md">
-                <label className="mb-2 block text-sm font-medium">
-                  Project
-                </label>
-
-                <Input
-                  type="number"
-                  value={projectId}
-                  onChange={(e) => setProjectId(e.target.value)}
-                  placeholder="Enter project ID"
-                />
-              </div>
-
-              {!selectedProjectId && (
-                <Alert className="border-amber-200 bg-amber-50 lg:flex-1">
-                  <AlertTriangle className="h-4 w-4 text-amber-600" />
-
-                  <AlertTitle className="text-amber-800">
-                    Select a project
-                  </AlertTitle>
-
-                  <AlertDescription className="text-amber-700">
-                    Select a project to view its RFIs.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ===================================================
-            SUMMARY
-        =================================================== */}
-
-        {selectedProjectId && (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <SummaryCard
-              title="Total RFIs"
-              value={summary.total}
-              description="All project RFIs"
-              icon={MessageSquareWarning}
-            />
-
-            <SummaryCard
-              title="Open"
-              value={summary.open}
-              description="Awaiting response"
-              icon={Clock3}
-            />
-
-            <SummaryCard
-              title="Responded"
-              value={summary.responded}
-              description="Response received"
-              icon={CheckCircle2}
-            />
-
-            <SummaryCard
-              title="Urgent"
-              value={summary.urgent}
-              description="Requires immediate attention"
-              icon={AlertTriangle}
-            />
-
-            <SummaryCard
-              title="Closed"
-              value={summary.closed}
-              description="Completed RFIs"
-              icon={CheckCircle2}
-            />
+        {isLoading ? (
+          <div style={{ padding: 32, color: "var(--text-3)" }}>Loading RFIs…</div>
+        ) : isError ? (
+          <EmptyState icon={XCircle} title="Couldn't load RFIs" text="Please refresh the page." />
+        ) : !rows.length ? (
+          <EmptyState icon={MessageSquareWarning} title="No RFIs" text={rfis.length ? "Nothing matches these filters." : projectId ? `No RFIs raised for ${nameOf(projectId)} yet.` : "No RFIs raised yet."}
+            action={<Button variant="primary" icon={Plus} onClick={openRaise}>Raise RFI</Button>} />
+        ) : (
+          <div className="inos-table-wrap">
+            <table className="inos-table">
+              <thead>
+                <tr><th>RFI</th><th>Subject</th><th>Project</th><th>Priority</th><th>Status</th><th>Routed to</th><th>Raised</th><th /></tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.id} style={{ cursor: "pointer" }} onClick={() => setView(r)}>
+                    <td style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{rfiNo(r)}</td>
+                    <td style={{ maxWidth: 320 }}><div style={{ fontWeight: 550, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.subject}</div></td>
+                    <td style={{ whiteSpace: "nowrap" }}>{rowProjectName(r, nameOf)}</td>
+                    <td><Pill tone={PRIORITY_TONE[r.priority] || "mute"} size="sm">{cap(r.priority)}</Pill></td>
+                    <td><Pill tone={STATUS_TONE[r.status] || "mute"} size="sm">{STATUS_LABEL[r.status] || r.status}</Pill></td>
+                    <td style={{ whiteSpace: "nowrap" }}>{teamName(r)}</td>
+                    <td style={{ whiteSpace: "nowrap", color: "var(--text-3)" }}>{fmt(r.raisedAt)}<div style={{ fontSize: 12 }}>{r.raisedBy}</div></td>
+                    <td onClick={(e) => e.stopPropagation()} style={{ whiteSpace: "nowrap", textAlign: "right" }}>
+                      <Button variant="ghost" size="sm" icon={Eye} aria-label="View" title="View" onClick={() => setView(r)} />
+                      {r.status === "OPEN" && <Button variant="ghost" size="sm" icon={Send} aria-label="Respond" title="Respond" onClick={() => { setRespond(r); setResponse(r.response || ""); }} />}
+                      {r.status !== "CLOSED" && <Button variant="ghost" size="sm" icon={ArrowRightLeft} aria-label="Re-route" title="Re-route" onClick={() => { setReroute(r); setTeamId(String(r.routedToTeamId || "")); }} />}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
+      </Card>
 
-        {/* ===================================================
-            MAIN TABLE
-        =================================================== */}
-
-        {selectedProjectId && (
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col gap-4">
-                <div>
-                  <CardTitle>RFI Register</CardTitle>
-
-                  <CardDescription>
-                    All information requests raised against this project.
-                  </CardDescription>
-                </div>
-
-                {/* TABS */}
-
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList>
-                    <TabsTrigger value="all">All</TabsTrigger>
-
-                    <TabsTrigger value="open">Open</TabsTrigger>
-
-                    <TabsTrigger value="responded">Responded</TabsTrigger>
-
-                    <TabsTrigger value="closed">Closed</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-
-                {/* FILTERS */}
-
-                <div className="flex flex-col gap-2 lg:flex-row">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-
-                    <Input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search RFI number, subject, query, team..."
-                      className="pl-9"
-                    />
-                  </div>
-
-                  <Select
-                    value={priorityFilter}
-                    onValueChange={setPriorityFilter}
-                  >
-                    <SelectTrigger className="w-full lg:w-[180px]">
-                      <Filter className="mr-2 h-4 w-4" />
-                      <SelectValue placeholder="Priority" />
-                    </SelectTrigger>
-
-                    <SelectContent>
-                      <SelectItem value="ALL">All Priorities</SelectItem>
-
-                      <SelectItem value="URGENT">Urgent</SelectItem>
-
-                      <SelectItem value="HIGH">High</SelectItem>
-
-                      <SelectItem value="NORMAL">Normal</SelectItem>
-
-                      <SelectItem value="LOW">Low</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="p-0">
-              {isLoading ? (
-                <div className="flex min-h-[350px] items-center justify-center">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Loading RFIs...
-                  </div>
-                </div>
-              ) : filteredRfis.length === 0 ? (
-                <div className="flex min-h-[350px] flex-col items-center justify-center px-6 text-center">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#1F453B]/10">
-                    <MessageSquareWarning className="h-6 w-6 text-[#1F453B]" />
-                  </div>
-
-                  <h3 className="font-medium">No RFIs found</h3>
-
-                  <p className="mt-1 max-w-md text-sm text-muted-foreground">
-                    {search || priorityFilter !== "ALL"
-                      ? "Try changing your filters."
-                      : "No information requests have been raised for this project."}
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/40">
-                        <TableHead>RFI</TableHead>
-
-                        <TableHead>Subject</TableHead>
-
-                        <TableHead>Priority</TableHead>
-
-                        <TableHead>Status</TableHead>
-
-                        <TableHead>Routed To</TableHead>
-
-                        <TableHead>Raised By</TableHead>
-
-                        <TableHead>Raised</TableHead>
-
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-
-                    <TableBody>
-                      {filteredRfis.map((rfi) => (
-                        <TableRow key={rfi.id} className="group">
-                          {/* RFI NUMBER */}
-
-                          <TableCell>
-                            <button
-                              type="button"
-                              onClick={() => openView(rfi)}
-                              className="font-semibold text-[#1F453B] hover:underline"
-                            >
-                              RFI-
-                              {String(rfi.rfiNumber || rfi.id).padStart(3, "0")}
-                            </button>
-                          </TableCell>
-
-                          {/* SUBJECT */}
-
-                          <TableCell>
-                            <div className="max-w-[280px]">
-                              <p className="truncate font-medium">
-                                {rfi.subject}
-                              </p>
-
-                              {rfi.step?.name && (
-                                <p className="mt-1 truncate text-xs text-muted-foreground">
-                                  {rfi.step.name}
-                                </p>
-                              )}
-                            </div>
-                          </TableCell>
-
-                          {/* PRIORITY */}
-
-                          <TableCell>
-                            <PriorityBadge priority={rfi.priority} />
-                          </TableCell>
-
-                          {/* STATUS */}
-
-                          <TableCell>
-                            <StatusBadge status={rfi.status} />
-                          </TableCell>
-
-                          {/* TEAM */}
-
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1F453B]/10">
-                                <ArrowRight className="h-3.5 w-3.5 text-[#1F453B]" />
-                              </div>
-
-                              <span className="text-sm">
-                                {rfi.routedToTeam?.name ||
-                                  rfi.routedToTeamName ||
-                                  `Team #${rfi.routedToTeamId}`}
-                              </span>
-                            </div>
-                          </TableCell>
-
-                          {/* RAISED BY */}
-
-                          <TableCell>
-                            <span className="text-sm">{rfi.raisedBy}</span>
-                          </TableCell>
-
-                          {/* DATE */}
-
-                          <TableCell>
-                            <span className="whitespace-nowrap text-sm text-muted-foreground">
-                              {rfi.raisedAt
-                                ? new Date(rfi.raisedAt).toLocaleDateString()
-                                : "-"}
-                            </span>
-                          </TableCell>
-
-                          {/* ACTIONS */}
-
-                          <TableCell>
-                            <div className="flex justify-end gap-1 opacity-80 group-hover:opacity-100">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                title="View"
-                                onClick={() => openView(rfi)}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-
-                              {rfi.status === "OPEN" && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  title="Respond"
-                                  onClick={() => openResponse(rfi)}
-                                >
-                                  <Send className="h-4 w-4" />
-                                </Button>
-                              )}
-
-                              {rfi.status !== "CLOSED" && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  title="Reroute"
-                                  onClick={() => openReroute(rfi)}
-                                >
-                                  <ArrowRight className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+      <Modal open={!!view} onClose={() => setView(null)} width={620} title={view ? `${rfiNo(view)} · ${view.subject}` : ""}
+        description={view ? `${rowProjectName(view, nameOf)} · raised by ${view.raisedBy} on ${fmt(view.raisedAt)}` : ""}
+        footer={view && (
+          <>
+            {view.status !== "CLOSED" && <Button variant="secondary" onClick={() => doClose(view)}>Close RFI</Button>}
+            {view.status === "OPEN" && <Button variant="primary" icon={Send} onClick={() => { setRespond(view); setResponse(""); setView(null); }}>Respond</Button>}
+          </>
+        )}>
+        {view && (
+          <div style={{ display: "grid", gap: 14 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <Pill tone={STATUS_TONE[view.status]}>{STATUS_LABEL[view.status] || view.status}</Pill>
+              <Pill tone={PRIORITY_TONE[view.priority]}>{cap(view.priority)} priority</Pill>
+              <Pill tone="brand" dot={false}>Routed to {teamName(view)}</Pill>
+            </div>
+            <Field label="Query"><p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{view.query}</p></Field>
+            <Field label="Response">
+              {view.response ? (
+                <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{view.response}<br /><span style={{ color: "var(--text-3)", fontSize: 12 }}>{view.respondedBy} · {fmt(view.respondedAt)}</span></p>
+              ) : <span style={{ color: "var(--text-3)" }}>No response yet</span>}
+            </Field>
+          </div>
         )}
+      </Modal>
 
-        {/* ===================================================
-            DETAIL DIALOG
-        =================================================== */}
+      <Modal open={!!respond} onClose={() => setRespond(null)} title={respond ? `Respond to ${rfiNo(respond)}` : ""} description={respond?.subject} width={560}
+        footer={<><Button onClick={() => setRespond(null)}>Cancel</Button><Button variant="primary" loading={respondState.isLoading} disabled={!response.trim()} onClick={submitRespond}>Save response</Button></>}>
+        {respond && (
+          <div style={{ display: "grid", gap: 12 }}>
+            <p style={{ margin: 0, color: "var(--text-2)" }}>{respond.query}</p>
+            <Field label="Response" required><TextArea rows={5} value={response} onChange={(e) => setResponse(e.target.value)} placeholder="Instruction or clarification for site" /></Field>
+          </div>
+        )}
+      </Modal>
 
-        <Dialog open={viewOpen} onOpenChange={setViewOpen}>
-          <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
-            {selectedRfi && (
-              <>
-                <DialogHeader>
-                  <div className="flex items-center gap-2">
-                    <MessageSquareWarning className="h-5 w-5 text-[#1F453B]" />
+      <Modal open={!!reroute} onClose={() => setReroute(null)} title={reroute ? `Re-route ${rfiNo(reroute)}` : ""} description={reroute?.subject}
+        footer={<><Button onClick={() => setReroute(null)}>Cancel</Button><Button variant="primary" loading={rerouteState.isLoading} disabled={!teamId} onClick={submitReroute}>Re-route</Button></>}>
+        <Field label="Route to team" required>
+          <SelectInput value={teamId} onChange={(e) => setTeamId(e.target.value)} placeholder="Select a team">
+            {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </SelectInput>
+        </Field>
+      </Modal>
 
-                    <DialogTitle>
-                      RFI-
-                      {String(selectedRfi.rfiNumber || selectedRfi.id).padStart(
-                        3,
-                        "0",
-                      )}
-                    </DialogTitle>
-                  </div>
-
-                  <DialogDescription>
-                    RFI details and response history.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-6">
-                  {/* STATUS */}
-
-                  <div className="flex flex-wrap gap-2">
-                    <StatusBadge status={selectedRfi.status} />
-
-                    <PriorityBadge priority={selectedRfi.priority} />
-                  </div>
-
-                  {/* SUBJECT */}
-
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Subject
-                    </p>
-
-                    <p className="mt-1 text-base font-semibold">
-                      {selectedRfi.subject}
-                    </p>
-                  </div>
-
-                  {/* QUERY */}
-
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Query
-                    </p>
-
-                    <div className="mt-2 rounded-lg border bg-muted/20 p-4 text-sm leading-6">
-                      {selectedRfi.query}
-                    </div>
-                  </div>
-
-                  {/* META */}
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        Raised By
-                      </p>
-
-                      <p className="mt-1 text-sm">{selectedRfi.raisedBy}</p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        Raised At
-                      </p>
-
-                      <p className="mt-1 text-sm">
-                        {selectedRfi.raisedAt
-                          ? new Date(selectedRfi.raisedAt).toLocaleString()
-                          : "-"}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        Routed To
-                      </p>
-
-                      <p className="mt-1 text-sm">
-                        {selectedRfi.routedToTeam?.name ||
-                          selectedRfi.routedToTeamName ||
-                          `Team #${selectedRfi.routedToTeamId}`}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        Process Step
-                      </p>
-
-                      <p className="mt-1 text-sm">
-                        {selectedRfi.step?.name || selectedRfi.stepName || "-"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* ATTACHMENTS */}
-
-                  {selectedRfi.attachmentUrls?.length > 0 && (
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        Attachments
-                      </p>
-
-                      <div className="mt-2 space-y-2">
-                        {selectedRfi.attachmentUrls.map((url, index) => (
-                          <a
-                            key={url || index}
-                            href={url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-2 rounded-lg border p-3 text-sm hover:bg-muted"
-                          >
-                            <Paperclip className="h-4 w-4" />
-                            Attachment {index + 1}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* RESPONSE */}
-
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Response
-                    </p>
-
-                    <div className="mt-2 rounded-lg border bg-muted/20 p-4 text-sm leading-6">
-                      {selectedRfi.response ? (
-                        selectedRfi.response
-                      ) : (
-                        <span className="text-muted-foreground">
-                          No response recorded yet.
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {selectedRfi.respondedBy && (
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                          Responded By
-                        </p>
-
-                        <p className="mt-1 text-sm">
-                          {selectedRfi.respondedBy}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                          Responded At
-                        </p>
-
-                        <p className="mt-1 text-sm">
-                          {selectedRfi.respondedAt
-                            ? new Date(selectedRfi.respondedAt).toLocaleString()
-                            : "-"}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <DialogFooter>
-                  {selectedRfi.status === "OPEN" && (
-                    <Button
-                      onClick={() => {
-                        setViewOpen(false);
-                        openResponse(selectedRfi);
-                      }}
-                      className="bg-[#1F453B] hover:bg-[#16352A]"
-                    >
-                      <Send className="mr-2 h-4 w-4" />
-                      Respond
-                    </Button>
-                  )}
-
-                  {selectedRfi.status !== "CLOSED" && (
-                    <Button
-                      variant="outline"
-                      disabled={closeState.isLoading}
-                      onClick={() => handleClose(selectedRfi)}
-                    >
-                      {closeState.isLoading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                      )}
-                      Close RFI
-                    </Button>
-                  )}
-                </DialogFooter>
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
-
-        {/* ===================================================
-            RESPONSE DIALOG
-        =================================================== */}
-
-        <Dialog open={responseOpen} onOpenChange={setResponseOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Respond to RFI</DialogTitle>
-
-              <DialogDescription>
-                Record the official response for{" "}
-                <strong>
-                  RFI-
-                  {selectedRfi?.rfiNumber}
-                </strong>
-                .
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              <div className="rounded-lg border bg-muted/20 p-4">
-                <p className="text-sm font-medium">{selectedRfi?.subject}</p>
-
-                <p className="mt-2 line-clamp-4 text-sm text-muted-foreground">
-                  {selectedRfi?.query}
-                </p>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium">
-                  Response
-                </label>
-
-                <Textarea
-                  value={response}
-                  onChange={(e) => setResponse(e.target.value)}
-                  placeholder="Enter the response / clarification..."
-                  rows={7}
-                />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setResponseOpen(false)}>
-                Cancel
-              </Button>
-
-              <Button
-                disabled={!response.trim() || respondState.isLoading}
-                onClick={handleRespond}
-                className="bg-[#1F453B] hover:bg-[#16352A]"
-              >
-                {respondState.isLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="mr-2 h-4 w-4" />
-                )}
-                Submit Response
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* ===================================================
-            REROUTE DIALOG
-        =================================================== */}
-
-        <Dialog open={rerouteOpen} onOpenChange={setRerouteOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Reroute RFI</DialogTitle>
-
-              <DialogDescription>
-                Change the team responsible for answering this RFI.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              <div className="rounded-lg border bg-muted/20 p-4">
-                <p className="text-sm font-medium">{selectedRfi?.subject}</p>
-
-                <p className="mt-1 text-xs text-muted-foreground">
-                  RFI-
-                  {selectedRfi?.rfiNumber}
-                </p>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium">
-                  Team ID
-                </label>
-
-                <Input
-                  type="number"
-                  value={teamId}
-                  onChange={(e) => setTeamId(e.target.value)}
-                  placeholder="Enter destination team ID"
-                />
-
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Replace this input with your Team selector when the teams API
-                  is connected.
-                </p>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setRerouteOpen(false)}>
-                Cancel
-              </Button>
-
-              <Button
-                disabled={!teamId || rerouteState.isLoading}
-                onClick={handleReroute}
-                className="bg-[#1F453B] hover:bg-[#16352A]"
-              >
-                {rerouteState.isLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <ArrowRight className="mr-2 h-4 w-4" />
-                )}
-                Reroute RFI
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </div>
+      <Modal open={raiseOpen} onClose={() => setRaiseOpen(false)} title="Raise an RFI" description="Ask the design team (or a trade) for a clarification needed on site." width={640} testId="rfi-raise"
+        footer={<><Button onClick={() => setRaiseOpen(false)}>Cancel</Button><Button variant="primary" loading={raiseState.isLoading} onClick={submitRaise}>Raise RFI</Button></>}>
+        <div className="inos-form-grid">
+          <Field label="Project" required full error={tried && invalid.projectId ? "Pick the project" : null}>
+            <ProjectPicker value={form.projectId} onChange={(v) => setForm((f) => ({ ...f, projectId: v }))} placeholder="Select a project" projects={projects} invalid={tried && invalid.projectId} />
+          </Field>
+          <Field label="Subject" required full error={tried && invalid.subject ? "Add a short subject" : null}>
+            <TextInput value={form.subject} maxLength={200} onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))} placeholder="e.g. Skirting detail at marble-to-wood transition" invalid={tried && invalid.subject} />
+          </Field>
+          <Field label="Query" required full error={tried && invalid.query ? "Describe the question" : null}>
+            <TextArea rows={4} value={form.query} onChange={(e) => setForm((f) => ({ ...f, query: e.target.value }))} placeholder="What is unclear, where, and which drawing it refers to" invalid={tried && invalid.query} />
+          </Field>
+          <Field label="Route to" required error={tried && invalid.routedToTeamId ? "Pick a team" : null}>
+            <SelectInput value={form.routedToTeamId} onChange={(e) => setForm((f) => ({ ...f, routedToTeamId: e.target.value }))} placeholder="Select a team">
+              {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </SelectInput>
+          </Field>
+          <Field label="Priority">
+            <SelectInput value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))}>
+              {["LOW", "NORMAL", "HIGH", "URGENT"].map((p) => <option key={p} value={p}>{cap(p)}</option>)}
+            </SelectInput>
+          </Field>
+          <Field label="Raised by" required full error={tried && invalid.raisedBy ? "Who is asking?" : null}>
+            <TextInput value={form.raisedBy} onChange={(e) => setForm((f) => ({ ...f, raisedBy: e.target.value }))} />
+          </Field>
+        </div>
+      </Modal>
+    </Page>
   );
 }

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { useGetQcHistoryQuery } from "@/api/procuerment/site-ops.api";
+import { useSiteProjects, useProjectParam, ProjectPicker, rowProjectName } from "./siteProjects";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -139,15 +140,16 @@ function SummaryCard({ title, value, description, icon: Icon }) {
   );
 }
 
-export default function QcHistoryPage({ projectId, projectName = "Project" }) {
+export default function QcHistoryPage() {
+  const [projectId, setProjectId] = useProjectParam();
+  const { projects, nameOf } = useSiteProjects();
+  const projectName = projectId ? nameOf(projectId) : "all projects";
   const [search, setSearch] = useState("");
   const [resultFilter, setResultFilter] = useState("ALL");
   const [selectedQc, setSelectedQc] = useState(null);
 
   const { data, isLoading, isFetching, isError, refetch } =
-    useGetQcHistoryQuery(projectId, {
-      skip: !projectId,
-    });
+    useGetQcHistoryQuery({ projectId });
 
   /*
    * Depending on your service response this may already be an array
@@ -174,6 +176,7 @@ export default function QcHistoryPage({ projectId, projectName = "Project" }) {
 
       return [
         item.result,
+        rowProjectName(item, nameOf),
         item.checkedBy,
         item.tradeTeam?.name,
         item.step?.name,
@@ -183,7 +186,7 @@ export default function QcHistoryPage({ projectId, projectName = "Project" }) {
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(term));
     });
-  }, [history, search, resultFilter]);
+  }, [history, search, resultFilter, nameOf]);
 
   const summary = useMemo(() => {
     const total = history.length;
@@ -308,6 +311,10 @@ export default function QcHistoryPage({ projectId, projectName = "Project" }) {
         <Card className="border-slate-200 shadow-sm">
           <CardContent className="p-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+              <div className="w-full lg:w-[260px]">
+                <ProjectPicker value={projectId} onChange={setProjectId} projects={projects} />
+              </div>
+
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
@@ -372,6 +379,8 @@ export default function QcHistoryPage({ projectId, projectName = "Project" }) {
                     <TableRow className="bg-slate-50/70">
                       <TableHead className="pl-6">Result</TableHead>
 
+                      <TableHead>Project</TableHead>
+
                       <TableHead>Checklist</TableHead>
 
                       <TableHead>Step / Phase</TableHead>
@@ -397,6 +406,10 @@ export default function QcHistoryPage({ projectId, projectName = "Project" }) {
                       >
                         <TableCell className="pl-6">
                           <StatusBadge status={item.result} />
+                        </TableCell>
+
+                        <TableCell className="whitespace-nowrap text-sm font-medium text-[#1F453B]">
+                          {rowProjectName(item, nameOf)}
                         </TableCell>
 
                         <TableCell>

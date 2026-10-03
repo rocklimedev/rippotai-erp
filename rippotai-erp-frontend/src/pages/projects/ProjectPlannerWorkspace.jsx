@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import PlannerDocument from "../../components/projects/PlannerDocument";
+import { OFFSCREEN_STYLE } from "@/components/print-document/commerce";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  ArrowLeft,
+  AlertCircle,
   Download,
   FileDown,
   Loader2,
@@ -11,23 +13,19 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-import { Shell } from "../../hooks/shared";
-
-import { Button } from "@/components/ui/button";
-
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-import { Input } from "@/components/ui/input";
-
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-import { Card, CardContent } from "@/components/ui/card";
+  Page,
+  PageHeader,
+  Card,
+  Button,
+  Tabs,
+  EmptyState,
+  SelectInput,
+  TextInput,
+  Toolbar,
+  ToolbarSpacer,
+} from "@/components/inos";
+import { Skeleton } from "@/components/projects/_projects-ui";
 
 import { useGetProjectsQuery } from "../../api/projects/project.api";
 
@@ -72,6 +70,7 @@ export function ProjectPlannerWorkspace() {
 
   const [busy, setBusy] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
+  const pdfRef = useRef(null);
 
   // ==========================================================
   // PLANNER
@@ -210,7 +209,7 @@ export function ProjectPlannerWorkspace() {
     setPdfBusy(true);
 
     try {
-      await downloadPlannerPdf();
+      await downloadPlannerPdf(() => pdfRef.current, overview?.project?.name, view);
 
       toast.success("PDF downloaded");
     } catch (err) {
@@ -256,316 +255,134 @@ export function ProjectPlannerWorkspace() {
   // RENDER
   // ==========================================================
 
+  const projectName = overview?.project?.name || projectList.find((pr) => String(pr.id) === String(projectId))?.name;
+  const hasProjectPlanner = overview?.planners?.some((plannerItem) => plannerItem.type === "PROJECT");
+
   return (
-    <Shell
-      title="Project planner"
-      subtitle="One project planner with the four views from the Excel template."
-      action={
-        <Button
-          variant="outline"
-          onClick={() => navigate("/projects/planner/list")}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-      }
-    >
-      <div className="space-y-5">
-        {/* ====================================================
-            TOP TOOLBAR
-        ===================================================== */}
+    <Page>
+      <PageHeader
+        crumbs={[
+          { label: "Projects", to: "/projects" },
+          { label: "Planners", to: "/projects/planner/list" },
+          { label: projectName || "Planner" },
+        ]}
+        title={projectName ? `${projectName} planner` : "Project planner"}
+        subtitle="One planner with the four views from the Excel template. Cells save when you leave them; status changes save immediately."
+        actions={
+          <>
+            {overview?.planners?.length > 0 && (
+              <Button variant="secondary" icon={pdfBusy ? Loader2 : FileDown} disabled={pdfBusy || isFetching || busy} onClick={handleDownloadPdf}>
+                {pdfBusy ? "Preparing PDF…" : "Download PDF"}
+              </Button>
+            )}
+            {projectId && (
+              <Button
+                variant="secondary"
+                icon={downloading ? Loader2 : Download}
+                disabled={downloading || isFetching || busy || !overview?.planners?.length}
+                onClick={handleDownloadExcel}
+              >
+                {downloading ? "Downloading…" : "Excel"}
+              </Button>
+            )}
+            {projectId && (
+              <Button variant="primary" icon={busy ? Loader2 : RefreshCw} disabled={busy || isFetching} onClick={initializePlanner}>
+                {busy ? "Updating…" : hasProjectPlanner ? "Sync template & locations" : "Initialize planner"}
+              </Button>
+            )}
+          </>
+        }
+      />
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
-              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                {/* PROJECT SELECTOR */}
-
-                {!params.plannerId && !params.projectId && (
-                  <div className="min-w-[260px]">
-                    <Select
-                      value={selectedProject}
-                      onValueChange={setSelectedProject}
-                      disabled={projectsLoading || busy}
-                    >
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={
-                            projectsLoading
-                              ? "Loading projects..."
-                              : "Select project"
-                          }
-                        />
-                      </SelectTrigger>
-
-                      <SelectContent>
-                        {projectList.length === 0 ? (
-                          <SelectItem value="__empty__" disabled>
-                            No projects found
-                          </SelectItem>
-                        ) : (
-                          projectList.map((project) => (
-                            <SelectItem key={project.id} value={project.id}>
-                              {project.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {/* INITIALIZE / SYNC */}
-
-                {projectId && (
-                  <Button
-                    disabled={busy || isFetching}
-                    onClick={initializePlanner}
-                  >
-                    {busy ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Updating…
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="mr-2 h-4 w-4" />
-
-                        {overview?.planners?.some(
-                          (plannerItem) => plannerItem.type === "PROJECT",
-                        )
-                          ? "Sync template & locations"
-                          : "Initialize project planner"}
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
-
-              {/* DOWNLOAD ACTIONS */}
-
-              <div className="flex flex-wrap items-center gap-2">
-                {overview?.planners?.length > 0 && (
-                  <Button
-                    variant="outline"
-                    disabled={pdfBusy || isFetching || busy}
-                    onClick={handleDownloadPdf}
-                  >
-                    {pdfBusy ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Rendering…
-                      </>
-                    ) : (
-                      <>
-                        <FileDown className="mr-2 h-4 w-4" />
-                        Download PDF
-                      </>
-                    )}
-                  </Button>
-                )}
-
-                {projectId && (
-                  <Button
-                    variant="outline"
-                    disabled={
-                      downloading ||
-                      isFetching ||
-                      busy ||
-                      !overview?.planners?.length
-                    }
-                    onClick={handleDownloadExcel}
-                  >
-                    {downloading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Downloading…
-                      </>
-                    ) : (
-                      <>
-                        <Download className="mr-2 h-4 w-4" />
-                        Download Excel
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
+      {!params.plannerId && !params.projectId && (
+        <Card title="Project" subtitle="Choose the project this planner belongs to.">
+          <SelectInput
+            value={selectedProject}
+            onChange={(e) => setSelectedProject(e.target.value)}
+            disabled={projectsLoading || busy}
+            aria-label="Project"
+            style={{ maxWidth: 420 }}
+          >
+            <option value="">{projectsLoading ? "Loading projects…" : projectList.length ? "Select project" : "No projects found"}</option>
+            {projectList.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </SelectInput>
         </Card>
+      )}
 
-        {/* ====================================================
-            LOCATION TOOLBAR
-        ===================================================== */}
+      {projectId && (
+        <Toolbar>
+          <span className="inos-icon-tile inos-icon-tile--sm" aria-hidden>
+            <MapPin />
+          </span>
+          <TextInput
+            aria-label="Location name"
+            placeholder="Floor or room name, e.g. Ground floor"
+            value={locationName}
+            onChange={(event) => setLocationName(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !busy && locationName.trim()) addLocation();
+            }}
+            disabled={busy}
+            style={{ maxWidth: 280 }}
+          />
+          <SelectInput value={parent} onChange={(e) => setParent(e.target.value)} disabled={busy} aria-label="Location parent" style={{ maxWidth: 240 }}>
+            <option value="">New floor</option>
+            {floors.map((floor) => (
+              <option key={floor.id} value={floor.id}>
+                Room in {floor.name}
+              </option>
+            ))}
+          </SelectInput>
+          <Button variant="soft" icon={Plus} disabled={busy || !locationName.trim()} onClick={addLocation}>
+            Add location
+          </Button>
+          <ToolbarSpacer />
+          {floors.length > 0 && (
+            <span className="pj-muted" style={{ fontSize: 13 }}>
+              {floors.length} floor{floors.length === 1 ? "" : "s"}
+            </span>
+          )}
+        </Toolbar>
+      )}
 
-        {projectId && (
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-                <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                  <MapPin className="h-4 w-4 text-primary" />
-                  Locations
-                </div>
-
-                <div className="flex flex-1 flex-col gap-3 sm:flex-row">
-                  {/* LOCATION NAME */}
-
-                  <Input
-                    aria-label="Location name"
-                    placeholder="Floor or room name"
-                    value={locationName}
-                    onChange={(event) => setLocationName(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (
-                        event.key === "Enter" &&
-                        !busy &&
-                        locationName.trim()
-                      ) {
-                        addLocation();
-                      }
-                    }}
-                    disabled={busy}
-                    className="sm:max-w-[280px]"
-                  />
-
-                  {/* LOCATION PARENT */}
-
-                  <Select
-                    value={parent || "__floor__"}
-                    onValueChange={(value) =>
-                      setParent(value === "__floor__" ? "" : value)
-                    }
-                    disabled={busy}
-                  >
-                    <SelectTrigger className="sm:max-w-[280px]">
-                      <SelectValue />
-                    </SelectTrigger>
-
-                    <SelectContent>
-                      <SelectItem value="__floor__">New floor</SelectItem>
-
-                      {floors.map((floor) => (
-                        <SelectItem key={floor.id} value={floor.id}>
-                          Room in {floor.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  {/* ADD */}
-
-                  <Button
-                    variant="outline"
-                    disabled={busy || !locationName.trim()}
-                    onClick={addLocation}
-                  >
-                    {busy ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Plus className="mr-2 h-4 w-4" />
-                    )}
-                    Add location
-                  </Button>
-                </div>
-
-                <p className="text-xs text-muted-foreground xl:max-w-[320px]">
-                  Cells save when you leave them. Status changes save
-                  immediately.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* ====================================================
-            ERROR
-        ===================================================== */}
-
-        {error ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-              <div className="rounded-full bg-red-50 p-3">
-                <RefreshCw className="h-5 w-5 text-red-600" />
-              </div>
-
-              <div>
-                <p className="font-medium text-gray-900">
-                  Could not load the planner
-                </p>
-
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Something went wrong while loading the planner data.
-                </p>
-              </div>
-
-              <Button variant="outline" onClick={refetch}>
-                <RefreshCw className="mr-2 h-4 w-4" />
+      {error ? (
+        <Card>
+          <EmptyState
+            icon={AlertCircle}
+            title="Could not load the planner"
+            text="Something went wrong while loading the planner data."
+            action={
+              <Button variant="secondary" icon={RefreshCw} onClick={refetch}>
                 Retry
               </Button>
-            </CardContent>
-          </Card>
-        ) : !projectId ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <MapPin className="mb-3 h-10 w-10 text-gray-300" />
+            }
+          />
+        </Card>
+      ) : !projectId ? (
+        <Card>
+          <EmptyState icon={MapPin} title="Select a project" text="Pick a project above to open its planner." />
+        </Card>
+      ) : !overview ? (
+        <Skeleton height={320} />
+      ) : (
+        <>
+          <Tabs value={view} onChange={setView} options={WORKBOOK_VIEWS.map((name) => ({ value: name, label: name }))} />
 
-              <p className="font-medium text-gray-900">Select a project</p>
+          <PlannerWorkbook key={projectId} overview={overview} view={view} refresh={refetch} />
 
-              <p className="mt-1 text-sm text-muted-foreground">
-                Select a project above to open its planner.
-              </p>
-            </CardContent>
-          </Card>
-        ) : !overview ? (
-          <Card>
-            <CardContent className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading planner…
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            {/* ================================================
-                PLANNER SHEET TABS
-            ================================================= */}
-
-            <div className="overflow-x-auto">
-              <Tabs value={view} onValueChange={setView}>
-                <TabsList className="w-max min-w-full justify-start">
-                  {WORKBOOK_VIEWS.map((name) => (
-                    <TabsTrigger key={name} value={name}>
-                      {name}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
+          <PlannerRowActions key={`${projectId}:${view}`} overview={overview} view={view} refresh={refetch} />
+          {pdfBusy && (
+            <div style={OFFSCREEN_STYLE} aria-hidden>
+              <PlannerDocument ref={pdfRef} overview={overview} view={view} project={projectList.find((pr) => String(pr.id) === String(projectId))} />
             </div>
-
-            {/* ================================================
-                WORKBOOK
-            ================================================= */}
-
-            <PlannerWorkbook
-              key={projectId}
-              overview={overview}
-              view={view}
-              refresh={refetch}
-            />
-
-            {/* ================================================
-                ROW ACTIONS
-            ================================================= */}
-
-            <PlannerRowActions
-              key={`${projectId}:${view}`}
-              overview={overview}
-              view={view}
-              refresh={refetch}
-            />
-          </>
-        )}
-      </div>
-    </Shell>
+          )}
+        </>
+      )}
+    </Page>
   );
 }
 

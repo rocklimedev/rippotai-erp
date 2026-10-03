@@ -1,3 +1,17 @@
+// MariaDB stores JSON as LONGTEXT, so Sequelize may hand back a string.
+const parseJsonArray = (v: unknown): any[] => {
+  if (Array.isArray(v)) return v;
+  if (typeof v === 'string') {
+    try {
+      const p = JSON.parse(v);
+      return Array.isArray(p) ? p : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
 import {
   Table,
   Column,
@@ -46,6 +60,9 @@ export class UserDashboardLayout extends Model<
     type: DataType.JSON,
     allowNull: false,
     defaultValue: [],
+    get(this: any) {
+      return parseJsonArray(this.getDataValue('layout'));
+    },
   })
   declare layout: LayoutItem[];
 
@@ -54,6 +71,9 @@ export class UserDashboardLayout extends Model<
     allowNull: false,
     defaultValue: [],
     field: 'hidden_keys',
+    get(this: any) {
+      return parseJsonArray(this.getDataValue('hiddenKeys'));
+    },
   })
   declare hiddenKeys: string[];
 

@@ -6,6 +6,7 @@ import {
   Param,
   Query,
   ParseIntPipe,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ChecklistService } from './checklist.service';
 import { QcSignOffService } from './qc-sign-off.service';
@@ -57,19 +58,36 @@ export class QcSignOffController {
     return this.qcService.recordSignOff(dto);
   }
 
+  /** GET /site-ops/qc/history?projectId=<uuid>&from=&to=&status=FAIL — all projects when projectId is omitted. */
+  @Get('history')
+  listHistory(
+    @Query('projectId') projectId?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.qcService.history({ projectId: projectId || undefined, from, to, status });
+  }
+
+  /** GET /site-ops/qc/handoff-status?projectId=<uuid> — latest result per project/step/trade. */
+  @Get('handoff-status')
+  listHandoff(@Query('projectId') projectId?: string) {
+    return this.qcService.getHandoffStatus(projectId || undefined);
+  }
+
   @Get(':id')
   getSignOff(@Param('id', ParseIntPipe) id: number) {
     return this.qcService.getSignOffOrThrow(id);
   }
 
   @Get('projects/:projectId/history')
-  getHistory(@Param('projectId', ParseIntPipe) projectId: number) {
+  getHistory(@Param('projectId', ParseUUIDPipe) projectId: string) {
     return this.qcService.getProjectHistory(projectId);
   }
 
   /** Latest pass/fail/rework per phase+trade — whether handoff to the next trade is currently clear. */
   @Get('projects/:projectId/handoff-status')
-  getHandoffStatus(@Param('projectId', ParseIntPipe) projectId: number) {
+  getHandoffStatus(@Param('projectId', ParseUUIDPipe) projectId: string) {
     return this.qcService.getHandoffStatus(projectId);
   }
 }

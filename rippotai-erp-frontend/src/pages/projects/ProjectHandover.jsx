@@ -2,39 +2,46 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, Package, Send } from "lucide-react";
+import { CheckCircle2, Circle, Package, Send, RefreshCw, ExternalLink, PackageOpen } from "lucide-react";
+
+import { Page, PageHeader, Card, Button, Pill, Progress, EmptyState } from "@/components/inos";
+import { Skeleton } from "@/components/projects/_projects-ui";
+import { useGetProjectByIdQuery } from "../../api/projects/project.api";
 
 export default function ProjectHandover() {
   const { id } = useParams();
   const nav = useNavigate();
   const [status, setStatus] = useState(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [pkgResult, setPkgResult] = useState(null);
   const [deliverResult, setDeliverResult] = useState(null);
 
+  const { data: project } = useGetProjectByIdQuery(id, { skip: !id });
+
   useEffect(() => {
     load();
   }, [id]); // eslint-disable-line
+
   const load = async () => {
+    setLoadFailed(false);
     try {
-      const { data } = await api.get(`/projects/${id}/handover-package-status`);
+      const { data } = await api.get(`/v1/projects/${id}/handover-package-status`);
       setStatus(data);
     } catch {
-      toast.error("Failed");
+      setLoadFailed(true);
     }
   };
 
   const prepare = async () => {
     setBusy(true);
     try {
-      const { data } = await api.post(
-        `/projects/${id}/handover/prepare-package`,
-      );
+      const { data } = await api.post(`/v1/projects/${id}/handover/prepare-package`);
       setPkgResult(data);
       toast.success(`Package generated (${(data.size / 1024).toFixed(1)} KB)`);
       load();
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "Failed");
+      toast.error(e?.response?.data?.message || "Couldn't prepare the package");
     }
     setBusy(false);
   };
@@ -42,111 +49,153 @@ export default function ProjectHandover() {
   const deliver = async () => {
     setBusy(true);
     try {
-      const { data } = await api.post(`/projects/${id}/handover/deliver`, {});
+      const { data } = await api.post(`/v1/projects/${id}/handover/deliver`, {});
       setDeliverResult(data);
       toast.success("Delivery link created");
-    } catch {
-      toast.error("Failed");
+      load();
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Couldn't create the delivery link");
     }
     setBusy(false);
   };
 
-  if (!status) return <div className="p-8 text-[#6B7B7C]">Loading…</div>;
+  const crumbs = [
+    { label: "Projects", to: "/projects" },
+    { label: project?.name || "Project", to: `/projects/${id}` },
+    { label: "Handover" },
+  ];
+
+  const header = (
+    <PageHeader
+      crumbs={crumbs}
+      title="Handover package"
+      subtitle="Compile the final drawings, approvals and certificates into one package for client delivery."
+      actions={
+        status && (
+          <>
+            <Button variant="secondary" icon={Package} onClick={prepare} disabled={busy || !status.ready} data-testid="btn-prepare-package">
+              Prepare package
+            </Button>
+            <Button variant="primary" icon={Send} onClick={deliver} disabled={busy || !(pkgResult || status.package)} data-testid="btn-deliver-client">
+              Deliver to client
+            </Button>
+          </>
+        )
+      }
+    />
+  );
+
+  if (!status) {
+    return (
+      <Page width="narrow">
+        {header}
+        {loadFailed ? (
+          <Card>
+            <EmptyState
+              icon={PackageOpen}
+              title="Handover status isn't available"
+              text="The handover checklist could not be loaded for this project. It may not be set up on this server yet."
+              action={
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Button variant="secondary" icon={RefreshCw} onClick={load}>
+                    Retry
+                  </Button>
+                  <Button variant="primary" onClick={() => nav(`/projects/${id}`)}>
+                    Back to project
+                  </Button>
+                </div>
+              }
+            />
+          </Card>
+        ) : (
+          <Skeleton height={260} />
+        )}
+      </Page>
+    );
+  }
+
+  const checklist = status.checklist || [];
+  const pkg = pkgResult || status.package;
+  const clientUrl = deliverResult?.url || status.package?.client_url;
 
   return (
-    <div className="max-w-[1000px] mx-auto p-6">
-      <button
-        onClick={() => nav(`/projects/${id}`)}
-        className="text-[13px] text-[#6B7B7C] inline-flex items-center gap-1 mb-3"
+    <Page width="narrow">
+      {header}
+
+      <Card
+        title="Readiness"
+        subtitle={`${status.available} of ${status.required} required items available`}
+        actions={status.ready ? <Pill tone="ok">Ready to package</Pill> : <Pill tone="warn">{status.percent}% ready</Pill>}
       >
-        <ArrowLeft size={14} /> Project
-      </button>
-      <h1 className="text-[36px] font-bold text-[#333333]">Handover Package</h1>
-      <p className="text-[13px] text-[#6B7B7C] mt-1">
-        Compile the final handover package for client delivery.
-      </p>
-
-      <div className="bg-white border border-[#B5C4B6] rounded-xl p-5 mt-5">
-        <div className="flex justify-between items-center mb-4">
-          <div className="text-[15px] font-bold text-[#333333]">
-            Readiness: {status.percent}% ({status.available}/{status.required})
-          </div>
-          {status.ready && (
-            <span className="text-[11px] font-bold text-[#333333] bg-[#EAEEF0] px-2 py-1 rounded-full">
-              100% READY
-            </span>
-          )}
-        </div>
-        <div className="h-3 bg-[#EAEEF0] rounded-full mb-5 overflow-hidden">
-          <div
-            className="h-full transition-all"
-            style={{
-              width: `${status.percent}%`,
-              background: status.ready ? "#1F453B" : "#1F453B",
-            }}
-          />
-        </div>
-        <div className="space-y-2">
-          {(status.checklist || []).map((c, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-2 text-[13px]"
-              data-testid={`checklist-${i}`}
-            >
-              <div
-                className={`w-5 h-5 rounded-full flex items-center justify-center ${c.done ? "bg-[#EAEEF0] text-[#333333]" : "bg-[#EAEEF0] text-[#B5C4B6]"}`}
-              >
-                {c.done ? "✓" : "○"}
-              </div>
-              <span className={c.done ? "text-[#333333]" : "text-[#6B7B7C]"}>
-                {c.name}
-              </span>
+        <div style={{ display: "grid", gap: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ flex: 1 }}>
+              <Progress value={status.percent} tone={status.ready ? "ok" : undefined} />
             </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2 mt-4">
-        <button
-          onClick={prepare}
-          disabled={busy || !status.ready}
-          className="px-4 py-2 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold inline-flex items-center gap-1 disabled:opacity-50"
-          data-testid="btn-prepare-package"
-        >
-          <Package size={14} /> Prepare Handover Package
-        </button>
-        <button
-          onClick={deliver}
-          disabled={busy || !pkgResult}
-          className="px-4 py-2 rounded-lg bg-[#1F453B] text-white text-[13px] font-semibold inline-flex items-center gap-1 disabled:opacity-50"
-          data-testid="btn-deliver-client"
-        >
-          <Send size={14} /> Deliver to Client
-        </button>
-      </div>
-
-      {pkgResult && (
-        <div className="mt-4 bg-[#EAEEF0] border border-[#1F453B]/20 rounded-lg p-3 text-[12.5px] text-[#333333]">
-          Package: <b>{pkgResult.filename}</b> (
-          {(pkgResult.size / 1024).toFixed(1)} KB)
-        </div>
-      )}
-      {deliverResult && (
-        <div className="mt-3 bg-white border border-[#B5C4B6] rounded-lg p-3 text-[12.5px]">
-          <div className="font-semibold text-[#333333]">Client Link:</div>
-          <div className="text-[11px] text-[#6B7B7C] break-all mt-1">
-            {deliverResult.url}
+            <span className="tabular" style={{ fontWeight: 700 }}>
+              {status.percent}%
+            </span>
           </div>
-          <a
-            href={deliverResult.url}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-2 inline-block px-3 py-1 rounded bg-[#1F453B] text-white text-[11.5px]"
-          >
-            Open as Client
-          </a>
+          <div style={{ display: "grid", gap: 10 }}>
+            {checklist.map((c, i) => (
+              <div key={i} data-testid={`checklist-${i}`} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
+                {c.done ? (
+                  <CheckCircle2 size={18} style={{ color: "var(--ok-dot)" }} aria-label="Done" />
+                ) : (
+                  <Circle size={18} style={{ color: "var(--line-strong)" }} aria-label="Pending" />
+                )}
+                <span style={{ color: c.done ? "var(--text)" : "var(--text-3)", flex: 1 }}>
+                  {c.name}
+                  {c.required === false && <span className="pj-muted"> (optional)</span>}
+                </span>
+                {c.detail && <span className="pj-muted" style={{ fontSize: 13 }}>{c.detail}</span>}
+              </div>
+            ))}
+          </div>
         </div>
+      </Card>
+
+      {pkg && (
+        <Card inset>
+          <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
+            <span className="inos-icon-tile inos-icon-tile--sm inos-icon-tile--ok">
+              <Package aria-hidden />
+            </span>
+            Package <b>{pkg.filename}</b>
+            <span className="pj-muted">({(pkg.size / 1024).toFixed(1)} KB)</span>
+            {pkg.url && (
+              <a href={pkg.url} className="inos-btn inos-btn--ghost inos-btn--sm" style={{ marginLeft: "auto" }}>
+                Download
+              </a>
+            )}
+          </span>
+        </Card>
       )}
-    </div>
+
+      {status.accepted && (
+        <Card inset>
+          <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
+            <CheckCircle2 size={18} style={{ color: "var(--ok-dot)" }} aria-hidden />
+            Accepted by <b>{status.accepted.signatory_name}</b>
+          </span>
+        </Card>
+      )}
+
+      {clientUrl && (
+        <Card title="Client link" subtitle="Share this link with the client to accept the handover.">
+          <div style={{ display: "grid", gap: 12 }}>
+            <div className="pj-muted" style={{ fontSize: 13, overflowWrap: "anywhere" }}>
+              {clientUrl}
+            </div>
+            <div>
+              <a href={clientUrl} target="_blank" rel="noreferrer" className="inos-btn inos-btn--soft inos-btn--sm">
+                <ExternalLink aria-hidden />
+                <span>Open as client</span>
+              </a>
+            </div>
+          </div>
+        </Card>
+      )}
+    </Page>
   );
 }

@@ -251,35 +251,6 @@ export class ProjectBriefSiteRestrictionDto {
 }
 
 export class CreateProjectBriefDto {
-  @IsOptional()
-  @IsString()
-  principalArchitect?: string;
-
-  @IsOptional()
-  @IsString()
-  projectLead?: string;
-
-  @IsOptional()
-  @IsString()
-  propertyType?: string;
-
-  @IsOptional()
-  @IsString()
-  fundingStage?: string;
-
-  @IsOptional()
-  @IsString()
-  budgetRange?: string;
-
-  @IsOptional()
-  @IsString()
-  expectedTimeline?: string;
-
-  @IsOptional()
-  @IsString()
-  toiletFacilityAndStayForLabour?: string;
-
-
   @IsUUID()
   projectId: string;
 

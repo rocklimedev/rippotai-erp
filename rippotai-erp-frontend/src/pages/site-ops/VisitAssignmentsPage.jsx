@@ -1,4 +1,7 @@
 import React, { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { SelectInput } from "@/components/inos";
+import { useSiteProjects, useProjectParam, ProjectPicker, rowProjectName, useTradeTeams } from "./siteProjects";
 import {
   CalendarDays,
   ChevronDown,
@@ -132,11 +135,14 @@ export default function VisitAssignmentsPage() {
   const [editingAssignment, setEditingAssignment] = useState(null);
 
   const [form, setForm] = useState(getInitialForm());
+  const [projectId, setProjectId] = useProjectParam();
+  const { projects, nameOf } = useSiteProjects();
+  const teams = useTradeTeams();
 
   /*
    * Fetch all visit assignments.
    */
-  const { data, isLoading, isFetching } = useGetVisitAssignmentsQuery();
+  const { data, isLoading, isFetching } = useGetVisitAssignmentsQuery({ projectId });
 
   /*
    * Create visit assignment.
@@ -173,9 +179,8 @@ export default function VisitAssignmentsPage() {
         assignment.externalPartyName,
         assignment.visitorType,
         assignment.frequency,
-        assignment.project?.name,
-        assignment.project?.projectName,
-        assignment.team?.name,
+        rowProjectName(assignment, nameOf),
+        assignment.teamName,
       ]
         .filter(Boolean)
         .join(" ")
@@ -185,7 +190,7 @@ export default function VisitAssignmentsPage() {
         matchesStatus && matchesType && (!query || searchable.includes(query))
       );
     });
-  }, [assignments, search, status, visitorType]);
+  }, [assignments, search, status, visitorType, nameOf]);
 
   const stats = useMemo(() => {
     const active = assignments.filter((item) => item.isActive !== false);
@@ -200,7 +205,7 @@ export default function VisitAssignmentsPage() {
 
   const openCreateDialog = () => {
     setEditingAssignment(null);
-    setForm(getInitialForm());
+    setForm({ ...getInitialForm(), projectId: projectId || "" });
     setDialogOpen(true);
   };
 
@@ -245,7 +250,7 @@ export default function VisitAssignmentsPage() {
     }
 
     const payload = {
-      projectId: Number(form.projectId),
+      projectId: form.projectId,
       visitorType: form.visitorType,
       frequency: form.frequency,
       teamId: form.teamId ? Number(form.teamId) : null,
@@ -260,8 +265,10 @@ export default function VisitAssignmentsPage() {
       setDialogOpen(false);
       setForm(getInitialForm());
       setEditingAssignment(null);
+      toast.success("Visit assignment saved");
     } catch (error) {
-      console.error("Failed to create visit assignment", error);
+      const m = error?.data?.message;
+      toast.error(Array.isArray(m) ? m.join(", ") : m || "Couldn't save the assignment");
     }
   };
 
@@ -273,15 +280,13 @@ export default function VisitAssignmentsPage() {
     }
   };
 
-  const getProjectName = (assignment) =>
-    assignment.project?.name ||
-    assignment.project?.projectName ||
-    `Project #${assignment.projectId}`;
+  const getProjectName = (assignment) => rowProjectName(assignment, nameOf);
 
   const getTeamName = (assignment) =>
+    assignment.teamName ||
     assignment.team?.name ||
-    assignment.team?.teamName ||
-    (assignment.teamId ? `Team #${assignment.teamId}` : null);
+    teams.find((t) => String(t.id) === String(assignment.teamId))?.name ||
+    (assignment.teamId ? `Team ${assignment.teamId}` : null);
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-[1600px] space-y-6 p-6">
@@ -356,6 +361,10 @@ export default function VisitAssignmentsPage() {
               </div>
 
               <div className="flex flex-col gap-2 sm:flex-row">
+                <div className="w-full sm:w-[230px]">
+                  <ProjectPicker value={projectId} onChange={setProjectId} projects={projects} />
+                </div>
+
                 {/* Search */}
 
                 <div className="relative">
@@ -485,12 +494,11 @@ export default function VisitAssignmentsPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Project</label>
 
-              <Input
+              <ProjectPicker
                 value={form.projectId}
-                onChange={(event) =>
-                  updateForm("projectId", event.target.value)
-                }
-                placeholder="Project ID"
+                onChange={(v) => updateForm("projectId", v)}
+                placeholder="Select a project"
+                projects={projects}
               />
             </div>
 
@@ -521,13 +529,17 @@ export default function VisitAssignmentsPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Team ID</label>
+                <label className="text-sm font-medium">Internal team</label>
 
-                <Input
+                <SelectInput
                   value={form.teamId}
                   onChange={(event) => updateForm("teamId", event.target.value)}
-                  placeholder="Internal team ID"
-                />
+                >
+                  <option value="">None</option>
+                  {teams.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </SelectInput>
               </div>
 
               <div className="space-y-2">
@@ -706,9 +718,7 @@ function AssignmentRow({
       <td className="px-6 py-4">
         <div className="font-medium">{projectName}</div>
 
-        <div className="mt-0.5 text-xs text-muted-foreground">
-          Project #{assignment.projectId}
-        </div>
+
       </td>
 
       {/* Visitor */}

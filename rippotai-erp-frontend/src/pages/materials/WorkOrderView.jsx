@@ -1,9 +1,8 @@
 import { useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft,
   Pencil,
-  Printer,
+  MoreHorizontal,
   Download,
   Trash2,
   CheckCircle2,
@@ -18,7 +17,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import WorkOrderDocument from "../../components/work-orders/WorkOrderDocument";
+import WorkOrderPrintDocument from "../../components/commerce-documents/WorkOrderPrintDocument";
+import { DocumentPreview } from "@/components/print-document";
+import { Page, PageHeader, EmptyState, StatusPill, Button as InosButton } from "@/components/inos";
 import { downloadWorkOrderPdf } from "../../components/work-orders/workOrderPdf";
 import {
   getWorkOrderNumber,
@@ -33,8 +34,6 @@ import {
 } from "../../api/procuerment/work-order.api";
 
 // shadcn/ui
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 import {
   AlertDialog,
@@ -185,21 +184,8 @@ export default function WorkOrderView() {
 
   const canCancel = CANCELLABLE_STATUSES.includes(status);
 
-  const handlePrint = () => {
-    if (documentRef.current?.querySelector('[data-ready="true"]')) {
-      window.print();
-    } else {
-      toast.info("Please wait for the document to finish loading.");
-    }
-  };
-
   const handleDownloadPdf = async () => {
     if (!documentRef.current || isGeneratingPdf) return;
-
-    if (!documentRef.current.querySelector('[data-ready="true"]')) {
-      toast.info("Please wait for the document to finish loading.");
-      return;
-    }
 
     try {
       setIsGeneratingPdf(true);
@@ -284,7 +270,7 @@ export default function WorkOrderView() {
 
       setDeleteDialogOpen(false);
 
-      navigate("/work-orders");
+      navigate("/procurement/work-order/all");
     } catch (error) {
       toast.error(
         error?.data?.message || error?.message || "Unable to delete work order",
@@ -292,208 +278,102 @@ export default function WorkOrderView() {
     }
   };
 
+  const crumbs = [
+    { label: "Procurement", to: "/procurement" },
+    { label: "Work orders", to: "/procurement/work-order/all" },
+    { label: workOrder ? getWorkOrderNumber(workOrder) : "Work order" },
+  ];
+
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#EAEEF0]">
-        <div className="flex items-center gap-3 text-sm text-slate-500">
-          <Loader2 size={20} className="animate-spin" />
-          Loading work order...
-        </div>
-      </div>
+      <Page>
+        <PageHeader crumbs={crumbs} title="Work order" subtitle="Loading…" />
+      </Page>
     );
   }
 
   if (isError || !workOrder) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#EAEEF0]">
-        <FileText size={42} className="text-slate-300" />
-
-        <p className="text-sm text-slate-500">
-          Unable to load this work order.
-        </p>
-
-        <Button
-          type="button"
-          onClick={() => refetch()}
-          className="bg-[#1F453B] hover:bg-[#17382f]"
-        >
-          Try Again
-        </Button>
-      </div>
+      <Page>
+        <PageHeader crumbs={crumbs} title="Work order" />
+        <div className="inos-card">
+          <EmptyState
+            icon={FileText}
+            title="Unable to load this work order"
+            text="It may have been deleted, or the server is unavailable."
+            action={
+              <InosButton variant="primary" onClick={() => refetch()}>
+                Try again
+              </InosButton>
+            }
+          />
+        </div>
+      </Page>
     );
   }
 
   return (
     <>
-      <div className="work-order-view min-h-screen bg-[#EAEEF0] p-4 md:p-6 print:bg-white print:p-0">
-        <div className="mx-auto max-w-[1200px]">
-          {/* Toolbar */}
-          <div className="mb-5 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm print:hidden lg:flex-row lg:items-center lg:justify-between">
-            {/* Left */}
-            <div className="flex min-w-0 items-center gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => navigate("/work-orders")}
-                className="shrink-0 rounded-xl"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="truncate font-semibold text-slate-900">
-                    {getWorkOrderNumber(workOrder)}
-                  </h1>
-
-                  <Badge
-                    variant="outline"
-                    className={
-                      STATUS_STYLES[status] ||
-                      "border-slate-200 bg-slate-100 text-slate-700"
-                    }
-                  >
-                    {formatStatus(status)}
-                  </Badge>
-                </div>
-
-                <p className="truncate text-sm text-slate-500">
-                  {workOrder.title ||
-                    `${getProjectName(workOrder)} • ${getVendorName(
-                      workOrder,
-                    )}`}
-                </p>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Primary status action */}
-              {statusAction && (
-                <Button
-                  type="button"
-                  disabled={isUpdatingStatus}
-                  onClick={() =>
-                    openStatusDialog(
-                      statusAction.nextStatus,
-                      statusAction.label,
-                      statusAction.description,
-                    )
-                  }
-                  className={
-                    status === "PENDING_APPROVAL"
-                      ? "bg-[#1F453B] hover:bg-[#17382f]"
-                      : ""
-                  }
-                >
-                  {isUpdatingStatus ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <statusAction.icon className="mr-2 h-4 w-4" />
-                  )}
-
-                  {statusAction.label}
-                </Button>
-              )}
-
-              {/* More actions */}
+      <Page>
+        <PageHeader
+          crumbs={crumbs}
+          title={getWorkOrderNumber(workOrder)}
+          subtitle={
+            <span style={{ display: "inline-flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+              {workOrder.title || `${getProjectName(workOrder)} · ${getVendorName(workOrder)}`}
+              <StatusPill status={String(status).toLowerCase()} size="sm" />
+            </span>
+          }
+          actions={
+            <>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={isUpdatingStatus || isDeleting}
-                  >
-                    Actions
-                  </Button>
+                  <InosButton variant="ghost" icon={MoreHorizontal} disabled={isUpdatingStatus || isDeleting} aria-label="More actions" />
                 </DropdownMenuTrigger>
-
                 <DropdownMenuContent align="end" className="w-56">
-                  {/* Status transition */}
-                  {statusAction && (
+                  {canCancel && (
                     <DropdownMenuItem
                       onSelect={() =>
-                        openStatusDialog(
-                          statusAction.nextStatus,
-                          statusAction.label,
-                          statusAction.description,
-                        )
+                        openStatusDialog("CANCELLED", "Cancel Work Order", "This will move the work order to Cancelled status.", true)
                       }
                     >
-                      <statusAction.icon className="mr-2 h-4 w-4" />
-                      {statusAction.label}
+                      <Ban className="mr-2 h-4 w-4" />
+                      Cancel work order
                     </DropdownMenuItem>
                   )}
-
-                  {/* Cancel */}
-                  {canCancel && (
-                    <>
-                      {statusAction && <DropdownMenuSeparator />}
-
-                      <DropdownMenuItem
-                        className="text-red-600 focus:text-red-600"
-                        onSelect={() =>
-                          openStatusDialog(
-                            "CANCELLED",
-                            "Cancel Work Order",
-                            "This will move the work order to Cancelled status.",
-                            true,
-                          )
-                        }
-                      >
-                        <Ban className="mr-2 h-4 w-4" />
-                        Cancel Work Order
-                      </DropdownMenuItem>
-                    </>
-                  )}
-
-                  <DropdownMenuSeparator />
-
-                  <DropdownMenuItem
-                    onSelect={() => navigate(`/work-orders/${id}/edit`)}
-                  >
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edit Work Order
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem onSelect={handlePrint}>
-                    <Printer className="mr-2 h-4 w-4" />
-                    Print
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem
-                    disabled={isGeneratingPdf}
-                    onSelect={handleDownloadPdf}
-                  >
-                    {isGeneratingPdf ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Download className="mr-2 h-4 w-4" />
-                    )}
-                    Download PDF
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
-
-                  <DropdownMenuItem
-                    className="text-red-600 focus:text-red-600"
-                    onSelect={() => setDeleteDialogOpen(true)}
-                  >
+                  {canCancel && <DropdownMenuSeparator />}
+                  <DropdownMenuItem className="text-red-600 focus:text-red-600" onSelect={() => setDeleteDialogOpen(true)}>
                     <Trash2 className="mr-2 h-4 w-4" />
-                    Delete Work Order
+                    Delete work order
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
-          </div>
+              <InosButton variant="secondary" icon={Pencil} onClick={() => navigate(`/procurement/work-order/${id}/edit`)}>
+                Edit
+              </InosButton>
+              {statusAction && (
+                <InosButton
+                  variant="soft"
+                  icon={statusAction.icon}
+                  disabled={isUpdatingStatus}
+                  onClick={() => openStatusDialog(statusAction.nextStatus, statusAction.label, statusAction.description)}
+                >
+                  {statusAction.label}
+                </InosButton>
+              )}
+              <InosButton variant="primary" icon={Download} loading={isGeneratingPdf} onClick={handleDownloadPdf}>
+                Download PDF
+              </InosButton>
+            </>
+          }
+        />
 
-          {/* Preview / Print / PDF */}
+        <DocumentPreview>
           <div ref={documentRef}>
-            <WorkOrderDocument workOrder={workOrder} />
+            <WorkOrderPrintDocument workOrder={workOrder} />
           </div>
-        </div>
-      </div>
+        </DocumentPreview>
+      </Page>
 
       {/* Status Confirmation */}
       <AlertDialog

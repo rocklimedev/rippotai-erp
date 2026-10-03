@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import { Pill } from "@/components/inos";
+import "@/pages/settings/_admin-ui.css";
 
 /**
  * Parses HTML terms and extracts individual items
@@ -27,7 +28,7 @@ function parseTermsFromHtml(htmlString) {
   // Fallback: if no list items found, try splitting by newlines
   if (items.length === 0) {
     const lines = htmlString
-      .split(/<br\s*\/?>/gi)
+      .split(/<br\s*\/?>|\n/gi)
       .map((line) => line.replace(/<[^>]+>/g, "").trim())
       .filter((line) => line.length > 0);
     return lines;
@@ -35,6 +36,10 @@ function parseTermsFromHtml(htmlString) {
 
   return items;
 }
+
+const Empty = () => (
+  <p style={{ margin: 0, fontSize: 13, color: "var(--text-3)" }}>No terms written yet.</p>
+);
 
 /**
  * TermsPreview - Display terms in a clean, easy-to-read format
@@ -45,34 +50,29 @@ export function TermsPreview({ htmlContent, maxPreview = 3 }) {
   const items = parseTermsFromHtml(htmlContent);
 
   if (items.length === 0) {
-    return <p className="text-sm text-[#6B7B7C] italic">No terms defined</p>;
+    return <Empty />;
   }
 
   const displayItems = expanded ? items : items.slice(0, maxPreview);
   const hasMore = items.length > maxPreview;
 
   return (
-    <div className="space-y-2">
-      <ol className="space-y-2 list-decimal list-inside">
+    <div style={{ display: "grid", gap: 8 }}>
+      <ol className="adm-terms-list">
         {displayItems.map((item, idx) => (
-          <li key={idx} className="text-sm text-[#2D3A3A] leading-relaxed">
-            {item}
-          </li>
+          <li key={idx}>{item}</li>
         ))}
       </ol>
 
       {hasMore && (
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 mt-2"
-        >
+        <button type="button" onClick={() => setExpanded(!expanded)} className="adm-link-btn" style={{ justifySelf: "start" }}>
           {expanded ? (
             <>
-              <ChevronUp size={16} /> Show less
+              <ChevronUp aria-hidden /> Show less
             </>
           ) : (
             <>
-              <ChevronDown size={16} /> Show {items.length - maxPreview} more
+              <ChevronDown aria-hidden /> Show {items.length - maxPreview} more
             </>
           )}
         </button>
@@ -89,19 +89,15 @@ export function TermsFullDisplay({ htmlContent }) {
   const items = parseTermsFromHtml(htmlContent);
 
   if (items.length === 0) {
-    return <p className="text-sm text-[#6B7B7C] italic">No terms defined</p>;
+    return <Empty />;
   }
 
   return (
-    <div className="space-y-3">
-      <ol className="space-y-3 list-decimal list-inside">
-        {items.map((item, idx) => (
-          <li key={idx} className="text-sm text-[#2D3A3A] leading-relaxed">
-            <span className="ml-1">{item}</span>
-          </li>
-        ))}
-      </ol>
-    </div>
+    <ol className="adm-terms-list" style={{ gap: 10 }}>
+      {items.map((item, idx) => (
+        <li key={idx}>{item}</li>
+      ))}
+    </ol>
   );
 }
 
@@ -119,44 +115,44 @@ export function TermsSection({
   const items = parseTermsFromHtml(htmlContent);
 
   return (
-    <div className="rounded-lg border border-[#E2E8E6] overflow-hidden">
+    <div style={{ border: "1px solid var(--line)", borderRadius: 12, overflow: "hidden", background: "var(--surface)" }}>
       <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="w-full px-4 py-3 bg-[#F5F9F8] hover:bg-[#EDF4F2] flex items-center justify-between"
+        type="button"
+        onClick={() => collapsible && setCollapsed(!collapsed)}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          padding: "12px 16px",
+          background: "var(--surface-2)",
+          borderBottom: collapsed ? 0 : "1px solid var(--line)",
+          textAlign: "left",
+        }}
       >
-        <div className="flex items-center gap-2">
-          {Icon && <Icon size={18} className="text-[#6B7B7C]" />}
-          <span className="font-semibold text-[#2D3A3A]">{title}</span>
-          <span className="text-xs text-[#6B7B7C] bg-white px-2 py-1 rounded">
+        <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {Icon && (
+            <span className="inos-icon-tile inos-icon-tile--sm">
+              <Icon aria-hidden />
+            </span>
+          )}
+          <span style={{ fontWeight: 650, color: "var(--text)" }}>{title}</span>
+          <Pill dot={false} size="sm">
             {items.length} {items.length === 1 ? "term" : "terms"}
-          </span>
-        </div>
+          </Pill>
+        </span>
         {collapsible && (
           <ChevronDown
             size={18}
-            className={`text-[#6B7B7C] transition-transform ${
-              collapsed ? "-rotate-90" : ""
-            }`}
+            style={{ color: "var(--text-3)", transition: "transform .15s ease", transform: collapsed ? "rotate(-90deg)" : "none" }}
           />
         )}
       </button>
 
       {!collapsed && (
-        <div className="px-4 py-4">
-          {items.length === 0 ? (
-            <p className="text-sm text-[#6B7B7C] italic">No terms defined</p>
-          ) : (
-            <ol className="space-y-3 list-decimal list-inside">
-              {items.map((item, idx) => (
-                <li
-                  key={idx}
-                  className="text-sm text-[#2D3A3A] leading-relaxed"
-                >
-                  <span className="ml-1">{item}</span>
-                </li>
-              ))}
-            </ol>
-          )}
+        <div style={{ padding: 16 }}>
+          {items.length === 0 ? <Empty /> : <TermsFullDisplay htmlContent={htmlContent} />}
         </div>
       )}
     </div>

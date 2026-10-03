@@ -341,6 +341,28 @@ export const siteOpsApi = baseApi.injectEndpoints({
       query: () => "/quality-checklists/templates",
       providesTags: ["QualityChecklists"],
     }),
+    createQualityChecklist: builder.mutation({
+      query: (body) => ({ url: '/quality-checklists', method: 'POST', body }),
+      invalidatesTags: ['QualityChecklists'],
+    }),
+    updateQualityChecklistItem: builder.mutation({
+      query: ({ id, ...body }) => ({ url: `/quality-checklists/items/${id}`, method: 'PUT', body }),
+      invalidatesTags: ['QualityChecklists'],
+    }),
+    addQualityChecklistItem: builder.mutation({
+      query: ({ checklistId, ...body }) => ({ url: `/quality-checklists/${checklistId}/items`, method: 'POST', body }),
+      invalidatesTags: ['QualityChecklists'],
+    }),
+    deleteQualityChecklist: builder.mutation({
+      query: (id) => ({ url: `/quality-checklists/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['QualityChecklists'],
+    }),
+    exportQualityChecklistJson: builder.query({
+      query: (id) => `/quality-checklists/${id}/export`,
+    }),
+    exportProjectQualityWorkbookJson: builder.query({
+      query: (id) => `/quality-checklists/project/${id}/export-workbook`,
+    }),
 
     getQualityChecklistTemplate: builder.query({
       query: (workHead) => `/quality-checklists/templates/${workHead}`,
@@ -489,6 +511,12 @@ export const {
 
   // Quality checklists
   useGetQualityChecklistTemplatesQuery,
+  useCreateQualityChecklistMutation,
+  useUpdateQualityChecklistItemMutation,
+  useAddQualityChecklistItemMutation,
+  useDeleteQualityChecklistMutation,
+  useLazyExportQualityChecklistJsonQuery,
+  useLazyExportProjectQualityWorkbookJsonQuery,
   useGetQualityChecklistTemplateQuery,
   useCreateQualityChecklistFromTemplateMutation,
   useGetQualityChecklistsByProjectQuery,

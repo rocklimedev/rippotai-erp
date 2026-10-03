@@ -7,13 +7,28 @@ export const siteOperationsApi = baseApi.injectEndpoints({
     // Controller: /site-ops/daily-reports
     // =========================================================
 
+    // GET /site-ops/daily-reports?projectId=&from=&to=&status=&hasIssues=
+    listDailySiteReports: builder.query({
+      query: ({ projectId, from, to, status, hasIssues } = {}) => ({
+        url: "/site-ops/daily-reports",
+        params: {
+          projectId: projectId || undefined,
+          from: from || undefined,
+          to: to || undefined,
+          status: status || undefined,
+          hasIssues: hasIssues ? "true" : undefined,
+        },
+      }),
+      providesTags: ["DailySiteReports"],
+    }),
+
     createDailySiteReport: builder.mutation({
       query: (body) => ({
         url: "/site-ops/daily-reports",
         method: "POST",
         body,
       }),
-      invalidatesTags: ["DailySiteReports"],
+      invalidatesTags: ["DailySiteReports", "SiteOpsDashboard"],
     }),
 
     updateDailySiteReport: builder.mutation({
@@ -22,7 +37,7 @@ export const siteOperationsApi = baseApi.injectEndpoints({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["DailySiteReports"],
+      invalidatesTags: ["DailySiteReports", "SiteOpsDashboard"],
     }),
 
     shareDailySiteReport: builder.mutation({
@@ -30,12 +45,32 @@ export const siteOperationsApi = baseApi.injectEndpoints({
         url: `/site-ops/daily-reports/${id}/share`,
         method: "POST",
       }),
-      invalidatesTags: ["DailySiteReports"],
+      invalidatesTags: ["DailySiteReports", "SiteOpsDashboard"],
+    }),
+
+    deleteDailySiteReport: builder.mutation({
+      query: (id) => ({
+        url: `/site-ops/daily-reports/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["DailySiteReports", "SiteOpsDashboard"],
+    }),
+
+    // POST /site-ops/daily-reports/photos (multipart "file") -> { url, filename, originalName }
+    uploadDailyReportPhoto: builder.mutation({
+      query: (file) => {
+        const body = new FormData();
+        body.append("file", file);
+        return { url: "/site-ops/daily-reports/photos", method: "POST", body };
+      },
     }),
 
     getDailySiteReport: builder.query({
       query: (id) => `/site-ops/daily-reports/${id}`,
-      providesTags: (result, error, id) => [{ type: "DailySiteReports", id }],
+      providesTags: (result, error, id) => [
+        { type: "DailySiteReports", id },
+        "DailySiteReports",
+      ],
     }),
 
     getDailySiteReportsByProject: builder.query({
@@ -66,6 +101,15 @@ export const siteOperationsApi = baseApi.injectEndpoints({
           id: `${projectId}-${reportDate}`,
         },
       ],
+    }),
+
+    // GET /site-ops/dashboard?projectId= — stats + recent rows for the dashboard widgets
+    getSiteOpsDashboard: builder.query({
+      query: ({ projectId } = {}) => ({
+        url: "/site-ops/dashboard",
+        params: { projectId: projectId || undefined },
+      }),
+      providesTags: ["SiteOpsDashboard", "DailySiteReports"],
     }),
 
     // =========================================================
@@ -116,6 +160,15 @@ export const siteOperationsApi = baseApi.injectEndpoints({
         "Mockups",
       ],
     }),
+    // GET /site-ops/mockups?projectId=<uuid>&status — all projects when projectId is omitted
+    listMockups: builder.query({
+      query: ({ projectId, status } = {}) => ({
+        url: "/site-ops/mockups",
+        params: { projectId: projectId || undefined, status: status || undefined },
+      }),
+      providesTags: ["Mockups"],
+    }),
+
     getProjectMockups: builder.query({
       query: ({ projectId, status } = {}) => {
         const params = new URLSearchParams();
@@ -225,13 +278,15 @@ export const siteOperationsApi = baseApi.injectEndpoints({
       ],
     }),
 
+    // GET /site-ops/qc/handoff-status?projectId=<uuid> — latest result per project/step/trade (all projects when omitted)
     getQcHandoffStatus: builder.query({
-      query: (projectId) => `/site-ops/qc/projects/${projectId}/handoff-status`,
+      query: (projectId) => ({
+        url: "/site-ops/qc/handoff-status",
+        params: { projectId: projectId || undefined },
+      }),
       providesTags: (result, error, projectId) => [
-        {
-          type: "QcSignOffs",
-          id: `HANDOFF-${projectId}`,
-        },
+        { type: "QcSignOffs", id: `HANDOFF-${projectId || "ALL"}` },
+        "QcSignOffs",
       ],
     }),
     getProjectQcHandoffStatus: builder.query({
@@ -293,6 +348,15 @@ export const siteOperationsApi = baseApi.injectEndpoints({
     getRfi: builder.query({
       query: (id) => `/site-ops/rfis/${id}`,
       providesTags: (result, error, id) => [{ type: "Rfis", id }],
+    }),
+
+    // GET /site-ops/rfis?projectId=<uuid>&status — all projects when projectId is omitted
+    listRfis: builder.query({
+      query: ({ projectId, status } = {}) => ({
+        url: "/site-ops/rfis",
+        params: { projectId: projectId || undefined, status: status || undefined },
+      }),
+      providesTags: ["Rfis"],
     }),
 
     getRfisByProject: builder.query({
@@ -451,8 +515,10 @@ export const siteOperationsApi = baseApi.injectEndpoints({
         "SiteVisits",
       ],
     }),
+    // GET /site-ops/qc/history?projectId=<uuid>&from&to&status — all projects when projectId is omitted
     getQcHistory: builder.query({
-      query: ({ projectId, from, to, status } = {}) => {
+      query: (arg = {}) => {
+        const { projectId, from, to, status } = typeof arg === "string" ? { projectId: arg } : arg || {};
         const params = new URLSearchParams();
 
         if (projectId) params.append("projectId", projectId);
@@ -477,6 +543,10 @@ export const {
   // DAILY SITE REPORTS
   // =========================================================
 
+  useListDailySiteReportsQuery,
+  useDeleteDailySiteReportMutation,
+  useUploadDailyReportPhotoMutation,
+  useGetSiteOpsDashboardQuery,
   useCreateDailySiteReportMutation,
   useUpdateDailySiteReportMutation,
   useShareDailySiteReportMutation,
@@ -493,6 +563,7 @@ export const {
   useGetMockupQuery,
   useGetMockupsByProjectQuery,
   useGetProjectMockupsQuery,
+  useListMockupsQuery,
   // =========================================================
   // CHECKLISTS
   // =========================================================
@@ -524,6 +595,7 @@ export const {
   useCloseRfiMutation,
   useGetRfiQuery,
   useGetRfisByProjectQuery,
+  useListRfisQuery,
   useGetOpenRfisForTeamQuery,
 
   // =========================================================

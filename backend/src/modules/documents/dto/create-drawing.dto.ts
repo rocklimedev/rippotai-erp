@@ -49,11 +49,16 @@ export class CreateDrawingDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(20)
+  sheetSize?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(255)
   issuePurpose?: string;
 
   @IsOptional()
-  @IsIn(['Draft', 'For Review', 'Approved', 'Rejected', 'Superseded'])
+  @IsIn(['Draft', 'For Review', 'Approved', 'For Construction', 'Rejected', 'Superseded'])
   status?: string;
 
   @IsOptional()

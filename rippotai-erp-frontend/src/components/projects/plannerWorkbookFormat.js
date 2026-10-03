@@ -10,14 +10,14 @@ const PHASES = [
   "MATERIAL SELECTION",
   "TENDER DRAWINGS",
   "WORKING DRAWINGS",
-  "SITE PREPRATION",
+  "SITE PREPARATION",
   "CIVIL WORK",
   "FIT OUTS",
   "FINISHING",
   "SNAG & HANDOVER",
 ];
 const phaseOrder = (phase) => {
-  const rank = PHASES.indexOf(phase?.title);
+  const rank = PHASES.indexOf(String(phase?.title || "").toUpperCase());
   return rank === -1 ? 100 + Number(phase?.sort_order || 0) : rank;
 };
 export function workbookRows(planners = []) {

@@ -5,6 +5,11 @@ import { QcSignOffItemResult } from './models/qc-sign-off-item-result.model';
 import { ChecklistTemplate } from './models/checklist-template.model';
 import { RecordQcSignOffDto } from './dto/qc.dto';
 import { QcResult } from '../../common/enums/site-operations.enums';
+import { Op } from 'sequelize';
+import { automationBus } from '@/common/automation-bus';
+import { Project } from '@/modules/projects/models/projects.model';
+import { Step } from '../process-workflow/models/step.model';
+import { Team } from '../process-workflow/models/team.model';
 
 @Injectable()
 export class QcSignOffService {
@@ -14,6 +19,7 @@ export class QcSignOffService {
     private itemResultModel: typeof QcSignOffItemResult,
     @InjectModel(ChecklistTemplate)
     private templateModel: typeof ChecklistTemplate,
+    @InjectModel(Team) private teamModel: typeof Team,
   ) {}
 
   /**
@@ -60,49 +66,102 @@ export class QcSignOffService {
       }
     }
 
+    // Automation hook: failed / rework inspections trigger QC_FAILED rules.
+    if (String(dto.result) !== 'PASS') {
+      automationBus.emitEvent('QC_FAILED', { entityId: signOff.id, projectId: dto.projectId });
+    }
+
     return this.getSignOffOrThrow(signOff.id);
   }
 
-  async getSignOffOrThrow(id: number): Promise<QcSignOff> {
+  async getSignOffOrThrow(id: number): Promise<any> {
     const signOff = await this.signOffModel.findByPk(id, {
-      include: [{ model: this.itemResultModel }],
+      include: this.listInclude(),
     });
     if (!signOff) throw new NotFoundException(`QC sign-off ${id} not found`);
-    return signOff;
+    return (await this.withTeams([signOff]))[0];
+  }
+
+  // Team is not joined in SQL: teams.id is CHAR(36) while trade_team_id is INT, and MySQL's
+  // numeric coercion would match e.g. team '7d99…' to 7. Names are attached by withTeams().
+  private readonly listInclude = () => [
+    { model: this.itemResultModel },
+    { model: Project, attributes: ['id', 'name'] },
+    { model: Step, attributes: ['id', 'name', 'code'] },
+    { model: ChecklistTemplate, attributes: ['id', 'name'] },
+  ];
+
+  private async withTeams(rows: QcSignOff[]): Promise<any[]> {
+    const plain = rows.map((r) => r.get({ plain: true }) as any);
+    const ids = [...new Set(plain.map((r) => String(r.tradeTeamId)))];
+    const teams = ids.length
+      ? await this.teamModel.findAll({ where: { id: ids }, attributes: ['id', 'name'] })
+      : [];
+    const byId = new Map(teams.map((t) => [String(t.get('id')), t.get({ plain: true })]));
+    return plain.map((r) => ({ ...r, tradeTeam: byId.get(String(r.tradeTeamId)) ?? null }));
   }
 
   /** Full QC history for a project, most recent first. */
-  async getProjectHistory(projectId: number): Promise<QcSignOff[]> {
-    return this.signOffModel.findAll({
-      where: { projectId },
-      order: [['checkedAt', 'DESC']],
-      include: [{ model: this.itemResultModel }],
-    });
+  async getProjectHistory(projectId: string): Promise<any[]> {
+    return this.history({ projectId });
+  }
+
+  /** QC history across projects (or one project), optional date range / result filter. */
+  async history(q: { projectId?: string; from?: string; to?: string; status?: string } = {}): Promise<any[]> {
+    const where: any = {};
+    if (q.projectId) where.projectId = q.projectId;
+    if (q.status) where.result = String(q.status).toUpperCase();
+    if (q.from || q.to) {
+      where.checkedAt = {};
+      if (q.from) where.checkedAt[Op.gte] = new Date(q.from);
+      if (q.to) where.checkedAt[Op.lte] = new Date(`${q.to}T23:59:59`);
+    }
+    return this.withTeams(
+      await this.signOffModel.findAll({
+        where,
+        order: [['checkedAt', 'DESC']],
+        include: this.listInclude(),
+      }),
+    );
   }
 
   /**
-   * The latest QC result per phase/step + trade for a project — i.e. whether
+   * The latest QC result per project + phase/step + trade — i.e. whether
    * handoff to the next trade is currently clear (latest result === PASS).
+   * Without projectId it covers every project.
    */
-  async getHandoffStatus(projectId: number) {
-    const all = await this.signOffModel.findAll({
-      where: { projectId },
-      order: [['checkedAt', 'DESC']],
-    });
+  async getHandoffStatus(projectId?: string) {
+    const all = await this.withTeams(
+      await this.signOffModel.findAll({
+        where: projectId ? { projectId } : {},
+        order: [
+          ['checkedAt', 'DESC'],
+          ['attemptNumber', 'DESC'],
+        ],
+        include: this.listInclude().slice(1),
+      }),
+    );
 
-    const latestByKey = new Map<string, QcSignOff>();
+    const latestByKey = new Map<string, any>();
     for (const s of all) {
-      const key = `${s.stepId}:${s.tradeTeamId}`;
+      const key = `${s.projectId}:${s.stepId}:${s.tradeTeamId}`;
       if (!latestByKey.has(key)) latestByKey.set(key, s);
     }
 
     return Array.from(latestByKey.values()).map((s) => ({
+      id: s.id,
+      projectId: s.projectId,
+      projectName: s.project?.name ?? null,
       stepId: s.stepId,
+      stepName: s.step?.name ?? null,
       tradeTeamId: s.tradeTeamId,
+      tradeTeamName: s.tradeTeam?.name ?? null,
+      checklistTemplateName: s.checklistTemplate?.name ?? null,
       result: s.result,
       attemptNumber: s.attemptNumber,
       checkedBy: s.checkedBy,
       checkedAt: s.checkedAt,
+      notes: s.notes,
       clearedForHandoff: s.result === QcResult.PASS,
     }));
   }

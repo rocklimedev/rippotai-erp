@@ -1,0 +1,592 @@
+/* =====================================================================
+   INOS design system — "Quiet Studio"
+   Clean, minimal, aligned. Brand ink-green on a soft green-grey canvas,
+   white surfaces with hairline borders, pastel colour only for meaning.
+
+   Layout concept: one centred content column (max 1360px), every page
+   opens with the same PageHeader, content sits in white cards on canvas.
+   ===================================================================== */
+
+/* ---------- Typeface: bundled, so it also works offline ---------------
+   Plus Jakarta Sans for everything. The legacy "Poppins" / "Nunito Sans"
+   names used inline across the app are aliased to it, so old screens pick
+   up the new type without touching every file. */
+@font-face {
+  font-family: "Poppins";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url(../../node_modules/@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2) format("woff2-variations");
+}
+@font-face {
+  font-family: "Nunito Sans";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url(../../node_modules/@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2) format("woff2-variations");
+}
+
+:root {
+  /* Brand */
+  --brand: #1f453b;            /* ink green — primary actions, active states */
+  --brand-hover: #173830;
+  --brand-600: #2c5a4d;
+  --brand-50: #eef3f0;         /* tinted wash behind brand elements */
+  --sage: #b5c4b6;
+  --sage-100: #e3eae4;
+  --sage-50: #f1f5f2;
+  --gold: #d9af61;             /* sparing accent: highlights, "you are here" */
+  --gold-100: #f7eedb;
+
+  /* Neutrals (green-biased, never pure grey) */
+  --canvas: #f5f7f6;           /* page ground */
+  --surface: #ffffff;          /* cards, header, inputs */
+  --surface-2: #f9fbfa;        /* table heads, inset areas */
+  --line: #e4e9e6;             /* hairlines */
+  --line-strong: #d2dbd6;      /* input borders */
+  --text: #1c2a25;             /* primary text */
+  --text-2: #4c5c56;           /* secondary text */
+  --text-3: #7f8e88;           /* captions, placeholders */
+
+  /* Pastel semantics — the only non-brand colours allowed */
+  --ok-bg: #e2f1e7;   --ok-fg: #2d6a4a;   --ok-dot: #5fa77f;
+  --warn-bg: #fbf0d6; --warn-fg: #86621a; --warn-dot: #d9af61;
+  --bad-bg: #f8e2de;  --bad-fg: #a0453a;  --bad-dot: #d9867a;
+  --info-bg: #e0ebf5; --info-fg: #2e5a7e; --info-dot: #7ea6c9;
+  --lilac-bg: #ebe5f4;--lilac-fg: #5c4985;--lilac-dot: #a08cc6;
+  --peach-bg: #fbe8da;--peach-fg: #95532a;--peach-dot: #e3a57c;
+  --mute-bg: #eef1ef; --mute-fg: #5b6b66; --mute-dot: #a7b3ae;
+
+  /* Shape + depth */
+  --r-xs: 6px; --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 22px;
+  --shadow-xs: 0 1px 2px rgba(20, 38, 32, 0.04);
+  --shadow-sm: 0 1px 2px rgba(20, 38, 32, 0.04), 0 2px 6px rgba(20, 38, 32, 0.04);
+  --shadow-md: 0 10px 30px -12px rgba(20, 38, 32, 0.18), 0 2px 6px rgba(20, 38, 32, 0.05);
+  --focus: 0 0 0 3px rgba(31, 69, 59, 0.16);
+
+  /* Type */
+  --font: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fs-cap: 11.5px; --fs-sm: 13px; --fs-body: 14px; --fs-lead: 15.5px;
+  --fs-h3: 16px; --fs-h2: 20px; --fs-h1: 26px; --fs-display: 32px;
+
+  /* Legacy tokens re-pointed so older screens match */
+  --ink-green: var(--brand);
+  --ink: var(--text);
+  --mist: #eaeef0;
+  --mist-soft: var(--surface-2);
+  --paper: var(--surface);
+  --bg-base: var(--canvas);
+  --stroke: var(--line);
+  --sage-soft: var(--sage-100);
+}
+
+/* shadcn/ui tokens (HSL triplets) aligned to the palette above */
+  :root {
+    --background: 150 13% 96%;
+    --foreground: 158 20% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 158 20% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 158 20% 14%;
+    --primary: 164 38% 20%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 140 12% 94%;
+    --secondary-foreground: 164 38% 20%;
+    --muted: 140 12% 95%;
+    --muted-foreground: 156 7% 52%;
+    --accent: 140 14% 94%;
+    --accent-foreground: 164 38% 20%;
+    --destructive: 7 47% 43%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 146 11% 90%;
+    --input: 147 11% 84%;
+    --ring: 164 38% 20%;
+    --radius: 0.75rem;
+  }
+
+
+/* ---------- Base ---------- */
+html, body { background: var(--canvas); }
+body {
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  color: var(--text);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font);
+  color: var(--text);
+  font-weight: 650;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+}
+input, select, textarea, button { font-family: inherit; font-size: var(--fs-body); }
+table th {
+  font-size: var(--fs-cap);
+  letter-spacing: 0.06em;
+  font-weight: 650;
+  color: var(--text-3);
+}
+table td { font-size: var(--fs-body); }
+::selection { background: var(--sage-100); color: var(--brand); }
+:focus-visible { outline: none; box-shadow: var(--focus); border-radius: var(--r-sm); }
+.tabular, .num { font-variant-numeric: tabular-nums; }
+
+.bg-page { background: var(--canvas) !important; }
+
+/* =====================================================================
+   Primitives — prefix inos-
+   ===================================================================== */
+
+/* Page frame: one column, consistent gutters */
+.inos-page {
+  max-width: 1360px;
+  margin-inline: auto;
+  padding-block: 4px 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.inos-page--narrow { max-width: 960px; }
+.inos-page--form { max-width: 880px; }
+
+/* Page header */
+.inos-page-header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+  padding-bottom: 4px;
+}
+.inos-page-header__text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.inos-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: var(--fs-cap); font-weight: 650; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.inos-eyebrow a:hover { color: var(--brand); }
+.inos-title { font-size: var(--fs-h1); line-height: 1.2; font-weight: 700; color: var(--text); margin: 0; }
+.inos-subtitle { font-size: var(--fs-lead); color: var(--text-2); margin: 0; max-width: 68ch; }
+.inos-page-header__actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* Section heading inside a page */
+.inos-section-title { font-size: var(--fs-h3); font-weight: 650; color: var(--text); margin: 0; }
+.inos-section-sub { font-size: var(--fs-sm); color: var(--text-3); margin: 2px 0 0; }
+
+/* Card */
+.inos-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-xs);
+  min-width: 0;
+}
+.inos-card--flat { box-shadow: none; }
+.inos-card--inset { background: var(--surface-2); box-shadow: none; }
+.inos-card--interactive { transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease; cursor: pointer; }
+.inos-card--interactive:hover { border-color: var(--line-strong); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.inos-card__header {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 20px; border-bottom: 1px solid var(--line);
+}
+.inos-card__header--plain { border-bottom: 0; padding-bottom: 4px; }
+.inos-card__body { padding: 20px; }
+.inos-card__body--flush { padding: 0; }
+.inos-card__footer { padding: 12px 20px; border-top: 1px solid var(--line); background: var(--surface-2); border-radius: 0 0 var(--r-lg) var(--r-lg); }
+
+/* Buttons */
+.inos-btn {
+  --h: 38px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: var(--h); padding: 0 14px; border-radius: 10px;
+  font-size: var(--fs-body); font-weight: 600; white-space: nowrap;
+  border: 1px solid transparent; cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
+}
+.inos-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.inos-btn:disabled { opacity: .5; cursor: not-allowed; }
+.inos-btn--primary { background: var(--brand); color: #fff; box-shadow: 0 1px 2px rgba(20, 38, 32, .12); }
+.inos-btn--primary:hover:not(:disabled) { background: var(--brand-hover); }
+.inos-btn--secondary { background: var(--surface); color: var(--text); border-color: var(--line-strong); }
+.inos-btn--secondary:hover:not(:disabled) { background: var(--surface-2); border-color: var(--sage); }
+.inos-btn--ghost { background: transparent; color: var(--text-2); }
+.inos-btn--ghost:hover:not(:disabled) { background: var(--sage-50); color: var(--brand); }
+.inos-btn--soft { background: var(--brand-50); color: var(--brand); }
+.inos-btn--soft:hover:not(:disabled) { background: var(--sage-100); }
+.inos-btn--danger { background: var(--bad-bg); color: var(--bad-fg); }
+.inos-btn--danger:hover:not(:disabled) { background: #f3d3cd; }
+.inos-btn--sm { --h: 32px; padding: 0 10px; font-size: var(--fs-sm); border-radius: 8px; }
+.inos-btn--lg { --h: 44px; padding: 0 18px; }
+.inos-btn--icon { width: var(--h); padding: 0; }
+
+/* Pills (status / tags) */
+.inos-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 24px; padding: 0 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; white-space: nowrap; line-height: 1;
+  background: var(--mute-bg); color: var(--mute-fg);
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+}
+.inos-pill__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--mute-dot); flex-shrink: 0; }
+.inos-pill--ok    { background: var(--ok-bg);    color: var(--ok-fg); }    .inos-pill--ok    .inos-pill__dot { background: var(--ok-dot); }
+.inos-pill--warn  { background: var(--warn-bg);  color: var(--warn-fg); }  .inos-pill--warn  .inos-pill__dot { background: var(--warn-dot); }
+.inos-pill--bad   { background: var(--bad-bg);   color: var(--bad-fg); }   .inos-pill--bad   .inos-pill__dot { background: var(--bad-dot); }
+.inos-pill--info  { background: var(--info-bg);  color: var(--info-fg); }  .inos-pill--info  .inos-pill__dot { background: var(--info-dot); }
+.inos-pill--lilac { background: var(--lilac-bg); color: var(--lilac-fg); } .inos-pill--lilac .inos-pill__dot { background: var(--lilac-dot); }
+.inos-pill--peach { background: var(--peach-bg); color: var(--peach-fg); } .inos-pill--peach .inos-pill__dot { background: var(--peach-dot); }
+.inos-pill--brand { background: var(--brand-50); color: var(--brand); }   .inos-pill--brand .inos-pill__dot { background: var(--brand); }
+.inos-pill--sm { height: 20px; padding: 0 8px; font-size: 11px; }
+
+/* Stat tile */
+.inos-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.inos-stat {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;
+  box-shadow: var(--shadow-xs);
+}
+.inos-stat__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.inos-stat__label { font-size: var(--fs-sm); color: var(--text-2); font-weight: 550; }
+.inos-stat__value { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); line-height: 1; font-variant-numeric: tabular-nums; }
+.inos-stat__meta { font-size: 12px; color: var(--text-3); }
+.inos-stat--active { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand) inset; }
+button.inos-stat { text-align: left; cursor: pointer; transition: border-color .15s ease; }
+button.inos-stat:hover { border-color: var(--line-strong); }
+
+/* Glass icon tile (duotone frosted, matches module icons) */
+.inos-icon-tile {
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  display: inline-grid; place-items: center;
+  background: var(--brand-50); color: var(--brand);
+}
+.inos-icon-tile svg { width: 18px; height: 18px; }
+.inos-icon-tile--ok { background: var(--ok-bg); color: var(--ok-fg); }
+.inos-icon-tile--warn { background: var(--warn-bg); color: var(--warn-fg); }
+.inos-icon-tile--bad { background: var(--bad-bg); color: var(--bad-fg); }
+.inos-icon-tile--info { background: var(--info-bg); color: var(--info-fg); }
+.inos-icon-tile--lilac { background: var(--lilac-bg); color: var(--lilac-fg); }
+.inos-icon-tile--peach { background: var(--peach-bg); color: var(--peach-fg); }
+.inos-icon-tile--sm { width: 28px; height: 28px; border-radius: 8px; }
+.inos-icon-tile--sm svg { width: 15px; height: 15px; }
+.inos-icon-tile--lg { width: 44px; height: 44px; border-radius: 12px; }
+.inos-icon-tile--lg svg { width: 22px; height: 22px; }
+
+/* Toolbar: search + filters row */
+.inos-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.inos-toolbar__spacer { flex: 1; }
+.inos-search {
+  position: relative; display: flex; align-items: center; min-width: 220px; flex: 1; max-width: 360px;
+}
+.inos-search svg { position: absolute; left: 12px; width: 16px; height: 16px; color: var(--text-3); pointer-events: none; }
+.inos-search input { padding-left: 36px !important; }
+
+/* Segmented tabs */
+.inos-segmented {
+  display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px;
+  background: var(--sage-50); border: 1px solid var(--line);
+}
+.inos-segmented button {
+  height: 30px; padding: 0 12px; border-radius: 8px; font-size: var(--fs-sm); font-weight: 600;
+  color: var(--text-2); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+.inos-segmented button:hover { color: var(--brand); }
+.inos-segmented button[aria-selected="true"], .inos-segmented button.is-active {
+  background: var(--surface); color: var(--brand); box-shadow: var(--shadow-sm);
+}
+.inos-segmented svg { width: 15px; height: 15px; }
+
+/* Underline tabs (for page-level sections) */
+.inos-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.inos-tabs button {
+  position: relative; height: 42px; padding: 0 12px; font-size: var(--fs-body); font-weight: 600; color: var(--text-3);
+  display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+}
+.inos-tabs button:hover { color: var(--text); }
+.inos-tabs button[aria-selected="true"], .inos-tabs button.is-active { color: var(--brand); }
+.inos-tabs button[aria-selected="true"]::after, .inos-tabs button.is-active::after {
+  content: ""; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px; border-radius: 2px; background: var(--brand);
+}
+.inos-tabs svg { width: 16px; height: 16px; }
+.inos-tabs .inos-count { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--sage-50); color: var(--text-2); }
+
+/* Table */
+.inos-table-wrap { overflow-x: auto; }
+.inos-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.inos-table thead th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--surface-2); text-align: left; white-space: nowrap;
+  height: 40px; padding: 0 16px; border-bottom: 1px solid var(--line);
+  font-size: var(--fs-cap); font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3);
+}
+.inos-table tbody td {
+  height: 56px; padding: 8px 16px; border-bottom: 1px solid var(--line);
+  color: var(--text); vertical-align: middle;
+}
+.inos-table tbody tr:last-child td { border-bottom: 0; }
+.inos-table tbody tr { transition: background .12s ease; }
+.inos-table tbody tr:hover td { background: var(--sage-50); }
+.inos-table tbody tr.is-clickable { cursor: pointer; }
+.inos-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.inos-table .actions { width: 1%; white-space: nowrap; text-align: right; }
+.inos-table .muted { color: var(--text-3); }
+
+/* Avatar */
+.inos-avatar {
+  width: 32px; height: 32px; border-radius: 999px; flex-shrink: 0;
+  display: inline-grid; place-items: center; font-size: 12px; font-weight: 700;
+  background: var(--sage-100); color: var(--brand);
+}
+
+/* Empty state */
+.inos-empty {
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px;
+  padding: 48px 24px; color: var(--text-2);
+}
+.inos-empty__title { font-size: var(--fs-lead); font-weight: 650; color: var(--text); margin: 0; }
+.inos-empty__text { font-size: var(--fs-sm); color: var(--text-3); margin: 0; max-width: 42ch; }
+
+/* Key-value list */
+.inos-kv { display: grid; grid-template-columns: minmax(120px, 36%) 1fr; gap: 10px 16px; font-size: var(--fs-body); }
+.inos-kv dt { color: var(--text-3); }
+.inos-kv dd { margin: 0; color: var(--text); font-weight: 550; min-width: 0; overflow-wrap: anywhere; }
+
+/* Progress */
+.inos-progress { height: 6px; border-radius: 999px; background: var(--sage-50); overflow: hidden; }
+.inos-progress > span { display: block; height: 100%; border-radius: inherit; background: var(--brand); }
+
+/* =====================================================================
+   Forms — labels above fields, sections in cards, one sticky action bar
+   ===================================================================== */
+.inos-form { display: flex; flex-direction: column; gap: 16px; }
+.inos-form-section {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 22px 24px; display: grid; gap: 18px;
+}
+.inos-form-section__head { display: flex; gap: 12px; align-items: flex-start; }
+.inos-form-section__step {
+  width: 26px; height: 26px; border-radius: 999px; flex-shrink: 0; display: grid; place-items: center;
+  background: var(--brand-50); color: var(--brand); font-size: 12px; font-weight: 700;
+}
+.inos-form-section__title { font-size: var(--fs-h3); font-weight: 650; color: var(--text); margin: 0; }
+.inos-form-section__desc { font-size: var(--fs-sm); color: var(--text-3); margin: 2px 0 0; }
+.inos-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 18px; }
+.inos-form-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.inos-form-grid .span-2, .inos-form-grid .span-full { grid-column: 1 / -1; }
+@media (max-width: 720px) {
+  .inos-form-grid, .inos-form-grid--3 { grid-template-columns: 1fr; }
+}
+.inos-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.inos-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 4px; }
+.inos-label .req { color: var(--bad-fg); }
+.inos-label .opt { color: var(--text-3); font-weight: 500; }
+.inos-hint { font-size: 12px; color: var(--text-3); }
+.inos-error { font-size: 12px; color: var(--bad-fg); font-weight: 550; }
+
+.inos-input, .inos-select, .inos-textarea {
+  width: 100%; background: var(--surface); color: var(--text);
+  border: 1px solid var(--line-strong); border-radius: 10px;
+  font-size: var(--fs-body); transition: border-color .15s ease, box-shadow .15s ease;
+  outline: none;
+}
+.inos-input, .inos-select { height: 40px; padding: 0 12px; }
+.inos-textarea { padding: 10px 12px; min-height: 96px; resize: vertical; line-height: 1.5; }
+.inos-select {
+  appearance: none; padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%237f8e88' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+}
+.inos-input::placeholder, .inos-textarea::placeholder { color: var(--text-3); }
+.inos-input:hover, .inos-select:hover, .inos-textarea:hover { border-color: var(--sage); }
+.inos-input:focus, .inos-select:focus, .inos-textarea:focus { border-color: var(--brand); box-shadow: var(--focus); }
+.inos-input[aria-invalid="true"], .inos-select[aria-invalid="true"], .inos-textarea[aria-invalid="true"] { border-color: var(--bad-dot); }
+.inos-input:disabled, .inos-select:disabled, .inos-textarea:disabled { background: var(--surface-2); color: var(--text-3); cursor: not-allowed; }
+
+/* Choice cards (radio-like big targets instead of tiny selects) */
+.inos-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.inos-choice {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--line-strong); background: var(--surface); cursor: pointer; text-align: left;
+  font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); transition: all .12s ease;
+}
+.inos-choice:hover { border-color: var(--sage); }
+.inos-choice[aria-checked="true"], .inos-choice.is-active { border-color: var(--brand); background: var(--brand-50); color: var(--brand); }
+
+/* Sticky action bar at the bottom of every form page */
+.inos-form-actions {
+  position: sticky; bottom: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  margin-top: 4px; padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(10px);
+  border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow-md);
+}
+.inos-form-actions__note { font-size: var(--fs-sm); color: var(--text-3); }
+.inos-form-actions__buttons { display: flex; gap: 8px; margin-left: auto; }
+
+/* Drawer / modal body helpers */
+.inos-modal-body { display: grid; gap: 16px; }
+
+/* =====================================================================
+   Folder cards (projects, document folders) — soft pastel folder with
+   paper sheets peeking out, dark-on-light label area
+   ===================================================================== */
+.inos-folder {
+  --tint: var(--sage-100); --tint-2: var(--sage); --tab: var(--sage);
+  position: relative; display: flex; flex-direction: column; min-width: 0;
+  border-radius: 20px; background: var(--surface); border: 1px solid var(--line);
+  box-shadow: var(--shadow-xs); overflow: hidden; cursor: pointer; text-align: left;
+  transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+}
+.inos-folder:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--line-strong); }
+.inos-folder__art {
+  position: relative; height: 92px; overflow: hidden;
+  background: linear-gradient(135deg, var(--tint) 0%, var(--tint-2) 140%);
+}
+.inos-folder__sheet {
+  position: absolute; bottom: -18px; width: 42%; height: 84px; border-radius: 8px; background: #fff;
+  box-shadow: 0 2px 8px rgba(20, 38, 32, .08);
+}
+.inos-folder__sheet::before, .inos-folder__sheet::after {
+  content: ""; position: absolute; left: 12px; right: 18px; height: 3px; border-radius: 3px; background: var(--line);
+}
+.inos-folder__sheet::before { top: 14px; }
+.inos-folder__sheet::after { top: 24px; right: 34px; }
+.inos-folder__sheet:nth-child(1) { left: 12%; transform: rotate(-6deg); }
+.inos-folder__sheet:nth-child(2) { left: 32%; transform: rotate(2deg); bottom: -12px; }
+.inos-folder__sheet:nth-child(3) { left: 50%; transform: rotate(7deg); bottom: -22px; }
+.inos-folder__pocket {
+  position: relative; margin-top: -26px; background: var(--surface);
+  border-radius: 0 16px 0 0; padding: 14px 18px 16px;
+  display: flex; flex-direction: column; gap: 10px; flex: 1;
+}
+.inos-folder__tab { position: absolute; top: -17px; left: 0; width: 58%; height: 18px; color: var(--surface); }
+.inos-folder__tab svg { display: block; width: 100%; height: 100%; }
+.inos-folder__title { font-size: var(--fs-lead); font-weight: 700; color: var(--text); margin: 0; line-height: 1.3; }
+.inos-folder__sub { font-size: var(--fs-sm); color: var(--text-3); margin: 0; }
+.inos-folder__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; font-size: 12.5px; color: var(--text-2); }
+.inos-folder--ok    { --tint: #e6f2ea; --tint-2: #b9dcc6; }
+.inos-folder--info  { --tint: #e4eef7; --tint-2: #b7cfe6; }
+.inos-folder--lilac { --tint: #eee8f6; --tint-2: #cdbfe4; }
+.inos-folder--peach { --tint: #fcece0; --tint-2: #f0c7a8; }
+.inos-folder--warn  { --tint: #fbf2dc; --tint-2: #ecd39a; }
+.inos-folder--brand { --tint: #e7efeb; --tint-2: #9fb7ab; }
+
+/* =====================================================================
+   Legacy classes re-skinned so every older screen shifts to the new look
+   ===================================================================== */
+.bc-card, .nm-raised {
+  background: var(--surface);
+  border: 1px solid var(--line) !important;
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-xs) !important;
+}
+.table-container { border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+header, .top-header, .app-header { border-bottom: 1px solid var(--line); }
+[role="dialog"], [data-radix-popper-content-wrapper] > * { border-color: var(--line); }
+[role="dialog"] { border-radius: var(--r-lg); box-shadow: var(--shadow-md); }
+
+.bc-btn-primary { background: var(--brand); border-radius: 10px; min-height: 38px; font-size: var(--fs-body); padding: 0 14px; }
+.bc-btn-primary:hover { background: var(--brand-hover); }
+.bc-btn-secondary {
+  background: var(--surface); color: var(--text); border: 1px solid var(--line-strong);
+  border-radius: 10px; min-height: 38px; font-size: var(--fs-body); padding: 0 14px;
+}
+.bc-btn-secondary:hover { background: var(--surface-2); border-color: var(--sage); }
+.bc-input { border: 1px solid var(--line-strong); color: var(--text); font-size: var(--fs-body); height: 40px; padding: 0 12px; }
+.bc-input:focus { border-color: var(--brand); box-shadow: var(--focus); }
+textarea.bc-input { height: auto; padding: 10px 12px; }
+.eyebrow { font-family: var(--font); font-size: var(--fs-cap); letter-spacing: 0.08em; font-weight: 650; color: var(--text-3); }
+.bc-form-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text); }
+.bc-chip { height: 24px; padding: 0 10px; font-size: 12px; }
+.bc-badge { border-radius: 999px; padding: 2px 8px; font-weight: 650; }
+.bc-table thead th { background: var(--surface-2); color: var(--text-3); font-size: var(--fs-cap); letter-spacing: .06em; }
+
+.app-tile {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 24px;
+  box-shadow: var(--shadow-xs);
+}
+.app-tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--line-strong); }
+
+.nav-dropdown-item { font-size: var(--fs-body); color: var(--text-2); border-radius: 8px; padding: 8px 10px; font-weight: 550; }
+.nav-dropdown-item:hover { background: var(--sage-50); color: var(--brand); }
+.nav-dropdown-item.active { background: var(--brand-50); color: var(--brand); }
+
+/* shadcn/radix surfaces */
+[data-radix-popper-content-wrapper] > [role="menu"], [data-radix-popper-content-wrapper] > [role="listbox"] {
+  border-radius: 12px; box-shadow: var(--shadow-md);
+}
+[data-sonner-toast] { font-family: var(--font) !important; border-radius: 12px !important; }
+
+/* Scrollbars — thin, quiet */
+* { scrollbar-width: thin; scrollbar-color: #cfd8d3 transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: #d3dcd7; border-radius: 999px; border: 3px solid transparent; background-clip: content-box; }
+*::-webkit-scrollbar-thumb:hover { background: #b9c6bf; background-clip: content-box; border: 3px solid transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  .inos-card--interactive, .inos-folder, .app-tile { transition: none; }
+  .inos-card--interactive:hover, .inos-folder:hover, .app-tile:hover { transform: none; }
+}
+
+/* =====================================================================
+   App shell — top bar + launcher
+   ===================================================================== */
+.inos-topbar {
+  position: sticky; top: 0; z-index: 30; height: 60px;
+  display: flex; align-items: center; gap: 6px; padding: 0 20px;
+  background: rgba(255, 255, 255, 0.94); backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.inos-topbar__app {
+  display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px 0 6px; margin-right: 6px;
+  border-right: 1px solid var(--line); flex-shrink: 0;
+}
+.inos-topbar__app-icon { width: 30px; height: 30px; }
+.inos-topbar__app-name { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; white-space: nowrap; }
+.inos-topbar__icon-btn {
+  width: 36px; height: 36px; border-radius: 10px; display: inline-grid; place-items: center; flex-shrink: 0;
+  color: var(--text-2); transition: background .12s ease, color .12s ease; position: relative;
+}
+.inos-topbar__icon-btn:hover { background: var(--sage-50); color: var(--brand); }
+.inos-nav-btn {
+  height: 34px; padding: 0 10px; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;
+  font-size: var(--fs-body); font-weight: 600; color: var(--text-2); white-space: nowrap;
+  transition: background .12s ease, color .12s ease;
+}
+.inos-nav-btn:hover, .inos-nav-btn[data-state="open"] { background: var(--sage-50); color: var(--brand); }
+.inos-nav-btn.is-active { color: var(--brand); background: var(--brand-50); }
+.inos-nav-btn svg { width: 14px; height: 14px; opacity: .7; }
+.inos-menu { padding: 6px !important; border-radius: 12px !important; border: 1px solid var(--line) !important; box-shadow: var(--shadow-md) !important; }
+.inos-menu__label { padding: 6px 10px 4px; font-size: var(--fs-cap); font-weight: 650; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
+
+.inos-launcher { min-height: 100vh; background: var(--canvas); display: flex; flex-direction: column; }
+.inos-launcher__bar { height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; }
+.inos-launcher__main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 6vh 24px 64px; gap: 40px; }
+.inos-launcher__hello { text-align: center; display: grid; gap: 8px; }
+.inos-launcher__hello h1 { font-size: var(--fs-display); font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+.inos-launcher__hello p { margin: 0; color: var(--text-2); font-size: var(--fs-lead); }
+.inos-launcher__grid {
+  display: grid; grid-template-columns: repeat(6, 124px); gap: 28px 20px; justify-content: center; width: 100%;
+}
+@media (max-width: 980px) { .inos-launcher__grid { grid-template-columns: repeat(4, 124px); } }
+@media (max-width: 620px) { .inos-launcher__grid { grid-template-columns: repeat(3, minmax(0, 104px)); gap: 20px 12px; } }
+.inos-app {
+  display: flex; flex-direction: column; align-items: center; gap: 10px; border-radius: 20px; padding: 4px;
+  text-align: center; color: var(--text);
+}
+.inos-app__tile {
+  position: relative; width: 96px; height: 96px; border-radius: 26px; display: grid; place-items: center;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-xs);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.inos-app__tile > div { width: 64px; height: 64px; }
+.inos-app:hover .inos-app__tile, .inos-app:focus-visible .inos-app__tile { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--line-strong); }
+.inos-app:focus-visible { box-shadow: none; }
+.inos-app__name { font-size: 13.5px; font-weight: 650; line-height: 1.25; }
+.inos-app__desc { font-size: 11.5px; color: var(--text-3); line-height: 1.3; margin-top: -6px; }
+.inos-app__badge {
+  position: absolute; top: -6px; right: -6px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px;
+  display: grid; place-items: center; font-size: 11px; font-weight: 700; color: #fff; background: var(--brand);
+  box-shadow: 0 0 0 3px var(--canvas);
+}
+@media (prefers-reduced-motion: reduce) { .inos-app__tile { transition: none; } .inos-app:hover .inos-app__tile { transform: none; } }
+@media (min-width: 1024px) { .inos-topbar__menu-btn { display: none; } }

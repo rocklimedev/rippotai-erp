@@ -286,6 +286,15 @@ export class PortfolioProjectResponseDto {
   })
   pct: number;
 
+  @ApiProperty({ example: '08_EXECUTION', required: false })
+  currentPhaseCode?: string;
+
+  @ApiProperty({ example: '08 EXECUTION', required: false })
+  currentPhaseName?: string;
+
+  @ApiProperty({ example: 1, required: false, description: 'Open site QC failures (latest attempt FAIL/REWORK)' })
+  siteQcFailures?: number;
+
   @ApiProperty({
     type: () => ProjectHealthResponseDto,
   })

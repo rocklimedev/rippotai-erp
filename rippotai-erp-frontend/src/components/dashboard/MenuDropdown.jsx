@@ -8,7 +8,22 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-export default function MenuDropdown({ app, label, items }) {
+// Apps whose index route is the customisable AppDashboard. Others use a
+// hand-built dashboard with no edit mode, so "Edit Dashboard" is hidden there.
+const CUSTOMISABLE_DASHBOARDS = new Set([
+  "crm",
+  "ledger",
+  "procurement",
+  "siteOperations",
+  "design_studio",
+  "inventory",
+  "boq",
+]);
+
+export default function MenuDropdown({ app, label, items: allItems }) {
+  const items = CUSTOMISABLE_DASHBOARDS.has(app)
+    ? allItems
+    : allItems.filter((it) => it.slug !== "edit-dashboard");
   const nav = useNavigate();
   const location = useLocation();
   const base = APP_META[app].base;
@@ -25,21 +40,27 @@ export default function MenuDropdown({ app, label, items }) {
     }
   };
   const currentPath = location.pathname;
+  const groupActive = items.some((it) => {
+    const p = it.slug?.startsWith("/") ? it.slug : `${base}/${it.slug}`;
+    return p !== base && (currentPath === p || currentPath.startsWith(p + "/"));
+  });
+
+  if (!items.length) return null;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           data-testid={`menu-${app}-${label.toLowerCase()}`}
-          className="h-9 px-3 rounded-lg text-[15px] font-semibold flex items-center gap-1 hover:bg-[#F4F6F7]"
-          style={{ color: "#1F453B", fontFamily: "Poppins" }}
+          className={`inos-nav-btn ${groupActive ? "is-active" : ""}`}
         >
           {label} <ChevronDown size={14} />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[240px] p-1 bc-card border-0">
+      <PopoverContent align="start" sideOffset={6} className="w-[248px] inos-menu">
+        <div className="inos-menu__label">{label}</div>
         {items.map((it) => {
-          const path = `${base}/${it.slug}`;
+          const path = it.slug?.startsWith("/") ? it.slug : `${base}/${it.slug}`;
           const active = currentPath === path;
           return (
             <button

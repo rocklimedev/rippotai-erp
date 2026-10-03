@@ -1,6 +1,8 @@
+import { Navigate } from "react-router-dom";
 import AppLayout from "@/layouts/AppLayout";
+import CalendarView from "@/pages/workspace/CalendarView";
+// Zoho / Google connector calendar — kept reachable at /calendar/connected
 import CalendarPage from "@/pages/phasef/CalendarPage";
-import { CalendarMine, CalendarTeam } from "@/pages/phasef/Calendar";
 
 export const calendarRoutes = [
   {
@@ -8,12 +10,14 @@ export const calendarRoutes = [
     path: "/calendar",
     layout: AppLayout,
     layoutProps: { app: "calendar" },
-    dynamicSections: { appKey: "calendar", exclude: ["mine", "team"] },
+    dynamicSections: { appKey: "calendar", exclude: ["mine", "team", "connected"] },
     children: [
-      { index: true, element: <CalendarPage /> },
-      { path: "mine", element: <CalendarMine /> },
-
-      { path: "team", element: <CalendarTeam /> },
+      // No customisable dashboard for this app — send stray links home.
+      { path: "edit-dashboard", element: <Navigate to="/calendar" replace /> },
+      { index: true, element: <CalendarView scope="team" /> },
+      { path: "mine", element: <CalendarView scope="mine" /> },
+      { path: "team", element: <CalendarView scope="team" /> },
+      { path: "connected", element: <CalendarPage /> },
     ],
   },
 ];

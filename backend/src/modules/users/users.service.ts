@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { UniqueConstraintError } from 'sequelize';
+import { Op, UniqueConstraintError } from 'sequelize';
 import * as bcrypt from 'bcryptjs';
 
 import { User } from './models/user.model';
@@ -289,7 +289,19 @@ export class UsersService {
     });
 
     if (!role) {
-      throw new NotFoundException(`Role "${roleName}" not found`);
+      // Functional roles like SITE_ENGINEER live in users.job_title, not in
+      // the access-role table: match on the title instead of 404-ing so
+      // pickers still get their people.
+      const title = roleName.replace(/[_-]+/g, ' ').trim();
+      return this.userModel.findAll({
+        where: {
+          is_active: true,
+          job_title: { [Op.like]: `%${title}%` },
+        },
+        attributes: PUBLIC_ATTRIBUTES,
+        include: ['role'],
+        order: [['name', 'ASC']],
+      });
     }
 
     return this.userModel.findAll({

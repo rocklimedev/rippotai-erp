@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { labelStyle, stageOf } from "../../hooks/stages";
+import { stageOf } from "../../hooks/stages";
+import { Field, TextInput, TextArea, ChoiceGroup, Button } from "@/components/inos";
+import { Callout } from "@/components/forms/crm-form-ui";
 import {
   useAddNoteMutation,
   useSetProposalMutation,
@@ -37,7 +39,7 @@ export default function LeadActionModal({ modal, onClose }) {
   const isProposed = modal.kind === "proposed";
   const lead = modal.lead;
 
-  const title = isProposed ? "Mark as Proposed" : "Add Remark";
+  const title = isProposed ? "Mark as proposed" : "Add remark";
 
   const stageLabel = stageOf(lead?.stage)?.label || lead?.stage || "Unknown";
 
@@ -99,105 +101,112 @@ export default function LeadActionModal({ modal, onClose }) {
     }
   };
 
+  const TIMELINES = ["1–3 months", "3–6 months", "6–12 months", "12+ months"];
+
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 flex items-center justify-center z-[100] p-5"
-      style={{ background: "rgba(15,31,26,0.35)" }}
+      className="fixed inset-0 flex items-center justify-center z-[100] p-4"
+      style={{ background: "rgba(20, 38, 32, 0.32)" }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lead-action-title"
         onClick={(e) => e.stopPropagation()}
-        className="bg-paper rounded-2xl p-6 w-[440px] max-w-full flex flex-col gap-3.5"
+        onKeyDown={(e) => {
+          if (e.key === "Escape" && !isSaving) onClose();
+        }}
+        className="w-[460px] max-w-full"
         style={{
-          boxShadow: "0 12px 40px rgba(15,31,26,0.22)",
+          background: "var(--surface)",
+          border: "1px solid var(--line)",
+          borderRadius: "var(--r-lg)",
+          boxShadow: "var(--shadow-md)",
         }}
       >
-        {/* Header */}
-        <div className="flex flex-col gap-0.5">
-          <div className="text-[16px] font-semibold text-[var(--ink-green)]">
+        <div style={{ padding: "18px 20px 4px" }}>
+          <h2 id="lead-action-title" className="inos-section-title">
             {title}
-          </div>
-
-          <div className="text-[12px] text-[var(--muted)]">{sub}</div>
+          </h2>
+          <p className="inos-section-sub">{sub}</p>
         </div>
 
-        {/* Proposal fields */}
-        {isProposed && (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-            <div className="flex flex-col gap-1.5">
-              <label style={labelStyle}>Quoted Amount</label>
-
-              <input
-                type="text"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="e.g. ₹1.4Cr"
-                className="bc-input"
-                disabled={isSaving}
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label style={labelStyle}>Timeline</label>
-
-              <select
-                value={timeline}
-                onChange={(e) => setTimeline(e.target.value)}
-                className="bc-input"
-                disabled={isSaving}
+        <form
+          className="inos-modal-body"
+          style={{ padding: "16px 20px 20px" }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            save();
+          }}
+        >
+          {isProposed && (
+            <>
+              <Field
+                label="Quoted amount"
+                required
+                htmlFor="lead-quote"
+                error={error && !amount.trim() ? error : undefined}
               >
-                <option>1–3 months</option>
-                <option>3–6 months</option>
-                <option>6–12 months</option>
-                <option>12+ months</option>
-              </select>
-            </div>
-          </div>
-        )}
+                <TextInput
+                  id="lead-quote"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="e.g. ₹1.4Cr"
+                  disabled={isSaving}
+                  invalid={Boolean(error && !amount.trim())}
+                  autoFocus
+                />
+              </Field>
 
-        {/* Remarks */}
-        <div className="flex flex-col gap-1.5">
-          <label style={labelStyle}>Remarks</label>
+              <Field label="Timeline">
+                <ChoiceGroup
+                  name="Timeline"
+                  value={timeline}
+                  onChange={(v) => !isSaving && setTimeline(v)}
+                  options={TIMELINES.map((t) => ({ value: t, label: t }))}
+                />
+              </Field>
+            </>
+          )}
 
-          <textarea
-            value={remarks}
-            onChange={(e) => setRemarks(e.target.value)}
-            rows={3}
-            placeholder={
-              isProposed
-                ? "Scope covered by this quote, exclusions, validity…"
-                : "Add a remark for this lead…"
-            }
-            className="bc-input resize-y"
-            disabled={isSaving}
-          />
-        </div>
-
-        {/* Error */}
-        {error && (
-          <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 text-red-700">
-            {error}
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex justify-end gap-2.5">
-          <button
-            onClick={onClose}
-            className="bc-btn-secondary"
-            disabled={isSaving}
+          <Field
+            label="Remarks"
+            required={!isProposed}
+            optional={isProposed}
+            htmlFor="lead-remarks"
+            error={!isProposed && error && !remarks.trim() ? error : undefined}
           >
-            Cancel
-          </button>
+            <TextArea
+              id="lead-remarks"
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              rows={3}
+              placeholder={
+                isProposed
+                  ? "Scope covered by this quote, exclusions, validity…"
+                  : "e.g. Called back, client wants a site visit next week"
+              }
+              disabled={isSaving}
+              autoFocus={!isProposed}
+            />
+          </Field>
 
-          <button onClick={save} className="bc-btn-primary" disabled={isSaving}>
-            {isSaving
-              ? "Saving..."
-              : isProposed
-                ? "Save Proposal"
-                : "Add Remark"}
-          </button>
-        </div>
+          {error &&
+            !(isProposed && !amount.trim()) &&
+            !(!isProposed && !remarks.trim()) && (
+              <Callout tone="bad">{error}</Callout>
+            )}
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
+            <Button variant="ghost" onClick={onClose} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" disabled={isSaving}>
+              {isSaving ? "Saving…" : isProposed ? "Save proposal" : "Add remark"}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );

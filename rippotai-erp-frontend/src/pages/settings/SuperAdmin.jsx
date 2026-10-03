@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { ShieldCheck, Activity } from "lucide-react";
+import { Activity, RefreshCw, SearchX, ShieldCheck, X } from "lucide-react";
+import { Page, PageHeader, Card, Button, Field, TextInput, Pill, Avatar } from "@/components/inos";
 import { useGetActivityLogsQuery } from "../../api/engagement/activity-logs.api";
 import { fmtDateTime } from "../../lib/settings.utils";
+import { AdminAccessDenied, SkeletonRows, TableEmpty, actionTone, adminCrumbs, changeEntries, fmtValue, humanize, plural } from "./_admin-ui";
 
 export default function SuperAdmin() {
   const { user } = useAuth();
@@ -18,6 +20,7 @@ export default function SuperAdmin() {
   const {
     data: activityLogs = [],
     isFetching: loadingLogs,
+    isError,
     refetch: refetchLogs,
   } = useGetActivityLogsQuery(logFilters, { skip: !isSuperAdmin });
 
@@ -28,162 +31,143 @@ export default function SuperAdmin() {
   const clearLogFilters = () =>
     setLogFilters({ user_id: "", action: "", entity_type: "", entity_id: "" });
 
-  // `changes` is an object like { name: "...", email: "...", is_active: true, ... }
-  // Render it as a compact "key: value" list instead of raw JSON.
-  const formatChanges = (changes) => {
-    if (!changes || typeof changes !== "object") return "—";
-    const entries = Object.entries(changes).filter(([, v]) => v !== null);
-    if (entries.length === 0) return "—";
-    return entries
-      .map(
-        ([key, value]) =>
-          `${key}: ${typeof value === "boolean" ? (value ? "true" : "false") : value}`,
-      )
-      .join(", ");
-  };
+  const hasFilters = Object.values(logFilters).some(Boolean);
+  const logs = Array.isArray(activityLogs) ? activityLogs : [];
 
   if (!isSuperAdmin) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <ShieldCheck size={28} className="text-[#1F453B] mb-4" />
-        <div className="text-xl font-semibold mb-2">
-          Super Admin Access Required
-        </div>
-        <p className="text-[#6B7B7C]">
-          This console is restricted to super administrators.
-        </p>
-      </div>
+      <AdminAccessDenied
+        crumb="Super admin"
+        title="Super admin access required"
+        text="This console is restricted to super administrators."
+      />
     );
   }
 
   return (
-    <div>
-      <div className="flex items-center gap-3 mb-6">
-        <Activity size={22} style={{ color: "#1F453B" }} />
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: "#333333" }}>
-            Activity Logs
-          </h1>
-          <p className="text-sm text-[#6B7B7C]">
-            Audit trail of actions taken across the workspace.
-          </p>
-        </div>
-      </div>
+    <Page>
+      <PageHeader
+        crumbs={adminCrumbs("Super admin")}
+        title="Activity log"
+        subtitle="An audit trail of every change made across the workspace — who did what, and when."
+        actions={
+          <Button variant="secondary" icon={RefreshCw} onClick={() => refetchLogs()} disabled={loadingLogs}>
+            {loadingLogs ? "Refreshing…" : "Refresh"}
+          </Button>
+        }
+      />
 
-      <div className="bg-white border border-[#E8EAF0] rounded-2xl p-4 mb-4">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-          <input
-            name="user_id"
-            value={logFilters.user_id}
-            onChange={onLogFilterChange}
-            placeholder="User ID"
-            className="h-9 px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-sm"
-          />
-          <input
-            name="action"
-            value={logFilters.action}
-            onChange={onLogFilterChange}
-            placeholder="Action (e.g. update)"
-            className="h-9 px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-sm"
-          />
-          <input
-            name="entity_type"
-            value={logFilters.entity_type}
-            onChange={onLogFilterChange}
-            placeholder="Entity type"
-            className="h-9 px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-sm"
-          />
-          <input
-            name="entity_id"
-            value={logFilters.entity_id}
-            onChange={onLogFilterChange}
-            placeholder="Entity ID"
-            className="h-9 px-3 rounded-lg border border-[#DDD8CE] bg-[#FAF8F5] text-sm"
-          />
+      <Card>
+        <div className="adm-filters">
+          <Field label="Action" htmlFor="f-action">
+            <TextInput id="f-action" name="action" value={logFilters.action} onChange={onLogFilterChange} placeholder="e.g. vendor_created" />
+          </Field>
+          <Field label="Entity type" htmlFor="f-etype">
+            <TextInput id="f-etype" name="entity_type" value={logFilters.entity_type} onChange={onLogFilterChange} placeholder="e.g. VENDOR" />
+          </Field>
+          <Field label="Entity ID" htmlFor="f-eid">
+            <TextInput id="f-eid" name="entity_id" value={logFilters.entity_id} onChange={onLogFilterChange} placeholder="Paste a record ID" />
+          </Field>
+          <Field label="User ID" htmlFor="f-uid">
+            <TextInput id="f-uid" name="user_id" value={logFilters.user_id} onChange={onLogFilterChange} placeholder="Paste a user ID" />
+          </Field>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Button variant="ghost" icon={X} onClick={clearLogFilters} disabled={!hasFilters} style={{ height: 40 }}>
+              Clear
+            </Button>
+          </div>
         </div>
-        <div className="flex justify-end gap-2 mt-3">
-          <button
-            onClick={clearLogFilters}
-            className="h-9 px-4 rounded-lg border border-[#DDD8CE] text-sm font-semibold text-[#333333] hover:bg-[#F7F7F5]"
-          >
-            Clear
-          </button>
-          <button
-            onClick={() => refetchLogs()}
-            className="h-9 px-4 rounded-lg text-white text-sm font-semibold"
-            style={{ backgroundColor: "#1F453B" }}
-          >
-            Refresh
-          </button>
-        </div>
-      </div>
+      </Card>
 
-      <div className="bg-white border border-[#E8EAF0] rounded-2xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-[#F7F7F5] text-xs uppercase tracking-widest text-[#6B7B7C]">
-            <tr>
-              <th className="text-left px-4 py-3">When</th>
-              <th className="text-left px-4 py-3">Actor</th>
-              <th className="text-left px-4 py-3">Action</th>
-              <th className="text-left px-4 py-3">Entity</th>
-              <th className="text-left px-4 py-3">Changes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loadingLogs ? (
+      <Card flush>
+        <div className="inos-table-wrap">
+          <table className="inos-table">
+            <thead>
               <tr>
-                <td colSpan={5} className="py-12 text-center text-[#6B7B7C]">
-                  Loading…
-                </td>
+                <th>When</th>
+                <th>Actor</th>
+                <th>Action</th>
+                <th>Record</th>
+                <th className="adm-hide-sm">Changes</th>
               </tr>
-            ) : activityLogs.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="py-12 text-center text-[#6B7B7C]">
-                  No activity found.
-                </td>
-              </tr>
-            ) : (
-              activityLogs.map((log) => (
-                <tr
-                  key={log.id}
-                  className="border-t border-[#E8EAF0] align-top"
-                >
-                  <td className="px-4 py-3 text-xs text-[#6B7B7C] whitespace-nowrap">
-                    {fmtDateTime(log.created_at)}
-                  </td>
-                  <td className="px-4 py-3 text-[#333333]">
-                    <div>{log.user_email || "—"}</div>
-                    {log.user_role && (
-                      <div className="text-xs text-[#6B7B7C] uppercase tracking-wide">
-                        {log.user_role}
-                      </div>
-                    )}
-                    {log.ip_address && (
-                      <div className="text-xs text-[#6B7B7C]">
-                        {log.ip_address}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="px-2 py-1 rounded-full text-xs font-semibold bg-[#EAF0EC] text-[#1F453B]">
-                      {log.action}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-[#333333]">
-                    <div>{log.entity_type}</div>
-                    <div className="text-xs text-[#6B7B7C]">
-                      {log.entity_label || log.entity_id || "—"}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-[#6B7B7C] max-w-[320px]">
-                    {formatChanges(log.changes)}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+            </thead>
+            <tbody>
+              {loadingLogs && logs.length === 0 ? (
+                <SkeletonRows cols={5} rows={4} />
+              ) : logs.length === 0 ? (
+                <TableEmpty
+                  cols={5}
+                  icon={hasFilters ? SearchX : isError ? ShieldCheck : Activity}
+                  title={hasFilters ? "No activity matches these filters" : isError ? "Couldn't load the activity log" : "No activity yet"}
+                  text={
+                    hasFilters
+                      ? "Clear a filter or try a broader value."
+                      : isError
+                        ? "The activity service didn't respond. Try refreshing."
+                        : "Changes made by your team will appear here."
+                  }
+                  action={
+                    hasFilters && (
+                      <Button variant="soft" icon={X} onClick={clearLogFilters}>
+                        Clear filters
+                      </Button>
+                    )
+                  }
+                />
+              ) : (
+                logs.map((log) => {
+                  const entries = changeEntries(log.changes);
+                  return (
+                    <tr key={log.id} style={{ verticalAlign: "top" }}>
+                      <td className="adm-cell-2 tabular" style={{ whiteSpace: "nowrap", fontSize: 13 }}>
+                        {fmtDateTime(log.created_at)}
+                      </td>
+                      <td>
+                        <div className="adm-cell-main">
+                          <Avatar name={log.user_email || "?"} size={30} />
+                          <div style={{ minWidth: 0 }}>
+                            <div className="adm-cell-title" style={{ fontWeight: 550 }}>
+                              {log.user_email || "System"}
+                            </div>
+                            <div className="adm-cell-sub">
+                              {[log.user_role && humanize(log.user_role), log.ip_address].filter(Boolean).join(" · ") || "—"}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <Pill tone={actionTone(log.action)}>{humanize(log.action)}</Pill>
+                      </td>
+                      <td>
+                        <div className="adm-cell-title" style={{ fontWeight: 550 }}>
+                          {log.entity_label || log.entity_id || "—"}
+                        </div>
+                        <div className="adm-cell-sub">{humanize(log.entity_type) || "—"}</div>
+                      </td>
+                      <td className="adm-hide-sm" style={{ maxWidth: 380 }}>
+                        {entries.length === 0 ? (
+                          <span className="muted">—</span>
+                        ) : (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                            {entries.slice(0, 4).map(([k, v]) => (
+                              <span key={k} className="adm-code" title={`${k}: ${fmtValue(v)}`} style={{ maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis" }}>
+                                {k ? `${humanize(k)}: ` : ""}
+                                {fmtValue(v)}
+                              </span>
+                            ))}
+                            {entries.length > 4 && <span className="adm-cell-sub">+{entries.length - 4} more</span>}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+        {logs.length > 0 && <div className="adm-table-foot">{plural(logs.length, "event")}</div>}
+      </Card>
+    </Page>
   );
 }

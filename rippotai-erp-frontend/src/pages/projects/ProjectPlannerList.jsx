@@ -3,8 +3,8 @@ import React, { useCallback, useMemo, useState } from "react";
 import {
   Eye,
   Plus,
-  Search,
-  Filter,
+  CheckCircle2,
+  Activity,
   Layers,
   ClipboardList,
   Truck,
@@ -27,7 +27,22 @@ import {
   useDownloadPlannerWorkbookMutation,
 } from "../../api/documents/project-planner.api";
 
-import { Button } from "@/components/ui/button";
+import {
+  Page,
+  PageHeader,
+  Card,
+  Button,
+  Stats,
+  StatTile,
+  Toolbar,
+  ToolbarSpacer,
+  SearchInput,
+  Segmented,
+  Pill,
+  EmptyState,
+  Progress,
+} from "@/components/inos";
+import { Skeleton } from "@/components/projects/_projects-ui";
 
 import {
   DropdownMenu,
@@ -294,9 +309,11 @@ function ProjectPlannerProbe({ project, onStats, onProjectStatus }) {
     skip: !project?.id,
   });
 
-  const planners = unwrapArray(plannersResponse);
+  // Memoised: unwrapArray returns a fresh [] per call, which re-fired the
+  // status effect below on every render ("Maximum update depth exceeded").
+  const planners = useMemo(() => unwrapArray(plannersResponse), [plannersResponse]);
 
-  const locationTree = unwrapArray(locationsResponse);
+  const locationTree = useMemo(() => unwrapArray(locationsResponse), [locationsResponse]);
 
   const floorCount = useMemo(() => countFloors(locationTree), [locationTree]);
 
@@ -365,20 +382,36 @@ const ProjectPlannerList = () => {
   // PROBE CALLBACKS
   // ============================================================
 
+  const statsSig = (st) =>
+    st
+      ? [st.totalItems, st.completedItems, st.percent, st.isLoading, st.floorCount,
+         st.planner?.id, st.planner?.name, st.planner?.updated_at, st.planner?.updatedAt].join("|")
+      : "";
+
   const handleStats = useCallback((key, stats) => {
-    setStatsByKey((current) => ({
-      ...current,
-      [key]: stats,
-    }));
+    setStatsByKey((current) =>
+      statsSig(current[key]) === statsSig(stats) ? current : { ...current, [key]: stats },
+    );
   }, []);
 
   const handleProjectStatus = useCallback((projectId, status) => {
-    setProjectProbeStatus((current) => ({
-      ...current,
-      [projectId]: status,
-    }));
+    let unchanged = false;
+    setProjectProbeStatus((current) => {
+      const prev = current[projectId];
+      if (
+        prev &&
+        prev.isLoading === status.isLoading &&
+        prev.plannerIds.join(",") === status.plannerIds.join(",")
+      ) {
+        unchanged = true;
+        return current;
+      }
+      return { ...current, [projectId]: status };
+    });
+    if (unchanged) return;
 
     setStatsByKey((current) => {
+      let removed = false;
       const next = {
         ...current,
       };
@@ -392,10 +425,11 @@ const ProjectPlannerList = () => {
 
         if (!status.plannerIds.includes(entry?.planner?.id)) {
           delete next[key];
+          removed = true;
         }
       });
 
-      return next;
+      return removed ? next : current;
     });
   }, []);
 
@@ -586,11 +620,8 @@ const ProjectPlannerList = () => {
   // ============================================================
 
   return (
-    <div className="w-full space-y-6">
-      {/* ======================================================
-          HIDDEN PROJECT PROBES
-      ====================================================== */}
-
+    <Page className="pj-page">
+      {/* Hidden per-project probes (fetch planners + locations) */}
       {!isLoadingProjects &&
         projects.map((project) => (
           <ProjectPlannerProbe
@@ -601,386 +632,151 @@ const ProjectPlannerList = () => {
           />
         ))}
 
-      {/* ======================================================
-          HEADER
-      ====================================================== */}
+      <PageHeader
+        crumbs={[{ label: "Projects", to: "/projects" }, { label: "Planners" }]}
+        title="Project planners"
+        subtitle="Consultancy, PMC and procurement planners across all projects."
+        actions={
+          <Button variant="primary" icon={Plus} onClick={handleCreate}>
+            New planner
+          </Button>
+        }
+      />
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-            <Layers className="h-5 w-5 text-primary" />
-          </div>
-
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">
-              Project Planners
-            </h1>
-
-            <p className="text-sm text-gray-500">
-              Consultancy, PMC and procurement planners across all projects
-            </p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleCreate}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" />
-          New Planner
-        </button>
-      </div>
-
-      {/* ======================================================
-          FILTERS
-      ====================================================== */}
-
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-
-            <input
-              type="text"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search project or planner..."
-              className="h-10 w-full rounded-lg border border-gray-200 bg-white pl-10 pr-4 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-            />
-          </div>
-
-          <div className="relative">
-            <Filter className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-
-            <select
-              value={plannerFilter}
-              onChange={(event) => setPlannerFilter(event.target.value)}
-              className="h-10 min-w-[220px] appearance-none rounded-lg border border-gray-200 bg-white pl-10 pr-8 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-            >
-              <option value="all">All Planners</option>
-
-              {PLANNER_TYPES.map((planner) => (
-                <option key={planner.value} value={planner.value}>
-                  {planner.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* ======================================================
-          SUMMARY
-      ====================================================== */}
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard
-          label="Planners"
-          value={stillLoading ? "…" : instances.length}
-          icon={Layers}
+      <Stats>
+        <StatTile label="Planners" value={stillLoading ? "…" : instances.length} icon={<Layers />} />
+        <StatTile
+          label="Projects with a planner"
+          value={stillLoading ? "…" : `${projectsWithPlannerCount} / ${projects.length}`}
+          icon={<Building2 />}
+          tone="info"
         />
+        <StatTile label="In progress" value={stillLoading ? "…" : activeCount} icon={<Activity />} tone="warn" />
+        <StatTile label="Fully completed" value={stillLoading ? "…" : completedCount} icon={<CheckCircle2 />} tone="ok" />
+      </Stats>
 
-        <SummaryCard
-          label="Projects With Planner"
-          value={
-            stillLoading
-              ? "…"
-              : `${projectsWithPlannerCount} / ${projects.length}`
-          }
-          icon={Building2}
+      <Toolbar>
+        <SearchInput value={search} onChange={setSearch} placeholder="Search project or planner…" />
+        <ToolbarSpacer />
+        <Segmented
+          value={plannerFilter}
+          onChange={setPlannerFilter}
+          options={[{ value: "all", label: "All" }, ...PLANNER_TYPES]}
         />
+      </Toolbar>
 
-        <SummaryCard
-          label="In Progress"
-          value={stillLoading ? "…" : activeCount}
-          icon={ClipboardList}
-        />
-
-        <SummaryCard
-          label="Fully Completed"
-          value={stillLoading ? "…" : completedCount}
-          icon={ClipboardList}
-        />
-      </div>
-
-      {/* ======================================================
-          TABLE
-      ====================================================== */}
-
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1050px]">
-            <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Project
-                </th>
-
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Planner
-                </th>
-
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Floors
-                </th>
-
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Items
-                </th>
-
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Completed
-                </th>
-
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Progress
-                </th>
-
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Status
-                </th>
-
-                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-gray-100">
-              {/* =================================================
-                  LOADING
-              ================================================= */}
-
-              {stillLoading && (
+      <Card
+        flush
+        footer={
+          !stillLoading && filteredInstances.length > 0 ? (
+            <span className="pj-muted" style={{ fontSize: 13 }}>
+              Showing {filteredInstances.length} of {instances.length} planners
+            </span>
+          ) : null
+        }
+      >
+        {stillLoading ? (
+          <div style={{ padding: 20, display: "grid", gap: 8 }}>
+            <Skeleton height={48} />
+            <Skeleton height={48} />
+            <Skeleton height={48} />
+          </div>
+        ) : filteredInstances.length === 0 ? (
+          <EmptyState
+            icon={Layers}
+            title={instances.length === 0 ? "No planners yet" : "No planners match"}
+            text={
+              instances.length === 0
+                ? "Create a project planner to track consultancy, PMC and procurement work floor by floor."
+                : "Try changing the search or planner filter."
+            }
+            action={
+              <Button variant="primary" icon={Plus} onClick={handleCreate}>
+                New planner
+              </Button>
+            }
+          />
+        ) : (
+          <div className="inos-table-wrap">
+            <table className="inos-table">
+              <thead>
                 <tr>
-                  <td
-                    colSpan={8}
-                    className="px-5 py-14 text-center text-sm text-gray-500"
-                  >
-                    Loading project planners...
-                  </td>
+                  <th>Project</th>
+                  <th>Planner</th>
+                  <th className="num">Floors</th>
+                  <th className="num">Items</th>
+                  <th className="num">Completed</th>
+                  <th>Progress</th>
+                  <th>Status</th>
+                  <th className="actions" aria-label="Actions" />
                 </tr>
-              )}
-
-              {/* =================================================
-                  EMPTY
-              ================================================= */}
-
-              {!stillLoading && filteredInstances.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="px-5 py-14 text-center">
-                    <div className="flex flex-col items-center justify-center">
-                      <Layers className="mb-3 h-10 w-10 text-gray-300" />
-
-                      <p className="text-sm font-medium text-gray-700">
-                        No planners found
-                      </p>
-
-                      <p className="mt-1 text-sm text-gray-500">
-                        {instances.length === 0
-                          ? "No Project Planner has been created yet."
-                          : "Try changing the search or planner filter."}
-                      </p>
-
-                      <button
-                        type="button"
-                        onClick={handleCreate}
-                        className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white"
-                      >
-                        <Plus className="h-4 w-4" />
-                        New Planner
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )}
-
-              {/* =================================================
-                  ROWS
-              ================================================= */}
-
-              {!stillLoading &&
-                filteredInstances.map((instance) => {
-                  const isProcurement =
-                    instance.plannerType === "VENDOR_PROCUREMENT";
-
+              </thead>
+              <tbody>
+                {filteredInstances.map((instance) => {
+                  const isProcurement = instance.plannerType === "VENDOR_PROCUREMENT";
                   const plannerId = instance?.planner?.id;
-
                   const isDeleting = deletingPlannerId === plannerId;
 
                   return (
-                    <tr
-                      key={instance.key}
-                      className="transition hover:bg-gray-50"
-                    >
-                      {/* =======================================
-                            PROJECT
-                      ======================================= */}
-
-                      <td className="px-5 py-4">
-                        <button
-                          type="button"
-                          onClick={() => handleView(instance)}
-                          className="font-medium text-primary hover:underline"
-                        >
-                          {instance.project?.name || "Untitled Project"}
-                        </button>
-
+                    <tr key={instance.key} className="is-clickable" onClick={() => handleView(instance)}>
+                      <td style={{ maxWidth: 260 }}>
+                        <div className="pj-cell-title pj-truncate">{instance.project?.name || "Untitled project"}</div>
                         {instance.project?.site_location && (
-                          <p className="mt-0.5 max-w-[240px] truncate text-xs text-gray-400">
-                            {instance.project.site_location}
-                          </p>
+                          <div className="pj-cell-sub pj-truncate">{instance.project.site_location}</div>
                         )}
                       </td>
-
-                      {/* =======================================
-                            PLANNER TYPE
-                      ======================================= */}
-
-                      <td className="px-5 py-4">
-                        <PlannerTypeBadge
-                          type={instance.plannerType}
-                          label={instance.plannerLabel}
-                        />
+                      <td>
+                        <PlannerTypeBadge type={instance.plannerType} label={instance.plannerLabel} />
                       </td>
-
-                      {/* =======================================
-                            FLOORS
-                      ======================================= */}
-
-                      <td className="px-5 py-4 text-sm text-gray-700">
-                        <div className="flex items-center gap-1.5">
-                          <Building2 className="h-3.5 w-3.5 text-gray-400" />
-
-                          {instance.floorCount}
-
-                          <span className="text-gray-400">
-                            {instance.floorCount === 1 ? "floor" : "floors"}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* =======================================
-                            ITEMS
-                      ======================================= */}
-
-                      <td className="px-5 py-4 text-sm text-gray-700">
+                      <td className="num">{instance.floorCount}</td>
+                      <td className="num">
                         {instance.totalItems}
-
-                        <span className="ml-1 text-xs text-gray-400">
+                        <span className="pj-muted" style={{ fontSize: 12, marginLeft: 4 }}>
                           {isProcurement ? "entries" : "tasks"}
                         </span>
                       </td>
-
-                      {/* =======================================
-                            COMPLETED ITEMS
-                      ======================================= */}
-
-                      <td className="px-5 py-4 text-sm">
-                        <span className="font-medium text-gray-700">
-                          {instance.completedItems}
-                        </span>
-
-                        <span className="text-gray-400">
-                          {" "}
-                          / {instance.totalItems}
-                        </span>
+                      <td className="num">
+                        {instance.completedItems}
+                        <span className="pj-muted"> / {instance.totalItems}</span>
                       </td>
-
-                      {/* =======================================
-                            PROGRESS
-                      ======================================= */}
-
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="h-2 w-28 overflow-hidden rounded-full bg-gray-100">
-                            <div
-                              className="h-full rounded-full bg-primary transition-all"
-                              style={{
-                                width: `${Math.min(
-                                  100,
-                                  Math.max(0, instance.percent),
-                                )}%`,
-                              }}
-                            />
-                          </div>
-
-                          <span className="min-w-[38px] text-xs font-semibold text-gray-600">
-                            {instance.percent}%
-                          </span>
+                      <td>
+                        <div className="pj-progress-cell">
+                          <Progress value={instance.percent} tone={instance.percent >= 100 ? "ok" : undefined} />
+                          <span>{instance.percent}%</span>
                         </div>
                       </td>
-
-                      {/* =======================================
-                            STATUS
-                      ======================================= */}
-
-                      <td className="px-5 py-4">
-                        <ProgressStatusBadge
-                          totalItems={instance.totalItems}
-                          progress={instance.percent}
-                        />
+                      <td>
+                        <ProgressStatusBadge totalItems={instance.totalItems} progress={instance.percent} />
                       </td>
-
-                      {/* =======================================
-                            ACTIONS
-                      ======================================= */}
-
-                      <td className="px-5 py-4 text-right">
+                      <td className="actions" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8"
-                              disabled={isDeleting}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-
-                              <span className="sr-only">Open actions</span>
-                            </Button>
+                            <Button variant="ghost" size="sm" icon={MoreHorizontal} disabled={isDeleting} aria-label="Open actions" />
                           </DropdownMenuTrigger>
-
-                          <DropdownMenuContent align="end" className="w-52">
-                            <DropdownMenuLabel>
-                              Planner Actions
-                            </DropdownMenuLabel>
-
+                          <DropdownMenuContent align="end" className="inos-menu w-52">
+                            <DropdownMenuLabel>Planner actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-
-                            <DropdownMenuItem
-                              onClick={() => handleView(instance)}
-                            >
+                            <DropdownMenuItem onClick={() => handleView(instance)}>
                               <Eye className="mr-2 h-4 w-4" />
-                              Open Planner
+                              Open planner
                             </DropdownMenuItem>
-
-                            <DropdownMenuItem
-                              onClick={() => handleEdit(instance)}
-                            >
+                            <DropdownMenuItem onClick={() => handleEdit(instance)}>
                               <Pencil className="mr-2 h-4 w-4" />
-                              Edit Planner
+                              Edit planner
                             </DropdownMenuItem>
-
-                            <DropdownMenuItem
-                              onClick={() => handleDownload(instance)}
-                            >
+                            <DropdownMenuItem onClick={() => handleDownload(instance)}>
                               <Download className="mr-2 h-4 w-4" />
-                              Download Workbook
+                              Download workbook
                             </DropdownMenuItem>
-
                             <DropdownMenuSeparator />
-
                             <DropdownMenuItem
                               variant="destructive"
                               disabled={isDeleting}
                               onClick={() => handleDelete(instance)}
+                              style={{ color: "var(--bad-fg)" }}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-
-                              {isDeleting ? "Deleting..." : "Delete Planner"}
+                              {isDeleting ? "Deleting…" : "Delete planner"}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -988,75 +784,28 @@ const ProjectPlannerList = () => {
                     </tr>
                   );
                 })}
-            </tbody>
-          </table>
-        </div>
-
-        {/* =====================================================
-            FOOTER
-        ====================================================== */}
-
-        {!stillLoading && filteredInstances.length > 0 && (
-          <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-5 py-3">
-            <p className="text-sm text-gray-500">
-              Showing{" "}
-              <span className="font-medium text-gray-700">
-                {filteredInstances.length}
-              </span>{" "}
-              of{" "}
-              <span className="font-medium text-gray-700">
-                {instances.length}
-              </span>{" "}
-              planners
-            </p>
+              </tbody>
+            </table>
           </div>
         )}
-      </div>
-    </div>
+      </Card>
+    </Page>
   );
 };
-
-// ============================================================
-// SUMMARY CARD
-// ============================================================
-
-function SummaryCard({ label, value, icon: Icon }) {
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-            {label}
-          </p>
-
-          <p className="mt-1 text-2xl font-semibold text-gray-900">{value}</p>
-        </div>
-
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-          <Icon className="h-4 w-4 text-primary" />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ============================================================
 // PLANNER TYPE BADGE
 // ============================================================
 
+const TYPE_TONE = { PROJECT: "brand", CONSULTANCY: "info", PMC: "lilac", VENDOR_PROCUREMENT: "peach" };
+
 function PlannerTypeBadge({ type, label }) {
-  const isProcurement = type === "VENDOR_PROCUREMENT";
-
+  const Icon = type === "VENDOR_PROCUREMENT" ? Truck : ClipboardList;
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-700">
-      {isProcurement ? (
-        <Truck className="h-3.5 w-3.5 text-gray-500" />
-      ) : (
-        <ClipboardList className="h-3.5 w-3.5 text-gray-500" />
-      )}
-
+    <Pill tone={TYPE_TONE[type] || "mute"} dot={false}>
+      <Icon size={13} aria-hidden />
       {label}
-    </span>
+    </Pill>
   );
 }
 
@@ -1065,35 +814,10 @@ function PlannerTypeBadge({ type, label }) {
 // ============================================================
 
 function ProgressStatusBadge({ totalItems, progress }) {
-  if (totalItems === 0) {
-    return (
-      <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500">
-        Empty
-      </span>
-    );
-  }
-
-  if (progress >= 100) {
-    return (
-      <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-        Completed
-      </span>
-    );
-  }
-
-  if (progress > 0) {
-    return (
-      <span className="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
-        In Progress
-      </span>
-    );
-  }
-
-  return (
-    <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
-      Not Started
-    </span>
-  );
+  if (totalItems === 0) return <Pill tone="mute">Empty</Pill>;
+  if (progress >= 100) return <Pill tone="ok">Completed</Pill>;
+  if (progress > 0) return <Pill tone="info">In progress</Pill>;
+  return <Pill tone="warn">Not started</Pill>;
 }
 
 export default ProjectPlannerList;

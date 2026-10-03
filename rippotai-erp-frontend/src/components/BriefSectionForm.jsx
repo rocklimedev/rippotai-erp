@@ -1,39 +1,27 @@
 import React, { useMemo } from "react";
-import { Save, Plus, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Trash2 } from "lucide-react";
 
+import { Field, TextInput, TextArea, SelectInput, FormActions } from "@/components/inos";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  DocFormLayout,
+  DocSection,
+  ProjectPicker,
+  Choices,
+  ChipSelect,
+  OptionSelect,
+  AddRowButton,
+  RowCard,
+  IconButton,
+  isFilled,
+  slugId,
+} from "@/components/forms/crm-form-ui";
 
 /**
- * Enhanced BriefSectionForm (shadcn/ui)
- * Supports: text, textarea, number, date, select, checkbox, multiselect
- * (with optional "Select All"), table, restriction-table, and conditional
- * visibility (showWhen / showWhenMultiselectIncludes).
+ * BriefSectionForm
+ * Supports: text, textarea, number, date, select, checkbox, multiselect,
+ * table, restriction-table, and conditional visibility (showWhen).
+ * Props/API unchanged; `crumbs`, `onCancel` are optional extras.
  */
 export function BriefSectionForm({
   title,
@@ -48,9 +36,14 @@ export function BriefSectionForm({
   onSubmit,
   isSubmitting = false,
   renderSection,
-  submitLabel = "Save Brief",
+  submitLabel = "Save brief",
   children,
+  projectsLoading,
+  crumbs,
+  onCancel,
 }) {
+  const navigate = useNavigate();
+
   const filledCount = useMemo(() => {
     let count = 0;
     Object.values(values || {}).forEach((value) => {
@@ -109,6 +102,13 @@ export function BriefSectionForm({
     return true;
   };
 
+  const isWide = (field) =>
+    field.type === "table" ||
+    field.type === "restriction-table" ||
+    field.type === "textarea" ||
+    field.type === "multiselect" ||
+    field.fullWidth;
+
   // ----------------------------------------------------------
   // Render a single field
   // ----------------------------------------------------------
@@ -117,89 +117,61 @@ export function BriefSectionForm({
     if (!isFieldVisible(field)) return null;
 
     const fieldValue = values?.[field.key] ?? "";
+    const set = (v) => handleFieldChange(section, field.key, v);
 
-    // ---- TABLE ----
+    // ---- TABLE (compact inline rows) ----
     if (field.type === "table") {
       const rows = getTableRows(field.key);
       const columns = field.columns || [];
+      const addRow = () =>
+        addTableRow(
+          field.key,
+          columns.reduce((acc, col) => {
+            acc[col.key] = "";
+            return acc;
+          }, {}),
+        );
 
       return (
-        <div key={field.key} className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-[13px] font-semibold">{field.label}</Label>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-[#1F453B] hover:text-[#1F453B]"
-              onClick={() =>
-                addTableRow(
-                  field.key,
-                  columns.reduce((acc, col) => {
-                    acc[col.key] = "";
-                    return acc;
-                  }, {}),
-                )
-              }
-            >
-              <Plus size={14} className="mr-1" />
-              {field.addLabel || "Add row"}
-            </Button>
-          </div>
-
-          {rows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No rows yet. Click "Add" to begin.
-            </p>
-          ) : (
-            <div className="overflow-x-auto rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
+        <Field key={field.key} label={field.label} hint={field.description} full>
+          {rows.length > 0 && (
+            <div className="crmf-table-wrap">
+              <table className="crmf-table">
+                <thead>
+                  <tr>
                     {columns.map((col) => (
-                      <TableHead key={col.key}>{col.label}</TableHead>
+                      <th key={col.key}>{col.label}</th>
                     ))}
-                    <TableHead className="w-12" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+                    <th aria-label="Actions" />
+                  </tr>
+                </thead>
+                <tbody>
                   {rows.map((row, idx) => (
-                    <TableRow key={row._id || row.autoFor || idx}>
+                    <tr key={idx}>
                       {columns.map((col) => (
-                        <TableCell key={col.key}>
-                          <Input
+                        <td key={col.key}>
+                          <TextInput
                             type={col.type === "date" ? "date" : "text"}
                             value={row[col.key] ?? ""}
-                            placeholder={col.placeholder || ""}
-                            onChange={(e) =>
-                              updateTableRow(
-                                field.key,
-                                idx,
-                                col.key,
-                                e.target.value,
-                              )
-                            }
+                            placeholder={col.placeholder || col.label}
+                            aria-label={col.label}
+                            onChange={(e) => updateTableRow(field.key, idx, col.key, e.target.value)}
                           />
-                        </TableCell>
+                        </td>
                       ))}
-                      <TableCell>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="text-red-500 hover:text-red-700"
-                          onClick={() => removeTableRow(field.key, idx)}
-                        >
-                          <Trash2 size={15} />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                      <td className="actions">
+                        <IconButton danger label="Remove row" onClick={() => removeTableRow(field.key, idx)}>
+                          <Trash2 />
+                        </IconButton>
+                      </td>
+                    </tr>
                   ))}
-                </TableBody>
-              </Table>
+                </tbody>
+              </table>
             </div>
           )}
-        </div>
+          <AddRowButton onClick={addRow}>{field.addLabel || "Add row"}</AddRowButton>
+        </Field>
       );
     }
 
@@ -211,363 +183,182 @@ export function BriefSectionForm({
       const availableOptions = options.filter((o) => !usedTypes.has(o.value));
 
       return (
-        <div key={field.key} className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <Label className="text-[13px] font-semibold">{field.label}</Label>
-
-            <Select
-              value=""
-              onValueChange={(type) => {
-                if (!type) return;
-                addTableRow(field.key, { type, details: "" });
-              }}
-            >
-              <SelectTrigger className="h-9 min-w-[260px]">
-                <SelectValue placeholder="+ Add restriction type…" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {rows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No restrictions added yet. Choose a type from the dropdown.
-            </p>
-          ) : (
-            <div className="space-y-3">
+        <Field key={field.key} label={field.label} hint="Pick a rule type to add it, then note the details." full>
+          {rows.length > 0 && (
+            <div className="crmf-rows">
               {rows.map((row, idx) => {
-                const label =
-                  options.find((o) => o.value === row.type)?.label || row.type;
-
+                const label = options.find((o) => o.value === row.type)?.label || row.type;
                 return (
-                  <Card key={idx} className="bg-[#FAFBFC]">
-                    <CardContent className="flex items-start gap-3 p-3">
-                      <div className="flex-1 space-y-1">
-                        <div className="text-[13px] font-semibold text-[#333333]">
-                          {label}
-                        </div>
-                        <Textarea
-                          rows={2}
-                          value={row.details ?? ""}
-                          placeholder="Details / notes…"
-                          onChange={(e) =>
-                            updateTableRow(
-                              field.key,
-                              idx,
-                              "details",
-                              e.target.value,
-                            )
-                          }
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="mt-1 text-red-500 hover:text-red-700"
-                        onClick={() => removeTableRow(field.key, idx)}
-                      >
-                        <Trash2 size={16} />
-                      </Button>
-                    </CardContent>
-                  </Card>
+                  <RowCard key={idx} title={label} onRemove={() => removeTableRow(field.key, idx)} removeLabel="Remove restriction">
+                    <TextArea
+                      rows={2}
+                      value={row.details ?? ""}
+                      placeholder="Details, e.g. work allowed 10am–6pm, no Sundays"
+                      aria-label={`${label} details`}
+                      onChange={(e) => updateTableRow(field.key, idx, "details", e.target.value)}
+                    />
+                  </RowCard>
                 );
               })}
             </div>
           )}
-        </div>
+          <SelectInput
+            value=""
+            disabled={availableOptions.length === 0}
+            placeholder={availableOptions.length ? "+ Add a restriction…" : "All restriction types added"}
+            onChange={(e) => {
+              const type = e.target.value;
+              if (!type) return;
+              addTableRow(field.key, { type, details: "" });
+            }}
+          >
+            {availableOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </SelectInput>
+        </Field>
       );
     }
 
-    // ---- MULTISELECT (checkbox list, optional Select All) ----
+    // ---- MULTISELECT (chips) ----
     if (field.type === "multiselect") {
-      const selected = Array.isArray(fieldValue) ? fieldValue : [];
-      const options = field.options || [];
-      const allValues = options.map((o) =>
-        typeof o === "object" ? o.value : o,
-      );
-
-      const allSelected =
-        allValues.length > 0 && allValues.every((v) => selected.includes(v));
-      const someSelected = selected.length > 0 && !allSelected;
-
-      const toggle = (optionValue) => {
-        const next = selected.includes(optionValue)
-          ? selected.filter((v) => v !== optionValue)
-          : [...selected, optionValue];
-        handleFieldChange(section, field.key, next);
-      };
-
-      const toggleAll = () => {
-        handleFieldChange(section, field.key, allSelected ? [] : allValues);
-      };
-
       return (
-        <div key={field.key} className="space-y-2">
-          <Label className="text-[13px] font-semibold">
-            {field.label}
-            {field.required && <span className="ml-1 text-red-500">*</span>}
-          </Label>
-          {field.description && (
-            <p className="text-xs text-muted-foreground">{field.description}</p>
+        <Field key={field.key} label={field.label} required={field.required} hint={field.description || "Select all that apply."} full>
+          <ChipSelect name={field.label} value={Array.isArray(fieldValue) ? fieldValue : []} options={field.options || []} onChange={set} />
+        </Field>
+      );
+    }
+
+    // ---- CHECKBOX ----
+    if (field.type === "checkbox") {
+      return (
+        <Field key={field.key} label={field.label} hint={field.description} full={field.fullWidth}>
+          <label className="crmf-check" style={{ height: 40 }}>
+            <input type="checkbox" checked={Boolean(fieldValue)} onChange={(e) => set(e.target.checked)} />
+            {field.checkboxLabel || field.label}
+          </label>
+        </Field>
+      );
+    }
+
+    // ---- SELECT: small sets as choice cards ----
+    if (field.type === "select") {
+      const options = field.options || [];
+      const small = options.length > 0 && options.length <= 4;
+      return (
+        <Field key={field.key} label={field.label} required={field.required} hint={field.description} full={field.fullWidth}>
+          {small ? (
+            <Choices name={field.label} value={fieldValue} options={options} columns={options.length} onChange={(v) => set(String(v))} />
+          ) : (
+            <OptionSelect
+              value={fieldValue}
+              options={options}
+              placeholder={field.placeholder || "Select…"}
+              onChange={(v) => set(v === "" ? "" : String(v))}
+            />
           )}
-
-          {field.selectAll && (
-            <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#1F453B]">
-              <Checkbox
-                checked={
-                  allSelected ? true : someSelected ? "indeterminate" : false
-                }
-                onCheckedChange={toggleAll}
-              />
-              Select All
-            </label>
-          )}
-
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {options.map((option) => {
-              const optionValue =
-                typeof option === "object" ? option.value : option;
-              const optionLabel =
-                typeof option === "object" ? option.label : option;
-              const checked = selected.includes(optionValue);
-
-              return (
-                <label
-                  key={optionValue}
-                  className="flex cursor-pointer items-center gap-2 text-sm text-[#333333]"
-                >
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={() => toggle(optionValue)}
-                  />
-                  {optionLabel}
-                </label>
-              );
-            })}
-          </div>
-        </div>
+        </Field>
       );
     }
 
     // ---- STANDARD FIELDS ----
     return (
-      <div key={field.key} className={field.fullWidth ? "md:col-span-2" : ""}>
-        <Label className="mb-1 block text-[13px] font-semibold">
-          {field.label}
-          {field.required && <span className="ml-1 text-red-500">*</span>}
-        </Label>
-
-        {field.description && (
-          <p className="mb-1 text-xs text-muted-foreground">
-            {field.description}
-          </p>
-        )}
-
+      <Field
+        key={field.key}
+        label={field.label}
+        required={field.required}
+        hint={field.description}
+        full={isWide(field)}
+      >
         {field.type === "textarea" ? (
-          <Textarea
-            rows={field.rows || 4}
-            value={fieldValue}
-            placeholder={field.placeholder || ""}
-            onChange={(event) =>
-              handleFieldChange(section, field.key, event.target.value)
-            }
-          />
+          <TextArea rows={field.rows || 3} value={fieldValue} placeholder={field.placeholder || ""} onChange={(e) => set(e.target.value)} />
         ) : field.type === "date" ? (
-          <Input
-            type="date"
-            value={fieldValue}
-            onChange={(event) =>
-              handleFieldChange(section, field.key, event.target.value)
-            }
-          />
+          <TextInput type="date" value={fieldValue} onChange={(e) => set(e.target.value)} />
         ) : field.type === "number" ? (
-          <Input
+          <TextInput
             type="number"
+            inputMode="decimal"
             min={field.min}
             max={field.max}
             step={field.step || "0.01"}
             value={fieldValue}
             placeholder={field.placeholder || ""}
-            onChange={(event) =>
-              handleFieldChange(section, field.key, event.target.value)
-            }
+            onChange={(e) => set(e.target.value)}
           />
-        ) : field.type === "select" ? (
-          <Select
-            value={fieldValue || undefined}
-            onValueChange={(value) =>
-              handleFieldChange(section, field.key, value)
-            }
-          >
-            <SelectTrigger className="h-10 w-full">
-              <SelectValue placeholder={field.placeholder || "Select..."} />
-            </SelectTrigger>
-            <SelectContent>
-              {(field.options || []).map((option) => {
-                const optionValue =
-                  typeof option === "object" ? option.value : option;
-                const optionLabel =
-                  typeof option === "object" ? option.label : option;
-                return (
-                  <SelectItem key={optionValue} value={String(optionValue)}>
-                    {optionLabel}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        ) : field.type === "checkbox" ? (
-          <label className="flex h-10 items-center gap-2">
-            <Checkbox
-              checked={Boolean(fieldValue)}
-              onCheckedChange={(checked) =>
-                handleFieldChange(section, field.key, checked)
-              }
-            />
-            <span className="text-sm text-[#333333]">
-              {field.checkboxLabel || field.label}
-            </span>
-          </label>
         ) : (
-          <Input
-            type={field.type || "text"}
-            value={fieldValue}
-            placeholder={field.placeholder || ""}
-            onChange={(event) =>
-              handleFieldChange(section, field.key, event.target.value)
-            }
-          />
+          <TextInput type={field.type || "text"} value={fieldValue} placeholder={field.placeholder || ""} onChange={(e) => set(e.target.value)} />
         )}
-      </div>
+      </Field>
     );
   };
 
   // ----------------------------------------------------------
-  // Section body
+  // Section body + completion
   // ----------------------------------------------------------
 
   const renderSectionBody = (section) => {
     if (section?.type && renderSection) {
       return renderSection(section);
     }
-
-    return (
-      <div className="grid gap-4 md:grid-cols-2">
-        {(section?.fields || [])
-          .filter((field) => isFieldVisible(field))
-          .map((field) => (
-            <div
-              key={field.key}
-              className={
-                field.type === "table" ||
-                field.type === "restriction-table" ||
-                field.type === "textarea" ||
-                field.type === "multiselect" ||
-                field.fullWidth
-                  ? "md:col-span-2"
-                  : ""
-              }
-            >
-              {renderField(section, field)}
-            </div>
-          ))}
-      </div>
-    );
+    return <div className="inos-form-grid">{(section?.fields || []).map((field) => renderField(section, field))}</div>;
   };
 
+  const sectionDone = (section) =>
+    (section?.fields || []).some((f) => isFieldVisible(f) && f.type !== "checkbox" && isFilled(values?.[f.key]));
+
+  const projectSectionId = "sec-project";
+  const nav = [
+    { id: projectSectionId, label: "Project", done: Boolean(projectId) },
+    ...sections.map((s, i) => ({
+      id: slugId(s.key || s.title, i),
+      label: s.title,
+      done: sectionDone(s),
+    })),
+  ];
+
   return (
-    <div className="space-y-5">
-      {/* HEADER */}
-      <div>
-        <h1 className="text-xl font-semibold text-[#333333]">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-[#6B7B7C]">{subtitle}</p>}
-      </div>
+    <DocFormLayout
+      crumbs={crumbs || [{ label: "CRM", to: "/crm" }, { label: "Forms" }, { label: "Project brief" }]}
+      title={title}
+      subtitle={subtitle}
+      nav={nav}
+    >
+      <DocSection id={projectSectionId} step={1} title="Project" description="Which project is this brief for?" done={Boolean(projectId)}>
+        <ProjectPicker
+          projects={projects}
+          value={projectId}
+          onChange={onProjectChange}
+          onAdd={onAddProject}
+          loading={projectsLoading}
+          hint="Site address and project type are filled in from the project."
+        />
+      </DocSection>
 
-      {/* PROJECT SELECTOR */}
-      <Card>
-        <CardContent className="pt-6">
-          <Label className="mb-1 block text-[13px] font-semibold">
-            Project
-          </Label>
-          <div className="flex flex-wrap items-center gap-3">
-            <Select
-              value={projectId || undefined}
-              onValueChange={(v) => onProjectChange?.(v)}
-            >
-              <SelectTrigger className="h-10 max-w-lg">
-                <SelectValue placeholder="Select Project" />
-              </SelectTrigger>
-              <SelectContent>
-                {(projects || []).map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {onAddProject && (
-              <Button
-                type="button"
-                variant="outline"
-                className="border-[#1F453B] text-[#1F453B] hover:bg-[#F0F7F5]"
-                onClick={onAddProject}
-              >
-                + New Project
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ALL SECTIONS STACKED */}
-      <div className="space-y-5">
-        {sections.map((section, index) => {
-          const sectionKey = section.key || section.title;
-
-          return (
-            <Card key={sectionKey}>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-[#333333]">
-                  <span className="mr-1">{index + 1}.</span>
-                  {section.title}
-                </CardTitle>
-                {section.description && (
-                  <CardDescription>{section.description}</CardDescription>
-                )}
-              </CardHeader>
-              <CardContent>{renderSectionBody(section)}</CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* FOOTER: status + Save button (bottom right) */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="text-xs text-muted-foreground">
-          {filledCount} field{filledCount !== 1 ? "s" : ""} completed
-        </div>
-
-        <Button
-          type="button"
-          onClick={onSubmit}
-          disabled={isSubmitting}
-          className="bg-[#1F453B] hover:bg-[#1F453B]/90"
+      {sections.map((section, index) => (
+        <DocSection
+          key={section.key || section.title}
+          id={nav[index + 1].id}
+          step={index + 2}
+          title={section.title}
+          description={section.description}
+          done={nav[index + 1].done}
         >
-          <Save size={15} className="mr-2" />
-          {isSubmitting ? "Saving..." : submitLabel}
-        </Button>
-      </div>
+          {renderSectionBody(section)}
+        </DocSection>
+      ))}
+
+      <FormActions
+        note={`${filledCount} field${filledCount !== 1 ? "s" : ""} completed`}
+        onCancel={onCancel || (() => navigate(-1))}
+        submitLabel={isSubmitting ? "Saving…" : submitLabel}
+        submitDisabled={isSubmitting}
+        onSubmit={onSubmit}
+      />
 
       {children}
-    </div>
+    </DocFormLayout>
   );
 }
 

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 
 import { Task } from './models/task.model';
 import { Project } from '../projects/models/projects.model';
@@ -27,11 +28,25 @@ export class TasksService {
     private readonly notificationForTaskService: NotificationForTaskService,
   ) {}
 
-  async findAll() {
+  async findAll(filters: {
+    status?: string;
+    project_id?: string;
+    assigned_to?: string;
+    priority?: string;
+    q?: string;
+  } = {}) {
+    const where: any = {};
+    if (filters.status) where.status = filters.status;
+    if (filters.project_id) where.project_id = filters.project_id;
+    if (filters.assigned_to) where.assigned_to = filters.assigned_to;
+    if (filters.priority) where.priority = filters.priority;
+    if (filters.q) where.title = { [Op.like]: `%${filters.q}%` };
     return this.taskModel.findAll({
+      where,
       include: [
         { model: Project, attributes: ['id', 'name'] },
         { model: User, as: 'creator', attributes: ['id', 'name', 'email'] },
+        { model: User, as: 'assignee', attributes: ['id', 'name', 'email'] },
       ],
       order: [
         ['order_index', 'ASC'],
@@ -45,6 +60,7 @@ export class TasksService {
       include: [
         { model: Project, attributes: ['id', 'name'] },
         { model: User, as: 'creator', attributes: ['id', 'name', 'email'] },
+        { model: User, as: 'assignee', attributes: ['id', 'name', 'email'] },
       ],
     });
 
@@ -77,6 +93,11 @@ export class TasksService {
         ? new Date(createTaskDto.due_date)
         : null,
       workload_estimate_hours: createTaskDto.workload_estimate_hours ?? 0,
+      description: createTaskDto.description ?? null,
+      assigned_to: createTaskDto.assigned_to ?? null,
+      start_date: createTaskDto.start_date
+        ? new Date(createTaskDto.start_date)
+        : null,
       order_index: 0,
       due_bucket: this.calculateDueBucket(createTaskDto.due_date),
     });
@@ -112,7 +133,13 @@ export class TasksService {
             ? new Date(updateTaskDto.due_date)
             : null
           : undefined,
-    });
+      start_date:
+        updateTaskDto.start_date !== undefined
+          ? updateTaskDto.start_date
+            ? new Date(updateTaskDto.start_date)
+            : null
+          : undefined,
+    } as any);
 
     if (updateTaskDto.due_date !== undefined) {
       task.due_bucket = this.calculateDueBucket(task.due_date);
@@ -219,10 +246,11 @@ export class TasksService {
   // =========================
   async getMyTasks(userId: string) {
     return this.taskModel.findAll({
-      where: { created_by: userId },
+      where: { [Op.or]: [{ created_by: userId }, { assigned_to: userId }] },
       include: [
         { model: Project, attributes: ['id', 'name'] },
         { model: User, as: 'creator', attributes: ['id', 'name', 'email'] },
+        { model: User, as: 'assignee', attributes: ['id', 'name', 'email'] },
       ],
       order: [
         ['order_index', 'ASC'],
@@ -233,10 +261,11 @@ export class TasksService {
 
   async getMyBoard(userId: string) {
     const tasks = await this.taskModel.findAll({
-      where: { created_by: userId },
+      where: { [Op.or]: [{ created_by: userId }, { assigned_to: userId }] },
       include: [
         { model: Project, attributes: ['id', 'name'] },
         { model: User, as: 'creator', attributes: ['id', 'name', 'email'] },
+        { model: User, as: 'assignee', attributes: ['id', 'name', 'email'] },
       ],
       order: [
         ['order_index', 'ASC'],
@@ -252,6 +281,7 @@ export class TasksService {
       include: [
         { model: Project, attributes: ['id', 'name'] },
         { model: User, as: 'creator', attributes: ['id', 'name', 'email'] },
+        { model: User, as: 'assignee', attributes: ['id', 'name', 'email'] },
       ],
       order: [
         ['order_index', 'ASC'],

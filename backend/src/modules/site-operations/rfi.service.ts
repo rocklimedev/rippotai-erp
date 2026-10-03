@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Rfi } from './models/rfi.model';
+import { Project } from '@/modules/projects/models/projects.model';
 import { Team } from '../process-workflow/models/team.model';
 import { RaiseRfiDto, RespondToRfiDto, RerouteRfiDto } from './dto/rfi.dto';
 import {
@@ -82,18 +83,37 @@ export class RfiService {
   }
 
   async getOrThrow(id: number): Promise<Rfi> {
-    const rfi = await this.rfiModel.findByPk(id, { include: [this.teamModel] });
+    const rfi = await this.rfiModel.findByPk(id, {
+      include: [this.teamModel, { model: Project, attributes: ['id', 'name'] }],
+    });
     if (!rfi) throw new NotFoundException(`RFI ${id} not found`);
     return rfi;
   }
 
-  async listForProject(projectId: number, status?: RfiStatus): Promise<Rfi[]> {
-    const where: any = { projectId };
+  async listForProject(projectId: string, status?: RfiStatus): Promise<any[]> {
+    return this.list({ projectId, status });
+  }
+
+  /** All RFIs, optionally for one project (UUID) and/or status, with team + project name. */
+  async list({ projectId, status }: { projectId?: string; status?: RfiStatus } = {}): Promise<any[]> {
+    const where: any = {};
+    if (projectId) where.projectId = projectId;
     if (status) where.status = status;
-    return this.rfiModel.findAll({
+    const rows = await this.rfiModel.findAll({
       where,
       order: [['raisedAt', 'DESC']],
-      include: [this.teamModel],
+      include: [{ model: Project, attributes: ['id', 'name'] }],
+    });
+    // Team names attached in JS: teams.id is CHAR(36) vs INT routed_to_team_id (see qc-sign-off.service).
+    const plain = rows.map((r) => r.get({ plain: true }) as any);
+    const ids = [...new Set(plain.map((r) => String(r.routedToTeamId)))];
+    const teams = ids.length
+      ? await this.teamModel.findAll({ where: { id: ids }, attributes: ['id', 'name'] })
+      : [];
+    const byId = new Map(teams.map((t) => [String(t.get('id')), t.get({ plain: true })]));
+    return plain.map((r) => {
+      const team = byId.get(String(r.routedToTeamId)) ?? null;
+      return { ...r, team, routedToTeam: team, routedToTeamName: (team as any)?.name ?? null };
     });
   }
 

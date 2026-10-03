@@ -1,3 +1,4 @@
+import { Navigate } from "react-router-dom";
 import AppLayout from "@/layouts/AppLayout";
 
 import AutomationOverview from "@/pages/automation/AutomationOverview";
@@ -5,7 +6,6 @@ import AutomationRules from "@/pages/automation/AutomationRules";
 import AutomationRuleBuilder from "@/pages/automation/AutomationRuleBuilder";
 import AutomationRuns from "@/pages/automation/AutomationRuns";
 import AutomationRunDetails from "@/pages/automation/AutomationRunDetails";
-import AutomationNotifications from "../../pages/automation/AutomationNotification";
 import AutomationEscalations from "@/pages/automation/AutomationEscalations";
 import AutomationAudit from "@/pages/automation/AutomationAudit";
 
@@ -71,10 +71,8 @@ export const automationRoutes = [
       // NOTIFICATION PREFERENCES
       // ============================================================
 
-      {
-        path: "notifications",
-        element: <AutomationNotifications />,
-      },
+      // Notification preferences were mock-only (email/Cliq delivery doesn't exist); rules notify in-app.
+      { path: "notifications", element: <Navigate to="/automation/rules" replace /> },
 
       // ============================================================
       // ESCALATION RULES

@@ -9,7 +9,7 @@ export function ProjectDocuments() {
   const [selected, setSelected] = useState("");
   const [pkg, setPkg] = useState(null);
   useEffect(() => {
-    api.get("/projects").then((r) => setProjects(r.data || []));
+    api.get("/v1/projects").then((r) => setProjects(r.data || []));
   }, []);
   useEffect(() => {
     if (!selected) return;

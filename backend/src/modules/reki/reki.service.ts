@@ -94,13 +94,6 @@ export class SiteRecceService {
           number_of_floors: dto.number_of_floors ?? null,
 
           site_type: dto.site_type ?? null,
-          project_type: dto.project_type ?? null,
-          site_type_other: dto.site_type_other ?? null,
-          site_condition: dto.site_condition ?? null,
-          site_condition_category: dto.site_condition_category ?? null,
-          site_condition_other: dto.site_condition_other ?? null,
-          floor_layouts: dto.floor_layouts ?? null,
-          site_restrictions: dto.site_restrictions ?? null,
 
           lift_available: dto.lift_available ?? null,
 
@@ -454,7 +447,6 @@ export class SiteRecceService {
         {
           model: Project,
           as: 'project',
-          include: [{ association: 'client' }, { association: 'project_type' }],
         },
 
         // ------------------------------------------------------
@@ -526,7 +518,6 @@ export class SiteRecceService {
         {
           model: Project,
           as: 'project',
-          include: [{ association: 'client' }, { association: 'project_type' }],
         },
 
         // ------------------------------------------------------
@@ -606,7 +597,6 @@ export class SiteRecceService {
         {
           model: Project,
           as: 'project',
-          include: [{ association: 'client' }, { association: 'project_type' }],
         },
 
         // ------------------------------------------------------
@@ -705,14 +695,6 @@ export class SiteRecceService {
         'number_of_rooms',
         'number_of_floors',
         'site_type',
-        'project_type',
-        'site_type_other',
-        'site_condition',
-        'site_condition_category',
-        'site_condition_other',
-        'floor_layouts',
-        'site_restrictions',
-
         'lift_available',
         'lift_size',
         'staircase_width',

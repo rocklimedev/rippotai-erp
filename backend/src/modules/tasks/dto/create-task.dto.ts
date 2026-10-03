@@ -19,6 +19,9 @@ export enum TaskPriority {
 
 export enum TaskStatus {
   TODO = 'todo',
+  IN_PROGRESS = 'in_progress',
+  REVIEW = 'review',
+  BLOCKED = 'blocked',
   COMPLETED = 'completed',
 }
 
@@ -28,7 +31,7 @@ export class CreateTaskDto {
   title: string;
 
   @IsOptional()
-  @IsUUID('4')
+  @IsUUID()
   project_id?: string | null;
 
   @IsOptional()
@@ -48,4 +51,16 @@ export class CreateTaskDto {
   @IsNumber()
   @Min(0)
   workload_estimate_hours?: number;
+
+  @IsOptional()
+  @IsString()
+  description?: string | null;
+
+  @IsOptional()
+  @IsUUID()
+  assigned_to?: string | null;
+
+  @IsOptional()
+  @IsDateString()
+  start_date?: string | null;
 }
