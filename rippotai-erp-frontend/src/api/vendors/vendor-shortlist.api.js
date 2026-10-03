@@ -2,6 +2,25 @@ import { baseApi } from "../../store/baseApi";
 
 export const vendorShortlistApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    getShortlistPackages: builder.query({
+      query: () => '/shortlist-packages',
+      providesTags: ['ShortlistPackages'],
+    }),
+    createShortlistPackage: builder.mutation({
+      query: (body) => ({ url: '/shortlist-packages', method: 'POST', body }),
+      invalidatesTags: ['ShortlistPackages'],
+    }),
+    previewShortlistPackage: builder.mutation({
+      query: ({ id, ...body }) => ({ url: `/shortlist-packages/${id}/preview`, method: 'POST', body }),
+    }),
+    applyShortlistPackage: builder.mutation({
+      query: ({ id, ...body }) => ({ url: `/shortlist-packages/${id}/apply`, method: 'POST', body }),
+      invalidatesTags: ['Shortlists', 'ShortlistEntries', 'ShortlistGrid'],
+    }),
+    deleteShortlistPackage: builder.mutation({
+      query: (id) => ({ url: `/shortlist-packages/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['ShortlistPackages'],
+    }),
     // ============================================================
     // PROJECT SHORTLISTS
     // ============================================================
@@ -212,6 +231,26 @@ export const vendorShortlistApi = baseApi.injectEndpoints({
         body,
       }),
 
+      async onQueryStarted(_args, { dispatch, queryFulfilled }) {
+        try {
+          const { data: saved } = await queryFulfilled;
+          dispatch(vendorShortlistApi.util.updateQueryData(
+            "getProjectShortlistGrid", saved.project_shortlist_id, (grid) => {
+              const block = grid.grid?.find(item => item.trade === saved.trade);
+              const row = block?.rows?.find(item => item.working_type === saved.working_type);
+              if (!row) return;
+              for (const field of Object.keys(row)) {
+                if (field in saved) row[field] = saved[field];
+              }
+              row.entry_id = saved.id;
+              row.name_of_vendor = saved.name_of_vendor?.trim() || saved.vendor?.name || saved.material?.name || null;
+            },
+          ));
+        } catch {
+          // Failed mutations leave the last confirmed grid state intact.
+        }
+      },
+
       invalidatesTags: (result, error, { id }) => [
         "ShortlistEntries",
         { type: "ShortlistEntries", id },
@@ -255,6 +294,11 @@ export const vendorShortlistApi = baseApi.injectEndpoints({
 // ============================================================
 
 export const {
+  useGetShortlistPackagesQuery,
+  useCreateShortlistPackageMutation,
+  usePreviewShortlistPackageMutation,
+  useApplyShortlistPackageMutation,
+  useDeleteShortlistPackageMutation,
   // Project Shortlists
   useGetProjectShortlistsQuery,
   useGetProjectShortlistByIdQuery,

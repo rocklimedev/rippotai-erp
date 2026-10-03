@@ -13,8 +13,10 @@ import {
   Min,
   Max,
   IsNotEmpty,
+  IsInt,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
+import { WorkHead } from '@/common/enums/quality-checklist.enums';
 import { ChecklistStatus } from '../models/quality-checklist.model';
 import {
   ItemStatus,
@@ -25,7 +27,8 @@ import {
  * DTO for creating a new Quality Checklist Item
  */
 export class CreateQualityChecklistItemDto {
-  @IsNumber()
+  @IsInt()
+  @Min(1)
   @IsNotEmpty()
   serial_number: number;
 
@@ -76,7 +79,7 @@ export class UpdateQualityChecklistItemDto {
 
   @IsBoolean()
   @IsOptional()
-  is_accepted?: boolean;
+  is_accepted?: boolean | null;
 
   @IsString()
   @IsOptional()
@@ -86,7 +89,7 @@ export class UpdateQualityChecklistItemDto {
   @IsDate()
   @Type(() => Date)
   @IsOptional()
-  inspection_date?: Date;
+  inspection_date?: Date | null;
 
   @IsUUID()
   @IsOptional()
@@ -97,6 +100,9 @@ export class UpdateQualityChecklistItemDto {
  * DTO for creating a new Quality Checklist
  */
 export class CreateQualityChecklistDto {
+  @IsOptional()
+  @IsEnum(WorkHead)
+  work_head?: WorkHead;
   @IsUUID()
   @IsNotEmpty()
   project_id: string;
@@ -145,6 +151,12 @@ export class UpdateQualityChecklistDto {
   @Max(100)
   @IsOptional()
   completion_percentage?: number;
+}
+
+export class CreateQualityChecklistFromTemplateDto {
+  @IsUUID() project_id: string;
+  @IsEnum(WorkHead) work_head: WorkHead;
+  @IsOptional() @IsString() @MaxLength(2000) description?: string;
 }
 
 /**
@@ -245,12 +257,14 @@ export class FilterQualityChecklistDto {
   @IsOptional()
   search?: string;
 
-  @IsNumber()
+  @Type(() => Number)
+  @IsInt()
   @IsOptional()
   @Min(1)
   page?: number = 1;
 
-  @IsNumber()
+  @Type(() => Number)
+  @IsInt()
   @IsOptional()
   @Min(1)
   @Max(100)
@@ -260,7 +274,7 @@ export class FilterQualityChecklistDto {
   @IsOptional()
   sortBy?: string = 'created_at';
 
-  @IsString()
+  @IsEnum({ ASC: 'ASC', DESC: 'DESC' })
   @IsOptional()
   sortOrder?: 'ASC' | 'DESC' = 'DESC';
 }
@@ -290,18 +304,20 @@ export class FilterChecklistItemDto {
   })
   is_accepted?: boolean;
 
-  @IsNumber()
+  @Type(() => Number)
+  @IsInt()
   @IsOptional()
   @Min(1)
   page?: number = 1;
 
-  @IsNumber()
+  @Type(() => Number)
+  @IsInt()
   @IsOptional()
   @Min(1)
   @Max(100)
   limit?: number = 10;
 
-  @IsString()
+  @IsEnum({ ASC: 'ASC', DESC: 'DESC' })
   @IsOptional()
   sortBy?: string = 'serial_number';
 

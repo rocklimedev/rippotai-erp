@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import ListShortlist from "./ListShortlist";
 import ProjectVendorShortlistView from "./ProjectVendorShortlistView";
+import ShortlistPackages from "./ShortlistPackages";
 
 import { useGetProjectsQuery } from "../../api/projects/project.api";
 
@@ -30,7 +31,14 @@ import { useGetProjectsQuery } from "../../api/projects/project.api";
  *   - initialShortlistId?: string
  *   - readOnly?: boolean
  */
-export default function VendorShortlistWorkspace({
+export default function VendorShortlistWorkspace(props) {
+  const { projectId } = useParams();
+  const [searchParams] = useSearchParams();
+  const selectedProjectId = projectId || searchParams.get("projectId") || "";
+  return <ProjectShortlistWorkspace key={`${selectedProjectId}:${props.initialShortlistId || ''}`} {...props} />;
+}
+
+function ProjectShortlistWorkspace({
   projectName,
   initialShortlistId = null,
   readOnly = false,
@@ -124,16 +132,6 @@ export default function VendorShortlistWorkspace({
       ""
     );
   }, [selectedProject, projectName]);
-
-  /**
-   * Whenever project changes, close the currently opened shortlist.
-   *
-   * This prevents a shortlist from project A remaining open
-   * after switching to project B.
-   */
-  useEffect(() => {
-    setActiveShortlist(null);
-  }, [selectedProjectId]);
 
   /**
    * Select another project.
@@ -254,6 +252,7 @@ export default function VendorShortlistWorkspace({
           </div>
         </div>
 
+        <ShortlistPackages key={selectedProjectId} projectId={selectedProjectId} readOnly={readOnly} />
         {/* =====================================================
             SHORTLIST WORKSPACE
         ====================================================== */}

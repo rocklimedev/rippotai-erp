@@ -7,6 +7,11 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { CreateShortlistEntryDto } from './create-shortlist-entry.dto';
+import { OmitType } from '@nestjs/mapped-types';
+
+export class BulkShortlistEntryDto extends OmitType(CreateShortlistEntryDto, [
+  'project_shortlist_id',
+] as const) {}
 
 /**
  * Bulk create entries for a project shortlist.
@@ -20,6 +25,6 @@ export class BulkCreateShortlistEntriesDto {
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })
-  @Type(() => CreateShortlistEntryDto)
-  entries: CreateShortlistEntryDto[];
+  @Type(() => BulkShortlistEntryDto)
+  entries: BulkShortlistEntryDto[];
 }

@@ -16,6 +16,7 @@ import { Rfi } from './models/rfi.model';
 // Quality Checklist (detailed Before/During/After per work head)
 import { QualityChecklist } from './models/quality-checklist.model';
 import { QualityChecklistItem } from './models/quality-checklist-item.model';
+import { QualityChecklistTemplate } from './models/quality-checklist-template.model';
 
 // Architect visit schedule + simple quality heads (from the two Excel workbooks)
 import { ArchitectVisitStage } from './models/architect-visit-stage.model';
@@ -93,6 +94,7 @@ import { SnagController } from './snag.controller';
       // Detailed quality checklists (phased checkpoints)
       QualityChecklist,
       QualityChecklistItem,
+      QualityChecklistTemplate,
 
       // Architect schedule + simple quality heads + snags
       ArchitectVisitStage,

@@ -10,8 +10,10 @@ import {
   Put,
   Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { QualityService } from './quality.service';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import {
   CreateQualityItemDto,
   QueryQualityCheckDto,
@@ -19,8 +21,8 @@ import {
   UpsertQualityCheckDto,
 } from './dto/quality.dto';
 
-// TODO: add your AuthGuard / PermissionsGuard (admin-only for master writes)
 @Controller('architect/quality')
+@UseGuards(JwtAuthGuard)
 export class QualityController {
   constructor(private readonly service: QualityService) {}
 

@@ -23,16 +23,6 @@ import {
   ShortlistEntryStatus,
 } from '@/common/enums/shortlist.enums';
 
-/**
- * ============================================================
- * SHORTLIST ENTRY CREATION ATTRIBUTES
- * ============================================================
- *
- * Fields that can be supplied when creating a ShortlistEntry.
- *
- * Sequelize-managed fields and associations are intentionally
- * excluded from this type.
- */
 export interface ShortlistEntryCreationAttributes {
   id?: string;
 
@@ -73,13 +63,6 @@ export interface ShortlistEntryCreationAttributes {
   updated_at?: Date;
 }
 
-/**
- * ============================================================
- * SHORTLIST ENTRY
- * ============================================================
- *
- * One row in the Excel-like shortlist grid.
- */
 @Table({
   tableName: 'shortlist_entries',
   timestamps: true,
@@ -90,6 +73,10 @@ export class ShortlistEntry extends Model<
   ShortlistEntry,
   ShortlistEntryCreationAttributes
 > {
+  // ============================================================
+  // ID
+  // ============================================================
+
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column({
@@ -98,11 +85,14 @@ export class ShortlistEntry extends Model<
   declare id: string;
 
   // ============================================================
-  // PROJECT SHORTLIST
+  // SHORTLIST
   // ============================================================
 
   @ForeignKey(() => ProjectShortlist)
-  @Index
+  @Index({
+    name: 'uq_shortlist_trade_working_type',
+    unique: true,
+  })
   @Column({
     type: DataType.CHAR(36),
     allowNull: false,
@@ -119,7 +109,10 @@ export class ShortlistEntry extends Model<
   // TRADE
   // ============================================================
 
-  @Index
+  @Index({
+    name: 'uq_shortlist_trade_working_type',
+    unique: true,
+  })
   @Column({
     type: DataType.ENUM(...Object.values(Trade)),
     allowNull: false,
@@ -130,7 +123,10 @@ export class ShortlistEntry extends Model<
   // WORKING TYPE
   // ============================================================
 
-  @Index
+  @Index({
+    name: 'uq_shortlist_trade_working_type',
+    unique: true,
+  })
   @Column({
     type: DataType.ENUM(...Object.values(WorkingType)),
     allowNull: false,
@@ -138,7 +134,7 @@ export class ShortlistEntry extends Model<
   declare working_type: WorkingType;
 
   // ============================================================
-  // SORT ORDER
+  // SORT
   // ============================================================
 
   @Column({
@@ -164,7 +160,7 @@ export class ShortlistEntry extends Model<
     foreignKey: 'vendor_id',
     as: 'vendor',
   })
-  declare vendor: Vendor;
+  declare vendor: Vendor | null;
 
   // ============================================================
   // MATERIAL
@@ -182,7 +178,7 @@ export class ShortlistEntry extends Model<
     foreignKey: 'material_id',
     as: 'material',
   })
-  declare material: MaterialMaster;
+  declare material: MaterialMaster | null;
 
   // ============================================================
   // DISPLAY NAME
@@ -195,7 +191,7 @@ export class ShortlistEntry extends Model<
   declare name_of_vendor: string | null;
 
   // ============================================================
-  // COMMERCIAL VALUES
+  // COMMERCIAL
   // ============================================================
 
   @Column({
@@ -226,7 +222,7 @@ export class ShortlistEntry extends Model<
   declare quotation_id: string | null;
 
   // ============================================================
-  // WORKFLOW
+  // STATUS
   // ============================================================
 
   @Column({
@@ -236,11 +232,19 @@ export class ShortlistEntry extends Model<
   })
   declare status: ShortlistEntryStatus;
 
+  // ============================================================
+  // NOTES
+  // ============================================================
+
   @Column({
     type: DataType.TEXT,
     allowNull: true,
   })
   declare notes: string | null;
+
+  // ============================================================
+  // SELECTED
+  // ============================================================
 
   @Column({
     type: DataType.BOOLEAN,
@@ -271,13 +275,13 @@ export class ShortlistEntry extends Model<
     foreignKey: 'created_by',
     as: 'creator',
   })
-  declare creator: User;
+  declare creator: User | null;
 
   @BelongsTo(() => User, {
     foreignKey: 'updated_by',
     as: 'updater',
   })
-  declare updater: User;
+  declare updater: User | null;
 
   // ============================================================
   // TIMESTAMPS

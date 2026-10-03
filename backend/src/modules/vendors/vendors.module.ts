@@ -31,6 +31,9 @@ import { ShortlistEntryController } from './shortlist-entry.controller';
 import { ProjectShortlistService } from './project-shortlist.service';
 import { ShortlistEntryService } from './shortlist-entry.service';
 import { ShortlistExportService } from './shortlist-export.service';
+import { ShortlistPackage } from './models/shortlist-package.model';
+import { ShortlistPackageService } from './shortlist-package.service';
+import { ShortlistPackageController } from './shortlist-package.controller';
 
 @Module({
   imports: [
@@ -42,6 +45,7 @@ import { ShortlistExportService } from './shortlist-export.service';
       Quotation,
       ProjectShortlist,
       ShortlistEntry,
+      ShortlistPackage,
     ]),
 
     ActivityLogsModule,
@@ -56,6 +60,7 @@ import { ShortlistExportService } from './shortlist-export.service';
     VendorBusinessTypesController,
     ProjectShortlistController,
     ShortlistEntryController,
+    ShortlistPackageController,
   ],
 
   providers: [
@@ -66,6 +71,7 @@ import { ShortlistExportService } from './shortlist-export.service';
     ProjectShortlistService,
     ShortlistEntryService,
     ShortlistExportService,
+    ShortlistPackageService,
   ],
 
   exports: [

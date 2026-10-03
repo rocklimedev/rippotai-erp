@@ -71,6 +71,8 @@ export class QualityService {
       return {
         item_id: item.id,
         name: item.name,
+        work_head: item.work_head,
+        template_serial_number: item.template_serial_number,
         sort_order: item.sort_order,
         check_id: r?.id ?? null,
         status: r?.status ?? QualityCheckStatus.PENDING,

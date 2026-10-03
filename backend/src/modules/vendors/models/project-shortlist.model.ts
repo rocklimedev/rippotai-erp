@@ -50,6 +50,10 @@ export class ProjectShortlist extends Model<
   ProjectShortlist,
   ProjectShortlistCreationAttributes
 > {
+  // ============================================================
+  // ID
+  // ============================================================
+
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column({
@@ -57,8 +61,15 @@ export class ProjectShortlist extends Model<
   })
   declare id: string;
 
+  // ============================================================
+  // PROJECT
+  // ============================================================
+
   @ForeignKey(() => Project)
-  @Index
+  @Index({
+    name: 'uq_project_shortlist_type',
+    unique: true,
+  })
   @Column({
     type: DataType.CHAR(36),
     allowNull: false,
@@ -71,12 +82,23 @@ export class ProjectShortlist extends Model<
   })
   declare project: Project;
 
-  @Index
+  // ============================================================
+  // SHORTLIST TYPE
+  // ============================================================
+
+  @Index({
+    name: 'uq_project_shortlist_type',
+    unique: true,
+  })
   @Column({
     type: DataType.ENUM(...Object.values(ShortlistType)),
     allowNull: false,
   })
   declare shortlist_type: ShortlistType;
+
+  // ============================================================
+  // TITLE
+  // ============================================================
 
   @Column({
     type: DataType.STRING(255),
@@ -84,11 +106,19 @@ export class ProjectShortlist extends Model<
   })
   declare title: string | null;
 
+  // ============================================================
+  // NOTES
+  // ============================================================
+
   @Column({
     type: DataType.TEXT,
     allowNull: true,
   })
   declare notes: string | null;
+
+  // ============================================================
+  // LOCK
+  // ============================================================
 
   @Column({
     type: DataType.BOOLEAN,
@@ -96,6 +126,10 @@ export class ProjectShortlist extends Model<
     defaultValue: false,
   })
   declare is_locked: boolean;
+
+  // ============================================================
+  // AUDIT
+  // ============================================================
 
   @ForeignKey(() => User)
   @Column({
@@ -123,11 +157,21 @@ export class ProjectShortlist extends Model<
   })
   declare updater: User;
 
+  // ============================================================
+  // ENTRIES
+  // ============================================================
+
   @HasMany(() => ShortlistEntry, {
     foreignKey: 'project_shortlist_id',
     as: 'entries',
+    onDelete: 'CASCADE',
+    hooks: true,
   })
   declare entries: ShortlistEntry[];
+
+  // ============================================================
+  // TIMESTAMPS
+  // ============================================================
 
   @CreatedAt
   @Column({

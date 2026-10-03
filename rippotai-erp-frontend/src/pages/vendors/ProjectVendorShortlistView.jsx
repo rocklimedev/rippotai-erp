@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   useGetProjectShortlistGridQuery,
@@ -10,6 +10,7 @@ import {
 } from "../../api/vendors/vendor-shortlist.api";
 
 import { useGetVendorsQuery } from "../../api/vendors/vendor.api";
+import { useGetMaterialsQuery } from "../../api/procuerment/material-master.api";
 
 /**
  * ============================================================
@@ -85,12 +86,6 @@ function EditableMoneyCell({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value ?? "");
   const committingRef = useRef(false);
-
-  useEffect(() => {
-    if (!editing) {
-      setDraft(value ?? "");
-    }
-  }, [value, editing]);
 
   const startEdit = useCallback(() => {
     if (disabled) return;
@@ -186,10 +181,10 @@ function EditableMoneyCell({
 
 function VendorSelectCell({
   value,
-  vendorId,
   onSave,
   disabled = false,
   placeholder = "Select vendor",
+  isMaterial = false,
 }) {
   const [editing, setEditing] = useState(false);
   const [search, setSearch] = useState("");
@@ -202,11 +197,16 @@ function VendorSelectCell({
       q: search.trim() || undefined,
     },
     {
-      skip: !editing,
+      skip: !editing || isMaterial,
     },
   );
 
-  const vendors = normalizeVendors(vendorsResponse);
+  const { data: materialsResponse, isFetching: isSearchingMaterials } = useGetMaterialsQuery(
+    { search: search.trim() || undefined, isActive: true },
+    { skip: !editing || !isMaterial },
+  );
+  const vendors = normalizeVendors(isMaterial ? materialsResponse : vendorsResponse);
+  const searching = isMaterial ? isSearchingMaterials : isSearching;
 
   useEffect(() => {
     if (editing) {
@@ -246,19 +246,21 @@ function VendorSelectCell({
       setSaving(true);
 
       try {
-        await onSave({
-          vendor_id: id,
+        const saved = await onSave({
+          ...(isMaterial ? { material_id: id } : { vendor_id: id }),
           name_of_vendor: name,
           vendor,
         });
 
-        setEditing(false);
-        setSearch("");
+        if (saved) {
+          setEditing(false);
+          setSearch("");
+        }
       } finally {
         setSaving(false);
       }
     },
-    [onSave],
+    [onSave, isMaterial],
   );
 
   if (editing) {
@@ -276,7 +278,7 @@ function VendorSelectCell({
               close();
             }
           }}
-          placeholder="Search vendors..."
+          placeholder={isMaterial ? "Search materials..." : "Search vendors..."}
           autoComplete="off"
         />
 
@@ -288,13 +290,13 @@ function VendorSelectCell({
             "max-h-64 overflow-y-auto",
           ].join(" ")}
         >
-          {isSearching ? (
+          {searching ? (
             <div className="px-3 py-3 text-sm text-[var(--muted)]">
-              Searching vendors…
+              Searching…
             </div>
           ) : vendors.length === 0 ? (
             <div className="px-3 py-3 text-sm text-[var(--muted)]">
-              No vendors found.
+              No matches found.
             </div>
           ) : (
             vendors.map((vendor) => {
@@ -404,6 +406,7 @@ export default function ProjectVendorShortlistView({
     useUpdateShortlistEntryMutation();
 
   const [createEntry] = useCreateShortlistEntryMutation();
+  const [saveMessage, setSaveMessage] = useState("");
 
   const [selectEntry] = useSelectShortlistEntryMutation();
 
@@ -458,6 +461,7 @@ export default function ProjectVendorShortlistView({
   const handleUpdateField = useCallback(
     async (blockTrade, row, patch) => {
       if (isLocked) return;
+      setSaveMessage("");
 
       let entryId = row.entry_id;
 
@@ -467,12 +471,14 @@ export default function ProjectVendorShortlistView({
       }
 
       try {
-        await updateEntry({
+        const saved = await updateEntry({
           id: entryId,
           ...patch,
         }).unwrap();
 
+        setSaveMessage("Changes saved.");
         await refetch();
+        return saved;
       } catch (err) {
         console.error("Update entry failed", err);
         alert(
@@ -494,12 +500,14 @@ export default function ProjectVendorShortlistView({
     async (blockTrade, row, selection) => {
       if (isLocked) return;
 
-      await handleUpdateField(blockTrade, row, {
-        vendor_id: selection.vendor_id,
+      return handleUpdateField(blockTrade, row, {
+        ...(gridData?.shortlist_type === "MATERIAL"
+          ? { material_id: selection.material_id }
+          : { vendor_id: selection.vendor_id }),
         name_of_vendor: selection.name_of_vendor,
       });
     },
-    [handleUpdateField, isLocked],
+    [handleUpdateField, isLocked, gridData?.shortlist_type],
   );
 
   /**
@@ -747,7 +755,7 @@ export default function ProjectVendorShortlistView({
                       <td className="px-1 py-1 min-w-0">
                         <VendorSelectCell
                           value={row.name_of_vendor}
-                          vendorId={row.vendor_id}
+                          isMaterial={gridData?.shortlist_type === "MATERIAL"}
                           disabled={!canEditRow}
                           placeholder={`Select ${typeLabel.toLowerCase()}`}
                           onSave={(selection) =>
@@ -838,8 +846,10 @@ export default function ProjectVendorShortlistView({
       {/* ======================================================
           SAVE INDICATOR
       ======================================================= */}
-      {isUpdating && (
-        <p className="text-sm text-[var(--muted)] text-right">Saving…</p>
+      {(isUpdating || saveMessage) && (
+        <p role="status" className="text-sm text-[var(--muted)] text-right">
+          {isUpdating ? "Saving…" : saveMessage}
+        </p>
       )}
     </div>
   );

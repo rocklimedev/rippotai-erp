@@ -1,6 +1,10 @@
 import { WorkHead, CheckpointPhase } from '@/common/enums/quality-checklist.enums';
 
 /**
+ * Legacy edited checkpoint catalog. The quality checklist API now reads the
+ * source-exact quality_checklist_templates table seeded by
+ * migrations/20261003_quality_checklist_template.sql.
+ *
  * Source: QUALITY CHECK LIST.xlsx — detailed sheets per work head.
  *
  * Fixes applied vs original workbook:

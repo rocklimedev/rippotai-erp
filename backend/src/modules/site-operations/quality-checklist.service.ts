@@ -4,7 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, Sequelize } from 'sequelize';
+import { Op } from 'sequelize';
+import { Sequelize as Database } from 'sequelize-typescript';
+import { QualityChecklistTemplate } from './models/quality-checklist-template.model';
+import { Project } from '../projects/models/projects.model';
+import { QualityService } from './quality.service';
 import {
   QualityChecklist,
   ChecklistStatus,
@@ -25,10 +29,7 @@ import {
   FilterChecklistItemDto,
   BulkUpdateChecklistItemsDto,
 } from './dto/quality-checklist.dto';
-import { WorkHead, WorkHeadLabels } from '@/common/enums/quality-checklist.enums';
-import {
-  WORK_HEAD_CHECKPOINTS,
-} from './constants/work-head-checkpoints.constant';
+import { WorkHead } from '@/common/enums/quality-checklist.enums';
 
 @Injectable()
 export class QualityChecklistService {
@@ -37,6 +38,10 @@ export class QualityChecklistService {
     private readonly checklistModel: typeof QualityChecklist,
     @InjectModel(QualityChecklistItem)
     private readonly checklistItemModel: typeof QualityChecklistItem,
+    @InjectModel(QualityChecklistTemplate)
+    private readonly templateModel: typeof QualityChecklistTemplate,
+    private readonly database: Database,
+    private readonly qualityService: QualityService,
   ) {}
 
   /**
@@ -46,14 +51,23 @@ export class QualityChecklistService {
     createChecklistDto: CreateQualityChecklistDto,
     userId: string,
   ): Promise<QualityChecklist> {
-    try {
+    let createdId = '';
+    await this.database.transaction(async (transaction) => {
       const { checklist_items, ...checklistData } = createChecklistDto;
 
-      const checklist = await this.checklistModel.create({
-        ...checklistData,
-        created_by: userId,
-        updated_by: userId,
-      });
+      if (
+        !(await Project.findByPk(checklistData.project_id, { transaction }))
+      ) {
+        throw new NotFoundException('Project not found');
+      }
+      const checklist = await this.checklistModel.create(
+        {
+          ...checklistData,
+          created_by: userId,
+          updated_by: userId,
+        },
+        { transaction },
+      );
 
       if (checklist_items && checklist_items.length > 0) {
         const items = checklist_items.map((item) => ({
@@ -63,15 +77,11 @@ export class QualityChecklistService {
           updated_by: userId,
         }));
 
-        await this.checklistItemModel.bulkCreate(items);
+        await this.checklistItemModel.bulkCreate(items, { transaction });
       }
-
-      return this.getChecklistById(checklist.id);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-
-      throw new BadRequestException(`Failed to create checklist: ${message}`);
-    }
+      createdId = checklist.id;
+    });
+    return this.getChecklistById(createdId);
   }
   /**
    * Get checklist by ID with all items
@@ -82,6 +92,7 @@ export class QualityChecklistService {
         {
           model: QualityChecklistItem,
           as: 'checklist_items',
+          separate: true,
           order: [['serial_number', 'ASC']],
         },
       ],
@@ -124,13 +135,22 @@ export class QualityChecklistService {
         {
           model: QualityChecklistItem,
           as: 'checklist_items',
+          separate: true,
           order: [['serial_number', 'ASC']],
         },
       ],
-      order: [[filter.sortBy || 'created_at', filter.sortOrder || 'DESC']],
+      order: [
+        [
+          ['created_at', 'checklist_name', 'status'].includes(
+            filter.sortBy ?? '',
+          )
+            ? filter.sortBy!
+            : 'created_at',
+          filter.sortOrder || 'DESC',
+        ],
+      ],
       limit,
       offset,
-      subQuery: false,
     });
 
     return {
@@ -151,6 +171,15 @@ export class QualityChecklistService {
     userId: string,
   ): Promise<QualityChecklist> {
     const checklist = await this.getChecklistById(id);
+    if (
+      updateChecklistDto.status === ChecklistStatus.PASSED &&
+      (!checklist.checklist_items.length ||
+        checklist.checklist_items.some((item) => item.is_accepted !== true))
+    ) {
+      throw new BadRequestException(
+        'Cannot pass a checklist with pending items',
+      );
+    }
 
     await checklist.update(
       {
@@ -179,7 +208,7 @@ export class QualityChecklistService {
     createItemDto: CreateQualityChecklistItemDto,
     userId: string,
   ): Promise<QualityChecklistItem> {
-    const checklist = await this.getChecklistById(checklistId);
+    await this.getChecklistById(checklistId);
 
     const item = await this.checklistItemModel.create({
       ...createItemDto,
@@ -208,9 +237,11 @@ export class QualityChecklistService {
       throw new NotFoundException(`Checklist item with ID ${itemId} not found`);
     }
 
+    await this.getChecklistById(item.checklist_id);
+
     await item.update(
       {
-        ...updateItemDto,
+        ...this.normalizeResult(updateItemDto),
         updated_by: userId,
       },
       { returning: true },
@@ -229,43 +260,43 @@ export class QualityChecklistService {
     bulkUpdateDto: BulkUpdateChecklistItemsDto,
     userId: string,
   ): Promise<QualityChecklistItem[]> {
-    const items = bulkUpdateDto.items;
-    const checklistIds = new Set<string>();
-
-    // Update each item
-    const updatedItems = await Promise.all(
-      items.map(async (item) => {
-        const checklistItem = await this.checklistItemModel.findByPk(item.id);
-        if (!checklistItem) {
-          throw new NotFoundException(
-            `Checklist item with ID ${item.id} not found`,
-          );
-        }
-
-        checklistIds.add(checklistItem.checklist_id);
-
-        await checklistItem.update(
-          {
-            status: item.status,
-            is_accepted: item.is_accepted,
-            remarks: item.remarks,
-            inspection_date: item.inspection_date,
-            inspected_by: item.inspected_by,
-            updated_by: userId,
-          },
-          { returning: true },
-        );
-
-        return checklistItem;
-      }),
-    );
-
-    // Recalculate completion for all affected checklists
-    for (const checklistId of checklistIds) {
-      await this.updateChecklistCompletion(checklistId);
+    if (
+      new Set(bulkUpdateDto.items.map((item) => item.id)).size !==
+      bulkUpdateDto.items.length
+    ) {
+      throw new BadRequestException('Duplicate item IDs in bulk update');
     }
-
-    return updatedItems;
+    const updated = await this.database.transaction(async (transaction) => {
+      const rows: QualityChecklistItem[] = [];
+      // Validate every target before changing any result.
+      for (const patch of bulkUpdateDto.items) {
+        const row = await this.checklistItemModel.findByPk(patch.id, {
+          transaction,
+          lock: transaction.LOCK.UPDATE,
+        });
+        if (!row)
+          throw new NotFoundException(`Checklist item ${patch.id} not found`);
+        if (
+          !(await this.checklistModel.findByPk(row.checklist_id, {
+            transaction,
+          }))
+        )
+          throw new NotFoundException('Checklist not found');
+        this.normalizeResult(patch);
+        rows.push(row);
+      }
+      for (let index = 0; index < rows.length; index++) {
+        const { id, ...patch } = bulkUpdateDto.items[index];
+        await rows[index].update(
+          { ...this.normalizeResult(patch), updated_by: userId },
+          { transaction },
+        );
+      }
+      return rows;
+    });
+    for (const id of new Set(updated.map((row) => row.checklist_id)))
+      await this.updateChecklistCompletion(id);
+    return updated;
   }
 
   /**
@@ -298,7 +329,14 @@ export class QualityChecklistService {
 
     const { count, rows } = await this.checklistItemModel.findAndCountAll({
       where,
-      order: [[filter.sortBy || 'serial_number', filter.sortOrder || 'ASC']],
+      order: [
+        [
+          ['serial_number', 'status', 'phase'].includes(filter.sortBy ?? '')
+            ? filter.sortBy!
+            : 'serial_number',
+          filter.sortOrder || 'ASC',
+        ],
+      ],
       limit,
       offset,
     });
@@ -328,23 +366,27 @@ export class QualityChecklistService {
    */
   async updateChecklistCompletion(checklistId: string): Promise<void> {
     const summary = await this.getChecklistSummary(checklistId);
+    const parent = await this.checklistModel.findByPk(checklistId);
 
-    const completionPercentage =
-      summary.total_items > 0
-        ? (summary.accepted_items / summary.total_items) * 100
-        : 0;
-
-    // Update status based on completion
+    // Inspected rows drive completion; acceptance remains a separate outcome.
     let status = ChecklistStatus.PENDING;
-    if (completionPercentage > 0 && completionPercentage < 100) {
+    if (summary.completion_percentage > 0 || summary.in_progress_items > 0) {
       status = ChecklistStatus.IN_PROGRESS;
-    } else if (completionPercentage === 100) {
+    }
+    if (summary.completion_percentage === 100) {
       status = ChecklistStatus.COMPLETED;
+    }
+    if (
+      parent?.status === ChecklistStatus.PASSED &&
+      summary.total_items > 0 &&
+      summary.accepted_items === summary.total_items
+    ) {
+      status = ChecklistStatus.PASSED;
     }
 
     await this.checklistModel.update(
       {
-        completion_percentage: Math.round(completionPercentage * 100) / 100,
+        completion_percentage: summary.completion_percentage,
         status,
       },
       { where: { id: checklistId } },
@@ -355,64 +397,37 @@ export class QualityChecklistService {
    * Get checklist summary/statistics
    */
   async getChecklistSummary(checklistId: string): Promise<ChecklistSummaryDto> {
+    await this.getChecklistById(checklistId);
     const items = await this.checklistItemModel.findAll({
       where: { checklist_id: checklistId },
-      attributes: [
-        [Sequelize.fn('COUNT', Sequelize.col('id')), 'total_items'],
-        [
-          Sequelize.fn(
-            'SUM',
-            Sequelize.literal('CASE WHEN is_accepted = true THEN 1 ELSE 0 END'),
-          ),
-          'accepted_items',
-        ],
-        [
-          Sequelize.fn(
-            'SUM',
-            Sequelize.literal(
-              'CASE WHEN is_accepted = false THEN 1 ELSE 0 END',
-            ),
-          ),
-          'rejected_items',
-        ],
-        [
-          Sequelize.fn(
-            'SUM',
-            Sequelize.literal(
-              `CASE WHEN status = '${ItemStatus.NOT_STARTED}' THEN 1 ELSE 0 END`,
-            ),
-          ),
-          'pending_items',
-        ],
-        [
-          Sequelize.fn(
-            'SUM',
-            Sequelize.literal(
-              `CASE WHEN status = '${ItemStatus.IN_PROGRESS}' THEN 1 ELSE 0 END`,
-            ),
-          ),
-          'in_progress_items',
-        ],
-      ],
-      raw: true,
     });
-
-    const summary = items[0] as any;
-    const totalItems = parseInt(summary.total_items) || 0;
-    const acceptedItems = parseInt(summary.accepted_items) || 0;
-    const rejectedItems = parseInt(summary.rejected_items) || 0;
-
+    const totalItems = items.length;
+    const acceptedItems = items.filter(
+      (item) => item.is_accepted === true,
+    ).length;
+    const rejectedItems = items.filter(
+      (item) => item.is_accepted === false,
+    ).length;
+    const reviewed = items.filter((item) =>
+      [ItemStatus.COMPLETED, ItemStatus.ACCEPTED, ItemStatus.REJECTED].includes(
+        item.status,
+      ),
+    ).length;
     return {
       total_items: totalItems,
       accepted_items: acceptedItems,
       rejected_items: rejectedItems,
-      pending_items: parseInt(summary.pending_items) || 0,
-      in_progress_items: parseInt(summary.in_progress_items) || 0,
+      pending_items: items.filter((item) =>
+        [ItemStatus.NOT_STARTED, ItemStatus.DEFERRED].includes(item.status),
+      ).length,
+      in_progress_items: items.filter(
+        (item) => item.status === ItemStatus.IN_PROGRESS,
+      ).length,
       completion_percentage:
-        totalItems > 0 ? Math.round((acceptedItems / totalItems) * 100) : 0,
+        totalItems > 0 ? Math.round((reviewed / totalItems) * 10000) / 100 : 0,
       acceptance_percentage:
         totalItems > 0
-          ? Math.round(((acceptedItems - rejectedItems) / totalItems) * 100)
+          ? Math.round((acceptedItems / totalItems) * 10000) / 100
           : 0,
     };
   }
@@ -436,15 +451,14 @@ export class QualityChecklistService {
   async completeChecklist(id: string): Promise<QualityChecklist> {
     const checklist = await this.getChecklistById(id);
 
-    // Check if all items are accepted
-    const pendingItems = await this.checklistItemModel.count({
-      where: {
-        checklist_id: id,
-        is_accepted: { [Op.ne]: true },
-      },
+    const items = await this.checklistItemModel.findAll({
+      where: { checklist_id: id },
     });
+    const pendingItems = items.filter(
+      (item) => item.is_accepted !== true,
+    ).length;
 
-    if (pendingItems > 0) {
+    if (!items.length || pendingItems > 0) {
       throw new BadRequestException(
         'Cannot complete checklist with pending items',
       );
@@ -464,13 +478,23 @@ export class QualityChecklistService {
   async exportChecklistData(checklistId: string): Promise<any> {
     const checklist = await this.getChecklistById(checklistId);
     const summary = await this.getChecklistSummary(checklistId);
+    const project = await Project.findByPk(checklist.project_id);
 
     return {
+      project: {
+        id: checklist.project_id,
+        name: project?.name ?? checklist.project_id,
+      },
       checklist: {
         id: checklist.id,
         name: checklist.checklist_name,
         status: checklist.status,
         completion_percentage: checklist.completion_percentage,
+        project_id: checklist.project_id,
+        work_head: checklist.work_head,
+        template_version: checklist.template_version,
+        title: checklist.template_title || checklist.checklist_name,
+        sheet_name: checklist.template_sheet_name || checklist.checklist_name,
       },
       summary,
       items: checklist.checklist_items.map((item) => ({
@@ -481,19 +505,29 @@ export class QualityChecklistService {
         is_accepted: item.is_accepted,
         remarks: item.remarks,
         inspection_date: item.inspection_date,
+        inspected_by: item.inspected_by,
       })),
     };
   }
 
   /**
-   * Return the cleaned template checkpoints for a work head
+   * Return source-exact seeded template checkpoints for a work head
    * (from QUALITY CHECK LIST.xlsx detailed sheets).
    */
-  getWorkHeadTemplate(workHead: WorkHead) {
-    const checkpoints = WORK_HEAD_CHECKPOINTS[workHead] ?? [];
+  async getWorkHeadTemplate(workHead: WorkHead) {
+    const template = await this.templateModel.findByPk(workHead);
+    if (!template)
+      throw new NotFoundException(
+        'Quality template not found; apply the template migration',
+      );
+    const checkpoints = template.checkpoints;
     return {
       work_head: workHead,
-      label: WorkHeadLabels[workHead],
+      label: template.label,
+      serial_number: template.serial_number,
+      title: template.title,
+      sheet_name: template.sheet_name,
+      version: template.version,
       checkpoint_count: checkpoints.length,
       checkpoints,
     };
@@ -502,15 +536,17 @@ export class QualityChecklistService {
   /**
    * List all work heads that have a detailed checkpoint template.
    */
-  listWorkHeadTemplates() {
-    return (Object.keys(WORK_HEAD_CHECKPOINTS) as WorkHead[])
-      .map((wh) => ({
-        work_head: wh,
-        label: WorkHeadLabels[wh],
-        checkpoint_count: WORK_HEAD_CHECKPOINTS[wh].length,
-        has_template: WORK_HEAD_CHECKPOINTS[wh].length > 0,
-      }))
-      .filter((t) => t.has_template);
+  async listWorkHeadTemplates() {
+    const templates = await this.templateModel.findAll({
+      order: [['serial_number', 'ASC']],
+    });
+    return templates.map((template) => ({
+      work_head: template.work_head,
+      label: template.label,
+      serial_number: template.serial_number,
+      checkpoint_count: template.checkpoints.length,
+      has_template: template.checkpoints.length > 0,
+    }));
   }
 
   /**
@@ -523,8 +559,8 @@ export class QualityChecklistService {
     userId: string,
     description?: string,
   ): Promise<QualityChecklist> {
-    const template = WORK_HEAD_CHECKPOINTS[workHead];
-    if (!template || template.length === 0) {
+    const template = await this.getWorkHeadTemplate(workHead);
+    if (!template.checkpoints.length) {
       throw new BadRequestException(
         `No detailed checklist template for work head: ${workHead}`,
       );
@@ -533,11 +569,14 @@ export class QualityChecklistService {
     return this.createChecklist(
       {
         project_id: projectId,
-        checklist_name: WorkHeadLabels[workHead],
+        checklist_name: template.label,
+        work_head: workHead,
+        template_version: template.version,
+        template_title: template.title,
+        template_sheet_name: template.sheet_name,
         description:
-          description ??
-          `Auto-generated from ${WorkHeadLabels[workHead]} QC template`,
-        checklist_items: template.map((c) => ({
+          description ?? `QUALITY CHECK LIST.xlsx — ${template.sheet_name}`,
+        checklist_items: template.checkpoints.map((c) => ({
           serial_number: c.serial_number,
           checkpoint_name: c.checkpoint_name,
           phase: c.phase,
@@ -545,5 +584,50 @@ export class QualityChecklistService {
       } as any,
       userId,
     );
+  }
+
+  private normalizeResult(dto: UpdateQualityChecklistItemDto) {
+    const patch = { ...dto };
+    if (
+      (dto.status === ItemStatus.ACCEPTED && dto.is_accepted === false) ||
+      (dto.status === ItemStatus.REJECTED && dto.is_accepted === true)
+    ) {
+      throw new BadRequestException('Status and acceptance conflict');
+    }
+    if (dto.status === ItemStatus.ACCEPTED) patch.is_accepted = true;
+    else if (dto.status === ItemStatus.REJECTED) patch.is_accepted = false;
+    else if (dto.status && dto.status !== ItemStatus.COMPLETED)
+      patch.is_accepted = null;
+    else if (dto.is_accepted === true) patch.status = ItemStatus.ACCEPTED;
+    else if (dto.is_accepted === false) patch.status = ItemStatus.REJECTED;
+    else if (dto.is_accepted === null && !dto.status)
+      patch.status = ItemStatus.NOT_STARTED;
+    return patch;
+  }
+
+  async exportProjectWorkbook(projectId: string) {
+    const project = await Project.findByPk(projectId);
+    if (!project) throw new NotFoundException('Project not found');
+    const checklists = await this.checklistModel.findAll({
+      where: { project_id: projectId },
+      include: [
+        {
+          model: QualityChecklistItem,
+          as: 'checklist_items',
+          separate: true,
+          order: [['serial_number', 'ASC']],
+        },
+      ],
+      order: [['created_at', 'ASC']],
+    });
+    return {
+      project: { id: project.id, name: project.name },
+      work_heads: (
+        await this.qualityService.projectChecklist({ project_id: projectId })
+      ).filter((head) => head.work_head),
+      checklists: await Promise.all(
+        checklists.map((checklist) => this.exportChecklistData(checklist.id)),
+      ),
+    };
   }
 }

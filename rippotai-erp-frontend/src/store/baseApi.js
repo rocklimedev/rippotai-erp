@@ -58,6 +58,12 @@ export const baseApi = createApi({
     "SavedSearches",
     "ProjectLocation",
     "Shortlists",
+    "ShortlistEntries",
+    "ShortlistGrid",
+    "ShortlistPackages",
+    "QualityItems",
+    "QualityChecks",
+    "QualityChecklists",
     "VendorQuotations",
     "VendorDashboard",
     // notifications
