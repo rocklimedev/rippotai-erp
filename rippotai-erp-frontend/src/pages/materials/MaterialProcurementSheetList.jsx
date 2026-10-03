@@ -199,7 +199,9 @@ export default function MaterialProcurementSheetList() {
             Refresh
           </Button>
 
-          <Button onClick={() => navigate("/material-procurement/new")}>
+          <Button
+            onClick={() => navigate("/procurement/material-procurement/new")}
+          >
             <Plus className="mr-2 h-4 w-4" />
             New Procurement
           </Button>
