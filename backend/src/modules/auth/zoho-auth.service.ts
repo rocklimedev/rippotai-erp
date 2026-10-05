@@ -78,6 +78,13 @@ export class ZohoAuthService implements RefreshableOAuthProviderService {
     return `${this.accountsBaseUrl}/oauth/v2/auth?${params.toString()}`;
   }
 
+  async buildAdditionalAuthorizationUrl(userId: string, state: string, scopes?: string[]) {
+    const token = await this.zohoTokenModel.findOne({ where: { userId } });
+    const existing = token?.scope?.split(/[\s,]+/).filter(Boolean) ?? [];
+    const combined = [...new Set([...this.defaultScopes, ...existing, ...(scopes ?? [])].filter(Boolean))];
+    return this.buildAuthorizationUrl(state, combined);
+  }
+
   // ============================================================
   // OAUTH CALLBACK
   // ============================================================

@@ -67,6 +67,7 @@ import { AutomationModule } from './modules/automation/automation.module';
 import { ClientPortalModule } from './modules/client-portal/client-portal.module';
 import { ProjectPlannerModule } from './modules/projects/project-planner.module';
 import { WorkspaceModule } from './modules/workspace/workspace.module';
+import { SyncModule } from './modules/sync/sync.module';
 
 @Module({
   imports: [
@@ -132,7 +133,7 @@ import { WorkspaceModule } from './modules/workspace/workspace.module';
     // ============================================================
     DocumentsModule,
     DrawingsModule,
-
+    SyncModule,
     // ============================================================
     // Project / Site
     // ============================================================

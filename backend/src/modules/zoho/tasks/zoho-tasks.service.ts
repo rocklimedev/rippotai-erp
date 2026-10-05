@@ -528,7 +528,7 @@ export class ZohoTasksService {
     const name = dto.title ?? dto.name;
     if (name) body.name = String(name).trim();
 
-    if (dto.description != null && dto.description !== '') {
+    if (dto.description != null) {
       body.description = dto.description;
     }
 
@@ -550,7 +550,7 @@ export class ZohoTasksService {
         body.percent_complete = '100';
       } else if (['in_progress', 'inprogress'].includes(s)) {
         body.percent_complete = '50';
-      } else if (s === 'todo' || s === 'open') {
+      } else if (s === 'todo' || s === 'open' || s === 'blocked') {
         body.percent_complete = '0';
       }
       // blocked → set custom_status to your portal’s status id if needed
@@ -558,7 +558,24 @@ export class ZohoTasksService {
 
     const due = dto.due_date ?? dto.dueDate;
     if (due) {
-      body.end_date = this.formatZohoDate(String(due));
+      body.end_date = this.formatZohoDate(String(due), dto.timezone);
+      body.start_date = this.formatZohoDate(
+        String(dto.start_date || due),
+        dto.timezone,
+      );
+    }
+
+    if (dto.reminderDate) {
+      body.reminder_string = JSON.stringify({
+        reminder: [
+          {
+            reminder_criteria: 'customdate',
+            custom_date: this.formatZohoDate(dto.reminderDate, dto.timezone),
+            reminder_time: dto.reminder_time || '09:00',
+            reminder_notify_users: 'owner',
+          },
+        ],
+      });
     }
 
     const person = dto.assignee ?? dto.assignee_id;
@@ -566,18 +583,28 @@ export class ZohoTasksService {
 
     if (dto.tasklist_id) body.tasklist_id = String(dto.tasklist_id);
 
-    return this.cleanPayload(body);
+    return Object.fromEntries(
+      Object.entries(body).filter(
+        ([, value]) => value !== undefined && value !== null,
+      ),
+    );
   }
 
   /** Classic Zoho date: MM-DD-YYYY */
-  private formatZohoDate(value: string): string {
+  private formatZohoDate(value: string, timezone?: string): string {
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) {
       return value;
     }
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    const yyyy = d.getFullYear();
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone || 'Asia/Kolkata',
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric',
+    }).formatToParts(d);
+    const mm = parts.find((part) => part.type === 'month')!.value;
+    const dd = parts.find((part) => part.type === 'day')!.value;
+    const yyyy = parts.find((part) => part.type === 'year')!.value;
     return `${mm}-${dd}-${yyyy}`;
   }
 
@@ -591,11 +618,12 @@ export class ZohoTasksService {
       );
     }
 
-    const host = new URL(apiDomain).hostname;
-    const tld =
-      host.split('.').slice(-1)[0] === 'cn'
-        ? host.split('.').slice(-2).join('.')
-        : host.split('.').slice(-1)[0];
+    const tld = new URL(apiDomain).hostname.replace(/^(www\.)?zohoapis\./, '');
+    if (
+      !['com', 'in', 'eu', 'com.au', 'jp', 'com.cn', 'ca', 'sa'].includes(tld)
+    ) {
+      throw new BadRequestException('Unsupported Zoho account region');
+    }
 
     return `https://projectsapi.zoho.${tld}`;
   }

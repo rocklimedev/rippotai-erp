@@ -34,7 +34,7 @@ export class ZohoOAuthController {
    */
   @UseGuards(JwtAuthGuard)
   @Get('authorize-url')
-  authorizeUrl(@Req() req: RequestWithUser, @Query('scopes') scopes?: string) {
+  async authorizeUrl(@Req() req: RequestWithUser, @Query('scopes') scopes?: string) {
     const userId = req.user.id;
 
     const state = this.oauthState.sign({
@@ -46,7 +46,8 @@ export class ZohoOAuthController {
       ? scopes.split(',').map((scope) => scope.trim())
       : undefined;
 
-    const authorizationUrl = this.zohoAuthService.buildAuthorizationUrl(
+    const authorizationUrl = await this.zohoAuthService.buildAdditionalAuthorizationUrl(
+      userId,
       state,
       scopeList,
     );

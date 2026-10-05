@@ -11,6 +11,8 @@ import { useGetWsTasksQuery, useGetWsMyTasksQuery, useUpdateWsTaskMutation } fro
 import { TASK_STATUSES, TASK_PRIORITIES, statusMeta, priorityMeta, isOverdue } from "./taskMeta";
 import { fmtDate, daysFromToday, useProjectsList, useUsersList, Loading, Meta } from "./shared";
 
+import ReminderSyncPanel from './ReminderSyncPanel';
+
 const VIEW_TABS = [
   { value: "board", label: "Board", to: "/tasks" },
   { value: "mine", label: "My tasks", to: "/tasks/mine" },
@@ -231,6 +233,8 @@ export default function TasksPage({ view = "board" }) {
         subtitle={mine ? "Tasks you created or that are assigned to you." : "Plan, assign and track work across every project."}
         actions={<Button variant="primary" icon={Plus} onClick={() => navigate("/tasks/new")} data-testid="new-task">New task</Button>}
       />
+
+      <ReminderSyncPanel kind="tasks" />
 
       <Stats>
         <StatTile label="Open" value={stats.open} icon={<ListTodo size={16} />} onClick={() => navigate(mine ? "/tasks/mine" : "/tasks/all")} />
