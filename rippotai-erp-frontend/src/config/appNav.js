@@ -298,6 +298,7 @@ export const APP_MENUS = {
       items: [
         I("Daily Reports", "daily-reports"),
         I("Visit Assignments", "visit-assignments"),
+        I("Site Visits", "site-visits"),
       ],
     },
 

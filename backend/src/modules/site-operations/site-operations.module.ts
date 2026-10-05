@@ -37,7 +37,11 @@ import { CdnModule } from '../cdn/cdn.module';
 import { SiteVisitController } from './site-visit.controller';
 import { MockupController } from './mockup.controller';
 import { RfiController } from './rfi.controller';
-
+import { VisitStageService } from './visit-stage.service';
+import { VisitStageController } from './visit-stage.controller';
+import { ArchitectVisitStage } from './models/architect-visit-stage.model';
+import { ArchitectSiteVisit } from './models/architect-site-visit.model';
+import { SnagItem } from './models/snag-item.model';
 /**
  * Site Operations — Quality, Reporting & Mockups.
  *
@@ -71,6 +75,9 @@ import { RfiController } from './rfi.controller';
       Project,
       Team,
       Step,
+      ArchitectVisitStage,
+      ArchitectSiteVisit,
+      SnagItem,
     ]),
   ],
   controllers: [
@@ -81,6 +88,7 @@ import { RfiController } from './rfi.controller';
     SiteVisitController,
     MockupController,
     RfiController,
+    VisitStageController,
   ],
   providers: [
     SiteOpsDashboardService,
@@ -90,6 +98,7 @@ import { RfiController } from './rfi.controller';
     SiteVisitService,
     MockupService,
     RfiService,
+    VisitStageService,
   ],
   exports: [
     ChecklistService,
@@ -98,6 +107,7 @@ import { RfiController } from './rfi.controller';
     SiteVisitService,
     MockupService,
     RfiService,
+    VisitStageService,
   ],
 })
 export class SiteOperationsModule {}
