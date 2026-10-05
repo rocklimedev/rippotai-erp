@@ -51,6 +51,7 @@ export class ZohoHttpService {
     try {
       const response = await axios.request<T>({
         ...options,
+        timeout: options.timeout ?? 30000,
         method,
         url: path,
         baseURL,
@@ -95,10 +96,13 @@ export class ZohoHttpService {
      *   message: "..."
      * }
      */
-    const zohoCode = data?.error?.code ?? data?.error_code ?? data?.code;
+    const detail = Array.isArray(data?.error) ? data.error[0] : data?.error;
+    const zohoCode =
+      detail?.code ?? detail?.error_code ?? data?.error_code ?? data?.code;
 
     const zohoMessage =
-      data?.error?.message ??
+      detail?.description ??
+      detail?.message ??
       data?.message ??
       data?.error ??
       axiosErr.message ??

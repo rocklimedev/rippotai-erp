@@ -223,7 +223,13 @@ export default function BoqVendorRateComparison() {
     data: boqResponse,
     isLoading: boqLoading,
     refetch: refetchBoqs,
-  } = useGetBoqsQuery({});
+  } = useGetBoqsQuery(
+    {},
+    {
+      refetchOnMountOrArgChange: true,
+      keepUnusedDataFor: 0,
+    },
+  );
 
   const boqs = useMemo(() => {
     if (Array.isArray(boqResponse)) {
@@ -248,6 +254,8 @@ export default function BoqVendorRateComparison() {
     refetch: refetchBoq,
   } = useGetBoqByIdQuery(selectedBoqId, {
     skip: !selectedBoqId,
+    refetchOnMountOrArgChange: true,
+    keepUnusedDataFor: 0,
   });
 
   const boq = useMemo(() => {
@@ -259,9 +267,15 @@ export default function BoqVendorRateComparison() {
   // ==========================================================
 
   const { data: vendorResponse, isLoading: vendorsLoading } =
-    useGetVendorsQuery({
-      status: "ACTIVE",
-    });
+    useGetVendorsQuery(
+      {
+        status: "ACTIVE",
+      },
+      {
+        refetchOnMountOrArgChange: true,
+        keepUnusedDataFor: 0,
+      },
+    );
 
   const vendors = useMemo(() => {
     if (Array.isArray(vendorResponse)) {
@@ -930,40 +944,6 @@ export default function BoqVendorRateComparison() {
             </button>
           </div>
         </div>
-
-        {/* ================================================== */}
-        {/* BOQ INFORMATION */}
-        {/* ================================================== */}
-
-        {boq && (
-          <Card>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-              <InfoBox
-                label="Project"
-                value={
-                  boq?.project?.name ||
-                  boq?.project_name ||
-                  boq?.project?.title ||
-                  "—"
-                }
-              />
-
-              <InfoBox
-                label="BOQ"
-                value={boq?.title || boq?.name || boq?.boq_name || "—"}
-              />
-
-              <InfoBox
-                label="Status"
-                value={boq?.status ? String(boq.status).toUpperCase() : "—"}
-              />
-
-              <InfoBox label="Version" value={boq?.version ?? "—"} />
-
-              <InfoBox label="Categories" value={`${categories.length}`} />
-            </div>
-          </Card>
-        )}
 
         {/* ================================================== */}
         {/* CONTROLS */}

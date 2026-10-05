@@ -37,6 +37,7 @@ import MaterialProcurementSheetList from "../../pages/materials/MaterialProcurem
 import CreateMaterialProcurementSheet from "../../pages/materials/CreateMaterialProcurementSheet";
 import MaterialProcurementSheetView from "../../pages/materials/MaterialProcurementSheetView";
 import VendorShortlistWorkspace from "../../pages/vendors/VendorShortlistWorkspace";
+import MaterialMasterCreateEdit from "../../pages/materials/MaterialMasterCreateEdit";
 export const materialsRoutes = [
   {
     type: "layout",
@@ -107,7 +108,14 @@ export const materialsRoutes = [
         path: "rate-sheets",
         element: <MaterialRateSheetList />,
       },
-
+      {
+        path: "rate-sheets/:id/edit",
+        element: <MaterialMasterCreateEdit />,
+      },
+      {
+        path: "rate-sheets/new",
+        element: <MaterialMasterCreateEdit />,
+      },
       // ------------------------------------------------------------
       // Material Estimates
       // ------------------------------------------------------------

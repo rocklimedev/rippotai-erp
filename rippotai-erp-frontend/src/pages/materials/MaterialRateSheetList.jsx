@@ -198,7 +198,7 @@ export default function MaterialMasterList() {
         rows.length !== 1 ? "s" : ""
       } • ${totalVendors} vendor relationship${totalVendors !== 1 ? "s" : ""}`}
       action={
-        <Button onClick={() => nav("/procurement/new")}>
+        <Button onClick={() => nav("/procurement/rate-sheets/new")}>
           <Plus className="mr-2 h-4 w-4" />
           New Material
         </Button>
@@ -299,7 +299,9 @@ export default function MaterialMasterList() {
                     return (
                       <React.Fragment key={r.id}>
                         <TableRow
-                          onClick={() => nav(`/procurement/${r.id}`)}
+                          onClick={() =>
+                            nav(`/procurement/rate-sheets/${r.id}`)
+                          }
                           className="cursor-pointer"
                         >
                           {/* MATERIAL */}
@@ -443,7 +445,9 @@ export default function MaterialMasterList() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => nav(`/procurement/${r.id}`)}
+                                onClick={() =>
+                                  nav(`/procurement/rate-sheets/${r.id}`)
+                                }
                                 title="View material"
                               >
                                 <Eye className="h-4 w-4" />
@@ -452,7 +456,9 @@ export default function MaterialMasterList() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => nav(`/procurement/${r.id}/edit`)}
+                                onClick={() =>
+                                  nav(`/procurement/rate-sheets/${r.id}/edit`)
+                                }
                                 title="Edit material"
                               >
                                 <Edit3 className="h-4 w-4" />

@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 
 import { ZohoHttpService } from '../services/zoho-http.service';
+import { ZohoAuthService } from '@/modules/auth/zoho-auth.service';
 
 import { CreateZohoCalendarDto } from './dto/create-calendar.dto';
 import { CreateZohoEventDto } from './dto/create-event.dto';
@@ -8,38 +9,30 @@ import { UpdateZohoEventDto } from './dto/update-event.dto';
 
 @Injectable()
 export class ZohoCalendarService {
-  /**
-   * =========================================================
-   * ZOHO CALENDAR API
-   * =========================================================
-   *
-   * IMPORTANT:
-   *
-   * Zoho Calendar does NOT use the generic Zoho OAuth
-   * api_domain such as:
-   *
-   * https://www.zohoapis.in
-   *
-   * For the India region, Calendar API uses:
-   *
-   * https://calendar.zoho.in/api/v1
-   *
-   * Therefore every request from this service explicitly
-   * passes the Calendar API baseURL to ZohoHttpService.
-   *
-   * This keeps the generic ZohoHttpService working for:
-   *
-   * - Zoho Bigin
-   * - Zoho CRM
-   * - Zoho Tasks
-   * - Zoho Mail
-   * - Other Zoho APIs
-   *
-   * without changing their existing api_domain handling.
-   */
-  private readonly baseUrl = 'https://calendar.zoho.in/api/v1';
+  // Calendar uses its own regional API host, derived from the connected account.
 
-  constructor(private readonly zohoHttpService: ZohoHttpService) {}
+  constructor(
+    private readonly zohoHttpService: ZohoHttpService,
+    private readonly zohoAuthService: ZohoAuthService,
+  ) {}
+
+  private async getBaseUrl(userId: string) {
+    const domain = await this.zohoAuthService.getApiDomain(userId);
+    if (!domain) throw new BadRequestException('Reconnect your Zoho account');
+    const region = new URL(domain).hostname.replace(/^(www\.)?zohoapis\./, '');
+    if (
+      !['com', 'in', 'eu', 'com.au', 'jp', 'com.cn', 'ca', 'sa'].includes(
+        region,
+      )
+    )
+      throw new BadRequestException('Unsupported Zoho account region');
+    return `https://calendar.zoho.${region}/api/v1`;
+  }
+
+  private eventRecord(response: any) {
+    const data = response?.data ?? response;
+    return data?.events?.[0] ?? data?.event ?? data;
+  }
 
   // =========================================================
   // CALENDARS
@@ -69,7 +62,7 @@ export class ZohoCalendarService {
     }
 
     return this.zohoHttpService.get(userId, '/calendars', {
-      baseURL: this.baseUrl,
+      baseURL: await this.getBaseUrl(userId),
       params,
     });
   }
@@ -85,7 +78,7 @@ export class ZohoCalendarService {
       userId,
       `/calendars/${encodeURIComponent(calendarUid)}`,
       {
-        baseURL: this.baseUrl,
+        baseURL: await this.getBaseUrl(userId),
       },
     );
   }
@@ -106,7 +99,7 @@ export class ZohoCalendarService {
     }
 
     return this.zohoHttpService.post(userId, '/calendars', {
-      baseURL: this.baseUrl,
+      baseURL: await this.getBaseUrl(userId),
       params: {
         calendarData: JSON.stringify(dto),
       },
@@ -164,7 +157,7 @@ export class ZohoCalendarService {
       userId,
       `/calendars/${encodeURIComponent(calendarUid)}/events`,
       {
-        baseURL: this.baseUrl,
+        baseURL: await this.getBaseUrl(userId),
         params,
       },
     );
@@ -184,7 +177,7 @@ export class ZohoCalendarService {
         calendarUid,
       )}/events/${encodeURIComponent(eventUid)}`,
       {
-        baseURL: this.baseUrl,
+        baseURL: await this.getBaseUrl(userId),
       },
     );
   }
@@ -223,7 +216,7 @@ export class ZohoCalendarService {
       userId,
       `/calendars/${encodeURIComponent(calendarUid)}/events`,
       {
-        baseURL: this.baseUrl,
+        baseURL: await this.getBaseUrl(userId),
         params: {
           eventdata: JSON.stringify(dto),
         },
@@ -254,15 +247,19 @@ export class ZohoCalendarService {
       );
     }
 
+    const current = this.eventRecord(
+      await this.getEvent(userId, calendarUid, eventUid),
+    );
+    if (!current?.etag) throw new BadRequestException('Zoho event has no etag');
     return this.zohoHttpService.put(
       userId,
       `/calendars/${encodeURIComponent(
         calendarUid,
       )}/events/${encodeURIComponent(eventUid)}`,
       {
-        baseURL: this.baseUrl,
+        baseURL: await this.getBaseUrl(userId),
         params: {
-          eventdata: JSON.stringify(dto),
+          eventdata: JSON.stringify({ ...dto, etag: current.etag }),
         },
       },
     );
@@ -276,13 +273,19 @@ export class ZohoCalendarService {
   async deleteEvent(userId: string, calendarUid: string, eventUid: string) {
     this.validateEventParams(userId, calendarUid, eventUid);
 
+    const current = this.eventRecord(
+      await this.getEvent(userId, calendarUid, eventUid),
+    );
+    if (!current?.etag) throw new BadRequestException('Zoho event has no etag');
+
     return this.zohoHttpService.delete(
       userId,
       `/calendars/${encodeURIComponent(
         calendarUid,
       )}/events/${encodeURIComponent(eventUid)}`,
       {
-        baseURL: this.baseUrl,
+        baseURL: await this.getBaseUrl(userId),
+        headers: { etag: String(current.etag) },
       },
     );
   }
@@ -324,7 +327,7 @@ export class ZohoCalendarService {
         calendarUid,
       )}/events/${encodeURIComponent(eventUid)}/byinstance`,
       {
-        baseURL: this.baseUrl,
+        baseURL: await this.getBaseUrl(userId),
         params: {
           range: JSON.stringify({
             start: range.start,
@@ -352,7 +355,7 @@ export class ZohoCalendarService {
     }
 
     return this.zohoHttpService.post(userId, '/smartadd', {
-      baseURL: this.baseUrl,
+      baseURL: await this.getBaseUrl(userId),
       params: {
         title: title.trim(),
       },
