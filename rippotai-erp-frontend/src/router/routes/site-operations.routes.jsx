@@ -9,7 +9,9 @@ import QCChecklistTemplates from "../../pages/site-ops/QcChecklistTemplatespage"
 import QCHandoffStatus from "../../pages/site-ops/QcHandoffStatus";
 import RFIs from "../../pages/site-ops/RfisPage";
 import Mockups from "../../pages/site-ops/MockupsPage";
-
+import SiteVisitsListPage from "../../pages/site-ops/SiteVisitsListPage";
+import SiteVisitDetailPage from "../../pages/site-ops/SiteVisitDetailPage";
+import SiteVisitCreatePage from "../../pages/site-ops/SiteVisitCreatePage";
 import SiteOperationsDashboard from "../../pages/dashboard/SiteOperationsDashboard";
 export const siteOperationsRoutes = [
   {
@@ -90,6 +92,23 @@ export const siteOperationsRoutes = [
       {
         path: "mockups",
         element: <Mockups />,
+      },
+
+      {
+        path: "site-visits",
+        element: <SiteVisitsListPage />,
+      },
+      {
+        path: "site-visits/:id",
+        element: <SiteVisitDetailPage />,
+      },
+      {
+        path: "site-visits/:id/edit",
+        element: <SiteVisitCreatePage />,
+      },
+      {
+        path: "site-visits/new",
+        element: <SiteVisitCreatePage />,
       },
     ],
   },

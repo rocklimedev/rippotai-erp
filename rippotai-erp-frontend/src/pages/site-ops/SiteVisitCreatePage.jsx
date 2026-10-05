@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -31,14 +31,9 @@ export default function SiteVisitCreatePage() {
 
   const [createVisit, { isLoading }] = useCreateSiteVisitMutation();
 
-  const { data: stages = [] } = useGetVisitStagesQuery();
-
+  const { data: stages = [], isLoading: stagesLoading } =
+    useGetVisitStagesQuery();
   const { data: projectsData } = useGetProjectsQuery({});
-
-  // =========================================================
-  // ARCHITECTS
-  // =========================================================
-
   const { data: architectsData, isLoading: architectsLoading } =
     useGetUsersByRoleNameQuery("SENIOR_ARCHITECT");
 
@@ -50,271 +45,352 @@ export default function SiteVisitCreatePage() {
     ? architectsData
     : architectsData?.data || architectsData?.items || [];
 
-  // =========================================================
-  // FORM
-  // =========================================================
+  // -------------------------------------------------------
+  // Sort stages by visit_no so the table matches the Excel
+  // -------------------------------------------------------
+  const sortedStages = useMemo(() => {
+    const list = Array.isArray(stages) ? [...stages] : [];
+    return list.sort((a, b) => (a.visit_no || 0) - (b.visit_no || 0));
+  }, [stages]);
 
-  const [form, setForm] = useState({
-    project_id: "",
-    stage_id: "",
-    status: "Not Scheduled",
-    scheduled_date: "",
-    visited_date: "",
-    architect_id: "",
-    findings: "",
-    remarks: "",
-  });
+  // -------------------------------------------------------
+  // Form state
+  // -------------------------------------------------------
+  const [projectId, setProjectId] = useState("");
+  const [architectId, setArchitectId] = useState("");
 
-  const set = (key, value) => {
-    setForm((prev) => ({
+  // Keyed by stage.id → row data
+  const [rows, setRows] = useState({});
+
+  const getRow = (stageId) =>
+    rows[stageId] || {
+      status: "Not Scheduled",
+      scheduled_date: "",
+      visited_date: "",
+      findings: "",
+      remarks: "",
+    };
+
+  const updateRow = (stageId, key, value) => {
+    setRows((prev) => ({
       ...prev,
-      [key]: value,
+      [stageId]: {
+        ...getRow(stageId),
+        [key]: value,
+      },
     }));
   };
 
-  // =========================================================
-  // SUBMIT
-  // =========================================================
-
+  // -------------------------------------------------------
+  // Submit – create one visit per stage that has data
+  // (unique constraint: project_id + stage_id)
+  // -------------------------------------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.project_id || !form.stage_id) {
-      toast.error("Project and stage are required");
+    if (!projectId) {
+      toast.error("Please select a project");
+      return;
+    }
+
+    // Only create rows that the user actually touched
+    const toCreate = sortedStages.filter((stage) => {
+      const r = getRow(stage.id);
+      return (
+        r.findings.trim() ||
+        r.remarks.trim() ||
+        r.scheduled_date ||
+        r.visited_date ||
+        r.status !== "Not Scheduled"
+      );
+    });
+
+    if (toCreate.length === 0) {
+      toast.error(
+        "Fill at least one stage (findings, date or status) before saving",
+      );
       return;
     }
 
     try {
-      const body = {
-        project_id: form.project_id,
-        stage_id: form.stage_id,
-        status: form.status,
+      let created = 0;
+      let skipped = 0;
 
-        scheduled_date: form.scheduled_date || undefined,
-        visited_date: form.visited_date || undefined,
+      for (const stage of toCreate) {
+        const r = getRow(stage.id);
+        try {
+          await createVisit({
+            project_id: projectId,
+            stage_id: stage.id,
+            status: r.status,
+            scheduled_date: r.scheduled_date || undefined,
+            visited_date: r.visited_date || undefined,
+            architect_id: architectId || undefined,
+            findings: r.findings || undefined,
+            remarks: r.remarks || undefined,
+          }).unwrap();
+          created++;
+        } catch (err) {
+          // Most likely unique constraint (visit already exists for this project+stage)
+          skipped++;
+          console.warn(`Skipped stage ${stage.visit_no}:`, err);
+        }
+      }
 
-        architect_id: form.architect_id || undefined,
-
-        findings: form.findings || undefined,
-        remarks: form.remarks || undefined,
-      };
-
-      const result = await createVisit(body).unwrap();
-
-      toast.success("Site visit created");
-
-      navigate(`/site-ops/visits/${result.id}`);
+      if (created > 0) {
+        toast.success(
+          `${created} site visit(s) created` +
+            (skipped ? ` (${skipped} already existed)` : ""),
+        );
+        navigate("/site-ops/visits");
+      } else {
+        toast.error(
+          "No new visits created (they may already exist for this project)",
+        );
+      }
     } catch (err) {
-      toast.error(err?.data?.message || err?.error || "Failed to create visit");
+      toast.error(
+        err?.data?.message || err?.error || "Failed to create visits",
+      );
     }
   };
 
-  // =========================================================
-  // RENDER
-  // =========================================================
+  // -------------------------------------------------------
+  // Helper for visit-type badge colour
+  // -------------------------------------------------------
+  const visitTypeBadge = (type) => {
+    if (!type) return null;
+    const t = type.toLowerCase();
+    if (t.includes("hold")) return "bg-amber-100 text-amber-800";
+    if (t.includes("critical")) return "bg-red-100 text-red-800";
+    if (t.includes("mandatory")) return "bg-blue-100 text-blue-800";
+    return "bg-gray-100 text-gray-700";
+  };
 
+  // -------------------------------------------------------
+  // RENDER
+  // -------------------------------------------------------
   return (
     <div className="bg-page min-h-full p-6">
-      {" "}
       <PageHeader
-        title="New Site Visit"
-        description="Schedule an architect site visit for a project stage."
+        title="Architect Visit Schedule"
+        description="Fill findings for each stage – just like the Excel sheet."
         backTo="/site-ops/visits"
       />
-      <form onSubmit={handleSubmit} className="bc-card p-6 max-w-3xl space-y-5">
-        <div className="grid gap-4 sm:grid-cols-2 bc-form-2col">
-          {/* ================================================= */}
-          {/* PROJECT */}
-          {/* ================================================= */}
 
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* ========== Top bar: Project + Architect ========== */}
+        <div className="bc-card p-5 grid gap-4 sm:grid-cols-2 max-w-4xl">
           <div className="space-y-2">
             <Label className="bc-form-label">Project *</Label>
-
-            <Select
-              value={form.project_id}
-              onValueChange={(value) => set("project_id", value)}
-            >
+            <Select value={projectId} onValueChange={setProjectId}>
               <SelectTrigger className="bc-input">
                 <SelectValue placeholder="Select project" />
               </SelectTrigger>
-
               <SelectContent>
-                {projects.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.name ||
-                      project.code ||
-                      project.project_name ||
-                      project.id}
+                {projects.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name || p.code || p.project_name || p.id}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-
-          {/* ================================================= */}
-          {/* VISIT STAGE */}
-          {/* ================================================= */}
-
-          <div className="space-y-2">
-            <Label className="bc-form-label">Visit stage *</Label>
-
-            <Select
-              value={form.stage_id}
-              onValueChange={(value) => set("stage_id", value)}
-            >
-              <SelectTrigger className="bc-input">
-                <SelectValue placeholder="Select visit stage" />
-              </SelectTrigger>
-
-              <SelectContent>
-                {(Array.isArray(stages) ? stages : []).map((stage) => (
-                  <SelectItem key={stage.id} value={stage.id}>
-                    {stage.visit_no
-                      ? `${stage.visit_no}. ${stage.stage}`
-                      : stage.stage || stage.name || stage.id}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* ================================================= */}
-          {/* STATUS */}
-          {/* ================================================= */}
-
-          <div className="space-y-2">
-            <Label className="bc-form-label">Status</Label>
-
-            <Select
-              value={form.status}
-              onValueChange={(value) => set("status", value)}
-            >
-              <SelectTrigger className="bc-input">
-                <SelectValue />
-              </SelectTrigger>
-
-              <SelectContent>
-                {ARCHITECT_VISIT_STATUS_OPTIONS.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {status}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* ================================================= */}
-          {/* ARCHITECT */}
-          {/* ================================================= */}
 
           <div className="space-y-2">
             <Label className="bc-form-label">Architect</Label>
-
             <Select
-              value={form.architect_id}
-              onValueChange={(value) => set("architect_id", value)}
+              value={architectId}
+              onValueChange={setArchitectId}
               disabled={architectsLoading}
             >
               <SelectTrigger className="bc-input">
                 <SelectValue
                   placeholder={
-                    architectsLoading
-                      ? "Loading architects..."
-                      : "Select architect"
+                    architectsLoading ? "Loading..." : "Select architect"
                   }
                 />
               </SelectTrigger>
-
               <SelectContent>
                 {architects.length === 0 ? (
-                  <SelectItem value="__no_architects" disabled>
+                  <SelectItem value="__none" disabled>
                     No architects found
                   </SelectItem>
                 ) : (
-                  architects.map((architect) => (
-                    <SelectItem key={architect.id} value={architect.id}>
-                      {architect.name ||
-                        architect.full_name ||
-                        `${architect.first_name || ""} ${
-                          architect.last_name || ""
-                        }`.trim() ||
-                        architect.email ||
-                        architect.id}
+                  architects.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name ||
+                        a.full_name ||
+                        `${a.first_name || ""} ${a.last_name || ""}`.trim() ||
+                        a.email ||
+                        a.id}
                     </SelectItem>
                   ))
                 )}
               </SelectContent>
             </Select>
           </div>
-
-          {/* ================================================= */}
-          {/* SCHEDULED DATE */}
-          {/* ================================================= */}
-
-          <div className="space-y-2">
-            <Label className="bc-form-label">Scheduled date</Label>
-
-            <Input
-              type="date"
-              className="bc-input"
-              value={form.scheduled_date}
-              onChange={(e) => set("scheduled_date", e.target.value)}
-            />
-          </div>
-
-          {/* ================================================= */}
-          {/* VISITED DATE */}
-          {/* ================================================= */}
-
-          <div className="space-y-2">
-            <Label className="bc-form-label">Visited date</Label>
-
-            <Input
-              type="date"
-              className="bc-input"
-              value={form.visited_date}
-              onChange={(e) => set("visited_date", e.target.value)}
-            />
-          </div>
         </div>
 
-        {/* =================================================== */}
-        {/* FINDINGS */}
-        {/* =================================================== */}
+        {/* ========== The Excel-like schedule table ========== */}
+        <div className="bc-card overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-muted/60 border-b">
+                <th className="p-3 text-left w-16">No.</th>
+                <th className="p-3 text-left min-w-[180px]">Stage</th>
+                <th className="p-3 text-left min-w-[240px]">
+                  Main checks / Purpose
+                </th>
+                <th className="p-3 text-left w-32">Visit Type</th>
+                <th className="p-3 text-left w-36">Status</th>
+                <th className="p-3 text-left w-36">Scheduled</th>
+                <th className="p-3 text-left w-36">Visited</th>
+                <th className="p-3 text-left min-w-[220px]">Findings</th>
+                <th className="p-3 text-left min-w-[160px]">Remarks</th>
+              </tr>
+            </thead>
 
-        <div className="space-y-2">
-          <Label className="bc-form-label">Findings</Label>
+            <tbody>
+              {stagesLoading ? (
+                <tr>
+                  <td
+                    colSpan={9}
+                    className="p-8 text-center text-muted-foreground"
+                  >
+                    Loading stages…
+                  </td>
+                </tr>
+              ) : sortedStages.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={9}
+                    className="p-8 text-center text-muted-foreground"
+                  >
+                    No visit stages found. Please seed the stages first.
+                  </td>
+                </tr>
+              ) : (
+                sortedStages.map((stage) => {
+                  const row = getRow(stage.id);
+                  return (
+                    <tr key={stage.id} className="border-b hover:bg-muted/30">
+                      {/* Visit No */}
+                      <td className="p-2 font-medium text-center align-top">
+                        {stage.visit_no ?? "–"}
+                      </td>
 
-          <Textarea
-            className="bc-input min-h-[100px]"
-            value={form.findings}
-            onChange={(e) => set("findings", e.target.value)}
-            placeholder="Site findings..."
-          />
+                      {/* Stage name */}
+                      <td className="p-2 font-medium align-top">
+                        {stage.stage || "–"}
+                      </td>
+
+                      {/* Purpose / Main checks  ← real field name */}
+                      <td className="p-2 text-muted-foreground text-xs leading-snug align-top">
+                        {stage.checks_purpose || "–"}
+                      </td>
+
+                      {/* Visit Type */}
+                      <td className="p-2 align-top">
+                        {stage.visit_type ? (
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${visitTypeBadge(
+                              stage.visit_type,
+                            )}`}
+                          >
+                            {stage.visit_type}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">
+                            –
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td className="p-2 align-top">
+                        <Select
+                          value={row.status}
+                          onValueChange={(v) =>
+                            updateRow(stage.id, "status", v)
+                          }
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ARCHITECT_VISIT_STATUS_OPTIONS.map((s) => (
+                              <SelectItem key={s} value={s}>
+                                {s}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </td>
+
+                      {/* Scheduled date */}
+                      <td className="p-2 align-top">
+                        <Input
+                          type="date"
+                          className="h-8 text-xs"
+                          value={row.scheduled_date}
+                          onChange={(e) =>
+                            updateRow(
+                              stage.id,
+                              "scheduled_date",
+                              e.target.value,
+                            )
+                          }
+                        />
+                      </td>
+
+                      {/* Visited date */}
+                      <td className="p-2 align-top">
+                        <Input
+                          type="date"
+                          className="h-8 text-xs"
+                          value={row.visited_date}
+                          onChange={(e) =>
+                            updateRow(stage.id, "visited_date", e.target.value)
+                          }
+                        />
+                      </td>
+
+                      {/* Findings */}
+                      <td className="p-2 align-top">
+                        <Textarea
+                          className="min-h-[60px] text-xs resize-y"
+                          placeholder="Findings…"
+                          value={row.findings}
+                          onChange={(e) =>
+                            updateRow(stage.id, "findings", e.target.value)
+                          }
+                        />
+                      </td>
+
+                      {/* Remarks */}
+                      <td className="p-2 align-top">
+                        <Textarea
+                          className="min-h-[60px] text-xs resize-y"
+                          placeholder="Remarks…"
+                          value={row.remarks}
+                          onChange={(e) =>
+                            updateRow(stage.id, "remarks", e.target.value)
+                          }
+                        />
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
 
-        {/* =================================================== */}
-        {/* REMARKS */}
-        {/* =================================================== */}
-
-        <div className="space-y-2">
-          <Label className="bc-form-label">Remarks</Label>
-
-          <Textarea
-            className="bc-input min-h-[80px]"
-            value={form.remarks}
-            onChange={(e) => set("remarks", e.target.value)}
-            placeholder="Additional remarks..."
-          />
-        </div>
-
-        {/* =================================================== */}
-        {/* ACTIONS */}
-        {/* =================================================== */}
-
-        <div className="flex gap-3 pt-2">
+        {/* ========== Actions ========== */}
+        <div className="flex gap-3">
           <Button type="submit" className="bc-btn-primary" disabled={isLoading}>
-            {isLoading ? "Creating..." : "Create visit"}
+            {isLoading ? "Saving schedule…" : "Save visit schedule"}
           </Button>
 
           <Button
