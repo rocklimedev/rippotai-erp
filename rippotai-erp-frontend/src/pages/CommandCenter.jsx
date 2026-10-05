@@ -59,6 +59,7 @@ import {
 import {
   commandCenterApi,
   useGetCommandCenterKpisQuery,
+  useRefreshCommandCenterMutation,
   useGetCommandCenterPortfolioQuery,
   useGetProjectPhaseDetailQuery,
   useGetCommandCenterActionsQuery,
@@ -1275,6 +1276,7 @@ const HEALTH_FILTERS = [
 
 export default function CommandCenter() {
   const dispatch = useDispatch();
+  const [refreshCache, refreshState] = useRefreshCommandCenterMutation();
   const [live, setLive] = useState(true);
   const [healthFilter, setHealthFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -1336,8 +1338,14 @@ export default function CommandCenter() {
     return () => clearInterval(timer);
   }, [live, dispatch]);
 
-  const handleRescan = () => {
-    // No dedicated rescan endpoint yet — refresh every live query on the page.
+  const handleRescan = async () => {
+    if (refreshState.isLoading) return;
+    try {
+      await refreshCache().unwrap();
+    } catch {
+      flashToast('Could not refresh records. Try again shortly.');
+      return;
+    }
     refetchKpis();
     refetchPortfolio();
     refetchAllRows();
@@ -1387,7 +1395,7 @@ export default function CommandCenter() {
                 {updatedLabel ? `Updated ${updatedLabel}` : "Loading…"}
               </span>
             </button>
-            <Button icon={RefreshCw} onClick={handleRescan} disabled={kpiLoading} className={kpiLoading ? "cc-refreshing" : undefined}>
+            <Button icon={RefreshCw} onClick={handleRescan} disabled={kpiLoading || refreshState.isLoading} className={kpiLoading || refreshState.isLoading ? "cc-refreshing" : undefined}>
               {kpiLoading ? "Refreshing" : "Rescan"}
             </Button>
             {user?.permissions?.includes("projects:create") && (

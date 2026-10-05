@@ -119,6 +119,10 @@ export const commandCenterApi = baseApi
         ],
       }),
 
+      refreshCommandCenter: builder.mutation({
+        query: () => ({ url: '/command-center/refresh', method: 'POST' }),
+      }),
+
       getCommandCenterPortfolio: builder.query({
         query: (params) => ({
           url: "/command-center/portfolio",
@@ -427,6 +431,7 @@ export const commandCenterApi = baseApi
   });
 
 export const {
+  useRefreshCommandCenterMutation,
   useGetCommandCenterGateReadinessQuery,
   useClearCommandCenterGateMutation,
   useReopenCommandCenterGateMutation,

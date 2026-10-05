@@ -1,0 +1,7 @@
+{
+  "rootDir": "../src",
+  "testRegex": "modules/projects/command-center.*\\.spec\\.ts$",
+  "transform": { "^.+\\.ts$": "ts-jest" },
+  "moduleNameMapper": { "^@/(.*)$": "<rootDir>/$1" },
+  "testEnvironment": "node"
+}
