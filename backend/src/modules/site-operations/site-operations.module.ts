@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-
+import { QualityChecklist } from './models/quality-checklist.model';
+import { QualityChecklistItem } from './models/quality-checklist-item.model';
 // Models — this module's own
 import { ChecklistTemplate } from './models/checklist-template.model';
 import { ChecklistTemplateItem } from './models/checklist-template-item.model';
@@ -12,12 +13,12 @@ import { VisitAssignment } from './models/visit-assignment.model';
 import { SiteVisitLog } from './models/site-visit-log.model';
 import { Mockup } from './models/mockup.model';
 import { Rfi } from './models/rfi.model';
-
+import { QualityChecklistTemplate } from './models/quality-checklist-template.model';
 // Models — shared, from the Process Workflow Engine module
 import { Project } from '@/modules/projects/models/projects.model';
 import { Team } from '../process-workflow/models/team.model';
 import { Step } from '../process-workflow/models/step.model';
-
+import { QualityService } from './quality.service';
 // Services
 import { ChecklistService } from './checklist.service';
 import { QcSignOffService } from './qc-sign-off.service';
@@ -25,7 +26,7 @@ import { DailySiteReportService } from './daily-site-report.service';
 import { SiteVisitService } from './site-visit.service';
 import { MockupService } from './mockup.service';
 import { RfiService } from './rfi.service';
-
+import { QualityCheckHead } from './models/quality-check-head.model';
 // Controllers
 import { ChecklistController, QcSignOffController } from './qc.controller';
 import {
@@ -42,6 +43,10 @@ import { VisitStageController } from './visit-stage.controller';
 import { ArchitectVisitStage } from './models/architect-visit-stage.model';
 import { ArchitectSiteVisit } from './models/architect-site-visit.model';
 import { SnagItem } from './models/snag-item.model';
+import { QualityChecklistController } from './quality-checklist.controller';
+import { QualityChecklistService } from './quality-checklist.service';
+import { ProjectQualityCheck } from './models/project-quality-check.model';
+import { QualityController } from './quality.controller';
 /**
  * Site Operations — Quality, Reporting & Mockups.
  *
@@ -73,7 +78,12 @@ import { SnagItem } from './models/snag-item.model';
       Rfi,
       // shared models this module references
       Project,
-      Team,
+      Team, // Quality Checklist
+      QualityChecklist,
+      QualityChecklistItem,
+      QualityChecklistTemplate,
+      QualityCheckHead,
+      ProjectQualityCheck,
       Step,
       ArchitectVisitStage,
       ArchitectSiteVisit,
@@ -83,10 +93,12 @@ import { SnagItem } from './models/snag-item.model';
   controllers: [
     ChecklistController,
     QcSignOffController,
+    QualityChecklistController,
     DailySiteReportController,
     SiteOpsDashboardController,
     SiteVisitController,
     MockupController,
+    QualityController,
     RfiController,
     VisitStageController,
   ],
@@ -94,6 +106,8 @@ import { SnagItem } from './models/snag-item.model';
     SiteOpsDashboardService,
     ChecklistService,
     QcSignOffService,
+    QualityChecklistService,
+    QualityService,
     DailySiteReportService,
     SiteVisitService,
     MockupService,
@@ -102,6 +116,7 @@ import { SnagItem } from './models/snag-item.model';
   ],
   exports: [
     ChecklistService,
+    QualityChecklistService,
     QcSignOffService,
     DailySiteReportService,
     SiteVisitService,

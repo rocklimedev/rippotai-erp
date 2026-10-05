@@ -12,6 +12,7 @@ import Mockups from "../../pages/site-ops/MockupsPage";
 import SiteVisitsListPage from "../../pages/site-ops/SiteVisitsListPage";
 import SiteVisitDetailPage from "../../pages/site-ops/SiteVisitDetailPage";
 import SiteVisitCreatePage from "../../pages/site-ops/SiteVisitCreatePage";
+import QualityChecksPage from "../../pages/site-ops/QualityChecksPage";
 import SiteOperationsDashboard from "../../pages/dashboard/SiteOperationsDashboard";
 export const siteOperationsRoutes = [
   {
@@ -109,6 +110,10 @@ export const siteOperationsRoutes = [
       {
         path: "site-visits/new",
         element: <SiteVisitCreatePage />,
+      },
+      {
+        path: "checklists/workspace",
+        element: <QualityChecksPage />,
       },
     ],
   },
