@@ -47,6 +47,11 @@ interface AuthedRequest {
 export class CommandCenterController {
   constructor(private readonly commandCenterService: CommandCenterService) {}
 
+  @Post('refresh')
+  refresh() {
+    return this.commandCenterService.refresh();
+  }
+
   private actorFrom(req: AuthedRequest): ActorContext {
     return {
       id: req.user.id,

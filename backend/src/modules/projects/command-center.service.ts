@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { CommandCenterCacheService } from './command-center-cache.service';
 import { GateEngineService } from '../gates/gate-engine.service';
 import {
   DocumentEvidenceService,
@@ -150,7 +151,13 @@ export class CommandCenterService {
     private readonly cdnService: CdnService,
     private readonly gateEngine: GateEngineService,
     private readonly evidence: DocumentEvidenceService,
+    private readonly cache: CommandCenterCacheService,
   ) {}
+
+  async refresh() {
+    await this.cache.invalidate();
+    return { success: true };
+  }
 
   // ============================================================
   // PORTFOLIO / ROLLUPS
@@ -181,14 +188,8 @@ export class CommandCenterService {
   async getPortfolio(
     query: PortfolioQueryDto,
   ): Promise<PortfolioProjectResponseDto[]> {
-    const projects = await this.projectModel.findAll({
-      include: [{ model: ProjectType, as: 'project_type' }],
-      order: [['updated_at', 'DESC']],
-    });
-
-    const siteQc = await this.openSiteQcFailures();
-    let rows = await Promise.all(
-      projects.map((project) => this.buildProjectRow(project, siteQc)),
+    let rows = await this.cache.getOrLoad('portfolio', () =>
+      this.buildPortfolio(),
     );
 
     if (query.health && query.health !== HealthFilter.ALL) {
@@ -196,23 +197,46 @@ export class CommandCenterService {
         (r) => r.health.key === (query.health as unknown as ProjectHealth),
       );
     }
-
     if (query.search?.trim()) {
       const q = query.search.trim().toLowerCase();
-
       rows = rows.filter((r) =>
         `${r.name} ${r.code} ${r.location}`.toLowerCase().includes(q),
       );
     }
+    return rows;
+  }
+
+  private async buildPortfolio(): Promise<PortfolioProjectResponseDto[]> {
+    const projects = await this.projectModel.findAll({
+      include: [{ model: ProjectType, as: 'project_type' }],
+      order: [['updated_at', 'DESC']],
+    });
+
+    const siteQc = await this.openSiteQcFailures();
+    const rows = await Promise.all(
+      projects.map((project) => this.buildProjectRow(project, siteQc)),
+    );
 
     return rows;
   }
   async getProjectPhases(projectId: string): Promise<ProjectPhasesResponseDto> {
+    return this.cache.getOrLoad('project:' + projectId, () =>
+      this.buildProjectPhases(projectId),
+    );
+  }
+
+  private async buildProjectPhases(
+    projectId: string,
+  ): Promise<ProjectPhasesResponseDto> {
     const project = await this.mustFindProject(projectId);
 
     return this.buildProjectRow(project);
   }
   async getKpis() {
+    return this.cache.getOrLoad('getKpis', () => this.buildKpis());
+  }
+
+  private async buildKpis() {
     const rows = await this.getPortfolio({});
     const allPhases = rows.flatMap((r) => r.phases);
     const totalValue = (await this.projectModel.findAll()).reduce(
@@ -229,8 +253,8 @@ export class CommandCenterService {
         .length,
       // failed execution/QC tasks + open site QC sign-off failures (Site Operations)
       failed:
-        allPhases.filter((p) => p.state === PhaseRollupState.QC_FAILED)
-          .length + rows.reduce((s, r) => s + (r.siteQcFailures || 0), 0),
+        allPhases.filter((p) => p.state === PhaseRollupState.QC_FAILED).length +
+        rows.reduce((s, r) => s + (r.siteQcFailures || 0), 0),
       siteQcFailed: rows.reduce((s, r) => s + (r.siteQcFailures || 0), 0),
       docsMissing: allPhases.reduce(
         (s, p) =>
@@ -246,6 +270,13 @@ export class CommandCenterService {
   }
 
   async getPhaseDetail(projectId: string, phaseId: string) {
+    return this.cache.getOrLoad(
+      'phase:' + JSON.stringify([projectId, phaseId]),
+      () => this.buildPhaseDetail(projectId, phaseId),
+    );
+  }
+
+  private async buildPhaseDetail(projectId: string, phaseId: string) {
     const project = await this.mustFindProject(projectId);
     const phase = await this.phaseModel.findByPk(phaseId);
     if (!phase || phase.module !== this.getProjectModule(project))
@@ -506,7 +537,10 @@ export class CommandCenterService {
       if (p.phaseNumber > 9 || p.state === PhaseRollupState.QC_FAILED) return p;
       if (p.phaseNumber < currentSeq)
         return { ...p, state: PhaseRollupState.COMPLETE };
-      if (p.phaseNumber > currentSeq && p.state === PhaseRollupState.AWAITING_GATE)
+      if (
+        p.phaseNumber > currentSeq &&
+        p.state === PhaseRollupState.AWAITING_GATE
+      )
         return { ...p, state: PhaseRollupState.IN_PROGRESS };
       return p;
     });
@@ -633,6 +667,12 @@ export class CommandCenterService {
   // ============================================================
 
   async getActionRequired() {
+    return this.cache.getOrLoad('getActionRequired', () =>
+      this.buildActionRequired(),
+    );
+  }
+
+  private async buildActionRequired() {
     const rows = await this.getPortfolio({});
     const items: Array<{
       severe: boolean;
@@ -695,6 +735,12 @@ export class CommandCenterService {
   }
 
   async getDocumentControl() {
+    return this.cache.getOrLoad('getDocumentControl', () =>
+      this.buildDocumentControl(),
+    );
+  }
+
+  private async buildDocumentControl() {
     const rows = await this.getPortfolio({});
     let required = 0;
     let uploaded = 0;
@@ -743,6 +789,10 @@ export class CommandCenterService {
   }
 
   async getTaskQc() {
+    return this.cache.getOrLoad('getTaskQc', () => this.buildTaskQc());
+  }
+
+  private async buildTaskQc() {
     const rows = await this.getPortfolio({});
     const openTasks: Array<{
       id: string;
@@ -809,6 +859,12 @@ export class CommandCenterService {
   }
 
   async getTeamWorkload() {
+    return this.cache.getOrLoad('getTeamWorkload', () =>
+      this.buildTeamWorkload(),
+    );
+  }
+
+  private async buildTeamWorkload() {
     const [docControl, taskQc] = await Promise.all([
       this.getDocumentControl(),
       this.getTaskQc(),
@@ -825,6 +881,10 @@ export class CommandCenterService {
   }
 
   async getCommercial() {
+    return this.cache.getOrLoad('getCommercial', () => this.buildCommercial());
+  }
+
+  private async buildCommercial() {
     const projects = await this.projectModel.findAll();
     const totalValue = projects.reduce(
       (s, p) => s + Number(p.approved_value ?? 0),

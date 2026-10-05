@@ -12,6 +12,8 @@ import { ProjectTypeService } from './project-type.service';
 import { ProjectDashboardService } from './project-dashboard.service';
 import { ProjectPhaseService } from './project-phase.service';
 import { CommandCenterService } from './command-center.service';
+import { CommandCenterCacheService } from './command-center-cache.service';
+import { RedisModule } from '@/common/redis/redis.module';
 
 import { ProjectsController } from './projects.controller';
 import { ProjectTypeController } from './project-type.controller';
@@ -100,6 +102,7 @@ import { CdnModule } from '@/modules/cdn/cdn.module';
     // REQUIRED BY CommandCenterService
     // ----------------------------------------------------------
     CdnModule,
+    RedisModule,
   ],
 
   controllers: [
@@ -121,6 +124,7 @@ import { CdnModule } from '@/modules/cdn/cdn.module';
 
     // Command Center
     CommandCenterService,
+    CommandCenterCacheService,
   ],
 
   exports: [
