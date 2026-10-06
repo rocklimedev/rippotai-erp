@@ -52,13 +52,11 @@ export default defineConfig({
             sizes: "192x192",
             type: "image/png",
           },
-
           {
             src: "/pwa-512x512.png",
             sizes: "512x512",
             type: "image/png",
           },
-
           {
             src: "/pwa-512x512.png",
             sizes: "512x512",
@@ -72,6 +70,10 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
 
         navigateFallback: "/index.html",
+
+        // Your current main bundle is ~4.2 MB.
+        // Workbox defaults to 2 MB.
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
 
         runtimeCaching: [
           {
@@ -113,5 +115,9 @@ export default defineConfig({
     ),
 
     "process.env": {},
+  },
+
+  build: {
+    chunkSizeWarningLimit: 5000,
   },
 });
