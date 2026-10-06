@@ -182,13 +182,13 @@ export default function ProjectBriefList() {
         status,
       }).unwrap();
 
-      toast.success(`Project brief status updated to ${formatStatus(status)}`);
+      toast.success(`Client brief status updated to ${formatStatus(status)}`);
     } catch (error) {
-      console.error("Failed to update project brief status:", error);
+      console.error("Failed to update client brief status:", error);
       toast.error(
         error?.data?.message ||
           error?.message ||
-          "Failed to update project brief status",
+          "Failed to update client brief status",
       );
     } finally {
       setUpdatingStatusId(null);
@@ -213,13 +213,13 @@ export default function ProjectBriefList() {
     try {
       setDeletingId(brief.id);
       await deleteProjectBrief(brief.id).unwrap();
-      toast.success("Project brief deleted successfully");
+      toast.success("Client brief deleted successfully");
     } catch (error) {
-      console.error("Failed to delete project brief:", error);
+      console.error("Failed to delete client brief:", error);
       toast.error(
         error?.data?.message ||
           error?.message ||
-          "Failed to delete project brief",
+          "Failed to delete client brief",
       );
     } finally {
       setDeletingId(null);
@@ -232,7 +232,7 @@ export default function ProjectBriefList() {
 
   return (
     <Shell
-      title="Project Briefs"
+      title="Client Briefs"
       subtitle={`${rows.length} brief${
         rows.length !== 1 ? "s" : ""
       } across the workspace`}
@@ -242,14 +242,14 @@ export default function ProjectBriefList() {
           data-testid="project-brief-new-btn"
         >
           <Plus className="mr-2 h-4 w-4" />
-          New Project Brief
+          New Client Brief
         </Button>
       }
     >
       {/* FILTER BAR */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <Input
-          placeholder="Search project briefs…"
+          placeholder="Search client briefs…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           className="max-w-sm"
@@ -294,7 +294,7 @@ export default function ProjectBriefList() {
                     >
                       <div className="inline-flex items-center gap-2">
                         <RefreshCw className="h-4 w-4 animate-spin" />
-                        Loading project briefs...
+                        Loading client briefs...
                       </div>
                     </TableCell>
                   </TableRow>
@@ -324,7 +324,7 @@ export default function ProjectBriefList() {
                               <div className="mt-0.5 text-xs text-muted-foreground">
                                 {brief.propertyType ||
                                   brief.siteType ||
-                                  "Project Brief"}
+                                  "Client Brief"}
                               </div>
                             </div>
                           </div>
@@ -454,8 +454,8 @@ export default function ProjectBriefList() {
                         </div>
                         <div className="text-sm font-semibold text-foreground">
                           {q
-                            ? "No matching project briefs"
-                            : "No project briefs yet"}
+                            ? "No matching client briefs"
+                            : "No client briefs yet"}
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground">
                           {q

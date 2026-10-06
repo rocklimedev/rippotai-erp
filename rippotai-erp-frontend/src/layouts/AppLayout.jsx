@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import TopHeader from "../components/dashboard/TopHeader";
+import DocumentSequenceNavigation from "@/components/documents/DocumentSequenceNavigation";
 /* ---- Main AppLayout: only header + main, no sidebar ---- */
 export default function AppLayout({ app }) {
   const { user, ready } = useAuth();
@@ -34,7 +35,7 @@ export default function AppLayout({ app }) {
     <div className="min-h-screen bg-page">
       <TopHeader app={app} />
       <main className="px-5 py-6 lg:px-8 lg:py-8">
-        <Outlet />
+        <DocumentSequenceNavigation><Outlet /></DocumentSequenceNavigation>
       </main>
     </div>
   );

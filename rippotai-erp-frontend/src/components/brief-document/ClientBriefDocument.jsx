@@ -2,6 +2,7 @@
 // Built on the shared print kit (components/print-document): fixed Rippotai cover, then only
 // the information that was actually captured, as plain text and small pills (no tick boxes).
 import React, { forwardRef, useMemo } from "react";
+import { PROJECT_TYPE_OPTIONS, SITE_TYPES_BY_PROJECT, SITE_CONDITIONS_BY_PROJECT, siteOptionLabel } from "../../hooks/brief-site-options";
 import {
   PrintDocument, KV, kvHas, TextItem, Figure, Note, SignOff,
   has, fmtDate, yesNo, listOf, bySort, labelOf as labelIn,
@@ -121,7 +122,7 @@ export function buildBriefSections(brief) {
       { label: "Email", value: client.email },
       { label: "Correspondence address", value: client.address },
       { label: "Relationship to the project", value: brief.relationshipToClient },
-      { label: "Project type", value: brief.projectType?.name || project.project_type?.name },
+      { label: "Project type", value: PROJECT_TYPE_OPTIONS.find((item) => item.value === brief.projectCategory)?.label || brief.projectType?.name || project.project_type?.name },
       { label: "Referred by", value: brief.referredBySource },
       { label: "Date of brief", value: fmtDate(brief.briefDate) },
     ];
@@ -141,8 +142,8 @@ export function buildBriefSections(brief) {
     ];
     const items = [
       { label: "Site address", value: brief.siteAddress || project.site_location, wide: true },
-      { label: "Property", value: labelOf("siteType", brief.siteType) },
-      { label: "Current condition", value: labelOf("siteCondition", brief.siteCondition) },
+      { label: "Site type", value: brief.siteType === "OTHER" ? brief.siteTypeOther || "Other" : siteOptionLabel(brief.siteType, SITE_TYPES_BY_PROJECT) || labelOf("siteType", brief.siteType) },
+      { label: "Current condition", value: brief.siteCondition === "OTHER" ? brief.siteConditionOther || "Other" : siteOptionLabel(brief.siteCondition, SITE_CONDITIONS_BY_PROJECT) || labelOf("siteCondition", brief.siteCondition) },
       { label: "Site area", value: area },
       { label: "Facing", value: facing(brief.facingOrientation) },
       { label: "Floors", value: has(brief.numberOfFloors) ? String(brief.numberOfFloors) : "" },
