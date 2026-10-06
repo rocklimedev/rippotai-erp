@@ -2,6 +2,7 @@ import {
   Table,
   Column,
   Model,
+  PrimaryKey,
   DataType,
   ForeignKey,
   BelongsTo,
@@ -19,16 +20,21 @@ import { ContinuityType } from '../../../common/enums/process-workflow.enums';
  */
 @Table({ tableName: 'continuity_roles', timestamps: true })
 export class ContinuityRole extends Model<ContinuityRole> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  declare id: string;
+
   @ForeignKey(() => Project)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  projectId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  projectId: string;
 
   @BelongsTo(() => Project)
   project: Project;
 
   @ForeignKey(() => Team)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  teamId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  teamId: string;
 
   @BelongsTo(() => Team)
   team: Team;
@@ -42,16 +48,16 @@ export class ContinuityRole extends Model<ContinuityRole> {
 
   /** For GATE_BOUND roles: the step/gate that brings this team onto the project. */
   @ForeignKey(() => Step)
-  @Column({ type: DataType.INTEGER, allowNull: true })
-  opensAtStepId: number | null;
+  @Column({ type: DataType.CHAR(36), allowNull: true })
+  opensAtStepId: string | null;
 
   @BelongsTo(() => Step, 'opensAtStepId')
   opensAtStep: Step;
 
   /** For GATE_BOUND roles: the step/gate that releases this team from the project. */
   @ForeignKey(() => Step)
-  @Column({ type: DataType.INTEGER, allowNull: true })
-  closesAtStepId: number | null;
+  @Column({ type: DataType.CHAR(36), allowNull: true })
+  closesAtStepId: string | null;
 
   @BelongsTo(() => Step, 'closesAtStepId')
   closesAtStep: Step;

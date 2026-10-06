@@ -43,7 +43,7 @@ export default function RfisListPage() {
   );
 
   const load = () => {
-    const n = Number(projectId);
+    const n = projectId;
     if (!n || Number.isNaN(n)) return;
     setQueryProjectId(n);
   };
@@ -85,7 +85,7 @@ export default function RfisListPage() {
             <label className="text-xs text-[var(--muted)]">Project ID</label>
             <Input
               className="bc-input w-[160px] h-10"
-              type="number"
+              type="text"
               placeholder="e.g. 12"
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}

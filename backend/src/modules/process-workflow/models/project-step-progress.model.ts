@@ -2,6 +2,7 @@ import {
   Table,
   Column,
   Model,
+  PrimaryKey,
   DataType,
   ForeignKey,
   BelongsTo,
@@ -23,16 +24,21 @@ import { StepStatus } from '../../../common/enums/process-workflow.enums';
   indexes: [{ unique: true, fields: ['projectId', 'stepId'] }],
 })
 export class ProjectStepProgress extends Model<ProjectStepProgress> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  declare id: string;
+
   @ForeignKey(() => Project)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  projectId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  projectId: string;
 
   @BelongsTo(() => Project)
   project: Project;
 
   @ForeignKey(() => Step)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  stepId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  stepId: string;
 
   @BelongsTo(() => Step)
   step: Step;
@@ -45,8 +51,8 @@ export class ProjectStepProgress extends Model<ProjectStepProgress> {
   status: StepStatus;
 
   @ForeignKey(() => Team)
-  @Column({ type: DataType.INTEGER, allowNull: true })
-  assigneeTeamId: number | null;
+  @Column({ type: DataType.CHAR(36), allowNull: true })
+  assigneeTeamId: string | null;
 
   @BelongsTo(() => Team)
   assigneeTeam: Team;

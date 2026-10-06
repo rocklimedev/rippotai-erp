@@ -2,6 +2,7 @@ import {
   Table,
   Column,
   Model,
+  PrimaryKey,
   DataType,
   ForeignKey,
   BelongsTo,
@@ -23,16 +24,21 @@ import { ResponsibilityType } from '../../../common/enums/process-workflow.enums
   ],
 })
 export class StepTeam extends Model<StepTeam> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  declare id: string;
+
   @ForeignKey(() => Step)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  stepId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  stepId: string;
 
   @BelongsTo(() => Step)
   step: Step;
 
   @ForeignKey(() => Team)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  teamId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  teamId: string;
 
   @BelongsTo(() => Team)
   team: Team;

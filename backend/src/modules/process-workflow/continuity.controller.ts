@@ -1,4 +1,11 @@
-import { Controller, Get, Post, Body, Param, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { ContinuityService } from './continuity.service';
 import { CreateContinuityRoleDto } from './dto/tracking.dto';
 
@@ -12,17 +19,17 @@ export class ContinuityController {
   }
 
   @Post('continuity-roles/:id/open')
-  markOpened(@Param('id', ParseIntPipe) id: number) {
+  markOpened(@Param('id', ParseUUIDPipe) id: string) {
     return this.continuityService.markOpened(id);
   }
 
   @Post('continuity-roles/:id/close')
-  markClosed(@Param('id', ParseIntPipe) id: number) {
+  markClosed(@Param('id', ParseUUIDPipe) id: string) {
     return this.continuityService.markClosed(id);
   }
 
   @Get('projects/:projectId/continuity-roles')
-  getRoleMap(@Param('projectId', ParseIntPipe) projectId: number) {
+  getRoleMap(@Param('projectId', ParseUUIDPipe) projectId: string) {
     return this.continuityService.getProjectRoleMap(projectId);
   }
 }

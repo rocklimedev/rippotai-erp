@@ -16,7 +16,7 @@ import { toast } from "sonner";
 
 export default function RfiDetailPage() {
   const { id } = useParams();
-  const rfiId = Number(id);
+  const rfiId = id;
   const {
     data: rfi,
     isLoading,
@@ -56,7 +56,7 @@ export default function RfiDetailPage() {
   };
 
   const handleReroute = async () => {
-    const teamId = Number(newTeamId);
+    const teamId = newTeamId;
     if (!teamId) {
       toast.error("Enter a valid team ID");
       return;
@@ -178,7 +178,7 @@ export default function RfiDetailPage() {
               <div className="space-y-2">
                 <Label>New team ID</Label>
                 <Input
-                  type="number"
+                  type="text"
                   className="bc-input"
                   value={newTeamId}
                   onChange={(e) => setNewTeamId(e.target.value)}

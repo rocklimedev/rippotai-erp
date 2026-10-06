@@ -2,6 +2,8 @@ import {
   Table,
   Column,
   Model,
+  Default,
+  PrimaryKey,
   DataType,
   ForeignKey,
   BelongsTo,
@@ -18,16 +20,21 @@ import { Team } from './team.model';
  */
 @Table({ tableName: 'gate_logs', timestamps: true })
 export class GateLog extends Model<GateLog> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  declare id: string;
+
   @ForeignKey(() => Project)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  projectId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  projectId: string;
 
   @BelongsTo(() => Project)
   project: Project;
 
   @ForeignKey(() => Step)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  stepId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  stepId: string;
 
   @BelongsTo(() => Step)
   step: Step;
@@ -39,8 +46,8 @@ export class GateLog extends Model<GateLog> {
   achievedAt: Date;
 
   @ForeignKey(() => Team)
-  @Column({ type: DataType.INTEGER, allowNull: true })
-  approverTeamId: number | null;
+  @Column({ type: DataType.CHAR(36), allowNull: true })
+  approverTeamId: string | null;
 
   @BelongsTo(() => Team)
   approverTeam: Team;

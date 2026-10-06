@@ -49,7 +49,7 @@ export default function MockupsListPage() {
   );
 
   const load = () => {
-    const n = Number(projectId);
+    const n = projectId;
     if (!n) return;
     setQueryId(n);
   };
@@ -90,7 +90,7 @@ export default function MockupsListPage() {
           <div className="space-y-1">
             <label className="text-xs text-[var(--muted)]">Project ID</label>
             <Input
-              type="number"
+              type="text"
               className="bc-input w-[140px] h-10"
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}

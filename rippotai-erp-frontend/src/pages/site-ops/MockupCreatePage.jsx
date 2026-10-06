@@ -25,7 +25,7 @@ export default function MockupCreatePage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const projectId = Number(form.projectId);
+    const projectId = form.projectId;
     if (!projectId || !form.name || !form.proposedBy) {
       toast.error("Project, name and proposed by are required");
       return;
@@ -33,7 +33,7 @@ export default function MockupCreatePage() {
     try {
       const result = await propose({
         projectId,
-        stepId: form.stepId ? Number(form.stepId) : undefined,
+        stepId: form.stepId ? form.stepId : undefined,
         name: form.name,
         finishType: form.finishType || undefined,
         location: form.location || undefined,
@@ -60,7 +60,7 @@ export default function MockupCreatePage() {
           <div className="space-y-2">
             <Label>Project ID *</Label>
             <Input
-              type="number"
+              type="text"
               className="bc-input"
               value={form.projectId}
               onChange={(e) => set("projectId", e.target.value)}
@@ -70,7 +70,7 @@ export default function MockupCreatePage() {
           <div className="space-y-2">
             <Label>Step ID</Label>
             <Input
-              type="number"
+              type="text"
               className="bc-input"
               value={form.stepId}
               onChange={(e) => set("stepId", e.target.value)}

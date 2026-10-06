@@ -30,7 +30,7 @@ export class ProgressService {
   ) {}
 
   /** Ensures a project has a progress row (NOT_STARTED) for every active step in the library. */
-  async initializeProjectProgress(projectId: number): Promise<void> {
+  async initializeProjectProgress(projectId: string): Promise<void> {
     const project = await this.projectModel.findByPk(projectId);
     if (!project) throw new NotFoundException(`Project ${projectId} not found`);
 
@@ -48,8 +48,8 @@ export class ProgressService {
   }
 
   async updateStepProgress(
-    projectId: number,
-    stepId: number,
+    projectId: string,
+    stepId: string,
     dto: UpdateStepProgressDto,
   ): Promise<ProjectStepProgress> {
     const [progress] = await this.progressModel.findOrCreate({
@@ -80,8 +80,8 @@ export class ProgressService {
   }
 
   async signOffStep(
-    projectId: number,
-    stepId: number,
+    projectId: string,
+    stepId: string,
     dto: SignOffStepDto,
   ): Promise<ProjectStepProgress> {
     const progress = await this.progressModel.findOne({
@@ -104,7 +104,7 @@ export class ProgressService {
   }
 
   /** Step-level progress for a project, grouped by phase, in phase/step order. */
-  async getProjectProgress(projectId: number) {
+  async getProjectProgress(projectId: string) {
     const phases = await this.phaseModel.findAll({
       order: [['order', 'ASC']],
       include: [

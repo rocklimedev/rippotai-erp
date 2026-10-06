@@ -5,7 +5,7 @@ import React, { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SelectInput } from "@/components/inos";
 import { useGetProjectsQuery } from "@/api/projects/project.api";
-import { useGetTeamsQuery } from "@/api/users/team.api";
+import { useGetWorkflowTeamsQuery } from "@/api/workflow/library.api";
 
 export function useSiteProjects() {
   const { data, isLoading } = useGetProjectsQuery({});
@@ -69,10 +69,10 @@ export function ProjectPicker({ value, onChange, allLabel = "All projects", plac
 }
 
 export function useTradeTeams() {
-  const { data } = useGetTeamsQuery();
+  const { data } = useGetWorkflowTeamsQuery();
   return useMemo(() => {
     const rows = Array.isArray(data) ? data : data?.data || [];
-    // site-ops rows route to the numeric trade teams (1 Civil … 10 Site Supervision)
-    return rows.filter((t) => /^\d+$/.test(String(t.id))).sort((a, b) => Number(a.id) - Number(b.id));
+    // Only workflow teams have a type; UUIDs are opaque identifiers.
+    return rows.filter((t) => t.type && t.is_active !== false && t.isActive !== false).sort((a, b) => String(a.name).localeCompare(String(b.name)));
   }, [data]);
 }

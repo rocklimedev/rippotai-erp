@@ -71,7 +71,7 @@ export class GateService {
     return gateLog;
   }
 
-  async getGateHistory(projectId: number): Promise<GateLog[]> {
+  async getGateHistory(projectId: string): Promise<GateLog[]> {
     return this.gateLogModel.findAll({
       where: { projectId },
       include: [{ model: this.stepModel }, { model: this.teamModel }],
@@ -80,7 +80,7 @@ export class GateService {
   }
 
   /** All gates in the library vs which ones a project has cleared, in phase/step order. */
-  async getGateChecklist(projectId: number) {
+  async getGateChecklist(projectId: string) {
     const gateSteps = await this.stepModel.findAll({
       where: { isGate: true },
       order: [['order', 'ASC']],

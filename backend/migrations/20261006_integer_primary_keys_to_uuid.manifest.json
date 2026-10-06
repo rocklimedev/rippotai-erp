@@ -1,0 +1,199 @@
+{
+  "tables": [
+    "checklist_template_items",
+    "checklist_templates",
+    "continuity_roles",
+    "daily_site_reports",
+    "deliverables",
+    "gate_logs",
+    "manpower_entries",
+    "mockups",
+    "phases",
+    "project_deliverable_records",
+    "project_step_progress",
+    "qc_sign_off_item_results",
+    "qc_sign_offs",
+    "rfis",
+    "site_visit_logs",
+    "step_teams",
+    "steps",
+    "teams",
+    "visit_assignments"
+  ],
+  "references": [
+    {
+      "table": "checklist_template_items",
+      "column": "template_id",
+      "parent": "checklist_templates"
+    },
+    {
+      "table": "checklist_templates",
+      "column": "step_id",
+      "parent": "steps"
+    },
+    {
+      "table": "checklist_templates",
+      "column": "trade_team_id",
+      "parent": "teams"
+    },
+    {
+      "table": "continuity_roles",
+      "column": "closes_at_step_id",
+      "parent": "steps"
+    },
+    {
+      "table": "continuity_roles",
+      "column": "opens_at_step_id",
+      "parent": "steps"
+    },
+    {
+      "table": "continuity_roles",
+      "column": "project_id",
+      "parent": "projects"
+    },
+    {
+      "table": "continuity_roles",
+      "column": "team_id",
+      "parent": "teams"
+    },
+    {
+      "table": "deliverables",
+      "column": "step_id",
+      "parent": "steps"
+    },
+    {
+      "table": "gate_logs",
+      "column": "approver_team_id",
+      "parent": "teams"
+    },
+    {
+      "table": "gate_logs",
+      "column": "project_id",
+      "parent": "projects"
+    },
+    {
+      "table": "gate_logs",
+      "column": "step_id",
+      "parent": "steps"
+    },
+    {
+      "table": "manpower_entries",
+      "column": "daily_site_report_id",
+      "parent": "daily_site_reports"
+    },
+    {
+      "table": "mockups",
+      "column": "step_id",
+      "parent": "steps"
+    },
+    {
+      "table": "project_deliverable_records",
+      "column": "deliverable_id",
+      "parent": "deliverables"
+    },
+    {
+      "table": "project_deliverable_records",
+      "column": "project_id",
+      "parent": "projects"
+    },
+    {
+      "table": "project_step_progress",
+      "column": "assignee_team_id",
+      "parent": "teams"
+    },
+    {
+      "table": "project_step_progress",
+      "column": "project_id",
+      "parent": "projects"
+    },
+    {
+      "table": "project_step_progress",
+      "column": "step_id",
+      "parent": "steps"
+    },
+    {
+      "table": "qc_sign_off_item_results",
+      "column": "qc_sign_off_id",
+      "parent": "qc_sign_offs"
+    },
+    {
+      "table": "qc_sign_off_item_results",
+      "column": "template_item_id",
+      "parent": "checklist_template_items"
+    },
+    {
+      "table": "qc_sign_offs",
+      "column": "checklist_template_id",
+      "parent": "checklist_templates"
+    },
+    {
+      "table": "qc_sign_offs",
+      "column": "step_id",
+      "parent": "steps"
+    },
+    {
+      "table": "qc_sign_offs",
+      "column": "trade_team_id",
+      "parent": "teams"
+    },
+    {
+      "table": "rfis",
+      "column": "routed_to_team_id",
+      "parent": "teams"
+    },
+    {
+      "table": "rfis",
+      "column": "step_id",
+      "parent": "steps"
+    },
+    {
+      "table": "site_visit_logs",
+      "column": "visit_assignment_id",
+      "parent": "visit_assignments"
+    },
+    {
+      "table": "step_teams",
+      "column": "step_id",
+      "parent": "steps"
+    },
+    {
+      "table": "step_teams",
+      "column": "team_id",
+      "parent": "teams"
+    },
+    {
+      "table": "steps",
+      "column": "phase_id",
+      "parent": "phases"
+    },
+    {
+      "table": "team_section_access",
+      "column": "team_id",
+      "parent": "teams"
+    },
+    {
+      "table": "visit_assignments",
+      "column": "team_id",
+      "parent": "teams"
+    },
+    {
+      "table": "team_members",
+      "column": "team_id",
+      "parent": "teams"
+    },
+    {
+      "table": "team_members",
+      "column": "owner_id",
+      "parent": "teams",
+      "where": {
+        "column": "owner_type",
+        "value": "TEAM"
+      }
+    },
+    {
+      "table": "manpower_entries",
+      "column": "team_id",
+      "parent": "teams"
+    }
+  ]
+}

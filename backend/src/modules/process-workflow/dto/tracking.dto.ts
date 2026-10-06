@@ -1,4 +1,5 @@
 import {
+  IsUUID,
   IsString,
   IsInt,
   IsOptional,
@@ -16,8 +17,8 @@ export class UpdateStepProgressDto {
   status: StepStatus;
 
   @IsOptional()
-  @IsInt()
-  assigneeTeamId?: number;
+  @IsUUID()
+  assigneeTeamId?: string;
 
   @IsOptional()
   @IsString()
@@ -48,19 +49,19 @@ export class SignOffStepDto {
 }
 
 export class LogGateDto {
-  @IsInt()
-  projectId: number;
+  @IsUUID()
+  projectId: string;
 
-  @IsInt()
-  stepId: number;
+  @IsUUID()
+  stepId: string;
 
   @IsOptional()
   @IsDateString()
   achievedAt?: string; // defaults to now
 
   @IsOptional()
-  @IsInt()
-  approverTeamId?: number;
+  @IsUUID()
+  approverTeamId?: string;
 
   @IsString()
   @MaxLength(150)
@@ -72,30 +73,30 @@ export class LogGateDto {
 }
 
 export class CreateContinuityRoleDto {
-  @IsInt()
-  projectId: number;
+  @IsUUID()
+  projectId: string;
 
-  @IsInt()
-  teamId: number;
+  @IsUUID()
+  teamId: string;
 
   @IsEnum(ContinuityType)
   continuityType: ContinuityType;
 
   @IsOptional()
-  @IsInt()
-  opensAtStepId?: number;
+  @IsUUID()
+  opensAtStepId?: string;
 
   @IsOptional()
-  @IsInt()
-  closesAtStepId?: number;
+  @IsUUID()
+  closesAtStepId?: string;
 }
 
 export class RecordDeliverableDto {
-  @IsInt()
-  projectId: number;
+  @IsUUID()
+  projectId: string;
 
-  @IsInt()
-  deliverableId: number;
+  @IsUUID()
+  deliverableId: string;
 
   @IsOptional()
   @IsString()

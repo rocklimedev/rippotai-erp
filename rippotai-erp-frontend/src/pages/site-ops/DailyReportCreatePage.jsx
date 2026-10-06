@@ -74,7 +74,7 @@ export default function DailyReportCreatePage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const projectId = Number(form.projectId);
+    const projectId = form.projectId;
 
     if (!projectId || !form.reportDate || !form.workCompleted) {
       toast.error("Fill required fields");

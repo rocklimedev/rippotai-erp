@@ -4,7 +4,7 @@ import {
   Post,
   Body,
   Param,
-  ParseIntPipe,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { GateService } from './gate.service';
 import { LogGateDto } from './dto/tracking.dto';
@@ -19,12 +19,12 @@ export class GateController {
   }
 
   @Get('projects/:projectId/history')
-  getHistory(@Param('projectId', ParseIntPipe) projectId: number) {
+  getHistory(@Param('projectId', ParseUUIDPipe) projectId: string) {
     return this.gateService.getGateHistory(projectId);
   }
 
   @Get('projects/:projectId/checklist')
-  getChecklist(@Param('projectId', ParseIntPipe) projectId: number) {
+  getChecklist(@Param('projectId', ParseUUIDPipe) projectId: string) {
     return this.gateService.getGateChecklist(projectId);
   }
 }

@@ -2,6 +2,7 @@ import {
   Table,
   Column,
   Model,
+  PrimaryKey,
   DataType,
   Default,
   HasMany,
@@ -20,6 +21,11 @@ import { ContinuityRole } from './continuity-role.model';
  */
 @Table({ tableName: 'teams', timestamps: true })
 export class Team extends Model<Team> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  declare id: string;
+
   @Column({ type: DataType.STRING(100), allowNull: false })
   name: string;
 

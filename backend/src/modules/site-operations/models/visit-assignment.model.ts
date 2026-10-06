@@ -2,6 +2,7 @@ import {
   Table,
   Column,
   Model,
+  PrimaryKey,
   DataType,
   ForeignKey,
   BelongsTo,
@@ -24,6 +25,11 @@ import { SiteVisitLog } from './site-visit-log.model';
  */
 @Table({ tableName: 'visit_assignments', timestamps: true })
 export class VisitAssignment extends Model<VisitAssignment> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  declare id: string;
+
   @ForeignKey(() => Project)
   @Column({ type: DataType.CHAR(36), allowNull: false })
   projectId: string;
@@ -38,8 +44,8 @@ export class VisitAssignment extends Model<VisitAssignment> {
   visitorType: VisitorType;
 
   @ForeignKey(() => Team)
-  @Column({ type: DataType.INTEGER, allowNull: true })
-  teamId: number | null; // internal team responsible, if applicable (e.g. Supervisor, Architect)
+  @Column({ type: DataType.CHAR(36), allowNull: true })
+  teamId: string | null; // internal team responsible, if applicable (e.g. Supervisor, Architect)
 
   @Column({ type: DataType.STRING(150), allowNull: true })
   externalPartyName: string | null; // vendor/contractor/client name, if not an internal team

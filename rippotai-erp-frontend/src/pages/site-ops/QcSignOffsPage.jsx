@@ -240,7 +240,7 @@ export default function QcSignOffsPage() {
 
           <div className="flex gap-2">
             <input
-              type="number"
+              type="text"
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
               placeholder="Project ID"

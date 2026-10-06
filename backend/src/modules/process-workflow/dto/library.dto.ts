@@ -1,4 +1,5 @@
 import {
+  IsUUID,
   IsString,
   IsInt,
   IsOptional,
@@ -49,8 +50,8 @@ export class UpdatePhaseDto {
 }
 
 export class CreateStepDto {
-  @IsInt()
-  phaseId: number;
+  @IsUUID()
+  phaseId: string;
 
   @IsString()
   @MaxLength(150)
@@ -122,8 +123,8 @@ export class UpdateStepDto {
 }
 
 export class CreateDeliverableDto {
-  @IsInt()
-  stepId: number;
+  @IsUUID()
+  stepId: string;
 
   @IsString()
   @MaxLength(200)
@@ -144,11 +145,11 @@ export class CreateDeliverableDto {
 }
 
 export class AssignStepTeamDto {
-  @IsInt()
-  stepId: number;
+  @IsUUID()
+  stepId: string;
 
-  @IsInt()
-  teamId: number;
+  @IsUUID()
+  teamId: string;
 
   @IsOptional()
   @IsString()

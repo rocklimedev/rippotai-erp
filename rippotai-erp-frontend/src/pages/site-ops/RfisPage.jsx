@@ -81,7 +81,7 @@ export default function RfisPage() {
     setTried(true);
     if (Object.values(invalid).some(Boolean)) return;
     try {
-      await raiseRfi({ ...form, subject: form.subject.trim(), query: form.query.trim(), raisedBy: form.raisedBy.trim(), routedToTeamId: Number(form.routedToTeamId) }).unwrap();
+      await raiseRfi({ ...form, subject: form.subject.trim(), query: form.query.trim(), raisedBy: form.raisedBy.trim(), routedToTeamId: form.routedToTeamId }).unwrap();
       toast.success("RFI raised");
       setRaiseOpen(false);
     } catch (e) {
@@ -101,7 +101,7 @@ export default function RfisPage() {
   const submitReroute = async () => {
     if (!teamId) return;
     try {
-      await rerouteRfi({ id: reroute.id, routedToTeamId: Number(teamId) }).unwrap();
+      await rerouteRfi({ id: reroute.id, routedToTeamId: teamId }).unwrap();
       toast.success("RFI re-routed");
       setReroute(null);
     } catch (e) {

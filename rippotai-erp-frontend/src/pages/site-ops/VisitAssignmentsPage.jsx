@@ -253,7 +253,7 @@ export default function VisitAssignmentsPage() {
       projectId: form.projectId,
       visitorType: form.visitorType,
       frequency: form.frequency,
-      teamId: form.teamId ? Number(form.teamId) : null,
+      teamId: form.teamId ? form.teamId : null,
       externalPartyName: form.externalPartyName.trim() || null,
       scheduleDays:
         form.frequency === "FIXED_SCHEDULE" ? form.scheduleDays : null,

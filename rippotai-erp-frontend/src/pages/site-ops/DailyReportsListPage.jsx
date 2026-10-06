@@ -52,7 +52,7 @@ export default function DailyReportsListPage() {
 
   const load = () => {
     if (!projectId) return;
-    setQueryId(Number(projectId));
+    setQueryId(projectId);
   };
 
   return (

@@ -2,6 +2,7 @@ import {
   Table,
   Column,
   Model,
+  PrimaryKey,
   DataType,
   ForeignKey,
   BelongsTo,
@@ -23,9 +24,14 @@ import { GateLog } from './gate-log.model';
  */
 @Table({ tableName: 'steps', timestamps: true, paranoid: true })
 export class Step extends Model<Step> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  declare id: string;
+
   @ForeignKey(() => Phase)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  phaseId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  phaseId: string;
 
   @BelongsTo(() => Phase)
   phase: Phase;

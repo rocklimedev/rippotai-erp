@@ -5,7 +5,6 @@ import {
   Body,
   Param,
   Query,
-  ParseIntPipe,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ChecklistService } from './checklist.service';
@@ -31,7 +30,7 @@ export class ChecklistController {
   }
 
   @Get('templates/:id')
-  getTemplate(@Param('id', ParseIntPipe) id: number) {
+  getTemplate(@Param('id', ParseUUIDPipe) id: string) {
     return this.checklistService.getTemplateOrThrow(id);
   }
 
@@ -42,8 +41,8 @@ export class ChecklistController {
     @Query('stepId') stepId?: string,
   ) {
     return this.checklistService.listTemplates(
-      tradeTeamId ? Number(tradeTeamId) : undefined,
-      stepId ? Number(stepId) : undefined,
+      tradeTeamId || undefined,
+      stepId || undefined,
     );
   }
 }
@@ -66,7 +65,12 @@ export class QcSignOffController {
     @Query('to') to?: string,
     @Query('status') status?: string,
   ) {
-    return this.qcService.history({ projectId: projectId || undefined, from, to, status });
+    return this.qcService.history({
+      projectId: projectId || undefined,
+      from,
+      to,
+      status,
+    });
   }
 
   /** GET /site-ops/qc/handoff-status?projectId=<uuid> — latest result per project/step/trade. */
@@ -76,7 +80,7 @@ export class QcSignOffController {
   }
 
   @Get(':id')
-  getSignOff(@Param('id', ParseIntPipe) id: number) {
+  getSignOff(@Param('id', ParseUUIDPipe) id: string) {
     return this.qcService.getSignOffOrThrow(id);
   }
 

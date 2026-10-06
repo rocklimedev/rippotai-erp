@@ -4,6 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 import { Phase } from './models/phase.model';
 import { Step } from './models/step.model';
 import { Team } from './models/team.model';
@@ -32,6 +33,13 @@ export class LibraryService {
     @InjectModel(Deliverable) private deliverableModel: typeof Deliverable,
   ) {}
 
+  listTeams(): Promise<Team[]> {
+    return this.teamModel.findAll({
+      where: { isActive: true, type: { [Op.ne]: null } },
+      order: [['name', 'ASC']],
+    });
+  }
+
   // ---------- Phases ----------
 
   async createPhase(dto: CreatePhaseDto): Promise<Phase> {
@@ -43,13 +51,13 @@ export class LibraryService {
     return this.phaseModel.create({ ...dto } as any);
   }
 
-  async updatePhase(id: number, dto: UpdatePhaseDto): Promise<Phase> {
+  async updatePhase(id: string, dto: UpdatePhaseDto): Promise<Phase> {
     const phase = await this.getPhaseOrThrow(id);
     await phase.update(dto as any);
     return phase;
   }
 
-  async getPhaseOrThrow(id: number): Promise<Phase> {
+  async getPhaseOrThrow(id: string): Promise<Phase> {
     const phase = await this.phaseModel.findByPk(id);
     if (!phase) throw new NotFoundException(`Phase ${id} not found`);
     return phase;
@@ -91,13 +99,13 @@ export class LibraryService {
     return this.stepModel.create({ ...dto } as any);
   }
 
-  async updateStep(id: number, dto: UpdateStepDto): Promise<Step> {
+  async updateStep(id: string, dto: UpdateStepDto): Promise<Step> {
     const step = await this.getStepOrThrow(id);
     await step.update(dto as any);
     return step;
   }
 
-  async getStepOrThrow(id: number): Promise<Step> {
+  async getStepOrThrow(id: string): Promise<Step> {
     const step = await this.stepModel.findByPk(id, {
       include: [
         { model: this.deliverableModel },
@@ -126,7 +134,7 @@ export class LibraryService {
     return this.deliverableModel.create({ ...dto } as any);
   }
 
-  async listDeliverablesForStep(stepId: number): Promise<Deliverable[]> {
+  async listDeliverablesForStep(stepId: string): Promise<Deliverable[]> {
     return this.deliverableModel.findAll({ where: { stepId } });
   }
 
@@ -150,7 +158,7 @@ export class LibraryService {
     return assignment;
   }
 
-  async removeTeamFromStep(stepTeamId: number): Promise<void> {
+  async removeTeamFromStep(stepTeamId: string): Promise<void> {
     const assignment = await this.stepTeamModel.findByPk(stepTeamId);
     if (!assignment)
       throw new NotFoundException(
@@ -159,14 +167,14 @@ export class LibraryService {
     await assignment.destroy();
   }
 
-  async listTeamsForStep(stepId: number): Promise<StepTeam[]> {
+  async listTeamsForStep(stepId: string): Promise<StepTeam[]> {
     return this.stepTeamModel.findAll({
       where: { stepId },
       include: [this.teamModel],
     });
   }
 
-  async listStepsForTeam(teamId: number): Promise<StepTeam[]> {
+  async listStepsForTeam(teamId: string): Promise<StepTeam[]> {
     return this.stepTeamModel.findAll({
       where: { teamId },
       include: [{ model: this.stepModel, include: [this.phaseModel] }],

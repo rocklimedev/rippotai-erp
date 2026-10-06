@@ -4,7 +4,7 @@ import {
   Post,
   Body,
   Param,
-  ParseIntPipe,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { DocumentRegisterService } from './document-register.service';
 import { RecordDeliverableDto } from '../process-workflow/dto/tracking.dto';
@@ -20,7 +20,7 @@ export class DocumentRegisterController {
 
   /** The live document register for a project. */
   @Get(':projectId/document-register')
-  getRegister(@Param('projectId', ParseIntPipe) projectId: number) {
+  getRegister(@Param('projectId', ParseUUIDPipe) projectId: string) {
     return this.registerService.getDocumentRegister(projectId);
   }
 }

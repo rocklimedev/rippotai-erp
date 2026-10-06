@@ -2,6 +2,7 @@ import {
   Table,
   Column,
   Model,
+  PrimaryKey,
   DataType,
   ForeignKey,
   BelongsTo,
@@ -17,6 +18,11 @@ import {
 /** A single logged (or missed/cancelled) site visit. */
 @Table({ tableName: 'site_visit_logs', timestamps: true })
 export class SiteVisitLog extends Model<SiteVisitLog> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  declare id: string;
+
   @ForeignKey(() => Project)
   @Column({ type: DataType.CHAR(36), allowNull: false })
   projectId: string;
@@ -26,8 +32,8 @@ export class SiteVisitLog extends Model<SiteVisitLog> {
 
   /** Optional link to the recurring assignment this visit fulfils. Null = ad hoc/unscheduled visit. */
   @ForeignKey(() => VisitAssignment)
-  @Column({ type: DataType.INTEGER, allowNull: true })
-  visitAssignmentId: number | null;
+  @Column({ type: DataType.CHAR(36), allowNull: true })
+  visitAssignmentId: string | null;
 
   @BelongsTo(() => VisitAssignment)
   visitAssignment: VisitAssignment;

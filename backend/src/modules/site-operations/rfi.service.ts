@@ -43,7 +43,7 @@ export class RfiService {
     } as any);
   }
 
-  async reroute(id: number, dto: RerouteRfiDto): Promise<Rfi> {
+  async reroute(id: string, dto: RerouteRfiDto): Promise<Rfi> {
     const rfi = await this.getOrThrow(id);
     if (rfi.status === RfiStatus.CLOSED)
       throw new BadRequestException('Cannot reroute a closed RFI');
@@ -57,7 +57,7 @@ export class RfiService {
   }
 
   /** Records the response. The RFI moves to ANSWERED; call close() separately to close it out. */
-  async respond(id: number, dto: RespondToRfiDto): Promise<Rfi> {
+  async respond(id: string, dto: RespondToRfiDto): Promise<Rfi> {
     const rfi = await this.getOrThrow(id);
     if (rfi.status === RfiStatus.CLOSED)
       throw new BadRequestException('RFI is already closed');
@@ -71,7 +71,7 @@ export class RfiService {
     return rfi;
   }
 
-  async close(id: number): Promise<Rfi> {
+  async close(id: string): Promise<Rfi> {
     const rfi = await this.getOrThrow(id);
     if (rfi.status !== RfiStatus.ANSWERED) {
       throw new BadRequestException(
@@ -82,7 +82,7 @@ export class RfiService {
     return rfi;
   }
 
-  async getOrThrow(id: number): Promise<Rfi> {
+  async getOrThrow(id: string): Promise<Rfi> {
     const rfi = await this.rfiModel.findByPk(id, {
       include: [this.teamModel, { model: Project, attributes: ['id', 'name'] }],
     });
@@ -95,7 +95,10 @@ export class RfiService {
   }
 
   /** All RFIs, optionally for one project (UUID) and/or status, with team + project name. */
-  async list({ projectId, status }: { projectId?: string; status?: RfiStatus } = {}): Promise<any[]> {
+  async list({
+    projectId,
+    status,
+  }: { projectId?: string; status?: RfiStatus } = {}): Promise<any[]> {
     const where: any = {};
     if (projectId) where.projectId = projectId;
     if (status) where.status = status;
@@ -108,17 +111,27 @@ export class RfiService {
     const plain = rows.map((r) => r.get({ plain: true }) as any);
     const ids = [...new Set(plain.map((r) => String(r.routedToTeamId)))];
     const teams = ids.length
-      ? await this.teamModel.findAll({ where: { id: ids }, attributes: ['id', 'name'] })
+      ? await this.teamModel.findAll({
+          where: { id: ids },
+          attributes: ['id', 'name'],
+        })
       : [];
-    const byId = new Map(teams.map((t) => [String(t.get('id')), t.get({ plain: true })]));
+    const byId = new Map(
+      teams.map((t) => [String(t.get('id')), t.get({ plain: true })]),
+    );
     return plain.map((r) => {
       const team = byId.get(String(r.routedToTeamId)) ?? null;
-      return { ...r, team, routedToTeam: team, routedToTeamName: (team as any)?.name ?? null };
+      return {
+        ...r,
+        team,
+        routedToTeam: team,
+        routedToTeamName: (team as any)?.name ?? null,
+      };
     });
   }
 
   /** Open RFIs sitting with a specific team (e.g. the Architect's queue). */
-  async listOpenForTeam(routedToTeamId: number): Promise<Rfi[]> {
+  async listOpenForTeam(routedToTeamId: string): Promise<Rfi[]> {
     return this.rfiModel.findAll({
       where: { routedToTeamId, status: RfiStatus.OPEN },
       order: [

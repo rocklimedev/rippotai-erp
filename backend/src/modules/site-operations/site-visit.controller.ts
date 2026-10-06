@@ -6,7 +6,6 @@ import {
   Body,
   Param,
   Query,
-  ParseIntPipe,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { SiteVisitService } from './site-visit.service';
@@ -32,7 +31,7 @@ export class SiteVisitController {
   }
 
   @Patch('assignments/:id/deactivate')
-  deactivateAssignment(@Param('id', ParseIntPipe) id: number) {
+  deactivateAssignment(@Param('id', ParseUUIDPipe) id: string) {
     return this.visitService.deactivateAssignment(id);
   }
 
@@ -44,14 +43,14 @@ export class SiteVisitController {
 
   @Patch('log/:id')
   updateVisit(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateSiteVisitDto,
   ) {
     return this.visitService.updateVisit(id, dto);
   }
 
   @Post('log/:id/check-in')
-  checkIn(@Param('id', ParseIntPipe) id: number) {
+  checkIn(@Param('id', ParseUUIDPipe) id: string) {
     return this.visitService.checkIn(id);
   }
 

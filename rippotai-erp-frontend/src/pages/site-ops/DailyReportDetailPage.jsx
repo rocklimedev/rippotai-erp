@@ -10,7 +10,7 @@ import { Share2 } from "lucide-react";
 
 export default function DailyReportDetailPage() {
   const { id } = useParams();
-  const reportId = Number(id);
+  const reportId = id;
   const {
     data: report,
     isLoading,

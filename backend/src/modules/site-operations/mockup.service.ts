@@ -29,7 +29,7 @@ export class MockupService {
   }
 
   /** Moves a mockup through review to APPROVED or REJECTED. APPROVED clears it for volume rollout. */
-  async review(id: number, dto: ReviewMockupDto): Promise<Mockup> {
+  async review(id: string, dto: ReviewMockupDto): Promise<Mockup> {
     const mockup = await this.getOrThrow(id);
     if (
       mockup.status === MockupStatus.APPROVED ||
@@ -50,7 +50,7 @@ export class MockupService {
     return mockup;
   }
 
-  async getOrThrow(id: number): Promise<Mockup> {
+  async getOrThrow(id: string): Promise<Mockup> {
     const mockup = await this.mockupModel.findByPk(id, {
       include: [{ model: Project, attributes: ['id', 'name'] }],
     });
@@ -66,7 +66,10 @@ export class MockupService {
   }
 
   /** All mock-ups, optionally for one project (UUID) and/or status, with project name. */
-  async list({ projectId, status }: { projectId?: string; status?: MockupStatus } = {}): Promise<Mockup[]> {
+  async list({
+    projectId,
+    status,
+  }: { projectId?: string; status?: MockupStatus } = {}): Promise<Mockup[]> {
     const where: any = {};
     if (projectId) where.projectId = projectId;
     if (status) where.status = status;

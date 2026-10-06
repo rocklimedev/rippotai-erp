@@ -2,6 +2,7 @@ import {
   Table,
   Column,
   Model,
+  PrimaryKey,
   DataType,
   ForeignKey,
   BelongsTo,
@@ -18,6 +19,11 @@ import { MockupStatus } from '../../../common/enums/site-operations.enums';
  */
 @Table({ tableName: 'mockups', timestamps: true })
 export class Mockup extends Model<Mockup> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  declare id: string;
+
   @ForeignKey(() => Project)
   @Column({ type: DataType.CHAR(36), allowNull: false })
   projectId: string;
@@ -26,8 +32,8 @@ export class Mockup extends Model<Mockup> {
   project: Project;
 
   @ForeignKey(() => Step)
-  @Column({ type: DataType.INTEGER, allowNull: true })
-  stepId: number | null; // related process step, if applicable
+  @Column({ type: DataType.CHAR(36), allowNull: true })
+  stepId: string | null; // related process step, if applicable
 
   @BelongsTo(() => Step)
   step: Step;

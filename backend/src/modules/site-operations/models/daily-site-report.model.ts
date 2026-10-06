@@ -2,6 +2,7 @@ import {
   Table,
   Column,
   Model,
+  PrimaryKey,
   DataType,
   ForeignKey,
   BelongsTo,
@@ -73,6 +74,11 @@ export interface PhotoLine {
   indexes: [{ unique: true, fields: ['projectId', 'reportDate'] }],
 })
 export class DailySiteReport extends Model<DailySiteReport> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  declare id: string;
+
   @ForeignKey(() => Project)
   @Column({ type: DataType.CHAR(36), allowNull: false })
   projectId: string;

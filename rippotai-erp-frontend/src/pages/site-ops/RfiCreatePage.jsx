@@ -34,8 +34,8 @@ export default function RfiCreatePage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const projectId = Number(form.projectId);
-    const routedToTeamId = Number(form.routedToTeamId);
+    const projectId = form.projectId;
+    const routedToTeamId = form.routedToTeamId;
     if (
       !projectId ||
       !form.subject ||
@@ -49,7 +49,7 @@ export default function RfiCreatePage() {
     try {
       const result = await raiseRfi({
         projectId,
-        stepId: form.stepId ? Number(form.stepId) : undefined,
+        stepId: form.stepId ? form.stepId : undefined,
         subject: form.subject,
         query: form.query,
         raisedBy: form.raisedBy,
@@ -76,7 +76,7 @@ export default function RfiCreatePage() {
           <div className="space-y-2">
             <Label>Project ID *</Label>
             <Input
-              type="number"
+              type="text"
               className="bc-input"
               value={form.projectId}
               onChange={(e) => set("projectId", e.target.value)}
@@ -86,7 +86,7 @@ export default function RfiCreatePage() {
           <div className="space-y-2">
             <Label>Route to team ID *</Label>
             <Input
-              type="number"
+              type="text"
               className="bc-input"
               value={form.routedToTeamId}
               onChange={(e) => set("routedToTeamId", e.target.value)}
@@ -96,7 +96,7 @@ export default function RfiCreatePage() {
           <div className="space-y-2">
             <Label>Step ID (optional)</Label>
             <Input
-              type="number"
+              type="text"
               className="bc-input"
               value={form.stepId}
               onChange={(e) => set("stepId", e.target.value)}

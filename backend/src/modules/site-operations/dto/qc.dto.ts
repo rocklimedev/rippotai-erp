@@ -34,12 +34,12 @@ export class CreateChecklistTemplateDto {
   @MaxLength(150)
   name: string;
 
-  @IsInt()
-  tradeTeamId: number;
+  @IsUUID()
+  tradeTeamId: string;
 
   @IsOptional()
-  @IsInt()
-  stepId?: number;
+  @IsUUID()
+  stepId?: string;
 
   @IsOptional()
   @IsString()
@@ -53,13 +53,13 @@ export class CreateChecklistTemplateDto {
 }
 
 export class AddChecklistItemDto extends CreateChecklistItemDto {
-  @IsInt()
-  templateId: number;
+  @IsUUID()
+  templateId: string;
 }
 
 export class QcItemResultInputDto {
-  @IsInt()
-  templateItemId: number;
+  @IsUUID()
+  templateItemId: string;
 
   @IsEnum(QcItemResult)
   result: QcItemResult;
@@ -73,14 +73,14 @@ export class RecordQcSignOffDto {
   @IsUUID()
   projectId: string;
 
-  @IsInt()
-  stepId: number;
+  @IsUUID()
+  stepId: string;
 
-  @IsInt()
-  tradeTeamId: number;
+  @IsUUID()
+  tradeTeamId: string;
 
-  @IsInt()
-  checklistTemplateId: number;
+  @IsUUID()
+  checklistTemplateId: string;
 
   @IsEnum(QcResult)
   result: QcResult;

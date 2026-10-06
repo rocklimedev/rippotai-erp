@@ -7,11 +7,15 @@ import { CreateChecklistTemplateDto, AddChecklistItemDto } from './dto/qc.dto';
 @Injectable()
 export class ChecklistService {
   constructor(
-    @InjectModel(ChecklistTemplate) private templateModel: typeof ChecklistTemplate,
-    @InjectModel(ChecklistTemplateItem) private itemModel: typeof ChecklistTemplateItem,
+    @InjectModel(ChecklistTemplate)
+    private templateModel: typeof ChecklistTemplate,
+    @InjectModel(ChecklistTemplateItem)
+    private itemModel: typeof ChecklistTemplateItem,
   ) {}
 
-  async createTemplate(dto: CreateChecklistTemplateDto): Promise<ChecklistTemplate> {
+  async createTemplate(
+    dto: CreateChecklistTemplateDto,
+  ): Promise<ChecklistTemplate> {
     const template = await this.templateModel.create({
       name: dto.name,
       tradeTeamId: dto.tradeTeamId,
@@ -21,7 +25,10 @@ export class ChecklistService {
 
     if (dto.items?.length) {
       for (const item of dto.items) {
-        await this.itemModel.create({ ...item, templateId: template.id } as any);
+        await this.itemModel.create({
+          ...item,
+          templateId: template.id,
+        } as any);
       }
     }
     return this.getTemplateOrThrow(template.id);
@@ -32,22 +39,30 @@ export class ChecklistService {
     return this.itemModel.create({ ...dto } as any);
   }
 
-  async getTemplateOrThrow(id: number): Promise<ChecklistTemplate> {
+  async getTemplateOrThrow(id: string): Promise<ChecklistTemplate> {
     const template = await this.templateModel.findByPk(id, {
-      include: [{ model: this.itemModel, separate: true, order: [['order', 'ASC']] }],
+      include: [
+        { model: this.itemModel, separate: true, order: [['order', 'ASC']] },
+      ],
     });
-    if (!template) throw new NotFoundException(`Checklist template ${id} not found`);
+    if (!template)
+      throw new NotFoundException(`Checklist template ${id} not found`);
     return template;
   }
 
   /** Reusable checklists for a trade, optionally scoped to a step (phase). */
-  async listTemplates(tradeTeamId?: number, stepId?: number): Promise<ChecklistTemplate[]> {
+  async listTemplates(
+    tradeTeamId?: string,
+    stepId?: string,
+  ): Promise<ChecklistTemplate[]> {
     const where: any = { isActive: true };
     if (tradeTeamId) where.tradeTeamId = tradeTeamId;
     if (stepId) where.stepId = stepId;
     return this.templateModel.findAll({
       where,
-      include: [{ model: this.itemModel, separate: true, order: [['order', 'ASC']] }],
+      include: [
+        { model: this.itemModel, separate: true, order: [['order', 'ASC']] },
+      ],
     });
   }
 }

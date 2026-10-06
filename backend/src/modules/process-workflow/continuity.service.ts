@@ -32,20 +32,20 @@ export class ContinuityService {
     return this.continuityModel.create({ ...dto } as any);
   }
 
-  async markOpened(id: number): Promise<ContinuityRole> {
+  async markOpened(id: string): Promise<ContinuityRole> {
     const role = await this.getOrThrow(id);
     await role.update({ actualOpenedAt: new Date() } as any);
     return role;
   }
 
-  async markClosed(id: number): Promise<ContinuityRole> {
+  async markClosed(id: string): Promise<ContinuityRole> {
     const role = await this.getOrThrow(id);
     await role.update({ actualClosedAt: new Date() } as any);
     return role;
   }
 
   /** Continuous roles (run end-to-end) vs gate-bound roles (open/close at gates), for a project. */
-  async getProjectRoleMap(projectId: number) {
+  async getProjectRoleMap(projectId: string) {
     const roles = await this.continuityModel.findAll({
       where: { projectId },
       include: [
@@ -65,13 +65,13 @@ export class ContinuityService {
     };
   }
 
-  private async getOrThrow(id: number): Promise<ContinuityRole> {
+  private async getOrThrow(id: string): Promise<ContinuityRole> {
     const role = await this.continuityModel.findByPk(id);
     if (!role) throw new NotFoundException(`Continuity role ${id} not found`);
     return role;
   }
 
-  private async assertStepExists(stepId: number): Promise<void> {
+  private async assertStepExists(stepId: string): Promise<void> {
     const step = await this.stepModel.findByPk(stepId);
     if (!step) throw new NotFoundException(`Step ${stepId} not found`);
   }

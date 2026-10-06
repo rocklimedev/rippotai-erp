@@ -8,10 +8,10 @@ import { GateLog } from './models/gate-log.model';
 import { StepStatus } from '../../common/enums/process-workflow.enums';
 
 export interface GanttBar {
-  stepId: number;
+  stepId: string;
   stepCode: string;
   stepName: string;
-  phaseId: number;
+  phaseId: string;
   phaseName: string;
   trackType: string;
   isGate: boolean;
@@ -23,7 +23,7 @@ export interface GanttBar {
 }
 
 export interface GateMarker {
-  stepId: number;
+  stepId: string;
   gateName: string;
   achievedAt: string;
   approverName: string;
@@ -46,7 +46,7 @@ export class TimelineService {
    * actual chart is left to the frontend; this returns the bars + markers.
    */
   async getProjectTimeline(
-    projectId: number,
+    projectId: string,
   ): Promise<{ bars: GanttBar[]; gates: GateMarker[] }> {
     const project = await this.projectModel.findByPk(projectId);
     if (!project) throw new NotFoundException(`Project ${projectId} not found`);

@@ -2,6 +2,7 @@ import {
   Table,
   Column,
   Model,
+  PrimaryKey,
   DataType,
   HasMany,
   Default,
@@ -17,6 +18,11 @@ import { Step } from './step.model';
  */
 @Table({ tableName: 'phases', timestamps: true, paranoid: true })
 export class Phase extends Model<Phase> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  declare id: string;
+
   @Column({ type: DataType.STRING(120), allowNull: false })
   name: string;
 

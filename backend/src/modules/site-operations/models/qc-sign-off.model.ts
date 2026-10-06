@@ -2,6 +2,7 @@ import {
   Table,
   Column,
   Model,
+  PrimaryKey,
   DataType,
   ForeignKey,
   BelongsTo,
@@ -22,6 +23,11 @@ import { QcResult } from '../../../common/enums/site-operations.enums';
  */
 @Table({ tableName: 'qc_sign_offs', timestamps: true })
 export class QcSignOff extends Model<QcSignOff> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  declare id: string;
+
   @ForeignKey(() => Project)
   @Column({ type: DataType.CHAR(36), allowNull: false })
   projectId: string;
@@ -30,22 +36,22 @@ export class QcSignOff extends Model<QcSignOff> {
   project: Project;
 
   @ForeignKey(() => Step)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  stepId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  stepId: string;
 
   @BelongsTo(() => Step)
   step: Step;
 
   @ForeignKey(() => Team)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  tradeTeamId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  tradeTeamId: string;
 
   @BelongsTo(() => Team)
   tradeTeam: Team;
 
   @ForeignKey(() => ChecklistTemplate)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  checklistTemplateId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  checklistTemplateId: string;
 
   @BelongsTo(() => ChecklistTemplate)
   checklistTemplate: ChecklistTemplate;

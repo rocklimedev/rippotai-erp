@@ -15,8 +15,8 @@ export class RaiseRfiDto {
   projectId: string;
 
   @IsOptional()
-  @IsInt()
-  stepId?: number;
+  @IsUUID()
+  stepId?: string;
 
   @IsString()
   @MaxLength(200)
@@ -37,8 +37,8 @@ export class RaiseRfiDto {
   @IsEnum(RfiPriority)
   priority?: RfiPriority;
 
-  @IsInt()
-  routedToTeamId: number;
+  @IsUUID()
+  routedToTeamId: string;
 
   @IsOptional()
   @IsArray()
@@ -55,6 +55,6 @@ export class RespondToRfiDto {
 }
 
 export class RerouteRfiDto {
-  @IsInt()
-  routedToTeamId: number;
+  @IsUUID()
+  routedToTeamId: string;
 }

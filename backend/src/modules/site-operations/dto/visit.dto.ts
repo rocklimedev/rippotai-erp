@@ -23,8 +23,8 @@ export class CreateVisitAssignmentDto {
   visitorType: VisitorType;
 
   @IsOptional()
-  @IsInt()
-  teamId?: number;
+  @IsUUID()
+  teamId?: string;
 
   @IsOptional()
   @IsString()
@@ -44,8 +44,8 @@ export class LogSiteVisitDto {
   projectId: string;
 
   @IsOptional()
-  @IsInt()
-  visitAssignmentId?: number;
+  @IsUUID()
+  visitAssignmentId?: string;
 
   @IsEnum(VisitorType)
   visitorType: VisitorType;

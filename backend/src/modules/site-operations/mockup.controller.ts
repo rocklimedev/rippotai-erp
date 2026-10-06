@@ -6,7 +6,6 @@ import {
   Body,
   Param,
   Query,
-  ParseIntPipe,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { MockupService } from './mockup.service';
@@ -28,16 +27,19 @@ export class MockupController {
     @Query('projectId') projectId?: string,
     @Query('status') status?: MockupStatus,
   ) {
-    return this.mockupService.list({ projectId: projectId || undefined, status: status || undefined });
+    return this.mockupService.list({
+      projectId: projectId || undefined,
+      status: status || undefined,
+    });
   }
 
   @Patch(':id/review')
-  review(@Param('id', ParseIntPipe) id: number, @Body() dto: ReviewMockupDto) {
+  review(@Param('id', ParseUUIDPipe) id: string, @Body() dto: ReviewMockupDto) {
     return this.mockupService.review(id, dto);
   }
 
   @Get(':id')
-  get(@Param('id', ParseIntPipe) id: number) {
+  get(@Param('id', ParseUUIDPipe) id: string) {
     return this.mockupService.getOrThrow(id);
   }
 

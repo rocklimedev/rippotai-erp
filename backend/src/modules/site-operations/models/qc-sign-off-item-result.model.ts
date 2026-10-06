@@ -2,6 +2,7 @@ import {
   Table,
   Column,
   Model,
+  PrimaryKey,
   DataType,
   ForeignKey,
   BelongsTo,
@@ -17,16 +18,21 @@ import { QcItemResult } from '../../../common/enums/site-operations.enums';
   indexes: [{ unique: true, fields: ['qcSignOffId', 'templateItemId'] }],
 })
 export class QcSignOffItemResult extends Model<QcSignOffItemResult> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  declare id: string;
+
   @ForeignKey(() => QcSignOff)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  qcSignOffId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  qcSignOffId: string;
 
   @BelongsTo(() => QcSignOff)
   qcSignOff: QcSignOff;
 
   @ForeignKey(() => ChecklistTemplateItem)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  templateItemId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  templateItemId: string;
 
   @BelongsTo(() => ChecklistTemplateItem)
   templateItem: ChecklistTemplateItem;

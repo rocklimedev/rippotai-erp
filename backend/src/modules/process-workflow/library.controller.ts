@@ -7,7 +7,7 @@ import {
   Body,
   Param,
   Query,
-  ParseIntPipe,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { LibraryService } from './library.service';
 import {
@@ -24,6 +24,11 @@ import { TrackType } from '../../common/enums/process-workflow.enums';
 export class LibraryController {
   constructor(private readonly libraryService: LibraryService) {}
 
+  @Get('teams')
+  listTeams() {
+    return this.libraryService.listTeams();
+  }
+
   // Phases
   @Post('phases')
   createPhase(@Body() dto: CreatePhaseDto) {
@@ -32,7 +37,7 @@ export class LibraryController {
 
   @Patch('phases/:id')
   updatePhase(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePhaseDto,
   ) {
     return this.libraryService.updatePhase(id, dto);
@@ -52,14 +57,14 @@ export class LibraryController {
 
   @Patch('steps/:id')
   updateStep(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateStepDto,
   ) {
     return this.libraryService.updateStep(id, dto);
   }
 
   @Get('steps/:id')
-  getStep(@Param('id', ParseIntPipe) id: number) {
+  getStep(@Param('id', ParseUUIDPipe) id: string) {
     return this.libraryService.getStepOrThrow(id);
   }
 
@@ -75,7 +80,7 @@ export class LibraryController {
   }
 
   @Get('steps/:id/deliverables')
-  listDeliverables(@Param('id', ParseIntPipe) id: number) {
+  listDeliverables(@Param('id', ParseUUIDPipe) id: string) {
     return this.libraryService.listDeliverablesForStep(id);
   }
 
@@ -86,17 +91,17 @@ export class LibraryController {
   }
 
   @Delete('step-teams/:id')
-  removeTeam(@Param('id', ParseIntPipe) id: number) {
+  removeTeam(@Param('id', ParseUUIDPipe) id: string) {
     return this.libraryService.removeTeamFromStep(id);
   }
 
   @Get('steps/:id/teams')
-  listTeamsForStep(@Param('id', ParseIntPipe) id: number) {
+  listTeamsForStep(@Param('id', ParseUUIDPipe) id: string) {
     return this.libraryService.listTeamsForStep(id);
   }
 
   @Get('teams/:id/steps')
-  listStepsForTeam(@Param('id', ParseIntPipe) id: number) {
+  listStepsForTeam(@Param('id', ParseUUIDPipe) id: string) {
     return this.libraryService.listStepsForTeam(id);
   }
 }

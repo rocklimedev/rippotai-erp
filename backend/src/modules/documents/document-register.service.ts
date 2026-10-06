@@ -53,7 +53,7 @@ export class DocumentRegisterService {
    * The live document register for a project: every deliverable in the library,
    * joined against its fulfilment record for this project, grouped by phase/step.
    */
-  async getDocumentRegister(projectId: number) {
+  async getDocumentRegister(projectId: string) {
     const project = await this.projectModel.findByPk(projectId);
     if (!project) throw new NotFoundException(`Project ${projectId} not found`);
 

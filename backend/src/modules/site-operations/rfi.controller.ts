@@ -6,7 +6,6 @@ import {
   Body,
   Param,
   Query,
-  ParseIntPipe,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { RfiService } from './rfi.service';
@@ -28,26 +27,32 @@ export class RfiController {
     @Query('projectId') projectId?: string,
     @Query('status') status?: RfiStatus,
   ) {
-    return this.rfiService.list({ projectId: projectId || undefined, status: status || undefined });
+    return this.rfiService.list({
+      projectId: projectId || undefined,
+      status: status || undefined,
+    });
   }
 
   @Patch(':id/reroute')
-  reroute(@Param('id', ParseIntPipe) id: number, @Body() dto: RerouteRfiDto) {
+  reroute(@Param('id', ParseUUIDPipe) id: string, @Body() dto: RerouteRfiDto) {
     return this.rfiService.reroute(id, dto);
   }
 
   @Patch(':id/respond')
-  respond(@Param('id', ParseIntPipe) id: number, @Body() dto: RespondToRfiDto) {
+  respond(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RespondToRfiDto,
+  ) {
     return this.rfiService.respond(id, dto);
   }
 
   @Patch(':id/close')
-  close(@Param('id', ParseIntPipe) id: number) {
+  close(@Param('id', ParseUUIDPipe) id: string) {
     return this.rfiService.close(id);
   }
 
   @Get(':id')
-  get(@Param('id', ParseIntPipe) id: number) {
+  get(@Param('id', ParseUUIDPipe) id: string) {
     return this.rfiService.getOrThrow(id);
   }
 
@@ -62,7 +67,7 @@ export class RfiController {
 
   /** The Architect's (or any team's) open RFI queue. */
   @Get('teams/:teamId/open')
-  listOpenForTeam(@Param('teamId', ParseIntPipe) teamId: number) {
+  listOpenForTeam(@Param('teamId', ParseUUIDPipe) teamId: string) {
     return this.rfiService.listOpenForTeam(teamId);
   }
 }

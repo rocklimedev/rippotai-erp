@@ -569,7 +569,7 @@ function ProposeMockupDialog({ open, onOpenChange, onSubmit, loading, defaultPro
       location: form.location || null,
       description: form.description || null,
       proposedBy: form.proposedBy,
-      stepId: form.stepId ? Number(form.stepId) : null,
+      stepId: form.stepId ? form.stepId : null,
       proposedAt: new Date().toISOString(),
     });
   };
@@ -651,7 +651,7 @@ function ProposeMockupDialog({ open, onOpenChange, onSubmit, loading, defaultPro
             <label className="mb-2 block text-sm font-medium">Step ID</label>
 
             <Input
-              type="number"
+              type="text"
               value={form.stepId}
               onChange={(e) => update("stepId", e.target.value)}
               placeholder="Optional"

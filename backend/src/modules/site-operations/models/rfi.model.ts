@@ -2,6 +2,7 @@ import {
   Table,
   Column,
   Model,
+  PrimaryKey,
   DataType,
   ForeignKey,
   BelongsTo,
@@ -22,6 +23,11 @@ import {
  */
 @Table({ tableName: 'rfis', timestamps: true })
 export class Rfi extends Model<Rfi> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  declare id: string;
+
   @ForeignKey(() => Project)
   @Column({ type: DataType.CHAR(36), allowNull: false })
   projectId: string;
@@ -30,8 +36,8 @@ export class Rfi extends Model<Rfi> {
   project: Project;
 
   @ForeignKey(() => Step)
-  @Column({ type: DataType.INTEGER, allowNull: true })
-  stepId: number | null;
+  @Column({ type: DataType.CHAR(36), allowNull: true })
+  stepId: string | null;
 
   @BelongsTo(() => Step)
   step: Step;
@@ -61,8 +67,8 @@ export class Rfi extends Model<Rfi> {
 
   /** Team the RFI is routed to — typically Architect. */
   @ForeignKey(() => Team)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  routedToTeamId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  routedToTeamId: string;
 
   @BelongsTo(() => Team)
   routedToTeam: Team;

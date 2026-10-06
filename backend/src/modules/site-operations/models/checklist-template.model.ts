@@ -2,6 +2,7 @@ import {
   Table,
   Column,
   Model,
+  PrimaryKey,
   DataType,
   ForeignKey,
   BelongsTo,
@@ -24,21 +25,26 @@ import { QcSignOff } from './qc-sign-off.model';
   paranoid: true,
 })
 export class ChecklistTemplate extends Model<ChecklistTemplate> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  declare id: string;
+
   @Column({ type: DataType.STRING(150), allowNull: false })
   name: string; // e.g. "Electrical First Fix QC", "Flooring Handover QC"
 
   /** The trade this checklist applies to (e.g. Electrical, Flooring). */
   @ForeignKey(() => Team)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  tradeTeamId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  tradeTeamId: string;
 
   @BelongsTo(() => Team)
   tradeTeam: Team;
 
   /** The step/phase in the master process this checklist gates handoff for. */
   @ForeignKey(() => Step)
-  @Column({ type: DataType.INTEGER, allowNull: true })
-  stepId: number | null;
+  @Column({ type: DataType.CHAR(36), allowNull: true })
+  stepId: string | null;
 
   @BelongsTo(() => Step)
   step: Step;

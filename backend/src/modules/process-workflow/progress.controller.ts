@@ -5,7 +5,7 @@ import {
   Patch,
   Body,
   Param,
-  ParseIntPipe,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ProgressService } from './progress.service';
 import { UpdateStepProgressDto, SignOffStepDto } from './dto/tracking.dto';
@@ -15,19 +15,19 @@ export class ProgressController {
   constructor(private readonly progressService: ProgressService) {}
 
   @Post('init')
-  init(@Param('projectId', ParseIntPipe) projectId: number) {
+  init(@Param('projectId', ParseUUIDPipe) projectId: string) {
     return this.progressService.initializeProjectProgress(projectId);
   }
 
   @Get()
-  getProjectProgress(@Param('projectId', ParseIntPipe) projectId: number) {
+  getProjectProgress(@Param('projectId', ParseUUIDPipe) projectId: string) {
     return this.progressService.getProjectProgress(projectId);
   }
 
   @Patch('steps/:stepId')
   updateStepProgress(
-    @Param('projectId', ParseIntPipe) projectId: number,
-    @Param('stepId', ParseIntPipe) stepId: number,
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Param('stepId', ParseUUIDPipe) stepId: string,
     @Body() dto: UpdateStepProgressDto,
   ) {
     return this.progressService.updateStepProgress(projectId, stepId, dto);
@@ -35,8 +35,8 @@ export class ProgressController {
 
   @Post('steps/:stepId/sign-off')
   signOff(
-    @Param('projectId', ParseIntPipe) projectId: number,
-    @Param('stepId', ParseIntPipe) stepId: number,
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Param('stepId', ParseUUIDPipe) stepId: string,
     @Body() dto: SignOffStepDto,
   ) {
     return this.progressService.signOffStep(projectId, stepId, dto);

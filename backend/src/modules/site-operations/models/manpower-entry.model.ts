@@ -2,6 +2,8 @@ import {
   Table,
   Column,
   Model,
+  Default,
+  PrimaryKey,
   DataType,
   ForeignKey,
   BelongsTo,
@@ -11,9 +13,14 @@ import { DailySiteReport } from './daily-site-report.model';
 /** Headcount for one trade / contractor on one day's report. */
 @Table({ tableName: 'manpower_entries', timestamps: true })
 export class ManpowerEntry extends Model<ManpowerEntry> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  declare id: string;
+
   @ForeignKey(() => DailySiteReport)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  dailySiteReportId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  dailySiteReportId: string;
 
   @BelongsTo(() => DailySiteReport)
   dailySiteReport: DailySiteReport;

@@ -2,6 +2,7 @@ import {
   Table,
   Column,
   Model,
+  PrimaryKey,
   DataType,
   ForeignKey,
   BelongsTo,
@@ -25,22 +26,27 @@ import { Deliverable } from './deliverable.model';
   ],
 })
 export class ProjectDeliverableRecord extends Model<ProjectDeliverableRecord> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  declare id: string;
+
   @ForeignKey(() => Project)
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.CHAR(36),
     allowNull: false,
   })
-  declare projectId: number;
+  declare projectId: string;
 
   @BelongsTo(() => Project)
   declare project: Project;
 
   @ForeignKey(() => Deliverable)
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.CHAR(36),
     allowNull: false,
   })
-  declare deliverableId: number;
+  declare deliverableId: string;
 
   @BelongsTo(() => Deliverable)
   declare deliverable: Deliverable;

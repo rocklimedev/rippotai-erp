@@ -31,7 +31,7 @@ export class SiteVisitService {
     });
   }
 
-  async deactivateAssignment(id: number): Promise<VisitAssignment> {
+  async deactivateAssignment(id: string): Promise<VisitAssignment> {
     const assignment = await this.assignmentModel.findByPk(id);
     if (!assignment)
       throw new NotFoundException(`Visit assignment ${id} not found`);
@@ -69,7 +69,7 @@ export class SiteVisitService {
   }
 
   async updateVisit(
-    id: number,
+    id: string,
     dto: UpdateSiteVisitDto,
   ): Promise<SiteVisitLog> {
     const visit = await this.visitLogModel.findByPk(id);
@@ -86,7 +86,7 @@ export class SiteVisitService {
   }
 
   /** Marks a scheduled visit as completed (arrival check-in). */
-  async checkIn(id: number): Promise<SiteVisitLog> {
+  async checkIn(id: string): Promise<SiteVisitLog> {
     const visit = await this.visitLogModel.findByPk(id);
     if (!visit) throw new NotFoundException(`Site visit ${id} not found`);
     await visit.update({

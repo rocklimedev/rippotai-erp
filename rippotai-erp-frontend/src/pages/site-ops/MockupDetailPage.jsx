@@ -23,7 +23,7 @@ const REVIEW_STATUSES = ["UNDER_REVIEW", "APPROVED", "REJECTED"];
 
 export default function MockupDetailPage() {
   const { id } = useParams();
-  const mockupId = Number(id);
+  const mockupId = id;
   const {
     data: mockup,
     isLoading,

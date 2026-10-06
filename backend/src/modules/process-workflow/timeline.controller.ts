@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
 import { TimelineService } from './timeline.service';
 
 @Controller(':projectId/timeline')
@@ -7,7 +7,7 @@ export class TimelineController {
 
   /** Gantt-style bars (one per step) + gate markers for the project, plotted against the phase ruler. */
   @Get()
-  getTimeline(@Param('projectId', ParseIntPipe) projectId: number) {
+  getTimeline(@Param('projectId', ParseUUIDPipe) projectId: string) {
     return this.timelineService.getProjectTimeline(projectId);
   }
 }

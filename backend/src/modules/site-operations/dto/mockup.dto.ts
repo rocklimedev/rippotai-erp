@@ -15,8 +15,8 @@ export class ProposeMockupDto {
   projectId: string;
 
   @IsOptional()
-  @IsInt()
-  stepId?: number;
+  @IsUUID()
+  stepId?: string;
 
   @IsString()
   @MaxLength(200)
