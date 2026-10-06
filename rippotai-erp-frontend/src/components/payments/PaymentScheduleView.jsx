@@ -91,7 +91,7 @@ export function buildScheduleSections(schedule) {
     });
   }
 
-  const termsHtml = schedule.termsTemplate?.content_html || schedule.terms_content_snapshot;
+  const termsHtml = schedule.terms_content_snapshot ?? schedule.termsTemplate?.content_html;
   if (htmlToTerms(termsHtml).length) sections.push({ title: "Terms", blocks: [<HtmlTerms key="t" html={termsHtml} />] });
 
   const architect =

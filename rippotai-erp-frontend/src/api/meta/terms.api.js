@@ -8,7 +8,7 @@ export const termsApi = baseApi.injectEndpoints({
       query: (scope) => ({
         url: "/terms-templates",
         method: "GET",
-        params: scope ? { scope } : undefined,
+        params: typeof scope === "object" ? { scope: scope.scope, include_inactive: scope.includeInactive || undefined } : scope ? { scope } : undefined,
       }),
       providesTags: ["TermsTemplates"],
     }),

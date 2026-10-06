@@ -1,27 +1,9 @@
+import { termsToText as htmlToPlainText, textToTermsHtml as plainTextToHtml } from "@/lib/terms";
 import React, { useEffect, useState } from "react";
 import { RefreshCw, FileText, PenLine, Plus, X, Pencil } from "lucide-react";
 import { formatINR } from "@/lib/format";
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
 import { useGetTermsTemplatesQuery } from "../../api/meta/terms.api";
-
-function htmlToPlainText(html) {
-  return (html || "")
-    .replace(/<[^>]+>/g, "\n")
-    .replace(/\n+/g, "\n")
-    .trim();
-}
-
-function plainTextToHtml(text) {
-  return (
-    "<ol>" +
-    text
-      .split("\n")
-      .filter(Boolean)
-      .map((l) => `<li>${l}</li>`)
-      .join("") +
-    "</ol>"
-  );
-}
 
 // Extra named financial entries that don't fit the category/item structure
 // (e.g. "Contingency", "Mobilization charge"). Rendered as a small editable

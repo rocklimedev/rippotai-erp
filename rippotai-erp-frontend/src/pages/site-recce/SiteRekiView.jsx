@@ -146,7 +146,7 @@ export function buildRecceSections(recce) {
           return {
             key: r.id,
             cells: [
-              { text: r.room_name, sub: [labelOf(ROOM_TYPE, r.room_type), has(r.room_number) && `No. ${r.room_number}`].filter(Boolean).join(" · ") },
+              { text: r.room_name, sub: [r.room_type === "OTHER" ? r.room_type_other || "Other" : labelOf(ROOM_TYPE, r.room_type), has(r.room_number) && `No. ${r.room_number}`].filter(Boolean).join(" · ") },
               dim(r.length, u),
               dim(r.width, u),
               dim(r.height, u),

@@ -93,6 +93,15 @@ export class PaymentSchedulesService {
             `Terms template ${resolvedTermsTemplateId} has no current version`,
           );
         }
+        if (
+          !termsTemplate.versions?.some(
+            (row) => row.version === resolvedTermsVersion,
+          )
+        ) {
+          throw new ConflictException(
+            `Terms version ${resolvedTermsVersion} not found for template ${resolvedTermsTemplateId}`,
+          );
+        }
       } else {
         // No template means no version.
         resolvedTermsVersion = null;
@@ -145,7 +154,7 @@ export class PaymentSchedulesService {
   // ============================================================
 
   async findAll(projectId?: string): Promise<PaymentSchedule[]> {
-    return this.paymentScheduleModel.findAll({
+    const schedules = await this.paymentScheduleModel.findAll({
       where: projectId ? { projectId } : undefined,
 
       include: [
@@ -170,6 +179,7 @@ export class PaymentSchedulesService {
         {
           model: TermsTemplate,
           as: 'termsTemplate',
+          paranoid: false,
           attributes: [
             'id',
             'name',
@@ -195,6 +205,10 @@ export class PaymentSchedulesService {
         ],
       ],
     });
+    await Promise.all(
+      schedules.map((schedule) => this.attachTermsSnapshot(schedule)),
+    );
+    return schedules;
   }
 
   // ============================================================
@@ -280,6 +294,7 @@ export class PaymentSchedulesService {
         {
           model: TermsTemplate,
           as: 'termsTemplate',
+          paranoid: false,
           attributes: [
             'id',
             'name',
@@ -319,7 +334,21 @@ export class PaymentSchedulesService {
       throw new NotFoundException(`Payment schedule ${id} not found`);
     }
 
+    await this.attachTermsSnapshot(schedule);
     return schedule;
+  }
+
+  private async attachTermsSnapshot(schedule: PaymentSchedule) {
+    if (schedule.termsTemplate && schedule.termsVersion != null) {
+      const versions = await schedule.termsTemplate.$get('versions', {
+        where: { version: schedule.termsVersion },
+      });
+      const content = versions[0]?.content_html;
+      if (content === undefined) {
+        throw new ConflictException('The saved terms version is unavailable');
+      }
+      schedule.setDataValue('terms_content_snapshot' as any, content);
+    }
   }
 
   // ============================================================
@@ -535,7 +564,9 @@ export class PaymentSchedulesService {
 
     // Automation hook: a milestone marked OVERDUE runs PAYMENT_MILESTONE_OVERDUE rules for it.
     if (String((milestone as any).status) === 'OVERDUE') {
-      automationBus.emitEvent('PAYMENT_MILESTONE_OVERDUE', { entityId: milestone.id });
+      automationBus.emitEvent('PAYMENT_MILESTONE_OVERDUE', {
+        entityId: milestone.id,
+      });
     }
 
     return milestone;

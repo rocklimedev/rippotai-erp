@@ -22,8 +22,11 @@ export class TermsController {
   constructor(private readonly termsService: TermsService) {}
 
   @Get()
-  findAll(@Query('scope') scope?: TermsScope) {
-    return this.termsService.findAll(scope);
+  findAll(
+    @Query('scope') scope?: TermsScope,
+    @Query('include_inactive') includeInactive?: string,
+  ) {
+    return this.termsService.findAll(scope, includeInactive === 'true');
   }
 
   @Get(':id')

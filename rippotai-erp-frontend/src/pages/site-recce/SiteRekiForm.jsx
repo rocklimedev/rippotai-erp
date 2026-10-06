@@ -18,7 +18,8 @@ import {
   useUploadSiteRecceImageMutation,
 } from "../../api/documents/site-recce.api";
 
-import { REKI_SECTIONS } from "../../hooks/reki-sections";
+import { SITE_RECCE_FORM_SECTIONS } from "../../hooks/reki-sections";
+import { utilityFormValues, utilityPayloadValue, changeSiteRecceField } from "../../hooks/site-recce-form-helpers";
 
 const SAVE_KEY = "bc.site-recce";
 
@@ -104,6 +105,7 @@ const mapBackendToFormValues = (data) => {
 
     room_name: room.room_name || "",
     room_type: room.room_type || "OTHER",
+    room_type_other: room.room_type_other || "",
     room_number:
       room.room_number === null || room.room_number === undefined
         ? ""
@@ -332,6 +334,7 @@ const mapBackendToFormValues = (data) => {
     // ROOM / PHOTO DATA
     // ========================================================
 
+    ...utilityFormValues({ ...data, drainage_point_location: data.draining_point_location || data.drainage_point_location }),
     rooms,
 
     photos,
@@ -383,6 +386,7 @@ const buildRoomsPayload = (rooms, photos) => {
       room_name: room.room_name,
 
       room_type: normalizeRoomType(room.room_type),
+      room_type_other: room.room_type === "OTHER" ? strOrUndefined(room.room_type_other?.trim()) : undefined,
 
       room_number: toIntOrUndefined(room.room_number),
 
@@ -449,11 +453,11 @@ const buildSiteReccePayload = (projectId, values) => {
 
     material_entry_point: strOrUndefined(values.material_entry_point),
 
-    water_connection: strOrUndefined(values.water_connection),
+    water_connection: utilityPayloadValue(values, "water_connection"),
 
-    power_load_available: strOrUndefined(values.power_load_available),
+    power_load_available: utilityPayloadValue(values, "power_load_available"),
 
-    drainage_point_location: strOrUndefined(values.drainage_point_location),
+    drainage_point_location: utilityPayloadValue(values, "drainage_point_location"),
 
     society_rwa_restrictions: strOrUndefined(values.society_rwa_restrictions),
 
@@ -650,7 +654,7 @@ export function SiteRekiForm() {
       value: user.id,
     }));
 
-    return REKI_SECTIONS.map((section) => {
+    return SITE_RECCE_FORM_SECTIONS.map((section) => {
       if (!section.fields?.some((field) => field.key === "site_engineer_id")) {
         return section;
       }
@@ -675,10 +679,7 @@ export function SiteRekiForm() {
   // ==========================================================
 
   const handleFieldChange = (_section, key, value) => {
-    setValues((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+    setValues((prev) => changeSiteRecceField(prev, key, value));
   };
 
   // ==========================================================

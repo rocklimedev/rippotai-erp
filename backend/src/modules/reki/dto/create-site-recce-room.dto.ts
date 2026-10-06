@@ -37,6 +37,11 @@ export class CreateSiteRecceRoomDto {
   room_type: SiteRecceRoomType;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  room_type_other?: string;
+
+  @IsOptional()
   @IsInt()
   @Min(0)
   room_number?: number;

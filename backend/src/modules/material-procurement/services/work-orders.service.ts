@@ -345,9 +345,9 @@ export class WorkOrdersService {
         (term, index) => ({
           work_order_id: workOrder.id,
 
-          terms_template_id: dto.terms_template_id ?? null,
+          terms_template_id: null,
 
-          sort_order: term.sort_order ?? index + 1,
+          sort_order: (term.sort_order ?? index + 1) + (termsTemplate ? 1 : 0),
 
           description: term.description,
 
@@ -749,6 +749,7 @@ export class WorkOrdersService {
     // TERMS TEMPLATE CHANGE
     // ------------------------------------------------------------
 
+    let selectedTermsTemplate: TermsTemplate | null = null;
     if (dtoData.terms_template_id !== undefined) {
       if (dtoData.terms_template_id) {
         const template = await this.termsTemplateModel.findByPk(
@@ -763,9 +764,7 @@ export class WorkOrdersService {
           throw new BadRequestException('Selected terms template is inactive');
         }
 
-        workOrderData.payment_terms = template.content_html;
-      } else {
-        workOrderData.payment_terms = null;
+        selectedTermsTemplate = template;
       }
     }
 
@@ -787,7 +786,48 @@ export class WorkOrdersService {
 
     workOrderData.updated_by = userId ?? null;
 
-    await workOrder.update(workOrderData);
+    await this.workOrderModel.sequelize!.transaction(async (transaction) => {
+      await workOrder.update(workOrderData, { transaction });
+      if (dto.terms !== undefined) {
+        const terms: WorkOrderTermCreationAttributes[] = dto.terms.map(
+          (term, index) => ({
+            work_order_id: id,
+            terms_template_id: null,
+            sort_order: index + 1,
+            description: term.description,
+            is_mandatory: term.is_mandatory ?? true,
+          }),
+        );
+        if (
+          selectedTermsTemplate &&
+          !terms.some(
+            (term) => term.description === selectedTermsTemplate.content_html,
+          )
+        ) {
+          terms.forEach((term) => {
+            term.sort_order += 1;
+          });
+          terms.unshift(
+            ...this.buildTermsFromTemplate(id, selectedTermsTemplate),
+          );
+        }
+        await this.termModel.destroy({
+          where: { work_order_id: id },
+          transaction,
+        });
+        if (terms.length)
+          await this.termModel.bulkCreate(terms, { transaction });
+      } else if (selectedTermsTemplate) {
+        await this.termModel.destroy({
+          where: { work_order_id: id, terms_template_id: { [Op.ne]: null } },
+          transaction,
+        });
+        await this.termModel.bulkCreate(
+          this.buildTermsFromTemplate(id, selectedTermsTemplate),
+          { transaction },
+        );
+      }
+    });
 
     return this.findOne(id);
   }

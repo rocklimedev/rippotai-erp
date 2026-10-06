@@ -1,3 +1,4 @@
+import { termsToText, textToTermsHtml } from "@/lib/terms";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -70,7 +71,6 @@ const SCOPES = [
   { value: "CLIENT", label: "Clients" },
   { value: "BOQ", label: "Bill of Quantities" },
   { value: "ESTIMATE", label: "Estimates" },
-  { value: "PAYMENT", label: "Payment Schedule" },
 ];
 
 const EMPTY_VALUES = {
@@ -192,7 +192,7 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState({
     name: "",
-    scope: "PAYMENT",
+    scope: "GLOBAL",
     content_html: "",
   });
 
@@ -289,7 +289,7 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
   // ============================================================
 
   const resetCreateForm = () =>
-    setCreateForm({ name: "", scope: "PAYMENT", content_html: "" });
+    setCreateForm({ name: "", scope: "GLOBAL", content_html: "" });
 
   const handleCreateTemplate = async () => {
     if (!createForm.name.trim() || !createForm.content_html.trim()) {
@@ -297,7 +297,7 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
       return;
     }
     try {
-      const created = await createTemplate(createForm).unwrap();
+      const created = await createTemplate({ ...createForm, name: createForm.name.trim(), content_html: textToTermsHtml(createForm.content_html) }).unwrap();
       toast.success("Template created");
       setCreateOpen(false);
       resetCreateForm();
@@ -312,7 +312,7 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
 
   const openEditContent = (template) => {
     setEditingTemplate(template);
-    setEditContent(template.content_html || "");
+    setEditContent(termsToText(template.content_html));
     setChangeNote("");
     setPreviewMode(false);
   };
@@ -326,20 +326,20 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
     try {
       const updated = await updateContent({
         id: editingTemplate.id,
-        content_html: editContent,
+        content_html: textToTermsHtml(editContent),
         change_note: changeNote || undefined,
       }).unwrap();
 
       toast.success(`Saved as v${(editingTemplate.current_version || 1) + 1}`);
 
       if (updated?.current_version) {
-        setValues((prev) => ({
+        setValues((prev) => prev.Overview?.terms_template_id === editingTemplate.id ? ({
           ...prev,
           Overview: {
             ...(prev.Overview || {}),
             terms_version: String(updated.current_version),
           },
-        }));
+        }) : prev);
       }
 
       setEditingTemplate(null);
@@ -970,7 +970,7 @@ function CreateTermsTemplateDialog({
               <div className="cf-block" style={{ minHeight: 160, overflowY: "auto" }}>
                 {form.content_html.trim() ? (
                   <TermsPreview
-                    htmlContent={form.content_html}
+                    htmlContent={textToTermsHtml(form.content_html)}
                     maxPreview={10}
                   />
                 ) : (
@@ -981,12 +981,10 @@ function CreateTermsTemplateDialog({
               </div>
             ) : (
               <textarea
-                className="inos-textarea" style={{ minHeight: 160, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 12.5 }}
-                placeholder={`<ol>
-  <li>All quantities are approximate and subject to site verification.</li>
-  <li>Rates include labour, material, tools, and equipment unless otherwise specified.</li>
-  <li>Any variation in scope shall be treated as extra work.</li>
-</ol>`}
+                className="inos-textarea" style={{ minHeight: 160 }}
+                placeholder={`All quantities are approximate and subject to site verification.
+Rates include labour, material, tools, and equipment unless otherwise specified.
+Any variation in scope shall be treated as extra work.`}
                 value={form.content_html}
                 onChange={(e) =>
                   setForm((f) => ({
@@ -997,7 +995,7 @@ function CreateTermsTemplateDialog({
               />
             )}
             <p className="inos-hint" style={{ display: "block", marginTop: 4 }}>
-              Paste HTML list format or plain text with line breaks
+              Write one term per line.
             </p>
           </div>
         </div>
@@ -1076,11 +1074,11 @@ function EditTermsTemplateDialog({
 
           {previewMode ? (
             <div className="cf-block" style={{ minHeight: 240, overflowY: "auto" }}>
-              <TermsFullDisplay htmlContent={editContent} />
+              <TermsFullDisplay htmlContent={textToTermsHtml(editContent)} />
             </div>
           ) : (
             <textarea
-              className="inos-textarea" style={{ minHeight: 240, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 12.5 }}
+              className="inos-textarea" style={{ minHeight: 240 }}
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
             />

@@ -1,3 +1,4 @@
+import { termsToText, textToTermsHtml } from "@/lib/terms";
 import React, { useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -199,7 +200,7 @@ function estimateToValues(e) {
     additional_amount: Number(e.additional_amount || 0),
     tax_percentage: Number(e.tax_percentage || 0),
     discount_amount: Number(e.discount_amount || 0),
-    terms_html: e.terms_html || "",
+    terms_html: termsToText(e.terms_html),
     terms_template_id: e.terms_template_id || "",
     terms_template_version: e.terms_template_version ?? null,
     categories: [...(e.categories || [])].sort(bySort).map((c) => ({
@@ -424,7 +425,7 @@ export function BudgetEstimateForm() {
       // TERMS
       // --------------------------------------------------------
 
-      terms_html: nullableValue(values.terms_html),
+      terms_html: nullableValue(textToTermsHtml(values.terms_html)),
 
       terms_template_id: nullableValue(values.terms_template_id),
 
