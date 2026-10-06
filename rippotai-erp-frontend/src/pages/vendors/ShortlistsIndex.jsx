@@ -1,124 +1,250 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import api from "@/lib/api";
-import { toast } from "sonner";
-import { ArrowLeft, Plus, Bookmark } from "lucide-react";
-import { relativeTime } from "@/lib/format";
+import { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowUpRight, Bookmark } from "lucide-react";
+import { useGetProjectShortlistsQuery } from "@/api/vendors/vendor-shortlist.api";
+import { useGetProjectsQuery } from "@/api/projects/project.api";
+import {
+  Page,
+  PageHeader,
+  Card,
+  Button,
+  EmptyState,
+  Field,
+  SelectInput,
+  SearchInput,
+} from "@/components/inos";
+
+const workspaceUrl = (projectId) =>
+  `/procurement/vendors/shortlists-workspace?projectId=${encodeURIComponent(projectId)}`;
+const normalizeRows = (response) =>
+  Array.isArray(response)
+    ? response
+    : response?.data?.data || response?.data || [];
+const projectName = (project) =>
+  project?.name || project?.project_name || project?.title;
+const typeLabel = (type) => (type === "MATERIAL" ? "Material" : "Vendor");
+const updatedDate = (value) =>
+  value ? new Date(value).toLocaleDateString("en-IN") : "—";
 
 export default function ShortlistsIndex() {
-  const nav = useNavigate();
-  const [lists, setLists] = useState(null);
-  const [newName, setNewName] = useState("");
-
-  const load = () =>
-    api
-      .get("/vendor-shortlists")
-      .then((r) => setLists(r.data))
-      .catch(() => setLists([]));
-  useEffect(() => {
-    load();
-  }, []);
-
-  const create = async () => {
-    if (!newName.trim()) return;
-    const { data } = await api.post("/vendor-shortlists", { name: newName });
-    setNewName("");
-    load();
-    nav(`/vendors/shortlists/${data.id}`);
-  };
+  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const [projectId, setProjectId] = useState("");
+  const [type, setType] = useState("");
+  const [workspaceProjectId, setWorkspaceProjectId] = useState("");
+  const {
+    data: response,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+  } = useGetProjectShortlistsQuery();
+  const {
+    data: projectResponse,
+    isLoading: projectsLoading,
+    isError: projectsError,
+    refetch: retryProjects,
+  } = useGetProjectsQuery({ includeArchived: true });
+  const lists = useMemo(() => normalizeRows(response), [response]);
+  const projects = useMemo(() => {
+    const byId = new Map(
+      normalizeRows(projectResponse).map((project) => [project.id, project]),
+    );
+    for (const list of lists) {
+      if (!byId.has(list.project_id))
+        byId.set(
+          list.project_id,
+          list.project || { id: list.project_id, name: list.project_id },
+        );
+    }
+    return [...byId.values()].sort((a, b) =>
+      (projectName(a) || "").localeCompare(projectName(b) || ""),
+    );
+  }, [projectResponse, lists]);
+  const names = useMemo(
+    () =>
+      new Map(projects.map((project) => [project.id, projectName(project)])),
+    [projects],
+  );
+  const visibleLists = useMemo(
+    () =>
+      lists.filter((list) => {
+        if (projectId && list.project_id !== projectId) return false;
+        if (type && list.shortlist_type !== type) return false;
+        const text = `${list.title || ""} ${projectName(list.project) || names.get(list.project_id) || ""} ${typeLabel(list.shortlist_type)}`;
+        return text.toLowerCase().includes(search.trim().toLowerCase());
+      }),
+    [lists, projectId, type, search, names],
+  );
+  const options = projects.map((project) => (
+    <option key={project.id} value={project.id}>
+      {projectName(project)}
+    </option>
+  ));
 
   return (
-    <div className="space-y-6" data-testid="shortlists-index">
-      <button
-        onClick={() => nav("/vendors")}
-        className="text-[13px] text-[#6B7B7C] hover:text-[#333333] flex items-center gap-1"
+    <Page>
+      <PageHeader
+        eyebrow="Procurement · Vendors"
+        title="Vendor & material shortlists"
+        subtitle="Browse shortlists across all projects. Open a project workspace to create, edit and manage its vendor and material selections."
+      />
+      <Card
+        title="Open project workspace"
+        subtitle="Choose any project to manage its shortlists, including projects without an existing shortlist."
       >
-        <ArrowLeft size={14} /> Back to Vendors
-      </button>
-      <div className="flex items-end justify-between flex-wrap gap-3">
-        <div>
-          <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6] mb-1.5">
-            Vendors · Shortlists
-          </div>
-          <h1 className="text-[34px] font-bold text-[#333333]">
-            Vendor Shortlists
-          </h1>
-          <p className="text-[13.5px] text-[#6B7B7C] mt-1">
-            Curate short lists of vendors by project and work package.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <input
-            className="bc-input h-10 max-w-[280px]"
-            placeholder="New shortlist name"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            data-testid="new-list-name"
-          />
-          <button
-            onClick={create}
-            className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold flex items-center gap-1"
-            data-testid="new-list-create"
+        <div className="flex flex-wrap items-end gap-3">
+          <Field label="Project">
+            <SelectInput
+              value={workspaceProjectId}
+              onChange={(event) => setWorkspaceProjectId(event.target.value)}
+              disabled={projectsLoading}
+            >
+              <option value="">
+                {projectsLoading ? "Loading projects…" : "Choose a project"}
+              </option>
+              {options}
+            </SelectInput>
+          </Field>
+          <Button
+            variant="primary"
+            iconRight={ArrowUpRight}
+            disabled={!workspaceProjectId}
+            onClick={() => navigate(workspaceUrl(workspaceProjectId))}
           >
-            <Plus size={14} /> Create
-          </button>
+            Open workspace
+          </Button>
+          {projectsError && (
+            <>
+              <p role="alert">Could not load all projects.</p>
+              <Button onClick={retryProjects}>Retry projects</Button>
+            </>
+          )}
         </div>
-      </div>
-
-      <section className="bc-card overflow-hidden">
-        <table className="w-full text-left text-[13px]">
-          <thead>
-            <tr className="text-[10.5px] uppercase tracking-widest text-[#B5C4B6] bg-[#EAEEF0] border-b border-[#B5C4B6]">
-              <th className="px-4 py-3">Name</th>
-              <th className="px-3 py-3">Project</th>
-              <th className="px-3 py-3">Work Package</th>
-              <th className="px-3 py-3 text-right">Vendors</th>
-              <th className="px-3 py-3">Created By</th>
-              <th className="px-3 py-3">Updated</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(lists || []).map((l) => (
-              <tr
-                key={l.id}
-                onClick={() => nav(`/vendors/shortlists/${l.id}`)}
-                className="border-b border-[#B5C4B6] hover:bg-[#EAEEF0] cursor-pointer"
-                data-testid={`shortlist-row-${l.id}`}
-              >
-                <td className="px-4 py-3 font-semibold text-[#333333] flex items-center gap-2">
-                  <Bookmark size={13} className="text-[#333333]" />
-                  {l.name}
-                </td>
-                <td className="px-3 py-3 text-[#6B7B7C]">
-                  {l.project_name || "—"}
-                </td>
-                <td className="px-3 py-3 text-[#6B7B7C]">
-                  {l.work_package || "—"}
-                </td>
-                <td className="px-3 py-3 text-right font-semibold">
-                  {l.vendor_count || 0}
-                </td>
-                <td className="px-3 py-3 text-[12px] text-[#6B7B7C]">
-                  {l.created_by}
-                </td>
-                <td className="px-3 py-3 text-[11.5px] text-[#B5C4B6]">
-                  {relativeTime(l.updated_at)}
-                </td>
-              </tr>
-            ))}
-            {lists && lists.length === 0 && (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="p-10 text-center text-[13px] text-[#6B7B7C]"
-                >
-                  No shortlists yet.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </section>
-    </div>
+      </Card>
+      <Card
+        title="All shortlists"
+        subtitle={`${lists.length} shortlists across ${new Set(lists.map((list) => list.project_id)).size} projects`}
+      >
+        <div className="flex flex-wrap items-end gap-3 mb-5">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search project or shortlist"
+          />
+          <Field label="Project">
+            <SelectInput
+              value={projectId}
+              onChange={(event) => setProjectId(event.target.value)}
+            >
+              <option value="">All projects</option>
+              {options}
+            </SelectInput>
+          </Field>
+          <Field label="Shortlist type">
+            <SelectInput
+              value={type}
+              onChange={(event) => setType(event.target.value)}
+            >
+              <option value="">Vendor & material</option>
+              <option value="VENDOR">Vendor</option>
+              <option value="MATERIAL">Material</option>
+            </SelectInput>
+          </Field>
+          {(search || projectId || type) && (
+            <Button
+              onClick={() => {
+                setSearch("");
+                setProjectId("");
+                setType("");
+              }}
+            >
+              Clear filters
+            </Button>
+          )}
+          <Button loading={isFetching} onClick={refetch}>
+            Refresh
+          </Button>
+        </div>
+        {isLoading ? (
+          <p role="status">Loading shortlists…</p>
+        ) : isError ? (
+          <EmptyState
+            title="Could not load shortlists"
+            text="Please retry to load the project shortlist list."
+            action={<Button onClick={refetch}>Retry</Button>}
+          />
+        ) : !visibleLists.length ? (
+          <EmptyState
+            icon={Bookmark}
+            title={
+              lists.length ? "No matching shortlists" : "No shortlists yet"
+            }
+            text={
+              lists.length
+                ? "Change or clear the filters to see more shortlists."
+                : "Choose a project above to create its vendor and material shortlists."
+            }
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table
+              className="inos-table w-full text-left"
+              data-testid="shortlists-index"
+            >
+              <thead>
+                <tr>
+                  <th>Project</th>
+                  <th>Shortlist</th>
+                  <th>Type</th>
+                  <th>Entries</th>
+                  <th>Selected</th>
+                  <th>Status</th>
+                  <th>Updated</th>
+                  <th>Workspace</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleLists.map((list) => (
+                  <tr key={list.id} data-testid={`shortlist-row-${list.id}`}>
+                    <td>
+                      {projectName(list.project) ||
+                        names.get(list.project_id) ||
+                        list.project_id}
+                    </td>
+                    <td>
+                      <Link
+                        to={workspaceUrl(list.project_id)}
+                        className="font-semibold hover:underline"
+                      >
+                        {list.title ||
+                          `${typeLabel(list.shortlist_type)} shortlist`}
+                      </Link>
+                    </td>
+                    <td>{typeLabel(list.shortlist_type)}</td>
+                    <td>{list.entries?.length || 0}</td>
+                    <td>
+                      {list.entries?.filter((entry) => entry.is_selected)
+                        .length || 0}
+                    </td>
+                    <td>{list.is_locked ? "Locked" : "Editable"}</td>
+                    <td>{updatedDate(list.updated_at)}</td>
+                    <td>
+                      <Link
+                        to={workspaceUrl(list.project_id)}
+                        className="inos-btn inos-btn--secondary"
+                        aria-label={`Open ${projectName(list.project) || names.get(list.project_id) || "project"} workspace`}
+                      >
+                        Open workspace
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+    </Page>
   );
 }

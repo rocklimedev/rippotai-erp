@@ -249,6 +249,11 @@ export const materialsRoutes = [
 
       {
         path: "vendors/shortlists",
+        element: <ShortlistsIndex />,
+      },
+
+      {
+        path: "vendors/shortlists-workspace",
         element: <VendorShortlistWorkspace />,
       },
 

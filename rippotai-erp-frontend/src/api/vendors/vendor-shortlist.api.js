@@ -1,4 +1,5 @@
 import { baseApi } from "../../store/baseApi";
+import { applySavedShortlistEntry } from './shortlist-grid';
 
 export const vendorShortlistApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -205,7 +206,18 @@ export const vendorShortlistApi = baseApi.injectEndpoints({
         body,
       }),
 
-      invalidatesTags: ["ShortlistEntries", "Shortlists", "ShortlistGrid"],
+      async onQueryStarted(_args, { dispatch, queryFulfilled }) {
+        try {
+          const { data: saved } = await queryFulfilled;
+          dispatch(vendorShortlistApi.util.updateQueryData(
+            'getProjectShortlistGrid', saved.project_shortlist_id,
+            grid => applySavedShortlistEntry(grid, saved),
+          ));
+        } catch {
+          // A failed creation must not replace confirmed values in the grid.
+        }
+      },
+      invalidatesTags: ["ShortlistEntries", "Shortlists"],
     }),
 
     /**
@@ -236,14 +248,7 @@ export const vendorShortlistApi = baseApi.injectEndpoints({
           const { data: saved } = await queryFulfilled;
           dispatch(vendorShortlistApi.util.updateQueryData(
             "getProjectShortlistGrid", saved.project_shortlist_id, (grid) => {
-              const block = grid.grid?.find(item => item.trade === saved.trade);
-              const row = block?.rows?.find(item => item.working_type === saved.working_type);
-              if (!row) return;
-              for (const field of Object.keys(row)) {
-                if (field in saved) row[field] = saved[field];
-              }
-              row.entry_id = saved.id;
-              row.name_of_vendor = saved.name_of_vendor?.trim() || saved.vendor?.name || saved.material?.name || null;
+              applySavedShortlistEntry(grid, saved);
             },
           ));
         } catch {
@@ -255,7 +260,6 @@ export const vendorShortlistApi = baseApi.injectEndpoints({
         "ShortlistEntries",
         { type: "ShortlistEntries", id },
         "Shortlists",
-        "ShortlistGrid",
       ],
     }),
 

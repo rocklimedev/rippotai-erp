@@ -11,18 +11,20 @@ import {
   Max,
   MaxLength,
   Min,
+  Matches,
+  IsNotEmpty,
 } from 'class-validator';
 import { DprWorkStatus } from '@/common/enums/dpr.enums';
 
 export class CreateAdminDailyLogDto {
   /** Defaults to today on the server if omitted */
-  @IsOptional() @IsDateString() log_date?: string;
-  @IsString() @MaxLength(150) work_type: string;
+  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) log_date?: string;
+  @IsString() @IsNotEmpty() @MaxLength(150) work_type: string;
   @IsOptional() @IsUUID() project_id?: string;
-  @IsString() details: string;
+  @IsString() @IsNotEmpty() details: string;
   @IsOptional() @IsEnum(DprWorkStatus) status?: DprWorkStatus;
   @IsOptional() @IsString() @MaxLength(255) pending_with?: string;
-  @IsOptional() @IsDateString() due_date?: string;
+  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) due_date?: string;
   @IsOptional() @IsString() remarks?: string;
 }
 
@@ -38,8 +40,8 @@ export class QueryAdminDailyLogDto {
   @IsOptional() @IsEnum(DprWorkStatus) status?: DprWorkStatus;
   @IsOptional() @IsString() work_type?: string;
   @IsOptional() @IsString() pending_with?: string;
-  @IsOptional() @IsDateString() from_date?: string;
-  @IsOptional() @IsDateString() to_date?: string;
+  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) from_date?: string;
+  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) to_date?: string;
   /** Not completed and due_date < today */
   @IsOptional()
   @Transform(({ value }) => value === true || value === 'true')
