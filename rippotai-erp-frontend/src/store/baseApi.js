@@ -29,6 +29,7 @@ export const baseApi = createApi({
   reducerPath: "baseApi",
   baseQuery,
   tagTypes: [
+    "AdminDpr",
     // auth
     "AuthUser",
     "AuthTokens",

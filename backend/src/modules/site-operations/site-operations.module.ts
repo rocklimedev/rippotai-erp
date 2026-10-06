@@ -1,3 +1,10 @@
+import { AdminDprExportService } from './admin-dpr-export.service';
+import { AdminDailyLog } from './models/admin-daily-log.model';
+import { AdminDailyLogService } from './admin-daily-log.service';
+import { AdminDailyLogController } from './admin-daily-log.controller';
+import { AdminDailyReport } from './models/admin-daily-report.model';
+import { AdminDailyReportService } from './admin-daily-report.service';
+import { AdminDailyReportController } from './admin-daily-report.controller';
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { QualityChecklist } from './models/quality-checklist.model';
@@ -71,6 +78,8 @@ import { QualityController } from './quality.controller';
       QcSignOff,
       QcSignOffItemResult,
       DailySiteReport,
+      AdminDailyReport,
+      AdminDailyLog,
       ManpowerEntry,
       VisitAssignment,
       SiteVisitLog,
@@ -91,6 +100,8 @@ import { QualityController } from './quality.controller';
     ]),
   ],
   controllers: [
+    AdminDailyReportController,
+    AdminDailyLogController,
     ChecklistController,
     QcSignOffController,
     QualityChecklistController,
@@ -103,6 +114,9 @@ import { QualityController } from './quality.controller';
     VisitStageController,
   ],
   providers: [
+    AdminDailyReportService,
+    AdminDailyLogService,
+    AdminDprExportService,
     SiteOpsDashboardService,
     ChecklistService,
     QcSignOffService,

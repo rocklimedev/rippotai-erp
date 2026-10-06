@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import ListShortlist from "./ListShortlist";
 import ProjectVendorShortlistView from "./ProjectVendorShortlistView";
@@ -23,8 +23,7 @@ import { useGetProjectsQuery } from "../../api/projects/project.api";
  *    - user must select a project
  *
  * Routes:
- *   /projects/:projectId/shortlists
- *   /projects/shortlists
+ *   /procurement/vendors/shortlists-workspace?projectId=UUID
  *
  * Props:
  *   - projectName?: string
@@ -50,7 +49,7 @@ function ProjectShortlistWorkspace({
   /**
    * Optional project ID can also be supplied through:
    *
-   * /shortlists?projectId=xxxx
+   * /shortlists-workspace?projectId=xxxx
    *
    * Route param always takes precedence.
    */
@@ -71,7 +70,7 @@ function ProjectShortlistWorkspace({
     isError: isProjectsError,
     refetch: refetchProjects,
   } = useGetProjectsQuery({
-    includeArchived: false,
+    includeArchived: true,
   });
 
   /**
@@ -143,7 +142,7 @@ function ProjectShortlistWorkspace({
       if (!nextProjectId) {
         setActiveShortlist(null);
 
-        navigate("/procurement/vendors/shortlists", {
+        navigate("/procurement/vendors/shortlists-workspace", {
           replace: true,
         });
 
@@ -154,7 +153,7 @@ function ProjectShortlistWorkspace({
 
       // Project ID is now passed through the URL query parameter.
       navigate(
-        `/procurement/vendors/shortlists?projectId=${encodeURIComponent(
+        `/procurement/vendors/shortlists-workspace?projectId=${encodeURIComponent(
           nextProjectId,
         )}`,
       );
@@ -184,6 +183,7 @@ function ProjectShortlistWorkspace({
     return (
       <div className="bg-page min-h-full">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6">
+          <Link to="/procurement/vendors/shortlists" className="bc-btn-secondary inline-flex mb-4">All shortlists</Link>
           <div className="mb-6">
             <p className="eyebrow mb-1">Procurement</p>
 
@@ -220,6 +220,7 @@ function ProjectShortlistWorkspace({
   return (
     <div className="bg-page min-h-full">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6">
+        <Link to="/procurement/vendors/shortlists" className="bc-btn-secondary inline-flex mb-4">All shortlists</Link>
         {/* =====================================================
             PROJECT SELECTOR
         ====================================================== */}

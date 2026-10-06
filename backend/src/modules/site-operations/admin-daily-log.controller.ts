@@ -1,3 +1,4 @@
+import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import {
   Body,
   Controller,
@@ -9,6 +10,7 @@ import {
   Post,
   Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { AdminDailyLogService } from './admin-daily-log.service';
 import {
@@ -17,7 +19,7 @@ import {
   UpdateAdminDailyLogDto,
 } from './dto/admin-daily-log.dto';
 
-// TODO: add your AuthGuard / PermissionsGuard decorators here, same as other modules.
+@UseGuards(JwtAuthGuard)
 @Controller('dpr/admin-logs')
 export class AdminDailyLogController {
   constructor(private readonly service: AdminDailyLogService) {}

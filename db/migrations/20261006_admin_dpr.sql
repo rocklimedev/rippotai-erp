@@ -1,0 +1,47 @@
+-- Apply before enabling Admin DPR. Existing tables and data are preserved.
+CREATE TABLE IF NOT EXISTS admin_daily_reports (
+  id CHAR(36) COLLATE utf8_unicode_ci NOT NULL,
+  report_date DATE NOT NULL,
+  project_id CHAR(36) COLLATE utf8_unicode_ci NOT NULL,
+  work_status ENUM('Pending','In Progress','Completed','Blocked') NOT NULL DEFAULT 'Pending',
+  work_details TEXT NULL,
+  contractor_working TEXT NULL,
+  work_planned_tomorrow TEXT NULL,
+  material_required_tomorrow TEXT NULL,
+  material_sent_from_vendor TEXT NULL,
+  material_sent_from_inventory TEXT NULL,
+  issues_blockers TEXT NULL,
+  photos_attached BOOLEAN NOT NULL DEFAULT FALSE,
+  created_by CHAR(36) COLLATE utf8_unicode_ci NULL,
+  updated_by CHAR(36) COLLATE utf8_unicode_ci NULL,
+  deleted_by CHAR(36) COLLATE utf8_unicode_ci NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  deleted_at DATETIME NULL,
+  PRIMARY KEY (id),
+  KEY idx_adr_date_project (report_date, project_id),
+  CONSTRAINT fk_admin_dpr_project FOREIGN KEY (project_id) REFERENCES projects(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS admin_daily_logs (
+  id CHAR(36) COLLATE utf8_unicode_ci NOT NULL,
+  log_date DATE NOT NULL,
+  work_type VARCHAR(150) NOT NULL,
+  project_id CHAR(36) COLLATE utf8_unicode_ci NULL,
+  details TEXT NOT NULL,
+  status ENUM('Pending','In Progress','Completed','Blocked') NOT NULL DEFAULT 'Pending',
+  pending_with VARCHAR(255) NULL,
+  due_date DATE NULL,
+  remarks TEXT NULL,
+  completed_at DATETIME NULL,
+  created_by CHAR(36) COLLATE utf8_unicode_ci NULL,
+  updated_by CHAR(36) COLLATE utf8_unicode_ci NULL,
+  deleted_by CHAR(36) COLLATE utf8_unicode_ci NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  deleted_at DATETIME NULL,
+  PRIMARY KEY (id),
+  KEY idx_adl_status_due (status, due_date),
+  KEY idx_adl_log_date (log_date),
+  CONSTRAINT fk_admin_log_project FOREIGN KEY (project_id) REFERENCES projects(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

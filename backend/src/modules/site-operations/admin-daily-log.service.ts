@@ -39,7 +39,7 @@ export class AdminDailyLogService {
     return this.findOne(row.id);
   }
 
-  async findAll(q: QueryAdminDailyLogDto) {
+  async findAll(q: QueryAdminDailyLogDto, paginate = true) {
     const page = q.page ?? 1;
     const limit = q.limit ?? 20;
     const where: WhereOptions<any> = {};
@@ -78,8 +78,7 @@ export class AdminDailyLogService {
         ['due_date', 'ASC'],
         ['created_at', 'DESC'],
       ],
-      limit,
-      offset: (page - 1) * limit,
+      ...(paginate ? { limit, offset: (page - 1) * limit } : {}),
     });
 
     return {

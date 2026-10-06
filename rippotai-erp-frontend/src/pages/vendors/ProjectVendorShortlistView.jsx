@@ -11,6 +11,7 @@ import {
 
 import { useGetVendorsQuery } from "../../api/vendors/vendor.api";
 import { useGetMaterialsQuery } from "../../api/procuerment/material-master.api";
+import { createShortlistSaveQueue } from '../../api/vendors/shortlist-grid';
 
 /**
  * ============================================================
@@ -407,6 +408,9 @@ export default function ProjectVendorShortlistView({
 
   const [createEntry] = useCreateShortlistEntryMutation();
   const [saveMessage, setSaveMessage] = useState("");
+  const entryIds = useRef(new Map());
+  const pendingCreates = useRef(new Map());
+  const [queueSave] = useState(createShortlistSaveQueue);
 
   const [selectEntry] = useSelectShortlistEntryMutation();
 
@@ -426,31 +430,37 @@ export default function ProjectVendorShortlistView({
     async (blockTrade, row) => {
       if (row.entry_id) return row.entry_id;
       if (isLocked) return null;
+      const key = `${shortlistId}:${blockTrade}:${row.working_type}`;
+      if (entryIds.current.has(key)) return entryIds.current.get(key);
+      if (pendingCreates.current.has(key)) return pendingCreates.current.get(key);
+      const creation = (async () => {
+        try {
+          const created = await createEntry({
+            project_shortlist_id: shortlistId,
+            trade: blockTrade,
+            working_type: row.working_type,
+            currency: row.currency || "INR",
+            status: "DRAFT",
+          }).unwrap();
 
-      try {
-        const created = await createEntry({
-          project_shortlist_id: shortlistId,
-          trade: blockTrade,
-          working_type: row.working_type,
-          currency: row.currency || "INR",
-          status: "DRAFT",
-        }).unwrap();
-
-        // Force grid refresh so the new entry_id appears
-        await refetch();
-
-        return created.id;
-      } catch (err) {
-        console.error("Failed to create shortlist entry", err);
-        alert(
-          err?.data?.message ||
-            err?.error ||
-            "Failed to create shortlist entry",
-        );
-        return null;
-      }
+          entryIds.current.set(key, created.id);
+          return created.id;
+        } catch (err) {
+          console.error("Failed to create shortlist entry", err);
+          alert(
+            err?.data?.message ||
+              err?.error ||
+              "Failed to create shortlist entry",
+          );
+          return null;
+        } finally {
+          pendingCreates.current.delete(key);
+        }
+      })();
+      pendingCreates.current.set(key, creation);
+      return creation;
     },
-    [createEntry, isLocked, shortlistId, refetch],
+    [createEntry, isLocked, shortlistId],
   );
 
   /**
@@ -462,33 +472,33 @@ export default function ProjectVendorShortlistView({
     async (blockTrade, row, patch) => {
       if (isLocked) return;
       setSaveMessage("");
+      return queueSave(`${shortlistId}:${blockTrade}:${row.working_type}`, async () => {
+        let entryId = row.entry_id;
 
-      let entryId = row.entry_id;
+        if (!entryId) {
+          entryId = await ensureEntryId(blockTrade, row);
+          if (!entryId) return;
+        }
 
-      if (!entryId) {
-        entryId = await ensureEntryId(blockTrade, row);
-        if (!entryId) return;
-      }
+        try {
+          const saved = await updateEntry({
+            id: entryId,
+            ...patch,
+          }).unwrap();
 
-      try {
-        const saved = await updateEntry({
-          id: entryId,
-          ...patch,
-        }).unwrap();
-
-        setSaveMessage("Changes saved.");
-        await refetch();
-        return saved;
-      } catch (err) {
-        console.error("Update entry failed", err);
-        alert(
-          err?.data?.message ||
-            err?.error ||
-            "Failed to update shortlist entry",
-        );
-      }
+          setSaveMessage("Changes saved.");
+          return saved;
+        } catch (err) {
+          console.error("Update entry failed", err);
+          alert(
+            err?.data?.message ||
+              err?.error ||
+              "Failed to update shortlist entry",
+          );
+        }
+      });
     },
-    [isLocked, ensureEntryId, updateEntry, refetch],
+    [isLocked, ensureEntryId, updateEntry, queueSave, shortlistId],
   );
 
   /**
@@ -709,9 +719,9 @@ export default function ProjectVendorShortlistView({
                   const isFirst = rowIdx === 0;
 
                   const rowKey = [
+                    shortlistId,
                     block.trade,
                     row.working_type,
-                    row.entry_id || rowIdx,
                   ].join("-");
 
                   // Now editable even when entry_id is missing

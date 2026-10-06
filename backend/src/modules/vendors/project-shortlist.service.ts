@@ -9,6 +9,7 @@ import { InjectModel } from '@nestjs/sequelize';
 
 import { ProjectShortlist } from './models/project-shortlist.model';
 import { ShortlistEntry } from './models/shortlist-entry.model';
+import { Project } from '@/modules/projects/models/projects.model';
 
 import { CreateProjectShortlistDto } from './dto/create-project-shortlist.dto';
 import { UpdateProjectShortlistDto } from './dto/update-project-shortlist.dto';
@@ -202,6 +203,7 @@ export class ProjectShortlistService {
       where,
 
       include: [
+        { model: Project, as: 'project', attributes: ['id', 'name', 'slug'], required: false },
         {
           model: ShortlistEntry,
           as: 'entries',

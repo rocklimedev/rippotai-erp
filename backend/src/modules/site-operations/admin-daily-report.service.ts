@@ -36,7 +36,7 @@ export class AdminDailyReportService {
     return this.findOne(row.id);
   }
 
-  async findAll(q: QueryAdminDailyReportDto) {
+  async findAll(q: QueryAdminDailyReportDto, paginate = true) {
     const page = q.page ?? 1;
     const limit = q.limit ?? 20;
     const where: WhereOptions<any> = {};
@@ -72,8 +72,7 @@ export class AdminDailyReportService {
         ['report_date', 'DESC'],
         ['created_at', 'DESC'],
       ],
-      limit,
-      offset: (page - 1) * limit,
+      ...(paginate ? { limit, offset: (page - 1) * limit } : {}),
     });
 
     return {
