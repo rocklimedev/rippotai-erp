@@ -1,3 +1,4 @@
+import { termsToText, textToTermsHtml } from "@/lib/terms";
 import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -91,7 +92,7 @@ function formatDate(d) {
 }
 
 export default function TermsSettings() {
-  const { data: templates, isLoading, isError } = useGetTermsTemplatesQuery();
+  const { data: templates, isLoading, isError } = useGetTermsTemplatesQuery({ includeInactive: true });
   const [createTemplate, { isLoading: creating }] =
     useCreateTermsTemplateMutation();
   const [updateTemplate] = useUpdateTermsTemplateMutation();
@@ -130,7 +131,7 @@ export default function TermsSettings() {
       return false;
     }
     try {
-      await createTemplate(createForm).unwrap();
+      await createTemplate({ ...createForm, name: createForm.name.trim(), content_html: textToTermsHtml(createForm.content_html) }).unwrap();
       toast.success("Template created");
       setCreateOpen(false);
       resetCreateForm();
@@ -143,7 +144,7 @@ export default function TermsSettings() {
 
   const openEditContent = (template) => {
     setEditingTemplate(template);
-    setEditContent(template.content_html || "");
+    setEditContent(termsToText(template.content_html));
     setChangeNote("");
     setPreviewMode(false);
   };
@@ -157,7 +158,7 @@ export default function TermsSettings() {
     try {
       await updateContent({
         id: editingTemplate.id,
-        content_html: editContent,
+        content_html: textToTermsHtml(editContent),
         change_note: changeNote || undefined,
       }).unwrap();
       toast.success(`Saved as v${(editingTemplate.current_version || 1) + 1}`);
@@ -394,14 +395,14 @@ function WriteOrPreview({ value, onChange, preview, setPreview, rows = 8, placeh
       {preview ? (
         <div className="adm-preview-box">
           {value.trim() ? (
-            full ? <TermsFullDisplay htmlContent={value} /> : <TermsPreview htmlContent={value} maxPreview={50} />
+            full ? <TermsFullDisplay htmlContent={textToTermsHtml(value)} /> : <TermsPreview htmlContent={textToTermsHtml(value)} maxPreview={50} />
           ) : (
             <p style={{ margin: 0, fontSize: 13, color: "var(--text-3)" }}>Write some terms to see the preview.</p>
           )}
         </div>
       ) : (
         <TextArea
-          className="adm-mono-area"
+
           rows={rows}
           value={value}
           invalid={invalid}
@@ -486,7 +487,7 @@ function CreateTemplateDialog({
         />
       </Field>
 
-      <Field label="Terms" required error={errors.content} hint="One term per line, or paste an HTML list (<ol><li>…</li></ol>).">
+      <Field label="Terms" required error={errors.content} hint="Write one term per line.">
         <WriteOrPreview
           value={form.content_html}
           onChange={(v) => {

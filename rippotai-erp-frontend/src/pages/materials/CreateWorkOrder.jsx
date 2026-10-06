@@ -1,3 +1,5 @@
+import { termsToText, textToTermsHtml } from "@/lib/terms";
+import { TermsFullDisplay } from "@/components/settings/TermsDisplay";
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -156,7 +158,7 @@ const normalizePaymentStage = (stage) => ({
 });
 
 const normalizeTerm = (term) => ({
-  description: term?.description || "",
+  description: termsToText(term?.description),
   is_mandatory: term?.is_mandatory !== false,
 });
 
@@ -330,7 +332,7 @@ export default function WorkOrderForm() {
           ? workOrder.cartage
           : 0,
 
-      payment_terms: workOrder.payment_terms || "",
+      payment_terms: termsToText(workOrder.payment_terms),
 
       terms_template_id:
         workOrder.terms_template_id || workOrder.termsTemplate?.id || "",
@@ -549,32 +551,13 @@ export default function WorkOrderForm() {
   ------------------------------------------------------- */
 
   const handleTemplateChange = (templateId) => {
-    const template = activeTermsTemplates.find(
-      (item) => item.id === templateId,
-    );
-
     setForm((current) => ({
       ...current,
 
       terms_template_id: templateId || "",
 
-      /*
-       * IMPORTANT:
-       *
-       * Do not replace existing manual terms when
-       * editing an existing work order.
-       *
-       * If a template is selected manually, add
-       * the template snapshot as the first term.
-       */
-      terms: templateId
-        ? [
-            {
-              description: template?.content_html || "",
-              is_mandatory: true,
-            },
-          ]
-        : [],
+      // The backend snapshots the selected template; keep manual additions.
+      terms: current.terms,
     }));
   };
 
@@ -785,15 +768,10 @@ export default function WorkOrderForm() {
         .map((term, index) => ({
           sort_order: index + 1,
 
-          description: term.description.trim(),
+          description: textToTermsHtml(term.description),
 
           is_mandatory: term.is_mandatory !== false,
 
-          ...(form.terms_template_id
-            ? {
-                terms_template_id: form.terms_template_id,
-              }
-            : {}),
         })),
     };
 
@@ -1590,14 +1568,7 @@ export default function WorkOrderForm() {
                   </div>
 
                   <div className="max-h-[350px] overflow-y-auto p-5">
-                    <div
-                      className="prose prose-sm max-w-none text-slate-700"
-                      dangerouslySetInnerHTML={{
-                        __html:
-                          selectedTemplate.content_html ||
-                          "<p>No template content available.</p>",
-                      }}
-                    />
+                    <TermsFullDisplay htmlContent={selectedTemplate.content_html} />
                   </div>
                 </div>
               )}

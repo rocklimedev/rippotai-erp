@@ -1,3 +1,5 @@
+import { TermsFullDisplay } from "@/components/settings/TermsDisplay";
+import { termsToText, textToTermsHtml } from "@/lib/terms";
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -1104,7 +1106,7 @@ export function PlanOfActionForm() {
     }
 
     try {
-      const created = await createTermsTemplate(termsCreateForm).unwrap();
+      const created = await createTermsTemplate({ ...termsCreateForm, name: termsCreateForm.name.trim(), content_html: textToTermsHtml(termsCreateForm.content_html) }).unwrap();
       toast.success("Terms template created");
       setTermsCreateOpen(false);
       resetTermsCreateForm();
@@ -1123,7 +1125,7 @@ export function PlanOfActionForm() {
 
   const openEditTermsContent = (template) => {
     setEditingTermsTemplate(template);
-    setTermsEditContent(template.content_html || "");
+    setTermsEditContent(termsToText(template.content_html));
     setTermsChangeNote("");
     setTermsEditPreview(false);
   };
@@ -1139,7 +1141,7 @@ export function PlanOfActionForm() {
     try {
       await updateTermsContent({
         id: editingTermsTemplate.id,
-        content_html: termsEditContent,
+        content_html: textToTermsHtml(termsEditContent),
         change_note: termsChangeNote || undefined,
       }).unwrap();
 
@@ -1171,14 +1173,14 @@ export function PlanOfActionForm() {
         {preview ? (
           <div className="crmf-preview prose prose-sm max-w-none">
             {value.trim() ? (
-              <div dangerouslySetInnerHTML={{ __html: value }} />
+              <TermsFullDisplay htmlContent={textToTermsHtml(value)} />
             ) : (
               <p className="inos-hint">Enter content to see a preview…</p>
             )}
           </div>
         ) : (
           <TextArea
-            className="crmf-mono"
+
             style={{ minHeight: 160 }}
             placeholder={placeholder}
             value={value}
@@ -1236,7 +1238,7 @@ export function PlanOfActionForm() {
                 label="Terms content"
                 required
                 full
-                hint="Paste an HTML list or plain text with line breaks."
+                hint="Write one term per line."
               >
                 {termsEditor(
                   termsCreateForm.content_html,
@@ -1247,11 +1249,9 @@ export function PlanOfActionForm() {
                     })),
                   termsCreatePreview,
                   setTermsCreatePreview,
-                  `<ol>
-  <li>All quantities are approximate and subject to site verification.</li>
-  <li>Rates include labour, material, tools, and equipment unless otherwise specified.</li>
-  <li>Any variation in scope shall be treated as extra work.</li>
-</ol>`,
+                  `All quantities are approximate and subject to site verification.
+Rates include labour, material, tools, and equipment unless otherwise specified.
+Any variation in scope shall be treated as extra work.`,
                 )}
               </Field>
             </div>

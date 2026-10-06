@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Image as ImageIcon, Pencil, Ruler, Upload, X, ShieldCheck } from "lucide-react";
+import { commitRoomDraft } from "@/hooks/site-recce-form-helpers";
 
 import { Button, Field, TextInput, TextArea, FormActions } from "@/components/inos";
 import {
@@ -138,7 +139,13 @@ function UploadButton({ label, busy, disabled, accept, onFile }) {
 // ROOM EDITOR
 // ============================================================
 
-function RoomEditor({ room, onChange, onCancel, onSave }) {
+function RoomEditor({ room, onChange, onCancel, onSave, onFileUpload }) {
+  const [pendingUploads, setPendingUploads] = useState(0);
+  const upload = async (file, type) => {
+    setPendingUploads((count) => count + 1);
+    try { return await onFileUpload(file, type); }
+    finally { setPendingUploads((count) => count - 1); }
+  };
   const update = (key, value) => {
     onChange({
       ...room,
@@ -151,7 +158,7 @@ function RoomEditor({ room, onChange, onCancel, onSave }) {
       title={room?.id ? "Edit room" : "New room"}
       meta="Name the room and record its measurements"
       actions={
-        <IconButton label="Close" onClick={onCancel}>
+        <IconButton label="Close" onClick={onCancel} disabled={pendingUploads > 0}>
           <X />
         </IconButton>
       }
@@ -166,17 +173,6 @@ function RoomEditor({ room, onChange, onCancel, onSave }) {
           />
         </Field>
 
-        <Field label="Room number" optional>
-          <TextInput
-            type="number"
-            min="0"
-            step="1"
-            value={room.room_number ?? ""}
-            placeholder="e.g. 1"
-            onChange={(e) => update("room_number", e.target.value)}
-          />
-        </Field>
-
         <Field label="Room type" full>
           <Choices
             name="Room type"
@@ -185,6 +181,10 @@ function RoomEditor({ room, onChange, onCancel, onSave }) {
             onChange={(value) => update("room_type", value)}
           />
         </Field>
+
+        {room.room_type === "OTHER" && <Field label="Other room type" required full>
+          <TextInput value={room.room_type_other || ""} placeholder="e.g. Study or prayer room" onChange={(e) => update("room_type_other", e.target.value)} />
+        </Field>}
 
         <Field label="Measurement unit" full>
           <Choices
@@ -244,11 +244,22 @@ function RoomEditor({ room, onChange, onCancel, onSave }) {
         </Field>
       </div>
 
+      <div className="crmf-rows">
+        {(room._photos || []).map((photo) => <PhotoEditor
+          key={photo.id} photo={photo} rooms={[]} embedded
+          onChange={(updated) => onChange((current) => current ? ({ ...current, _photos: current._photos.map((item) => item.id === photo.id ? (typeof updated === "function" ? updated(item) : updated) : item) }) : current)}
+          onCancel={() => onChange((current) => ({ ...current, _photos: current._photos.filter((item) => item.id !== photo.id) }))}
+          onFileUpload={onFileUpload ? upload : undefined}
+        />)}
+        <AddRowButton onClick={() => onChange((current) => ({ ...current, _photos: [...(current._photos || []), { ...EMPTY_PHOTO, id: crypto.randomUUID(), room_id: current.id || current._draftId, shot_number: (current._photos?.length || 0) + 1 }] }))}>
+          Add room photo / layout
+        </AddRowButton>
+      </div>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-        <Button variant="ghost" onClick={onCancel}>
+        <Button variant="ghost" onClick={onCancel} disabled={pendingUploads > 0}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={onSave} disabled={!room?.room_name?.trim()}>
+        <Button variant="primary" onClick={onSave} disabled={pendingUploads > 0 || !room?.room_name?.trim() || (room.room_type === "OTHER" && !room.room_type_other?.trim()) || (room._photos || []).some((photo) => !photo.shot_number || (!photo.photo_url && !photo.layout_image_url))}>
           {room?.id ? "Update room" : "Add room"}
         </Button>
       </div>
@@ -267,6 +278,7 @@ function PhotoEditor({
   onCancel,
   onSave,
   onFileUpload,
+  embedded = false,
 }) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
@@ -339,14 +351,14 @@ function PhotoEditor({
       }
     >
       <div className="inos-form-grid">
-        <Field label="Room" required>
+        {!embedded && <Field label="Room" required>
           <OptionSelect
             value={photo.room_id || ""}
             options={roomOptions}
             placeholder="Select a room"
             onChange={(value) => update("room_id", value)}
           />
-        </Field>
+        </Field>}
 
         <Field label="Shot number" required hint="Numbering follows the order shots were taken.">
           <TextInput
@@ -435,7 +447,7 @@ function PhotoEditor({
         </Field>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+      {!embedded && <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
         <Button variant="ghost" onClick={onCancel}>
           Cancel
         </Button>
@@ -451,7 +463,7 @@ function PhotoEditor({
         >
           {photo?.id ? "Update shot" : "Add shot"}
         </Button>
-      </div>
+      </div>}
     </RowCard>
   );
 }
@@ -530,6 +542,8 @@ export function SiteRecceSectionForm({
     setEditingRoom({
       ...EMPTY_ROOM,
       id: null,
+      _draftId: crypto.randomUUID(),
+      _photos: [],
       sort_order: rooms.length,
     });
   };
@@ -537,6 +551,7 @@ export function SiteRecceSectionForm({
   const handleEditRoom = (room) => {
     setEditingRoom({
       ...room,
+      _photos: photos.filter((photo) => String(photo.room_id) === String(room.id)).map((photo) => ({ ...photo })),
     });
   };
 
@@ -579,23 +594,9 @@ export function SiteRecceSectionForm({
       return;
     }
 
-    let nextRooms;
-
-    if (editingRoom.id) {
-      nextRooms = rooms.map((room) =>
-        String(room.id) === String(editingRoom.id) ? editingRoom : room,
-      );
-    } else {
-      const newRoom = {
-        ...editingRoom,
-        id: `tmp-room-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        sort_order: rooms.length,
-      };
-
-      nextRooms = [...rooms, newRoom];
-    }
-
-    onFieldChange("Room-wise Measurements", "rooms", nextRooms);
+    const committed = commitRoomDraft(rooms, photos, editingRoom);
+    onFieldChange("Room-wise Measurements", "rooms", committed.rooms);
+    onFieldChange("Room Photos & Layout References", "photos", committed.photos);
 
     setEditingRoom(null);
   };
@@ -794,13 +795,14 @@ export function SiteRecceSectionForm({
                   onChange={setEditingRoom}
                   onCancel={() => setEditingRoom(null)}
                   onSave={handleSaveRoom}
+                  onFileUpload={onFileUpload}
                 />
               ) : (
                 <RowCard
                   key={room.id || index}
                   index={index + 1}
                   title={room.room_name}
-                  meta={`${getRoomTypeLabel(room.room_type)}${room.room_number ? ` · Room ${room.room_number}` : ""}`}
+                  meta={room.room_type === "OTHER" ? room.room_type_other || "Other" : getRoomTypeLabel(room.room_type)}
                   onRemove={() => handleDeleteRoom(room.id)}
                   removeLabel="Delete room"
                   actions={
@@ -839,6 +841,7 @@ export function SiteRecceSectionForm({
             onChange={setEditingRoom}
             onCancel={() => setEditingRoom(null)}
             onSave={handleSaveRoom}
+            onFileUpload={onFileUpload}
           />
         )}
 
@@ -958,6 +961,7 @@ export function SiteRecceSectionForm({
         if (field.type === "restriction-table") {
           return null;
         }
+        if (field.showWhen && values?.[field.showWhen.field] !== field.showWhen.value) return null;
 
         const fieldValue = values?.[field.key] ?? "";
         const set = (value) => handleFieldChange(section.title, field.key, value);
@@ -1026,7 +1030,7 @@ export function SiteRecceSectionForm({
 
   const renderSectionBody = (section) => {
     if (section.type === "rooms") {
-      return renderRooms();
+      return <>{renderRooms()}<div className="mt-6">{renderPhotos()}</div></>;
     }
 
     if (section.type === "roomPhotos") {
@@ -1120,17 +1124,17 @@ export function SiteRecceSectionForm({
       ))}
 
       <FormActions
-        note={autosaveNote || `${filledCount} item${filledCount !== 1 ? "s" : ""} completed`}
+        note={editingRoom || editingPhoto ? "Save or cancel the open room / photo before saving the site recce." : autosaveNote || `${filledCount} item${filledCount !== 1 ? "s" : ""} completed`}
         extra={
           onSaveDraft && (
-            <Button variant="secondary" onClick={onSaveDraft}>
+            <Button variant="secondary" onClick={onSaveDraft} disabled={Boolean(editingRoom || editingPhoto)}>
               Save draft
             </Button>
           )
         }
         onCancel={onCancel || (() => navigate(-1))}
         submitLabel={isSubmitting ? "Saving…" : submitLabel || (title?.includes("Recce") || title?.includes("recce") ? "Save site recce" : "Generate brief")}
-        submitDisabled={isSubmitting}
+        submitDisabled={isSubmitting || Boolean(editingRoom || editingPhoto)}
         onSubmit={onSubmit}
       />
 

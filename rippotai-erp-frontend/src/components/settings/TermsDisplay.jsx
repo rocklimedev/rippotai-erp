@@ -1,3 +1,4 @@
+import { termsToText } from "@/lib/terms";
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Pill } from "@/components/inos";
@@ -8,33 +9,7 @@ import "@/pages/settings/_admin-ui.css";
  * Handles <ol><li>, <ul><li>, and newline-separated formats
  */
 function parseTermsFromHtml(htmlString) {
-  if (!htmlString) return [];
-
-  // Create a temporary DOM element to parse HTML
-  const temp = document.createElement("div");
-  temp.innerHTML = htmlString;
-
-  const items = [];
-
-  // Try to find ordered or unordered lists
-  const listItems = temp.querySelectorAll("li");
-  if (listItems.length > 0) {
-    listItems.forEach((li) => {
-      const text = li.textContent.trim();
-      if (text) items.push(text);
-    });
-  }
-
-  // Fallback: if no list items found, try splitting by newlines
-  if (items.length === 0) {
-    const lines = htmlString
-      .split(/<br\s*\/?>|\n/gi)
-      .map((line) => line.replace(/<[^>]+>/g, "").trim())
-      .filter((line) => line.length > 0);
-    return lines;
-  }
-
-  return items;
+  return termsToText(htmlString).split(/\n/).map((line) => line.trim()).filter(Boolean);
 }
 
 const Empty = () => (

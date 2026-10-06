@@ -184,6 +184,7 @@ export class SiteRecceService {
           room_name: roomDto.room_name,
 
           room_type: roomDto.room_type ?? null,
+          room_type_other: roomDto.room_type === 'OTHER' ? roomDto.room_type_other ?? null : null,
 
           room_number: roomDto.room_number ?? null,
 

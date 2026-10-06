@@ -31,9 +31,12 @@ export class TermsService {
     private readonly sequelize: Sequelize,
   ) {}
 
-  async findAll(scope?: TermsScope) {
+  async findAll(scope?: TermsScope, includeInactive = false) {
     return this.templateModel.findAll({
-      where: scope ? { scope, is_active: true } : { is_active: true },
+      where: {
+        ...(scope ? { scope } : {}),
+        ...(includeInactive ? {} : { is_active: true }),
+      },
       order: [['name', 'ASC']],
     });
   }
@@ -45,10 +48,12 @@ export class TermsService {
   }
 
   async create(dto: CreateTermsTemplateDto, actorId?: string) {
+    if (!dto.name.trim() || !dto.content_html.trim())
+      throw new BadRequestException('Name and terms content are required');
     return this.sequelize.transaction(async (t: Transaction) => {
       const template = await this.templateModel.create(
         {
-          name: dto.name,
+          name: dto.name.trim(),
           scope: dto.scope,
           content_html: dto.content_html,
           is_default: dto.is_default ?? false,
@@ -88,9 +93,15 @@ export class TermsService {
     dto: UpdateTermsTemplateContentDto,
     actorId?: string,
   ) {
-    const template = await this.findOne(id);
-
+    if (!dto.content_html.trim()) {
+      throw new BadRequestException('Terms content cannot be empty');
+    }
     return this.sequelize.transaction(async (t: Transaction) => {
+      const template = await this.templateModel.findByPk(id, {
+        transaction: t,
+        lock: t.LOCK.UPDATE,
+      });
+      if (!template) throw new NotFoundException('Terms template not found');
       const nextVersion = template.current_version + 1;
 
       await this.versionModel.create(
@@ -144,6 +155,8 @@ export class TermsService {
     version?: number,
   ): Promise<TermsSnapshot> {
     const template = await this.findOne(templateId);
+    if (!template.is_active)
+      throw new BadRequestException('Terms template is inactive');
 
     if (version === undefined || version === template.current_version) {
       return {

@@ -1,4 +1,3 @@
-
 export const REKI_SECTIONS = [
   // ============================================================
   // 01. GENERAL INFORMATION
@@ -144,7 +143,8 @@ export const REKI_SECTIONS = [
 
   {
     title: "Site Rules & Restrictions",
-    description: "Society / RWA rules that affect how and when work can happen on site.",
+    description:
+      "Society / RWA rules that affect how and when work can happen on site.",
     fields: [
       {
         key: "society_rwa_restrictions",
@@ -211,11 +211,6 @@ export const REKI_SECTIONS = [
           { label: "Balcony", value: "BALCONY" },
           { label: "Other", value: "OTHER" },
         ],
-      },
-      {
-        key: "room_number",
-        label: "Room Number",
-        type: "number",
       },
       {
         key: "length",
@@ -325,3 +320,32 @@ export const REKI_SECTIONS = [
     ],
   },
 ];
+
+// Only the entry form combines rooms and their photo/layout records.
+export const SITE_RECCE_FORM_SECTIONS = REKI_SECTIONS.filter(
+  (section) => section.type !== "roomPhotos",
+).map((section) => {
+  if (section.type === "rooms")
+    return {
+      ...section,
+      title: "Room-wise Measurements, Photos & Layouts",
+      description:
+        "Create each room with its measurements, site photos and layout references.",
+    };
+  if (section.title !== "Site Utilities") return section;
+  return {
+    ...section,
+    fields: section.fields.flatMap((field) => [
+      {
+        key: `${field.key}_available`,
+        label: `${field.label} — Available?`,
+        type: "select",
+        options: [
+          { label: "Yes", value: "YES" },
+          { label: "No", value: "NO" },
+        ],
+      },
+      { ...field, showWhen: { field: `${field.key}_available`, value: "YES" } },
+    ]),
+  };
+});

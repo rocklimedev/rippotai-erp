@@ -1,3 +1,4 @@
+import { TermsFullDisplay } from "@/components/settings/TermsDisplay";
 import React from "react";
 import { CalendarClock, Trash2, Plus } from "lucide-react";
 
@@ -563,12 +564,7 @@ export default function PlanOfActionSection({ data, onChange }) {
               Terms & Conditions
             </p>
 
-            <div
-              className="prose prose-sm max-w-none rounded-lg border bg-muted/20 p-4"
-              dangerouslySetInnerHTML={{
-                __html: data.termsContentSnapshot,
-              }}
-            />
+            <TermsFullDisplay htmlContent={data.termsContentSnapshot} />
           </div>
         )}
 

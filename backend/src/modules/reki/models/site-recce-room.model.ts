@@ -88,6 +88,9 @@ export class SiteRecceRoom extends Model<SiteRecceRoom> {
   })
   declare room_number: number | null;
 
+  @Column({ type: DataType.STRING(255), allowNull: true })
+  declare room_type_other: string | null;
+
   // ============================================================
   // MEASUREMENTS
   // ============================================================
