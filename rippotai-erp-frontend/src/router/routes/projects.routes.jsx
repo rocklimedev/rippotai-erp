@@ -11,8 +11,20 @@ import ProjectPlannerView from "../../pages/projects/ProjectPlannerView";
 import ProjectPlannerWorkspace from "../../pages/projects/ProjectPlannerWorkspace";
 import { DocumentsAll } from "@/pages/documents/DocumentsAll";
 import { DocumentUpload } from "@/pages/documents/DocumentUpload";
+import { DocumentReference } from "@/components/documents/DocumentSequenceNavigation";
 
 export const projectsRoutes = [
+  {
+    type: "layout",
+    path: "/document",
+    layout: AppLayout,
+    layoutProps: { app: "projects" },
+    blockRoles: ["client"],
+    children: [
+      { path: "upload", element: <DocumentUpload /> },
+      { path: "reference", element: <DocumentReference /> },
+    ],
+  },
   {
     type: "layout",
     path: "/projects",

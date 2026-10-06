@@ -8,10 +8,11 @@ import {
   useLocation,
 } from "react-router-dom";
 import axios from "axios";
+import { API_URL } from "@/lib/config";
 import { toast } from "sonner";
 import { fmtINR, relativeTime } from "@/lib/format";
 
-const API = `${import.meta.env.VITE_BACKEND_URL || ""}/api/v1`;
+const API = API_URL;
 // Public axios instance (no auth header)
 const publicApi = axios.create({ baseURL: API });
 

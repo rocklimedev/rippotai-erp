@@ -1,3 +1,4 @@
+import { projectCategoryFromName } from "./brief-site-options.js";
 // ============================================================
 // HELPERS
 // ============================================================
@@ -133,6 +134,9 @@ export const normalizeProjectBrief = (brief) => {
     // ========================================================
     siteAddress: brief.siteAddress ?? "",
     projectType: brief.projectTypeId ?? "",
+    projectCategory: brief.projectCategory || projectCategoryFromName(brief.projectType?.name || brief.project?.project_type?.name),
+    siteTypeOther: brief.siteTypeOther ?? "",
+    siteConditionOther: brief.siteConditionOther ?? "",
     siteArea: brief.siteArea ?? "",
     siteAreaUnit: brief.siteAreaUnit ?? "",
     facingOrientation: brief.facingOrientation ?? "",
@@ -267,6 +271,9 @@ export const buildProjectBriefPayload = (projectId, values) => {
     // SITE
     siteAddress: values.siteAddress || null,
     projectTypeId: values.projectType || null,
+    projectCategory: values.projectCategory || null,
+    siteTypeOther: values.siteType === "OTHER" ? values.siteTypeOther?.trim() || null : null,
+    siteConditionOther: values.siteCondition === "OTHER" ? values.siteConditionOther?.trim() || null : null,
     siteArea:
       values.siteArea !== "" &&
       values.siteArea !== null &&

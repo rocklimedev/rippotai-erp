@@ -14,6 +14,7 @@ import { Type } from 'class-transformer';
 
 import {
   DrawingsAvailable,
+  BriefProjectCategory,
   MaintenanceAppetite,
   ProjectBriefStatus,
   SiteAreaUnit,
@@ -275,6 +276,18 @@ export class CreateProjectBriefDto {
   @IsOptional()
   @IsUUID()
   projectTypeId?: string;
+
+  @IsOptional()
+  @IsEnum(BriefProjectCategory)
+  projectCategory?: BriefProjectCategory;
+
+  @IsOptional()
+  @IsString()
+  siteTypeOther?: string;
+
+  @IsOptional()
+  @IsString()
+  siteConditionOther?: string;
 
   @IsOptional()
   @IsNumber()

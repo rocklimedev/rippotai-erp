@@ -183,7 +183,7 @@ export const BRIEF_SECTIONS = [
         rows: 3,
       },
       {
-        key: "projectType", // renamed from propertyType
+        key: "projectCategory",
         label: "Project Type",
         type: "select",
         // options will be injected from projectTypesApi at runtime
@@ -236,13 +236,14 @@ export const BRIEF_SECTIONS = [
         type: "select",
         options: SITE_TYPE_OPTIONS,
       },
-      // siteTypeOther REMOVED
+      { key: "siteTypeOther", label: "Other Site Type", showWhen: { field: "siteType", value: "OTHER" } },
       {
         key: "siteCondition",
         label: "Current Site Condition",
         type: "select",
         options: SITE_CONDITION_OPTIONS,
       },
+      { key: "siteConditionOther", label: "Other Site Condition", showWhen: { field: "siteCondition", value: "OTHER" } },
       {
         key: "drawingsAvailable",
         label: "Drawings Available",

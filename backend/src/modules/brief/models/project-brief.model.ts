@@ -17,6 +17,7 @@ import {
 
 import {
   ProjectBriefStatus,
+  BriefProjectCategory,
   SiteAreaUnit,
   SiteType,
   SiteCondition,
@@ -88,6 +89,15 @@ export class ProjectBrief extends Model<ProjectBrief> {
     allowNull: true,
   })
   declare projectTypeId: string | null;
+
+  @Column({ type: DataType.ENUM(...Object.values(BriefProjectCategory)) })
+  declare projectCategory: BriefProjectCategory | null;
+
+  @Column(DataType.TEXT)
+  declare siteTypeOther: string | null;
+
+  @Column(DataType.TEXT)
+  declare siteConditionOther: string | null;
 
   @BelongsTo(() => ProjectType, 'projectTypeId')
   declare projectType: ProjectType | null;
