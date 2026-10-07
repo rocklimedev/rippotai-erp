@@ -21,6 +21,7 @@ import {
   Callout,
 } from "@/components/forms/crm-form-ui";
 import { useAutoSave } from "../../hooks/use-autosave";
+import { useSharedProjectData } from '../../hooks/use-shared-project-data';
 import { useGetProjectsQuery } from "../../api/projects/project.api";
 
 import {
@@ -103,7 +104,7 @@ export function ScopeOfWorkForm() {
   // PROJECT
   // ============================================================
 
-  const initialProjectId = searchParams.get("project_id") || "";
+  const initialProjectId = searchParams.get("project_id") || searchParams.get("projectId") || "";
 
   const [projectId, setProjectId] = React.useState(initialProjectId);
 
@@ -114,7 +115,8 @@ export function ScopeOfWorkForm() {
   // FORM STATE
   // ============================================================
 
-  const [values, setValues] = useAutoSave(SAVE_KEY, {
+  const draftKey = `${SAVE_KEY}.${scopeOfWorkId || projectId || 'new'}`;
+  const [values, setValues] = useAutoSave(draftKey, {
     Overview: {
       scope_summary: "",
       specific_exclusions: "",
@@ -130,6 +132,7 @@ export function ScopeOfWorkForm() {
 
     Items: [],
   });
+  useSharedProjectData(projectId, 'scope', values, setValues, !scopeOfWorkId);
 
   // ============================================================
   // LOAD EXISTING SCOPE OF WORK
@@ -1086,7 +1089,7 @@ export function ScopeOfWorkForm() {
       // Clear autosave
       // --------------------------------------------------------
 
-      localStorage.removeItem(SAVE_KEY);
+      localStorage.removeItem(draftKey);
 
       // --------------------------------------------------------
       // Navigate to document
@@ -1176,7 +1179,7 @@ export function ScopeOfWorkForm() {
       }}
       onSaveDraft={() => {
         try {
-          localStorage.setItem(SAVE_KEY, JSON.stringify(values));
+          localStorage.setItem(draftKey, JSON.stringify(values));
           toast.success("Draft saved on this device.");
         } catch {
           toast.error("Could not save the draft.");

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useSharedProjectData } from "../../hooks/use-shared-project-data";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2, AlertCircle } from "lucide-react";
@@ -12,7 +13,13 @@ import {
   useGetProjectBriefQuery,
   useUpdateProjectBriefMutation,
 } from "../../api/documents/brief.api";
-import { PROJECT_TYPE_OPTIONS, SITE_TYPES_BY_PROJECT, SITE_CONDITIONS_BY_PROJECT, projectCategoryFromName, changeBriefSiteField } from "../../hooks/brief-site-options";
+import {
+  PROJECT_TYPE_OPTIONS,
+  SITE_TYPES_BY_PROJECT,
+  SITE_CONDITIONS_BY_PROJECT,
+  projectCategoryFromName,
+  changeBriefSiteField,
+} from "../../hooks/brief-site-options";
 
 import { BRIEF_SECTIONS } from "../../hooks/brief-sections"; // or wherever you place the updated config
 import NewProjectModal from "../../components/projects/CreateNewProject";
@@ -63,7 +70,6 @@ export function BriefForm() {
   // ==========================================================
   // PROJECT TYPES (for Project Type dropdown)
   // ==========================================================
-
 
   // ==========================================================
   // NEW PROJECT MODAL
@@ -184,12 +190,22 @@ export function BriefForm() {
         selectedProject.project_type_id ||
         selectedProject.project_type?.id ||
         "",
-      projectCategory: current.projectCategory || projectCategoryFromName(selectedProject.project_type?.name),
+      projectCategory:
+        current.projectCategory ||
+        projectCategoryFromName(selectedProject.project_type?.name),
     }));
   }, [projectId, projects]);
   // ==========================================================
   // FIELD CHANGE
   // ==========================================================
+
+  useSharedProjectData(
+    projectId,
+    "brief",
+    values,
+    setValues,
+    !isEditMode || initialized,
+  );
 
   const handleFieldChange = (section, key, value) => {
     setValues((current) => changeBriefSiteField(current, key, value));
@@ -212,9 +228,21 @@ export function BriefForm() {
       toast.error("Select a project first");
       return;
     }
-    if (!values.projectCategory) { toast.error("Select Residential, Commercial or Institutional"); return; }
-    if (values.siteType === "OTHER" && !values.siteTypeOther?.trim()) { toast.error("Enter the other site type"); return; }
-    if (values.siteCondition === "OTHER" && !values.siteConditionOther?.trim()) { toast.error("Enter the other site condition"); return; }
+    if (!values.projectCategory) {
+      toast.error("Select Residential, Commercial or Institutional");
+      return;
+    }
+    if (values.siteType === "OTHER" && !values.siteTypeOther?.trim()) {
+      toast.error("Enter the other site type");
+      return;
+    }
+    if (
+      values.siteCondition === "OTHER" &&
+      !values.siteConditionOther?.trim()
+    ) {
+      toast.error("Enter the other site condition");
+      return;
+    }
 
     try {
       const payload = buildPayload();
@@ -287,7 +315,9 @@ export function BriefForm() {
           icon={AlertCircle}
           title="Unable to load this brief"
           text="Reload the page to try again."
-          action={<Button onClick={() => window.location.reload()}>Reload</Button>}
+          action={
+            <Button onClick={() => window.location.reload()}>Reload</Button>
+          }
         />
       </Page>
     );
@@ -311,13 +341,29 @@ export function BriefForm() {
     return {
       ...section,
       fields: section.fields.map((field) => {
-        if (field.key === "projectCategory") return { ...field, options: PROJECT_TYPE_OPTIONS };
+        if (field.key === "projectCategory")
+          return { ...field, options: PROJECT_TYPE_OPTIONS };
         if (field.key === "siteType" || field.key === "siteCondition") {
-          const groups = field.key === "siteType" ? SITE_TYPES_BY_PROJECT : SITE_CONDITIONS_BY_PROJECT;
+          const groups =
+            field.key === "siteType"
+              ? SITE_TYPES_BY_PROJECT
+              : SITE_CONDITIONS_BY_PROJECT;
           const options = groups[values.projectCategory] || [];
           // Keep legacy values visible while editing an existing brief.
           const selected = values[field.key];
-          return { ...field, options: selected && !options.some((item) => item.value === selected) ? [...options, { value: selected, label: `${selected} (previous selection)` }] : options };
+          return {
+            ...field,
+            options:
+              selected && !options.some((item) => item.value === selected)
+                ? [
+                    ...options,
+                    {
+                      value: selected,
+                      label: `${selected} (previous selection)`,
+                    },
+                  ]
+                : options,
+          };
         }
         return field;
       }),
@@ -348,9 +394,7 @@ export function BriefForm() {
         onProjectChange={setProjectId}
         onAddProject={() => setShowNewProjectModal(true)}
         onSubmit={handleSubmit}
-        isSubmitting={
-          isSubmitting || projectsLoading || briefLoading
-        }
+        isSubmitting={isSubmitting || projectsLoading || briefLoading}
       />
 
       <NewProjectModal

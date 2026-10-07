@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import PlannerDocument from "../../components/projects/PlannerDocument";
 import { OFFSCREEN_STYLE } from "@/components/print-document/commerce";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   AlertCircle,
@@ -62,8 +62,9 @@ export function ProjectPlannerWorkspace() {
   // STATE
   // ==========================================================
 
-  const [selectedProject, setSelectedProject] = useState("");
-  const [view, setView] = useState("Overview");
+  const [searchParams] = useSearchParams();
+  const [selectedProject, setSelectedProject] = useState(() => searchParams.get('projectId') || searchParams.get('project_id') || '');
+  const [view, setView] = useState(() => searchParams.get('view') || 'Overview');
 
   const [locationName, setLocationName] = useState("");
   const [parent, setParent] = useState("");

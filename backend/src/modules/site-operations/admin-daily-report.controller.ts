@@ -1,4 +1,4 @@
-import { AdminDprExportService } from './admin-dpr-export.service';
+import { AdminDprDocumentService } from './admin-dpr-document.service';
 import type { Response } from 'express';
 import { Res } from '@nestjs/common';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
@@ -25,7 +25,10 @@ import {
 @UseGuards(JwtAuthGuard)
 @Controller('dpr/admin-reports')
 export class AdminDailyReportController {
-  constructor(private readonly service: AdminDailyReportService, private readonly exporter: AdminDprExportService) {}
+  constructor(
+    private readonly service: AdminDailyReportService,
+    private readonly documents: AdminDprDocumentService,
+  ) {}
 
   @Post()
   create(@Body() dto: CreateAdminDailyReportDto, @Req() req: any) {
@@ -43,11 +46,22 @@ export class AdminDailyReportController {
   }
 
   @Get('export')
-  async export(@Query() query: QueryAdminDailyReportDto, @Res() res: Response) {
-    const buffer = await this.exporter.export(query);
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename="admin-dpr.xlsx"');
-    res.send(Buffer.from(buffer));
+  async export(
+    @Query() query: QueryAdminDailyReportDto,
+    @Req() req: any,
+    @Res() res: Response,
+  ) {
+    const saved = await this.documents.create(query, req.user);
+    const row = await this.documents.download(saved.id);
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${row.filename}"`,
+    );
+    res.send(row.excel_data);
   }
 
   @Get(':id')

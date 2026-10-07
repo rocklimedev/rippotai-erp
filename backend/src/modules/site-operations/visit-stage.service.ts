@@ -1,5 +1,5 @@
 import {
-  ConflictException,
+  BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -9,6 +9,7 @@ import {
   CreateVisitStageDto,
   UpdateVisitStageDto,
 } from './dto/visit-stage.dto';
+import { ARCHITECT_VISIT_STAGES } from './constants/architect-visit-stages.constant';
 
 @Injectable()
 export class VisitStageService {
@@ -17,35 +18,46 @@ export class VisitStageService {
     private readonly model: typeof ArchitectVisitStage,
   ) {}
 
-  findAll(includeInactive = false) {
-    return this.model.findAll({
+  async findAll(includeInactive = false) {
+    const rows = await this.model.findAll({
       where: includeInactive ? {} : { is_active: true },
       order: [['visit_no', 'ASC']],
+    });
+    return rows.flatMap((row) => {
+      const standard = ARCHITECT_VISIT_STAGES.find(
+        (s) => s.visit_no === row.visit_no && s.visit_no !== 20,
+      );
+      return standard ? [{ ...row.toJSON(), ...standard }] : [];
     });
   }
 
   async findOne(id: string) {
     const row = await this.model.findByPk(id);
     if (!row) throw new NotFoundException('Visit stage not found');
-    return row;
+    const standard = ARCHITECT_VISIT_STAGES.find(
+      (s) => s.visit_no === row.visit_no && s.visit_no !== 20,
+    );
+    if (!standard)
+      throw new NotFoundException('Visit stage is unavailable for allocation');
+    return { ...row.toJSON(), ...standard };
   }
 
   async create(dto: CreateVisitStageDto) {
-    if (await this.model.findOne({ where: { visit_no: dto.visit_no } })) {
-      throw new ConflictException(`Visit no. ${dto.visit_no} already exists`);
-    }
-    return this.model.create(dto as any);
+    throw new BadRequestException(
+      'Architect visit stages are fixed by the site visit schedule',
+    );
   }
 
   async update(id: string, dto: UpdateVisitStageDto) {
-    const row = await this.findOne(id);
-    return row.update(dto as any);
+    throw new BadRequestException(
+      'Architect visit stages are fixed by the site visit schedule',
+    );
   }
 
   /** Soft-disable instead of delete so historical visits keep their stage */
   async deactivate(id: string) {
-    const row = await this.findOne(id);
-    await row.update({ is_active: false });
-    return { message: 'Visit stage deactivated' };
+    throw new BadRequestException(
+      'Architect visit stages are fixed by the site visit schedule',
+    );
   }
 }

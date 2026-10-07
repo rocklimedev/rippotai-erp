@@ -1,4 +1,11 @@
 import { AdminDprExportService } from './admin-dpr-export.service';
+import { SnagList, SnagListRevision } from './models/snag-list.model';
+import { SnagListService } from './snag-list.service';
+import { SnagListExportService } from './snag-list-export.service';
+import { SnagListController } from './snag-list.controller';
+import { AdminDprDocument } from './models/admin-dpr-document.model';
+import { AdminDprDocumentService } from './admin-dpr-document.service';
+import { AdminDprDocumentController } from './admin-dpr-document.controller';
 import { AdminDailyLog } from './models/admin-daily-log.model';
 import { AdminDailyLogService } from './admin-daily-log.service';
 import { AdminDailyLogController } from './admin-daily-log.controller';
@@ -79,6 +86,7 @@ import { QualityController } from './quality.controller';
       QcSignOffItemResult,
       DailySiteReport,
       AdminDailyReport,
+      AdminDprDocument,
       AdminDailyLog,
       ManpowerEntry,
       VisitAssignment,
@@ -97,10 +105,13 @@ import { QualityController } from './quality.controller';
       ArchitectVisitStage,
       ArchitectSiteVisit,
       SnagItem,
+      SnagList,
+      SnagListRevision,
     ]),
   ],
   controllers: [
     AdminDailyReportController,
+    AdminDprDocumentController,
     AdminDailyLogController,
     ChecklistController,
     QcSignOffController,
@@ -112,11 +123,13 @@ import { QualityController } from './quality.controller';
     QualityController,
     RfiController,
     VisitStageController,
+    SnagListController,
   ],
   providers: [
     AdminDailyReportService,
     AdminDailyLogService,
     AdminDprExportService,
+    AdminDprDocumentService,
     SiteOpsDashboardService,
     ChecklistService,
     QcSignOffService,
@@ -127,6 +140,8 @@ import { QualityController } from './quality.controller';
     MockupService,
     RfiService,
     VisitStageService,
+    SnagListService,
+    SnagListExportService,
   ],
   exports: [
     ChecklistService,

@@ -1,7 +1,8 @@
 import { termsToText, textToTermsHtml } from "@/lib/terms";
 import { TermsFullDisplay } from "@/components/settings/TermsDisplay";
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useSharedProjectData } from "../../hooks/use-shared-project-data";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   Plus,
@@ -169,6 +170,7 @@ const normalizeTerm = (term) => ({
 export default function WorkOrderForm() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
 
   /*
    * If id exists:
@@ -235,7 +237,7 @@ export default function WorkOrderForm() {
   ------------------------------------------------------- */
 
   const getInitialForm = () => ({
-    project_id: "",
+    project_id: searchParams.get('projectId') || searchParams.get('project_id') || '',
     vendor_id: "",
 
     work_order_date: new Date().toISOString().slice(0, 10),
@@ -265,6 +267,13 @@ export default function WorkOrderForm() {
   const [form, setForm] = useState(getInitialForm);
 
   const [isFormLoaded, setIsFormLoaded] = useState(!isEditMode);
+  useSharedProjectData(
+    form.project_id,
+    "workOrder",
+    form,
+    setForm,
+    isFormLoaded,
+  );
 
   /* -------------------------------------------------------
      LOAD EXISTING WORK ORDER
@@ -771,7 +780,6 @@ export default function WorkOrderForm() {
           description: textToTermsHtml(term.description),
 
           is_mandatory: term.is_mandatory !== false,
-
         })),
     };
 
@@ -1568,7 +1576,9 @@ export default function WorkOrderForm() {
                   </div>
 
                   <div className="max-h-[350px] overflow-y-auto p-5">
-                    <TermsFullDisplay htmlContent={selectedTemplate.content_html} />
+                    <TermsFullDisplay
+                      htmlContent={selectedTemplate.content_html}
+                    />
                   </div>
                 </div>
               )}

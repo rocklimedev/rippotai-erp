@@ -1,26 +1,34 @@
 import { baseApi } from "../../store/baseApi";
-import { applySavedShortlistEntry } from './shortlist-grid';
+import { applySavedShortlistEntry } from "./shortlist-grid";
 
 export const vendorShortlistApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getShortlistPackages: builder.query({
-      query: () => '/shortlist-packages',
-      providesTags: ['ShortlistPackages'],
+      query: () => "/shortlist-packages",
+      providesTags: ["ShortlistPackages"],
     }),
     createShortlistPackage: builder.mutation({
-      query: (body) => ({ url: '/shortlist-packages', method: 'POST', body }),
-      invalidatesTags: ['ShortlistPackages'],
+      query: (body) => ({ url: "/shortlist-packages", method: "POST", body }),
+      invalidatesTags: ["ShortlistPackages"],
     }),
     previewShortlistPackage: builder.mutation({
-      query: ({ id, ...body }) => ({ url: `/shortlist-packages/${id}/preview`, method: 'POST', body }),
+      query: ({ id, ...body }) => ({
+        url: `/shortlist-packages/${id}/preview`,
+        method: "POST",
+        body,
+      }),
     }),
     applyShortlistPackage: builder.mutation({
-      query: ({ id, ...body }) => ({ url: `/shortlist-packages/${id}/apply`, method: 'POST', body }),
-      invalidatesTags: ['Shortlists', 'ShortlistEntries', 'ShortlistGrid'],
+      query: ({ id, ...body }) => ({
+        url: `/shortlist-packages/${id}/apply`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Shortlists", "ShortlistEntries", "ShortlistGrid"],
     }),
     deleteShortlistPackage: builder.mutation({
-      query: (id) => ({ url: `/shortlist-packages/${id}`, method: 'DELETE' }),
-      invalidatesTags: ['ShortlistPackages'],
+      query: (id) => ({ url: `/shortlist-packages/${id}`, method: "DELETE" }),
+      invalidatesTags: ["ShortlistPackages"],
     }),
     // ============================================================
     // PROJECT SHORTLISTS
@@ -83,9 +91,32 @@ export const vendorShortlistApi = baseApi.injectEndpoints({
      * Returns Excel-like grid structure.
      */
     getProjectShortlistGrid: builder.query({
-      query: (id) => `/project-shortlists/${id}/grid`,
+      query: (id) => `/project-shortlists/${id}/workspace`,
 
       providesTags: (result, error, id) => [{ type: "ShortlistGrid", id }],
+    }),
+
+    saveShortlistWorkspaceRow: builder.mutation({
+      query: ({ shortlistId, ...body }) => ({
+        url: `/project-shortlists/${shortlistId}/workspace/row`,
+        method: "PUT",
+        body,
+      }),
+      async onQueryStarted({ shortlistId }, { dispatch, queryFulfilled }) {
+        try {
+          const { data: grid } = await queryFulfilled;
+          dispatch(
+            vendorShortlistApi.util.updateQueryData(
+              "getProjectShortlistGrid",
+              shortlistId,
+              () => grid,
+            ),
+          );
+        } catch {
+          /* Keep the confirmed workspace on failed saves. */
+        }
+      },
+      invalidatesTags: ["ShortlistEntries", "Shortlists"],
     }),
 
     /**
@@ -209,10 +240,13 @@ export const vendorShortlistApi = baseApi.injectEndpoints({
       async onQueryStarted(_args, { dispatch, queryFulfilled }) {
         try {
           const { data: saved } = await queryFulfilled;
-          dispatch(vendorShortlistApi.util.updateQueryData(
-            'getProjectShortlistGrid', saved.project_shortlist_id,
-            grid => applySavedShortlistEntry(grid, saved),
-          ));
+          dispatch(
+            vendorShortlistApi.util.updateQueryData(
+              "getProjectShortlistGrid",
+              saved.project_shortlist_id,
+              (grid) => applySavedShortlistEntry(grid, saved),
+            ),
+          );
         } catch {
           // A failed creation must not replace confirmed values in the grid.
         }
@@ -246,11 +280,15 @@ export const vendorShortlistApi = baseApi.injectEndpoints({
       async onQueryStarted(_args, { dispatch, queryFulfilled }) {
         try {
           const { data: saved } = await queryFulfilled;
-          dispatch(vendorShortlistApi.util.updateQueryData(
-            "getProjectShortlistGrid", saved.project_shortlist_id, (grid) => {
-              applySavedShortlistEntry(grid, saved);
-            },
-          ));
+          dispatch(
+            vendorShortlistApi.util.updateQueryData(
+              "getProjectShortlistGrid",
+              saved.project_shortlist_id,
+              (grid) => {
+                applySavedShortlistEntry(grid, saved);
+              },
+            ),
+          );
         } catch {
           // Failed mutations leave the last confirmed grid state intact.
         }
@@ -308,6 +346,7 @@ export const {
   useGetProjectShortlistByIdQuery,
   useGetProjectShortlistByProjectAndTypeQuery,
   useGetProjectShortlistGridQuery,
+  useSaveShortlistWorkspaceRowMutation,
 
   useCreateProjectShortlistMutation,
   useUpdateProjectShortlistMutation,

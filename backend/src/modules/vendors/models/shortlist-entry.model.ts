@@ -114,7 +114,7 @@ export class ShortlistEntry extends Model<
     unique: true,
   })
   @Column({
-    type: DataType.ENUM(...Object.values(Trade)),
+    type: DataType.STRING(32),
     allowNull: false,
   })
   declare trade: Trade;
@@ -128,7 +128,7 @@ export class ShortlistEntry extends Model<
     unique: true,
   })
   @Column({
-    type: DataType.ENUM(...Object.values(WorkingType)),
+    type: DataType.STRING(32),
     allowNull: false,
   })
   declare working_type: WorkingType;
@@ -226,7 +226,7 @@ export class ShortlistEntry extends Model<
   // ============================================================
 
   @Column({
-    type: DataType.ENUM(...Object.values(ShortlistEntryStatus)),
+    type: DataType.STRING(32),
     allowNull: false,
     defaultValue: ShortlistEntryStatus.DRAFT,
   })

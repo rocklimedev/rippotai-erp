@@ -1,859 +1,412 @@
-import React, { useMemo, useState } from "react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { SelectInput } from "@/components/inos";
-import { useSiteProjects, useProjectParam, ProjectPicker, rowProjectName, useTradeTeams } from "./siteProjects";
 import {
-  CalendarDays,
-  ChevronDown,
-  CircleUserRound,
-  Clock3,
-  Edit3,
-  MoreHorizontal,
-  Plus,
-  Power,
-  Search,
-  UserRound,
-  Users,
-  X,
-} from "lucide-react";
-
+  useSiteProjects,
+  useProjectParam,
+  ProjectPicker,
+  rowProjectName,
+  useTradeTeams,
+} from "./siteProjects";
 import {
-  useGetVisitAssignmentsByProjectQuery,
-  useCreateVisitAssignmentMutation,
   useGetVisitAssignmentsQuery,
+  useCreateVisitAssignmentMutation,
+  useUpdateVisitAssignmentMutation,
   useDeactivateVisitAssignmentMutation,
 } from "@/api/procuerment/site-ops.api";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
+import { useGetVisitStagesQuery } from "@/api/site-ops/site-ops.api";
 import { Button } from "@/components/ui/button";
-
 import { Input } from "@/components/ui/input";
-
-import { Badge } from "@/components/ui/badge";
-
-import { Separator } from "@/components/ui/separator";
-
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
-
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-const VISITOR_TYPES = [
-  "SUPERVISOR",
+const initial = () => ({
+  projectId: "",
+  visitorType: "ARCHITECT",
+  stageId: "",
+  scheduledDate: "",
+  teamId: "",
+  externalPartyName: "",
+  purpose: "",
+});
+const types = [
   "ARCHITECT",
+  "SUPERVISOR",
   "VENDOR",
   "CONTRACTOR",
   "CLIENT",
+  "OTHER",
 ];
-
-const FREQUENCIES = [
-  "DAILY",
-  "WEEKLY",
-  "FORTNIGHTLY",
-  "MONTHLY",
-  "FIXED_SCHEDULE",
-  "AD_HOC",
-];
-
-const DAYS = [
-  { value: 1, label: "Mon", full: "Monday" },
-  { value: 2, label: "Tue", full: "Tuesday" },
-  { value: 3, label: "Wed", full: "Wednesday" },
-  { value: 4, label: "Thu", full: "Thursday" },
-  { value: 5, label: "Fri", full: "Friday" },
-  { value: 6, label: "Sat", full: "Saturday" },
-  { value: 7, label: "Sun", full: "Sunday" },
-];
-
-const formatLabel = (value) => {
-  if (!value) return "—";
-
-  return value
-    .toString()
-    .replace(/_/g, " ")
-    .toLowerCase()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-};
-
-const getFrequencyDescription = (frequency) => {
-  switch (frequency) {
-    case "DAILY":
-      return "Every day";
-    case "WEEKLY":
-      return "Once every week";
-    case "FORTNIGHTLY":
-      return "Once every two weeks";
-    case "MONTHLY":
-      return "Once every month";
-    case "FIXED_SCHEDULE":
-      return "Specific days";
-    case "AD_HOC":
-      return "As required";
-    default:
-      return "—";
-  }
-};
-
-const getInitialForm = () => ({
-  projectId: "",
-  visitorType: "",
-  teamId: "",
-  externalPartyName: "",
-  frequency: "",
-  scheduleDays: [],
-});
-
+const message = (e) =>
+  Array.isArray(e?.data?.message)
+    ? e.data.message.join(", ")
+    : e?.data?.message || "Unable to save allocation";
 export default function VisitAssignmentsPage() {
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("active");
-  const [visitorType, setVisitorType] = useState("all");
-
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingAssignment, setEditingAssignment] = useState(null);
-
-  const [form, setForm] = useState(getInitialForm());
   const [projectId, setProjectId] = useProjectParam();
   const { projects, nameOf } = useSiteProjects();
   const teams = useTradeTeams();
-
-  /*
-   * Fetch all visit assignments.
-   */
-  const { data, isLoading, isFetching } = useGetVisitAssignmentsQuery({ projectId });
-
-  /*
-   * Create visit assignment.
-   */
-  const [createAssignment, { isLoading: creating }] =
-    useCreateVisitAssignmentMutation();
-
-  /*
-   * Deactivate visit assignment.
-   */
-  const [deactivateAssignment, { isLoading: deactivating }] =
-    useDeactivateVisitAssignmentMutation();
-
-  const assignments = useMemo(() => {
-    if (Array.isArray(data)) return data;
-
-    return data?.data || data?.assignments || [];
-  }, [data]);
-
-  const filteredAssignments = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    return assignments.filter((assignment) => {
-      const matchesStatus =
-        status === "all" ||
-        (status === "active"
-          ? assignment.isActive !== false
-          : assignment.isActive === false);
-
-      const matchesType =
-        visitorType === "all" || assignment.visitorType === visitorType;
-
-      const searchable = [
-        assignment.externalPartyName,
-        assignment.visitorType,
-        assignment.frequency,
-        rowProjectName(assignment, nameOf),
-        assignment.teamName,
+  const { data, isLoading, error } = useGetVisitAssignmentsQuery({ projectId });
+  const { data: stageData, isLoading: loadingStages } =
+    useGetVisitStagesQuery();
+  const stages = Array.isArray(stageData) ? stageData : stageData?.data || [];
+  const [create, { isLoading: creating }] = useCreateVisitAssignmentMutation();
+  const [update, { isLoading: updating }] = useUpdateVisitAssignmentMutation();
+  const [deactivate] = useDeactivateVisitAssignmentMutation();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState(initial);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("active");
+  const assignments = Array.isArray(data) ? data : data?.data || [];
+  const rows = assignments.filter(
+    (a) =>
+      (status === "all" || Boolean(a.isActive) === (status === "active")) &&
+      [
+        rowProjectName(a, nameOf),
+        a.stageName,
+        a.purpose,
+        a.externalPartyName,
+        a.team?.name,
+        a.visitorType,
       ]
         .filter(Boolean)
         .join(" ")
-        .toLowerCase();
-
-      return (
-        matchesStatus && matchesType && (!query || searchable.includes(query))
-      );
-    });
-  }, [assignments, search, status, visitorType, nameOf]);
-
-  const stats = useMemo(() => {
-    const active = assignments.filter((item) => item.isActive !== false);
-
-    return {
-      total: assignments.length,
-      active: active.length,
-      internal: active.filter((item) => item.teamId).length,
-      external: active.filter((item) => item.externalPartyName).length,
-    };
-  }, [assignments]);
-
-  const openCreateDialog = () => {
-    setEditingAssignment(null);
-    setForm({ ...getInitialForm(), projectId: projectId || "" });
-    setDialogOpen(true);
+        .toLowerCase()
+        .includes(search.toLowerCase()),
+  );
+  const selected = stages.find((s) => s.id === form.stageId);
+  const change = (key, value) => setForm((f) => ({ ...f, [key]: value }));
+  const start = (a) => {
+    setEditing(a || null);
+    setForm(
+      a
+        ? {
+            ...initial(),
+            ...a,
+            teamId: a.teamId ? String(a.teamId) : "",
+            externalPartyName: a.externalPartyName || "",
+            purpose: a.purpose || "",
+          }
+        : { ...initial(), projectId: projectId || "" },
+    );
+    setOpen(true);
   };
-
-  const openEditDialog = (assignment) => {
-    setEditingAssignment(assignment);
-
-    setForm({
-      projectId: assignment.projectId ? String(assignment.projectId) : "",
-      visitorType: assignment.visitorType || "",
-      teamId: assignment.teamId ? String(assignment.teamId) : "",
-      externalPartyName: assignment.externalPartyName || "",
-      frequency: assignment.frequency || "",
-      scheduleDays: assignment.scheduleDays || [],
-    });
-
-    setDialogOpen(true);
-  };
-
-  const updateForm = (field, value) => {
-    setForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
-  };
-
-  const toggleDay = (day) => {
-    setForm((current) => {
-      const exists = current.scheduleDays.includes(day);
-
-      return {
-        ...current,
-        scheduleDays: exists
-          ? current.scheduleDays.filter((item) => item !== day)
-          : [...current.scheduleDays, day].sort((a, b) => a - b),
-      };
-    });
-  };
-
-  const handleSubmit = async () => {
-    if (!form.projectId || !form.visitorType || !form.frequency) {
-      return;
-    }
-
-    const payload = {
+  const save = async (e) => {
+    e.preventDefault();
+    const body = {
       projectId: form.projectId,
       visitorType: form.visitorType,
-      frequency: form.frequency,
+      scheduledDate: form.scheduledDate,
+      stageId: form.visitorType === "ARCHITECT" ? form.stageId : undefined,
       teamId: form.teamId ? Number(form.teamId) : null,
       externalPartyName: form.externalPartyName.trim() || null,
-      scheduleDays:
-        form.frequency === "FIXED_SCHEDULE" ? form.scheduleDays : null,
+      purpose:
+        form.visitorType === "ARCHITECT" ? undefined : form.purpose.trim(),
     };
-
     try {
-      await createAssignment(payload).unwrap();
-
-      setDialogOpen(false);
-      setForm(getInitialForm());
-      setEditingAssignment(null);
-      toast.success("Visit assignment saved");
-    } catch (error) {
-      const m = error?.data?.message;
-      toast.error(Array.isArray(m) ? m.join(", ") : m || "Couldn't save the assignment");
+      if (editing) await update({ id: editing.id, ...body }).unwrap();
+      else await create(body).unwrap();
+      setOpen(false);
+      toast.success(editing ? "Visit allocation updated" : "Visit allocated");
+    } catch (e) {
+      toast.error(message(e));
     }
   };
-
-  const handleDeactivate = async (assignment) => {
-    try {
-      await deactivateAssignment(assignment.id).unwrap();
-    } catch (error) {
-      console.error("Failed to deactivate visit assignment", error);
-    }
-  };
-
-  const getProjectName = (assignment) => rowProjectName(assignment, nameOf);
-
-  const getTeamName = (assignment) =>
-    assignment.teamName ||
-    assignment.team?.name ||
-    teams.find((t) => String(t.id) === String(assignment.teamId))?.name ||
-    (assignment.teamId ? `Team ${assignment.teamId}` : null);
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-[1600px] space-y-6 p-6">
-        {/* =====================================================
-            HEADER
-        ===================================================== */}
-
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Site Operations</span>
-              <span>/</span>
-              <span>Visits</span>
-              <span>/</span>
-              <span className="text-foreground">Assignments</span>
-            </div>
-
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-              Visit Assignments
-            </h1>
-
-            <p className="mt-1 text-sm text-muted-foreground">
-              Define who is expected to visit each project and how frequently.
-            </p>
-          </div>
-
-          <Button onClick={openCreateDialog}>
-            <Plus className="mr-2 h-4 w-4" />
-            Schedule Visit
-          </Button>
+    <div className="mx-auto max-w-7xl space-y-6 p-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Visit Assignments</h1>
+          <p className="text-sm text-muted-foreground">
+            Allocate a dated site visit. Architect stages and checks follow the
+            site visit schedule.
+          </p>
         </div>
-
-        {/* =====================================================
-            STATS
-        ===================================================== */}
-
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            title="Total Assignments"
-            value={stats.total}
-            icon={CalendarDays}
-          />
-
-          <StatCard title="Active" value={stats.active} icon={Clock3} />
-
-          <StatCard
-            title="Internal Teams"
-            value={stats.internal}
-            icon={Users}
-          />
-
-          <StatCard
-            title="External Parties"
-            value={stats.external}
-            icon={CircleUserRound}
-          />
-        </div>
-
-        {/* =====================================================
-            MAIN CARD
-        ===================================================== */}
-
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div>
-                <CardTitle className="text-base">Visit Schedule</CardTitle>
-
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Recurring and ad-hoc site visit responsibilities.
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <div className="w-full sm:w-[230px]">
-                  <ProjectPicker value={projectId} onChange={setProjectId} projects={projects} />
-                </div>
-
-                {/* Search */}
-
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-
-                  <Input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Search assignments..."
-                    className="w-full pl-9 sm:w-[240px]"
-                  />
-                </div>
-
-                {/* Visitor type */}
-
-                <Select value={visitorType} onValueChange={setVisitorType}>
-                  <SelectTrigger className="w-full sm:w-[170px]">
-                    <SelectValue placeholder="Visitor type" />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    <SelectItem value="all">All visitor types</SelectItem>
-
-                    {VISITOR_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {formatLabel(type)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <Separator className="mt-4" />
-
-            <Tabs value={status} onValueChange={setStatus} className="pt-3">
-              <TabsList>
-                <TabsTrigger value="active">Active</TabsTrigger>
-
-                <TabsTrigger value="all">All</TabsTrigger>
-
-                <TabsTrigger value="inactive">Inactive</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </CardHeader>
-
-          <CardContent className="p-0">
-            {/* =================================================
-                TABLE
-            ================================================= */}
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="border-y bg-muted/30">
-                  <tr className="text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    <th className="px-6 py-3">Project</th>
-
-                    <th className="px-4 py-3">Visitor</th>
-
-                    <th className="px-4 py-3">Assigned To</th>
-
-                    <th className="px-4 py-3">Frequency</th>
-
-                    <th className="px-4 py-3">Schedule</th>
-
-                    <th className="px-4 py-3">Status</th>
-
-                    <th className="w-[60px] px-4 py-3" />
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y">
-                  {isLoading || isFetching ? (
-                    <LoadingRows />
-                  ) : filteredAssignments.length === 0 ? (
-                    <EmptyState onCreate={openCreateDialog} />
-                  ) : (
-                    filteredAssignments.map((assignment) => (
-                      <AssignmentRow
-                        key={assignment.id}
-                        assignment={assignment}
-                        projectName={getProjectName(assignment)}
-                        teamName={getTeamName(assignment)}
-                        onEdit={() => openEditDialog(assignment)}
-                        onDeactivate={() => handleDeactivate(assignment)}
-                        deactivating={deactivating}
-                      />
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Footer */}
-
-            {filteredAssignments.length > 0 && (
-              <div className="border-t px-6 py-3 text-xs text-muted-foreground">
-                Showing {filteredAssignments.length} of {assignments.length}{" "}
-                assignments
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <Button onClick={() => start()}>Allocate visit</Button>
       </div>
-
-      {/* =======================================================
-          CREATE / EDIT DIALOG
-      ======================================================= */}
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-xl">
+      <div className="flex flex-wrap gap-3">
+        <ProjectPicker
+          projects={projects}
+          value={projectId}
+          onChange={setProjectId}
+        />
+        <Input
+          className="max-w-xs"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search allocations"
+        />
+        <select
+          aria-label="Allocation status"
+          className="rounded border p-2"
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+        >
+          <option value="active">Active</option>
+          <option value="inactive">Inactive / legacy</option>
+          <option value="all">All</option>
+        </select>
+      </div>
+      {error ? (
+        <p role="alert">Unable to load allocations. Please try again.</p>
+      ) : isLoading ? (
+        <p>Loading allocations…</p>
+      ) : (
+        <div className="overflow-x-auto rounded border">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-muted">
+              <tr>
+                {[
+                  "Project",
+                  "Visitor",
+                  "Date",
+                  "Stage / Purpose",
+                  "Visit type",
+                  "Status",
+                  "Actions",
+                ].map((h) => (
+                  <th className="p-3" key={h}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((a) => (
+                <tr className="border-t" key={a.id}>
+                  <td className="p-3">{rowProjectName(a, nameOf)}</td>
+                  <td className="p-3">
+                    {a.externalPartyName ||
+                      a.team?.name ||
+                      `Team ${a.teamId || "—"}`}
+                    <div className="text-xs text-muted-foreground">
+                      {a.visitorType}
+                    </div>
+                  </td>
+                  <td className="p-3">
+                    {a.scheduledDate || "Legacy recurrence"}
+                  </td>
+                  <td className="max-w-md p-3">
+                    {a.stageName || a.purpose || "Requires event allocation"}
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {a.checksPurpose}
+                    </p>
+                  </td>
+                  <td className="p-3">{a.visitType || "—"}</td>
+                  <td className="p-3">
+                    {a.visitLogs?.[0]?.status ||
+                      (a.isActive ? "Allocated" : "Inactive")}
+                  </td>
+                  <td className="space-x-2 whitespace-nowrap p-3">
+                    {a.isActive && a.visitLogs?.[0]?.status !== "COMPLETED" && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={!!a.visitLogs?.length}
+                          onClick={() => start(a)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              await deactivate(a.id).unwrap();
+                              toast.success("Allocation cancelled");
+                            } catch (e) {
+                              toast.error(message(e));
+                            }
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    )}
+                    {a.visitLogs?.length ? (
+                      <Link
+                        className="underline"
+                        to={`/site-operations/site-visits/${a.visitLogs[0].id}`}
+                      >
+                        View visit
+                      </Link>
+                    ) : a.isActive && a.scheduledDate ? (
+                      <Link
+                        className="underline"
+                        to={`/site-operations/site-visits/new?assignment=${a.id}`}
+                      >
+                        Record visit
+                      </Link>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+              {!rows.length && (
+                <tr>
+                  <td colSpan={7} className="p-6 text-center">
+                    No visit allocations found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingAssignment
-                ? "Edit Visit Assignment"
-                : "Schedule Site Visit"}
+              {editing ? "Edit visit allocation" : "Allocate visit"}
             </DialogTitle>
-
             <DialogDescription>
-              Define who should visit the project and how often.
+              {editing
+                ? "Project, visitor type and stage are locked. Logged events cannot be edited."
+                : "Choose the stage the architect is coming to inspect, then allocate the visitor and date."}
             </DialogDescription>
           </DialogHeader>
-
-          <div className="space-y-5 py-2">
-            {/* Project */}
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Project</label>
-
-              <ProjectPicker
+          <form className="space-y-4" onSubmit={save}>
+            <div>
+              <Label htmlFor="allocation-project">Project</Label>
+              <select
+                id="allocation-project"
+                required
+                disabled={!!editing}
+                className="w-full rounded border p-2"
                 value={form.projectId}
-                onChange={(v) => updateForm("projectId", v)}
-                placeholder="Select a project"
-                projects={projects}
-              />
-            </div>
-
-            {/* Visitor Type */}
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Visitor Type</label>
-
-              <Select
-                value={form.visitorType}
-                onValueChange={(value) => updateForm("visitorType", value)}
+                onChange={(e) => change("projectId", e.target.value)}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select visitor type" />
-                </SelectTrigger>
-
-                <SelectContent>
-                  {VISITOR_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {formatLabel(type)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="">Select project</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {nameOf(p.id)}
+                  </option>
+                ))}
+              </select>
             </div>
-
-            {/* Assignment target */}
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Internal team</label>
-
-                <SelectInput
-                  value={form.teamId}
-                  onChange={(event) => updateForm("teamId", event.target.value)}
+            <div>
+              <Label htmlFor="allocation-type">Visitor type</Label>
+              <select
+                id="allocation-type"
+                disabled={!!editing}
+                className="w-full rounded border p-2"
+                value={form.visitorType}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    visitorType: e.target.value,
+                    stageId: "",
+                    purpose: "",
+                  }))
+                }
+              >
+                {types.map((t) => (
+                  <option key={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+            {form.visitorType === "ARCHITECT" ? (
+              <div>
+                <Label htmlFor="allocation-stage">Visit stage</Label>
+                <select
+                  id="allocation-stage"
+                  required
+                  disabled={!!editing || loadingStages}
+                  className="w-full rounded border p-2"
+                  value={form.stageId || ""}
+                  onChange={(e) => change("stageId", e.target.value)}
                 >
-                  <option value="">None</option>
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
+                  <option value="">Select purpose / stage</option>
+                  {stages.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.visit_no}. {s.stage}
+                    </option>
                   ))}
-                </SelectInput>
+                </select>
+                <p className="mt-2 text-sm">
+                  {editing?.checksPurpose || selected?.checks_purpose}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {editing?.visitType || selected?.visit_type}
+                </p>
+                {selected?.remarks && (
+                  <p className="text-sm text-muted-foreground">
+                    {selected.remarks}
+                  </p>
+                )}
               </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">External Party</label>
-
+            ) : (
+              <div>
+                <Label htmlFor="allocation-purpose">Purpose</Label>
                 <Input
-                  value={form.externalPartyName}
-                  onChange={(event) =>
-                    updateForm("externalPartyName", event.target.value)
-                  }
-                  placeholder="Vendor / contractor / client"
+                  id="allocation-purpose"
+                  required
+                  maxLength={250}
+                  value={form.purpose}
+                  onChange={(e) => change("purpose", e.target.value)}
                 />
               </div>
+            )}
+            <div>
+              <Label htmlFor="allocation-date">Scheduled date</Label>
+              <Input
+                id="allocation-date"
+                type="date"
+                required
+                value={form.scheduledDate || ""}
+                onChange={(e) => change("scheduledDate", e.target.value)}
+              />
             </div>
-
-            {/* Frequency */}
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Frequency</label>
-
-              <Select
-                value={form.frequency}
-                onValueChange={(value) => updateForm("frequency", value)}
+            <div>
+              <Label htmlFor="allocation-team">Allocated team</Label>
+              <select
+                id="allocation-team"
+                className="w-full rounded border p-2"
+                value={form.teamId}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    teamId: e.target.value,
+                    externalPartyName: "",
+                  }))
+                }
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select frequency" />
-                </SelectTrigger>
-
-                <SelectContent>
-                  {FREQUENCIES.map((frequency) => (
-                    <SelectItem key={frequency} value={frequency}>
-                      <div className="flex flex-col">
-                        <span>{formatLabel(frequency)}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="">Named visitor instead</option>
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
             </div>
-
-            {/* Fixed schedule */}
-
-            {form.frequency === "FIXED_SCHEDULE" && (
-              <div className="space-y-3 rounded-lg border bg-muted/20 p-4">
-                <div>
-                  <p className="text-sm font-medium">Visit Days</p>
-
-                  <p className="text-xs text-muted-foreground">
-                    Select the days this visitor is expected on site.
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {DAYS.map((day) => {
-                    const selected = form.scheduleDays.includes(day.value);
-
-                    return (
-                      <Button
-                        key={day.value}
-                        type="button"
-                        variant={selected ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => toggleDay(day.value)}
-                      >
-                        {day.label}
-                      </Button>
-                    );
-                  })}
-                </div>
+            {!form.teamId && (
+              <div>
+                <Label htmlFor="allocation-visitor">
+                  Allocated visitor name
+                </Label>
+                <Input
+                  id="allocation-visitor"
+                  required
+                  maxLength={150}
+                  value={form.externalPartyName}
+                  onChange={(e) => change("externalPartyName", e.target.value)}
+                />
               </div>
             )}
-
-            {/* Summary */}
-
-            {form.frequency && (
-              <div className="rounded-lg border bg-muted/20 p-4">
-                <div className="flex items-start gap-3">
-                  <CalendarDays className="mt-0.5 h-5 w-5 text-muted-foreground" />
-
-                  <div>
-                    <p className="text-sm font-medium">Schedule Summary</p>
-
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {getFrequencyDescription(form.frequency)}
-
-                      {form.frequency === "FIXED_SCHEDULE" &&
-                        form.scheduleDays.length > 0 &&
-                        ` — ${form.scheduleDays
-                          .map(
-                            (day) =>
-                              DAYS.find((item) => item.value === day)?.label,
-                          )
-                          .join(", ")}`}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
-            </Button>
-
             <Button
-              onClick={handleSubmit}
-              disabled={
-                creating ||
-                !form.projectId ||
-                !form.visitorType ||
-                !form.frequency
-              }
+              type="submit"
+              disabled={creating || updating || loadingStages}
             >
-              {creating
-                ? "Saving..."
-                : editingAssignment
-                  ? "Save Changes"
-                  : "Create Assignment"}
+              {creating || updating ? "Saving…" : "Save allocation"}
             </Button>
-          </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
-  );
-}
-
-/* =============================================================
-   STAT CARD
-============================================================= */
-
-function StatCard({ title, value, icon: Icon }) {
-  return (
-    <Card>
-      <CardContent className="flex items-center justify-between p-5">
-        <div>
-          <p className="text-sm text-muted-foreground">{title}</p>
-
-          <p className="mt-1 text-2xl font-semibold tracking-tight">{value}</p>
-        </div>
-
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-          <Icon className="h-5 w-5 text-muted-foreground" />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-/* =============================================================
-   ASSIGNMENT ROW
-============================================================= */
-
-function AssignmentRow({
-  assignment,
-  projectName,
-  teamName,
-  onEdit,
-  onDeactivate,
-  deactivating,
-}) {
-  const isActive = assignment.isActive !== false;
-
-  const schedule =
-    assignment.frequency === "FIXED_SCHEDULE"
-      ? (assignment.scheduleDays || [])
-          .map((day) => DAYS.find((item) => item.value === day)?.label)
-          .filter(Boolean)
-          .join(", ") || "No days selected"
-      : getFrequencyDescription(assignment.frequency);
-
-  return (
-    <tr className="group hover:bg-muted/20">
-      {/* Project */}
-
-      <td className="px-6 py-4">
-        <div className="font-medium">{projectName}</div>
-
-
-      </td>
-
-      {/* Visitor */}
-
-      <td className="px-4 py-4">
-        <Badge variant="outline">{formatLabel(assignment.visitorType)}</Badge>
-      </td>
-
-      {/* Assigned To */}
-
-      <td className="px-4 py-4">
-        {teamName ? (
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" />
-
-            <span>{teamName}</span>
-          </div>
-        ) : assignment.externalPartyName ? (
-          <div className="flex items-center gap-2">
-            <UserRound className="h-4 w-4 text-muted-foreground" />
-
-            <span>{assignment.externalPartyName}</span>
-          </div>
-        ) : (
-          <span className="text-muted-foreground">Not assigned</span>
-        )}
-      </td>
-
-      {/* Frequency */}
-
-      <td className="px-4 py-4">
-        <span className="font-medium">{formatLabel(assignment.frequency)}</span>
-      </td>
-
-      {/* Schedule */}
-
-      <td className="px-4 py-4">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-4 w-4 text-muted-foreground" />
-
-          <span className="text-muted-foreground">{schedule}</span>
-        </div>
-      </td>
-
-      {/* Status */}
-
-      <td className="px-4 py-4">
-        <Badge variant={isActive ? "default" : "secondary"}>
-          {isActive ? "Active" : "Inactive"}
-        </Badge>
-      </td>
-
-      {/* Actions */}
-
-      <td className="px-4 py-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="opacity-60 group-hover:opacity-100"
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onEdit}>
-              <Edit3 className="mr-2 h-4 w-4" />
-              Edit
-            </DropdownMenuItem>
-
-            {isActive && (
-              <>
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={onDeactivate}
-                  disabled={deactivating}
-                >
-                  <Power className="mr-2 h-4 w-4" />
-                  Deactivate
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </td>
-    </tr>
-  );
-}
-
-/* =============================================================
-   LOADING
-============================================================= */
-
-function LoadingRows() {
-  return Array.from({ length: 5 }).map((_, index) => (
-    <tr key={index} className="animate-pulse">
-      {Array.from({ length: 7 }).map((__, cell) => (
-        <td key={cell} className="px-4 py-5">
-          <div className="h-4 rounded bg-muted" />
-        </td>
-      ))}
-    </tr>
-  ));
-}
-
-/* =============================================================
-   EMPTY
-============================================================= */
-
-function EmptyState({ onCreate }) {
-  return (
-    <tr>
-      <td colSpan={7}>
-        <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-            <CalendarDays className="h-6 w-6 text-muted-foreground" />
-          </div>
-
-          <h3 className="text-sm font-semibold">No visit assignments found</h3>
-
-          <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            Create an assignment to define who should visit the site and how
-            frequently.
-          </p>
-
-          <Button className="mt-5" onClick={onCreate}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Assignment
-          </Button>
-        </div>
-      </td>
-    </tr>
   );
 }

@@ -85,7 +85,7 @@ export default function SiteInventoryTransactionForm() {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const projectId = searchParams.get("project_id") || "";
+  const projectId = searchParams.get("project_id") || searchParams.get("projectId") || "";
 
   const initialMaterialId = searchParams.get("material_id") || "";
 

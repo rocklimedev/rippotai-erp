@@ -17,6 +17,8 @@ import { QueryShortlistEntryDto } from './dto/query-shortlist.dto';
 import {
   ShortlistType,
   ShortlistEntryStatus,
+  Trade,
+  WorkingType,
 } from '@/common/enums/shortlist.enums';
 
 import { Op } from 'sequelize';
@@ -32,6 +34,70 @@ export class ShortlistEntryService {
     @InjectModel(ProjectShortlist)
     private readonly shortlistModel: typeof ProjectShortlist,
   ) {}
+
+  private assertCoordinates(trade: unknown, workingType: unknown): void {
+    if (!Object.values(Trade).includes(trade as Trade) ||
+        !Object.values(WorkingType).includes(workingType as WorkingType)) {
+      throw new BadRequestException('A valid trade and working_type are required');
+    }
+  }
+
+  async saveWorkspaceRow(shortlistId: string, dto: UpdateShortlistEntryDto & {
+    trade: Trade; working_type: WorkingType; entry_id?: string;
+  }, userId?: string): Promise<string> {
+    this.assertCoordinates(dto.trade, dto.working_type);
+    return this.sequelize.transaction(async transaction => {
+      // Serializing on the parent prevents duplicate first edits and competing selections.
+      const parent = await this.shortlistModel.findByPk(shortlistId, {
+        transaction, lock: transaction.LOCK.UPDATE,
+      });
+      if (!parent) throw new NotFoundException('Shortlist not found');
+      if (parent.is_locked) throw new BadRequestException('Shortlist is locked');
+      this.validateEntryForShortlist(parent, dto);
+      const { entry_id, ...patch } = dto;
+      let existing = await this.entryModel.findOne({ where: {
+        project_shortlist_id: shortlistId, trade: dto.trade, working_type: dto.working_type,
+      }, transaction, order: [['updated_at', 'DESC'], ['id', 'ASC']] });
+      if (entry_id) {
+        const identified = await this.entryModel.findByPk(entry_id, { transaction });
+        if (!identified || identified.project_shortlist_id !== shortlistId)
+          throw new BadRequestException('Entry does not belong to this shortlist');
+        if (existing && existing.id !== identified.id) {
+          const emptySkeleton = !existing.vendor_id && !existing.material_id &&
+            !existing.name_of_vendor?.trim() && existing.estimate_value == null &&
+            existing.quotation_value == null && !existing.notes && !existing.quotation_id &&
+            !existing.is_selected && existing.status === ShortlistEntryStatus.DRAFT;
+          if (!emptySkeleton) throw new BadRequestException('This workspace row already has saved data. Choose an empty row.');
+          await existing.destroy({ transaction });
+        }
+        existing = identified;
+      }
+      const values: any = { ...patch, updated_by: userId ?? null };
+      if ((patch.is_selected === true && patch.status !== undefined && patch.status !== ShortlistEntryStatus.SELECTED) ||
+          (patch.is_selected === false && patch.status === ShortlistEntryStatus.SELECTED))
+        throw new BadRequestException('Selection flag and status conflict');
+      if (patch.is_selected === true || patch.status === ShortlistEntryStatus.SELECTED) {
+        values.is_selected = true;
+        values.status = ShortlistEntryStatus.SELECTED;
+        await this.entryModel.update({ is_selected: false, status: ShortlistEntryStatus.SHORTLISTED }, {
+          where: { project_shortlist_id: shortlistId, trade: dto.trade,
+            [Op.or]: [{ is_selected: true }, { status: ShortlistEntryStatus.SELECTED }] }, transaction,
+        });
+      } else if (patch.status !== undefined) values.is_selected = false;
+      else if (patch.is_selected === false && existing?.status === ShortlistEntryStatus.SELECTED)
+        values.status = ShortlistEntryStatus.SHORTLISTED;
+      const saved = existing
+        ? await existing.update(values, { transaction })
+        : await this.entryModel.create({ ...values, project_shortlist_id: shortlistId, created_by: userId ?? null }, { transaction });
+      await saved.reload({ transaction });
+      // MySQL in non-strict mode can silently coerce incompatible ENUMs to ''.
+      // Roll back rather than reporting a successful, invisible save.
+      if (saved.trade !== dto.trade || saved.working_type !== dto.working_type ||
+          (values.status !== undefined && saved.status !== values.status))
+        throw new BadRequestException('Shortlist database schema is outdated. Apply 20261007_shortlist_workspace.sql before saving.');
+      return saved.id;
+    });
+  }
 
   // ============================================================
   // ASSERT SHORTLIST EXISTS + EDITABLE
@@ -89,36 +155,9 @@ export class ShortlistEntryService {
     dto: CreateShortlistEntryDto,
     userId?: string,
   ): Promise<ShortlistEntry> {
-    const shortlist = await this.assertShortlistEditable(
-      dto.project_shortlist_id,
-    );
-
-    this.validateEntryForShortlist(shortlist, dto);
-
-    /*
-     * Prevent duplicate trade + working type rows.
-     */
-    const existing = await this.entryModel.findOne({
-      where: {
-        project_shortlist_id: dto.project_shortlist_id,
-        trade: dto.trade,
-        working_type: dto.working_type,
-      },
-    });
-
-    if (existing) {
-      throw new BadRequestException(
-        `An entry already exists for ${dto.trade} / ${dto.working_type}`,
-      );
-    }
-
-    const entry = await this.entryModel.create({
-      ...dto,
-      created_by: userId ?? null,
-      updated_by: userId ?? null,
-    });
-
-    return this.findOne(entry.id);
+    const { project_shortlist_id, ...patch } = dto;
+    const id = await this.saveWorkspaceRow(project_shortlist_id, patch, userId);
+    return this.findOne(id);
   }
 
   // ============================================================
@@ -134,6 +173,7 @@ export class ShortlistEntryService {
     );
 
     for (const entry of dto.entries) {
+      this.assertCoordinates(entry.trade, entry.working_type);
       this.validateEntryForShortlist(shortlist, entry);
     }
 
@@ -283,6 +323,8 @@ export class ShortlistEntryService {
     const shortlist = await this.assertShortlistEditable(
       entry.project_shortlist_id,
     );
+
+    this.assertCoordinates(dto.trade ?? entry.trade, dto.working_type ?? entry.working_type);
 
     this.validateEntryForShortlist(shortlist, dto);
 

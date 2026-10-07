@@ -427,6 +427,15 @@ export const siteOperationsApi = baseApi.injectEndpoints({
       invalidatesTags: ["SiteVisits"],
     }),
 
+    updateVisitAssignment: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/site-ops/visits/assignments/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["SiteVisits"],
+    }),
+
     getVisitAssignmentsByProject: builder.query({
       query: (projectId) =>
         `/site-ops/visits/assignments/projects/${projectId}`,
@@ -456,6 +465,15 @@ export const siteOperationsApi = baseApi.injectEndpoints({
       invalidatesTags: ["SiteVisits"],
     }),
 
+    getAllocatedVisitLogs: builder.query({
+      query: ({ projectId } = {}) => ({ url: "/site-ops/visits/log", params: projectId ? { projectId } : undefined }),
+      providesTags: ["SiteVisits"],
+    }),
+    getAllocatedVisit: builder.query({
+      query: (id) => `/site-ops/visits/log/${id}`,
+      providesTags: ["SiteVisits"],
+    }),
+
     updateSiteVisit: builder.mutation({
       query: ({ id, ...body }) => ({
         url: `/site-ops/visits/log/${id}`,
@@ -466,6 +484,11 @@ export const siteOperationsApi = baseApi.injectEndpoints({
         "SiteVisits",
         { type: "SiteVisits", id },
       ],
+    }),
+
+    updateAllocatedVisit: builder.mutation({
+      query: ({ id, ...body }) => ({ url: `/site-ops/visits/log/${id}`, method: "PATCH", body }),
+      invalidatesTags: ["SiteVisits"],
     }),
 
     checkInSiteVisit: builder.mutation({
@@ -603,6 +626,10 @@ export const {
   // =========================================================
   useGetVisitAssignmentsQuery,
   useCreateVisitAssignmentMutation,
+  useGetAllocatedVisitLogsQuery,
+  useGetAllocatedVisitQuery,
+  useUpdateAllocatedVisitMutation,
+  useUpdateVisitAssignmentMutation,
   useGetVisitAssignmentsByProjectQuery,
   useDeactivateVisitAssignmentMutation,
   useLogSiteVisitMutation,

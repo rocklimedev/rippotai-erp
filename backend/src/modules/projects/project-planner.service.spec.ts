@@ -60,6 +60,23 @@ describe('unified project planner', () => {
     expect(pmc.destroy).toHaveBeenCalled();
     expect(vendor.destroy).toHaveBeenCalled();
   });
+  it('inherits brief dates and recce rooms when initializing an empty location list', async () => {
+    const planner = record({ id: 'planner', type: 'PROJECT' });
+    const locationModel = { findAll: jest.fn().mockResolvedValue([]), create: jest.fn().mockResolvedValue({ id: 'floor' }) };
+    const instance = service({
+      plannerModel: { findAll: jest.fn().mockResolvedValue([planner]) },
+      locationModel,
+      sharedProjectData: { prefill: jest.fn().mockResolvedValue({ documents: {
+        'client-brief': { desiredStartDate: '2026-10-10', targetCompletionDate: '2026-12-10' },
+        'site-recce': { unit_floor_no: '1', rooms: [{ room_name: 'Kitchen' }, { room_name: 'kitchen' }] },
+      } }) },
+    });
+    await instance.initializeProjectPlanners('project');
+    expect(planner.planned_start_date).toBe('2026-10-10');
+    expect(planner.planned_end_date).toBe('2026-12-10');
+    expect(locationModel.create).toHaveBeenCalledTimes(2);
+    expect(locationModel.create).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'Kitchen', type: 'ROOM', parent_id: 'floor' }), { transaction });
+  });
 
   it('syncs an edited template row without duplicating it or resetting progress', async () => {
     const planner = record({

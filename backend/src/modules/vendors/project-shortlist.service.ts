@@ -465,6 +465,8 @@ export class ProjectShortlistService {
       is_locked: shortlist.is_locked,
 
       grid,
+      unplaced_entries: entries.filter(entry =>
+        !trades.includes(entry.trade) || !workingTypes.includes(entry.working_type)),
     };
   }
 }

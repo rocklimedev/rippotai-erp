@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import {
   useGetProjectShortlistGridQuery,
-  useUpdateShortlistEntryMutation,
-  useSelectShortlistEntryMutation,
+  useSaveShortlistWorkspaceRowMutation,
   useUpdateProjectShortlistMutation,
   useLazyExportProjectShortlistQuery,
-  useCreateShortlistEntryMutation,
 } from "../../api/vendors/vendor-shortlist.api";
 
 import { useGetVendorsQuery } from "../../api/vendors/vendor.api";
 import { useGetMaterialsQuery } from "../../api/procuerment/material-master.api";
-import { createShortlistSaveQueue } from '../../api/vendors/shortlist-grid';
+import {
+  createShortlistSaveQueue,
+  reconcileConfirmedShortlistRows,
+} from "../../api/vendors/shortlist-grid";
 
 /**
  * ============================================================
@@ -114,17 +116,17 @@ function EditableMoneyCell({
 
     const parsed = raw == null || Number.isNaN(raw) ? null : raw;
 
-    setEditing(false);
-
     const current = value === "" || value == null ? null : Number(value);
 
     if (parsed !== current) {
       try {
-        await onSave(parsed);
+        const saved = await onSave(parsed);
+        if (saved) setEditing(false);
       } finally {
         committingRef.current = false;
       }
     } else {
+      setEditing(false);
       committingRef.current = false;
     }
   }, [draft, onSave, value]);
@@ -202,11 +204,14 @@ function VendorSelectCell({
     },
   );
 
-  const { data: materialsResponse, isFetching: isSearchingMaterials } = useGetMaterialsQuery(
-    { search: search.trim() || undefined, isActive: true },
-    { skip: !editing || !isMaterial },
+  const { data: materialsResponse, isFetching: isSearchingMaterials } =
+    useGetMaterialsQuery(
+      { search: search.trim() || undefined, isActive: true },
+      { skip: !editing || !isMaterial },
+    );
+  const vendors = normalizeVendors(
+    isMaterial ? materialsResponse : vendorsResponse,
   );
-  const vendors = normalizeVendors(isMaterial ? materialsResponse : vendorsResponse);
   const searching = isMaterial ? isSearchingMaterials : isSearching;
 
   useEffect(() => {
@@ -403,16 +408,34 @@ export default function ProjectVendorShortlistView({
     skip: !shortlistId,
   });
 
-  const [updateEntry, { isLoading: isUpdating }] =
-    useUpdateShortlistEntryMutation();
-
-  const [createEntry] = useCreateShortlistEntryMutation();
+  const [saveWorkspaceRow, { isLoading: isUpdating }] =
+    useSaveShortlistWorkspaceRowMutation();
+  const [recoveryRows, setRecoveryRows] = useState({});
   const [saveMessage, setSaveMessage] = useState("");
-  const entryIds = useRef(new Map());
-  const pendingCreates = useRef(new Map());
+  const [confirmedRows, setConfirmedRows] = useState({});
+  const confirmedRowsRef = useRef({});
+  useEffect(() => {
+    confirmedRowsRef.current = {};
+    setConfirmedRows({});
+    setRecoveryRows({});
+  }, [shortlistId]);
   const [queueSave] = useState(createShortlistSaveQueue);
 
-  const [selectEntry] = useSelectShortlistEntryMutation();
+  useEffect(() => {
+    if (!gridData) return;
+    const remaining = reconcileConfirmedShortlistRows(
+      confirmedRowsRef.current,
+      gridData,
+      shortlistId,
+    );
+    if (
+      Object.keys(remaining).length !==
+      Object.keys(confirmedRowsRef.current).length
+    ) {
+      confirmedRowsRef.current = remaining;
+      setConfirmedRows(remaining);
+    }
+  }, [gridData, shortlistId, confirmedRows]);
 
   const [updateShortlist] = useUpdateProjectShortlistMutation();
 
@@ -426,79 +449,53 @@ export default function ProjectVendorShortlistView({
    * ENSURE ENTRY EXISTS (create on first edit)
    * ==========================================================
    */
-  const ensureEntryId = useCallback(
-    async (blockTrade, row) => {
-      if (row.entry_id) return row.entry_id;
-      if (isLocked) return null;
-      const key = `${shortlistId}:${blockTrade}:${row.working_type}`;
-      if (entryIds.current.has(key)) return entryIds.current.get(key);
-      if (pendingCreates.current.has(key)) return pendingCreates.current.get(key);
-      const creation = (async () => {
-        try {
-          const created = await createEntry({
-            project_shortlist_id: shortlistId,
-            trade: blockTrade,
-            working_type: row.working_type,
-            currency: row.currency || "INR",
-            status: "DRAFT",
-          }).unwrap();
-
-          entryIds.current.set(key, created.id);
-          return created.id;
-        } catch (err) {
-          console.error("Failed to create shortlist entry", err);
-          alert(
-            err?.data?.message ||
-              err?.error ||
-              "Failed to create shortlist entry",
-          );
-          return null;
-        } finally {
-          pendingCreates.current.delete(key);
-        }
-      })();
-      pendingCreates.current.set(key, creation);
-      return creation;
-    },
-    [createEntry, isLocked, shortlistId],
-  );
-
-  /**
-   * ==========================================================
-   * UPDATE ENTRY (creates first if needed)
-   * ==========================================================
-   */
   const handleUpdateField = useCallback(
     async (blockTrade, row, patch) => {
       if (isLocked) return;
       setSaveMessage("");
-      return queueSave(`${shortlistId}:${blockTrade}:${row.working_type}`, async () => {
-        let entryId = row.entry_id;
-
-        if (!entryId) {
-          entryId = await ensureEntryId(blockTrade, row);
-          if (!entryId) return;
-        }
-
+      return queueSave(shortlistId, async () => {
         try {
-          const saved = await updateEntry({
-            id: entryId,
-            ...patch,
+          const { vendor, ...values } = patch;
+          const workspace = await saveWorkspaceRow({
+            shortlistId,
+            trade: blockTrade,
+            working_type: row.working_type,
+            ...values,
           }).unwrap();
-
+          const savedRow = workspace.grid
+            .find((block) => block.trade === blockTrade)
+            ?.rows.find((item) => item.working_type === row.working_type);
+          if (!savedRow?.entry_id)
+            throw new Error("Saved row is missing from the workspace response");
+          const saved = {
+            ...savedRow,
+            id: savedRow.entry_id,
+            trade: blockTrade,
+          };
+          const confirmed = {};
+          for (const block of workspace.grid)
+            for (const item of block.rows)
+              confirmed[`${shortlistId}:${block.trade}:${item.working_type}`] =
+                item;
+          confirmedRowsRef.current = confirmed;
+          setConfirmedRows(confirmed);
           setSaveMessage("Changes saved.");
+          toast.success("Changes saved", {
+            description: `${blockTrade} · ${row.working_type}`,
+          });
           return saved;
         } catch (err) {
           console.error("Update entry failed", err);
           alert(
             err?.data?.message ||
               err?.error ||
+              err?.message ||
               "Failed to update shortlist entry",
           );
         }
       });
     },
-    [isLocked, ensureEntryId, updateEntry, queueSave, shortlistId],
+    [isLocked, saveWorkspaceRow, queueSave, shortlistId],
   );
 
   /**
@@ -526,25 +523,9 @@ export default function ProjectVendorShortlistView({
    * ==========================================================
    */
   const handleSelect = useCallback(
-    async (blockTrade, row) => {
-      if (isLocked) return;
-
-      let entryId = row.entry_id;
-
-      if (!entryId) {
-        entryId = await ensureEntryId(blockTrade, row);
-        if (!entryId) return;
-      }
-
-      try {
-        await selectEntry(entryId).unwrap();
-        await refetch();
-      } catch (err) {
-        console.error("Select failed", err);
-        alert(err?.data?.message || "Failed to select shortlist entry");
-      }
-    },
-    [isLocked, ensureEntryId, selectEntry, refetch],
+    (blockTrade, row) =>
+      handleUpdateField(blockTrade, row, { is_selected: true }),
+    [handleUpdateField],
   );
 
   /**
@@ -643,6 +624,84 @@ export default function ProjectVendorShortlistView({
 
   return (
     <div className="space-y-5">
+      {gridData.unplaced_entries?.length > 0 && (
+        <section className="bc-card p-4 space-y-3">
+          <h3 className="font-semibold">
+            Saved records needing a trade and work type
+          </h3>
+          <p className="text-sm">
+            These records have missing or outdated coordinates. Choose their
+            original row to restore them. Existing occupied rows are protected.
+          </p>
+          {gridData.unplaced_entries.map((entry) => {
+            const coordinates = recoveryRows[entry.id] || {};
+            const change = (field, value) =>
+              setRecoveryRows((current) => ({
+                ...current,
+                [entry.id]: { ...current[entry.id], [field]: value },
+              }));
+            return (
+              <div key={entry.id} className="flex flex-wrap gap-2 items-center">
+                <span>
+                  {entry.name_of_vendor ||
+                    entry.vendor?.name ||
+                    entry.material?.name ||
+                    "Unassigned"}{" "}
+                  · Estimate: {entry.estimate_value ?? "—"} · Quotation:{" "}
+                  {entry.quotation_value ?? "—"}
+                </span>
+                <select
+                  aria-label="Recovery trade"
+                  className="bc-input"
+                  disabled={isLocked || isUpdating}
+                  value={coordinates.trade || ""}
+                  onChange={(e) => change("trade", e.target.value)}
+                >
+                  <option value="">Choose trade</option>
+                  {gridData.grid.map((block) => (
+                    <option key={block.trade} value={block.trade}>
+                      {block.trade}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  aria-label="Recovery work type"
+                  className="bc-input"
+                  disabled={isLocked || isUpdating}
+                  value={coordinates.working_type || ""}
+                  onChange={(e) => change("working_type", e.target.value)}
+                >
+                  <option value="">Choose work type</option>
+                  {gridData.grid[0]?.rows.map((row) => (
+                    <option key={row.working_type} value={row.working_type}>
+                      {row.working_type}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="bc-btn-secondary"
+                  disabled={
+                    isLocked ||
+                    isUpdating ||
+                    !coordinates.trade ||
+                    !coordinates.working_type
+                  }
+                  onClick={() =>
+                    handleUpdateField(
+                      coordinates.trade,
+                      { working_type: coordinates.working_type },
+                      { entry_id: entry.id },
+                    )
+                  }
+                >
+                  Restore row
+                </button>
+              </div>
+            );
+          })}
+        </section>
+      )}
+
       {/* ======================================================
           TOOLBAR
       ======================================================= */}
@@ -715,7 +774,11 @@ export default function ProjectVendorShortlistView({
 
             <tbody>
               {(gridData.grid || []).map((block) =>
-                (block.rows || []).map((row, rowIdx) => {
+                (block.rows || []).map((serverRow, rowIdx) => {
+                  const row =
+                    confirmedRows[
+                      `${shortlistId}:${block.trade}:${serverRow.working_type}`
+                    ] || serverRow;
                   const isFirst = rowIdx === 0;
 
                   const rowKey = [

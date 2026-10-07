@@ -1,4 +1,9 @@
 import AdminDprPage from '@/pages/site-ops/AdminDprPage';
+import AdminDprWorkspacePage from '@/pages/site-ops/AdminDprWorkspacePage';
+import AdminDprDetailPage from '@/pages/site-ops/AdminDprDetailPage';
+import SnagListsPage from '@/pages/site-ops/SnagListsPage';
+import SnagListDetailPage from '@/pages/site-ops/SnagListDetailPage';
+import SnagListWorkspacePage from '@/pages/site-ops/SnagListWorkspacePage';
 import AppLayout from "@/layouts/AppLayout";
 import AppDashboard from "@/components/dashboard/AppDashboard";
 import DailySiteReports from "../../pages/site-ops/DailySiteReportsPage";
@@ -30,6 +35,12 @@ export const siteOperationsRoutes = [
 
     children: [
       { path: "admin-dpr", element: <AdminDprPage /> },
+      { path: "admin-dpr/workspace", element: <AdminDprWorkspacePage /> },
+      { path: "admin-dpr/:id", element: <AdminDprDetailPage /> },
+      { path: "snag-lists", element: <SnagListsPage /> },
+      { path: "snag-lists/workspace", element: <SnagListWorkspacePage /> },
+      { path: "snag-lists/:id/workspace", element: <SnagListWorkspacePage /> },
+      { path: "snag-lists/:id", element: <SnagListDetailPage /> },
       // =========================================================
       // DASHBOARD
       // =========================================================
@@ -107,7 +118,7 @@ export const siteOperationsRoutes = [
       },
       {
         path: "site-visits/:id/edit",
-        element: <SiteVisitCreatePage />,
+        element: <SiteVisitDetailPage />,
       },
       {
         path: "site-visits/new",

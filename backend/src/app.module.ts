@@ -35,6 +35,7 @@ import { TermsModule } from './modules/metas/terms.module';
 
 // Documents
 import { DocumentsModule } from './modules/documents/document.module';
+import { SharedProjectDataModule } from './modules/documents/shared-project-data.module';
 import { DrawingsModule } from './modules/documents/drawing.module';
 
 // Project / Site
@@ -132,6 +133,7 @@ import { SyncModule } from './modules/sync/sync.module';
     // Documents
     // ============================================================
     DocumentsModule,
+    SharedProjectDataModule,
     DrawingsModule,
     SyncModule,
     // ============================================================

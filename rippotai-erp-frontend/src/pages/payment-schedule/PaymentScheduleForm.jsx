@@ -1,5 +1,6 @@
 import { termsToText, textToTermsHtml } from "@/lib/terms";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useSharedProjectData } from '../../hooks/use-shared-project-data';
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus, Trash2, Wand2, Pencil, Eye, Code, Loader2, ArrowUp, ArrowDown } from "lucide-react";
@@ -147,9 +148,10 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
   // ============================================================
 
   // Separate draft key for edits so they never overwrite the "new" draft
-  const draftKey = isEdit ? `${SAVE_KEY}.${scheduleId}` : SAVE_KEY;
+  const draftKey = `${SAVE_KEY}.${isEdit ? scheduleId : projectId || 'new'}`;
 
   const [values, setValues] = useAutoSave(draftKey, EMPTY_VALUES);
+  useSharedProjectData(projectId, 'payment', values, setValues, !isEdit);
 
   // ============================================================
   // HYDRATE FORM FROM SERVER (edit mode)

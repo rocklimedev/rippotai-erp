@@ -1,8 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useCallback, useState } from "react";
+import { useSharedProjectData } from "../../hooks/use-shared-project-data";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Plus } from "lucide-react";
-import { Page, PageHeader, Button, Field, TextInput, SelectInput, FormActions } from "@/components/inos";
+import {
+  Page,
+  PageHeader,
+  Button,
+  Field,
+  TextInput,
+  SelectInput,
+  FormActions,
+} from "@/components/inos";
 import { DocSection, Grid } from "@/components/forms/commerce-form-ui";
 
 import {
@@ -22,6 +31,12 @@ export default function BoqNew() {
     () => searchParams.get("project_id") || searchParams.get("projectId") || "",
   );
   const [title, setTitle] = useState("");
+  const boqValues = useMemo(() => ({ title }), [title]);
+  const setBoqValues = useCallback(
+    (updater) => setTitle((current) => updater({ title: current }).title),
+    [],
+  );
+  useSharedProjectData(projectId, "boq", boqValues, setBoqValues);
   const [templateId, setTemplateId] = useState("");
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
 
@@ -126,16 +141,29 @@ export default function BoqNew() {
         title="New bill of quantities"
         subtitle="Pick the project, optionally start from a template, then continue in the BOQ editor."
         actions={
-          <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate("/boq")}>
+          <Button
+            variant="ghost"
+            icon={ArrowLeft}
+            onClick={() => navigate("/boq")}
+          >
             Back to BOQs
           </Button>
         }
       />
 
       <form onSubmit={submit} className="inos-form">
-        <DocSection step={1} title="Project" description="Every BOQ belongs to one project.">
+        <DocSection
+          step={1}
+          title="Project"
+          description="Every BOQ belongs to one project."
+        >
           <Grid cols={1}>
-            <Field label="Project" required htmlFor="boq-project" hint="Not listed? Create it without leaving this page.">
+            <Field
+              label="Project"
+              required
+              htmlFor="boq-project"
+              hint="Not listed? Create it without leaving this page."
+            >
               <div style={{ display: "flex", gap: 8 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <SelectInput
@@ -145,16 +173,24 @@ export default function BoqNew() {
                     disabled={projectsLoading}
                     required
                   >
-                    <option value="">{projectsLoading ? "Loading projects…" : "Select project"}</option>
+                    <option value="">
+                      {projectsLoading ? "Loading projects…" : "Select project"}
+                    </option>
                     {projects.map((project) => (
                       <option key={project.id} value={project.id}>
                         {project.name}
                       </option>
                     ))}
-                    <option value={CREATE_NEW_PROJECT}>+ Create new project…</option>
+                    <option value={CREATE_NEW_PROJECT}>
+                      + Create new project…
+                    </option>
                   </SelectInput>
                 </div>
-                <Button variant="secondary" icon={Plus} onClick={() => setShowNewProjectModal(true)}>
+                <Button
+                  variant="secondary"
+                  icon={Plus}
+                  onClick={() => setShowNewProjectModal(true)}
+                >
                   New project
                 </Button>
               </div>
@@ -162,20 +198,38 @@ export default function BoqNew() {
           </Grid>
         </DocSection>
 
-        <DocSection step={2} title="Details" description="Both optional — you can change them in the editor.">
+        <DocSection
+          step={2}
+          title="Details"
+          description="Both optional — you can change them in the editor."
+        >
           <Grid cols={2}>
-            <Field label="BOQ title" optional htmlFor="boq-title" hint="Leave blank to name it after the project.">
+            <Field
+              label="BOQ title"
+              optional
+              htmlFor="boq-title"
+              hint="Leave blank to name it after the project."
+            >
               <TextInput
                 id="boq-title"
                 value={title}
-                placeholder={selectedProject ? `e.g. ${selectedProject.name} — interiors BOQ` : "e.g. Interiors BOQ"}
+                placeholder={
+                  selectedProject
+                    ? `e.g. ${selectedProject.name} — interiors BOQ`
+                    : "e.g. Interiors BOQ"
+                }
                 onChange={(e) => setTitle(e.target.value)}
               />
             </Field>
             <Field
               label="Start from"
               htmlFor="boq-template"
-              hint={selectedTemplate?.description || (templateId ? "Categories and items are copied from the template." : "An empty BOQ you fill in yourself.")}
+              hint={
+                selectedTemplate?.description ||
+                (templateId
+                  ? "Categories and items are copied from the template."
+                  : "An empty BOQ you fill in yourself.")
+              }
             >
               <SelectInput
                 id="boq-template"
@@ -183,7 +237,9 @@ export default function BoqNew() {
                 disabled={templatesLoading}
                 onChange={(e) => setTemplateId(e.target.value)}
               >
-                <option value="">{templatesLoading ? "Loading templates…" : "Blank BOQ"}</option>
+                <option value="">
+                  {templatesLoading ? "Loading templates…" : "Blank BOQ"}
+                </option>
                 {templates.map((template) => (
                   <option key={template.id} value={template.id}>
                     {template.name}
@@ -200,7 +256,9 @@ export default function BoqNew() {
             busy ? (
               "Creating…"
             ) : (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <span
+                style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+              >
                 Create & open editor <ArrowRight size={16} aria-hidden />
               </span>
             )

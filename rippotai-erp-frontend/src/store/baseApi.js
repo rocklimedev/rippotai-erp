@@ -30,6 +30,7 @@ export const baseApi = createApi({
   baseQuery,
   tagTypes: [
     "AdminDpr",
+    "SnagLists",
     // auth
     "AuthUser",
     "AuthTokens",

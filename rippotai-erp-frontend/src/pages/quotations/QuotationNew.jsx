@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useSharedProjectData } from '../../hooks/use-shared-project-data';
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -236,6 +237,7 @@ export default function EstimateForm() {
   const nav = useNavigate();
   const { id } = useParams(); // present on /quotations/:id/edit, undefined on /procurement/estimates/new
   const isEdit = !!id;
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
@@ -263,7 +265,10 @@ export default function EstimateForm() {
   const [vendor, setVendor] = useState(null);
   const [showNewVendor, setShowNewVendor] = useState(false);
   // Project
-  const [project, setProject] = useState(null);
+  const [project, setProject] = useState(() => {
+    const projectId = searchParams.get('projectId') || searchParams.get('project_id');
+    return projectId && !isEdit ? { id: projectId, name: '' } : null;
+  });
   const [showNewProject, setShowNewProject] = useState(false);
   // Units (for the item rows' unit dropdown)
   const { data: unitsData, isLoading: unitsLoading } = useGetUnitsQuery();
@@ -273,6 +278,9 @@ export default function EstimateForm() {
   const [newUnitRowId, setNewUnitRowId] = useState(null);
   // Items
   const [items, setItems] = useState([emptyItem()]);
+  const quoteValues = useMemo(() => ({ items }), [items]);
+  const setQuoteValues = useCallback(updater => setItems(current => updater({ items: current }).items), []);
+  useSharedProjectData(project?.id, 'quotation', quoteValues, setQuoteValues, !isEdit);
   // Totals
   const [addlAmt, setAddlAmt] = useState(0);
   const [addlIsPct, setAddlIsPct] = useState(false);
@@ -387,6 +395,11 @@ export default function EstimateForm() {
   const projects = Array.isArray(projectsData)
     ? projectsData
     : projectsData?.data || [];
+  useEffect(() => {
+    if (isEdit || !project?.id || project.name) return;
+    const selected = projects.find(item => item.id === project.id);
+    if (selected) setProject({ id: selected.id, name: selected.name, location: selected.site_location || '' });
+  }, [isEdit, project, projects]);
 
   // Recompute estimate number whenever project or date changes — but only
   // in create mode. In edit mode the number was already assigned when the

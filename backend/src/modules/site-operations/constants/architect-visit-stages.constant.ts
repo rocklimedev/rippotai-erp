@@ -61,7 +61,7 @@ export const ARCHITECT_VISIT_STAGES: {
   {
     visit_no: 7,
     stage: 'Plumbing / electrical first fix check before plaster',
-    checks_purpose: 'Location & height check, routing check',
+    checks_purpose: 'Location & height check, routine check',
     visit_type: H,
   },
   {
@@ -95,6 +95,7 @@ export const ARCHITECT_VISIT_STAGES: {
   {
     visit_no: 12,
     stage: 'During / After false ceiling framework & wiring',
+    remarks: 'Before false ceiling: ceiling electrical check',
     checks_purpose:
       'Ceiling level, cove details, AC diffusers (if any), curtain pockets, access panels/trap doors, lights location, fan point, plywork for chandeliers/AC/curtains, profile channels',
     visit_type: H,
