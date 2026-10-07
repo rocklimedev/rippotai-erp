@@ -114,10 +114,7 @@ export const DOCUMENT_SEQUENCE = [
     "quality-check-list",
     "Quality Check List",
     "/site-operations/checklists/workspace",
-    [
-      "/site-operations/checklists/workspace",
-      "/site-operations/qc/checklist-templates",
-    ],
+    ["/site-operations/checklists/workspace", "/site-operations/checklists"],
   ),
   reference("snag-list", "Snag List"),
   reference("admin-dpr", "Admin DPR"),
@@ -154,7 +151,7 @@ const listRoutes = {
   "purchase-order": "/procurement/purchase-orders",
   "work-order": "/procurement/work-order/all",
   "delivery-challan": "/procurement/delivery-challans",
-  "quality-check-list": "/site-operations/qc/checklist-templates",
+  "quality-check-list": "/site-operations/checklists",
   "site-inventory-register": "/inventory/site-inventory/all",
   "daily-progress-report": "/site-operations/daily-reports",
 };
@@ -165,7 +162,11 @@ DOCUMENT_SEQUENCE.forEach((item) => {
 export const normalizeDocumentName = (value = "") =>
   value.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-export function documentDestination(document, projectId, { create = false } = {}) {
+export function documentDestination(
+  document,
+  projectId,
+  { create = false } = {},
+) {
   const params = new URLSearchParams({ sequence: document.id });
   if (projectId) params.set("projectId", projectId);
   if (document.view) params.set("view", document.view);
@@ -173,7 +174,9 @@ export function documentDestination(document, projectId, { create = false } = {}
   const route =
     document.action === "upload"
       ? "/document/upload"
-      : (create && document.action === 'create' ? document.createRoute : document.route) || "/document/reference";
+      : (create && document.action === "create"
+          ? document.createRoute
+          : document.route) || "/document/reference";
   return `${route}?${params}`;
 }
 
@@ -184,10 +187,13 @@ export function currentSequenceDocument(pathname, search) {
   );
   if (
     explicit &&
-    (pathname === explicit.route || pathname === explicit.createRoute ||
+    (pathname === explicit.route ||
+      pathname === explicit.createRoute ||
       (pathname === "/document/reference" && explicit.action === "reference") ||
       (pathname === "/projects/documents/all" && explicit.action === "upload"))
   )
     return explicit;
-  return DOCUMENT_SEQUENCE.find((item) => item.route === pathname || item.createRoute === pathname);
+  return DOCUMENT_SEQUENCE.find(
+    (item) => item.route === pathname || item.createRoute === pathname,
+  );
 }

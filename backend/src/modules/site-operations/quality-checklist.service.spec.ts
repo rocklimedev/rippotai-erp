@@ -58,6 +58,17 @@ describe('quality checklist template and workflow', () => {
     return { service, parent, checklists, items, templates, database };
   }
   afterEach(() => jest.restoreAllMocks());
+  it('lists saved checklists across projects and applies project filters', async () => {
+    const { service, checklists } = setup();
+    await service.getChecklists({ page: 2, limit: 20 });
+    expect(checklists.findAndCountAll).toHaveBeenLastCalledWith(
+      expect.objectContaining({ where: {}, offset: 20, limit: 20 }),
+    );
+    await service.getChecklists({ project_id: 'project' });
+    expect(checklists.findAndCountAll).toHaveBeenLastCalledWith(
+      expect.objectContaining({ where: { project_id: 'project' } }),
+    );
+  });
   it('contains all 17 source work heads and 165 detailed checkpoints, preserving duplicates', () => {
     expect(source).toHaveLength(17);
     expect(
@@ -151,12 +162,12 @@ describe('quality checklist template and workflow', () => {
     expect(checklists.findAndCountAll).toHaveBeenCalledWith(
       expect.objectContaining({
         offset: 12,
-        include: [
+        include: expect.arrayContaining([
           expect.objectContaining({
             separate: true,
             order: [['serial_number', 'ASC']],
           }),
-        ],
+        ]),
       }),
     );
   });

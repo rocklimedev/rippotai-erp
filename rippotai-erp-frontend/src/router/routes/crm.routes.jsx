@@ -22,7 +22,9 @@ import { ProjectBriefView } from "../../pages/brief/ProjectBriefView";
 import { PlanOfActionView } from "../../pages/plan-of-action/PlanOfActionView";
 
 import { ScopeOfWorkView } from "../../pages/scope-of-work/ScopeOfWorkView";
-import { BusinessProposalAll } from "../../pages/documents/BusinessProposal";
+import BusinessProposalList from "@/pages/business-proposal/BusinessProposalList";
+import BusinessProposalView from "@/pages/business-proposal/BusinessProposalView";
+import BusinessProposalWorkspace from "@/pages/business-proposal/BusinessProposalWorkspace";
 import ProposalBuilder from "../../pages/documents/ProposalBuilder";
 import CRMDashboard from "../../pages/dashboard/CRMDashboard";
 import ZohoCrmTestConsole from "../../pages/ZohoCrmTester";
@@ -52,6 +54,15 @@ export const crmRoutes = [
     },
 
     children: [
+      {
+        path: "business-proposal/workspace",
+        element: <BusinessProposalWorkspace />,
+      },
+      {
+        path: "business-proposal/:id/workspace",
+        element: <BusinessProposalWorkspace />,
+      },
+      { path: "business-proposal/:id", element: <BusinessProposalView /> },
       // ============================================================
       // CRM DASHBOARD
       // ============================================================
@@ -93,7 +104,7 @@ export const crmRoutes = [
       },
       {
         path: "business-proposal/all",
-        element: <BusinessProposalAll />,
+        element: <BusinessProposalList />,
       },
 
       {
@@ -139,7 +150,7 @@ export const crmRoutes = [
       },
       {
         path: "forms/business-proposal",
-        element: <ProposalBuilder />,
+        element: <BusinessProposalWorkspace />,
       },
       {
         path: "forms/site-reki",

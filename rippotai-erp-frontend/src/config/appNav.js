@@ -183,7 +183,7 @@ export const APP_MENUS = {
 
         // I("Scope Of Approval", "scope-of-approval/all"),
         // I("Pitch Deck", "pitch-deck/all"),
-        // I("Business Proposal", "business-proposal/all"),
+        I("Business Proposals", "business-proposal/all"),
       ],
     },
 
@@ -298,20 +298,13 @@ export const APP_MENUS = {
       items: [
         I("Daily Reports", "daily-reports"),
         I("Admin DPR", "admin-dpr"),
-        I("Snag Lists", "snag-lists"),
         I("Visit Assignments", "visit-assignments"),
       ],
     },
 
     {
       label: "Quality & Coordination",
-      items: [
-        I("QC Sign-offs", "qc/history"),
-        I("QC Handoff Status", "qc/handoff-status"),
-        I("Checklists", "qc/checklist-templates"),
-        I("Mockups", "mockups"),
-        I("RFIs / Clarifications", "rfis"),
-      ],
+      items: [I("Snag Lists", "snag-lists"), I("Checklists", "checklists")],
     },
 
     {

@@ -66,6 +66,11 @@ export class QualityChecklistController {
     return this.qualityChecklistService.listWorkHeadTemplates();
   }
 
+  @Get()
+  listChecklists(@Query() filter: FilterQualityChecklistDto) {
+    return this.qualityChecklistService.getChecklists(filter);
+  }
+
   /**
    * Get checkpoint template for one work head
    * GET /quality-checklists/templates/:workHead

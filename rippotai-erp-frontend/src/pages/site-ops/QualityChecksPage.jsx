@@ -1,5 +1,5 @@
 import { Fragment, useState, useEffect, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useGetProjectsQuery } from "../../api/projects/project.api";
 import {
@@ -74,6 +74,12 @@ export default function QualityChecksPage() {
   const project = projects.find((project) => project.id === projectId);
   return (
     <div className="bg-page min-h-full p-4 sm:p-6 space-y-5">
+      <Link
+        className="bc-btn-secondary inline-flex"
+        to="/site-operations/checklists"
+      >
+        ← Checklists list
+      </Link>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">Site operations</p>
@@ -138,6 +144,9 @@ export default function QualityChecksPage() {
 
 function QualityProject({ projectId, projectName, initialId }) {
   const [activeId, setActiveId] = useState(initialId || "");
+  useEffect(() => {
+    setActiveId(initialId || "");
+  }, [initialId]);
   const [showCreate, setShowCreate] = useState(false);
   const [page, setPage] = useState(1);
   const {
