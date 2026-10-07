@@ -202,7 +202,9 @@ export class WorkspaceService {
     if (status === 'inactive') where.push('va.is_active = 0');
     const rows = await this.q(
       `SELECT va.id, va.project_id AS projectId, p.name AS projectName, va.visitor_type AS visitorType, va.team_id AS teamId,
-              t.name AS teamName, va.external_party_name AS externalPartyName, va.frequency, va.schedule_days AS scheduleDays,
+              t.name AS teamName, va.external_party_name AS externalPartyName,
+              va.stage_id AS stageId, va.stage_name AS stageName, va.checks_purpose AS checksPurpose,
+              va.visit_type AS visitType, va.purpose, va.scheduled_date AS scheduledDate,
               va.is_active AS isActive, va.created_at AS createdAt, va.updated_at AS updatedAt
        FROM visit_assignments va LEFT JOIN projects p ON p.id = va.project_id LEFT JOIN teams t ON t.id = CAST(va.team_id AS CHAR)
        WHERE ${where.join(' AND ')} ORDER BY va.is_active DESC, p.name, va.id`,
@@ -211,7 +213,6 @@ export class WorkspaceService {
     return rows.map((x: any) => ({
       ...x,
       isActive: !!x.isActive,
-      scheduleDays: typeof x.scheduleDays === 'string' ? safeJson(x.scheduleDays) : x.scheduleDays,
     }));
   }
 

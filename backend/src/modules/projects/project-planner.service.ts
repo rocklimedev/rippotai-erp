@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 
 import { InjectModel } from '@nestjs/sequelize';
@@ -15,6 +16,7 @@ import {
   ProjectPhaseModule,
   ProjectPlannerType,
   ProcurementItemType,
+  PlannerLocationType,
 } from '@/common/enums/project-planner.enum';
 
 import {
@@ -31,6 +33,7 @@ import {
 
 // Existing models
 import { Project } from '@/modules/projects/models/projects.model';
+import { SharedProjectDataService } from '../documents/shared-project-data.service';
 import { DocumentType } from '@/modules/documents/models/document-type.model';
 import { User } from '@/modules/users/models/user.model';
 import { Vendor } from '@/modules/vendors/models/vendors.model';
@@ -78,6 +81,7 @@ export class ProjectPlannerService {
 
     @InjectModel(DocumentType)
     private readonly documentTypeModel: typeof DocumentType,
+    @Optional() private readonly sharedProjectData?: SharedProjectDataService,
   ) {}
 
   // ============================================================
@@ -155,6 +159,31 @@ export class ProjectPlannerService {
         },
         { transaction },
       );
+      if (this.sharedProjectData) {
+        const context = await this.sharedProjectData.prefill(projectId, 'planner-consultancy', transaction);
+        const brief = context.documents['client-brief'];
+        const timeline: Record<string, string> = {};
+        if (!planner.planned_start_date && brief?.desiredStartDate) timeline.planned_start_date = brief.desiredStartDate;
+        if (!planner.planned_end_date && brief?.targetCompletionDate) timeline.planned_end_date = brief.targetCompletionDate;
+        if (Object.keys(timeline).length) await planner.update(timeline, { transaction });
+        const existingLocations = await this.locationModel.findAll({ where: { project_id: projectId }, transaction });
+        if (!existingLocations.length) {
+          const recce = context.documents['site-recce'];
+          const scope = context.documents['scope-of-work'];
+          const spaces = (scope?.items || []).map((item: any) => item.projectSpace?.name).filter(Boolean);
+          const names = spaces.length ? spaces : (recce?.rooms?.length ? recce.rooms.map((room: any) => room.room_name) : (brief?.spaceRequirements || []).map((room: any) => room.spaceName));
+          if (names.length) {
+            const floor = await this.locationModel.create({ project_id: projectId, name: recce?.unit_floor_no ? `Floor ${recce.unit_floor_no}` : 'Site Floor', type: PlannerLocationType.FLOOR, sort_order: 0 }, { transaction });
+            const seen = new Set<string>();
+            for (const name of names) {
+              const normalized = String(name).trim().toLowerCase();
+              if (!normalized || seen.has(normalized)) continue;
+              seen.add(normalized);
+              await this.locationModel.create({ project_id: projectId, parent_id: floor.id, name: String(name).trim(), type: PlannerLocationType.ROOM, sort_order: seen.size }, { transaction });
+            }
+          }
+        }
+      }
       return [planner];
     });
   }

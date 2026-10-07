@@ -3,7 +3,15 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus, Trash2, Camera, Loader2, FileText, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Camera,
+  Loader2,
+  FileText,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+} from "lucide-react";
 
 import {
   Page,
@@ -58,7 +66,14 @@ function Chips({ value, onChange, options, name }) {
       {options.map((o) => {
         const I = o.icon;
         return (
-          <button key={o.value} type="button" role="radio" aria-checked={value === o.value} className="dsr-chip" onClick={() => onChange(o.value)}>
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={value === o.value}
+            className="dsr-chip"
+            onClick={() => onChange(o.value)}
+          >
             {I && <I aria-hidden />}
             {o.label}
           </button>
@@ -70,7 +85,13 @@ function Chips({ value, onChange, options, name }) {
 
 function Toggle({ checked, onChange, label, hint }) {
   return (
-    <button type="button" role="switch" aria-checked={!!checked} className="dsr-toggle" onClick={() => onChange(!checked)}>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={!!checked}
+      className="dsr-toggle"
+      onClick={() => onChange(!checked)}
+    >
       <span className="dsr-toggle__track" aria-hidden />
       <span>
         {label}
@@ -82,7 +103,13 @@ function Toggle({ checked, onChange, label, hint }) {
 
 const RemoveBtn = ({ onClick, label }) => (
   <div className="dsr-row__remove">
-    <Button variant="ghost" icon={Trash2} aria-label={label} title={label} onClick={onClick} />
+    <Button
+      variant="ghost"
+      icon={Trash2}
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+    />
   </div>
 );
 
@@ -97,17 +124,32 @@ export default function DailyReportForm() {
 
   const { data: projectsData } = useGetProjectsQuery({});
   const projects = useMemo(() => {
-    const rows = Array.isArray(projectsData) ? projectsData : projectsData?.data || projectsData?.items || [];
+    const rows = Array.isArray(projectsData)
+      ? projectsData
+      : projectsData?.data || projectsData?.items || [];
     return rows.filter((p) => !p.deleted_at && !p.archived_at);
   }, [projectsData]);
 
   const { data: materialsData } = useGetMaterialsQuery({ isActive: true });
-  const materials = useMemo(() => (Array.isArray(materialsData) ? materialsData : materialsData?.data || []), [materialsData]);
+  const materials = useMemo(
+    () =>
+      Array.isArray(materialsData) ? materialsData : materialsData?.data || [],
+    [materialsData],
+  );
 
   const { data: recent } = useListDailySiteReportsQuery({}, { skip: isEdit });
-  const { data: existing, isFetching: loadingExisting, isError: loadError } = useGetDailySiteReportQuery(id, { skip: !isEdit });
+  const {
+    data: existing,
+    isFetching: loadingExisting,
+    isError: loadError,
+  } = useGetDailySiteReportQuery(id, { skip: !isEdit });
 
-  const [form, setForm] = useState(() => emptyForm({ projectId: params.get("projectId") || "", reportedBy: user?.name || "" }));
+  const [form, setForm] = useState(() =>
+    emptyForm({
+      projectId: params.get("projectId") || params.get("project_id") || "",
+      reportedBy: user?.name || "",
+    }),
+  );
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(null); // "DRAFT" | "SUBMITTED"
   const [uploading, setUploading] = useState(0);
@@ -130,8 +172,12 @@ export default function DailyReportForm() {
   useEffect(() => {
     if (isEdit || form.projectId || !projects.length) return;
     const rows = Array.isArray(recent) ? recent : [];
-    const fromRecent = rows.find((r) => projects.some((p) => p.id === r.projectId))?.projectId;
-    const active = projects.find((p) => String(p.status).toLowerCase() === "active") || projects[0];
+    const fromRecent = rows.find((r) =>
+      projects.some((p) => p.id === r.projectId),
+    )?.projectId;
+    const active =
+      projects.find((p) => String(p.status).toLowerCase() === "active") ||
+      projects[0];
     setForm((f) => ({ ...f, projectId: fromRecent || active?.id || "" }));
   }, [isEdit, projects, recent, form.projectId]);
 
@@ -140,21 +186,33 @@ export default function DailyReportForm() {
     if (errors[key]) setErrors((e) => ({ ...e, [key]: undefined }));
   };
   const setRow = (list, idx, key, value) => {
-    setForm((f) => ({ ...f, [list]: f[list].map((r, i) => (i === idx ? { ...r, [key]: value } : r)) }));
+    setForm((f) => ({
+      ...f,
+      [list]: f[list].map((r, i) => (i === idx ? { ...r, [key]: value } : r)),
+    }));
     const ek = `${list}.${idx}.${key}`;
-    if (errors[ek] || errors[list]) setErrors((e) => ({ ...e, [ek]: undefined, [list]: undefined }));
+    if (errors[ek] || errors[list])
+      setErrors((e) => ({ ...e, [ek]: undefined, [list]: undefined }));
   };
-  const addRow = (list, row) => setForm((f) => ({ ...f, [list]: [...f[list], row] }));
-  const removeRow = (list, idx) => setForm((f) => ({ ...f, [list]: f[list].filter((_, i) => i !== idx) }));
+  const addRow = (list, row) =>
+    setForm((f) => ({ ...f, [list]: [...f[list], row] }));
+  const removeRow = (list, idx) =>
+    setForm((f) => ({ ...f, [list]: f[list].filter((_, i) => i !== idx) }));
   const err = (k) => errors[k];
 
   const wasSubmitted = isEdit && existing?.status === "SUBMITTED";
-  const manpowerTotal = form.manpower.reduce((s, m) => s + (Number(m.headcount) || 0), 0);
-  const project = projects.find((p) => p.id === form.projectId) || existing?.project;
+  const manpowerTotal = form.manpower.reduce(
+    (s, m) => s + (Number(m.headcount) || 0),
+    0,
+  );
+  const project =
+    projects.find((p) => p.id === form.projectId) || existing?.project;
 
   /* ---------- photos ---------- */
   const onFiles = async (fileList) => {
-    const files = Array.from(fileList || []).filter((f) => f.type.startsWith("image/"));
+    const files = Array.from(fileList || []).filter((f) =>
+      f.type.startsWith("image/"),
+    );
     if (!files.length) return;
     setUploading((n) => n + files.length);
     for (const file of files) {
@@ -162,7 +220,15 @@ export default function DailyReportForm() {
         const res = await uploadPhoto(file).unwrap();
         setForm((f) => ({
           ...f,
-          photos: [...f.photos, { key: rowKey(), url: res.url, filename: res.filename, caption: file.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ") }],
+          photos: [
+            ...f.photos,
+            {
+              key: rowKey(),
+              url: res.url,
+              filename: res.filename,
+              caption: file.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "),
+            },
+          ],
         }));
       } catch (e) {
         toast.error(`${file.name}: ${e?.data?.message || "upload failed"}`);
@@ -175,14 +241,24 @@ export default function DailyReportForm() {
 
   /* ---------- material master link ---------- */
   const onMaterialName = (idx, name) => {
-    const hit = materials.find((m) => String(m.name).toLowerCase() === name.trim().toLowerCase());
+    const hit = materials.find(
+      (m) => String(m.name).toLowerCase() === name.trim().toLowerCase(),
+    );
     setForm((f) => ({
       ...f,
       materials: f.materials.map((r, i) =>
-        i === idx ? { ...r, name, materialId: hit?.id || "", unit: hit?.unit?.code || r.unit } : r,
+        i === idx
+          ? {
+              ...r,
+              name,
+              materialId: hit?.id || "",
+              unit: hit?.unit?.code || r.unit,
+            }
+          : r,
       ),
     }));
-    if (errors[`materials.${idx}.name`]) setErrors((e) => ({ ...e, [`materials.${idx}.name`]: undefined }));
+    if (errors[`materials.${idx}.name`])
+      setErrors((e) => ({ ...e, [`materials.${idx}.name`]: undefined }));
   };
 
   /* ---------- save ---------- */
@@ -204,18 +280,30 @@ export default function DailyReportForm() {
     setSaving(status);
     try {
       const body = payloadFromForm(form, status, { includeProject: !isEdit });
-      const res = isEdit ? await updateReport({ id, ...body }).unwrap() : await createReport(body).unwrap();
-      toast.success(status === "SUBMITTED" ? "Report submitted" : "Draft saved");
+      const res = isEdit
+        ? await updateReport({ id, ...body }).unwrap()
+        : await createReport(body).unwrap();
+      toast.success(
+        status === "SUBMITTED" ? "Report submitted" : "Draft saved",
+      );
       nav(`${BASE}/${res.id}`);
     } catch (e2) {
       const msg = e2?.data?.message;
       if (e2?.status === 409 && e2?.data?.existingId) {
-        setErrors((x) => ({ ...x, reportDate: "A report already exists for this project on this date" }));
+        setErrors((x) => ({
+          ...x,
+          reportDate: "A report already exists for this project on this date",
+        }));
         toast.error("A report for this date already exists", {
-          action: { label: "Open it", onClick: () => nav(`${BASE}/${e2.data.existingId}/edit`) },
+          action: {
+            label: "Open it",
+            onClick: () => nav(`${BASE}/${e2.data.existingId}/edit`),
+          },
         });
       } else {
-        toast.error(Array.isArray(msg) ? msg[0] : msg || "Could not save the report");
+        toast.error(
+          Array.isArray(msg) ? msg[0] : msg || "Could not save the report",
+        );
       }
     } finally {
       setSaving(null);
@@ -233,7 +321,12 @@ export default function DailyReportForm() {
       <Page width="form">
         <PageHeader crumbs={crumbs} title="Daily site report" />
         <div className="inos-card">
-          <EmptyState icon={FileText} title="Report not found" text="It may have been deleted." action={<Button onClick={() => nav(BASE)}>Back to reports</Button>} />
+          <EmptyState
+            icon={FileText}
+            title="Report not found"
+            text="It may have been deleted."
+            action={<Button onClick={() => nav(BASE)}>Back to reports</Button>}
+          />
         </div>
       </Page>
     );
@@ -241,37 +334,79 @@ export default function DailyReportForm() {
   if (isEdit && loadingExisting && !loaded.current) {
     return (
       <Page width="form">
-        <PageHeader crumbs={crumbs} title="Edit daily report" subtitle="Loading…" />
+        <PageHeader
+          crumbs={crumbs}
+          title="Edit daily report"
+          subtitle="Loading…"
+        />
       </Page>
     );
   }
 
-  const received = form.materials.map((m, i) => ({ m, i })).filter((x) => x.m.direction === "RECEIVED");
-  const used = form.materials.map((m, i) => ({ m, i })).filter((x) => x.m.direction === "USED");
+  const received = form.materials
+    .map((m, i) => ({ m, i }))
+    .filter((x) => x.m.direction === "RECEIVED");
+  const used = form.materials
+    .map((m, i) => ({ m, i }))
+    .filter((x) => x.m.direction === "USED");
 
   const materialRow = ({ m, i }) => (
     <div className="dsr-row dsr-row--material" key={m.key}>
       <div className="dsr-wide">
-        <Field label="Material" error={err(`materials.${i}.name`)} hint={m.materialId ? "Linked to material master" : undefined}>
-          <TextInput list="dsr-materials" value={m.name} placeholder="e.g. Cement OPC 53" invalid={!!err(`materials.${i}.name`)} onChange={(e) => onMaterialName(i, e.target.value)} />
+        <Field
+          label="Material"
+          error={err(`materials.${i}.name`)}
+          hint={m.materialId ? "Linked to material master" : undefined}
+        >
+          <TextInput
+            list="dsr-materials"
+            value={m.name}
+            placeholder="e.g. Cement OPC 53"
+            invalid={!!err(`materials.${i}.name`)}
+            onChange={(e) => onMaterialName(i, e.target.value)}
+          />
         </Field>
       </div>
       <Field label="Qty" error={err(`materials.${i}.quantity`)}>
-        <TextInput type="number" inputMode="decimal" min="0" step="any" value={m.quantity} invalid={!!err(`materials.${i}.quantity`)} onChange={(e) => setRow("materials", i, "quantity", e.target.value)} />
+        <TextInput
+          type="number"
+          inputMode="decimal"
+          min="0"
+          step="any"
+          value={m.quantity}
+          invalid={!!err(`materials.${i}.quantity`)}
+          onChange={(e) => setRow("materials", i, "quantity", e.target.value)}
+        />
       </Field>
       <Field label="Unit">
-        <SelectInput value={m.unit} onChange={(e) => setRow("materials", i, "unit", e.target.value)}>
+        <SelectInput
+          value={m.unit}
+          onChange={(e) => setRow("materials", i, "unit", e.target.value)}
+        >
           {UNITS.map((u) => (
-            <option key={u} value={u}>{u}</option>
+            <option key={u} value={u}>
+              {u}
+            </option>
           ))}
         </SelectInput>
       </Field>
       <div className="dsr-wide">
         <Field label="Remarks">
-          <TextInput value={m.remarks} placeholder={m.direction === "RECEIVED" ? "Challan no. / supplier" : "Where used"} onChange={(e) => setRow("materials", i, "remarks", e.target.value)} />
+          <TextInput
+            value={m.remarks}
+            placeholder={
+              m.direction === "RECEIVED"
+                ? "Challan no. / supplier"
+                : "Where used"
+            }
+            onChange={(e) => setRow("materials", i, "remarks", e.target.value)}
+          />
         </Field>
       </div>
-      <RemoveBtn label="Remove material" onClick={() => removeRow("materials", i)} />
+      <RemoveBtn
+        label="Remove material"
+        onClick={() => removeRow("materials", i)}
+      />
     </div>
   );
 
@@ -287,56 +422,148 @@ export default function DailyReportForm() {
         }
       />
 
-      <form className="inos-form" onSubmit={(e) => { e.preventDefault(); save("SUBMITTED"); }} noValidate>
+      <form
+        className="inos-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          save("SUBMITTED");
+        }}
+        noValidate
+      >
         {/* 1 ---------------------------------------------------- basics */}
-        <FormSection step={1} title="Basics" description="Project, date and conditions on site.">
+        <FormSection
+          step={1}
+          title="Basics"
+          description="Project, date and conditions on site."
+        >
           <Field label="Project" required error={err("projectId")}>
-            <SelectInput value={form.projectId} disabled={isEdit} invalid={!!err("projectId")} placeholder={projects.length ? "Select a project" : "Loading projects…"} onChange={(e) => set("projectId", e.target.value)}>
+            <SelectInput
+              value={form.projectId}
+              disabled={isEdit}
+              invalid={!!err("projectId")}
+              placeholder={
+                projects.length ? "Select a project" : "Loading projects…"
+              }
+              onChange={(e) => set("projectId", e.target.value)}
+            >
               {projects.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
               ))}
             </SelectInput>
           </Field>
-          <Field label="Report date" required error={err("reportDate")} hint={project?.site_location || undefined}>
-            <TextInput type="date" max={todayISO()} value={form.reportDate} invalid={!!err("reportDate")} onChange={(e) => set("reportDate", e.target.value)} />
+          <Field
+            label="Report date"
+            required
+            error={err("reportDate")}
+            hint={project?.site_location || undefined}
+          >
+            <TextInput
+              type="date"
+              max={todayISO()}
+              value={form.reportDate}
+              invalid={!!err("reportDate")}
+              onChange={(e) => set("reportDate", e.target.value)}
+            />
           </Field>
           <Field label="Weather" full>
-            <Chips name="Weather" value={form.weatherCondition} onChange={(v) => set("weatherCondition", v)} options={WEATHER} />
+            <Chips
+              name="Weather"
+              value={form.weatherCondition}
+              onChange={(v) => set("weatherCondition", v)}
+              options={WEATHER}
+            />
           </Field>
           <Field label="Site condition" full>
-            <Chips name="Site condition" value={form.siteCondition} onChange={(v) => set("siteCondition", v)} options={SITE_CONDITIONS} />
+            <Chips
+              name="Site condition"
+              value={form.siteCondition}
+              onChange={(v) => set("siteCondition", v)}
+              options={SITE_CONDITIONS}
+            />
           </Field>
           <Field label="Weather / site notes" optional full>
-            <TextInput value={form.weatherNotes} placeholder="e.g. Rain from 2 pm, basement pumped out" onChange={(e) => set("weatherNotes", e.target.value)} />
+            <TextInput
+              value={form.weatherNotes}
+              placeholder="e.g. Rain from 2 pm, basement pumped out"
+              onChange={(e) => set("weatherNotes", e.target.value)}
+            />
           </Field>
           <Field label="Reported by" required error={err("reportedBy")}>
-            <TextInput value={form.reportedBy} invalid={!!err("reportedBy")} onChange={(e) => set("reportedBy", e.target.value)} />
+            <TextInput
+              value={form.reportedBy}
+              invalid={!!err("reportedBy")}
+              onChange={(e) => set("reportedBy", e.target.value)}
+            />
           </Field>
         </FormSection>
 
         {/* 2 ---------------------------------------------------- manpower */}
-        <FormSection step={2} title="Manpower" description="Workers on site today, by trade and contractor." columns={1}>
+        <FormSection
+          step={2}
+          title="Manpower"
+          description="Workers on site today, by trade and contractor."
+          columns={1}
+        >
           <div className="dsr-rows">
             {form.manpower.map((m, i) => (
               <div className="dsr-row dsr-row--manpower" key={m.key}>
                 <Field label="Trade" error={err(`manpower.${i}.trade`)}>
-                  <SelectInput value={m.trade} placeholder="Select trade" invalid={!!err(`manpower.${i}.trade`)} onChange={(e) => setRow("manpower", i, "trade", e.target.value)}>
+                  <SelectInput
+                    value={m.trade}
+                    placeholder="Select trade"
+                    invalid={!!err(`manpower.${i}.trade`)}
+                    onChange={(e) =>
+                      setRow("manpower", i, "trade", e.target.value)
+                    }
+                  >
                     {TRADES.map((t) => (
-                      <option key={t.value} value={t.value}>{t.label}</option>
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
                     ))}
                   </SelectInput>
                 </Field>
                 <Field label="Contractor / agency">
-                  <TextInput value={m.contractorName} placeholder="e.g. Sharma Electricals" onChange={(e) => setRow("manpower", i, "contractorName", e.target.value)} />
+                  <TextInput
+                    value={m.contractorName}
+                    placeholder="e.g. Sharma Electricals"
+                    onChange={(e) =>
+                      setRow("manpower", i, "contractorName", e.target.value)
+                    }
+                  />
                 </Field>
                 <Field label="Headcount" error={err(`manpower.${i}.headcount`)}>
-                  <TextInput type="number" inputMode="numeric" min="0" value={m.headcount} invalid={!!err(`manpower.${i}.headcount`)} onChange={(e) => setRow("manpower", i, "headcount", e.target.value)} />
+                  <TextInput
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    value={m.headcount}
+                    invalid={!!err(`manpower.${i}.headcount`)}
+                    onChange={(e) =>
+                      setRow("manpower", i, "headcount", e.target.value)
+                    }
+                  />
                 </Field>
-                <RemoveBtn label="Remove trade" onClick={() => removeRow("manpower", i)} />
+                <RemoveBtn
+                  label="Remove trade"
+                  onClick={() => removeRow("manpower", i)}
+                />
               </div>
             ))}
-            {err("manpower") && <span className="inos-error">{err("manpower")}</span>}
-            <Button className="dsr-add" variant="soft" size="sm" icon={Plus} onClick={() => addRow("manpower", blankManpower())}>Add trade</Button>
+            {err("manpower") && (
+              <span className="inos-error">{err("manpower")}</span>
+            )}
+            <Button
+              className="dsr-add"
+              variant="soft"
+              size="sm"
+              icon={Plus}
+              onClick={() => addRow("manpower", blankManpower())}
+            >
+              Add trade
+            </Button>
             <div className="dsr-total">
               <span>Total on site</span>
               <strong>{manpowerTotal}</strong>
@@ -345,34 +572,96 @@ export default function DailyReportForm() {
         </FormSection>
 
         {/* 3 ---------------------------------------------------- work done */}
-        <FormSection step={3} title="Work done today" description="One row per activity. Progress is cumulative % complete." columns={1}>
+        <FormSection
+          step={3}
+          title="Work done today"
+          description="One row per activity. Progress is cumulative % complete."
+          columns={1}
+        >
           <div className="dsr-rows">
             {form.workItems.map((w, i) => (
               <div className="dsr-row dsr-row--work" key={w.key}>
                 <div className="dsr-wide">
-                  <Field label="Activity" error={err(`workItems.${i}.activity`)}>
-                    <TextInput value={w.activity} placeholder="e.g. Brickwork for partition walls" invalid={!!err(`workItems.${i}.activity`)} onChange={(e) => setRow("workItems", i, "activity", e.target.value)} />
+                  <Field
+                    label="Activity"
+                    error={err(`workItems.${i}.activity`)}
+                  >
+                    <TextInput
+                      value={w.activity}
+                      placeholder="e.g. Brickwork for partition walls"
+                      invalid={!!err(`workItems.${i}.activity`)}
+                      onChange={(e) =>
+                        setRow("workItems", i, "activity", e.target.value)
+                      }
+                    />
                   </Field>
                 </div>
                 <Field label="Location / area">
-                  <TextInput value={w.location} placeholder="e.g. First floor, bedroom 2" onChange={(e) => setRow("workItems", i, "location", e.target.value)} />
+                  <TextInput
+                    value={w.location}
+                    placeholder="e.g. First floor, bedroom 2"
+                    onChange={(e) =>
+                      setRow("workItems", i, "location", e.target.value)
+                    }
+                  />
                 </Field>
-                <Field label="Progress %" error={err(`workItems.${i}.progress`)}>
-                  <TextInput type="number" inputMode="numeric" min="0" max="100" value={w.progress} placeholder="0–100" invalid={!!err(`workItems.${i}.progress`)} onChange={(e) => setRow("workItems", i, "progress", e.target.value)} />
+                <Field
+                  label="Progress %"
+                  error={err(`workItems.${i}.progress`)}
+                >
+                  <TextInput
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    max="100"
+                    value={w.progress}
+                    placeholder="0–100"
+                    invalid={!!err(`workItems.${i}.progress`)}
+                    onChange={(e) =>
+                      setRow("workItems", i, "progress", e.target.value)
+                    }
+                  />
                 </Field>
-                <RemoveBtn label="Remove activity" onClick={() => removeRow("workItems", i)} />
+                <RemoveBtn
+                  label="Remove activity"
+                  onClick={() => removeRow("workItems", i)}
+                />
               </div>
             ))}
-            {err("workItems") && <span className="inos-error">{err("workItems")}</span>}
-            <Button className="dsr-add" variant="soft" size="sm" icon={Plus} onClick={() => addRow("workItems", blankWork())}>Add activity</Button>
+            {err("workItems") && (
+              <span className="inos-error">{err("workItems")}</span>
+            )}
+            <Button
+              className="dsr-add"
+              variant="soft"
+              size="sm"
+              icon={Plus}
+              onClick={() => addRow("workItems", blankWork())}
+            >
+              Add activity
+            </Button>
           </div>
-          <Field label="Summary" optional hint="A line or two for the client, if needed.">
-            <TextArea rows={3} value={form.workCompleted} placeholder="Overall summary of the day" onChange={(e) => set("workCompleted", e.target.value)} />
+          <Field
+            label="Summary"
+            optional
+            hint="A line or two for the client, if needed."
+          >
+            <TextArea
+              rows={3}
+              value={form.workCompleted}
+              placeholder="Overall summary of the day"
+              onChange={(e) => set("workCompleted", e.target.value)}
+            />
           </Field>
         </FormSection>
 
         {/* 4 ---------------------------------------------------- materials + equipment */}
-        <FormSection step={4} title="Materials & equipment" description="What arrived on site and what was used. Pick from the material list where possible." columns={1}>
+        <FormSection
+          step={4}
+          title="Materials & equipment"
+          description="What arrived on site and what was used. Pick from the material list where possible."
+          columns={1}
+        >
           <datalist id="dsr-materials">
             {materials.map((m) => (
               <option key={m.id} value={m.name} />
@@ -381,112 +670,298 @@ export default function DailyReportForm() {
           <div className="dsr-rows">
             <p className="dsr-sub">Received</p>
             {received.map(materialRow)}
-            <Button className="dsr-add" variant="soft" size="sm" icon={ArrowDownToLine} onClick={() => addRow("materials", blankMaterial("RECEIVED"))}>Add received</Button>
+            <Button
+              className="dsr-add"
+              variant="soft"
+              size="sm"
+              icon={ArrowDownToLine}
+              onClick={() => addRow("materials", blankMaterial("RECEIVED"))}
+            >
+              Add received
+            </Button>
             <p className="dsr-sub">Used / consumed</p>
             {used.map(materialRow)}
-            <Button className="dsr-add" variant="soft" size="sm" icon={ArrowUpFromLine} onClick={() => addRow("materials", blankMaterial("USED"))}>Add used</Button>
+            <Button
+              className="dsr-add"
+              variant="soft"
+              size="sm"
+              icon={ArrowUpFromLine}
+              onClick={() => addRow("materials", blankMaterial("USED"))}
+            >
+              Add used
+            </Button>
             <p className="dsr-sub">Equipment on site</p>
             {form.equipment.map((q, i) => (
               <div className="dsr-row dsr-row--equipment" key={q.key}>
                 <div className="dsr-wide">
                   <Field label="Equipment">
-                    <TextInput value={q.name} placeholder="e.g. Concrete mixer" onChange={(e) => setRow("equipment", i, "name", e.target.value)} />
+                    <TextInput
+                      value={q.name}
+                      placeholder="e.g. Concrete mixer"
+                      onChange={(e) =>
+                        setRow("equipment", i, "name", e.target.value)
+                      }
+                    />
                   </Field>
                 </div>
                 <Field label="Count">
-                  <TextInput type="number" inputMode="numeric" min="0" value={q.count} onChange={(e) => setRow("equipment", i, "count", e.target.value)} />
+                  <TextInput
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    value={q.count}
+                    onChange={(e) =>
+                      setRow("equipment", i, "count", e.target.value)
+                    }
+                  />
                 </Field>
                 <Field label="Hours used">
-                  <TextInput type="number" inputMode="decimal" min="0" step="any" value={q.hours} onChange={(e) => setRow("equipment", i, "hours", e.target.value)} />
+                  <TextInput
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="any"
+                    value={q.hours}
+                    onChange={(e) =>
+                      setRow("equipment", i, "hours", e.target.value)
+                    }
+                  />
                 </Field>
-                <RemoveBtn label="Remove equipment" onClick={() => removeRow("equipment", i)} />
+                <RemoveBtn
+                  label="Remove equipment"
+                  onClick={() => removeRow("equipment", i)}
+                />
               </div>
             ))}
-            <Button className="dsr-add" variant="soft" size="sm" icon={Plus} onClick={() => addRow("equipment", blankEquipment())}>Add equipment</Button>
+            <Button
+              className="dsr-add"
+              variant="soft"
+              size="sm"
+              icon={Plus}
+              onClick={() => addRow("equipment", blankEquipment())}
+            >
+              Add equipment
+            </Button>
           </div>
         </FormSection>
 
         {/* 5 ---------------------------------------------------- issues + safety */}
-        <FormSection step={5} title="Issues, delays & safety" description="Anything that held up work or needs a decision. Flag what needs attention." columns={1}>
+        <FormSection
+          step={5}
+          title="Issues, delays & safety"
+          description="Anything that held up work or needs a decision. Flag what needs attention."
+          columns={1}
+        >
           <div className="dsr-rows">
             {form.issueItems.map((it, i) => (
               <div className="dsr-row dsr-row--issue" key={it.key}>
                 <Field label="Type">
-                  <SelectInput value={it.type} onChange={(e) => setRow("issueItems", i, "type", e.target.value)}>
+                  <SelectInput
+                    value={it.type}
+                    onChange={(e) =>
+                      setRow("issueItems", i, "type", e.target.value)
+                    }
+                  >
                     {ISSUE_TYPES.map((t) => (
-                      <option key={t.value} value={t.value}>{t.label}</option>
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
                     ))}
                   </SelectInput>
                 </Field>
                 <div className="dsr-wide">
-                  <Field label="Description" error={err(`issueItems.${i}.description`)}>
-                    <TextInput value={it.description} placeholder="What happened and what is needed" invalid={!!err(`issueItems.${i}.description`)} onChange={(e) => setRow("issueItems", i, "description", e.target.value)} />
+                  <Field
+                    label="Description"
+                    error={err(`issueItems.${i}.description`)}
+                  >
+                    <TextInput
+                      value={it.description}
+                      placeholder="What happened and what is needed"
+                      invalid={!!err(`issueItems.${i}.description`)}
+                      onChange={(e) =>
+                        setRow("issueItems", i, "description", e.target.value)
+                      }
+                    />
                   </Field>
                 </div>
-                <RemoveBtn label="Remove issue" onClick={() => removeRow("issueItems", i)} />
+                <RemoveBtn
+                  label="Remove issue"
+                  onClick={() => removeRow("issueItems", i)}
+                />
                 <div className="dsr-issue-foot">
-                  <Chips name="Impact" value={it.impact} onChange={(v) => setRow("issueItems", i, "impact", v)} options={IMPACTS.map((o) => ({ ...o, label: `${o.label} impact` }))} />
-                  <Toggle checked={it.needsAttention} onChange={(v) => setRow("issueItems", i, "needsAttention", v)} label="Needs attention" />
+                  <Chips
+                    name="Impact"
+                    value={it.impact}
+                    onChange={(v) => setRow("issueItems", i, "impact", v)}
+                    options={IMPACTS.map((o) => ({
+                      ...o,
+                      label: `${o.label} impact`,
+                    }))}
+                  />
+                  <Toggle
+                    checked={it.needsAttention}
+                    onChange={(v) =>
+                      setRow("issueItems", i, "needsAttention", v)
+                    }
+                    label="Needs attention"
+                  />
                 </div>
               </div>
             ))}
-            {!form.issueItems.length && <p className="dsr-muted">No issues logged. Add one if anything held up work.</p>}
-            <Button className="dsr-add" variant="soft" size="sm" icon={Plus} onClick={() => addRow("issueItems", blankIssue())}>Add issue</Button>
+            {!form.issueItems.length && (
+              <p className="dsr-muted">
+                No issues logged. Add one if anything held up work.
+              </p>
+            )}
+            <Button
+              className="dsr-add"
+              variant="soft"
+              size="sm"
+              icon={Plus}
+              onClick={() => addRow("issueItems", blankIssue())}
+            >
+              Add issue
+            </Button>
           </div>
-          <Toggle checked={form.safetyIncident} onChange={(v) => set("safetyIncident", v)} label="Safety incident today" hint="Injury, near miss or unsafe condition" />
-          <Field label={form.safetyIncident ? "Incident details" : "Safety notes"} required={form.safetyIncident} optional={!form.safetyIncident} error={err("safetyNotes")}>
-            <TextArea rows={2} value={form.safetyNotes} invalid={!!err("safetyNotes")} placeholder="e.g. Toolbox talk on scaffolding; helmets checked" onChange={(e) => set("safetyNotes", e.target.value)} />
+          <Toggle
+            checked={form.safetyIncident}
+            onChange={(v) => set("safetyIncident", v)}
+            label="Safety incident today"
+            hint="Injury, near miss or unsafe condition"
+          />
+          <Field
+            label={form.safetyIncident ? "Incident details" : "Safety notes"}
+            required={form.safetyIncident}
+            optional={!form.safetyIncident}
+            error={err("safetyNotes")}
+          >
+            <TextArea
+              rows={2}
+              value={form.safetyNotes}
+              invalid={!!err("safetyNotes")}
+              placeholder="e.g. Toolbox talk on scaffolding; helmets checked"
+              onChange={(e) => set("safetyNotes", e.target.value)}
+            />
           </Field>
         </FormSection>
 
         {/* 6 ---------------------------------------------------- photos */}
-        <FormSection step={6} title="Photos" description="Progress photos with a short caption. Several at once is fine." columns={1}>
+        <FormSection
+          step={6}
+          title="Photos"
+          description="Progress photos with a short caption. Several at once is fine."
+          columns={1}
+        >
           <div className="dsr-photos">
             {form.photos.map((p, i) => (
               <div className="dsr-photo" key={p.key}>
                 <div className="dsr-photo__img">
                   <img src={p.url} alt={p.caption || `Photo ${i + 1}`} />
-                  <Button size="sm" variant="ghost" icon={Trash2} aria-label="Remove photo" onClick={() => removeRow("photos", i)} />
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon={Trash2}
+                    aria-label="Remove photo"
+                    onClick={() => removeRow("photos", i)}
+                  />
                 </div>
-                <input className="inos-input" value={p.caption} placeholder="Caption" aria-label={`Caption for photo ${i + 1}`} onChange={(e) => setRow("photos", i, "caption", e.target.value)} />
+                <input
+                  className="inos-input"
+                  value={p.caption}
+                  placeholder="Caption"
+                  aria-label={`Caption for photo ${i + 1}`}
+                  onChange={(e) =>
+                    setRow("photos", i, "caption", e.target.value)
+                  }
+                />
               </div>
             ))}
             <label className="dsr-drop">
-              {uploading ? <Loader2 className="animate-spin" size={22} /> : <Camera size={22} />}
+              {uploading ? (
+                <Loader2 className="animate-spin" size={22} />
+              ) : (
+                <Camera size={22} />
+              )}
               {uploading ? `Uploading ${uploading}…` : "Add photos"}
               <small>Camera or gallery · JPG / PNG</small>
-              <input ref={fileRef} type="file" accept="image/*" multiple hidden data-testid="dsr-photo-input" onChange={(e) => onFiles(e.target.files)} />
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                data-testid="dsr-photo-input"
+                onChange={(e) => onFiles(e.target.files)}
+              />
             </label>
           </div>
         </FormSection>
 
         {/* 7 ---------------------------------------------------- tomorrow */}
-        <FormSection step={7} title="Tomorrow's plan" description="Work planned for the next day, and anything that must arrive first." columns={1}>
+        <FormSection
+          step={7}
+          title="Tomorrow's plan"
+          description="Work planned for the next day, and anything that must arrive first."
+          columns={1}
+        >
           <Field label="Plan" optional>
-            <TextArea rows={3} value={form.nextDayPlan} placeholder="e.g. Start plastering first floor; need 40 bags cement by 10 am" onChange={(e) => set("nextDayPlan", e.target.value)} />
+            <TextArea
+              rows={3}
+              value={form.nextDayPlan}
+              placeholder="e.g. Start plastering first floor; need 40 bags cement by 10 am"
+              onChange={(e) => set("nextDayPlan", e.target.value)}
+            />
           </Field>
         </FormSection>
 
         {/* 8 ---------------------------------------------------- share */}
-        <FormSection step={8} title="Share" description="Submitted reports can be shared with the client." columns={1}>
+        <FormSection
+          step={8}
+          title="Share"
+          description="Submitted reports can be shared with the client."
+          columns={1}
+        >
           <Toggle
             checked={form.shareWithClient}
             onChange={(v) => set("shareWithClient", v)}
             label="Share with client"
-            hint={form.shareWithClient ? "Marked as shared when you submit." : "Stays internal to the team."}
+            hint={
+              form.shareWithClient
+                ? "Marked as shared when you submit."
+                : "Stays internal to the team."
+            }
           />
         </FormSection>
 
         <div className="inos-form-actions">
           <span className="inos-form-actions__note">
-            {manpowerTotal} on site · {form.workItems.filter((w) => w.activity.trim()).length} activities · {form.photos.length} photos
+            {manpowerTotal} on site ·{" "}
+            {form.workItems.filter((w) => w.activity.trim()).length} activities
+            · {form.photos.length} photos
           </span>
           <div className="inos-form-actions__buttons">
-            <Button variant="ghost" onClick={() => nav(isEdit ? `${BASE}/${id}` : BASE)}>Cancel</Button>
+            <Button
+              variant="ghost"
+              onClick={() => nav(isEdit ? `${BASE}/${id}` : BASE)}
+            >
+              Cancel
+            </Button>
             {!wasSubmitted && (
-              <Button variant="secondary" loading={saving === "DRAFT"} disabled={!!saving} onClick={() => save("DRAFT")}>Save draft</Button>
+              <Button
+                variant="secondary"
+                loading={saving === "DRAFT"}
+                disabled={!!saving}
+                onClick={() => save("DRAFT")}
+              >
+                Save draft
+              </Button>
             )}
-            <Button variant="primary" type="submit" loading={saving === "SUBMITTED"} disabled={!!saving}>
+            <Button
+              variant="primary"
+              type="submit"
+              loading={saving === "SUBMITTED"}
+              disabled={!!saving}
+            >
               {wasSubmitted ? "Save changes" : "Submit report"}
             </Button>
           </div>

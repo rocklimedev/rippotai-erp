@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { useSharedProjectData } from '../../hooks/use-shared-project-data';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Plus, Trash2, Save, Send, Calculator } from "lucide-react";
 import { toast } from "sonner";
@@ -168,6 +169,9 @@ export default function CreateMaterialProcurementSheet() {
   const [remarks, setRemarks] = useState("");
 
   const [items, setItems] = useState([createEmptyItem(1)]);
+  const procurementValues = useMemo(() => ({ items }), [items]);
+  const setProcurementValues = useCallback(updater => setItems(current => updater({ items: current }).items), []);
+  useSharedProjectData(projectId, 'procurement', procurementValues, setProcurementValues, !isEdit && !materialsLoading, materials);
 
   const [initialized, setInitialized] = useState(false);
 
@@ -701,7 +705,7 @@ export default function CreateMaterialProcurementSheet() {
                           <option value="">
                             {materialsLoading
                               ? "Loading materials..."
-                              : "Select material"}
+                              : item.description || "Select material"}
                           </option>
 
                           {materials.map((material) => (

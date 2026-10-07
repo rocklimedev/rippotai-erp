@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 
 // Single shared RTK Query API
 import { baseApi } from "./baseApi";
+import { sharedDocumentCache } from './shared-document-cache';
 // -------------------------------
 // FEATURE API FILES
 // -------------------------------
@@ -47,7 +48,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false, // RTK Query safety (optional but common)
-    }).concat(baseApi.middleware),
+    }).concat(sharedDocumentCache, baseApi.middleware),
 
   devTools: process.env.NODE_ENV !== "production",
 });

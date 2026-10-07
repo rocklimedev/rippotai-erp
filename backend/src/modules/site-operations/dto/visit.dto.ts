@@ -4,18 +4,32 @@ import {
   IsOptional,
   IsBoolean,
   IsEnum,
-  IsArray,
   MaxLength,
   IsDateString,
   IsUUID,
+  Matches,
+  Min,
 } from 'class-validator';
+import { PartialType } from '@nestjs/mapped-types';
 import {
   VisitorType,
-  VisitFrequency,
   VisitStatus,
 } from '../../../common/enums/site-operations.enums';
 
 export class CreateVisitAssignmentDto {
+  @IsOptional()
+  @IsUUID()
+  stageId?: string;
+
+  @IsDateString({ strict: true })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  scheduledDate: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(250)
+  purpose?: string;
+
   @IsUUID()
   projectId: string;
 
@@ -24,20 +38,18 @@ export class CreateVisitAssignmentDto {
 
   @IsOptional()
   @IsInt()
+  @Min(1)
   teamId?: number;
 
   @IsOptional()
   @IsString()
   @MaxLength(150)
   externalPartyName?: string;
-
-  @IsEnum(VisitFrequency)
-  frequency: VisitFrequency;
-
-  @IsOptional()
-  @IsArray()
-  scheduleDays?: number[];
 }
+
+export class UpdateVisitAssignmentDto extends PartialType(
+  CreateVisitAssignmentDto,
+) {}
 
 export class LogSiteVisitDto {
   @IsUUID()
@@ -45,6 +57,7 @@ export class LogSiteVisitDto {
 
   @IsOptional()
   @IsInt()
+  @Min(1)
   visitAssignmentId?: number;
 
   @IsEnum(VisitorType)
@@ -54,7 +67,8 @@ export class LogSiteVisitDto {
   @MaxLength(150)
   visitorName: string;
 
-  @IsDateString()
+  @IsDateString({ strict: true })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
   scheduledDate: string;
 
   @IsOptional()

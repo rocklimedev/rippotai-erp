@@ -1,6 +1,7 @@
 import { termsToText, textToTermsHtml } from "@/lib/terms";
 import React, { useEffect, useMemo, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useSharedProjectData } from "../../hooks/use-shared-project-data";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { Button, TextInput, EmptyState } from "@/components/inos";
@@ -72,7 +73,8 @@ const BUDGET_SECTIONS = [
   {
     key: "amounts",
     title: "Amounts",
-    description: "Headline figures. Miscellaneous % and tax % apply on top; discount comes off before tax.",
+    description:
+      "Headline figures. Miscellaneous % and tax % apply on top; discount comes off before tax.",
     fields: [
       {
         key: "design_amount",
@@ -132,7 +134,8 @@ const BUDGET_SECTIONS = [
   {
     key: "categories",
     title: "Categories & items",
-    description: "Break the estimate into categories with quantity × rate lines.",
+    description:
+      "Break the estimate into categories with quantity × rate lines.",
     type: "categories",
   },
 
@@ -182,7 +185,8 @@ const dateOnly = (v) => (v ? String(v).slice(0, 10) : "");
 
 /** Server estimate → form values (edit mode). */
 function estimateToValues(e) {
-  const bySort = (a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0);
+  const bySort = (a, b) =>
+    Number(a.sort_order || 0) - Number(b.sort_order || 0);
   return {
     project_id: e.project_id || "",
     boq_id: e.boq_id || "",
@@ -215,7 +219,10 @@ function estimateToValues(e) {
         unit: i.unit || null,
         quantity: Number(i.quantity || 0),
         rate: Number(i.rate || 0),
-        amount: i.amount != null ? Number(i.amount) : Number(i.quantity || 0) * Number(i.rate || 0),
+        amount:
+          i.amount != null
+            ? Number(i.amount)
+            : Number(i.quantity || 0) * Number(i.rate || 0),
         calc_type: i.calc_type || "M",
         location: i.location || null,
         detail: i.detail || null,
@@ -236,6 +243,7 @@ function estimateToValues(e) {
 export function BudgetEstimateForm() {
   const navigate = useNavigate();
   const { id: editId } = useParams();
+  const [searchParams] = useSearchParams();
   const isEdit = Boolean(editId);
 
   const { data: projects = [] } = useGetProjectsQuery();
@@ -246,40 +254,55 @@ export function BudgetEstimateForm() {
     useUpdateBudgetEstimateMutation();
   const isSubmitting = isCreating || isUpdating;
 
-  const { data: existing, isLoading: loadingExisting, isError: loadError } = useGetBudgetEstimateQuery(editId, { skip: !isEdit });
+  const {
+    data: existing,
+    isLoading: loadingExisting,
+    isError: loadError,
+  } = useGetBudgetEstimateQuery(editId, { skip: !isEdit });
 
-  const [values, setValues] = useAutoSave(isEdit ? `${SAVE_KEY}.${editId}` : SAVE_KEY, {
-    project_id: "",
-    boq_id: "",
-    source_template_id: "",
+  const draftKey = `${SAVE_KEY}.${isEdit ? editId : searchParams.get('projectId') || searchParams.get('project_id') || 'new'}`;
+  const [values, setValues] = useAutoSave(
+    draftKey,
+    {
+      project_id: searchParams.get('projectId') || searchParams.get('project_id') || '',
+      boq_id: "",
+      source_template_id: "",
 
-    estimate_number: "",
-    title: "",
+      estimate_number: "",
+      title: "",
 
-    client_name: "",
-    location: "",
-    prepared_by: "",
-    estimate_date: todayISO(),
+      client_name: "",
+      location: "",
+      prepared_by: "",
+      estimate_date: todayISO(),
 
-    misc_percentage: 0,
+      misc_percentage: 0,
 
-    design_amount: 0,
-    execution_amount: 0,
-    supervisor_amount: 0,
-    additional_amount: 0,
+      design_amount: 0,
+      execution_amount: 0,
+      supervisor_amount: 0,
+      additional_amount: 0,
 
-    tax_percentage: 0,
-    discount_amount: 0,
+      tax_percentage: 0,
+      discount_amount: 0,
 
-    terms_html: "",
-    terms_template_id: "",
-    terms_template_version: null,
+      terms_html: "",
+      terms_template_id: "",
+      terms_template_version: null,
 
-    categories: [],
-    miscellaneous: [],
-  });
+      categories: [],
+      miscellaneous: [],
+    },
+  );
 
   const projectId = values?.project_id || "";
+  useSharedProjectData(
+    projectId,
+    "budget",
+    values,
+    setValues,
+    !isEdit || Boolean(existing),
+  );
 
   // Edit mode: load the saved estimate into the form once (server copy wins over any local draft).
   const loadedFor = useRef(null);
@@ -518,7 +541,10 @@ export function BudgetEstimateForm() {
       const payload = buildPayload();
 
       if (isEdit) {
-        const data = await updateBudgetEstimate({ id: editId, body: payload }).unwrap();
+        const data = await updateBudgetEstimate({
+          id: editId,
+          body: payload,
+        }).unwrap();
         toast.success(`Budget estimate ${data?.estimate_number || ""} updated`);
         localStorage.removeItem(`${SAVE_KEY}.${editId}`);
         navigate(`/ledger/budget-estimate/${editId}`);
@@ -533,7 +559,7 @@ export function BudgetEstimateForm() {
         } created successfully`,
       );
 
-      localStorage.removeItem(SAVE_KEY);
+      localStorage.removeItem(draftKey);
 
       if (data?.id) {
         navigate(`/ledger/budget-estimate/${data.id}`);
@@ -544,7 +570,9 @@ export function BudgetEstimateForm() {
       toast.error(
         error?.data?.message ||
           error?.message ||
-          (isEdit ? "Failed to update budget estimate" : "Failed to create budget estimate"),
+          (isEdit
+            ? "Failed to update budget estimate"
+            : "Failed to create budget estimate"),
       );
     }
   };
@@ -554,7 +582,10 @@ export function BudgetEstimateForm() {
   // ============================================================
 
   const setCategories = (updater) =>
-    setValues((current) => ({ ...current, categories: updater([...(current.categories || [])]) }));
+    setValues((current) => ({
+      ...current,
+      categories: updater([...(current.categories || [])]),
+    }));
 
   const setCategoryItem = (categoryIndex, itemIndex, patch) =>
     setCategories((categories) => {
@@ -636,7 +667,11 @@ export function BudgetEstimateForm() {
 
   const categoriesTotal = (values.categories || []).reduce(
     (sum, category) =>
-      sum + (category.items || []).reduce((s, item) => s + Number(item.amount || 0), 0),
+      sum +
+      (category.items || []).reduce(
+        (s, item) => s + Number(item.amount || 0),
+        0,
+      ),
     0,
   );
 
@@ -668,10 +703,24 @@ export function BudgetEstimateForm() {
       return (
         <div style={{ display: "grid", gap: 14 }}>
           {categories.map((category, categoryIndex) => {
-            const categorySum = (category.items || []).reduce((s, item) => s + Number(item.amount || 0), 0);
+            const categorySum = (category.items || []).reduce(
+              (s, item) => s + Number(item.amount || 0),
+              0,
+            );
             return (
-              <div key={categoryIndex} className="cf-block" style={{ padding: 0, gap: 0, overflow: "hidden" }}>
-                <div style={{ display: "flex", gap: 10, alignItems: "center", padding: "12px 14px" }}>
+              <div
+                key={categoryIndex}
+                className="cf-block"
+                style={{ padding: 0, gap: 0, overflow: "hidden" }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "center",
+                    padding: "12px 14px",
+                  }}
+                >
                   <TextInput
                     value={category.name || ""}
                     placeholder="Category name, e.g. Flooring"
@@ -685,7 +734,14 @@ export function BudgetEstimateForm() {
                     }}
                     style={{ fontWeight: 600, maxWidth: 420 }}
                   />
-                  <span className="tabular" style={{ marginLeft: "auto", fontWeight: 650, whiteSpace: "nowrap" }}>
+                  <span
+                    className="tabular"
+                    style={{
+                      marginLeft: "auto",
+                      fontWeight: 650,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
                     {inr(categorySum)}
                   </span>
                   <RemoveRow
@@ -703,9 +759,15 @@ export function BudgetEstimateForm() {
                     <thead>
                       <tr>
                         <th>Item</th>
-                        <th className="num" style={{ width: 110 }}>Qty</th>
-                        <th className="num" style={{ width: 140 }}>Rate</th>
-                        <th className="num" style={{ width: 140 }}>Amount</th>
+                        <th className="num" style={{ width: 110 }}>
+                          Qty
+                        </th>
+                        <th className="num" style={{ width: 140 }}>
+                          Rate
+                        </th>
+                        <th className="num" style={{ width: 140 }}>
+                          Amount
+                        </th>
                         <th className="actions" aria-label="Row actions" />
                       </tr>
                     </thead>
@@ -718,7 +780,11 @@ export function BudgetEstimateForm() {
                               value={item.name || ""}
                               onChange={(event) => {
                                 const name = event.target.value;
-                                setCategoryItem(categoryIndex, itemIndex, (it) => ({ ...it, name }));
+                                setCategoryItem(
+                                  categoryIndex,
+                                  itemIndex,
+                                  (it) => ({ ...it, name }),
+                                );
                               }}
                             />
                           </td>
@@ -729,12 +795,18 @@ export function BudgetEstimateForm() {
                               placeholder="0"
                               value={item.quantity ?? ""}
                               onChange={(event) => {
-                                const quantity = Number(event.target.value || 0);
-                                setCategoryItem(categoryIndex, itemIndex, (it) => ({
-                                  ...it,
-                                  quantity,
-                                  amount: quantity * Number(it.rate || 0),
-                                }));
+                                const quantity = Number(
+                                  event.target.value || 0,
+                                );
+                                setCategoryItem(
+                                  categoryIndex,
+                                  itemIndex,
+                                  (it) => ({
+                                    ...it,
+                                    quantity,
+                                    amount: quantity * Number(it.rate || 0),
+                                  }),
+                                );
                               }}
                             />
                           </td>
@@ -747,11 +819,15 @@ export function BudgetEstimateForm() {
                                 value={item.rate ?? ""}
                                 onChange={(event) => {
                                   const rate = Number(event.target.value || 0);
-                                  setCategoryItem(categoryIndex, itemIndex, (it) => ({
-                                    ...it,
-                                    rate,
-                                    amount: Number(it.quantity || 0) * rate,
-                                  }));
+                                  setCategoryItem(
+                                    categoryIndex,
+                                    itemIndex,
+                                    (it) => ({
+                                      ...it,
+                                      rate,
+                                      amount: Number(it.quantity || 0) * rate,
+                                    }),
+                                  );
                                 }}
                               />
                             </Affix>
@@ -761,9 +837,14 @@ export function BudgetEstimateForm() {
                             <RemoveRow
                               onClick={() =>
                                 setCategories((list) => {
-                                  const items = [...(list[categoryIndex].items || [])];
+                                  const items = [
+                                    ...(list[categoryIndex].items || []),
+                                  ];
                                   items.splice(itemIndex, 1);
-                                  list[categoryIndex] = { ...list[categoryIndex], items };
+                                  list[categoryIndex] = {
+                                    ...list[categoryIndex],
+                                    items,
+                                  };
                                   return list;
                                 })
                               }
@@ -774,14 +855,24 @@ export function BudgetEstimateForm() {
                     </tbody>
                   </LineTable>
                 )}
-                <div className="cf-section__footer" style={{ background: "transparent" }}>
-                  <AddRow onClick={() => addCategoryItem(categoryIndex)}>Add item</AddRow>
+                <div
+                  className="cf-section__footer"
+                  style={{ background: "transparent" }}
+                >
+                  <AddRow onClick={() => addCategoryItem(categoryIndex)}>
+                    Add item
+                  </AddRow>
                 </div>
               </div>
             );
           })}
           <div>
-            <Button variant="secondary" size="sm" icon={Plus} onClick={addCategory}>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Plus}
+              onClick={addCategory}
+            >
               Add category
             </Button>
           </div>
@@ -794,12 +885,17 @@ export function BudgetEstimateForm() {
       return (
         <div style={{ display: "grid", gap: 10 }}>
           {misc.length > 0 && (
-            <div className="cf-block" style={{ padding: 0, overflow: "hidden" }}>
+            <div
+              className="cf-block"
+              style={{ padding: 0, overflow: "hidden" }}
+            >
               <LineTable minWidth={560}>
                 <thead>
                   <tr>
                     <th>Charge</th>
-                    <th className="num" style={{ width: 160 }}>Value</th>
+                    <th className="num" style={{ width: 160 }}>
+                      Value
+                    </th>
                     <th>Notes</th>
                     <th className="actions" aria-label="Row actions" />
                   </tr>
@@ -811,7 +907,9 @@ export function BudgetEstimateForm() {
                         <TextInput
                           value={item.name || ""}
                           placeholder="e.g. Debris removal"
-                          onChange={(event) => setMisc(index, { name: event.target.value })}
+                          onChange={(event) =>
+                            setMisc(index, { name: event.target.value })
+                          }
                         />
                       </td>
                       <td className="num">
@@ -820,7 +918,11 @@ export function BudgetEstimateForm() {
                             type="number"
                             inputMode="decimal"
                             value={item.value ?? 0}
-                            onChange={(event) => setMisc(index, { value: Number(event.target.value || 0) })}
+                            onChange={(event) =>
+                              setMisc(index, {
+                                value: Number(event.target.value || 0),
+                              })
+                            }
                           />
                         </Affix>
                       </td>
@@ -828,7 +930,9 @@ export function BudgetEstimateForm() {
                         <TextInput
                           value={item.notes || ""}
                           placeholder="Optional"
-                          onChange={(event) => setMisc(index, { notes: event.target.value })}
+                          onChange={(event) =>
+                            setMisc(index, { notes: event.target.value })
+                          }
                         />
                       </td>
                       <td className="actions">
@@ -854,11 +958,24 @@ export function BudgetEstimateForm() {
     return (
       <div className="inos-page inos-page--narrow" style={{ paddingTop: 32 }}>
         <EmptyState
-          title={loadingExisting ? "Loading estimate…" : loadError ? "Estimate not found" : "This estimate is locked"}
-          text={existing?.locked ? "Unlock it from the estimate page before editing." : undefined}
+          title={
+            loadingExisting
+              ? "Loading estimate…"
+              : loadError
+                ? "Estimate not found"
+                : "This estimate is locked"
+          }
+          text={
+            existing?.locked
+              ? "Unlock it from the estimate page before editing."
+              : undefined
+          }
           action={
             !loadingExisting && (
-              <Button variant="soft" onClick={() => navigate(`/ledger/budget-estimate/${editId}`)}>
+              <Button
+                variant="soft"
+                onClick={() => navigate(`/ledger/budget-estimate/${editId}`)}
+              >
                 Back to estimate
               </Button>
             )
@@ -870,12 +987,24 @@ export function BudgetEstimateForm() {
 
   return (
     <BudgetSectionForm
-      title={isEdit ? `Edit ${existing?.estimate_number || "budget estimate"}` : "New budget estimate"}
+      title={
+        isEdit
+          ? `Edit ${existing?.estimate_number || "budget estimate"}`
+          : "New budget estimate"
+      }
       subtitle="Headline amounts, category lines and charges — totals update as you type."
       crumbs={[
         { label: "Ledger", to: "/ledger" },
         { label: "Budget estimates", to: "/ledger/budget-estimates/all" },
-        ...(isEdit ? [{ label: existing?.estimate_number || "Estimate", to: `/ledger/budget-estimate/${editId}` }, { label: "Edit" }] : [{ label: "New" }]),
+        ...(isEdit
+          ? [
+              {
+                label: existing?.estimate_number || "Estimate",
+                to: `/ledger/budget-estimate/${editId}`,
+              },
+              { label: "Edit" },
+            ]
+          : [{ label: "New" }]),
       ]}
       onCancel={() => navigate(-1)}
       sections={BUDGET_SECTIONS}
@@ -893,9 +1022,18 @@ export function BudgetEstimateForm() {
           title="Summary"
           rows={[
             { label: "Subtotal", value: inr(totals.subtotal) },
-            { label: `Miscellaneous${Number(values.misc_percentage) ? ` (${values.misc_percentage}%)` : ""}`, value: inr(totals.miscAmount) },
-            { label: "Discount", value: `− ${inr(values.discount_amount || 0)}` },
-            { label: `Tax${Number(values.tax_percentage) ? ` (${values.tax_percentage}%)` : ""}`, value: inr(totals.taxAmount) },
+            {
+              label: `Miscellaneous${Number(values.misc_percentage) ? ` (${values.misc_percentage}%)` : ""}`,
+              value: inr(totals.miscAmount),
+            },
+            {
+              label: "Discount",
+              value: `− ${inr(values.discount_amount || 0)}`,
+            },
+            {
+              label: `Tax${Number(values.tax_percentage) ? ` (${values.tax_percentage}%)` : ""}`,
+              value: inr(totals.taxAmount),
+            },
           ]}
           totalLabel="Total estimate"
           total={inr(totals.total)}

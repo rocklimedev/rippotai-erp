@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
@@ -16,6 +17,8 @@ import { BoqTemplateItem } from './models/boq-template-item.model';
 import { BoqVersion } from './models/boq-version.model';
 import { Project } from '../projects/models/projects.model';
 import { CreateBoqDto } from './dto/create-boq.dto';
+import { SharedProjectDataService } from '../documents/shared-project-data.service';
+import { boqCategoriesFromPrefill } from '../documents/document-prefill';
 import { UpdateBoqDto } from './dto/update-boq.dto';
 import {
   CreateBoqCategoryDto,
@@ -113,6 +116,7 @@ export class BoqService {
     private readonly activity: BoqActivityService,
     private readonly boqVersionService: BoqVersionService,
     private readonly termsService: TermsService,
+    @Optional() private readonly sharedProjectData?: SharedProjectDataService,
   ) {}
 
   /** BOQ list with category / item counts (list page columns) and optional status / text filters. */
@@ -339,6 +343,16 @@ export class BoqService {
         }
       }
 
+      if (!dto.source_template_id && this.sharedProjectData) {
+        const context = await this.sharedProjectData.prefill(dto.project_id, 'boq', t);
+        const groups = boqCategoriesFromPrefill(context.documents);
+        for (const [categoryIndex, group] of groups.entries()) {
+          const category = await this.categoryModel.create({ boq_id: boq.id, name: group.name, sort_order: categoryIndex } as BoqCategory, { transaction: t });
+          for (const [itemIndex, item] of group.items.entries()) {
+            await this.itemModel.create({ ...item, boq_category_id: category.id, library_item_id: null, hidden: false, sort_order: itemIndex } as any, { transaction: t });
+          }
+        }
+      }
       await this.recomputeTotal(boq.id, t);
 
       // Seed this boq as the root of its own version lineage (v1).
@@ -365,7 +379,7 @@ export class BoqService {
         target: `BOQ · ${boq.title}`,
         details: dto.source_template_id
           ? `Created from template ${dto.source_template_id}`
-          : 'Created blank',
+          : 'Created with available previous document data',
         transaction: t,
       });
 

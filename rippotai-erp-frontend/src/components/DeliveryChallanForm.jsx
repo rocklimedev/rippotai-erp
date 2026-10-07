@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from 'react-router-dom';
+import { useSharedProjectData } from '../hooks/use-shared-project-data';
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -479,8 +481,10 @@ export default function DeliveryChallanForm({
   onCancel,
 }) {
   const isEditMode = Boolean(initialData?.id);
+  const [searchParams] = useSearchParams();
 
-  const [form, setForm] = useState(() => buildInitialForm(initialData));
+  const [form, setForm] = useState(() => buildInitialForm(initialData || { project_id: searchParams.get('projectId') || searchParams.get('project_id') || '' }));
+  useSharedProjectData(form.project_id, 'challan', form, setForm, !isEditMode);
 
   const [errors, setErrors] = useState({});
 
@@ -497,7 +501,7 @@ export default function DeliveryChallanForm({
    * --------------------------------------------------------------- */
 
   useEffect(() => {
-    setForm(buildInitialForm(initialData));
+    if (initialData) setForm(buildInitialForm(initialData));
     setErrors({});
   }, [initialData]);
 

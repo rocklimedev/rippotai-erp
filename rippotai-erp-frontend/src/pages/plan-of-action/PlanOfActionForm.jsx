@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { PlanOfActionSectionForm } from "../../components/plan-of-action/PlanOfActionSectionForm";
 import { useAutoSave } from "../../hooks/use-autosave";
+import { useSharedProjectData } from '../../hooks/use-shared-project-data';
 
 import {
   useGetProjectsQuery,
@@ -327,7 +328,8 @@ export function PlanOfActionForm() {
      FORM STATE
   ============================================================ */
 
-  const [values, setValues] = useAutoSave(SAVE_KEY, {
+  const draftKey = `${SAVE_KEY}.${isEditMode ? id : projectId || 'new'}`;
+  const [values, setValues] = useAutoSave(draftKey, {
     Overview: {
       title: "Plan of Action",
       execution_description: "",
@@ -343,6 +345,7 @@ export function PlanOfActionForm() {
 
     terms_template_id: "",
   });
+  useSharedProjectData(projectId, 'plan', values, setValues, !isEditMode);
 
   /* ============================================================
      TERMS CREATE / EDIT STATE
@@ -1643,7 +1646,7 @@ Any variation in scope shall be treated as extra work.`,
          CLEAR AUTOSAVE
       ====================================================== */
 
-      localStorage.removeItem(SAVE_KEY);
+      localStorage.removeItem(draftKey);
 
       /* ======================================================
          REDIRECT
@@ -1758,7 +1761,7 @@ Any variation in scope shall be treated as extra work.`,
 
   const handleSaveDraft = () => {
     try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(values));
+      localStorage.setItem(draftKey, JSON.stringify(values));
       toast.success("Draft saved on this device.");
     } catch {
       toast.error("Could not save the draft.");

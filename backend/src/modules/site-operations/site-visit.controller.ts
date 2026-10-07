@@ -14,6 +14,7 @@ import {
   CreateVisitAssignmentDto,
   LogSiteVisitDto,
   UpdateSiteVisitDto,
+  UpdateVisitAssignmentDto,
 } from './dto/visit.dto';
 
 @Controller('site-ops/visits')
@@ -24,6 +25,22 @@ export class SiteVisitController {
   @Post('assignments')
   createAssignment(@Body() dto: CreateVisitAssignmentDto) {
     return this.visitService.createAssignment(dto);
+  }
+
+  @Get('assignments')
+  listAllAssignments(
+    @Query('projectId', new ParseUUIDPipe({ optional: true }))
+    projectId?: string,
+  ) {
+    return this.visitService.listAssignments(projectId);
+  }
+
+  @Patch('assignments/:id')
+  updateAssignment(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateVisitAssignmentDto,
+  ) {
+    return this.visitService.updateAssignment(id, dto);
   }
 
   @Get('assignments/projects/:projectId')
@@ -37,6 +54,19 @@ export class SiteVisitController {
   }
 
   // Logging
+  @Get('log')
+  listVisitLogs(
+    @Query('projectId', new ParseUUIDPipe({ optional: true }))
+    projectId?: string,
+  ) {
+    return this.visitService.getVisitLog(projectId);
+  }
+
+  @Get('log/:id')
+  getVisit(@Param('id', ParseIntPipe) id: number) {
+    return this.visitService.getVisit(id);
+  }
+
   @Post('log')
   logVisit(@Body() dto: LogSiteVisitDto) {
     return this.visitService.logVisit(dto);

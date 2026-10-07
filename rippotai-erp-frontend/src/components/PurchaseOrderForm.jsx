@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from 'react-router-dom';
+import { useSharedProjectData } from '../hooks/use-shared-project-data';
 import { toast } from "sonner";
 import {
   Plus,
@@ -291,10 +293,11 @@ export default function PurchaseOrderForm({
   onSuccess,
 }) {
   const isEdit = Boolean(initialData?.id);
+  const [searchParams] = useSearchParams();
   const onBack = onBackProp || onCancel;
 
   const [form, setForm] = useState(() => {
-    if (!initialData) return { ...emptyForm, po_date: todayISO() };
+    if (!initialData) return { ...emptyForm, po_date: todayISO(), project_id: searchParams.get('projectId') || searchParams.get('project_id') || '' };
 
     return {
       ...emptyForm,
@@ -324,6 +327,7 @@ export default function PurchaseOrderForm({
 
   const [updateMaterial] = useUpdateMaterialMutation();
 
+
   const { data: projectsResponse, isLoading: projectsLoading } =
     useGetProjectsQuery({});
 
@@ -349,6 +353,7 @@ export default function PurchaseOrderForm({
     () => normalizeArray(materialsResponse),
     [materialsResponse],
   );
+  useSharedProjectData(form.project_id, 'purchaseOrder', form, setForm, !isEdit && !materialsLoading, materials);
 
   const selectedProject = useMemo(
     () =>

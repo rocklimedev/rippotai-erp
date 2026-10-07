@@ -24,7 +24,7 @@ export class SiteVisitLog extends Model<SiteVisitLog> {
   @BelongsTo(() => Project, { constraints: false })
   project: Project;
 
-  /** Optional link to the recurring assignment this visit fulfils. Null = ad hoc/unscheduled visit. */
+  /** Event allocation fulfilled by this visit. Required for new architect logs. */
   @ForeignKey(() => VisitAssignment)
   @Column({ type: DataType.INTEGER, allowNull: true })
   visitAssignmentId: number | null;

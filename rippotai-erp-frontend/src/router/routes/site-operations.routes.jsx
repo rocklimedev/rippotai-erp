@@ -107,7 +107,7 @@ export const siteOperationsRoutes = [
       },
       {
         path: "site-visits/:id/edit",
-        element: <SiteVisitCreatePage />,
+        element: <SiteVisitDetailPage />,
       },
       {
         path: "site-visits/new",

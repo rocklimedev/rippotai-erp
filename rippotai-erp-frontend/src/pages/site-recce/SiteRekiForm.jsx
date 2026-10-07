@@ -5,6 +5,7 @@ import { Plus, Trash2, Upload, X, Loader2 } from "lucide-react";
 
 import { SiteRecceSectionForm } from "../../components/SiteRecceSectionForm";
 import { useAutoSave } from "../../hooks/use-autosave";
+import { useSharedProjectData } from '../../hooks/use-shared-project-data';
 import { Page, EmptyState } from "@/components/inos";
 import { todayISODate } from "@/components/forms/crm-form-ui";
 
@@ -535,13 +536,14 @@ export function SiteRekiForm() {
   // PROJECT ID
   // ==========================================================
 
-  const [projectId, setProjectId] = useState("");
+  const [projectId, setProjectId] = useState(() => searchParams.get('projectId') || searchParams.get('project_id') || '');
 
   // ==========================================================
   // FORM STATE
   // ==========================================================
 
-  const [values, setValues] = useAutoSave(SAVE_KEY, {
+  const draftKey = `${SAVE_KEY}.${isEditMode ? siteRecceId : projectId || 'new'}`;
+  const [values, setValues] = useAutoSave(draftKey, {
     status: "draft",
 
     project_id: "",
@@ -589,6 +591,8 @@ export function SiteRekiForm() {
   // LOAD EXISTING SITE RECCE INTO FORM
   // ==========================================================
 
+  useSharedProjectData(projectId, 'recce', values, setValues, !isEditMode || Boolean(existingSiteRecce));
+
   useEffect(() => {
     if (!isEditMode) return;
 
@@ -624,7 +628,7 @@ export function SiteRekiForm() {
 
   const handleSaveDraft = () => {
     try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(values));
+      localStorage.setItem(draftKey, JSON.stringify(values));
       toast.success("Draft saved on this device.");
     } catch {
       toast.error("Could not save the draft.");
@@ -1447,7 +1451,7 @@ export function SiteRekiForm() {
 
         toast.success("Site Recce updated successfully.");
 
-        localStorage.removeItem(SAVE_KEY);
+        localStorage.removeItem(draftKey);
 
         navigate(`/site-recce/${siteRecceId}`);
 
@@ -1462,7 +1466,7 @@ export function SiteRekiForm() {
 
       toast.success("Site Recce created successfully.");
 
-      localStorage.removeItem(SAVE_KEY);
+      localStorage.removeItem(draftKey);
 
       navigate(`/site-recce/${recce.id}`);
     } catch (error) {
