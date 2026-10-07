@@ -25,4 +25,13 @@ describe('shortlist grid assignment display', () => {
     const row = await grid([{ ...skeleton, vendor_id: 'vendor', name_of_vendor: '  ', vendor: { name: 'Electrical Co' } }]);
     expect(row.name_of_vendor).toBe('Electrical Co');
   });
+  it('returns blank-coordinate saved records for explicit recovery instead of silently hiding them', async () => {
+    const service = new ProjectShortlistService({} as any, {} as any);
+    const unplaced = { ...skeleton, id: 'orphan', trade: '', working_type: '',
+      name_of_vendor: 'Saved vendor', vendor_id: 'vendor', estimate_value: 500 };
+    jest.spyOn(service, 'findOne').mockResolvedValue({ id: 'shortlist', entries: [unplaced] } as any);
+    const result = await service.getGridView('shortlist');
+    expect(result.unplaced_entries).toEqual([unplaced]);
+    expect(result.grid.every(block => block.rows.every(row => row.entry_id === null))).toBe(true);
+  });
 });

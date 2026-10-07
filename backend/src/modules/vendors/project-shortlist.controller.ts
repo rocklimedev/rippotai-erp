@@ -19,12 +19,15 @@ import { CreateProjectShortlistDto } from './dto/create-project-shortlist.dto';
 import { UpdateProjectShortlistDto } from './dto/update-project-shortlist.dto';
 import { QueryProjectShortlistDto } from './dto/query-shortlist.dto';
 import { ShortlistType } from '@/common/enums/shortlist.enums';
+import { ShortlistEntryService } from './shortlist-entry.service';
+import { SaveShortlistWorkspaceRowDto } from './dto/save-shortlist-workspace-row.dto';
 
 @Controller('project-shortlists')
 export class ProjectShortlistController {
   constructor(
     private readonly service: ProjectShortlistService,
     private readonly exportService: ShortlistExportService,
+    private readonly entryService: ShortlistEntryService,
   ) {}
 
   /**
@@ -71,6 +74,20 @@ export class ProjectShortlistController {
    */
   @Get(':id/grid')
   async getGrid(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.getGridView(id);
+  }
+
+  @Get(':id/workspace')
+  async getWorkspace(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.getGridView(id);
+  }
+
+  @Put(':id/workspace/row')
+  async saveWorkspaceRow(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SaveShortlistWorkspaceRowDto,
+  ) {
+    await this.entryService.saveWorkspaceRow(id, dto);
     return this.service.getGridView(id);
   }
 
