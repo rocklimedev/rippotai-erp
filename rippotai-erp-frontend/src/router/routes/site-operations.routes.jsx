@@ -1,4 +1,6 @@
 import AdminDprPage from '@/pages/site-ops/AdminDprPage';
+import AdminDprWorkspacePage from '@/pages/site-ops/AdminDprWorkspacePage';
+import AdminDprDetailPage from '@/pages/site-ops/AdminDprDetailPage';
 import AppLayout from "@/layouts/AppLayout";
 import AppDashboard from "@/components/dashboard/AppDashboard";
 import DailySiteReports from "../../pages/site-ops/DailySiteReportsPage";
@@ -30,6 +32,8 @@ export const siteOperationsRoutes = [
 
     children: [
       { path: "admin-dpr", element: <AdminDprPage /> },
+      { path: "admin-dpr/workspace", element: <AdminDprWorkspacePage /> },
+      { path: "admin-dpr/:id", element: <AdminDprDetailPage /> },
       // =========================================================
       // DASHBOARD
       // =========================================================
