@@ -1,3 +1,5 @@
+import { useAuth } from "@/context/AuthContext";
+import { BRIEF_STATUS_LABELS, briefTransitions } from "./brief-status";
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -42,6 +44,8 @@ import {
 
 export default function ProjectBriefList() {
   const nav = useNavigate();
+  const { user } = useAuth();
+  const canApprove = user?.permissions?.includes("documents:approve");
 
   const [q, setQ] = useState("");
   const [deletingId, setDeletingId] = useState(null);
@@ -157,14 +161,9 @@ export default function ProjectBriefList() {
   // STATUS OPTIONS
   // =========================================================
 
-  const STATUS_OPTIONS = [
-    { value: "DRAFT", label: "Draft" },
-    { value: "IN_REVIEW", label: "In Review" },
-    { value: "SUBMITTED", label: "Submitted" },
-    { value: "APPROVED", label: "Approved" },
-    { value: "SIGNED_OFF", label: "Signed Off" },
-    { value: "REJECTED", label: "Rejected" },
-  ];
+  const STATUS_OPTIONS = Object.entries(BRIEF_STATUS_LABELS).map(
+    ([value, label]) => ({ value, label }),
+  );
 
   // =========================================================
   // UPDATE STATUS
@@ -174,6 +173,13 @@ export default function ProjectBriefList() {
     if (!brief?.id) return;
     if ((brief.status || "DRAFT") === status) return;
 
+    if (
+      status === "SIGNED_OFF" &&
+      !window.confirm(
+        "Sign off this client brief? Changes will require a new draft version.",
+      )
+    )
+      return;
     try {
       setUpdatingStatusId(brief.id);
 
@@ -341,7 +347,11 @@ export default function ProjectBriefList() {
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           <Select
                             value={currentStatus}
-                            disabled={isUpdating}
+                            disabled={
+                              isUpdating ||
+                              briefTransitions(currentStatus, canApprove)
+                                .length === 0
+                            }
                             onValueChange={(value) =>
                               handleStatusChange(brief, value)
                             }
@@ -362,7 +372,14 @@ export default function ProjectBriefList() {
                               </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
-                              {STATUS_OPTIONS.map((option) => (
+                              {STATUS_OPTIONS.filter(
+                                (option) =>
+                                  option.value === currentStatus ||
+                                  briefTransitions(
+                                    currentStatus,
+                                    canApprove,
+                                  ).includes(option.value),
+                              ).map((option) => (
                                 <SelectItem
                                   key={option.value}
                                   value={option.value}
@@ -416,6 +433,7 @@ export default function ProjectBriefList() {
                               variant="ghost"
                               size="icon"
                               onClick={() => nav(`/crm/brief/${brief.id}/edit`)}
+                              disabled={currentStatus !== "DRAFT"}
                               title="Edit"
                               data-testid={`project-brief-edit-${brief.id}`}
                             >
@@ -426,7 +444,7 @@ export default function ProjectBriefList() {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDelete(brief)}
-                              disabled={isDeleting}
+                              disabled={isDeleting || currentStatus !== "DRAFT"}
                               className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                               title="Delete"
                               data-testid={`project-brief-delete-${brief.id}`}

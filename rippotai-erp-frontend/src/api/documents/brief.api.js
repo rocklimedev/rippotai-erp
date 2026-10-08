@@ -46,7 +46,7 @@ export const projectBriefsApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["ProjectBriefs"],
+      invalidatesTags: ["ProjectBriefs", "ProjectDocumentPhase", "CommandCenterKpis", "CommandCenterPortfolio", "CommandCenterProjectPhases", "CommandCenterDocuments", "CommandCenterActions", "CommandCenterGates"],
     }),
 
     // =========================================================
@@ -59,7 +59,7 @@ export const projectBriefsApi = baseApi.injectEndpoints({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["ProjectBriefs"],
+      invalidatesTags: ["ProjectBriefs", "ProjectDocumentPhase", "CommandCenterKpis", "CommandCenterPortfolio", "CommandCenterProjectPhases", "CommandCenterDocuments", "CommandCenterActions", "CommandCenterGates"],
     }),
 
     // =========================================================
@@ -67,15 +67,15 @@ export const projectBriefsApi = baseApi.injectEndpoints({
     // =========================================================
 
     updateProjectBriefStatus: builder.mutation({
-      query: ({ id, status, userId }) => ({
+      query: ({ id, status }) => ({
         url: `/project-briefs/${id}/status`,
         method: "PATCH",
         body: {
           status,
-          ...(userId ? { userId } : {}),
+
         },
       }),
-      invalidatesTags: ["ProjectBriefs"],
+      invalidatesTags: ["ProjectBriefs", "ProjectDocumentPhase", "CommandCenterKpis", "CommandCenterPortfolio", "CommandCenterProjectPhases", "CommandCenterDocuments", "CommandCenterActions", "CommandCenterGates"],
     }),
 
     // =========================================================
@@ -87,7 +87,7 @@ export const projectBriefsApi = baseApi.injectEndpoints({
         url: `/project-briefs/${id}/new-version`,
         method: "POST",
       }),
-      invalidatesTags: ["ProjectBriefs"],
+      invalidatesTags: ["ProjectBriefs", "ProjectDocumentPhase", "CommandCenterKpis", "CommandCenterPortfolio", "CommandCenterProjectPhases", "CommandCenterDocuments", "CommandCenterActions", "CommandCenterGates"],
     }),
 
     // =========================================================
@@ -99,7 +99,7 @@ export const projectBriefsApi = baseApi.injectEndpoints({
         url: `/project-briefs/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["ProjectBriefs"],
+      invalidatesTags: ["ProjectBriefs", "ProjectDocumentPhase", "CommandCenterKpis", "CommandCenterPortfolio", "CommandCenterProjectPhases", "CommandCenterDocuments", "CommandCenterActions", "CommandCenterGates"],
     }),
   }),
 

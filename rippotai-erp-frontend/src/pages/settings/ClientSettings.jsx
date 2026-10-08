@@ -24,12 +24,18 @@ import {
 
 import ClientModal from "../../components/clients/ClientModal";
 import ClientActionsMenu from "../../components/clients/ClientActionsMenu";
-import { AdminAccessDenied, SkeletonRows, TableEmpty, adminCrumbs, plural } from "./_admin-ui";
+import {
+  AdminAccessDenied,
+  SkeletonRows,
+  TableEmpty,
+  adminCrumbs,
+  plural,
+} from "./_admin-ui";
 
 export default function ClientSettings() {
   const { user } = useAuth();
 
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = ["ADMIN", "SUPERADMIN"].includes(user?.role);
 
   const [search, setSearch] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
@@ -153,14 +159,23 @@ export default function ClientSettings() {
         title="Clients"
         subtitle="The people and companies you build for — used on projects, estimates and invoices."
         actions={
-          <Button variant="primary" icon={UserPlus} onClick={() => setModalClient("new")} data-testid="add-client-btn">
+          <Button
+            variant="primary"
+            icon={UserPlus}
+            onClick={() => setModalClient("new")}
+            data-testid="add-client-btn"
+          >
             Add client
           </Button>
         }
       />
 
       <Toolbar>
-        <SearchInput value={search} onChange={setSearch} placeholder="Search name, email, phone or company" />
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search name, email, phone or company"
+        />
         <Segmented
           value={showDeleted ? "all" : "current"}
           onChange={(v) => setShowDeleted(v === "all")}
@@ -193,7 +208,9 @@ export default function ClientSettings() {
                 <TableEmpty
                   cols={6}
                   icon={Building2}
-                  title={clientsError ? "Couldn't load clients" : "No clients yet"}
+                  title={
+                    clientsError ? "Couldn't load clients" : "No clients yet"
+                  }
                   text={
                     clientsError
                       ? "The clients service didn't respond. Try again in a moment."
@@ -201,14 +218,23 @@ export default function ClientSettings() {
                   }
                   action={
                     !clientsError && (
-                      <Button variant="soft" icon={UserPlus} onClick={() => setModalClient("new")}>
+                      <Button
+                        variant="soft"
+                        icon={UserPlus}
+                        onClick={() => setModalClient("new")}
+                      >
                         Add client
                       </Button>
                     )
                   }
                 />
               ) : filteredClients.length === 0 ? (
-                <TableEmpty cols={6} icon={SearchX} title="No matching clients" text="Try a different name, phone or company." />
+                <TableEmpty
+                  cols={6}
+                  icon={SearchX}
+                  title="No matching clients"
+                  text="Try a different name, phone or company."
+                />
               ) : (
                 filteredClients.map((client) => {
                   const active =
@@ -218,27 +244,47 @@ export default function ClientSettings() {
                     client.deleted_at != null || client.is_deleted === true;
 
                   const company = client.company_name || client.company;
-                  const sub = client.client_code || (client.contact_person && client.contact_person !== client.name ? client.contact_person : null) || client.address;
+                  const sub =
+                    client.client_code ||
+                    (client.contact_person &&
+                    client.contact_person !== client.name
+                      ? client.contact_person
+                      : null) ||
+                    client.address;
 
                   return (
-                    <tr key={client.id} style={deleted ? { opacity: 0.7 } : undefined}>
+                    <tr
+                      key={client.id}
+                      style={deleted ? { opacity: 0.7 } : undefined}
+                    >
                       <td>
                         <div className="adm-cell-main">
                           <Avatar name={client.name} size={36} />
                           <div style={{ minWidth: 0 }}>
-                            <div className="adm-cell-title">{client.name || "Unnamed client"}</div>
+                            <div className="adm-cell-title">
+                              {client.name || "Unnamed client"}
+                            </div>
                             {sub && <div className="adm-cell-sub">{sub}</div>}
                           </div>
                         </div>
                       </td>
 
-                      <td className="adm-cell-2 adm-hide-sm">{client.email || <span className="muted">—</span>}</td>
-
-                      <td className="adm-cell-2 tabular" style={{ whiteSpace: "nowrap" }}>
-                        {client.phone || client.mobile || <span className="muted">—</span>}
+                      <td className="adm-cell-2 adm-hide-sm">
+                        {client.email || <span className="muted">—</span>}
                       </td>
 
-                      <td className="adm-cell-2 adm-hide-sm">{company || <span className="muted">—</span>}</td>
+                      <td
+                        className="adm-cell-2 tabular"
+                        style={{ whiteSpace: "nowrap" }}
+                      >
+                        {client.phone || client.mobile || (
+                          <span className="muted">—</span>
+                        )}
+                      </td>
+
+                      <td className="adm-cell-2 adm-hide-sm">
+                        {company || <span className="muted">—</span>}
+                      </td>
 
                       <td>
                         <Pill tone={deleted ? "bad" : active ? "ok" : "mute"}>
@@ -263,7 +309,11 @@ export default function ClientSettings() {
             </tbody>
           </table>
         </div>
-        {total > 0 && <div className="adm-table-foot">{plural(filteredClients.length, "client")} shown</div>}
+        {total > 0 && (
+          <div className="adm-table-foot">
+            {plural(filteredClients.length, "client")} shown
+          </div>
+        )}
       </Card>
 
       {/* Create / Edit Modal */}

@@ -1,15 +1,33 @@
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Activity, RefreshCw, SearchX, ShieldCheck, X } from "lucide-react";
-import { Page, PageHeader, Card, Button, Field, TextInput, Pill, Avatar } from "@/components/inos";
+import {
+  Page,
+  PageHeader,
+  Card,
+  Button,
+  Field,
+  TextInput,
+  Pill,
+  Avatar,
+} from "@/components/inos";
 import { useGetActivityLogsQuery } from "../../api/engagement/activity-logs.api";
 import { fmtDateTime } from "../../lib/settings.utils";
-import { AdminAccessDenied, SkeletonRows, TableEmpty, actionTone, adminCrumbs, changeEntries, fmtValue, humanize, plural } from "./_admin-ui";
+import {
+  AdminAccessDenied,
+  SkeletonRows,
+  TableEmpty,
+  actionTone,
+  adminCrumbs,
+  changeEntries,
+  fmtValue,
+  humanize,
+  plural,
+} from "./_admin-ui";
 
 export default function SuperAdmin() {
   const { user } = useAuth();
-  const isSuperAdmin = user?.role === "ADMIN";
-
+  const isSuperAdmin = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
   const [logFilters, setLogFilters] = useState({
     user_id: "",
     action: "",
@@ -51,7 +69,12 @@ export default function SuperAdmin() {
         title="Activity log"
         subtitle="An audit trail of every change made across the workspace — who did what, and when."
         actions={
-          <Button variant="secondary" icon={RefreshCw} onClick={() => refetchLogs()} disabled={loadingLogs}>
+          <Button
+            variant="secondary"
+            icon={RefreshCw}
+            onClick={() => refetchLogs()}
+            disabled={loadingLogs}
+          >
             {loadingLogs ? "Refreshing…" : "Refresh"}
           </Button>
         }
@@ -60,19 +83,49 @@ export default function SuperAdmin() {
       <Card>
         <div className="adm-filters">
           <Field label="Action" htmlFor="f-action">
-            <TextInput id="f-action" name="action" value={logFilters.action} onChange={onLogFilterChange} placeholder="e.g. vendor_created" />
+            <TextInput
+              id="f-action"
+              name="action"
+              value={logFilters.action}
+              onChange={onLogFilterChange}
+              placeholder="e.g. vendor_created"
+            />
           </Field>
           <Field label="Entity type" htmlFor="f-etype">
-            <TextInput id="f-etype" name="entity_type" value={logFilters.entity_type} onChange={onLogFilterChange} placeholder="e.g. VENDOR" />
+            <TextInput
+              id="f-etype"
+              name="entity_type"
+              value={logFilters.entity_type}
+              onChange={onLogFilterChange}
+              placeholder="e.g. VENDOR"
+            />
           </Field>
           <Field label="Entity ID" htmlFor="f-eid">
-            <TextInput id="f-eid" name="entity_id" value={logFilters.entity_id} onChange={onLogFilterChange} placeholder="Paste a record ID" />
+            <TextInput
+              id="f-eid"
+              name="entity_id"
+              value={logFilters.entity_id}
+              onChange={onLogFilterChange}
+              placeholder="Paste a record ID"
+            />
           </Field>
           <Field label="User ID" htmlFor="f-uid">
-            <TextInput id="f-uid" name="user_id" value={logFilters.user_id} onChange={onLogFilterChange} placeholder="Paste a user ID" />
+            <TextInput
+              id="f-uid"
+              name="user_id"
+              value={logFilters.user_id}
+              onChange={onLogFilterChange}
+              placeholder="Paste a user ID"
+            />
           </Field>
           <div style={{ display: "flex", gap: 8 }}>
-            <Button variant="ghost" icon={X} onClick={clearLogFilters} disabled={!hasFilters} style={{ height: 40 }}>
+            <Button
+              variant="ghost"
+              icon={X}
+              onClick={clearLogFilters}
+              disabled={!hasFilters}
+              style={{ height: 40 }}
+            >
               Clear
             </Button>
           </div>
@@ -98,7 +151,13 @@ export default function SuperAdmin() {
                 <TableEmpty
                   cols={5}
                   icon={hasFilters ? SearchX : isError ? ShieldCheck : Activity}
-                  title={hasFilters ? "No activity matches these filters" : isError ? "Couldn't load the activity log" : "No activity yet"}
+                  title={
+                    hasFilters
+                      ? "No activity matches these filters"
+                      : isError
+                        ? "Couldn't load the activity log"
+                        : "No activity yet"
+                  }
                   text={
                     hasFilters
                       ? "Clear a filter or try a broader value."
@@ -119,43 +178,80 @@ export default function SuperAdmin() {
                   const entries = changeEntries(log.changes);
                   return (
                     <tr key={log.id} style={{ verticalAlign: "top" }}>
-                      <td className="adm-cell-2 tabular" style={{ whiteSpace: "nowrap", fontSize: 13 }}>
+                      <td
+                        className="adm-cell-2 tabular"
+                        style={{ whiteSpace: "nowrap", fontSize: 13 }}
+                      >
                         {fmtDateTime(log.created_at)}
                       </td>
                       <td>
                         <div className="adm-cell-main">
                           <Avatar name={log.user_email || "?"} size={30} />
                           <div style={{ minWidth: 0 }}>
-                            <div className="adm-cell-title" style={{ fontWeight: 550 }}>
+                            <div
+                              className="adm-cell-title"
+                              style={{ fontWeight: 550 }}
+                            >
                               {log.user_email || "System"}
                             </div>
                             <div className="adm-cell-sub">
-                              {[log.user_role && humanize(log.user_role), log.ip_address].filter(Boolean).join(" · ") || "—"}
+                              {[
+                                log.user_role && humanize(log.user_role),
+                                log.ip_address,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ") || "—"}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td>
-                        <Pill tone={actionTone(log.action)}>{humanize(log.action)}</Pill>
+                        <Pill tone={actionTone(log.action)}>
+                          {humanize(log.action)}
+                        </Pill>
                       </td>
                       <td>
-                        <div className="adm-cell-title" style={{ fontWeight: 550 }}>
+                        <div
+                          className="adm-cell-title"
+                          style={{ fontWeight: 550 }}
+                        >
                           {log.entity_label || log.entity_id || "—"}
                         </div>
-                        <div className="adm-cell-sub">{humanize(log.entity_type) || "—"}</div>
+                        <div className="adm-cell-sub">
+                          {humanize(log.entity_type) || "—"}
+                        </div>
                       </td>
                       <td className="adm-hide-sm" style={{ maxWidth: 380 }}>
                         {entries.length === 0 ? (
                           <span className="muted">—</span>
                         ) : (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: 6,
+                            }}
+                          >
                             {entries.slice(0, 4).map(([k, v]) => (
-                              <span key={k} className="adm-code" title={`${k}: ${fmtValue(v)}`} style={{ maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis" }}>
+                              <span
+                                key={k}
+                                className="adm-code"
+                                title={`${k}: ${fmtValue(v)}`}
+                                style={{
+                                  maxWidth: 260,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                }}
+                              >
                                 {k ? `${humanize(k)}: ` : ""}
                                 {fmtValue(v)}
                               </span>
                             ))}
-                            {entries.length > 4 && <span className="adm-cell-sub">+{entries.length - 4} more</span>}
+                            {entries.length > 4 && (
+                              <span className="adm-cell-sub">
+                                +{entries.length - 4} more
+                              </span>
+                            )}
                           </div>
                         )}
                       </td>
@@ -166,7 +262,9 @@ export default function SuperAdmin() {
             </tbody>
           </table>
         </div>
-        {logs.length > 0 && <div className="adm-table-foot">{plural(logs.length, "event")}</div>}
+        {logs.length > 0 && (
+          <div className="adm-table-foot">{plural(logs.length, "event")}</div>
+        )}
       </Card>
     </Page>
   );

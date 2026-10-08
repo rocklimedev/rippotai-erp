@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Upload,
+  ArrowRight,
   FileText,
   Download,
   CheckCircle2,
@@ -178,7 +179,10 @@ function Stat({ label, value, warn }) {
 function DocumentTypeRow({ documentType, projectId, onUpload, onDownload }) {
   const uploadCount = getUploadCount(documentType);
   const documentIds = getDocumentIds(documentType);
-  const isUploaded = Boolean(documentType?.isUploaded) || uploadCount > 0;
+  const evidence = documentType?.evidence;
+  const isNative = evidence?.source === "DATABASE";
+  const isDrawing = documentType?.targetType === "DRAWING";
+  const isUploaded = evidence ? evidence.satisfied : Boolean(documentType?.isUploaded) || uploadCount > 0;
   const isRequired = isRequiredDocument(documentType);
   const allowsMultiple = Boolean(documentType?.allowsMultiple);
   const latestDocumentId = getLatestDocumentId(documentType);
@@ -188,7 +192,7 @@ function DocumentTypeRow({ documentType, projectId, onUpload, onDownload }) {
       <div className="pj-doc-row">
         <span
           className={cn("inos-icon-tile inos-icon-tile--sm", isUploaded ? "inos-icon-tile--ok" : isRequired ? "inos-icon-tile--peach" : "")}
-          aria-label={isUploaded ? "Uploaded" : isRequired ? "Required, pending" : "Pending"}
+          aria-label={isUploaded ? "Evidence satisfied" : isRequired ? "Required, pending" : "Pending"}
         >
           {isUploaded ? <CheckCircle2 aria-hidden /> : <FileText aria-hidden />}
         </span>
@@ -212,7 +216,7 @@ function DocumentTypeRow({ documentType, projectId, onUpload, onDownload }) {
           <div className="pj-list-item__sub">
             {[
               documentType?.description,
-              isUploaded ? `${uploadCount} upload${uploadCount !== 1 ? "s" : ""}` : "Not uploaded",
+              evidence?.detail || (isUploaded ? `${uploadCount} upload${uploadCount !== 1 ? "s" : ""}` : "Pending"),
               documentType?.latestUploadedAt && `Latest ${formatDate(documentType.latestUploadedAt)}`,
               allowsMultiple && "Multiple allowed",
             ]
@@ -222,7 +226,11 @@ function DocumentTypeRow({ documentType, projectId, onUpload, onDownload }) {
         </div>
 
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-          {!isUploaded ? (
+          {isNative || isDrawing ? (
+            <InosButton size="sm" variant={isUploaded ? "secondary" : "primary"} icon={ArrowRight} onClick={() => onUpload(documentType, projectId)}>
+              {isNative ? (evidence.recordId ? "Open source" : "Create") : "Open drawings"}
+            </InosButton>
+          ) : !isUploaded ? (
             <InosButton size="sm" variant="primary" icon={Upload} onClick={() => onUpload(documentType, projectId)}>
               Upload
             </InosButton>
@@ -317,7 +325,7 @@ function DocumentPhaseCard({ phase, projectId, collapsed, onToggle, onUpload, on
         </div>
         {!isEmpty && (
           <div className="pj-collapse-stats">
-            <Stat label="uploaded" value={`${uploaded}/${total}`} />
+            <Stat label="satisfied" value={`${uploaded}/${total}`} />
             <Stat label="required" value={`${uploadedRequired}/${required}`} warn={pendingRequired > 0} />
             <ProgressStat percentage={completionPercentage} />
           </div>
@@ -347,7 +355,7 @@ function DocumentPhaseCard({ phase, projectId, collapsed, onToggle, onUpload, on
                 {pending} pending document{pending !== 1 ? "s" : ""}
               </span>
               <span style={{ fontWeight: 600, color: pendingRequired > 0 ? "var(--warn-fg)" : "var(--ok-fg)" }}>
-                {pendingRequired > 0 ? `${pendingRequired} required pending` : "All required documents uploaded"}
+                {pendingRequired > 0 ? `${pendingRequired} required pending` : "All required evidence satisfied"}
               </span>
             </div>
           )}
@@ -798,6 +806,15 @@ export function DocumentsAll() {
       return;
     }
 
+    if (documentType?.evidence?.source === "DATABASE") {
+      if (documentType.evidence.actionUrl) nav(`${documentType.evidence.actionUrl}${documentType.evidence.actionUrl.includes("?") ? "&" : "?"}project_id=${encodeURIComponent(resolvedProjectId)}`);
+      else toast.error("Document source is not available.");
+      return;
+    }
+    if (documentType?.targetType === "DRAWING") {
+      nav(`/design-studio/all?project=${encodeURIComponent(resolvedProjectId)}`);
+      return;
+    }
     const documentTypeId = getDocumentTypeId(documentType);
 
     if (!documentTypeId) {
@@ -950,10 +967,10 @@ export function DocumentsAll() {
 
       <Stats>
         <StatTile label="Projects" value={selectedProjectId ? 1 : totalProjects} meta="In view" icon={<FolderOpen />} />
-        <StatTile label="Documents" value={`${uploadedDocuments}/${totalDocuments}`} meta="Uploaded" icon={<FileText />} tone="info" />
+        <StatTile label="Documents" value={`${uploadedDocuments}/${totalDocuments}`} meta="Evidence satisfied" icon={<FileText />} tone="info" />
         <StatTile label="Pending" value={pendingDocuments} meta="Document types" icon={<Upload />} tone="peach" />
         <StatTile
-          label="Required uploaded"
+          label="Required satisfied"
           value={`${uploadedRequiredDocuments}/${requiredDocuments}`}
           meta={requiredDocuments ? `${requiredCompletionPercentage}% · ${pendingRequiredDocuments} pending` : "None configured"}
           icon={<CheckCircle2 />}
@@ -998,7 +1015,7 @@ export function DocumentsAll() {
           <AlertTriangle aria-hidden />
           <div>
             <b>Required documents are still pending</b>
-            {pendingRequiredDocuments} required document{pendingRequiredDocuments !== 1 ? "s" : ""} must be uploaded before the
+            {pendingRequiredDocuments} required document{pendingRequiredDocuments !== 1 ? "s" : ""} must be completed and reviewed before the
             checklist is complete.
           </div>
         </div>

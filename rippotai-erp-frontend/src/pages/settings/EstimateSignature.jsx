@@ -4,7 +4,16 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
 import { ImageUp, PenLine, RefreshCw, X } from "lucide-react";
-import { Page, PageHeader, Card, Button, EmptyState, Field, TextInput, Pill } from "@/components/inos";
+import {
+  Page,
+  PageHeader,
+  Card,
+  Button,
+  EmptyState,
+  Field,
+  TextInput,
+  Pill,
+} from "@/components/inos";
 import { useLazyMeQuery } from "../../api/auth/auth.api";
 import { useUploadSignatureMutation } from "../../api/users/user-signatures.api";
 import { AdminAccessDenied, adminCrumbs } from "./_admin-ui";
@@ -106,7 +115,10 @@ export default function EstimateSignature() {
 
     try {
       // POST /api/v1/user-signatures (multipart) — the old /users/me/signature route doesn't exist.
-      const data = await uploadSignature({ userId: me?.id, file: sigFile }).unwrap();
+      const data = await uploadSignature({
+        userId: me?.id,
+        file: sigFile,
+      }).unwrap();
 
       toast.success("Signature saved successfully.");
 
@@ -118,14 +130,17 @@ export default function EstimateSignature() {
       setSigPreview(null);
       setSigFile(null);
     } catch (error) {
-      toast.error(error?.data?.message || error?.response?.data?.detail || "Unable to save signature.");
+      toast.error(
+        error?.data?.message ||
+          error?.response?.data?.detail ||
+          "Unable to save signature.",
+      );
     } finally {
       setSigSaving(false);
     }
   };
 
-  const isAdmin = me?.role?.toUpperCase() === "ADMIN";
-
+  const isAdmin = ["ADMIN", "SUPERADMIN"].includes(user?.role);
   const header = (
     <PageHeader
       crumbs={adminCrumbs("Estimate signature")}
@@ -146,7 +161,11 @@ export default function EstimateSignature() {
               title="Couldn't load your account"
               text="We need your profile to show the current signature. Refresh to try again."
               action={
-                <Button variant="soft" icon={RefreshCw} onClick={() => window.location.reload()}>
+                <Button
+                  variant="soft"
+                  icon={RefreshCw}
+                  onClick={() => window.location.reload()}
+                >
                   Refresh
                 </Button>
               }
@@ -154,7 +173,10 @@ export default function EstimateSignature() {
           ) : (
             <div style={{ display: "grid", gap: 12 }}>
               <div className="adm-skel" style={{ width: "40%" }} />
-              <div className="adm-skel" style={{ height: 120, borderRadius: 12 }} />
+              <div
+                className="adm-skel"
+                style={{ height: 120, borderRadius: 12 }}
+              />
             </div>
           )}
         </Card>
@@ -184,28 +206,52 @@ export default function EstimateSignature() {
       <Card
         title="Current signature"
         subtitle={currentSig.url ? "Shown on approved estimates." : undefined}
-        actions={currentSig.url ? <Pill tone="ok">In use</Pill> : <Pill tone="warn">Not set</Pill>}
+        actions={
+          currentSig.url ? (
+            <Pill tone="ok">In use</Pill>
+          ) : (
+            <Pill tone="warn">Not set</Pill>
+          )
+        }
       >
         {currentSig.url ? (
           <div style={{ display: "grid", gap: 10 }}>
             <div className="adm-sig">
               <img src={currentSig.url} alt="Current signature" />
             </div>
-            <div className="adm-cell-title">{currentSig.name || me?.name || "—"}</div>
+            <div className="adm-cell-title">
+              {currentSig.name || me?.name || "—"}
+            </div>
           </div>
         ) : (
-          <div className="adm-sig" style={{ borderStyle: "dashed", minHeight: 96, gap: 6, textAlign: "center" }}>
+          <div
+            className="adm-sig"
+            style={{
+              borderStyle: "dashed",
+              minHeight: 96,
+              gap: 6,
+              textAlign: "center",
+            }}
+          >
             <PenLine size={20} style={{ color: "var(--text-3)" }} aria-hidden />
             <span className="adm-cell-sub" style={{ marginTop: 0 }}>
-              No signature yet — upload one below and approved estimates will carry it.
+              No signature yet — upload one below and approved estimates will
+              carry it.
             </span>
           </div>
         )}
       </Card>
 
-      <Card title={currentSig.url ? "Replace signature" : "Upload signature"} subtitle="PNG or JPG, up to 2 MB. A transparent PNG looks best.">
+      <Card
+        title={currentSig.url ? "Replace signature" : "Upload signature"}
+        subtitle="PNG or JPG, up to 2 MB. A transparent PNG looks best."
+      >
         <div style={{ display: "grid", gap: 18 }}>
-          <Field label="Name under the signature" htmlFor="sig-name" hint="Printed below the signature, e.g. your full name and title.">
+          <Field
+            label="Name under the signature"
+            htmlFor="sig-name"
+            hint="Printed below the signature, e.g. your full name and title."
+          >
             <TextInput
               id="sig-name"
               value={sigName}
@@ -220,11 +266,23 @@ export default function EstimateSignature() {
                 <div className="adm-sig">
                   <img src={sigPreview} alt="New signature preview" />
                 </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 8,
+                  }}
+                >
                   <span className="adm-cell-sub" style={{ marginTop: 0 }}>
                     {sigFile?.name}
                   </span>
-                  <Button variant="ghost" size="sm" icon={X} onClick={clearPick}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={X}
+                    onClick={clearPick}
+                  >
                     Remove
                   </Button>
                 </div>
@@ -240,20 +298,37 @@ export default function EstimateSignature() {
                   type="file"
                   accept="image/png,image/jpeg"
                   className="sr-only"
-                  style={{ position: "absolute", width: 1, height: 1, opacity: 0 }}
+                  style={{
+                    position: "absolute",
+                    width: 1,
+                    height: 1,
+                    opacity: 0,
+                  }}
                   onChange={onSigPick}
                 />
               </label>
             )}
           </Field>
 
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, borderTop: "1px solid var(--line)", paddingTop: 16 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 8,
+              borderTop: "1px solid var(--line)",
+              paddingTop: 16,
+            }}
+          >
             {sigFile && (
               <Button variant="ghost" onClick={clearPick} disabled={sigSaving}>
                 Cancel
               </Button>
             )}
-            <Button variant="primary" onClick={saveSignature} disabled={!sigFile || sigSaving}>
+            <Button
+              variant="primary"
+              onClick={saveSignature}
+              disabled={!sigFile || sigSaving}
+            >
               {sigSaving ? "Saving…" : "Save signature"}
             </Button>
           </div>

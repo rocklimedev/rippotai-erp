@@ -224,6 +224,12 @@ export function BriefForm() {
   // ==========================================================
 
   const handleSubmit = async () => {
+    if (isEditMode && existingBrief?.status !== "DRAFT") {
+      toast.error(
+        "Return this brief to Draft or create a new version before editing.",
+      );
+      return;
+    }
     if (!projectId) {
       toast.error("Select a project first");
       return;
@@ -326,7 +332,7 @@ export function BriefForm() {
   const title = isEditMode ? "Edit project brief" : "Project brief";
 
   const subtitle = isEditMode
-    ? "Update the client brief. Saving creates a new version of the brief document."
+    ? "Update the client brief. Only drafts can be edited."
     : "Capture the client's requirements in one place. Produces a versioned project brief document.";
 
   // Inject live project type options into the sections config

@@ -34,7 +34,7 @@ import {
 
 export default function UsersSettings() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = ["ADMIN", "SUPERADMIN"].includes(user?.role);
 
   const {
     data: users = [],
@@ -121,21 +121,33 @@ export default function UsersSettings() {
         title="Users"
         subtitle="Invite team members, set their role and switch access on or off."
         actions={
-          <Button variant="primary" icon={UserPlus} onClick={() => setModalUser("new")} data-testid="invite-user-btn">
+          <Button
+            variant="primary"
+            icon={UserPlus}
+            onClick={() => setModalUser("new")}
+            data-testid="invite-user-btn"
+          >
             Invite user
           </Button>
         }
       />
 
       <Toolbar>
-        <SearchInput value={search} onChange={setSearch} placeholder="Search by name, email or role" />
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search by name, email or role"
+        />
         <Segmented
           value={statusFilter}
           onChange={setStatusFilter}
           options={[
             { value: "all", label: `All · ${list.length}` },
             { value: "active", label: `Active · ${activeCount}` },
-            { value: "inactive", label: `Inactive · ${list.length - activeCount}` },
+            {
+              value: "inactive",
+              label: `Inactive · ${list.length - activeCount}`,
+            },
           ]}
         />
         <ToolbarSpacer />
@@ -169,14 +181,23 @@ export default function UsersSettings() {
                   }
                   action={
                     !usersError && (
-                      <Button variant="soft" icon={UserPlus} onClick={() => setModalUser("new")}>
+                      <Button
+                        variant="soft"
+                        icon={UserPlus}
+                        onClick={() => setModalUser("new")}
+                      >
                         Invite user
                       </Button>
                     )
                   }
                 />
               ) : visible.length === 0 ? (
-                <TableEmpty cols={6} icon={SearchX} title="No matching users" text="Try a different name, email or filter." />
+                <TableEmpty
+                  cols={6}
+                  icon={SearchX}
+                  title="No matching users"
+                  text="Try a different name, email or filter."
+                />
               ) : (
                 visible.map((u) => {
                   const active = u.is_active !== false;
@@ -185,9 +206,20 @@ export default function UsersSettings() {
                     <tr key={u.id}>
                       <td>
                         <div className="adm-cell-main">
-                          <Avatar name={u.name} src={u.avatar_url || undefined} size={36} />
+                          <Avatar
+                            name={u.name}
+                            src={u.avatar_url || undefined}
+                            size={36}
+                          />
                           <div style={{ minWidth: 0 }}>
-                            <div className="adm-cell-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div
+                              className="adm-cell-title"
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                              }}
+                            >
                               {u.name}
                               {isSelf && (
                                 <Pill tone="brand" dot={false} size="sm">
@@ -195,7 +227,11 @@ export default function UsersSettings() {
                                 </Pill>
                               )}
                             </div>
-                            <div className="adm-cell-sub">{u.job_title || humanize(u.role?.name) || "Team member"}</div>
+                            <div className="adm-cell-sub">
+                              {u.job_title ||
+                                humanize(u.role?.name) ||
+                                "Team member"}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -209,9 +245,13 @@ export default function UsersSettings() {
                           <span className="muted">—</span>
                         )}
                       </td>
-                      <td className="adm-cell-2 tabular adm-hide-sm">{fmtDate(u.created_at)}</td>
+                      <td className="adm-cell-2 tabular adm-hide-sm">
+                        {fmtDate(u.created_at)}
+                      </td>
                       <td>
-                        <Pill tone={active ? "ok" : "mute"}>{active ? "Active" : "Inactive"}</Pill>
+                        <Pill tone={active ? "ok" : "mute"}>
+                          {active ? "Active" : "Inactive"}
+                        </Pill>
                       </td>
                       <td className="actions">
                         <UserActionsMenu

@@ -1,3 +1,4 @@
+import { DocumentEvidenceService } from '../gates/conditions/document-evidence.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ProjectPhase } from '../projects/models/project-phase.model';
@@ -19,6 +20,7 @@ export class ProjectDocumentPhaseService {
 
     @InjectModel(Document)
     private readonly documentModel: typeof Document,
+    private readonly evidenceService: DocumentEvidenceService,
   ) {
     console.log('\n========== DOCUMENT MODEL DEBUG ==========');
 
@@ -179,201 +181,214 @@ export class ProjectDocumentPhaseService {
        BUILD PROJECT TREE
     ============================================================ */
 
-    const projectTrees = projects.map((project) => {
-      const projectId = project.id;
+    const projectTrees = await Promise.all(
+      projects.map(async (project) => {
+        const projectId = project.id;
 
-      const projectDocumentMap =
-        documentsByProject.get(projectId) || new Map<string, any[]>();
+        const projectDocumentMap =
+          documentsByProject.get(projectId) || new Map<string, any[]>();
 
-      let totalDocuments = 0;
-      let uploadedDocuments = 0;
+        let totalDocuments = 0;
+        let uploadedDocuments = 0;
 
-      let requiredDocuments = 0;
-      let uploadedRequiredDocuments = 0;
+        let requiredDocuments = 0;
+        let uploadedRequiredDocuments = 0;
 
-      const projectPhases = phases.map((phase) => {
-        const phaseId = phase.id;
+        const projectPhases = await Promise.all(
+          phases.map(async (phase) => {
+            const phaseId = phase.id;
 
-        const phaseDocumentTypes = documentTypesByPhase.get(phaseId) || [];
+            const phaseDocumentTypes = documentTypesByPhase.get(phaseId) || [];
 
-        const documentsForPhase = phaseDocumentTypes.map((documentType) => {
-          const uploaded = projectDocumentMap.get(documentType.id) || [];
+            const documentsForPhase = await Promise.all(
+              phaseDocumentTypes.map(async (documentType) => {
+                const uploaded = projectDocumentMap.get(documentType.id) || [];
 
-          const isUploaded = uploaded.length > 0;
+                const evidence = await this.evidenceService.resolve(
+                  projectId,
+                  documentType,
+                );
+                const isUploaded = evidence.satisfied;
 
-          const requirementType = String(
-            documentType.requirementType || 'REQUIRED',
-          ).toUpperCase();
+                const requirementType = String(
+                  documentType.requirementType || 'REQUIRED',
+                ).toUpperCase();
 
-          const isRequired = requirementType === 'REQUIRED';
+                const isRequired = requirementType === 'REQUIRED';
 
-          totalDocuments += 1;
+                totalDocuments += 1;
 
-          if (isUploaded) {
-            uploadedDocuments += 1;
-          }
+                if (isUploaded) {
+                  uploadedDocuments += 1;
+                }
 
-          if (isRequired) {
-            requiredDocuments += 1;
+                if (isRequired) {
+                  requiredDocuments += 1;
 
-            if (isUploaded) {
-              uploadedRequiredDocuments += 1;
-            }
-          }
+                  if (isUploaded) {
+                    uploadedRequiredDocuments += 1;
+                  }
+                }
 
-          return {
-            id: documentType.id,
+                return {
+                  id: documentType.id,
 
-            code: documentType.code,
+                  code: documentType.code,
 
-            name: documentType.name,
+                  name: documentType.name,
 
-            description: documentType.description || null,
+                  description: documentType.description || null,
 
-            sequence: documentType.sequence,
+                  sequence: documentType.sequence,
 
-            targetType: documentType.targetType,
+                  targetType: documentType.targetType,
 
-            requirementType,
+                  requirementType,
 
-            allowsMultiple: Boolean(documentType.allowsMultiple),
+                  allowsMultiple: Boolean(documentType.allowsMultiple),
 
-            requiresRevision: Boolean(documentType.requiresRevision),
+                  requiresRevision: Boolean(documentType.requiresRevision),
 
-            requiresApproval: Boolean(documentType.requiresApproval),
+                  requiresApproval: Boolean(documentType.requiresApproval),
 
-            projectPhaseId: documentType.projectPhaseId,
+                  projectPhaseId: documentType.projectPhaseId,
 
-            phaseCode: documentType.phaseCode,
+                  phaseCode: documentType.phaseCode,
 
-            phaseName: documentType.phaseName,
+                  phaseName: documentType.phaseName,
 
-            isUploaded,
+                  evidence,
+                  isUploaded,
 
-            uploadCount: uploaded.length,
+                  uploadCount: uploaded.length,
 
-            documentIds: uploaded.map((document) => document.id),
+                  documentIds: uploaded.map((document) => document.id),
 
-            latestDocumentId: uploaded[0]?.id || null,
+                  latestDocumentId: uploaded[0]?.id || null,
 
-            latestUploadedAt:
-              uploaded[0]?.createdAt || uploaded[0]?.updatedAt || null,
+                  latestUploadedAt:
+                    uploaded[0]?.createdAt || uploaded[0]?.updatedAt || null,
 
-            documents: uploaded.map((document) => ({
-              id: document.id,
-              title: document.title,
-              filename: document.filename,
-              version: document.version,
-              status: document.status,
-              createdAt: document.createdAt,
-              updatedAt: document.updatedAt,
-            })),
-          };
-        });
+                  documents: uploaded.map((document) => ({
+                    id: document.id,
+                    title: document.title,
+                    filename: document.filename,
+                    version: document.version,
+                    status: document.status,
+                    createdAt: document.createdAt,
+                    updatedAt: document.updatedAt,
+                  })),
+                };
+              }),
+            );
 
-        const total = documentsForPhase.length;
+            const total = documentsForPhase.length;
 
-        const uploaded = documentsForPhase.filter(
-          (item) => item.isUploaded,
-        ).length;
+            const uploaded = documentsForPhase.filter(
+              (item) => item.isUploaded,
+            ).length;
 
-        const pending = total - uploaded;
+            const pending = total - uploaded;
 
-        const required = documentsForPhase.filter(
-          (item) => item.requirementType === 'REQUIRED',
-        ).length;
+            const required = documentsForPhase.filter(
+              (item) => item.requirementType === 'REQUIRED',
+            ).length;
 
-        const uploadedRequired = documentsForPhase.filter(
-          (item) => item.requirementType === 'REQUIRED' && item.isUploaded,
-        ).length;
+            const uploadedRequired = documentsForPhase.filter(
+              (item) => item.requirementType === 'REQUIRED' && item.isUploaded,
+            ).length;
 
-        const pendingRequired = required - uploadedRequired;
+            const pendingRequired = required - uploadedRequired;
 
-        const completionPercentage =
-          total > 0 ? Math.round((uploaded / total) * 100) : 100;
+            const completionPercentage =
+              total > 0 ? Math.round((uploaded / total) * 100) : 100;
 
-        const requiredCompletionPercentage =
-          required > 0 ? Math.round((uploadedRequired / required) * 100) : 100;
+            const requiredCompletionPercentage =
+              required > 0
+                ? Math.round((uploadedRequired / required) * 100)
+                : 100;
+
+            return {
+              id: phase.id,
+
+              phaseNumber: phase.phase_number,
+
+              phaseCode: phase.phase_code,
+
+              title: phase.title,
+
+              description: phase.description,
+
+              sortOrder: phase.sort_order,
+
+              isComplete: pendingRequired === 0,
+
+              summary: {
+                total,
+                uploaded,
+                pending,
+
+                required,
+                uploadedRequired,
+                pendingRequired,
+
+                completionPercentage,
+                requiredCompletionPercentage,
+              },
+
+              documents: documentsForPhase,
+            };
+          }),
+        );
+
+        const pendingDocuments = totalDocuments - uploadedDocuments;
+
+        const pendingRequiredDocuments =
+          requiredDocuments - uploadedRequiredDocuments;
 
         return {
-          id: phase.id,
+          id: project.id,
 
-          phaseNumber: phase.phase_number,
+          name: project.name || project.id,
 
-          phaseCode: phase.phase_code,
-
-          title: phase.title,
-
-          description: phase.description,
-
-          sortOrder: phase.sort_order,
-
-          isComplete: pendingRequired === 0,
+          phases: projectPhases,
 
           summary: {
-            total,
-            uploaded,
-            pending,
+            totalPhases: projectPhases.length,
 
-            required,
-            uploadedRequired,
-            pendingRequired,
+            completedPhases: projectPhases.filter((phase) => phase.isComplete)
+              .length,
 
-            completionPercentage,
-            requiredCompletionPercentage,
+            pendingPhases: projectPhases.filter((phase) => !phase.isComplete)
+              .length,
+
+            totalDocuments,
+
+            uploadedDocuments,
+
+            pendingDocuments,
+
+            requiredDocuments,
+
+            uploadedRequiredDocuments,
+
+            pendingRequiredDocuments,
+
+            completionPercentage:
+              totalDocuments > 0
+                ? Math.round((uploadedDocuments / totalDocuments) * 100)
+                : 100,
+
+            requiredCompletionPercentage:
+              requiredDocuments > 0
+                ? Math.round(
+                    (uploadedRequiredDocuments / requiredDocuments) * 100,
+                  )
+                : 100,
           },
-
-          documents: documentsForPhase,
         };
-      });
-
-      const pendingDocuments = totalDocuments - uploadedDocuments;
-
-      const pendingRequiredDocuments =
-        requiredDocuments - uploadedRequiredDocuments;
-
-      return {
-        id: project.id,
-
-        name: project.name || project.id,
-
-        phases: projectPhases,
-
-        summary: {
-          totalPhases: projectPhases.length,
-
-          completedPhases: projectPhases.filter((phase) => phase.isComplete)
-            .length,
-
-          pendingPhases: projectPhases.filter((phase) => !phase.isComplete)
-            .length,
-
-          totalDocuments,
-
-          uploadedDocuments,
-
-          pendingDocuments,
-
-          requiredDocuments,
-
-          uploadedRequiredDocuments,
-
-          pendingRequiredDocuments,
-
-          completionPercentage:
-            totalDocuments > 0
-              ? Math.round((uploadedDocuments / totalDocuments) * 100)
-              : 100,
-
-          requiredCompletionPercentage:
-            requiredDocuments > 0
-              ? Math.round(
-                  (uploadedRequiredDocuments / requiredDocuments) * 100,
-                )
-              : 100,
-        },
-      };
-    });
+      }),
+    );
 
     /* ============================================================
        GLOBAL SUMMARY
@@ -561,132 +576,141 @@ export class ProjectDocumentPhaseService {
     /*
      * Build the final project document/phase tree.
      */
-    const phaseResults = phases.map((phase) => {
-      const phaseDocumentTypes = documentTypesByPhase.get(phase.id) ?? [];
+    const phaseResults = await Promise.all(
+      phases.map(async (phase) => {
+        const phaseDocumentTypes = documentTypesByPhase.get(phase.id) ?? [];
 
-      const documents = phaseDocumentTypes.map((documentType) => {
-        const uploaded = uploadedByDocumentType.get(documentType.id) ?? [];
+        const documents = await Promise.all(
+          phaseDocumentTypes.map(async (documentType) => {
+            const uploaded = uploadedByDocumentType.get(documentType.id) ?? [];
 
-        const isUploaded = uploaded.length > 0;
+            const evidence = await this.evidenceService.resolve(
+              projectId,
+              documentType,
+            );
+            const isUploaded = evidence.satisfied;
+
+            return {
+              id: documentType.id,
+              code: documentType.code,
+              name: documentType.name,
+
+              projectPhaseId: documentType.projectPhaseId,
+
+              phaseCode: documentType.phaseCode,
+
+              phaseName: documentType.phaseName,
+
+              sectionCode: documentType.sectionCode,
+
+              sectionName: documentType.sectionName,
+
+              sequence: documentType.sequence,
+
+              targetType: documentType.targetType,
+
+              requirementType: documentType.requirementType,
+
+              allowsMultiple: documentType.allowsMultiple,
+
+              requiresRevision: documentType.requiresRevision,
+
+              requiresApproval: documentType.requiresApproval,
+
+              description: documentType.description,
+
+              isActive: documentType.isActive,
+
+              /*
+               * Project-specific upload state.
+               */
+              evidence,
+              isUploaded,
+
+              uploadCount: uploaded.length,
+
+              documentIds: uploaded.map((document) => document.id),
+
+              latestDocumentId: uploaded[0]?.id ?? null,
+
+              latestUploadedAt: uploaded[0]?.createdAt ?? null,
+            };
+          }),
+        );
+
+        const total = documents.length;
+
+        const uploadedCount = documents.filter(
+          (document) => document.isUploaded,
+        ).length;
+
+        const pendingCount = total - uploadedCount;
+
+        const requiredDocuments = documents.filter(
+          (document) => document.requirementType === 'REQUIRED',
+        );
+
+        const uploadedRequiredDocuments = requiredDocuments.filter(
+          (document) => document.isUploaded,
+        );
+
+        const completionPercentage =
+          total === 0 ? 100 : Math.round((uploadedCount / total) * 100);
+
+        const requiredCompletionPercentage =
+          requiredDocuments.length === 0
+            ? 100
+            : Math.round(
+                (uploadedRequiredDocuments.length / requiredDocuments.length) *
+                  100,
+              );
+
+        /*
+         * A phase is considered complete only when all
+         * REQUIRED document types have at least one upload.
+         */
+        const isComplete =
+          requiredDocuments.length === 0 ||
+          uploadedRequiredDocuments.length === requiredDocuments.length;
 
         return {
-          id: documentType.id,
-          code: documentType.code,
-          name: documentType.name,
+          id: phase.id,
 
-          projectPhaseId: documentType.projectPhaseId,
+          module: phase.module,
 
-          phaseCode: documentType.phaseCode,
+          phaseNumber: phase.phase_number,
 
-          phaseName: documentType.phaseName,
+          phaseCode: phase.phase_code,
 
-          sectionCode: documentType.sectionCode,
+          title: phase.title,
 
-          sectionName: documentType.sectionName,
+          description: phase.description,
 
-          sequence: documentType.sequence,
+          sortOrder: phase.sort_order,
 
-          targetType: documentType.targetType,
+          isComplete,
 
-          requirementType: documentType.requirementType,
+          summary: {
+            total,
+            uploaded: uploadedCount,
+            pending: pendingCount,
 
-          allowsMultiple: documentType.allowsMultiple,
+            required: requiredDocuments.length,
 
-          requiresRevision: documentType.requiresRevision,
+            uploadedRequired: uploadedRequiredDocuments.length,
 
-          requiresApproval: documentType.requiresApproval,
+            pendingRequired:
+              requiredDocuments.length - uploadedRequiredDocuments.length,
 
-          description: documentType.description,
+            completionPercentage,
 
-          isActive: documentType.isActive,
+            requiredCompletionPercentage,
+          },
 
-          /*
-           * Project-specific upload state.
-           */
-          isUploaded,
-
-          uploadCount: uploaded.length,
-
-          documentIds: uploaded.map((document) => document.id),
-
-          latestDocumentId: uploaded[0]?.id ?? null,
-
-          latestUploadedAt: uploaded[0]?.createdAt ?? null,
+          documents,
         };
-      });
-
-      const total = documents.length;
-
-      const uploadedCount = documents.filter(
-        (document) => document.isUploaded,
-      ).length;
-
-      const pendingCount = total - uploadedCount;
-
-      const requiredDocuments = documents.filter(
-        (document) => document.requirementType === 'REQUIRED',
-      );
-
-      const uploadedRequiredDocuments = requiredDocuments.filter(
-        (document) => document.isUploaded,
-      );
-
-      const completionPercentage =
-        total === 0 ? 100 : Math.round((uploadedCount / total) * 100);
-
-      const requiredCompletionPercentage =
-        requiredDocuments.length === 0
-          ? 100
-          : Math.round(
-              (uploadedRequiredDocuments.length / requiredDocuments.length) *
-                100,
-            );
-
-      /*
-       * A phase is considered complete only when all
-       * REQUIRED document types have at least one upload.
-       */
-      const isComplete =
-        requiredDocuments.length === 0 ||
-        uploadedRequiredDocuments.length === requiredDocuments.length;
-
-      return {
-        id: phase.id,
-
-        module: phase.module,
-
-        phaseNumber: phase.phase_number,
-
-        phaseCode: phase.phase_code,
-
-        title: phase.title,
-
-        description: phase.description,
-
-        sortOrder: phase.sort_order,
-
-        isComplete,
-
-        summary: {
-          total,
-          uploaded: uploadedCount,
-          pending: pendingCount,
-
-          required: requiredDocuments.length,
-
-          uploadedRequired: uploadedRequiredDocuments.length,
-
-          pendingRequired:
-            requiredDocuments.length - uploadedRequiredDocuments.length,
-
-          completionPercentage,
-
-          requiredCompletionPercentage,
-        },
-
-        documents,
-      };
-    });
+      }),
+    );
 
     /*
      * Overall project-level summary.
