@@ -1,34 +1,13 @@
-import { useEffect, useState } from "react";
+import { useGetBusinessProposalsQuery } from "@/api/documents/business-proposals.api";
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import api from "@/lib/api";
 export default function BusinessProposalList() {
   const [params] = useSearchParams();
-  const projectId = params.get("project_id") || "";
-  const [rows, setRows] = useState([]);
+  const projectId = params.get("project_id") || params.get("projectId") || "";
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [reload, setReload] = useState(0);
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError("");
-    api
-      .get("/business-proposals", { params: { project_id: projectId, search } })
-      .then(({ data }) => {
-        if (active) setRows(data);
-      })
-      .catch(() => {
-        if (active) setError("Could not load business proposals.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [projectId, search, reload]);
-  return (
+  const { currentData: rows = [], isFetching: loading, isError, refetch } = useGetBusinessProposalsQuery({ projectId, search });
+  const error = isError ? "Could not load business proposals." : "";
+return (
     <div className="bg-page p-6 space-y-5">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Business proposals</h1>
@@ -49,7 +28,7 @@ export default function BusinessProposalList() {
       {loading ? (
         <p>Loading proposals…</p>
       ) : error ? (
-        <button onClick={() => setReload(reload + 1)}>{error} Retry</button>
+        <button onClick={() => refetch()}>{error} Retry</button>
       ) : !rows.length ? (
         <div className="bc-card p-8">No saved business proposals yet.</div>
       ) : (

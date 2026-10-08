@@ -1,0 +1,2 @@
+Reference: C:/Users/devro/Downloads/inos-local/CONSENT FORM VF.docx
+A4 portrait, margins left/right 19.4 mm, top 21.2 mm, bottom 19.4 mm. Lato 7.5pt body; green #0d3d2f and gold #d9b061. Three pages per OOXML cached layout: cover and client details; consent sections 01 and 02; declaration 03 and signature fields. Original wording retained verbatim in consent-form-content.json. Signatures and signing dates remain blank. Word renderer unavailable; browser PDF export used for QA.

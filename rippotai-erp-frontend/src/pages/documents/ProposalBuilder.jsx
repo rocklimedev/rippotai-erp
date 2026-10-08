@@ -1,7 +1,7 @@
-import api from "@/lib/api";
+import { useCreateBusinessProposalMutation, useUpdateBusinessProposalMutation } from "@/api/documents/business-proposals.api";
 import { toast } from "sonner";
 import React, { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import {
   Pencil,
@@ -309,7 +309,13 @@ export default function ProposalBuilder({
 
   const documentRef = useRef(null);
   const [recordId, setRecordId] = useState(savedRecord?.id || "");
-  const [savingSnapshot, setSavingSnapshot] = useState(false);
+  const [createBusinessProposal, createState] = useCreateBusinessProposalMutation();
+  const [updateBusinessProposal, updateState] = useUpdateBusinessProposalMutation();
+  const savingSnapshot = createState.isLoading || updateState.isLoading;
+  const snapshotSaving = useRef(false);
+  useEffect(() => {
+    if (!savedRecord) setRecordId("");
+  }, [projectId, savedRecord]);
 
   /* ============================================================
      REAL DATA — READS
@@ -695,7 +701,9 @@ export default function ProposalBuilder({
       !baseDocs.schedule
     )
       throw new Error("Wait for all proposal documents to load before saving");
-    setSavingSnapshot(true);
+    if (snapshotSaving.current) throw new Error("A proposal save is already in progress");
+    snapshotSaving.current = true;
+
     try {
       const body = {
         project_id: projectId,
@@ -706,13 +714,14 @@ export default function ProposalBuilder({
         snapshot: { schemaVersion: 1, proposal, docs: proposalDocs },
       };
       const response = recordId
-        ? await api.put(`/business-proposals/${recordId}`, body)
-        : await api.post("/business-proposals", body);
-      setRecordId(response.data.id);
+        ? await updateBusinessProposal({ id: recordId, body }).unwrap()
+        : await createBusinessProposal(body).unwrap();
+      setRecordId(response.id);
       toast.success("Business proposal saved");
-      return response.data;
+      return response;
     } finally {
-      setSavingSnapshot(false);
+      snapshotSaving.current = false;
+
     }
   }
   const handleDownload = async () => {
@@ -865,12 +874,13 @@ export default function ProposalBuilder({
               disabled={savingSnapshot}
               onClick={() =>
                 saveSnapshot().catch((error) =>
-                  toast.error(error?.response?.data?.message || error.message),
+                  toast.error(error?.data?.message || error?.message || "Could not save business proposal"),
                 )
               }
             >
               {savingSnapshot ? "Saving…" : "Save proposal"}
             </Button>
+            {recordId && <Link className="bc-btn-secondary" to={`/crm/business-proposal/${recordId}`}>View saved proposal</Link>}
             <Segmented
               value={view}
               onChange={setView}
