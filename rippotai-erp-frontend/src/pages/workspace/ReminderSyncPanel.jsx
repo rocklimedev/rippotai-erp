@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card } from "@/components/inos";
 import {
   useGetReminderStatusQuery,
   useSaveReminderSettingsMutation,
-  useSyncRemindersMutation,
+  useGetReminderPortalsQuery,
+  useGetReminderProjectsQuery,
   useReconcileReminderMutation,
   useGetReminderCalendarsQuery,
 } from "@/api/workspace/reminder-sync.api";
@@ -32,20 +32,30 @@ export default function ReminderSyncPanel({ kind }) {
       refetchOnFocus: true,
     });
   const [draft, setDraft] = useState(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const calendars = useGetReminderCalendarsQuery(undefined, { skip: kind !== 'calendar' || !settingsOpen });
+
+  const calendars = useGetReminderCalendarsQuery(undefined, {
+    skip: kind !== "calendar",
+    refetchOnMountOrArgChange: true,
+  });
   const [remoteIds, setRemoteIds] = useState({});
   const [save, saving] = useSaveReminderSettingsMutation();
-  const [sync, syncing] = useSyncRemindersMutation();
   const [reconcile, reconciling] = useReconcileReminderMutation();
   const [authorize, authorizing] = useLazyZohoAuthorizeUrlQuery();
-  const busy = saving.isLoading || syncing.isLoading || reconciling.isLoading;
+  const busy = saving.isLoading || reconciling.isLoading;
   const form = draft || { ...defaults, ...data?.settings };
+  const portals = useGetReminderPortalsQuery(undefined, {
+    skip: kind !== "tasks",
+    refetchOnMountOrArgChange: true,
+  });
+  const projects = useGetReminderProjectsQuery(form.portal_id, {
+    skip: kind !== "tasks" || !form.portal_id,
+    refetchOnMountOrArgChange: true,
+  });
   const fields =
     kind === "tasks"
       ? [
-          ["portal_id", "Zoho portal ID"],
-          ["project_id", "Zoho project ID"],
+          ["portal_id", "Zoho portal"],
+          ["project_id", "Zoho project"],
           ["tasklist_id", "Task list ID (optional)"],
           ["assignee_id", "Your Zoho Projects user ID"],
           ["task_reminder_time", "Reminder time on due date"],
@@ -88,16 +98,6 @@ export default function ReminderSyncPanel({ kind }) {
       toast.error(errorMessage(e));
     }
   };
-  const run = async (retry_failed = false) => {
-    try {
-      const result = await sync({ kind, retry_failed }).unwrap();
-      const message = `${result.created} created, ${result.updated} updated, ${result.deleted} removed, ${result.failed} failed, ${result.uncertain} need review`;
-      if (result.success) toast.success(message);
-      else toast.error(message);
-    } catch (e) {
-      toast.error(errorMessage(e));
-    }
-  };
   return (
     <Card>
       <div
@@ -110,7 +110,9 @@ export default function ReminderSyncPanel({ kind }) {
         }}
       >
         <div>
-          <strong>Zoho reminders</strong>
+          <strong>
+            {kind === "tasks" ? "Task reminders" : "Calendar reminders"}
+          </strong>
           <p style={{ margin: "6px 0" }}>
             Your local{" "}
             {kind === "tasks" ? "tasks with due dates" : "calendar events"}{" "}
@@ -119,20 +121,6 @@ export default function ReminderSyncPanel({ kind }) {
               ? "Automatic sync runs every minute."
               : "Automatic sync is paused."}
           </p>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <Button
-            disabled={busy || isLoading || isError || Boolean(draft)}
-            icon={RefreshCw}
-            onClick={() => run()}
-          >
-            Sync now
-          </Button>
-          {data?.failed > 0 && (
-            <Button disabled={busy || Boolean(draft)} onClick={() => run(true)}>
-              Retry failed
-            </Button>
-          )}
         </div>
       </div>
       {isLoading && <p>Loading reminder status…</p>}
@@ -151,28 +139,40 @@ export default function ReminderSyncPanel({ kind }) {
       {data?.settings?.last_error && (
         <p role="alert">{data.settings.last_error}</p>
       )}
-      <details onToggle={(event) => setSettingsOpen(event.currentTarget.open)}>
-        <summary style={{ cursor: "pointer" }}>Reminder settings</summary>
+      <div>
         <p>
           {kind === "tasks"
             ? "Syncs tasks assigned to you, plus unassigned tasks you created. Enter your Zoho Projects user ID so Zoho sends reminders to you."
             : "Syncs calendar events you created. Task deadlines use task reminders."}
         </p>
-        {kind === 'calendar' && <div>
-          {calendars.isFetching && <p>Loading your Zoho calendars…</p>}
-          {calendars.isError && <p role="alert">{errorMessage(calendars.error)}</p>}
-          <Button disabled={calendars.isFetching} onClick={() => calendars.refetch()}>Refresh calendars</Button>
-          {calendars.data && !calendars.data.length && <p>No personal calendars found. Create a calendar in Zoho, then refresh this list.</p>}
-        </div>}
+        {(kind === "tasks" ? [portals, projects] : [calendars]).map(
+          (query, index) =>
+            query.isError && (
+              <p key={index} role="alert">
+                {errorMessage(query.error)}{" "}
+                <Button onClick={query.refetch}>
+                  Retry loading destinations
+                </Button>
+              </p>
+            ),
+        )}
+        {(kind === "tasks"
+          ? portals.isFetching || projects.isFetching
+          : calendars.isFetching) && <p>Loading Zoho destinations...</p>}
+        {kind === "tasks" && portals.currentData?.length === 0 && (
+          <p>No Zoho portals found in this account.</p>
+        )}
+        {kind === "tasks" &&
+          form.portal_id &&
+          projects.currentData?.length === 0 && (
+            <p>No projects found in this portal.</p>
+          )}
+        {kind === "calendar" && calendars.data?.length === 0 && (
+          <p>No personal calendars found in this account.</p>
+        )}
         <Button onClick={connect} disabled={busy || authorizing.isFetching}>
           Connect Zoho reminders
         </Button>
-        <p>
-          <Link to={kind === "tasks" ? "/tasks/zoho" : "/calendar/connected"}>
-            Find your Zoho destination
-          </Link>{" "}
-          · <Link to="/settings/connectors">Manage connection</Link>
-        </p>
         <form
           onSubmit={submit}
           style={{
@@ -185,28 +185,98 @@ export default function ReminderSyncPanel({ kind }) {
           {[...fields, ["timezone", "Timezone"]].map(([key, label]) => (
             <label key={key} style={{ display: "grid", gap: 4 }}>
               {label}
-              {key === 'calendar_id' ? <select className="inos-input" value={form.calendar_id} required
-                disabled={busy || calendars.isFetching || !calendars.data?.length}
-                onChange={(event) => setDraft({ ...form, calendar_id: event.target.value })}>
-                <option value="">Select your Zoho calendar</option>
-                {form.calendar_id && !calendars.data?.some((calendar) => calendar.uid === form.calendar_id) && <option value={form.calendar_id} disabled>Saved calendar unavailable — choose another</option>}
-                {calendars.data?.map((calendar) => <option key={calendar.uid} value={calendar.uid}>{calendar.name}</option>)}
-              </select> : <input
-                className="inos-input"
-                type={
-                  key === "reminder_minutes"
-                    ? "number"
-                    : key === "task_reminder_time"
-                      ? "time"
-                      : "text"
-                }
-                min={key === "reminder_minutes" ? 0 : undefined}
-                max={key === "reminder_minutes" ? 10080 : undefined}
-                value={form[key]}
-                disabled={busy || isLoading || isError}
-                required={form.enabled && key !== "tasklist_id"}
-                onChange={(e) => setDraft({ ...form, [key]: e.target.value })}
-              />}
+              {key === "portal_id" || key === "project_id" ? (
+                <select
+                  className="inos-input"
+                  value={form[key]}
+                  required={form.enabled}
+                  disabled={
+                    busy ||
+                    isLoading ||
+                    isError ||
+                    (key === "portal_id"
+                      ? portals.isFetching
+                      : projects.isFetching || !form.portal_id)
+                  }
+                  onChange={(event) =>
+                    setDraft({
+                      ...form,
+                      [key]: event.target.value,
+                      ...(key === "portal_id"
+                        ? { project_id: "", tasklist_id: "" }
+                        : { tasklist_id: "" }),
+                    })
+                  }
+                >
+                  <option value="">
+                    {key === "portal_id"
+                      ? "Select your Zoho portal"
+                      : "Select your Zoho project"}
+                  </option>
+                  {form[key] &&
+                    !(
+                      key === "portal_id"
+                        ? portals.currentData
+                        : projects.currentData
+                    )?.some((item) => item.id === form[key]) && (
+                      <option value={form[key]}>
+                        Saved destination ({form[key]})
+                      </option>
+                    )}
+                  {(key === "portal_id"
+                    ? portals.currentData
+                    : projects.currentData
+                  )?.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              ) : key === "calendar_id" ? (
+                <select
+                  className="inos-input"
+                  value={form.calendar_id}
+                  required={form.enabled}
+                  disabled={
+                    busy || calendars.isFetching || !calendars.data?.length
+                  }
+                  onChange={(event) =>
+                    setDraft({ ...form, calendar_id: event.target.value })
+                  }
+                >
+                  <option value="">Select your Zoho calendar</option>
+                  {form.calendar_id &&
+                    !calendars.data?.some(
+                      (calendar) => calendar.uid === form.calendar_id,
+                    ) && (
+                      <option value={form.calendar_id} disabled>
+                        Saved calendar unavailable — choose another
+                      </option>
+                    )}
+                  {calendars.data?.map((calendar) => (
+                    <option key={calendar.uid} value={calendar.uid}>
+                      {calendar.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  className="inos-input"
+                  type={
+                    key === "reminder_minutes"
+                      ? "number"
+                      : key === "task_reminder_time"
+                        ? "time"
+                        : "text"
+                  }
+                  min={key === "reminder_minutes" ? 0 : undefined}
+                  max={key === "reminder_minutes" ? 10080 : undefined}
+                  value={form[key]}
+                  disabled={busy || isLoading || isError}
+                  required={form.enabled && key !== "tasklist_id"}
+                  onChange={(e) => setDraft({ ...form, [key]: e.target.value })}
+                />
+              )}
             </label>
           ))}
           <label>
@@ -221,16 +291,25 @@ export default function ReminderSyncPanel({ kind }) {
           <Button
             type="submit"
             variant="primary"
-            disabled={busy || isLoading || isError || (kind === 'calendar' && !calendars.data?.some((calendar) => calendar.uid === form.calendar_id))}
+            disabled={
+              busy ||
+              isLoading ||
+              isError ||
+              (form.enabled &&
+                kind === "calendar" &&
+                !calendars.data?.some(
+                  (calendar) => calendar.uid === form.calendar_id,
+                ))
+            }
           >
             Save settings
           </Button>
         </form>
         <p>
           Pausing stops future syncs; existing Zoho reminders remain active.
-          Edit records here to update them in Zoho.
+          Changes to your tasks and events sync automatically.
         </p>
-      </details>
+      </div>
       {data?.errors?.length > 0 && (
         <details>
           <summary>Records needing attention ({data.errors.length})</summary>
@@ -253,7 +332,7 @@ export default function ReminderSyncPanel({ kind }) {
                         remote_id: remoteIds[item.local_id],
                       }).unwrap();
                       toast.success(
-                        "Reminder linked. Sync now to apply local data.",
+                        "Reminder linked. Changes will sync automatically.",
                       );
                     } catch (e) {
                       toast.error(errorMessage(e));

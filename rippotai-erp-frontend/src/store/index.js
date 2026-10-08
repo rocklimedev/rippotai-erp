@@ -1,4 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
+import { setupListeners } from "@reduxjs/toolkit/query";
 
 // Single shared RTK Query API
 import { baseApi } from "./baseApi";
@@ -52,3 +53,5 @@ export const store = configureStore({
 
   devTools: process.env.NODE_ENV !== "production",
 });
+
+setupListeners(store.dispatch);

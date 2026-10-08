@@ -98,6 +98,26 @@ describe('Zoho reminder mirror', () => {
     );
   });
 
+  it('loads portal destinations from the connected user and preserves string IDs', async () => {
+    zohoTasks.listPortals = jest.fn().mockResolvedValue({ data: { portals: [{ id_string: '170876000006360599', name: 'Studio' }] } });
+    expect(await service.taskPortals(user)).toEqual([{ id: '170876000006360599', name: 'Studio' }]);
+    expect(zohoTasks.listPortals).toHaveBeenCalledWith(user);
+  });
+
+  it('loads projects beyond the first page for the selected portal', async () => {
+    const first = Array.from({ length: 100 }, (_, i) => ({ id_string: String(i + 1), name: 'Project ' + i }));
+    zohoTasks.listProjects = jest.fn().mockResolvedValueOnce({ projects: first }).mockResolvedValueOnce({ projects: [{ id_string: '101', name: 'Last project' }] });
+    const projects = await service.taskProjects(user, 'portal-2');
+    expect(projects).toHaveLength(101);
+    expect(projects[100]).toEqual({ id: '101', name: 'Last project' });
+    expect(zohoTasks.listProjects).toHaveBeenNthCalledWith(2, user, 'portal-2', { index: 101, range: 100 });
+  });
+
+  it('reports malformed destination responses instead of an empty project list', async () => {
+    zohoTasks.listProjects = jest.fn().mockResolvedValue({ error: 'missing scopes' });
+    await expect(service.taskProjects(user, 'portal')).rejects.toThrow(BadRequestException);
+  });
+
   it('pushes new due tasks and scopes selection to the reminder owner', async () => {
     const result = await service.sync(user, 'tasks');
     expect(result).toMatchObject({ success: true, created: 1 });

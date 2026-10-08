@@ -29,6 +29,7 @@ import CreateDeliveryChallanPage from "../../pages/materials/CreateDeliveryChall
 import DeliveryChallanView from "../../pages/materials/DeliveryChallanView";
 
 import BoqVendorRateComparison from "../../pages/boq/BoqVendorRateComparison";
+import VendorRateComparisonList from "../../pages/boq/VendorRateComparisonList";
 import WorkOrderList from "../../pages/materials/WorkOrderList";
 import CreateWorkOrder from "../../pages/materials/CreateWorkOrder";
 import WorkOrderView from "../../pages/materials/WorkOrderView";
@@ -127,6 +128,18 @@ export const materialsRoutes = [
 
       {
         path: "vendors/rate-comparison",
+        element: <VendorRateComparisonList />,
+      },
+      {
+        path: "vendors/rate-comparison/new",
+        element: <BoqVendorRateComparison />,
+      },
+      {
+        path: "vendors/rate-comparison/:id/edit",
+        element: <BoqVendorRateComparison />,
+      },
+      {
+        path: "vendors/rate-comparison/:id",
         element: <BoqVendorRateComparison />,
       },
 

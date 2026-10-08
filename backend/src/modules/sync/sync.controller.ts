@@ -26,6 +26,14 @@ class ReconcileReminderDto {
 @ApiBearerAuth()
 export class SyncController {
   constructor(private readonly reminders: ReminderSyncService) {}
+  @Get('tasks/portals')
+  taskPortals(@CurrentUser() user: any) {
+    return this.reminders.taskPortals(user.id);
+  }
+  @Get('tasks/portals/:portalId/projects')
+  taskProjects(@CurrentUser() user: any, @Param('portalId') portalId: string) {
+    return this.reminders.taskProjects(user.id, portalId);
+  }
   @Get('calendar/destinations')
   calendarDestinations(@CurrentUser() user: any) {
     return this.reminders.calendarDestinations(user.id);

@@ -108,6 +108,33 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
+  private destinationList(response: any, key: string) {
+    const data = response?.data ?? response;
+    const items = Array.isArray(data) ? data : data?.[key];
+    if (!Array.isArray(items))
+      throw new BadRequestException(`Could not load Zoho ${key}. Reconnect Zoho reminders and try again.`);
+    return items.filter((item) => item?.id_string || item?.id).map((item) => ({
+      id: String(item.id_string || item.id),
+      name: item.name || String(item.id_string || item.id),
+    }));
+  }
+
+  async taskPortals(userId: string) {
+    return this.destinationList(await this.zohoTasks.listPortals(userId), 'portals');
+  }
+
+  async taskProjects(userId: string, portalId: string) {
+    const projects: { id: string; name: string }[] = [];
+    const limit = 100;
+    for (let index = 1; ; index += limit) {
+      const page = this.destinationList(await this.zohoTasks.listProjects(userId, portalId, { index, range: limit }), 'projects');
+      if (page.some((item) => projects.some((project) => project.id === item.id)))
+        throw new BadRequestException('Could not load all Zoho projects. Try again later.');
+      projects.push(...page);
+      if (page.length < limit) return projects;
+    }
+  }
+
   async calendarDestinations(userId: string) {
     const response = await this.zohoCalendar.listCalendars(userId, 'own', true);
     const data = response?.data ?? response;
