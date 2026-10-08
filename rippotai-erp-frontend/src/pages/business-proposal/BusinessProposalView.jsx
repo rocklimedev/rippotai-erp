@@ -7,13 +7,14 @@ import {
   downloadDocumentPdf,
   pdfFileName,
 } from "@/components/print-document";
-import { useBusinessProposal } from "./useBusinessProposal";
+import { useGetBusinessProposalQuery } from "@/api/documents/business-proposals.api";
 export default function BusinessProposalView() {
   const { id } = useParams();
-  const { record, error } = useBusinessProposal(id);
+  const { currentData: record, isError, refetch } = useGetBusinessProposalQuery(id, { skip: !id });
+  const error = isError ? "Could not load this business proposal." : "";
   const ref = useRef(null);
   const [downloading, setDownloading] = useState(false);
-  if (!record) return <p className="p-6">{error || "Loading proposal…"}</p>;
+  if (!record) return <div className="p-6"><p>{error || "Loading proposal…"}</p>{isError && <button onClick={refetch}>Retry</button>}</div>;
   async function download() {
     setDownloading(true);
     try {

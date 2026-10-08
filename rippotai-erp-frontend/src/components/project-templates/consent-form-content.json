@@ -1,0 +1,32 @@
+{
+  "brand": "RIPP\u014cTAI",
+  "brandLine": "ARCHITECTURE \u00b7 INTERIORS \u00b7 TURNKEY",
+  "title": "CLIENT CONSENT FORM",
+  "subtitle": "OCCUPIED SITE & PRE-AGREEMENT COMMENCEMENT",
+  "intro": "This form records the Client\u2019s consent on two specific points before work begins at site. It does not replace the Scope of Work, BOQ, Payment Schedule or the Agreement, each of which is issued and signed separately.",
+  "sections": [
+    {
+      "title": "01   Consent to Work at an Occupied Site",
+      "intro": "The Client confirms the following:",
+      "clauses": [
+        "1.1.   The above site is currently occupied and lived in by the Client, and will continue to be occupied for some or all of the duration of the project.",
+        "1.2.   The Client gives consent for Rippotai and its appointed team \u2014 including site staff, contractors and vendors \u2014 to carry out survey, design and execution work at the site while it remains occupied.",
+        "1.3.   The Client understands that work at an occupied site involves the ordinary presence of workers and material, and the usual noise, dust and disruption of construction activity, during working hours agreed between the Client and Rippotai.",
+        "1.4.   The Client will keep the work area reasonably accessible and clear, and will inform Rippotai in advance of any rooms, times or belongings that need to be kept out of the scope of daily work."
+      ]
+    },
+    {
+      "title": "02   Commencement Before the Agreement is Signed",
+      "intro": "The Client confirms the following:",
+      "clauses": [
+        "2.1.   The formal Agreement / Contract for this project will be signed only after the Bill of Quantities (BOQ) is finalised, and the BOQ itself depends on estimates received from vendors for the required materials and work.",
+        "2.2.   Until the Agreement is signed, Rippotai will proceed with the project \u2014 including design, site survey and preparatory work \u2014 on the basis of the understanding recorded in this consent form and any Business Proposal already shared.",
+        "2.3.   The Client understands and agrees that the scope, cost and timeline discussed at this stage are indicative and provisional, and will be confirmed only once vendor estimates are received, the BOQ is finalised, and the Agreement is signed by both parties.",
+        "2.4.   Nothing in this form obliges either party to proceed beyond this stage if the finalised BOQ or Agreement terms are not acceptable to them."
+      ]
+    }
+  ],
+  "declarationTitle": "03   Declaration & Sign-Off",
+  "declaration": "I / We confirm that I / we have read and understood the two points above, and give consent accordingly. I / We understand this form does not replace the Agreement, Scope of Work, BOQ or Payment Schedule, each of which will be issued and signed separately.",
+  "recordNote": "This form is retained on the project file and forms part of the project record. It does not constitute the Agreement, Scope of Work, BOQ or Payment Schedule, each of which is issued as a separate document."
+}

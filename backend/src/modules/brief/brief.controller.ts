@@ -1,5 +1,10 @@
+import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
+import { CurrentUserPayload } from '@/common/interfaces/current-user-payload.interface';
+import { UpdateBriefStatusDto } from './dto/update-brief-status.dto';
 import {
   Body,
+  Req,
+  UseGuards,
   Controller,
   Delete,
   Get,
@@ -14,6 +19,7 @@ import { ProjectBriefsService } from './brief.service';
 import { CreateProjectBriefDto } from './dto/create-project-brief.dto';
 import { UpdateProjectBriefDto } from './dto/update-project-brief.dto';
 
+@UseGuards(JwtAuthGuard)
 @Controller('project-briefs')
 export class ProjectBriefsController {
   constructor(private readonly projectBriefsService: ProjectBriefsService) {}
@@ -70,13 +76,10 @@ export class ProjectBriefsController {
   @Patch(':id/status')
   updateStatus(
     @Param('id') id: string,
-    @Body()
-    body: {
-      status: string;
-      userId?: string;
-    },
+    @Body() body: UpdateBriefStatusDto,
+    @Req() req: { user: CurrentUserPayload },
   ) {
-    return this.projectBriefsService.updateStatus(id, body.status, body.userId);
+    return this.projectBriefsService.updateStatus(id, body.status, req.user.id, req.user.permissions);
   }
 
   // =========================================================

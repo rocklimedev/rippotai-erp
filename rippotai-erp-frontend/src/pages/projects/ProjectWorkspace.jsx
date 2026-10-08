@@ -55,6 +55,7 @@ import {
   phaseProgress,
 } from "@/components/projects/_projects-ui";
 import { useGetProjectPhasesQuery as useGetCommandCenterPhasesQuery } from "@/api/projects/command-center.api";
+import ProjectTemplatesPanel from "@/components/project-templates/ProjectTemplatesPanel";
 
 import { useGetProjectByIdQuery } from "../../api/projects/project.api";
 import { useGetBoqsQuery } from "../../api/boq/boq.api";
@@ -904,6 +905,7 @@ export default function ProjectWorkspace() {
           { value: "overview", label: "Overview", icon: LayoutDashboard },
           { value: "phases", label: "Phases", icon: GitCommitHorizontal, count: progress.total || undefined },
           { value: "documents", label: "Documents", icon: FileText, count: docs.length },
+          { value: "templates", label: "Templates", icon: FileText },
           { value: "drawings", label: "Drawings", icon: FolderOpen },
           { value: "commercial", label: "Commercial", icon: IndianRupee },
           { value: "activity", label: "Activity", icon: Activity },
@@ -936,6 +938,7 @@ export default function ProjectWorkspace() {
       )}
 
       {tab === "drawings" && <ProjectDrawingsPanel projectId={id} />}
+      {tab === "templates" && <ProjectTemplatesPanel key={id} project={p} />}
 
       {tab === "commercial" && (
         <>

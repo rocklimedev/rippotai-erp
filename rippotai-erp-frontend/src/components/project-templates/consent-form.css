@@ -1,0 +1,207 @@
+.consent-document {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  color: #263f35;
+  font-family: Lato, Arial, sans-serif;
+}
+.consent-document * {
+  box-sizing: border-box;
+  font-family: Lato, Arial, sans-serif;
+}
+.consent-document p {
+  margin: 0;
+}
+.consent-page.pd-page {
+  position: relative;
+  flex: none;
+  width: 210mm;
+  height: 297mm;
+  padding: 21mm 19.4mm 19.4mm;
+  background: #fff;
+  color: #263f35;
+  box-shadow: 0 2px 12px #0001;
+  font-size: 9pt;
+  line-height: 1.5;
+}
+
+/* ---------- cover ---------- */
+.consent-brand {
+  text-align: center;
+  color: #0d3d2f;
+  padding-bottom: 7mm;
+  border-bottom: 1.75pt solid #d9b061;
+  margin-bottom: 9mm;
+}
+.consent-brand img {
+  display: block;
+  width: 42mm;
+  height: auto;
+  margin: 0 auto 3mm;
+}
+.consent-brand__name {
+  font-size: 15pt;
+  letter-spacing: 4px;
+  line-height: 1.2;
+}
+.consent-brand__line {
+  display: block;
+  margin-top: 1.5mm;
+  font-size: 6pt;
+  letter-spacing: 2px;
+  color: #3f5c52;
+}
+.consent-cover-title h1 {
+  font-size: 16pt;
+  font-weight: 400;
+  color: #0d3d2f;
+  letter-spacing: 0.5px;
+  margin: 0 0 1.5mm;
+}
+.consent-cover-title > p {
+  font-size: 6.5pt;
+  letter-spacing: 1.5px;
+  color: #3f5c52;
+  margin-bottom: 9mm;
+}
+.consent-callout {
+  background: #f4f7f6;
+  padding: 5mm 6mm;
+  line-height: 1.55;
+  color: #263f35;
+}
+.consent-callout > .consent-lead {
+  color: #0d3d2f;
+}
+
+/* ---------- details ---------- */
+.consent-details {
+  margin-top: 12mm;
+}
+.consent-details h2 {
+  font-size: 6.5pt;
+  letter-spacing: 1.5px;
+  font-weight: 400;
+  color: #3f5c52;
+  margin: 0 0 6mm;
+  padding-bottom: 2.5mm;
+  border-bottom: 1pt solid #d9b061;
+}
+.consent-detail-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10mm;
+  margin-bottom: 8mm;
+}
+.consent-document label {
+  display: block;
+  color: #3f5c52;
+  font-size: 6.5pt;
+  letter-spacing: 1.2px;
+  margin-bottom: 2.5mm;
+}
+.consent-detail-row p {
+  min-height: 11mm;
+  border-bottom: 1pt solid #c4ccc9;
+  padding-bottom: 2.5mm;
+  overflow-wrap: anywhere;
+  font-size: 11pt;
+  color: #0d3d2f;
+}
+
+/* ---------- sections ---------- */
+.consent-section {
+  margin-bottom: 11mm;
+}
+.consent-section h2 {
+  display: flex;
+  gap: 4mm;
+  align-items: baseline;
+  font-size: 13pt;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #0d3d2f;
+  margin: 0 0 6mm;
+  padding: 3.5mm 0;
+  border-top: 0.75pt solid #d9b061;
+  border-bottom: 0.75pt solid #d9b061;
+}
+.consent-section h2 > span {
+  color: #d9b061;
+}
+.consent-intro {
+  margin-bottom: 4mm !important;
+  color: #0d3d2f;
+}
+.consent-clause {
+  display: grid;
+  grid-template-columns: 9mm 1fr;
+  gap: 2mm;
+  margin-bottom: 4.5mm !important;
+  line-height: 1.5;
+}
+.consent-clause > span:first-child {
+  color: #d9b061;
+}
+
+/* ---------- declaration & signatures ---------- */
+.consent-declaration {
+  background: #0d3d2f;
+  color: #fff;
+  padding: 6mm;
+  margin-top: 8mm;
+}
+.consent-document .consent-declaration label {
+  color: #d9b061;
+  margin-bottom: 3mm;
+}
+.consent-declaration p {
+  color: #fff;
+  line-height: 1.6;
+}
+.consent-signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16mm;
+  margin-top: 14mm;
+}
+.consent-sign-line {
+  height: 22mm;
+  border-bottom: 1pt solid #0d3d2f;
+  margin-bottom: 2.5mm;
+}
+.consent-signatures p {
+  font-size: 8pt;
+  color: #3f5c52;
+  margin-bottom: 2.5mm;
+}
+.consent-record-note {
+  font-size: 6.5pt;
+  font-style: italic;
+  line-height: 1.5;
+  color: #636363;
+  margin-top: 16mm !important;
+  padding-top: 4mm;
+  border-top: 0.75pt solid #c4ccc9;
+}
+
+/* ---------- footer ---------- */
+.consent-footer {
+  position: absolute;
+  bottom: 10mm;
+  left: 19.4mm;
+  right: 19.4mm;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4mm;
+  font-size: 6pt;
+  letter-spacing: 1.2px;
+  color: #3f5c52;
+  white-space: nowrap;
+}
+.consent-document.is-capturing .consent-page {
+  box-shadow: none;
+}
