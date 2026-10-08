@@ -1,4 +1,3 @@
-import ReminderSyncPanel from "./ReminderSyncPanel";
 // Calendar: month / week / agenda over INOS events + task due dates, milestones, payment dues,
 // quotation expiries and site visits. /calendar (team), /calendar/mine, /calendar/team
 import React, { useMemo, useState } from "react";
@@ -522,7 +521,7 @@ export default function CalendarView({ scope = "team" }) {
       from: `${ymd(range.start)}T00:00:00`,
       to: `${ymd(range.end)}T23:59:59`,
       mine,
-    });
+    }, { pollingInterval: 30000, refetchOnFocus: true, refetchOnReconnect: true });
   const items = useMemo(
     () => (data?.items || []).filter((it) => !hidden.has(it.source)),
     [data, hidden],
@@ -581,7 +580,6 @@ export default function CalendarView({ scope = "team" }) {
           </Button>
         }
       />
-      <ReminderSyncPanel kind="calendar" />
       <Tabs
         value={scope}
         onChange={(v) =>

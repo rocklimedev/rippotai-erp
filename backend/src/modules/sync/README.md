@@ -1,6 +1,6 @@
 # Zoho reminder mirror
 
-The ERP database owns tasks and calendar events. Zoho Projects and Zoho Calendar deliver reminders. Remote edits are not imported. Enable each mirror from its native frontend page after connecting Zoho.
+The ERP database owns tasks and calendar events. Zoho Projects and Zoho Calendar deliver reminders. Remote edits are not imported. Configure both mirrors in Connectors > Zoho > Manage after connecting Zoho. Select a portal and project for tasks and a calendar for events. Synchronization runs in the backend every minute without a manual refresh.
 
 Apply `backend/migrations/20261005_zoho_reminder_sync.sql` before starting the backend. Schema synchronization is disabled. Required OAuth permissions: ZohoProjects.tasks.ALL, ZohoProjects.portals.READ, ZohoProjects.projects.READ, ZohoCalendar.calendar.READ, ZohoCalendar.event.ALL. Reconnect if the stored token lacks these scopes.
 

@@ -342,20 +342,28 @@ export const siteOpsApi = baseApi.injectEndpoints({
       providesTags: ["QualityChecklists"],
     }),
     createQualityChecklist: builder.mutation({
-      query: (body) => ({ url: '/quality-checklists', method: 'POST', body }),
-      invalidatesTags: ['QualityChecklists'],
+      query: (body) => ({ url: "/quality-checklists", method: "POST", body }),
+      invalidatesTags: ["QualityChecklists"],
     }),
     updateQualityChecklistItem: builder.mutation({
-      query: ({ id, ...body }) => ({ url: `/quality-checklists/items/${id}`, method: 'PUT', body }),
-      invalidatesTags: ['QualityChecklists'],
+      query: ({ id, ...body }) => ({
+        url: `/quality-checklists/items/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["QualityChecklists"],
     }),
     addQualityChecklistItem: builder.mutation({
-      query: ({ checklistId, ...body }) => ({ url: `/quality-checklists/${checklistId}/items`, method: 'POST', body }),
-      invalidatesTags: ['QualityChecklists'],
+      query: ({ checklistId, ...body }) => ({
+        url: `/quality-checklists/${checklistId}/items`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["QualityChecklists"],
     }),
     deleteQualityChecklist: builder.mutation({
-      query: (id) => ({ url: `/quality-checklists/${id}`, method: 'DELETE' }),
-      invalidatesTags: ['QualityChecklists'],
+      query: (id) => ({ url: `/quality-checklists/${id}`, method: "DELETE" }),
+      invalidatesTags: ["QualityChecklists"],
     }),
     exportQualityChecklistJson: builder.query({
       query: (id) => `/quality-checklists/${id}/export`,
@@ -383,6 +391,11 @@ export const siteOpsApi = baseApi.injectEndpoints({
         url: `/quality-checklists/project/${projectId}`,
         params,
       }),
+      providesTags: ["QualityChecklists"],
+    }),
+
+    getQualityChecklists: builder.query({
+      query: (params = {}) => ({ url: "/quality-checklists", params }),
       providesTags: ["QualityChecklists"],
     }),
 
@@ -520,6 +533,7 @@ export const {
   useGetQualityChecklistTemplateQuery,
   useCreateQualityChecklistFromTemplateMutation,
   useGetQualityChecklistsByProjectQuery,
+  useGetQualityChecklistsQuery,
   useGetQualityChecklistByIdQuery,
   useCompleteQualityChecklistMutation,
 

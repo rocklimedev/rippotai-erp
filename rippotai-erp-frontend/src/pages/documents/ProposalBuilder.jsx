@@ -1,3 +1,5 @@
+import api from "@/lib/api";
+import { toast } from "sonner";
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -27,7 +29,11 @@ import BudgetEstimateSection from "../../components/business-proposal/BudgetEsti
 import PaymentScheduleSection from "../../components/business-proposal/PaymentScheduleSection";
 import NextStepsSection from "../../components/business-proposal/NextStepsSection";
 import ProposalDocument from "../../components/business-proposal/ProposalDocument";
-import { DocumentPreview, downloadDocumentPdf, pdfFileName } from "@/components/print-document";
+import {
+  DocumentPreview,
+  downloadDocumentPdf,
+  pdfFileName,
+} from "@/components/print-document";
 import ProposalReadinessCheck from "../../components/business-proposal/ProposalReadinessCheck";
 import {
   useGetBudgetEstimatesQuery,
@@ -68,7 +74,6 @@ import {
 } from "../../lib/proposalMappers";
 // Budget Estimate has no real endpoint yet — intentionally kept mocked.
 import { fetchNextSteps } from "../../lib/mockApi";
-
 
 /* ============================================================
    TABS
@@ -230,7 +235,12 @@ function StepFooter({
         {saving ? "Saving changes…" : "Changes are saved when you continue"}
       </span>
       <div className="inos-form-actions__buttons">
-        <Button variant="ghost" icon={ArrowLeft} onClick={onBack} disabled={backDisabled}>
+        <Button
+          variant="ghost"
+          icon={ArrowLeft}
+          onClick={onBack}
+          disabled={backDisabled}
+        >
           Back
         </Button>
         <Button
@@ -256,7 +266,10 @@ const CRUMBS = [
    MAIN COMPONENT
 ============================================================ */
 
-export default function ProposalBuilder({ projectId: projectIdProp }) {
+export default function ProposalBuilder({
+  projectId: projectIdProp,
+  savedRecord,
+}) {
   // Project comes from the route prop, else ?project_id=, else none (the
   // readiness step then asks for one). The old "demo-project" default
   // fired API calls for a project that doesn't exist.
@@ -281,18 +294,22 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
     setProjectId(initialProjectId);
   }, [initialProjectId]);
 
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(savedRecord ? 1 : 0);
   const [view, setView] = useState("edit");
 
   const [savingStep, setSavingStep] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  const [proposal, setProposal] = useState(EMPTY_PROPOSAL);
+  const [proposal, setProposal] = useState(
+    savedRecord?.snapshot?.proposal || EMPTY_PROPOSAL,
+  );
 
   // Sections that still don't come from a real endpoint.
   const [mockLoading, setMockLoading] = useState(true);
 
   const documentRef = useRef(null);
+  const [recordId, setRecordId] = useState(savedRecord?.id || "");
+  const [savingSnapshot, setSavingSnapshot] = useState(false);
 
   /* ============================================================
      REAL DATA — READS
@@ -302,19 +319,23 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
     data: projectData,
     isFetching: projectFetching,
     isLoading: projectLoading,
-  } = useGetProjectByIdQuery(projectId, { skip: !projectId });
+  } = useGetProjectByIdQuery(projectId, { skip: !projectId || !!savedRecord });
 
   const {
     data: scopeOfWorkData,
     isFetching: scopeFetching,
     isLoading: scopeLoading,
-  } = useGetScopeOfWorkByProjectQuery(projectId, { skip: !projectId });
+  } = useGetScopeOfWorkByProjectQuery(projectId, {
+    skip: !projectId || !!savedRecord,
+  });
 
   const {
     data: planOfActionList,
     isFetching: planFetching,
     isLoading: planLoading,
-  } = useFindPlanOfActionsByProjectQuery(projectId, { skip: !projectId });
+  } = useFindPlanOfActionsByProjectQuery(projectId, {
+    skip: !projectId || !!savedRecord,
+  });
 
   const {
     data: paymentScheduleList,
@@ -322,14 +343,14 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
     isLoading: paymentLoading,
   } = useGetPaymentSchedulesQuery(
     { project_id: projectId },
-    { skip: !projectId },
+    { skip: !projectId || !!savedRecord },
   );
   const {
     data: budgetEstimateList,
     isFetching: budgetFetching,
     isLoading: budgetLoading,
   } = useGetBudgetEstimatesQuery(projectId, {
-    skip: !projectId,
+    skip: !projectId || !!savedRecord,
   });
   // Assumes a single active Plan of Action / Payment Schedule per
   // project. If a project can have more than one (e.g. drafts and a
@@ -338,16 +359,27 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
   // List endpoints don't always honour the project filter — match the project explicitly.
   const ofProject = (list) =>
     Array.isArray(list)
-      ? list.find((d) => (d?.projectId ?? d?.project_id ?? d?.project?.id) === projectId) || null
+      ? list.find(
+          (d) =>
+            (d?.projectId ?? d?.project_id ?? d?.project?.id) === projectId,
+        ) || null
       : null;
   const planOfActionDoc = ofProject(planOfActionList);
   const paymentScheduleDoc = ofProject(paymentScheduleList);
   const budgetEstimateDoc = ofProject(budgetEstimateList);
 
   // Full documents for the printable proposal (the same data their own PDFs use).
-  const { data: planFull } = useGetPlanOfActionQuery(planOfActionDoc?.id, { skip: !planOfActionDoc?.id });
-  const { data: scheduleFull } = useGetPaymentScheduleQuery(paymentScheduleDoc?.id, { skip: !paymentScheduleDoc?.id });
-  const { data: budgetFull } = useGetBudgetEstimateQuery(budgetEstimateDoc?.id, { skip: !budgetEstimateDoc?.id });
+  const { data: planFull } = useGetPlanOfActionQuery(planOfActionDoc?.id, {
+    skip: !planOfActionDoc?.id || !!savedRecord,
+  });
+  const { data: scheduleFull } = useGetPaymentScheduleQuery(
+    paymentScheduleDoc?.id,
+    { skip: !paymentScheduleDoc?.id || !!savedRecord },
+  );
+  const { data: budgetFull } = useGetBudgetEstimateQuery(
+    budgetEstimateDoc?.id,
+    { skip: !budgetEstimateDoc?.id || !!savedRecord },
+  );
   /* ============================================================
      REAL DATA — WRITES
   ============================================================ */
@@ -387,7 +419,7 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
       }
     };
 
-    if (projectId) {
+    if (projectId && !savedRecord) {
       loadNextSteps();
     }
 
@@ -400,7 +432,7 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
   ============================================================ */
 
   useEffect(() => {
-    if (!projectData) return;
+    if (savedRecord || !projectData) return;
 
     setProposal((previous) => ({
       ...previous,
@@ -409,7 +441,7 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
   }, [projectData]);
 
   useEffect(() => {
-    if (!scopeOfWorkData) return;
+    if (savedRecord || !scopeOfWorkData) return;
 
     setProposal((previous) => ({
       ...previous,
@@ -418,35 +450,39 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
   }, [scopeOfWorkData]);
 
   useEffect(() => {
-    if (!planOfActionDoc) return;
+    if (savedRecord || !planOfActionDoc) return;
 
     setProposal((previous) => ({
       ...previous,
-      planOfAction: mapPlanOfActionFromApi(planOfActionDoc),
+      planOfAction: mapPlanOfActionFromApi(planFull || planOfActionDoc),
     }));
-  }, [planOfActionDoc]);
+  }, [planFull, planOfActionDoc]);
 
   useEffect(() => {
-    if (!paymentScheduleDoc) return;
+    if (savedRecord || !paymentScheduleDoc) return;
 
     setProposal((previous) => ({
       ...previous,
-      paymentSchedule: mapPaymentScheduleFromApi(paymentScheduleDoc),
+      paymentSchedule: mapPaymentScheduleFromApi(
+        scheduleFull || paymentScheduleDoc,
+      ),
     }));
-  }, [paymentScheduleDoc]);
+  }, [scheduleFull, paymentScheduleDoc]);
   useEffect(() => {
-    if (!budgetEstimateDoc) return;
+    if (savedRecord || !budgetEstimateDoc) return;
 
     setProposal((previous) => ({
       ...previous,
-      budgetEstimate: mapBudgetEstimateFromApi(budgetEstimateDoc),
+      budgetEstimate: mapBudgetEstimateFromApi(budgetFull || budgetEstimateDoc),
     }));
-  }, [budgetEstimateDoc]);
+  }, [budgetFull, budgetEstimateDoc]);
   /* ============================================================
      RESET TO READINESS WHEN SWITCHING PROJECT
   ============================================================ */
 
   useEffect(() => {
+    if (savedRecord) return;
+    setRecordId("");
     setProposal(EMPTY_PROPOSAL);
     setStep(0);
     setView("edit");
@@ -468,6 +504,7 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
   ============================================================ */
 
   const saveProjectDetail = async () => {
+    if (savedRecord) return;
     if (!projectId || !proposal.projectDetail) return;
 
     try {
@@ -485,6 +522,7 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
   };
 
   const saveScopeOfWork = async () => {
+    if (savedRecord) return;
     if (!scopeOfWorkData?.id || !proposal.scopeOfWork) return;
 
     try {
@@ -502,6 +540,7 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
   };
 
   const savePlanOfAction = async () => {
+    if (savedRecord) return;
     if (!planOfActionDoc?.id || !proposal.planOfAction) return;
 
     try {
@@ -524,6 +563,7 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
   };
 
   const savePaymentSchedule = async () => {
+    if (savedRecord) return;
     if (!paymentScheduleDoc?.id || !proposal.paymentSchedule) return;
 
     try {
@@ -540,6 +580,7 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
     }
   };
   const saveBudgetEstimate = async () => {
+    if (savedRecord) return;
     if (!budgetEstimateDoc?.id || !proposal.budgetEstimate) return;
 
     try {
@@ -581,6 +622,99 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
      DOWNLOAD PDF
   ============================================================ */
 
+  const baseDocs = savedRecord?.snapshot?.docs || {
+    project: projectData,
+    scope: scopeOfWorkData,
+    plan: planFull,
+    budget: budgetFull,
+    schedule: scheduleFull,
+  };
+  const proposalDocs = {
+    project: {
+      ...baseDocs.project,
+      ...mapProjectDetailToUpdatePayload(proposal.projectDetail),
+    },
+    scope: proposal.scopeOfWork
+      ? {
+          ...baseDocs.scope,
+          ...mapScopeOfWorkToUpdatePayload(proposal.scopeOfWork),
+          items: mapScopeOfWorkToUpdatePayload(proposal.scopeOfWork).items.map(
+            (item) => ({
+              ...baseDocs.scope?.items?.find((source) => source.id === item.id),
+              ...item,
+            }),
+          ),
+        }
+      : baseDocs.scope,
+    plan: proposal.planOfAction
+      ? {
+          ...baseDocs.plan,
+          ...mapPlanOfActionToUpdatePayload(proposal.planOfAction),
+          phases: proposal.planOfAction.phases?.map((phase, index) => ({
+            ...baseDocs.plan?.phases?.[index],
+            title: phase.title || phase.name,
+            description: phase.detail || phase.description,
+            PlanOfActionPhase: {
+              ...baseDocs.plan?.phases?.[index]?.PlanOfActionPhase,
+              ...mapPlanOfActionToPhasesPayload(proposal.planOfAction)[index],
+            },
+          })),
+        }
+      : baseDocs.plan,
+    budget: proposal.budgetEstimate
+      ? {
+          ...baseDocs.budget,
+          ...proposal.budgetEstimate,
+          client_name: proposal.budgetEstimate.clientName,
+          total_amount: proposal.budgetEstimate.totalAmount,
+        }
+      : baseDocs.budget,
+    schedule: proposal.paymentSchedule
+      ? {
+          ...baseDocs.schedule,
+          ...proposal.paymentSchedule,
+          milestones: proposal.paymentSchedule.milestones?.map((m, index) => ({
+            ...baseDocs.schedule?.milestones?.[index],
+            ...mapPaymentScheduleToUpdatePayload(proposal.paymentSchedule)
+              .milestones[index],
+            amount: m.amount,
+          })),
+        }
+      : baseDocs.schedule,
+    nextSteps: proposal.nextSteps,
+    generatedAt:
+      savedRecord?.snapshot?.docs?.generatedAt || new Date().toISOString(),
+  };
+  async function saveSnapshot() {
+    if (!projectId) throw new Error("Select a project first");
+    if (
+      !baseDocs.project ||
+      !baseDocs.scope ||
+      !baseDocs.plan ||
+      !baseDocs.budget ||
+      !baseDocs.schedule
+    )
+      throw new Error("Wait for all proposal documents to load before saving");
+    setSavingSnapshot(true);
+    try {
+      const body = {
+        project_id: projectId,
+        title:
+          proposal.projectDetail?.projectName ||
+          proposalDocs.project?.name ||
+          "Business proposal",
+        snapshot: { schemaVersion: 1, proposal, docs: proposalDocs },
+      };
+      const response = recordId
+        ? await api.put(`/business-proposals/${recordId}`, body)
+        : await api.post("/business-proposals", body);
+      setRecordId(response.data.id);
+      toast.success("Business proposal saved");
+      return response.data;
+    } finally {
+      setSavingSnapshot(false);
+    }
+  }
   const handleDownload = async () => {
     if (exporting) return;
 
@@ -605,6 +739,7 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
 
     try {
       setExporting(true);
+      await saveSnapshot();
 
       /*
        * Preview needs to be mounted before
@@ -717,6 +852,7 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
           <>
             <Button
               variant="ghost"
+              disabled={!!savedRecord}
               onClick={() => {
                 setStep(0);
                 setView("edit");
@@ -725,10 +861,24 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
               Readiness
             </Button>
 
+            <Button
+              disabled={savingSnapshot}
+              onClick={() =>
+                saveSnapshot().catch((error) =>
+                  toast.error(error?.response?.data?.message || error.message),
+                )
+              }
+            >
+              {savingSnapshot ? "Saving…" : "Save proposal"}
+            </Button>
             <Segmented
               value={view}
               onChange={setView}
-              options={TABS.map((t) => ({ value: t.value, label: t.label, icon: t.icon }))}
+              options={TABS.map((t) => ({
+                value: t.value,
+                label: t.label,
+                icon: t.icon,
+              }))}
             />
 
             <Button
@@ -754,7 +904,10 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
       ======================================================== */}
 
       {view === "edit" && (
-        <main className="inos-form" style={{ maxWidth: 920, width: "100%", margin: "0 auto" }}>
+        <main
+          className="inos-form"
+          style={{ maxWidth: 920, width: "100%", margin: "0 auto" }}
+        >
           {/* ====================================================
               STEP 1 - PROJECT DETAILS
           ==================================================== */}
@@ -929,7 +1082,10 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
 
       {view === "preview" && (
         <>
-          <div className="inos-form-actions" style={{ position: "static", boxShadow: "none" }}>
+          <div
+            className="inos-form-actions"
+            style={{ position: "static", boxShadow: "none" }}
+          >
             <span className="inos-form-actions__note">
               Proposal preview — this is exactly what the PDF will contain.
             </span>
@@ -949,15 +1105,7 @@ export default function ProposalBuilder({ projectId: projectIdProp }) {
 
           <main>
             <DocumentPreview>
-              <ProposalDocument
-                ref={documentRef}
-                project={projectData || {}}
-                scope={scopeOfWorkData}
-                plan={planFull}
-                budget={budgetFull}
-                schedule={scheduleFull}
-                nextSteps={proposal.nextSteps}
-              />
+              <ProposalDocument ref={documentRef} {...proposalDocs} />
             </DocumentPreview>
           </main>
         </>

@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 
 import * as express from 'express';
@@ -8,7 +9,9 @@ import { RedisIoAdapter } from './redis-io.adapter';
 import { StripSecretsInterceptor } from './common/interceptors/strip-secrets.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // Saved comparison snapshots include BOQ lines and vendor rates.
+  app.useBodyParser('json', { limit: '3mb' });
 
   const isDev = process.env.NODE_ENV !== 'production';
 

@@ -3,6 +3,8 @@ export const reminderSyncApi = baseApi
   .enhanceEndpoints({ addTagTypes: ["ReminderSync"] })
   .injectEndpoints({
     endpoints: (builder) => ({
+      getReminderPortals: builder.query({ query: () => '/sync/tasks/portals' }),
+      getReminderProjects: builder.query({ query: (portalId) => `/sync/tasks/portals/${encodeURIComponent(portalId)}/projects` }),
       getReminderCalendars: builder.query({
         query: () => '/sync/calendar/destinations',
       }),
@@ -43,6 +45,8 @@ export const reminderSyncApi = baseApi
     }),
   });
 export const {
+  useGetReminderPortalsQuery,
+  useGetReminderProjectsQuery,
   useGetReminderCalendarsQuery,
   useGetReminderStatusQuery,
   useSaveReminderSettingsMutation,

@@ -1,4 +1,6 @@
 import React from "react";
+import ReminderSyncPanel from "../workspace/ReminderSyncPanel";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   CheckCircle2,
   Link2,
@@ -98,6 +100,7 @@ function IntegrationCard({
   onConnect,
   onDisconnect,
   disconnectState,
+  onManage,
 }) {
   const { data, isLoading, isFetching } = status;
 
@@ -193,7 +196,7 @@ function IntegrationCard({
         ))}
       </div>
 
-      {connected && (
+      {connected && onManage && (
         <>
           <Separator className="bg-[#EEF2F0]" />
 
@@ -218,6 +221,7 @@ function IntegrationCard({
               variant="ghost"
               size="sm"
               className="text-[#6B7B7C] hover:text-[#22302D]"
+              onClick={onManage}
             >
               <Settings2 className="mr-2 h-3.5 w-3.5" />
               Manage
@@ -234,6 +238,7 @@ function IntegrationCard({
 /* ---------------------------------------------------------------------- */
 
 export default function IntegrationSettings() {
+  const [manageOpen, setManageOpen] = React.useState(false);
   /* ------------------------------------------------------------------ */
   /* Status                                                              */
   /* ------------------------------------------------------------------ */
@@ -321,7 +326,8 @@ export default function IntegrationSettings() {
     {
       key: "zoho",
 
-      name: "Zoho Bigin",
+      name: "Zoho",
+      onManage: () => setManageOpen(true),
 
       description:
         "Manage leads, contacts, pipelines, and activities without leaving your workflow.",
@@ -330,7 +336,7 @@ export default function IntegrationSettings() {
 
       iconClass: "bg-[#FFF1E8]",
 
-      features: ["Leads", "Contacts", "Pipelines", "Activities", "Notes"],
+      features: ["Leads", "Contacts", "Pipelines", "Activities", "Notes", "Reminders"],
 
       status: zoho,
 
@@ -418,6 +424,15 @@ export default function IntegrationSettings() {
         </p>
       </div>
 
+      <Dialog open={manageOpen} onOpenChange={setManageOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Zoho reminders</DialogTitle>
+            <DialogDescription>Choose task and calendar destinations and reminder preferences. Enabled reminders sync automatically in the background every minute.</DialogDescription>
+          </DialogHeader>
+          {manageOpen && <><ReminderSyncPanel kind="tasks" /><ReminderSyncPanel kind="calendar" /></>}
+        </DialogContent>
+      </Dialog>
       <div className="space-y-4">
         {providers.map(
           ({

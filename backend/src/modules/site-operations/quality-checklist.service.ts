@@ -112,11 +112,18 @@ export class QualityChecklistService {
     projectId: string,
     filter: FilterQualityChecklistDto,
   ): Promise<PaginatedQualityChecklistDto> {
+    return this.getChecklists({ ...filter, project_id: projectId });
+  }
+
+  async getChecklists(
+    filter: FilterQualityChecklistDto,
+  ): Promise<PaginatedQualityChecklistDto> {
     const page = Math.max(1, filter.page || 1);
     const limit = Math.min(100, Math.max(1, filter.limit || 10));
     const offset = (page - 1) * limit;
 
-    const where: any = { project_id: projectId };
+    const where: any = {};
+    if (filter.project_id) where.project_id = filter.project_id;
 
     if (filter.status) {
       where.status = filter.status;
@@ -132,6 +139,7 @@ export class QualityChecklistService {
     const { count, rows } = await this.checklistModel.findAndCountAll({
       where,
       include: [
+        { model: Project, as: 'project', attributes: ['id', 'name'] },
         {
           model: QualityChecklistItem,
           as: 'checklist_items',

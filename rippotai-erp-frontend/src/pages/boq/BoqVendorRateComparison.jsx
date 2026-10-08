@@ -1,4 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useGetProjectsQuery } from "../../api/projects/project.api";
+import {
+  useGetRateComparisonQuery,
+  useCreateRateComparisonMutation,
+  useUpdateRateComparisonMutation,
+} from "../../api/procuerment/vendor-rate-comparison.api";
 import {
   Calculator,
   ChevronDown,
@@ -50,17 +57,6 @@ const percentage = (value) => {
 
   return `${n.toFixed(2)}%`;
 };
-
-const getId = (item) =>
-  item?.id || item?._id || item?.uuid || item?.item_id || item?.category_id;
-
-const getName = (item, fallback = "") =>
-  item?.name ||
-  item?.title ||
-  item?.description ||
-  item?.item_description ||
-  item?.category_name ||
-  fallback;
 
 // ============================================================
 // BOQ normalization
@@ -214,18 +210,78 @@ const getVendorName = (vendor) =>
 // Main Component
 // ============================================================
 
+const getRateKey = (itemId, vendorId) => `${itemId}__${vendorId}`;
+const comparisonPath = "/procurement/vendors/rate-comparison";
+const apiError = (error) => {
+  const message = error?.data?.message;
+  return Array.isArray(message)
+    ? message.join(". ")
+    : message || "Could not save rate comparison sheet";
+};
+const asList = (response) => {
+  const data = response?.data?.data ?? response?.data ?? response;
+  return Array.isArray(data) ? data : data?.items || data?.projects || [];
+};
+
 export default function BoqVendorRateComparison() {
+  const { id } = useParams();
+  const {
+    currentData: data,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetRateComparisonQuery(id, {
+    skip: !id,
+    refetchOnMountOrArgChange: true,
+  });
+  if (id && (isLoading || (!data && !isError)))
+    return (
+      <Shell>
+        <p>Loading comparison sheet...</p>
+      </Shell>
+    );
+  if (id && isError)
+    return (
+      <Shell>
+        <p role="alert">
+          Could not load this comparison sheet.{" "}
+          <button onClick={refetch}>Retry</button>
+        </p>
+      </Shell>
+    );
+  return (
+    <ComparisonWorkspace key={id || "new"} initialSheet={id ? data : null} />
+  );
+}
+
+function ComparisonWorkspace({ initialSheet }) {
+  const navigate = useNavigate();
+  const [title, setTitle] = useState(initialSheet?.title || "");
+  const [notes, setNotes] = useState(initialSheet?.notes || "");
+  const [projectId, setProjectId] = useState(initialSheet?.project_id || "");
+  const [revision, setRevision] = useState(initialSheet?.revision || 1);
+  const [vendorSnapshots, setVendorSnapshots] = useState(
+    initialSheet?.snapshot?.vendors || [],
+  );
+  const [createSheet, creating] = useCreateRateComparisonMutation();
+  const [updateSheet, updating] = useUpdateRateComparisonMutation();
+  const saving = creating.isLoading || updating.isLoading;
+  const projectsQuery = useGetProjectsQuery();
+  const projects = asList(projectsQuery.data);
+
   // ==========================================================
   // BOQ LIST
   // ==========================================================
 
   const {
-    data: boqResponse,
-    isLoading: boqLoading,
+    currentData: boqResponse,
+    isFetching: boqLoading,
+    isError: boqListError,
     refetch: refetchBoqs,
   } = useGetBoqsQuery(
-    {},
+    { project_id: projectId },
     {
+      skip: !projectId || Boolean(initialSheet),
       refetchOnMountOrArgChange: true,
       keepUnusedDataFor: 0,
     },
@@ -246,21 +302,24 @@ export default function BoqVendorRateComparison() {
     );
   }, [boqResponse]);
 
-  const [selectedBoqId, setSelectedBoqId] = useState("");
+  const [selectedBoqId, setSelectedBoqId] = useState(
+    initialSheet?.boq_id || "",
+  );
 
   const {
-    data: boqDetailResponse,
-    isLoading: boqDetailLoading,
+    currentData: boqDetailResponse,
+    isFetching: boqDetailLoading,
+    isError: boqDetailError,
     refetch: refetchBoq,
   } = useGetBoqByIdQuery(selectedBoqId, {
-    skip: !selectedBoqId,
+    skip: !selectedBoqId || Boolean(initialSheet),
     refetchOnMountOrArgChange: true,
     keepUnusedDataFor: 0,
   });
 
   const boq = useMemo(() => {
-    return normalizeBoq(boqDetailResponse);
-  }, [boqDetailResponse]);
+    return initialSheet?.snapshot?.boq || normalizeBoq(boqDetailResponse);
+  }, [boqDetailResponse, initialSheet]);
 
   // ==========================================================
   // VENDORS
@@ -278,19 +337,21 @@ export default function BoqVendorRateComparison() {
     );
 
   const vendors = useMemo(() => {
-    if (Array.isArray(vendorResponse)) {
-      return vendorResponse;
-    }
-
-    return (
-      vendorResponse?.data?.items ||
-      vendorResponse?.data?.vendors ||
-      vendorResponse?.data ||
-      vendorResponse?.vendors ||
-      vendorResponse?.items ||
-      []
-    );
-  }, [vendorResponse]);
+    const data =
+      vendorResponse?.data?.data ?? vendorResponse?.data ?? vendorResponse;
+    const live = Array.isArray(data)
+      ? data
+      : data?.items || data?.vendors || [];
+    return [
+      ...vendorSnapshots,
+      ...live.filter(
+        (vendor) =>
+          !vendorSnapshots.some(
+            (saved) => String(saved.id) === String(getVendorId(vendor)),
+          ),
+      ),
+    ];
+  }, [vendorResponse, vendorSnapshots]);
 
   // ==========================================================
   // STATE
@@ -300,11 +361,17 @@ export default function BoqVendorRateComparison() {
 
   const [selectedCategoryId, setSelectedCategoryId] = useState("ALL");
 
-  const [selectedVendorIds, setSelectedVendorIds] = useState([]);
+  const [selectedVendorIds, setSelectedVendorIds] = useState(
+    initialSheet?.snapshot?.selected_vendor_ids || [],
+  );
 
-  const [vendorNames, setVendorNames] = useState({});
+  const [vendorNames, setVendorNames] = useState(
+    initialSheet?.snapshot?.vendor_names || {},
+  );
 
-  const [vendorRates, setVendorRates] = useState({});
+  const [vendorRates, setVendorRates] = useState(
+    initialSheet?.snapshot?.vendor_rates || {},
+  );
 
   const [expandedCategories, setExpandedCategories] = useState({});
 
@@ -319,62 +386,20 @@ export default function BoqVendorRateComparison() {
   }, [boq]);
 
   // ==========================================================
-  // AUTO SELECT FIRST BOQ
-  // ==========================================================
-
-  useEffect(() => {
-    if (!selectedBoqId && boqs.length) {
-      const first = boqs[0];
-
-      const id = first?.id || first?._id || first?.boq_id || first?.uuid || "";
-
-      if (id) {
-        setSelectedBoqId(id);
-      }
-    }
-  }, [boqs, selectedBoqId]);
-
-  // ==========================================================
-  // AUTO EXPAND CATEGORIES
-  // ==========================================================
-
-  useEffect(() => {
-    if (!categories.length) return;
-
-    setExpandedCategories((previous) => {
-      const next = { ...previous };
-
-      categories.forEach((category) => {
-        if (next[category.id] === undefined) {
-          next[category.id] = true;
-        }
-      });
-
-      return next;
-    });
-  }, [categories]);
-
-  // ==========================================================
-  // RESET WHEN BOQ CHANGES
-  // ==========================================================
-
-  useEffect(() => {
-    setVendorRates({});
-    setSelectedCategoryId("ALL");
-    setSearch("");
-  }, [selectedBoqId]);
-
-  // ==========================================================
   // SELECTED VENDORS
   // ==========================================================
 
   const selectedVendors = useMemo(() => {
     return selectedVendorIds
-      .map((id) =>
-        vendors.find((vendor) => String(getVendorId(vendor)) === String(id)),
+      .map(
+        (id) =>
+          vendorSnapshots.find(
+            (vendor) => String(getVendorId(vendor)) === String(id),
+          ) ||
+          vendors.find((vendor) => String(getVendorId(vendor)) === String(id)),
       )
       .filter(Boolean);
-  }, [selectedVendorIds, vendors]);
+  }, [selectedVendorIds, vendors, vendorSnapshots]);
 
   // ==========================================================
   // VENDOR NAME
@@ -420,8 +445,6 @@ export default function BoqVendorRateComparison() {
   // RATE KEY
   // ==========================================================
 
-  const getRateKey = (itemId, vendorId) => `${itemId}__${vendorId}`;
-
   // ==========================================================
   // UPDATE VENDOR RATE
   // ==========================================================
@@ -439,17 +462,20 @@ export default function BoqVendorRateComparison() {
   // GET VENDOR RATE
   // ==========================================================
 
-  const getVendorRate = (itemId, vendorId) => {
-    const key = getRateKey(itemId, vendorId);
+  const getVendorRate = useCallback(
+    (itemId, vendorId) => {
+      const key = getRateKey(itemId, vendorId);
 
-    const stored = vendorRates[key];
+      const stored = vendorRates[key];
 
-    if (stored !== undefined && stored !== null && stored !== "") {
-      return Number(stored);
-    }
+      if (stored !== undefined && stored !== null && stored !== "") {
+        return Number(stored);
+      }
 
-    return 0;
-  };
+      return 0;
+    },
+    [vendorRates],
+  );
 
   // ==========================================================
   // FLATTEN BOQ CATEGORIES INTO ROWS
@@ -514,58 +540,61 @@ export default function BoqVendorRateComparison() {
   // CALCULATE ROW
   // ==========================================================
 
-  const calculateRow = (row) => {
-    const qty = getItemQty(row.item);
+  const calculateRow = useCallback(
+    (row) => {
+      const qty = getItemQty(row.item);
 
-    const boqRate = getBoqRate(row.item);
+      const boqRate = getBoqRate(row.item);
 
-    const boqAmount = getBoqAmount(row.item);
+      const boqAmount = getBoqAmount(row.item);
 
-    const vendorResults = selectedVendors
-      .map((vendor, vendorIndex) => {
-        const vendorId = getVendorId(vendor);
+      const vendorResults = selectedVendors
+        .map((vendor, vendorIndex) => {
+          const vendorId = getVendorId(vendor);
 
-        const rate = getVendorRate(row.itemId, vendorId);
+          const rate = getVendorRate(row.itemId, vendorId);
 
-        const hasQuote = rate > 0;
+          const hasQuote = rate > 0;
 
-        const amount = qty * rate;
+          const amount = qty * rate;
 
-        return {
-          vendor,
-          vendorId,
-          vendorIndex,
-          rate,
-          amount,
-          hasQuote,
-        };
-      })
-      .filter((result) => result.hasQuote);
+          return {
+            vendor,
+            vendorId,
+            vendorIndex,
+            rate,
+            amount,
+            hasQuote,
+          };
+        })
+        .filter((result) => result.hasQuote);
 
-    const l1 = vendorResults.length
-      ? [...vendorResults].sort((a, b) => a.rate - b.rate)[0]
-      : null;
+      const l1 = vendorResults.length
+        ? [...vendorResults].sort((a, b) => a.rate - b.rate)[0]
+        : null;
 
-    const varianceAmount = l1 ? l1.amount - boqAmount : 0;
+      const varianceAmount = l1 ? l1.amount - boqAmount : 0;
 
-    const variancePercent =
-      boqAmount > 0 ? (varianceAmount / boqAmount) * 100 : 0;
+      const variancePercent =
+        boqAmount > 0 ? (varianceAmount / boqAmount) * 100 : 0;
 
-    return {
-      ...row,
-      qty,
-      boqRate,
-      boqAmount,
-      vendorResults,
-      l1,
-      varianceAmount,
-      variancePercent,
-    };
-  };
+      return {
+        ...row,
+        qty,
+        boqRate,
+        boqAmount,
+        vendorResults,
+        l1,
+        varianceAmount,
+        variancePercent,
+      };
+    },
+    [selectedVendors, getVendorRate],
+  );
 
   const calculatedRows = useMemo(() => {
     return filteredRows.map(calculateRow);
-  }, [filteredRows, selectedVendors, vendorRates]);
+  }, [filteredRows, calculateRow]);
 
   // ==========================================================
   // FULL BOQ ROWS
@@ -596,7 +625,7 @@ export default function BoqVendorRateComparison() {
     });
 
     return result.map(calculateRow);
-  }, [categories, selectedVendors, vendorRates]);
+  }, [categories, calculateRow]);
 
   // ==========================================================
   // BOQ TOTALS
@@ -668,7 +697,140 @@ export default function BoqVendorRateComparison() {
       variance: l1Variance,
       variancePercent: boq > 0 ? (l1Variance / boq) * 100 : 0,
     };
-  }, [allRows, selectedVendors, vendorRates]);
+  }, [allRows, selectedVendors, getVendorRate]);
+
+  const editState = JSON.stringify({
+    title,
+    notes,
+    projectId,
+    selectedBoqId,
+    selectedVendorIds,
+    vendorNames,
+    vendorRates,
+  });
+  const [savedState, setSavedState] = useState(editState);
+  const dirty = editState !== savedState;
+  useEffect(() => {
+    const warn = (event) => {
+      if (dirty) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
+  const saveSheet = async () => {
+    if (
+      !title.trim() ||
+      !projectId ||
+      !selectedBoqId ||
+      !boq ||
+      boqDetailLoading
+    ) {
+      toast.error(
+        "Enter a sheet name and select a project and its BOQ before saving.",
+      );
+      return;
+    }
+    if (
+      Object.values(vendorRates).some(
+        (rate) =>
+          rate !== "" && (!Number.isFinite(Number(rate)) || Number(rate) < 0),
+      )
+    ) {
+      toast.error("Vendor rates must be non-negative numbers.");
+      return;
+    }
+    const snapshot = {
+      schema_version: 1,
+      boq: {
+        id: selectedBoqId,
+        project_id: projectId,
+        title: boq.title,
+        boq_number: boq.boq_number,
+        version: boq.version,
+        project_total: boqProjectTotal,
+        misc_amount: boqMiscAmount,
+        misc_pct: boqMiscPercentage,
+        final_total: boqFinalTotal,
+        categories: categories.map((category) => ({
+          id: category.id,
+          name: category.name,
+          items: category.items.map((item, index) => ({
+            id: getItemId(item, category.id, index),
+            description: getItemDescription(item),
+            specification: getItemSpecification(item),
+            unit: getItemUnit(item),
+            quantity: getItemQty(item),
+            rate: getBoqRate(item),
+            amount: getBoqAmount(item),
+          })),
+        })),
+      },
+      selected_vendor_ids: selectedVendorIds.map(String),
+      vendors: selectedVendors.map((vendor) => ({
+        id: String(getVendorId(vendor)),
+        name: getVendorName(vendor),
+      })),
+      vendor_names: vendorNames,
+      vendor_rates: vendorRates,
+      rows: allRows.map((row) => ({
+        item_id: row.itemId,
+        category_id: row.categoryId,
+        description: getItemDescription(row.item),
+        specification: getItemSpecification(row.item),
+        unit: getItemUnit(row.item),
+        quantity: row.qty,
+        boq_rate: row.boqRate,
+        boq_amount: row.boqAmount,
+        quotes: row.vendorResults.map((quote) => ({
+          vendor_id: String(quote.vendorId),
+          rate: quote.rate,
+          amount: quote.amount,
+        })),
+        l1: row.l1
+          ? {
+              vendor_id: String(row.l1.vendorId),
+              rate: row.l1.rate,
+              amount: row.l1.amount,
+            }
+          : null,
+        variance_amount: row.varianceAmount,
+        variance_percent: row.variancePercent,
+      })),
+      summary: {
+        ...summary,
+        vendorTotals: summary.vendorTotals.map(({ vendor, ...totals }) => ({
+          ...totals,
+          name: vendorNames[getVendorId(vendor)] || getVendorName(vendor),
+        })),
+      },
+    };
+    const body = {
+      title: title.trim(),
+      notes,
+      project_id: projectId,
+      boq_id: selectedBoqId,
+      snapshot,
+    };
+    try {
+      const sheet = await (
+        initialSheet
+          ? updateSheet({ id: initialSheet.id, revision, ...body })
+          : createSheet(body)
+      ).unwrap();
+      setRevision(sheet.revision);
+      setSavedState(editState);
+      setVendorSnapshots(snapshot.vendors);
+      toast.success("Rate comparison sheet saved");
+      if (!initialSheet)
+        navigate(comparisonPath + "/" + sheet.id + "/edit", { replace: true });
+    } catch (error) {
+      toast.error(apiError(error));
+    }
+  };
 
   // ==========================================================
   // CATEGORY SUMMARIES
@@ -834,9 +996,14 @@ export default function BoqVendorRateComparison() {
   // ==========================================================
 
   const resetRates = () => {
+    if (
+      Object.keys(vendorRates).length &&
+      !window.confirm("Clear all entered vendor rates?")
+    )
+      return;
     setVendorRates({});
 
-    toast.success("All vendor rates have been cleared.");
+    toast.success("Rates cleared. Save the sheet to keep this change.");
   };
 
   // ==========================================================
@@ -845,13 +1012,24 @@ export default function BoqVendorRateComparison() {
 
   const refresh = async () => {
     try {
-      await refetchBoqs();
+      if (
+        !initialSheet &&
+        Object.keys(vendorRates).length &&
+        !window.confirm("Refresh the source BOQ and clear entered rates?")
+      )
+        return;
+      if (!initialSheet) setVendorRates({});
+      if (projectId && !initialSheet) await refetchBoqs();
 
-      if (selectedBoqId) {
+      if (selectedBoqId && !initialSheet) {
         await refetchBoq();
       }
 
-      toast.success("BOQ data refreshed.");
+      toast.success(
+        initialSheet
+          ? "This sheet uses its saved BOQ snapshot."
+          : "BOQ data refreshed.",
+      );
     } catch {
       toast.error("Unable to refresh BOQ data.");
     }
@@ -864,26 +1042,13 @@ export default function BoqVendorRateComparison() {
   const toggleCategory = (categoryId) => {
     setExpandedCategories((previous) => ({
       ...previous,
-      [categoryId]: !previous[categoryId],
+      [categoryId]: !(previous[categoryId] ?? true),
     }));
   };
 
   // ==========================================================
   // LOADING
   // ==========================================================
-
-  if (boqLoading) {
-    return (
-      <Shell>
-        <div className="flex min-h-[400px] items-center justify-center">
-          <div className="flex items-center gap-3 text-gray-500">
-            <RefreshCw size={20} className="animate-spin" />
-            Loading BOQs...
-          </div>
-        </div>
-      </Shell>
-    );
-  }
 
   // ==========================================================
   // RENDER
@@ -902,11 +1067,11 @@ export default function BoqVendorRateComparison() {
               <Calculator size={14} />
               Procurement
               <ChevronRight size={13} />
-              BOQ Vendor Calculator
+              Vendor Rate Comparison
             </div>
 
             <h1 className="text-2xl font-bold text-[#1F453B]">
-              BOQ Vendor Rate Calculator
+              Vendor Rate Comparison Sheet
             </h1>
 
             <p className="mt-1 text-sm text-gray-500">
@@ -916,6 +1081,43 @@ export default function BoqVendorRateComparison() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              className="rounded-lg border px-3 py-2 text-sm"
+              onClick={() => {
+                if (
+                  !dirty ||
+                  window.confirm(
+                    "Leave this sheet and discard unsaved changes?",
+                  )
+                )
+                  navigate(comparisonPath);
+              }}
+            >
+              All sheets
+            </button>
+            <button
+              type="button"
+              disabled={
+                saving ||
+                !title.trim() ||
+                !projectId ||
+                !selectedBoqId ||
+                !boq ||
+                boqDetailLoading
+              }
+              onClick={saveSheet}
+              className="rounded-lg bg-[#1F453B] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Save sheet"}
+            </button>
+            <span className="text-xs text-gray-500">
+              {dirty
+                ? "Unsaved changes"
+                : initialSheet
+                  ? "Saved · Revision " + revision
+                  : "New sheet"}
+            </span>
             <button
               type="button"
               onClick={refresh}
@@ -950,6 +1152,98 @@ export default function BoqVendorRateComparison() {
         {/* ================================================== */}
 
         <Card>
+          <div className="mb-4 grid gap-4 md:grid-cols-2">
+            <label className="text-sm font-medium">
+              Sheet name
+              <input
+                className="inos-input mt-1 w-full"
+                maxLength={255}
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                placeholder="e.g. Ground floor finishes comparison"
+              />
+            </label>
+            <label className="text-sm font-medium">
+              Project
+              <select
+                className="inos-input mt-1 w-full"
+                disabled={Boolean(initialSheet) || projectsQuery.isLoading}
+                value={projectId}
+                onChange={(event) => {
+                  if (
+                    Object.keys(vendorRates).length &&
+                    !window.confirm(
+                      "Changing project clears the BOQ and entered rates. Continue?",
+                    )
+                  )
+                    return;
+                  setProjectId(event.target.value);
+                  setSelectedBoqId("");
+                  setVendorRates({});
+                  setSelectedCategoryId("ALL");
+                  setSearch("");
+                }}
+              >
+                <option value="">Select project</option>
+                {initialSheet &&
+                  !projects.some((project) => project.id === projectId) && (
+                    <option value={projectId}>
+                      {initialSheet.project?.name || projectId}
+                    </option>
+                  )}
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm font-medium md:col-span-2">
+              Notes
+              <textarea
+                className="inos-input mt-1 w-full"
+                rows={2}
+                maxLength={10000}
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                placeholder="Comparison context or procurement notes"
+              />
+            </label>
+          </div>
+          {projectsQuery.isError && (
+            <p role="alert">
+              Could not load projects.{" "}
+              <button onClick={projectsQuery.refetch}>Retry</button>
+            </p>
+          )}
+          {boqListError && (
+            <p role="alert">
+              Could not load project BOQs.{" "}
+              <button onClick={refetchBoqs}>Retry</button>
+            </p>
+          )}
+          {boqDetailError && (
+            <p role="alert">
+              Could not load the selected BOQ.{" "}
+              <button onClick={refetchBoq}>Retry</button>
+            </p>
+          )}
+          {projectId &&
+            !initialSheet &&
+            !boqLoading &&
+            !boqListError &&
+            boqs.length === 0 && (
+              <p>
+                No BOQs found for this project. Create a BOQ before comparing
+                rates.
+              </p>
+            )}
+          {initialSheet && (
+            <p className="mb-4 text-xs text-gray-500">
+              This sheet uses the saved BOQ snapshot. Create a new sheet to
+              compare a different project or BOQ.
+            </p>
+          )}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
             {/* BOQ */}
 
@@ -961,12 +1255,30 @@ export default function BoqVendorRateComparison() {
               <div className="relative">
                 <select
                   value={selectedBoqId}
+                  disabled={!projectId || Boolean(initialSheet) || boqLoading}
                   onChange={(event) => {
+                    if (
+                      Object.keys(vendorRates).length &&
+                      !window.confirm(
+                        "Changing BOQ clears entered rates. Continue?",
+                      )
+                    )
+                      return;
                     setSelectedBoqId(event.target.value);
+                    setVendorRates({});
+                    setSelectedCategoryId("ALL");
+                    setSearch("");
                   }}
                   className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 py-2.5 pr-9 text-sm font-medium text-gray-800 outline-none focus:border-[#1F453B]"
                 >
-                  <option value="">Select BOQ</option>
+                  <option value="">
+                    {boqLoading ? "Loading project BOQs..." : "Select BOQ"}
+                  </option>
+                  {initialSheet && (
+                    <option value={selectedBoqId}>
+                      {boq?.title || initialSheet.boq?.title || selectedBoqId}
+                    </option>
+                  )}
 
                   {boqs.map((item) => {
                     const id =
@@ -1478,7 +1790,7 @@ export default function BoqVendorRateComparison() {
                       return null;
                     }
 
-                    const expanded = expandedCategories[category.id];
+                    const expanded = expandedCategories[category.id] ?? true;
 
                     const categoryBoq = categoryRows.reduce(
                       (sum, row) => sum + row.boqAmount,
@@ -2079,24 +2391,6 @@ function VendorSelectionModal({
             Apply Vendors
           </button>
         </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// INFO BOX
-// ============================================================
-
-function InfoBox({ label, value }) {
-  return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-        {label}
-      </div>
-
-      <div className="mt-1 truncate text-sm font-semibold text-gray-800">
-        {value}
       </div>
     </div>
   );
