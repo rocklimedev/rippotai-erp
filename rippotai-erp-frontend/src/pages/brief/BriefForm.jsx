@@ -12,6 +12,7 @@ import {
   useCreateProjectBriefMutation,
   useGetProjectBriefQuery,
   useUpdateProjectBriefMutation,
+  useUploadBriefReferenceImageMutation,
 } from "../../api/documents/brief.api";
 import {
   PROJECT_TYPE_OPTIONS,
@@ -106,6 +107,8 @@ export function BriefForm() {
     useUpdateProjectBriefMutation();
 
   const isSubmitting = isCreating || isUpdating;
+  const [uploadReferenceImage] = useUploadBriefReferenceImageMutation();
+  const [uploadingReferences, setUploadingReferences] = useState(false);
 
   // ==========================================================
   // STATE
@@ -211,6 +214,28 @@ export function BriefForm() {
     setValues((current) => changeBriefSiteField(current, key, value));
   };
 
+  const handleReferenceImagesUpload = async (files) => {
+    if (!files.length || uploadingReferences) return;
+    setUploadingReferences(true);
+    try {
+      for (const file of files) {
+        if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type) || file.size > 10 * 1024 * 1024) {
+          toast.error(`${file.name}: choose a JPG, PNG, WebP or GIF under 10 MB.`);
+          continue;
+        }
+        try {
+          const uploaded = await uploadReferenceImage(file).unwrap();
+          if (!uploaded?.url) throw new Error("Upload returned no image URL");
+          setValues((current) => ({ ...current, referenceImages: [...(current.referenceImages || []), { title: file.name.slice(0, 255), fileUrl: uploaded.url }] }));
+        } catch (error) {
+          toast.error(`${file.name}: ${error?.data?.message || "Image upload failed. Please try again."}`);
+        }
+      }
+    } finally {
+      setUploadingReferences(false);
+    }
+  };
+
   // ==========================================================
   // BUILD PAYLOAD
   // ==========================================================
@@ -224,6 +249,7 @@ export function BriefForm() {
   // ==========================================================
 
   const handleSubmit = async () => {
+    if (uploadingReferences || isSubmitting) return;
     if (isEditMode && existingBrief?.status !== "DRAFT") {
       toast.error(
         "Return this brief to Draft or create a new version before editing.",
@@ -388,6 +414,8 @@ export function BriefForm() {
         sections={sectionsWithProjectTypes}
         values={values}
         onFieldChange={handleFieldChange}
+        onReferenceImagesUpload={handleReferenceImagesUpload}
+        uploadingReferences={uploadingReferences}
         projects={projects}
         projectsLoading={projectsLoading}
         crumbs={[

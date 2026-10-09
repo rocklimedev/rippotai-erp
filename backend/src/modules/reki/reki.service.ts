@@ -194,6 +194,7 @@ export class SiteRecceService {
           width: roomDto.width ?? null,
 
           height: roomDto.height ?? null,
+          area: roomDto.area ?? null,
 
           measurement_unit: roomDto.measurement_unit ?? 'FT',
 

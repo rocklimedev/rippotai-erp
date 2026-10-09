@@ -5,9 +5,24 @@ import {
   utilityPayloadValue,
   changeSiteRecceField,
   commitRoomDraft,
+  changeRoomField,
   SITE_UTILITY_FIELDS,
 } from "./site-recce-form-helpers.js";
 import { SITE_RECCE_FORM_SECTIONS } from "./reki-sections.js";
+test("room area updates from length and width with decimal rounding", () => {
+  const room = changeRoomField({ width: "12", area: 50 }, "length", "14");
+  assert.equal(room.area, 168);
+  assert.equal(changeRoomField(room, "width", "10.25").area, 143.5);
+  assert.equal(changeRoomField({ width: "3.33" }, "length", "2.22").area, 7.39);
+  assert.equal(changeRoomField(room, "height", "10").area, 168);
+  assert.equal(changeRoomField(room, "area", "160").area, "160");
+});
+test("incomplete or invalid room measurements clear stale calculated area", () => {
+  for (const value of ["", " ", "invalid", "-1"]) {
+    assert.equal(changeRoomField({ width: "12", area: 168 }, "length", value).area, "");
+  }
+  assert.equal(changeRoomField({ width: "12" }, "length", "0").area, 0);
+});
 test("all three utilities round-trip Yes, No and details without stale input", () => {
   for (const key of SITE_UTILITY_FIELDS) {
     const no = changeSiteRecceField(

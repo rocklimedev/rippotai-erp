@@ -229,6 +229,11 @@ export const REKI_SECTIONS = [
         type: "number",
       },
       {
+        key: "area",
+        label: "Area (square units)",
+        type: "number",
+      },
+      {
         key: "measurement_unit",
         label: "Measurement Unit",
         type: "select",

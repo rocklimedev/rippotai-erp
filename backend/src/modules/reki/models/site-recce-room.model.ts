@@ -113,6 +113,9 @@ export class SiteRecceRoom extends Model<SiteRecceRoom> {
   })
   declare height: number | null;
 
+  @Column({ type: DataType.DECIMAL(12, 2), allowNull: true })
+  declare area: number | null;
+
   @Column({
     type: DataType.ENUM('FT', 'M', 'IN', 'CM'),
     allowNull: false,

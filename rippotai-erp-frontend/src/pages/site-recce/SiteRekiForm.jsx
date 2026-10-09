@@ -126,6 +126,7 @@ const mapBackendToFormValues = (data) => {
         : String(room.height),
 
     measurement_unit: room.measurement_unit || "FT",
+    area: room.area === null || room.area === undefined ? "" : String(room.area),
 
     existing_flooring: room.existing_flooring || "",
     existing_ceiling: room.existing_ceiling || "",
@@ -391,6 +392,7 @@ const buildRoomsPayload = (rooms, photos) => {
       width: toNumberOrUndefined(room.width),
 
       height: toNumberOrUndefined(room.height),
+      area: toNumberOrUndefined(room.area),
 
       measurement_unit: normalizeMeasurementUnit(room.measurement_unit),
 

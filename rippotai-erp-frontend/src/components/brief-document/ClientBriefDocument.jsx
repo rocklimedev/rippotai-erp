@@ -227,17 +227,18 @@ export function buildBriefSections(brief) {
     if (kvHas(kv)) blocks.push(<KV key="kv" items={kv} />);
     if (has(brief.mustHaveElements)) blocks.push({ text: { label: "Must-haves", value: brief.mustHaveElements } });
     if (has(brief.vastuRequirements)) blocks.push({ text: { label: "Vastu", value: brief.vastuRequirements } });
-    const refs = bySort(brief.references).filter((r) => has(r.title) || has(r.description) || has(r.referenceUrl));
+    const refs = bySort(brief.references).filter((r) => has(r.title) || has(r.description) || has(r.referenceUrl) || has(r.fileUrl));
     if (refs.length)
       blocks.push(
         <div key="refs">
           <span className="pd-label">References shared</span>
           {refs.map((r, i) => (
-            <p key={r.id || i} className="pd-text" style={{ marginTop: i ? "1.5mm" : 0 }}>
+            <div key={r.id || i} className="pd-text" style={{ marginTop: i ? "1.5mm" : 0, breakInside: "avoid" }}>
               {has(r.title) && <b>{r.title}. </b>}
               {r.description}
               {has(r.referenceUrl) && <span style={{ color: "var(--pd-green-2)" }}> {r.referenceUrl}</span>}
-            </p>
+              {has(r.fileUrl) && <a href={r.fileUrl} target="_blank" rel="noreferrer"><img src={r.fileUrl} crossOrigin="anonymous" alt={r.title || "Reference image"} style={{ display: "block", maxWidth: "100%", maxHeight: "55mm", objectFit: "contain", marginTop: "2mm" }} /></a>}
+            </div>
           ))}
         </div>,
       );

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CdnModule } from '../cdn/cdn.module';
 import { SequelizeModule } from '@nestjs/sequelize';
 
 import { ProjectBriefsController } from './brief.controller';
@@ -19,6 +20,7 @@ import { ProjectBriefSiteRestriction } from './models/project-brief-site-restric
 
 @Module({
   imports: [
+    CdnModule,
     SequelizeModule.forFeature([
       ProjectBrief,
       ProjectBriefDocument,
