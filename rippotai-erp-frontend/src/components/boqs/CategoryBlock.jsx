@@ -75,7 +75,7 @@ export function CategoryBlock({
             <div className="w-8 h-8 rounded bg-[#1F453B] text-white text-[13px] font-bold flex items-center justify-center">
               {cat.code}
             </div>
-            <h3 className="font-serif-bc text-[18px] text-[#333333] flex-1">
+            <h3 className="text-[18px] text-[#333333] flex-1">
               {cat.name}
             </h3>
             <div className="text-[11.5px] text-[#B5C4B6]">

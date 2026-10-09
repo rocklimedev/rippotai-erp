@@ -1,4 +1,6 @@
 import {
+  IsArray,
+  IsUrl,
   IsBoolean,
   IsDateString,
   IsEnum,
@@ -164,6 +166,11 @@ export class CreateSiteRecceDto {
   @IsOptional()
   @IsString()
   existing_condition?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsUrl({}, { each: true })
+  existing_site_layouts?: string[];
 
   // ============================================================
   // ROOMS

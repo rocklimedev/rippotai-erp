@@ -1,3 +1,4 @@
+import { RichTextEditor } from "./RichTextEditor";
 import React, { useEffect, useState } from "react";
 import {
   Sheet,
@@ -25,9 +26,9 @@ export function ItemDetailDrawer({ open, onClose, item, disabled, onPatch }) {
       return `${d.count || 0} × ${d.std_qty || 0} = ${(d.count || 0) * (d.std_qty || 0)}`;
     return "—";
   };
-  const apply = () => {
-    onPatch({ detail, notes });
-    onClose();
+  const apply = async () => {
+    const saved = await onPatch({ detail, notes });
+    if (saved) onClose();
   };
 
   return (
@@ -41,7 +42,7 @@ export function ItemDetailDrawer({ open, onClose, item, disabled, onPatch }) {
             Item Detail
           </SheetTitle>
           <div className="text-[16px] font-bold text-[#333333]">
-            {item.description}
+            {item.name}
           </div>
         </SheetHeader>
         <div className="mt-4 space-y-4 text-[13px]">
@@ -107,12 +108,7 @@ export function ItemDetailDrawer({ open, onClose, item, disabled, onPatch }) {
             <label className="text-[11px] uppercase tracking-widest text-[#B5C4B6]">
               Internal Notes
             </label>
-            <textarea
-              className="bc-input mt-1 min-h-[80px]"
-              disabled={disabled}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
+            <RichTextEditor key={item.id} value={notes} onChange={setNotes} disabled={disabled} label="Item notes" />
           </div>
           {!disabled && (
             <button

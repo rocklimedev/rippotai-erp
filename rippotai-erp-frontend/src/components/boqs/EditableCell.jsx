@@ -60,7 +60,7 @@ export function EditableCell({
               ? String(format ? format(value) : value)
               : undefined
           }
-          className="block max-w-full truncate"
+          className="block max-w-full whitespace-pre-wrap break-words"
         >
           {format ? (
             format(value)

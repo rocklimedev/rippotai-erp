@@ -29,7 +29,7 @@ export function BoqSummaryHeader({ boq, disabled }) {
             <StatusChip status={boq.status} />
 
             <span
-              className="text-[11px] font-mono font-bold text-[#333333] bg-[#EAEEF0] px-2 py-0.5 rounded"
+              className="text-[11px] font-bold text-[#333333] bg-[#EAEEF0] px-2 py-0.5 rounded"
               data-testid="boq-number"
             >
               {boq.boq_number || `BOQ-V${boq.version}`}
@@ -43,7 +43,7 @@ export function BoqSummaryHeader({ boq, disabled }) {
             )}
           </div>
 
-          <h1 className="font-serif-bc text-[34px] md:text-[42px] leading-[1.05] text-[#333333] tracking-tight">
+          <h1 className="text-[28px] md:text-[32px] leading-[1.05] text-[#333333] tracking-tight">
             {projectName}
           </h1>
 

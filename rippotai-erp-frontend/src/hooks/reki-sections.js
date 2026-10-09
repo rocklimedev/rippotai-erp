@@ -1,4 +1,5 @@
 export const REKI_SECTIONS = [
+  { title: "Existing Site Layout", type: "existing-layouts", fields: [] },
   // ============================================================
   // 01. GENERAL INFORMATION
   // ============================================================

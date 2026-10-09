@@ -231,6 +231,9 @@ export class SiteRecce extends Model<SiteRecce> {
   })
   declare existing_condition: string | null;
 
+  @Column({ type: DataType.JSON, allowNull: true })
+  declare existing_site_layouts: string[] | null;
+
   // ============================================================
   // AUDIT
   // ============================================================

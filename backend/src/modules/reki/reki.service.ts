@@ -116,6 +116,7 @@ export class SiteRecceService {
           material_movement_rule: dto.material_movement_rule ?? null,
 
           existing_condition: dto.existing_condition ?? null,
+          existing_site_layouts: dto.existing_site_layouts ?? [],
 
           created_by: userId ?? null,
 
@@ -240,16 +241,10 @@ export class SiteRecceService {
       // --------------------------------------------------------
       // Automatically determine shot number
       //
-      // Priority:
-      // 1. shot_number
-      // 2. shotNumber
-      // 3. array index + 1
+      // Number shots in their saved order within each room.
       // --------------------------------------------------------
 
-      const rawShotNumber =
-        photoDto?.shot_number ?? photoDto?.shotNumber ?? index + 1;
-
-      const shotNumber = Number(rawShotNumber);
+      const shotNumber = index + 1;
 
       // --------------------------------------------------------
       // Validate shot number
@@ -320,10 +315,7 @@ export class SiteRecceService {
     siteRecceId: string,
     roomId: string,
     file: Express.Multer.File,
-    shotNumber: number,
     data?: {
-      standing_position?: string;
-      camera_direction?: string;
       notes?: string;
     },
   ): Promise<SiteReccePhoto> {
@@ -361,33 +353,6 @@ export class SiteRecceService {
     }
 
     // --------------------------------------------------------
-    // Validate shot number
-    // --------------------------------------------------------
-
-    const parsedShotNumber = Number(shotNumber);
-
-    if (!Number.isInteger(parsedShotNumber) || parsedShotNumber < 1) {
-      throw new BadRequestException('shot_number must be a positive integer');
-    }
-
-    // --------------------------------------------------------
-    // Check duplicate shot
-    // --------------------------------------------------------
-
-    const existing = await SiteReccePhoto.findOne({
-      where: {
-        room_id: roomId,
-        shot_number: parsedShotNumber,
-      },
-    });
-
-    if (existing) {
-      throw new BadRequestException(
-        `Shot ${parsedShotNumber} already exists for this room`,
-      );
-    }
-
-    // --------------------------------------------------------
     // Upload to CDN
     // --------------------------------------------------------
 
@@ -397,12 +362,21 @@ export class SiteRecceService {
     // Create DB record
     // --------------------------------------------------------
 
-    const photo = await SiteReccePhoto.create({
+    return this.sequelize.transaction(async (transaction) => {
+      // Serialize numbering for simultaneous uploads to the same room.
+      const lockedRoom = await SiteRecceRoom.findOne({
+        where: { id: roomId, site_recce_id: siteRecceId },
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!lockedRoom) throw new NotFoundException('Room not found for this Site Recce');
+      const lastShot = await SiteReccePhoto.max('shot_number', { where: { room_id: roomId }, transaction });
+      return SiteReccePhoto.create({
       site_recce_id: siteRecceId,
 
       room_id: roomId,
 
-      shot_number: parsedShotNumber,
+      shot_number: Number(lastShot || 0) + 1,
 
       photo_url: upload.url,
 
@@ -412,14 +386,9 @@ export class SiteRecceService {
 
       layout_file_name: null,
 
-      standing_position: data?.standing_position ?? null,
-
-      camera_direction: data?.camera_direction ?? null,
-
       notes: data?.notes ?? null,
-    } as any);
-
-    return photo;
+      } as any, { transaction });
+    });
   }
 
   // ============================================================
@@ -707,6 +676,7 @@ export class SiteRecceService {
         'working_hours_allowed',
         'material_movement_rule',
         'existing_condition',
+        'existing_site_layouts',
       ];
 
       for (const field of fields) {

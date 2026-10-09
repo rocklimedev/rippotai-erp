@@ -33,7 +33,7 @@
 
 .pd-page {
   width: 210mm;
-  height: 297mm;
+  height: var(--pd-page-height, 297mm);
   background: var(--pd-paper);
   position: relative;
   overflow: hidden;

@@ -224,8 +224,22 @@ export function BriefSectionForm({
 
     // ---- MULTISELECT (chips) ----
     if (field.type === "multiselect") {
+      const selected = Array.isArray(fieldValue) ? fieldValue : [];
+      const options = field.options || [];
+      const allSelected = options.length > 0 && options.every((option) => selected.includes(option.value));
       return (
         <Field key={field.key} label={field.label} required={field.required} hint={field.description || "Select all that apply."} full>
+          {field.selectAll && (
+            <label className="crmf-check">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                ref={(input) => { if (input) input.indeterminate = !allSelected && selected.length > 0; }}
+                onChange={(event) => set(event.target.checked ? options.map((option) => option.value) : [])}
+              />
+              Select All
+            </label>
+          )}
           <ChipSelect name={field.label} value={Array.isArray(fieldValue) ? fieldValue : []} options={field.options || []} onChange={set} />
         </Field>
       );
@@ -246,17 +260,19 @@ export function BriefSectionForm({
     // ---- SELECT: small sets as choice cards ----
     if (field.type === "select") {
       const options = field.options || [];
+      const selectedValue = field.arrayValue ? (Array.isArray(fieldValue) ? fieldValue[0] || "" : fieldValue) : fieldValue;
+      const setSelected = (value) => set(field.arrayValue ? (value ? [String(value)] : []) : String(value));
       const small = options.length > 0 && options.length <= 4;
       return (
         <Field key={field.key} label={field.label} required={field.required} hint={field.description} full={field.fullWidth}>
           {small ? (
-            <Choices name={field.label} value={fieldValue} options={options} columns={options.length} onChange={(v) => set(String(v))} />
+            <Choices name={field.label} value={selectedValue} options={options} columns={options.length} onChange={setSelected} />
           ) : (
             <OptionSelect
-              value={fieldValue}
+              value={selectedValue}
               options={options}
               placeholder={field.placeholder || "Select…"}
-              onChange={(v) => set(v === "" ? "" : String(v))}
+              onChange={setSelected}
             />
           )}
         </Field>

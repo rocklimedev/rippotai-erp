@@ -1,9 +1,10 @@
 import { IsInt, IsOptional, IsString, Min, MaxLength } from 'class-validator';
 
 export class CreateSiteReccePhotoDto {
+  @IsOptional()
   @IsInt()
   @Min(1)
-  shot_number: number;
+  shot_number?: number;
 
   // ============================================================
   // LAYOUT

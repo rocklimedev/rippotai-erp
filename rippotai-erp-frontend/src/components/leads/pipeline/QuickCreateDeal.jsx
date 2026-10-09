@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Button, Field, TextInput, SelectInput, ChoiceGroup } from "@/components/inos";
+import {
+  Button,
+  Field,
+  TextInput,
+  SelectInput,
+  ChoiceGroup,
+} from "@/components/inos";
 import { useGetClientsQuery } from "@/api/projects/client.api";
 import { useCreateLeadMutation } from "@/api/connectors/leads.api";
 import { STAGES, formatINR } from "@/hooks/stages";
@@ -31,7 +37,13 @@ const empty = (stage) => ({
  * stage, owner, source, expected close. Everything else is edited later
  * in the deal drawer.
  */
-export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta, onCreated }) {
+export default function QuickCreateDeal({
+  open,
+  onOpenChange,
+  defaultStage,
+  meta,
+  onCreated,
+}) {
   const [form, setForm] = useState(empty(defaultStage));
   const [errors, setErrors] = useState({});
   const { data: clients = [] } = useGetClientsQuery(undefined, { skip: !open });
@@ -45,12 +57,18 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
   }, [open, defaultStage]);
 
   const set = (k, v) => {
-    setForm((f) => ({ ...f, [k]: v }));
+    setForm((f) => ({
+      ...f,
+      [k]: k === "phone" ? v.replace(/\D/g, "").slice(0, 10) : v,
+    }));
     if (errors[k]) setErrors((e) => ({ ...e, [k]: undefined }));
   };
 
   const sortedClients = useMemo(
-    () => [...(Array.isArray(clients) ? clients : [])].sort((a, b) => a.name.localeCompare(b.name)),
+    () =>
+      [...(Array.isArray(clients) ? clients : [])].sort((a, b) =>
+        a.name.localeCompare(b.name),
+      ),
     [clients],
   );
   const selectedClient = sortedClients.find((c) => c.id === form.clientId);
@@ -61,17 +79,28 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
     const c = sortedClients.find((x) => x.id === id);
     if (c && !form.dealName.trim()) {
       const surname = c.name.split(/\s+/).slice(-1)[0];
-      setForm((f) => ({ ...f, clientId: id, dealName: `${surname} ${form.type === "Residential" ? "Residence" : "Project"}` }));
+      setForm((f) => ({
+        ...f,
+        clientId: id,
+        dealName: `${surname} ${form.type === "Residential" ? "Residence" : "Project"}`,
+      }));
     }
   };
 
   const validate = () => {
     const e = {};
-    if (form.clientMode === "existing" && !form.clientId) e.clientId = "Pick a client, or add a new one.";
-    if (form.clientMode === "new" && !form.newClientName.trim()) e.newClientName = "Enter the client's name.";
-    if (form.clientMode === "new" && !form.phone.trim() && !form.email.trim()) e.phone = "Add a phone number or email.";
-    if (!form.dealName.trim()) e.dealName = "Name the deal, e.g. “Malhotra Residence”.";
-    if (form.amount && Number.isNaN(amountValue)) e.amount = "Use a number, e.g. 45 L or 1.2 Cr.";
+    if (form.clientMode === "existing" && !form.clientId)
+      e.clientId = "Pick a client, or add a new one.";
+    if (form.clientMode === "new" && !form.newClientName.trim())
+      e.newClientName = "Enter the client's name.";
+    if (form.clientMode === "new" && !form.phone.trim() && !form.email.trim())
+      e.phone = "Add a phone number or email.";
+    if (form.clientMode === "new" && form.phone && form.phone.length !== 10)
+      e.phone = "Enter a 10-digit phone number.";
+    if (!form.dealName.trim())
+      e.dealName = "Name the deal, e.g. “Malhotra Residence”.";
+    if (form.amount && Number.isNaN(amountValue))
+      e.amount = "Use a number, e.g. 45 L or 1.2 Cr.";
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -88,7 +117,11 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
       expectedClose: form.expectedClose || undefined,
       type: form.type,
       location: form.location.trim() || undefined,
-      ...(owner ? (owner.id ? { ownerId: owner.id } : { owner: owner.name }) : {}),
+      ...(owner
+        ? owner.id
+          ? { ownerId: owner.id }
+          : { owner: owner.name }
+        : {}),
       ...(form.clientMode === "existing"
         ? { clientId: form.clientId }
         : {
@@ -104,7 +137,9 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
     };
     try {
       const deal = await createLead(body).unwrap();
-      toast.success(`${deal.title} added to ${STAGES.find((s) => s.id === deal.stage)?.label}`);
+      toast.success(
+        `${deal.title} added to ${STAGES.find((s) => s.id === deal.stage)?.label}`,
+      );
       onOpenChange(false);
       onCreated?.(deal);
     } catch (err) {
@@ -125,7 +160,12 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={submit} loading={isLoading} data-testid="create-deal-submit">
+          <Button
+            variant="primary"
+            onClick={submit}
+            loading={isLoading}
+            data-testid="create-deal-submit"
+          >
             Create deal
           </Button>
         </>
@@ -145,45 +185,114 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
             required
             htmlFor="qc-client"
             error={errors.clientId}
-            hint={selectedClient ? [selectedClient.contact_person, selectedClient.phone].filter(Boolean).join(" · ") : undefined}
+            hint={
+              selectedClient
+                ? [selectedClient.contact_person, selectedClient.phone]
+                    .filter(Boolean)
+                    .join(" · ")
+                : undefined
+            }
           >
-            <SelectInput id="qc-client" value={form.clientId} onChange={(e) => onClientPick(e.target.value)} placeholder="Select a client…" invalid={!!errors.clientId}>
+            <SelectInput
+              id="qc-client"
+              value={form.clientId}
+              onChange={(e) => onClientPick(e.target.value)}
+              placeholder="Select a client…"
+              invalid={!!errors.clientId}
+            >
               {sortedClients.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
               ))}
             </SelectInput>
-            <button type="button" className="crm-linkbtn" style={{ justifySelf: "start" }} onClick={() => set("clientMode", "new")}>
+            <button
+              type="button"
+              className="crm-linkbtn"
+              style={{ justifySelf: "start" }}
+              onClick={() => set("clientMode", "new")}
+            >
               + New client
             </button>
           </Field>
         ) : (
-          <Field label="New client name" required htmlFor="qc-newclient" error={errors.newClientName}>
-            <TextInput id="qc-newclient" value={form.newClientName} onChange={(e) => set("newClientName", e.target.value)} placeholder="e.g. Rhea Malhotra" autoFocus invalid={!!errors.newClientName} />
-            <button type="button" className="crm-linkbtn" style={{ justifySelf: "start" }} onClick={() => set("clientMode", "existing")}>
+          <Field
+            label="New client name"
+            required
+            htmlFor="qc-newclient"
+            error={errors.newClientName}
+          >
+            <TextInput
+              id="qc-newclient"
+              value={form.newClientName}
+              onChange={(e) => set("newClientName", e.target.value)}
+              placeholder="e.g. Rhea Malhotra"
+              autoFocus
+              invalid={!!errors.newClientName}
+            />
+            <button
+              type="button"
+              className="crm-linkbtn"
+              style={{ justifySelf: "start" }}
+              onClick={() => set("clientMode", "existing")}
+            >
               Pick an existing client instead
             </button>
           </Field>
         )}
 
         <Field label="Contact person" optional htmlFor="qc-contact">
-          <TextInput id="qc-contact" value={form.contact} onChange={(e) => set("contact", e.target.value)} placeholder="Who you're speaking with" />
+          <TextInput
+            id="qc-contact"
+            value={form.contact}
+            onChange={(e) => set("contact", e.target.value)}
+            placeholder="Who you're speaking with"
+          />
         </Field>
 
         {form.clientMode === "new" && (
           <>
-            <Field label="Phone" htmlFor="qc-phone" error={errors.phone} hint="Phone or email is enough.">
-              <TextInput id="qc-phone" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+91 98XXX XXXXX" inputMode="tel" invalid={!!errors.phone} />
+            <Field
+              label="Phone"
+              htmlFor="qc-phone"
+              error={errors.phone}
+              hint="Phone or email is enough."
+            >
+              <TextInput
+                id="qc-phone"
+                value={form.phone}
+                onChange={(e) => set("phone", e.target.value)}
+                placeholder="10-digit phone number"
+                inputMode="numeric"
+                maxLength={10}
+                invalid={!!errors.phone}
+              />
             </Field>
             <Field label="Email" optional htmlFor="qc-email">
-              <TextInput id="qc-email" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="name@example.com" />
+              <TextInput
+                id="qc-email"
+                type="email"
+                value={form.email}
+                onChange={(e) => set("email", e.target.value)}
+                placeholder="name@example.com"
+              />
             </Field>
           </>
         )}
 
-        <Field label="Deal / project name" required htmlFor="qc-deal" error={errors.dealName}>
-          <TextInput id="qc-deal" value={form.dealName} onChange={(e) => set("dealName", e.target.value)} placeholder="e.g. DLF Camellias apartment" invalid={!!errors.dealName} />
+        <Field
+          label="Deal / project name"
+          required
+          htmlFor="qc-deal"
+          error={errors.dealName}
+        >
+          <TextInput
+            id="qc-deal"
+            value={form.dealName}
+            onChange={(e) => set("dealName", e.target.value)}
+            placeholder="e.g. DLF Camellias apartment"
+            invalid={!!errors.dealName}
+          />
         </Field>
 
         <Field
@@ -191,16 +300,31 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
           optional
           htmlFor="qc-amount"
           error={errors.amount}
-          hint={amountValue && !Number.isNaN(amountValue) ? `= ${formatINR(amountValue, { compact: false })}` : "Type 45 L, 1.2 Cr or a full amount."}
+          hint={
+            amountValue && !Number.isNaN(amountValue)
+              ? `= ${formatINR(amountValue, { compact: false })}`
+              : "Type 45 L, 1.2 Cr or a full amount."
+          }
         >
           <div className="crm-input-prefix">
             <span>₹</span>
-            <TextInput id="qc-amount" value={form.amount} onChange={(e) => set("amount", e.target.value)} placeholder="45 L" inputMode="decimal" invalid={!!errors.amount} />
+            <TextInput
+              id="qc-amount"
+              value={form.amount}
+              onChange={(e) => set("amount", e.target.value)}
+              placeholder="45 L"
+              inputMode="decimal"
+              invalid={!!errors.amount}
+            />
           </div>
         </Field>
 
         <Field label="Stage" htmlFor="qc-stage">
-          <SelectInput id="qc-stage" value={form.stage} onChange={(e) => set("stage", e.target.value)}>
+          <SelectInput
+            id="qc-stage"
+            value={form.stage}
+            onChange={(e) => set("stage", e.target.value)}
+          >
             {STAGES.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.label}
@@ -210,7 +334,11 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
         </Field>
 
         <Field label="Owner" htmlFor="qc-owner">
-          <SelectInput id="qc-owner" value={form.ownerId} onChange={(e) => set("ownerId", e.target.value)}>
+          <SelectInput
+            id="qc-owner"
+            value={form.ownerId}
+            onChange={(e) => set("ownerId", e.target.value)}
+          >
             <option value="">Me</option>
             {(meta?.owners || []).map((o) => (
               <option key={o.id || o.name} value={o.id || o.name}>
@@ -221,8 +349,26 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
         </Field>
 
         <Field label="Source" htmlFor="qc-source">
-          <SelectInput id="qc-source" value={form.source} onChange={(e) => set("source", e.target.value)}>
-            {(meta?.sources || ["Referral", "Website", "Instagram", "Walk-in", "Other"]).map((s) => (
+          <SelectInput
+            id="qc-source"
+            value={form.source}
+            onChange={(e) => set("source", e.target.value)}
+          >
+            {[
+              ...new Set(
+                (
+                  meta?.sources || [
+                    "Referral",
+                    "Website",
+                    "Social Media",
+                    "Walk-in",
+                    "Other",
+                  ]
+                )
+                  .filter((s) => !/zoho|bigin/i.test(s))
+                  .map((s) => (s === "Instagram" ? "Social Media" : s)),
+              ),
+            ].map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
@@ -231,15 +377,30 @@ export default function QuickCreateDeal({ open, onOpenChange, defaultStage, meta
         </Field>
 
         <Field label="Expected close" optional htmlFor="qc-close">
-          <TextInput id="qc-close" type="date" value={form.expectedClose} onChange={(e) => set("expectedClose", e.target.value)} />
+          <TextInput
+            id="qc-close"
+            type="date"
+            value={form.expectedClose}
+            onChange={(e) => set("expectedClose", e.target.value)}
+          />
         </Field>
 
         <Field label="Location" optional htmlFor="qc-location">
-          <TextInput id="qc-location" value={form.location} onChange={(e) => set("location", e.target.value)} placeholder="e.g. Golf Course Road, Gurugram" />
+          <TextInput
+            id="qc-location"
+            value={form.location}
+            onChange={(e) => set("location", e.target.value)}
+            placeholder="e.g. Golf Course Road, Gurugram"
+          />
         </Field>
 
         <Field label="Project type" full>
-          <ChoiceGroup value={form.type} onChange={(v) => set("type", v)} options={TYPES.map((t) => ({ value: t, label: t }))} name="Project type" />
+          <ChoiceGroup
+            value={form.type}
+            onChange={(v) => set("type", v)}
+            options={TYPES.map((t) => ({ value: t, label: t }))}
+            name="Project type"
+          />
         </Field>
         <button type="submit" hidden />
       </form>

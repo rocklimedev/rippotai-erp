@@ -127,7 +127,7 @@ export const boqApi = baseApi.injectEndpoints({
         method: "PATCH",
         body: { terms_template_id, version },
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: "Boq", id }],
+      invalidatesTags: (result, error, { id }) => [{ type: "BOQ", id }],
     }),
 
     // ==========================
@@ -141,7 +141,7 @@ export const boqApi = baseApi.injectEndpoints({
         body,
       }),
       invalidatesTags: (result, error, { boqId }) => [
-        { type: "BOQ", id: boqId },
+        { type: "BOQ", id: boqId }, "LIBRARY",
       ],
     }),
 
@@ -177,7 +177,7 @@ export const boqApi = baseApi.injectEndpoints({
         body,
       }),
       invalidatesTags: (result, error, { boqId }) => [
-        { type: "BOQ", id: boqId },
+        { type: "BOQ", id: boqId }, "LIBRARY",
       ],
     }),
 
@@ -188,7 +188,7 @@ export const boqApi = baseApi.injectEndpoints({
         body,
       }),
       invalidatesTags: (result, error, { boqId }) => [
-        { type: "BOQ", id: boqId },
+        { type: "BOQ", id: boqId }, "LIBRARY",
       ],
     }),
 

@@ -1,3 +1,4 @@
+import MonthlyMilestoneBuilder from "@/components/payments/MonthlyMilestoneBuilder";
 import React, { useMemo } from "react";
 import {
   CircleDollarSign,
@@ -121,27 +122,8 @@ const DEFAULT_KEY_TERMS = [
 ============================================================ */
 
 function normalizeMilestones(milestones) {
-  if (!Array.isArray(milestones) || milestones.length === 0) {
-    return DEFAULT_MILESTONES.map((milestone) => ({
-      ...milestone,
-    }));
-  }
-
-  return DEFAULT_MILESTONES.map((defaultMilestone) => {
-    const existing = milestones.find(
-      (milestone) => milestone.code === defaultMilestone.code,
-    );
-
-    return existing
-      ? {
-          ...defaultMilestone,
-          ...existing,
-          share: Number(existing.share ?? defaultMilestone.share),
-        }
-      : {
-          ...defaultMilestone,
-        };
-  });
+  const source = Array.isArray(milestones) ? milestones : DEFAULT_MILESTONES;
+  return source.map((milestone) => ({ ...milestone, share: Number(milestone.share || 0) }));
 }
 
 /* ============================================================
@@ -200,7 +182,7 @@ export default function PaymentScheduleSection({ data, onChange }) {
     [milestones],
   );
 
-  const isComplete = totalShare === 100;
+  const isComplete = Math.abs(totalShare - 100) < 0.01;
 
   /* ============================================================
      UPDATE DATA
@@ -223,6 +205,7 @@ export default function PaymentScheduleSection({ data, onChange }) {
     next[index] = {
       ...next[index],
       [key]: key === "share" ? Number(value) : value,
+      ...(key === "share" ? { amount: Math.round(Number(data.totalContractValue || 0) * Number(value)) / 100 } : {}),
     };
 
     updateData({
@@ -289,7 +272,7 @@ export default function PaymentScheduleSection({ data, onChange }) {
             <CardTitle>Payment schedule</CardTitle>
 
             <CardDescription className="mt-1">
-              Seven milestones against stages of work — edit before generating
+              Stage-based and monthly payment milestones — edit before generating
             </CardDescription>
           </div>
         </div>
@@ -302,9 +285,8 @@ export default function PaymentScheduleSection({ data, onChange }) {
 
         <div className="rounded-lg border bg-muted/40 p-4">
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Each milestone falls due before the corresponding phase is
-            mobilised, so material can be ordered and labour deployed without a
-            break between phases.
+            Use stage-based milestones, monthly installments, or a combination.
+            The combined payment shares should add up to 100%.
           </p>
         </div>
 
@@ -312,6 +294,13 @@ export default function PaymentScheduleSection({ data, onChange }) {
             MILESTONES
         ==================================================== */}
 
+        <MonthlyMilestoneBuilder totalShare={totalShare} contractValue={data.totalContractValue}
+          existingCodes={milestones.map((m) => m.code)}
+          canReplace={milestones.every((m) => (!m.status || m.status === "PENDING") && !Number(m.paidAmount) && !m.invoiceDate)}
+          onGenerate={(rows, replace) => updateData({ milestones: [ ...(replace ? [] : milestones),
+            ...rows.map((row) => ({ code: row.code, name: row.title, description: row.description, trigger: row.releaseTrigger,
+              dueDate: row.dueDate, share: row.percentage, amount: row.amount, status: "PENDING" })),
+          ] })} />
         <div className="space-y-3">
           {/* DESKTOP TABLE */}
 
@@ -372,6 +361,7 @@ export default function PaymentScheduleSection({ data, onChange }) {
                           updateMilestone(index, "trigger", event.target.value)
                         }
                       />
+                      <Input type="date" aria-label={`Due date for ${milestone.name || milestone.code}`} className="mt-2" value={(milestone.dueDate || "").slice(0, 10)} onChange={(event) => updateMilestone(index, "dueDate", event.target.value)} />
                     </td>
 
                     <td className="p-3">
@@ -469,6 +459,8 @@ export default function PaymentScheduleSection({ data, onChange }) {
                 </div>
 
                 <div className="mt-3 space-y-2">
+                  <Label>Due date</Label>
+                  <Input type="date" aria-label={`Mobile due date for ${milestone.name || milestone.code}`} value={(milestone.dueDate || "").slice(0, 10)} onChange={(event) => updateMilestone(index, "dueDate", event.target.value)} />
                   <Label>Release trigger</Label>
 
                   <Input

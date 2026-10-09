@@ -118,7 +118,7 @@ export default function BoqTemplateEditor() {
       await addItem({
         templateId: id,
         categoryId: cid,
-        name: payload.description,
+        name: payload.name,
         unit: payload.unit || "Nos.",
         quantity: payload.quantity || 1,
         rate: payload.rate || 0,
@@ -618,6 +618,7 @@ export default function BoqTemplateEditor() {
       />
 
       <AddItemPicker
+        saveToLibrary
         open={!!pickerFor}
         defaultCategoryId={pickerFor?.cid}
         categories={categories}

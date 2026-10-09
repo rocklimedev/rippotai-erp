@@ -11,6 +11,10 @@ import {
   fmtDate,
   money,
 } from "@/components/print-document";
+import welcomeImage from "@/assets/proposal/welcome.png";
+import coverImage from "@/assets/proposal/cover.jpg";
+import mark from "@/assets/rippotai_mark.png";
+import "./proposal-template.css";
 import { buildSowSections } from "@/pages/scope-of-work/ScopeOfWorkView";
 import {
   buildPoaSections,
@@ -149,7 +153,52 @@ export function buildProposalSections({
       />,
     ],
   });
-  return sections;
+  const presentation = {
+    "The project": ["02 PROJECT DETAILS", "Project Snapshot.", "The fixed facts we are designing and sequencing around."],
+    "How the execution runs": ["04 OUR PLAN", "Our Plan.", "The approach and programme for your project."],
+    "Phases": ["PROPOSED TIMELINES", "From Planning To Handover.", "Your saved programme, phase by phase."],
+    "Scope summary": ["05 SCOPE OF WORK", "Services Confirmed In Your Brief.", "A summary of what sits inside this proposal."],
+    "Scope of work": ["SCOPE OF WORK", "The Scope, In Detail.", "Work organised by trade."],
+    "Not included": ["SCOPE OF WORK", "Not In This Scope.", "Items to be handled separately."],
+    "Budget estimate": ["BUDGET ESTIMATE", "Your Project Investment.", "The current estimate and its breakdown."],
+    "Commercial summary": ["OUR FEES", "One Fee. Open Books Underneath It.", "The saved commercial breakdown for your project."],
+    "Payment schedule": ["HOW YOU PAY", "Your Payment Plan.", "The agreed basis for your payment schedule."],
+    "Payment milestones": ["HOW YOU PAY", "Pay By Stage.", "Payments linked to the milestones below."],
+    "Terms": ["OUR FEES", "Good To Know.", "The terms that accompany your payment schedule."],
+    "Next steps": ["NEXT STEPS", "From Review To Mobilization.", "Simple decisions, in the right order."],
+    "Acceptance": ["ACCEPTANCE", "Ready For The Next Step.", "Confirm the proposal below."],
+  };
+  const order = ["The project", "How the execution runs", "Phases", "Scope summary", "Scope of work", "Not included", "Budget estimate", "Commercial summary", "Payment schedule", "Payment milestones", "Terms", "Next steps", "Acceptance"];
+  const arranged = sections.sort((a, b) => order.indexOf(a.title) - order.indexOf(b.title)).map((section) => {
+    const [label, heading, intro] = presentation[section.title];
+    return { ...section, newPage: true, title: label, intro: undefined, rows: undefined, blocks: [
+      <div className="bp-editorial-heading" key="heading"><h2>{heading}</h2><p>{intro}</p></div>,
+      ...(section.rows ? [{ table: section.rows }] : []), ...(section.blocks || []),
+    ] };
+  });
+  const commercialIndex = arranged.findIndex((s) => s.title === "BUDGET ESTIMATE" || s.title === "OUR FEES" || s.title === "HOW YOU PAY");
+  if (commercialIndex >= 0) arranged.splice(commercialIndex, 0, {
+    newPage: true,
+    blocks: [<div className="bp-divider" key="divider"><h2>The Proposal</h2><span /></div>],
+  });
+  arranged.unshift({
+    title: "01 WELCOME NOTE", newPage: true,
+    blocks: [
+      <div key="welcome-title" className="bp-editorial-heading bp-welcome"><h2>A considered vision<br />for your space.</h2></div>,
+      <img key="welcome-art" className="bp-welcome-art" src={welcomeImage} alt="Architectural illustration of a living space" />,
+      <div key="welcome" className="bp-welcome-card"><p>Thank you{client.name ? `, ${client.name},` : ""} for trusting Rippotai. This proposal brings together the scope, programme, budget and payment schedule for {project.name || "your project"}.</p><div><strong>Rippotai</strong><small>ARCHITECTURE · INTERIORS · TURNKEY</small></div></div>,
+    ],
+  });
+  const projectIndex = arranged.findIndex((section) => section.title === "02 PROJECT DETAILS");
+  arranged.splice(projectIndex >= 0 ? projectIndex + 1 : 1, 0, {
+    title: "03 HOW WE WORK", newPage: true,
+    blocks: [
+      <div className="bp-editorial-heading" key="heading"><h2>Clear gates. Clean approvals.</h2><p>A clear path from the first brief to handover.</p></div>,
+      <div className="bp-principles" key="principles">{["One Point Of Contact", "Nothing Hidden In BOQ", "Sign-off Before Spend", "Stage-wise Progress"].map((label, i) => <div key={label}><span>{String(i + 1).padStart(2, "0")}</span>{label}</div>)}</div>,
+      <div key="gates"><span className="pd-label">PROCESS GATES</span><div className="bp-gates">{["Brief", "Concept", "BOQ Freeze", "GFC Drawings", "Execution", "Handover"].map((label, i) => <div key={label}><span>{i + 1}</span>{label}</div>)}</div><p className="bp-caption">YOU SIGN OFF AT EVERY GATE</p></div>,
+    ],
+  });
+  return arranged;
 }
 
 const ProposalDocument = forwardRef(function ProposalDocument(props, ref) {
@@ -162,6 +211,14 @@ const ProposalDocument = forwardRef(function ProposalDocument(props, ref) {
   return (
     <PrintDocument
       ref={ref}
+      className="bp-template"
+      pageHeight={373.333}
+      numbered={false}
+      cover={<section className="pd-page bp-cover">
+        <img className="bp-cover-art" src={coverImage} alt="Rippotai architectural staircase" />
+        <div className="bp-cover-panel"><h1>BUSINESS<br />PROPOSAL</h1><span className="bp-gold-rule" /><h2>{project.name || "Your Project"}</h2><p>{project.site_location}<br />{client.name}</p><small>{date}</small></div>
+      </section>}
+      closing={<section className="pd-page bp-closing"><img src={mark} alt="Rippotai" /><div className="bp-wordmark">RIPPŌTAI</div><h2>Let’s bring your vision home.</h2><span className="bp-gold-rule" /><p>ARCHITECTURE · INTERIORS · TURNKEY</p></section>}
       docType="Business Proposal"
       title={project.name || "Project"}
       subtitle="Scope, plan, budget and payments — in one place."

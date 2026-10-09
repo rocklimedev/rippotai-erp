@@ -203,10 +203,7 @@ export class BoqController {
   addCategory(
     @Param('id') id: string,
     @Body()
-    dto: CreateBoqCategoryDto & {
-      catalog_code?: string;
-      include_items?: boolean;
-    },
+    dto: CreateBoqCategoryDto,
     @CurrentUser() user?: User,
   ) {
     return this.boqService.addCategory(id, dto, user?.id);

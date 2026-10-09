@@ -1,3 +1,4 @@
+import { RichTextEditor } from "./RichTextEditor";
 import React, { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ export function AddItemPicker({
   onPick,
   categories = [],
   defaultCategoryId,
+  saveToLibrary = false,
 }) {
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
@@ -37,6 +39,7 @@ export function AddItemPicker({
     { skip: !open },
   );
   const [createLibraryItem] = useCreateLibraryItemMutation();
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -61,21 +64,24 @@ export function AddItemPicker({
 
   if (!open) return null;
 
-  const pickFromLibrary = (it) => {
-    onPick({
+  const pickFromLibrary = async (it) => {
+    if (saving) return;
+    setSaving(true);
+    try { await onPick({
       payload: {
         name: it.name, // ✅ was `description: it.name`
         unit: it.unit || "Nos.",
         quantity: 1,
-        rate: it.default_rate || 0,
+        rate: Number(it.default_rate) || 0,
         calc_type: "M",
         library_item_id: it.id,
         notes: it.notes || "",
       },
-    });
+    }); } catch { toast.error("Could not add item. Please retry."); } finally { setSaving(false); }
   };
 
   const createInline = async () => {
+    if (saving) return;
     if (!newItem.name.trim()) return toast.error("Name required");
     const isNewCat = newItem.category_id === CREATE_NEW;
     if (!isNewCat && !newItem.category_id)
@@ -84,32 +90,28 @@ export function AddItemPicker({
       return toast.error("New category name required");
 
     try {
-      const chosenCat = isNewCat
-        ? null
-        : categories.find((c) => c.id === newItem.category_id);
-      const lib = await createLibraryItem({
-        name: newItem.name,
-        unit: newItem.unit,
-        default_rate: newItem.default_rate,
-        notes: newItem.notes,
-        category_name: isNewCat ? newItem.new_category_name : chosenCat?.name,
-      }).unwrap();
-
-      onPick({
+      setSaving(true);
+      const libraryItem = saveToLibrary ? await createLibraryItem({
+        name: newItem.name.trim(), unit: newItem.unit, default_rate: Number(newItem.default_rate) || 0,
+        notes: newItem.notes, category_name: isNewCat ? newItem.new_category_name.trim() : categories.find((c) => c.id === newItem.category_id)?.name,
+      }).unwrap() : null;
+      await onPick({
         payload: {
-          description: lib.name,
-          unit: lib.unit,
+          ...(libraryItem ? { library_item_id: libraryItem.id } : {}),
+          name: newItem.name.trim(),
+          unit: newItem.unit,
           quantity: 1,
-          rate: lib.default_rate || 0,
+          rate: Number(newItem.default_rate) || 0,
           calc_type: "M",
-          library_item_id: lib.id,
-          notes: lib.notes || "",
+          notes: newItem.notes || "",
         },
         targetCategoryId: isNewCat ? null : newItem.category_id,
         newCategoryName: isNewCat ? newItem.new_category_name.trim() : null,
       });
     } catch {
-      toast.error("Create failed");
+      toast.error("Could not save item. Your entries have been kept.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -120,7 +122,7 @@ export function AddItemPicker({
       data-testid="add-item-picker"
     >
       <div
-        className="bg-white rounded-2xl w-[560px] p-5"
+        className="bg-white rounded-2xl w-[560px] max-w-[95vw] max-h-[90vh] overflow-y-auto p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="text-[16px] font-semibold text-[#333333] mb-3">
@@ -214,14 +216,7 @@ export function AddItemPicker({
                 }
                 className="h-9 px-2 rounded-lg border border-[#DDD8CE] bg-white text-[13px]"
               />
-              <input
-                placeholder="Notes (optional)"
-                value={newItem.notes}
-                onChange={(e) =>
-                  setNewItem({ ...newItem, notes: e.target.value })
-                }
-                className="h-9 px-2 rounded-lg border border-[#DDD8CE] bg-white text-[13px] col-span-2"
-              />
+              <div className="col-span-2"><RichTextEditor value={newItem.notes} onChange={(notes) => setNewItem((current) => ({ ...current, notes }))} label="New item notes" /></div>
             </div>
             <div className="flex justify-end gap-2 mt-2">
               <button
@@ -232,10 +227,11 @@ export function AddItemPicker({
               </button>
               <button
                 onClick={createInline}
+                disabled={saving}
                 className="h-8 px-3 rounded-lg bg-[#1F453B] text-white text-[12.5px] font-semibold"
                 data-testid="picker-new-save"
               >
-                Save &amp; Add
+                {saving ? "Saving…" : "Save & Add"}
               </button>
             </div>
           </div>
@@ -252,6 +248,7 @@ export function AddItemPicker({
           {results.map((it) => (
             <button
               key={it.id}
+              disabled={saving}
               onClick={() => pickFromLibrary(it)}
               className="w-full text-left px-3 py-2 border-b border-[#EAEEF0] hover:bg-[#FAF8F5] flex items-center justify-between"
               data-testid={`item-picker-row-${it.id}`}

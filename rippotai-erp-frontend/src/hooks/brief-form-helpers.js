@@ -219,7 +219,7 @@ export const normalizeProjectBrief = (brief) => {
     // ========================================================
     workTypes: (brief.workTypes ?? [])
       .map((item) => item?.workType ?? item)
-      .filter(Boolean),
+      .filter(Boolean).slice(0, 1),
 
     services: (brief.services ?? [])
       .map((item) => item?.serviceType ?? item)
@@ -297,7 +297,7 @@ export const buildProjectBriefPayload = (projectId, values) => {
     drawingsOther: values.drawingsOther || null,
 
     // SCOPE
-    workTypeOther: values.workTypeOther || null,
+    workTypeOther: (Array.isArray(values.workTypes) ? values.workTypes : splitLines(values.workTypes)).includes("OTHER") ? values.workTypeOther || null : null,
     servicesOther: values.servicesOther || null,
     areasIncludedInScope: values.areasIncludedInScope || null,
     areasExcludedFromScope: values.areasExcludedFromScope || null,
@@ -348,7 +348,7 @@ export const buildProjectBriefPayload = (projectId, values) => {
     workTypes: (Array.isArray(values.workTypes)
       ? values.workTypes
       : splitLines(values.workTypes)
-    ).map((workType) => ({ workType })),
+    ).slice(0, 1).map((workType) => ({ workType })),
 
     services: (Array.isArray(values.services)
       ? values.services

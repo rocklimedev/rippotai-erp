@@ -267,13 +267,15 @@ export const BRIEF_SECTIONS = [
     fields: [
       {
         key: "workTypes",
-        label: "Work Types",
-        type: "multiselect",
+        label: "Work Type",
+        type: "select",
+        arrayValue: true,
         options: WORK_TYPE_OPTIONS,
       },
       {
         key: "workTypeOther",
         label: "Other Work Type",
+        showWhenMultiselectIncludes: { field: "workTypes", value: "OTHER" },
       },
       {
         key: "services",
@@ -284,12 +286,14 @@ export const BRIEF_SECTIONS = [
       {
         key: "servicesOther",
         label: "Other Service",
+        showWhenMultiselectIncludes: { field: "services", value: "OTHER" },
       },
       {
         key: "procurementCategories",
         label: "Material Procurement", // renamed
         type: "multiselect",
         options: PROCUREMENT_CATEGORY_OPTIONS,
+        selectAll: true,
       },
       {
         key: "areasIncludedInScope",
