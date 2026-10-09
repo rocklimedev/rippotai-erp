@@ -3,6 +3,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, QueryTypes, WhereOptions } from 'sequelize';
@@ -30,7 +31,11 @@ import {
 // POST /leads/sync/zoho imports Bigin deals into INOS.
 // ------------------------------------------------------------------
 
-export const PIPELINE_STAGES: { id: LeadStage; label: string; closed?: boolean }[] = [
+export const PIPELINE_STAGES: {
+  id: LeadStage;
+  label: string;
+  closed?: boolean;
+}[] = [
   { id: LeadStage.CAPTURE, label: 'Lead Capture' },
   { id: LeadStage.QUAL, label: 'Qualification' },
   { id: LeadStage.DISC, label: 'Discovery / Site Visit' },
@@ -42,7 +47,9 @@ export const PIPELINE_STAGES: { id: LeadStage; label: string; closed?: boolean }
   { id: LeadStage.LOST, label: 'Closed Lost', closed: true },
 ];
 
-const STAGE_LABEL = new Map<string, string>(PIPELINE_STAGES.map((s) => [s.id, s.label]));
+const STAGE_LABEL = new Map<string, string>(
+  PIPELINE_STAGES.map((s) => [s.id, s.label]),
+);
 const OPEN_STAGES = new Set<string>([
   LeadStage.CAPTURE,
   LeadStage.QUAL,
@@ -56,6 +63,7 @@ const WON_STAGES = new Set<string>([LeadStage.CONTRACT, LeadStage.HANDOFF]);
 const BIGIN_TO_LOCAL: Record<string, LeadStage> = {
   qualification: LeadStage.QUAL,
   'needs analysis': LeadStage.DISC,
+  'site visit': LeadStage.DISC,
   'proposal/price quote': LeadStage.PROP,
   'negotiation/review': LeadStage.NEGO,
   'closed won': LeadStage.CONTRACT,
@@ -64,7 +72,7 @@ const BIGIN_TO_LOCAL: Record<string, LeadStage> = {
 const LOCAL_TO_BIGIN: Record<string, string> = {
   capture: 'Qualification',
   qual: 'Qualification',
-  disc: 'Needs Analysis',
+  disc: 'Site Visit',
   prop: 'Proposal/Price Quote',
   nego: 'Negotiation/Review',
   contract: 'Closed Won',
@@ -75,13 +83,12 @@ const LOCAL_TO_BIGIN: Record<string, string> = {
 export const LEAD_SOURCES = [
   'Referral',
   'Website',
-  'Instagram',
+  'Social Media',
   'Google Ads',
   'Walk-in',
   'Architect partner',
   'Existing client',
   'Exhibition',
-  'Zoho Bigin',
   'Other',
 ];
 
@@ -99,7 +106,9 @@ function normaliseStage(stage?: string | null): LeadStage | null {
 }
 
 function parseINR(token: string): number | null {
-  const match = token.trim().match(/^₹?\s*([\d.,]+)\s*(l|lakh|lac|cr|crore)?$/i);
+  const match = token
+    .trim()
+    .match(/^₹?\s*([\d.,]+)\s*(l|lakh|lac|cr|crore)?$/i);
   if (!match) return null;
   const value = parseFloat(match[1].replace(/,/g, ''));
   if (!Number.isFinite(value)) return null;
@@ -110,7 +119,9 @@ function parseINR(token: string): number | null {
 
 function parseBudgetRange(range?: string | null): number | null {
   if (!range) return null;
-  const clean = String(range).replace(/under\s*/i, '').replace('+', '');
+  const clean = String(range)
+    .replace(/under\s*/i, '')
+    .replace('+', '');
   const nums = clean
     .split(/[–-]/)
     .map((p) => parseINR(p))
@@ -121,7 +132,8 @@ function parseBudgetRange(range?: string | null): number | null {
 
 const toNum = (v: unknown): number | null => {
   if (v === null || v === undefined || v === '') return null;
-  const n = typeof v === 'number' ? v : Number(String(v).replace(/[₹,\s]/g, ''));
+  const n =
+    typeof v === 'number' ? v : Number(String(v).replace(/[₹,\s]/g, ''));
   return Number.isFinite(n) ? n : null;
 };
 
@@ -163,7 +175,7 @@ export interface Actor {
 type Deal = ReturnType<LeadsService['toDeal']>;
 
 @Injectable()
-export class LeadsService {
+export class LeadsService implements OnModuleInit {
   private readonly logger = new Logger(LeadsService.name);
 
   constructor(
@@ -176,6 +188,78 @@ export class LeadsService {
     @InjectModel(LeadTask) private readonly taskModel: typeof LeadTask,
   ) {}
 
+  onModuleInit() {
+    for (const modelName of [
+      'SiteRecce',
+      'BusinessProposal',
+      'Document',
+      'Lead',
+    ]) {
+      const model = this.db.models[modelName];
+      model?.addHook(
+        'afterSave',
+        'lead-document-stage',
+        async (record: any, options: any) => {
+          if (modelName === 'Lead' && !record.changed('projectId')) return;
+          const projectId = record.project_id || record.projectId;
+          if (!projectId) return;
+          const sync = async () => {
+            try {
+              await this.syncProjectStage(projectId, {
+                id:
+                  record.updated_by ||
+                  record.created_by ||
+                  record.uploadedBy ||
+                  '',
+                name: record.uploadedByName || 'Project documents',
+              });
+            } catch (error) {
+              this.logger.error(
+                `Lead document stage update failed for ${projectId}: ${error.message}`,
+              );
+            }
+          };
+          if (options.transaction) options.transaction.afterCommit(sync);
+          else await sync();
+        },
+      );
+    }
+  }
+
+  async syncProjectStage(projectId: string, actor: Actor) {
+    const [evidence] = await this.select<{ recce: number; proposal: number }>(
+      `
+      SELECT
+        EXISTS(SELECT 1 FROM site_recces WHERE project_id = ? AND deleted_at IS NULL) AS recce,
+        (EXISTS(SELECT 1 FROM business_proposals WHERE project_id = ?) AND
+         EXISTS(SELECT 1 FROM documents d JOIN document_types t ON t.id = d.document_type_id
+           WHERE d.project_id = ? AND d.url IS NOT NULL AND d.url <> ''
+           AND d.status NOT IN ('rejected', 'archived')
+           AND (LOWER(t.name) = 'business proposal' OR LOWER(t.code) IN ('business_proposal', 'business-proposal')))) AS proposal
+    `,
+      [projectId, projectId, projectId],
+    );
+    const stage = evidence?.proposal
+      ? LeadStage.PROP
+      : evidence?.recce
+        ? LeadStage.DISC
+        : null;
+    if (!stage) return;
+    const leads = await this.leadModel.findAll({ where: { projectId } });
+    for (const lead of leads) {
+      if (
+        OPEN_STAGES.has(lead.stage) &&
+        STAGE_ORDER.indexOf(lead.stage) < STAGE_ORDER.indexOf(stage)
+      ) {
+        await this.moveStage(
+          { ...actor, id: actor.id || lead.ownerId || '' },
+          lead.id,
+          stage,
+        );
+      }
+    }
+  }
+
   // ============================================================
   // HELPERS
   // ============================================================
@@ -184,8 +268,14 @@ export class LeadsService {
     return this.leadModel.sequelize!;
   }
 
-  private async select<T = any>(sql: string, replacements: any[] = []): Promise<T[]> {
-    return this.db.query(sql, { replacements, type: QueryTypes.SELECT }) as Promise<T[]>;
+  private async select<T = any>(
+    sql: string,
+    replacements: any[] = [],
+  ): Promise<T[]> {
+    return this.db.query(sql, {
+      replacements,
+      type: QueryTypes.SELECT,
+    }) as Promise<T[]>;
   }
 
   private async zohoConnected(userId: string): Promise<boolean> {
@@ -232,7 +322,8 @@ export class LeadsService {
         ],
       });
     }
-    if (f.owner) and.push(f.owner === '__none' ? { owner: null } : { owner: f.owner });
+    if (f.owner)
+      and.push(f.owner === '__none' ? { owner: null } : { owner: f.owner });
     if (f.source) and.push({ source: f.source });
     if (f.type) and.push({ type: f.type });
     if (f.stage) {
@@ -265,12 +356,16 @@ export class LeadsService {
       case 'value-desc':
         return (a: Deal, b: Deal) => (b.amount ?? -1) - (a.amount ?? -1);
       case 'value-asc':
-        return (a: Deal, b: Deal) => (a.amount ?? Infinity) - (b.amount ?? Infinity);
+        return (a: Deal, b: Deal) =>
+          (a.amount ?? Infinity) - (b.amount ?? Infinity);
       case 'close':
         return (a: Deal, b: Deal) =>
-          str(a.expectedClose || '9999').localeCompare(str(b.expectedClose || '9999'));
+          str(a.expectedClose || '9999').localeCompare(
+            str(b.expectedClose || '9999'),
+          );
       case 'oldest':
-        return (a: Deal, b: Deal) => iso(a.createdAt).localeCompare(iso(b.createdAt));
+        return (a: Deal, b: Deal) =>
+          iso(a.createdAt).localeCompare(iso(b.createdAt));
       case 'name-asc':
         return (a: Deal, b: Deal) => str(a.title).localeCompare(str(b.title));
       case 'name-desc':
@@ -283,12 +378,15 @@ export class LeadsService {
       case 'owner':
         return (a: Deal, b: Deal) => str(a.owner).localeCompare(str(b.owner));
       case 'location':
-        return (a: Deal, b: Deal) => str(a.location).localeCompare(str(b.location));
+        return (a: Deal, b: Deal) =>
+          str(a.location).localeCompare(str(b.location));
       case 'updated':
-        return (a: Deal, b: Deal) => iso(b.updatedAt).localeCompare(iso(a.updatedAt));
+        return (a: Deal, b: Deal) =>
+          iso(b.updatedAt).localeCompare(iso(a.updatedAt));
       case 'newest':
       default:
-        return (a: Deal, b: Deal) => iso(b.createdAt).localeCompare(iso(a.createdAt));
+        return (a: Deal, b: Deal) =>
+          iso(b.createdAt).localeCompare(iso(a.createdAt));
     }
   }
 
@@ -387,7 +485,9 @@ export class LeadsService {
   private async hydrate(leads: Lead[]): Promise<Deal[]> {
     if (!leads.length) return [];
     const ids = leads.map((l) => l.id);
-    const clientIds = [...new Set(leads.map((l) => l.clientId).filter(Boolean))] as string[];
+    const clientIds = [
+      ...new Set(leads.map((l) => l.clientId).filter(Boolean)),
+    ] as string[];
 
     const [tasks, noteCounts, clients] = await Promise.all([
       this.taskModel.findAll({
@@ -461,7 +561,15 @@ export class LeadsService {
     return {
       stages: PIPELINE_STAGES,
       owners: [...users, ...extraOwners],
-      sources: [...new Set([...LEAD_SOURCES, ...sources.map((s) => s.source)])],
+      sources: [
+        ...new Set(
+          [...LEAD_SOURCES, ...sources.map((s) => s.source)]
+            .filter((source) => !/zoho|bigin/i.test(source))
+            .map((source) =>
+              source === 'Instagram' ? 'Social Media' : source,
+            ),
+        ),
+      ],
       types: Object.values(LeadType),
       tags: Object.values(LeadTag),
       colors: Object.values(LeadColor),
@@ -529,8 +637,14 @@ export class LeadsService {
     const [deal] = await this.hydrate([lead]);
 
     const [notes, activity, tasks] = await Promise.all([
-      this.noteModel.findAll({ where: { leadId: id }, order: [['created_at', 'DESC']] }),
-      this.activityModel.findAll({ where: { leadId: id }, order: [['created_at', 'DESC']] }),
+      this.noteModel.findAll({
+        where: { leadId: id },
+        order: [['created_at', 'DESC']],
+      }),
+      this.activityModel.findAll({
+        where: { leadId: id },
+        order: [['created_at', 'DESC']],
+      }),
       this.taskModel.findAll({
         where: { leadId: id },
         order: [
@@ -559,11 +673,26 @@ export class LeadsService {
       project = rows[0] || null;
 
       const docQueries: [string, string][] = [
-        ['brief', 'SELECT id, status, created_at AS createdAt FROM project_briefs WHERE project_id = ? AND deleted_at IS NULL ORDER BY created_at DESC'],
-        ['recce', 'SELECT id, NULL AS status, created_at AS createdAt FROM site_recces WHERE project_id = ? AND deleted_at IS NULL ORDER BY created_at DESC'],
-        ['planOfAction', 'SELECT id, status, created_at AS createdAt FROM plan_of_actions WHERE project_id = ? AND deleted_at IS NULL ORDER BY created_at DESC'],
-        ['scopeOfWork', 'SELECT id, status, created_at AS createdAt FROM scope_of_work WHERE project_id = ? AND deleted_at IS NULL ORDER BY created_at DESC'],
-        ['proposal', 'SELECT id, status, created_at AS createdAt FROM budget_estimates WHERE project_id = ? ORDER BY created_at DESC'],
+        [
+          'brief',
+          'SELECT id, status, created_at AS createdAt FROM project_briefs WHERE project_id = ? AND deleted_at IS NULL ORDER BY created_at DESC',
+        ],
+        [
+          'recce',
+          'SELECT id, NULL AS status, created_at AS createdAt FROM site_recces WHERE project_id = ? AND deleted_at IS NULL ORDER BY created_at DESC',
+        ],
+        [
+          'planOfAction',
+          'SELECT id, status, created_at AS createdAt FROM plan_of_actions WHERE project_id = ? AND deleted_at IS NULL ORDER BY created_at DESC',
+        ],
+        [
+          'scopeOfWork',
+          'SELECT id, status, created_at AS createdAt FROM scope_of_work WHERE project_id = ? AND deleted_at IS NULL ORDER BY created_at DESC',
+        ],
+        [
+          'proposal',
+          'SELECT id, status, created_at AS createdAt FROM budget_estimates WHERE project_id = ? ORDER BY created_at DESC',
+        ],
       ];
       await Promise.all(
         docQueries.map(async ([key, sql]) => {
@@ -627,14 +756,17 @@ export class LeadsService {
         'SELECT name, contact_person AS contactPerson, phone, email FROM clients WHERE id = ?',
         [clientId],
       );
-      if (!rows.length) throw new BadRequestException('Selected client was not found.');
+      if (!rows.length)
+        throw new BadRequestException('Selected client was not found.');
       clientName = rows[0].name;
       body.phone = body.phone || rows[0].phone;
       body.email = body.email || rows[0].email;
-      if (!contactName && rows[0].contactPerson) body.contact = rows[0].contactPerson;
+      if (!contactName && rows[0].contactPerson)
+        body.contact = rows[0].contactPerson;
     }
 
-    const name = contactName || String(body.contact || '').trim() || clientName || '';
+    const name =
+      contactName || String(body.contact || '').trim() || clientName || '';
     if (!name && !dealName) {
       throw new BadRequestException('Enter a deal name or pick a client.');
     }
@@ -648,7 +780,9 @@ export class LeadsService {
     let owner: string | null = body.owner || null;
     let ownerId: string | null = body.ownerId || null;
     if (ownerId && !owner) {
-      const rows = await this.select('SELECT name FROM users WHERE id = ?', [ownerId]);
+      const rows = await this.select('SELECT name FROM users WHERE id = ?', [
+        ownerId,
+      ]);
       owner = rows[0]?.name || null;
     }
     if (!owner) {
@@ -677,12 +811,20 @@ export class LeadsService {
       ownerId,
       stage,
       stageEnteredAt: new Date(),
-      tag: (Object.values(LeadTag) as string[]).includes(body.tag) ? body.tag : null,
+      tag: (Object.values(LeadTag) as string[]).includes(body.tag)
+        ? body.tag
+        : null,
       description: body.description || null,
-      closedAt: WON_STAGES.has(stage) || stage === LeadStage.LOST ? new Date() : null,
+      closedAt:
+        WON_STAGES.has(stage) || stage === LeadStage.LOST ? new Date() : null,
     } as any);
 
-    await this.log(lead.id, 'created', `Deal created in ${STAGE_LABEL.get(stage)}`, actor);
+    await this.log(
+      lead.id,
+      'created',
+      `Deal created in ${STAGE_LABEL.get(stage)}`,
+      actor,
+    );
 
     if (body.note?.trim()) {
       await this.noteModel.create({
@@ -714,11 +856,19 @@ export class LeadsService {
       address: nc.address || undefined,
     };
     try {
-      const created = await this.clientsService.create(payload as any, actor as any);
+      const created = await this.clientsService.create(
+        payload as any,
+        actor as any,
+      );
       return created.id;
     } catch {
-      const slug = `${name}-${Date.now().toString(36)}`.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      const created = await this.clientsService.create({ ...payload, slug } as any, actor as any);
+      const slug = `${name}-${Date.now().toString(36)}`
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-');
+      const created = await this.clientsService.create(
+        { ...payload, slug } as any,
+        actor as any,
+      );
       return created.id;
     }
   }
@@ -773,14 +923,31 @@ export class LeadsService {
       if (!(key in body)) continue;
       let value = body[key];
       if (value === '') value = null;
-      const attr = key === 'contact' ? 'name' : key === 'title' ? 'dealName' : key;
+      const attr =
+        key === 'contact' ? 'name' : key === 'title' ? 'dealName' : key;
 
       if (attr === 'amount') value = toNum(value);
       if (attr === 'color' && value === 'None') value = null;
-      if (attr === 'type' && value && !(Object.values(LeadType) as string[]).includes(value)) continue;
-      if (attr === 'tag' && value && !(Object.values(LeadTag) as string[]).includes(value)) continue;
-      if (attr === 'color' && value && !(Object.values(LeadColor) as string[]).includes(value)) continue;
-      if (attr === 'stuckMode' && !['auto', 'always', 'never'].includes(value)) continue;
+      if (
+        attr === 'type' &&
+        value &&
+        !(Object.values(LeadType) as string[]).includes(value)
+      )
+        continue;
+      if (
+        attr === 'tag' &&
+        value &&
+        !(Object.values(LeadTag) as string[]).includes(value)
+      )
+        continue;
+      if (
+        attr === 'color' &&
+        value &&
+        !(Object.values(LeadColor) as string[]).includes(value)
+      )
+        continue;
+      if (attr === 'stuckMode' && !['auto', 'always', 'never'].includes(value))
+        continue;
       if (attr === 'name' && !value) continue;
 
       const current = (lead as any)[attr];
@@ -794,17 +961,26 @@ export class LeadsService {
     }
 
     if (patch.ownerId && !('owner' in body)) {
-      const rows = await this.select('SELECT name FROM users WHERE id = ?', [patch.ownerId]);
+      const rows = await this.select('SELECT name FROM users WHERE id = ?', [
+        patch.ownerId,
+      ]);
       if (rows[0]) patch.owner = rows[0].name;
     }
     if (patch.clientId && !('company' in body)) {
-      const rows = await this.select('SELECT name FROM clients WHERE id = ?', [patch.clientId]);
+      const rows = await this.select('SELECT name FROM clients WHERE id = ?', [
+        patch.clientId,
+      ]);
       if (rows[0]) patch.company = rows[0].name;
     }
 
     if (Object.keys(patch).length) {
       await lead.update(patch);
-      await this.log(lead.id, 'update', `Updated ${[...new Set(changed)].join(', ')}`, actor);
+      await this.log(
+        lead.id,
+        'update',
+        `Updated ${[...new Set(changed)].join(', ')}`,
+        actor,
+      );
       this.mirrorUpdate(actor.id, lead).catch(() => undefined);
     }
 
@@ -832,7 +1008,8 @@ export class LeadsService {
     const lead = await this.findOr404(id);
     const from = lead.stage;
     if (from === stage) {
-      if (opts.lostReason && stage === LeadStage.LOST) await lead.update({ lostReason: opts.lostReason });
+      if (opts.lostReason && stage === LeadStage.LOST)
+        await lead.update({ lostReason: opts.lostReason });
       const [deal] = await this.hydrate([lead]);
       return deal;
     }
@@ -884,7 +1061,9 @@ export class LeadsService {
     await this.activityModel.destroy({ where: { leadId: id } });
     await lead.destroy();
     if (zohoId && (await this.zohoConnected(actor.id))) {
-      this.zohoCrmService.deletePipeline(actor.id, zohoId).catch(() => undefined);
+      this.zohoCrmService
+        .deletePipeline(actor.id, zohoId)
+        .catch(() => undefined);
     }
     return { ok: true };
   }
@@ -901,7 +1080,12 @@ export class LeadsService {
       text: text.trim(),
       author: actor.name || 'System',
     } as any);
-    return { id: note.id, text: note.text, author: note.author, createdAt: note.createdAt ?? note.get('created_at') ?? new Date() };
+    return {
+      id: note.id,
+      text: note.text,
+      author: note.author,
+      createdAt: note.createdAt ?? note.get('created_at') ?? new Date(),
+    };
   }
 
   async deleteNote(id: string, noteId: string) {
@@ -913,8 +1097,13 @@ export class LeadsService {
   // TASKS
   // ============================================================
 
-  async addTask(actor: Actor, id: string, body: { title: string; dueDate?: string }) {
-    if (!body?.title?.trim()) throw new BadRequestException('Give the task a title.');
+  async addTask(
+    actor: Actor,
+    id: string,
+    body: { title: string; dueDate?: string },
+  ) {
+    if (!body?.title?.trim())
+      throw new BadRequestException('Give the task a title.');
     await this.findOr404(id);
     const task = await this.taskModel.create({
       leadId: id,
@@ -931,8 +1120,15 @@ export class LeadsService {
     return task;
   }
 
-  async updateTask(actor: Actor, id: string, taskId: string, body: Record<string, any>) {
-    const task = await this.taskModel.findOne({ where: { id: taskId, leadId: id } });
+  async updateTask(
+    actor: Actor,
+    id: string,
+    taskId: string,
+    body: Record<string, any>,
+  ) {
+    const task = await this.taskModel.findOne({
+      where: { id: taskId, leadId: id },
+    });
     if (!task) throw new NotFoundException('Task not found');
     const patch: Record<string, any> = {};
     if (body?.title?.trim()) patch.title = body.title.trim();
@@ -940,7 +1136,8 @@ export class LeadsService {
     if (body && 'done' in body) patch.done = !!body.done;
     const completing = patch.done === true && !task.done;
     await task.update(patch);
-    if (completing) await this.log(id, 'task', `Task completed: ${task.title}`, actor);
+    if (completing)
+      await this.log(id, 'task', `Task completed: ${task.title}`, actor);
     return task;
   }
 
@@ -956,7 +1153,11 @@ export class LeadsService {
   async setProposal(
     actor: Actor,
     id: string,
-    { amount, timeline, remarks }: { amount: string; timeline: string; remarks?: string },
+    {
+      amount,
+      timeline,
+      remarks,
+    }: { amount: string; timeline: string; remarks?: string },
   ) {
     const lead = await this.findOr404(id);
     const n = toNum(amount);
@@ -974,12 +1175,7 @@ export class LeadsService {
       actor,
     );
     if (remarks?.trim()) await this.addNote(actor, id, remarks);
-    if (
-      OPEN_STAGES.has(lead.stage) &&
-      STAGE_ORDER.indexOf(lead.stage) < STAGE_ORDER.indexOf(LeadStage.PROP)
-    ) {
-      await this.moveStage(actor, id, LeadStage.PROP);
-    }
+    if (lead.projectId) await this.syncProjectStage(lead.projectId, actor);
     return { ok: true };
   }
 
@@ -987,7 +1183,12 @@ export class LeadsService {
   // ACTIVITY FEED + REVIEW (dashboard widgets)
   // ============================================================
 
-  async getActivity(f: { leadId?: string; date_from?: string; date_to?: string; user?: string }) {
+  async getActivity(f: {
+    leadId?: string;
+    date_from?: string;
+    date_to?: string;
+    user?: string;
+  }) {
     const where: any = {};
     if (f.leadId) where.leadId = f.leadId;
     if (f.user) where.author = f.user;
@@ -1003,7 +1204,10 @@ export class LeadsService {
     return this.activityModel.findAll({
       where,
       include: [
-        { model: Lead, attributes: ['id', 'name', 'dealName', 'phone', 'owner', 'stage'] },
+        {
+          model: Lead,
+          attributes: ['id', 'name', 'dealName', 'phone', 'owner', 'stage'],
+        },
       ],
       order: [['created_at', 'DESC']],
       limit: 500,
@@ -1022,10 +1226,14 @@ export class LeadsService {
 
     const ordered = PIPELINE_STAGES.filter((s) => !s.closed);
     const idxOf = (stage: string) => ordered.findIndex((s) => s.id === stage);
-    const reached = (idx: number) => deals.filter((d) => idxOf(d.stage) >= idx).length;
+    const reached = (idx: number) =>
+      deals.filter((d) => idxOf(d.stage) >= idx).length;
     const convBars = ordered.slice(1).map((s, i) => {
       const prev = reached(i);
-      return { label: s.label, pct: prev ? Math.round((reached(i + 1) / prev) * 100) : 0 };
+      return {
+        label: s.label,
+        pct: prev ? Math.round((reached(i + 1) / prev) * 100) : 0,
+      };
     });
 
     const timeBars = ordered
@@ -1033,12 +1241,17 @@ export class LeadsService {
       .map((s) => {
         const inStage = deals.filter((d) => d.stage === s.id);
         const avg = inStage.length
-          ? Math.round(inStage.reduce((a, d) => a + d.daysInStage, 0) / inStage.length)
+          ? Math.round(
+              inStage.reduce((a, d) => a + d.daysInStage, 0) / inStage.length,
+            )
           : 0;
         return { label: s.label, avgDays: avg };
       });
 
-    const bySource = new Map<string, { label: string; count: number; won: number }>();
+    const bySource = new Map<
+      string,
+      { label: string; count: number; won: number }
+    >();
     for (const d of deals) {
       const k = d.source || 'Unknown';
       if (!bySource.has(k)) bySource.set(k, { label: k, count: 0, won: 0 });
@@ -1054,7 +1267,9 @@ export class LeadsService {
         { label: 'Won', value: won.length, sub: fmtINR(sum(won)) },
         {
           label: 'Win rate',
-          value: closedCount ? `${Math.round((won.length / closedCount) * 100)}%` : '—',
+          value: closedCount
+            ? `${Math.round((won.length / closedCount) * 100)}%`
+            : '—',
         },
       ],
       convBars,
@@ -1091,11 +1306,16 @@ export class LeadsService {
   private async mirrorCreate(userId: string, lead: Lead) {
     if (lead.zohoId || !(await this.zohoConnected(userId))) return;
     try {
-      const res: any = await this.zohoCrmService.createPipeline(userId, this.biginPayload(lead));
+      const res: any = await this.zohoCrmService.createPipeline(
+        userId,
+        this.biginPayload(lead),
+      );
       const zohoId = res?.data?.[0]?.details?.id;
       if (zohoId) await lead.update({ zohoId: String(zohoId) });
     } catch (e: any) {
-      this.logger.warn(`Bigin mirror (create) failed for ${lead.id}: ${e?.message}`);
+      this.logger.warn(
+        `Bigin mirror (create) failed for ${lead.id}: ${e?.message}`,
+      );
     }
   }
 
@@ -1103,16 +1323,24 @@ export class LeadsService {
     if (!(await this.zohoConnected(userId))) return;
     if (!lead.zohoId) return this.mirrorCreate(userId, lead);
     try {
-      await this.zohoCrmService.updatePipeline(userId, lead.zohoId, this.biginPayload(lead));
+      await this.zohoCrmService.updatePipeline(
+        userId,
+        lead.zohoId,
+        this.biginPayload(lead),
+      );
     } catch (e: any) {
-      this.logger.warn(`Bigin mirror (update) failed for ${lead.id}: ${e?.message}`);
+      this.logger.warn(
+        `Bigin mirror (update) failed for ${lead.id}: ${e?.message}`,
+      );
     }
   }
 
   /** Import / refresh deals from Zoho Bigin into INOS. */
   async syncFromZoho(actor: Actor) {
     if (!(await this.zohoConnected(actor.id))) {
-      throw new BadRequestException('Zoho Bigin is not connected for this user.');
+      throw new BadRequestException(
+        'Zoho Bigin is not connected for this user.',
+      );
     }
     const res: any = await this.zohoCrmService.getPipelines(actor.id, {
       fields:
@@ -1136,7 +1364,9 @@ export class LeadsService {
         owner: r.Owner?.name || null,
         description: r.Description || null,
       };
-      const existing = await this.leadModel.findOne({ where: { zohoId: String(r.id) } });
+      const existing = await this.leadModel.findOne({
+        where: { zohoId: String(r.id) },
+      });
       if (existing) {
         if (existing.stage !== stage) {
           values.stage = stage;

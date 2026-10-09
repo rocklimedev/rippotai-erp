@@ -30,8 +30,8 @@ export default function BusinessProposalView() {
     }
   }
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex justify-between items-center">
+    <div className="bp-workspace p-6 space-y-5">
+      <div className="flex flex-wrap gap-4 justify-between items-center">
         <Link to="/crm/business-proposal/all">← Business proposals</Link>
         <div className="flex gap-3">
           <Link

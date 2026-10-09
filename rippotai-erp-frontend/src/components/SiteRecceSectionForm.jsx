@@ -135,6 +135,46 @@ function UploadButton({ label, busy, disabled, accept, onFile }) {
   );
 }
 
+function ExistingSiteLayouts({ images, onChange, onFileUpload, busy, onBusyChange }) {
+  const uploadFiles = async (files) => {
+    if (!files.length || !onFileUpload) return;
+    onBusyChange(true);
+    const uploaded = [];
+    try {
+      for (const file of files) {
+        if (!file.type.startsWith("image/")) throw new Error("Choose image files for the site layouts.");
+        const url = await onFileUpload(file, "layout");
+        if (!url) throw new Error(`Could not upload ${file.name}.`);
+        uploaded.push(url);
+      }
+    } catch (error) {
+      window.alert(error.message || "Could not upload the site layouts. Please try again.");
+    } finally {
+      if (uploaded.length) onChange([...images, ...uploaded]);
+      onBusyChange(false);
+    }
+  };
+
+  return (
+    <div>
+      <label className="inos-btn inos-btn--secondary" style={{ width: "fit-content" }}>
+        <Upload aria-hidden />
+        {busy ? "Uploading..." : "Upload layouts"}
+        <input type="file" accept="image/*" multiple hidden disabled={busy || !onFileUpload}
+          onChange={(event) => { const files = Array.from(event.target.files || []); event.target.value = ""; uploadFiles(files); }} />
+      </label>
+      <div className="inos-form-grid" style={{ marginTop: 16 }}>
+        {images.map((url, index) => (
+          <div key={`${url}-${index}`}>
+            <Preview label={`Existing site layout ${index + 1}`} url={url} />
+            <IconButton label={`Remove layout ${index + 1}`} disabled={busy} onClick={() => onChange(images.filter((_, i) => i !== index))}><X /></IconButton>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ============================================================
 // ROOM EDITOR
 // ============================================================
@@ -174,8 +214,7 @@ function RoomEditor({ room, onChange, onCancel, onSave, onFileUpload }) {
         </Field>
 
         <Field label="Room type" full>
-          <Choices
-            name="Room type"
+          <OptionSelect
             value={room.room_type || "OTHER"}
             options={ROOM_TYPE_OPTIONS}
             onChange={(value) => update("room_type", value)}
@@ -187,11 +226,9 @@ function RoomEditor({ room, onChange, onCancel, onSave, onFileUpload }) {
         </Field>}
 
         <Field label="Measurement unit" full>
-          <Choices
-            name="Measurement unit"
+          <OptionSelect
             value={room.measurement_unit || "FT"}
             options={MEASUREMENT_UNIT_OPTIONS}
-            columns={4}
             onChange={(value) => update("measurement_unit", value)}
           />
         </Field>
@@ -343,7 +380,7 @@ function PhotoEditor({
   return (
     <RowCard
       title={photo?.id ? "Edit photo / layout shot" : "New photo / layout shot"}
-      meta="Link the shot to a room and note where it was taken from"
+      meta="Link the photo or layout to a room"
       actions={
         <IconButton label="Close" onClick={onCancel}>
           <X />
@@ -359,15 +396,6 @@ function PhotoEditor({
             onChange={(value) => update("room_id", value)}
           />
         </Field>}
-
-        <Field label="Shot number" required hint="Numbering follows the order shots were taken.">
-          <TextInput
-            type="number"
-            min="1"
-            value={photo.shot_number ?? ""}
-            onChange={(e) => update("shot_number", e.target.value)}
-          />
-        </Field>
 
         <Field label="Actual photo" hint={!onFileUpload ? "File upload is not configured." : "JPG or PNG from the site visit."}>
           {photo.photo_url && <Preview label={photo.photo_file_name || "Current photo"} url={photo.photo_url} />}
@@ -388,52 +416,6 @@ function PhotoEditor({
             disabled={uploadingLayout || !onFileUpload}
             accept="image/*,.pdf"
             onFile={(file) => uploadFile(file, "layout")}
-          />
-        </Field>
-
-        <Field label="Standing position">
-          <TextInput
-            value={photo.standing_position || ""}
-            placeholder="e.g. Entrance door"
-            onChange={(e) => update("standing_position", e.target.value)}
-          />
-        </Field>
-
-        <Field label="Camera direction">
-          <TextInput
-            value={photo.camera_direction || ""}
-            placeholder="e.g. North, towards TV wall"
-            onChange={(e) => update("camera_direction", e.target.value)}
-          />
-        </Field>
-
-        <Field label="Photo URL" optional hint="Filled automatically after upload.">
-          <TextInput
-            value={photo.photo_url || ""}
-            placeholder="https://…"
-            onChange={(e) => update("photo_url", e.target.value)}
-          />
-        </Field>
-
-        <Field label="Layout URL" optional hint="Filled automatically after upload.">
-          <TextInput
-            value={photo.layout_image_url || ""}
-            placeholder="https://…"
-            onChange={(e) => update("layout_image_url", e.target.value)}
-          />
-        </Field>
-
-        <Field label="Photo file name" optional>
-          <TextInput
-            value={photo.photo_file_name || ""}
-            onChange={(e) => update("photo_file_name", e.target.value)}
-          />
-        </Field>
-
-        <Field label="Layout file name" optional>
-          <TextInput
-            value={photo.layout_file_name || ""}
-            onChange={(e) => update("layout_file_name", e.target.value)}
           />
         </Field>
 
@@ -500,6 +482,7 @@ export function SiteRecceSectionForm({
   const rooms = Array.isArray(values?.rooms) ? values.rooms : [];
 
   const photos = Array.isArray(values?.photos) ? values.photos : [];
+  const [uploadingSiteLayouts, setUploadingSiteLayouts] = useState(false);
 
   const filledCount = useMemo(() => {
     let count = 0;
@@ -916,10 +899,6 @@ export function SiteRecceSectionForm({
                   )}
                   <KV
                     items={[
-                      ["Standing position", photo.standing_position],
-                      ["Camera direction", photo.camera_direction],
-                      photo.photo_file_name && ["Photo file", photo.photo_file_name],
-                      photo.layout_file_name && ["Layout file", photo.layout_file_name],
                       photo.notes && ["Notes", photo.notes],
                     ]}
                   />
@@ -1029,6 +1008,11 @@ export function SiteRecceSectionForm({
   // ============================================================
 
   const renderSectionBody = (section) => {
+    if (section.type === "existing-layouts") {
+      return <ExistingSiteLayouts images={values.existing_site_layouts || []}
+        onChange={(images) => handleFieldChange(section.title, "existing_site_layouts", images)}
+        onFileUpload={onFileUpload} busy={uploadingSiteLayouts} onBusyChange={setUploadingSiteLayouts} />;
+    }
     if (section.type === "rooms") {
       return <>{renderRooms()}<div className="mt-6">{renderPhotos()}</div></>;
     }
@@ -1127,14 +1111,14 @@ export function SiteRecceSectionForm({
         note={editingRoom || editingPhoto ? "Save or cancel the open room / photo before saving the site recce." : autosaveNote || `${filledCount} item${filledCount !== 1 ? "s" : ""} completed`}
         extra={
           onSaveDraft && (
-            <Button variant="secondary" onClick={onSaveDraft} disabled={Boolean(editingRoom || editingPhoto)}>
+            <Button variant="secondary" onClick={onSaveDraft} disabled={uploadingSiteLayouts || Boolean(editingRoom || editingPhoto)}>
               Save draft
             </Button>
           )
         }
         onCancel={onCancel || (() => navigate(-1))}
         submitLabel={isSubmitting ? "Saving…" : submitLabel || (title?.includes("Recce") || title?.includes("recce") ? "Save site recce" : "Generate brief")}
-        submitDisabled={isSubmitting || Boolean(editingRoom || editingPhoto)}
+        submitDisabled={isSubmitting || uploadingSiteLayouts || Boolean(editingRoom || editingPhoto)}
         onSubmit={onSubmit}
       />
 

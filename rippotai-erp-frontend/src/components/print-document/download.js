@@ -20,7 +20,8 @@ export async function downloadDocumentPdf(rootEl, fileName = "Document.pdf", { t
 
     const pageEls = Array.from(rootEl.querySelectorAll(".pd-page"));
     if (!pageEls.length) throw new Error("downloadDocumentPdf: no .pd-page elements found");
-    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
+    const pageHeight = Number(rootEl.dataset.pageHeight) || 297;
+    const pdf = new jsPDF({ unit: "mm", format: [210, pageHeight], orientation: "portrait", compress: true });
     for (let i = 0; i < pageEls.length; i++) {
       const canvas = await html2canvas(pageEls[i], {
         scale: 2.5,
@@ -31,7 +32,7 @@ export async function downloadDocumentPdf(rootEl, fileName = "Document.pdf", { t
         scrollY: -window.scrollY,
       });
       if (i > 0) pdf.addPage();
-      pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, 210, 297, undefined, "FAST");
+      pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, 210, pageHeight, undefined, "FAST");
     }
     pdf.setProperties({ title: title || fileName.replace(/\.pdf$/i, ""), author, subject: subject || title || "", creator: "INOS" });
     // output: "blob" → return the PDF (e.g. to upload it) instead of saving it.

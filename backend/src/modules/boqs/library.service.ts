@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, WhereOptions } from 'sequelize';
+import { Op, Transaction, WhereOptions } from 'sequelize';
 import { LibraryItem } from './models/library-item.model';
 import { LibraryCategory } from './models/library-category.model';
 import { BoqItem } from './models/boq-item.model';
@@ -24,6 +24,45 @@ export class LibraryService {
     private readonly boqItemModel: typeof BoqItem,
     private readonly activity: BoqActivityService,
   ) {}
+
+  async resolveCategory(name: string, transaction?: Transaction) {
+    const [category] = await this.categoryModel.findOrCreate({
+      where: { name: name.trim() }, defaults: { name: name.trim() } as LibraryCategory, transaction,
+    });
+    return category;
+  }
+
+  async categoryItems(name: string, categoryId?: string) {
+    if (categoryId) {
+      const category = await this.categoryModel.findByPk(categoryId);
+      if (!category) throw new NotFoundException('Library category not found');
+      name = category.name;
+    }
+    const category = await this.resolveCategory(name);
+    const items = await this.itemModel.findAll({
+      where: { is_active: true, [Op.or]: [{ category_id: category.id }, { category_name: category.name }] },
+      order: [['created_at', 'ASC']],
+    });
+    return { category, items };
+  }
+
+  // Update reusable defaults only. Existing BOQs retain their own snapshots and quantities.
+  async saveBoqItem(item: BoqItem, categoryName: string, transaction: Transaction) {
+    if (!item.name?.trim()) return;
+    const category = await this.resolveCategory(categoryName, transaction);
+    let library = item.library_item_id
+      ? await this.itemModel.findByPk(item.library_item_id, { transaction }) : null;
+    // Moving a project row to another category must not move the original library entry.
+    if (library && library.category_name !== category.name) library = null;
+    if (!library) library = await this.itemModel.findOne({
+      where: { name: item.name.trim(), category_name: category.name }, transaction,
+    });
+    const values = { name: item.name.trim(), category_id: category.id, category_name: category.name,
+      unit_id: item.unit_id, unit: item.unit, default_rate: Number(item.rate), notes: item.notes };
+    if (library) await library.update(values, { transaction });
+    else library = await this.itemModel.create(values as LibraryItem, { transaction });
+    await item.update({ library_item_id: library.id }, { transaction });
+  }
 
   async findCategories() {
     return this.categoryModel.findAll({
@@ -73,9 +112,10 @@ export class LibraryService {
       category_name = category?.name ?? category_name;
     }
 
+    const category = category_name ? await this.resolveCategory(category_name) : null;
     const item = await this.itemModel.create({
-      name: dto.name,
-      category_id: dto.category_id ?? null,
+      name: dto.name.trim(),
+      category_id: dto.category_id ?? category?.id ?? null,
       category_name,
       unit_id: dto.unit_id ?? null,
       unit: dto.unit ?? null,

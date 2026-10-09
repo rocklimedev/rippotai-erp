@@ -154,7 +154,7 @@ function flatten(sections, numbered) {
 
 /* ------------------------------------------------------------ pagination */
 
-function paginate(full, content, flat) {
+function paginate(full, content, flat, bodyHeight = BODY_HEIGHT_PX) {
   const pages = [];
   let cur = [];
   let used = 0;
@@ -167,10 +167,10 @@ function paginate(full, content, flat) {
   };
   flat.forEach((b, i) => {
     const next = flat[i + 1];
-    const overflow = used + content[i] > BODY_HEIGHT_PX;
-    const wantsFresh = b.sectionStart && (b.newPage || BODY_HEIGHT_PX - used < FRESH_SECTION_PX);
+    const overflow = used + content[i] > bodyHeight;
+    const wantsFresh = b.sectionStart && (b.newPage || bodyHeight - used < FRESH_SECTION_PX);
     // a table must not open with a single row at the foot of a page
-    const lonelyStart = b.tableStart && sameTable(b, next) && used + full[i] + content[i + 1] > BODY_HEIGHT_PX;
+    const lonelyStart = b.tableStart && sameTable(b, next) && used + full[i] + content[i + 1] > bodyHeight;
     if (cur.length && (overflow || wantsFresh || lonelyStart)) {
       // widow control: the last row of a table takes the previous row with it
       const prevIdx = cur[cur.length - 1];
@@ -261,6 +261,9 @@ const PrintDocument = forwardRef(function PrintDocument(
     footerNote,
     capturing,
     className,
+    cover,
+    closing,
+    pageHeight = 297,
   },
   ref,
 ) {
@@ -288,8 +291,8 @@ const PrintDocument = forwardRef(function PrintDocument(
       full.push(h);
       content.push(h - pad);
     });
-    setPages(paginate(full, content, flat));
-  }, [flat]);
+    setPages(paginate(full, content, flat, BODY_HEIGHT_PX + (pageHeight - 297) * MM));
+  }, [flat, pageHeight]);
 
   useLayoutEffect(() => {
     measure();
@@ -307,14 +310,14 @@ const PrintDocument = forwardRef(function PrintDocument(
       { label: "Prepared by", value: preparedBy || "Rippotai Architecture" },
     ];
 
-  const totalPages = (pages?.length || 0) + 1;
+  const totalPages = (pages?.length || 0) + 1 + (closing ? 1 : 0);
   const headMeta = [reference, date, has(version) ? `v${version}` : ""].filter(has).join(" · ");
   const footMid = footerNote || (has(preparedFor || title) ? `Prepared for ${preparedFor || title}` : "");
   const blockClass = (b) => `pd-block ${b.tight ? "pd-block--tight" : ""} ${b.sectionEnd ? "pd-block--end" : ""}`;
 
   return (
-    <div ref={ref} className={`pd-doc ${capturing ? "is-capturing" : ""} ${className || ""}`}>
-      <Cover docType={docType} title={title} subtitle={subtitle} details={details} />
+    <div ref={ref} data-page-height={pageHeight} style={{ "--pd-page-height": `${pageHeight}mm` }} className={`pd-doc ${capturing ? "is-capturing" : ""} ${className || ""}`}>
+      {cover || <Cover docType={docType} title={title} subtitle={subtitle} details={details} />}
 
       {(pages || []).map((idxs, p) => (
         <section key={p} className="pd-page pd-inner">
@@ -361,6 +364,7 @@ const PrintDocument = forwardRef(function PrintDocument(
         </section>
       ))}
 
+      {closing}
       {/* off-screen measuring rig (same width as the page body) */}
       <div className="pd-measure" ref={measureRef} aria-hidden onLoadCapture={() => setTick((t) => t + 1)}>
         {flat.map((b) => (

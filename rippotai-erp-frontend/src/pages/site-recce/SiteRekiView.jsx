@@ -28,7 +28,7 @@ const dim = (v, unit) => (has(v) && Number(v) > 0 ? `${num(v)} ${unit}` : "");
 
 function ShotPair({ photo, index }) {
   const n = photo.shot_number ?? index + 1;
-  const meta = [photo.standing_position && `Standing at ${photo.standing_position}`, photo.camera_direction].filter(has);
+  const meta = [];
   const hasLayout = has(photo.layout_image_url);
   return (
     <div>
@@ -133,6 +133,15 @@ export function buildRecceSections(recce) {
       intro: "Seepage, cracks, earlier alterations and damage — recorded before any work touches the site.",
       blocks: [{ text: { value: recce.existing_condition } }],
     });
+
+  if (recce.existing_site_layouts?.length) {
+    sections.push({ title: "Existing Site Layout", blocks: recce.existing_site_layouts.map((url, index) => (
+      <figure key={`${url}-${index}`} className="pd-shot pd-shot--single">
+        <img src={url} alt={`Existing site layout ${index + 1}`} crossOrigin="anonymous" />
+        <figcaption>Layout {index + 1}</figcaption>
+      </figure>
+    )) });
+  }
 
   const measured = rooms.filter((r) => has(r.room_name));
   if (measured.length)

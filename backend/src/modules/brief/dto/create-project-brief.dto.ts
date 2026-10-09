@@ -1,5 +1,6 @@
 import {
   IsArray,
+  ArrayMaxSize,
   IsBoolean,
   IsDateString,
   IsEnum,
@@ -469,6 +470,7 @@ export class CreateProjectBriefDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ProjectBriefWorkTypeDto)
+  @ArrayMaxSize(1)
   workTypes?: ProjectBriefWorkTypeDto[];
 
   @IsOptional()

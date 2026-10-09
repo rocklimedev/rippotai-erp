@@ -219,6 +219,7 @@ export default function BoqWorkspace() {
         const created = await addCategory({
           boqId: id,
           name: newCategoryName,
+          include_items: false,
         }).unwrap();
         const cat = (created.categories || []).find(
           (c) => c.name === newCategoryName,
@@ -229,8 +230,8 @@ export default function BoqWorkspace() {
       await addItem({ boqId: id, categoryId: cid, ...payload }).unwrap();
       toast.success("Item added");
       setPickerFor(null);
-    } catch {
-      toast.error("Failed to add item");
+    } catch (error) {
+      throw error;
     }
   };
 
@@ -752,7 +753,7 @@ export default function BoqWorkspace() {
           boq={boq}
           disabled={disabled}
           onLockedEdit={onLockedEdit}
-          onSaveTerms={(terms_html) => debouncedUpdateBoq({ terms_html })}
+          onSaveTerms={(terms_html) => withSaveChip(updateBoq({ id, terms_html }).unwrap())}
           onSaveMiscPct={(misc_pct) => debouncedUpdateBoq({ misc_pct })}
           onApplyTerms={handleApplyTerms}
           applyingTerms={applyingTerms}

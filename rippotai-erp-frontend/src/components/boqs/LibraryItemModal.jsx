@@ -1,3 +1,4 @@
+import { RichTextEditor } from "./RichTextEditor";
 import React, { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -287,7 +288,7 @@ export function LibraryItemModal({ item, cats, onClose, onSaved }) {
           </Field>
         </div>
         <Field label="Notes" optional>
-          <TextArea rows={2} placeholder="Spec, brand or finish notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+          <RichTextEditor value={form.notes} onChange={(notes) => setForm({ ...form, notes })} label="Library item notes" />
         </Field>
       </Modal>
 

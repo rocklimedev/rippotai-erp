@@ -51,13 +51,13 @@ export default function NewLeadPage({ onCaptured }) {
   const { data: meta } = useGetLeadsMetaQuery();
 
   const sources = useMemo(() => {
-    const list = meta?.sources?.length ? meta.sources : SOURCES;
+    const list = [...new Set((meta?.sources?.length ? meta.sources : SOURCES).filter((s) => !/zoho|bigin/i.test(s)).map((s) => s === "Instagram" ? "Social Media" : s))];
     return list.includes(form.source) ? list : [form.source, ...list];
   }, [meta, form.source]);
 
   const onForm = (e) => {
     const { name, value } = e.target;
-    setForm((current) => ({ ...current, [name]: value }));
+    setForm((current) => ({ ...current, [name]: ["phone", "whatsapp"].includes(name) ? value.replace(/\D/g, "").slice(0, 10) : value }));
     if (errors[name]) setErrors((x) => ({ ...x, [name]: undefined }));
     if (bannerErr) {
       setBanner("");
@@ -72,6 +72,8 @@ export default function NewLeadPage({ onCaptured }) {
     const next = {};
     if (!form.name.trim()) next.name = "Enter the lead's full name.";
     if (!form.phone.trim()) next.phone = "A phone number is required.";
+    else if (form.phone.length !== 10) next.phone = "Enter a 10-digit phone number.";
+    if (!samePhone && form.whatsapp && form.whatsapp.length !== 10) next.whatsapp = "Enter a 10-digit WhatsApp number.";
     if (form.amount && Number.isNaN(amountValue)) next.amount = "Use a number, e.g. 45 L or 1.2 Cr.";
     setErrors(next);
     if (Object.keys(next).length) return;
@@ -136,27 +138,29 @@ export default function NewLeadPage({ onCaptured }) {
             />
           </Field>
 
-          <Field label="Phone" required htmlFor="lead-phone" error={fieldError("phone")} hint="Include the country code.">
+          <Field label="Phone" required htmlFor="lead-phone" error={fieldError("phone")}>
             <TextInput
               id="lead-phone"
               name="phone"
               value={form.phone}
               onChange={onForm}
-              placeholder="+91 98XXX XXXXX"
+              placeholder="10-digit phone number"
+              maxLength={10}
               inputMode="tel"
               autoComplete="tel"
               invalid={Boolean(fieldError("phone"))}
             />
           </Field>
 
-          <Field label="WhatsApp" htmlFor="lead-whatsapp">
+          <Field label="WhatsApp" htmlFor="lead-whatsapp" error={fieldError("whatsapp")}>
             <TextInput
               id="lead-whatsapp"
               name="whatsapp"
               value={samePhone ? form.phone : form.whatsapp}
               onChange={onForm}
               disabled={samePhone}
-              placeholder="+91 98XXX XXXXX"
+              placeholder="10-digit phone number"
+              maxLength={10}
               inputMode="tel"
             />
             <label className="crmf-check">
@@ -300,4 +304,4 @@ export default function NewLeadPage({ onCaptured }) {
 const PROJECT_TYPES = ["Residential", "Commercial", "Institutional"];
 const BUDGETS = ["Under ₹25L", "₹25L–₹75L", "₹75L–₹2Cr", "₹2Cr–₹5Cr", "₹5Cr+", "₹10Cr+", "₹15Cr+"];
 const TIMELINES = ["Immediate", "1–3 months", "3–6 months", "6+ months"];
-const SOURCES = ["Website", "Referral — add name in notes", "Instagram", "WhatsApp", "Walk-in"];
+const SOURCES = ["Website", "Referral — add name in notes", "Social Media", "WhatsApp", "Walk-in"];

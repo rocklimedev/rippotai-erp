@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseIntPipe,
   ParseUUIDPipe,
   Patch,
   Post,
@@ -147,15 +146,6 @@ export class SiteRecceController {
 
     @UploadedFile() file: Express.Multer.File,
 
-    @Body('shot_number', ParseIntPipe)
-    shotNumber: number,
-
-    @Body('standing_position')
-    standingPosition?: string,
-
-    @Body('camera_direction')
-    cameraDirection?: string,
-
     @Body('notes')
     notes?: string,
   ) {
@@ -163,12 +153,7 @@ export class SiteRecceController {
       siteRecceId,
       roomId,
       file,
-      shotNumber,
       {
-        standing_position: standingPosition,
-
-        camera_direction: cameraDirection,
-
         notes,
       },
     );

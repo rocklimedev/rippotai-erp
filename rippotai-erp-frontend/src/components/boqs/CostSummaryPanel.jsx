@@ -1,8 +1,7 @@
-import { termsToText as htmlToPlainText, textToTermsHtml as plainTextToHtml } from "@/lib/terms";
+import { RichTextEditor } from "./RichTextEditor";
 import React, { useEffect, useState } from "react";
 import { RefreshCw, FileText, PenLine, Plus, X, Pencil } from "lucide-react";
 import { formatINR } from "@/lib/format";
-import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
 import { useGetTermsTemplatesQuery } from "../../api/meta/terms.api";
 
 // Extra named financial entries that don't fit the category/item structure
@@ -208,30 +207,19 @@ export function CostSummaryPanel({
   // Local buffer for the textarea so typing isn't clobbered by prop
   // updates that lag behind the save request.
   const [termsText, setTermsText] = useState(() =>
-    htmlToPlainText(boq.terms_html),
+    boq.terms_html || "",
   );
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
 
   // Only resync from the prop when we're looking at a *different* BOQ,
   // not on every terms_html change (which would fight with local typing).
   useEffect(() => {
-    setTermsText(htmlToPlainText(boq.terms_html));
+    setTermsText(boq.terms_html || "");
     setSelectedTemplateId("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boq.id]);
 
   const { data: templates } = useGetTermsTemplatesQuery("BOQ");
-
-  const debouncedSaveTerms = useDebouncedCallback((text) => {
-    onSaveTerms(plainTextToHtml(text));
-  }, 500);
-
-  const handleTermsChange = (e) => {
-    if (disabled) return onLockedEdit();
-    const value = e.target.value;
-    setTermsText(value);
-    debouncedSaveTerms(value);
-  };
 
   const handleApply = async (templateId, version) => {
     if (disabled) return onLockedEdit();
@@ -239,7 +227,7 @@ export function CostSummaryPanel({
     const updated = await onApplyTerms(templateId, version);
     // onApplyTerms resolves with the fresh boq (or undefined on failure);
     // sync the local textarea buffer to whatever got snapshotted.
-    if (updated?.terms_html) setTermsText(htmlToPlainText(updated.terms_html));
+    if (updated?.terms_html) setTermsText(updated.terms_html);
     setSelectedTemplateId("");
   };
 
@@ -312,13 +300,14 @@ export function CostSummaryPanel({
           )}
         </div>
 
-        <textarea
-          className="bc-input min-h-[140px] text-[13px] leading-relaxed"
+        <RichTextEditor
+          key={boq.id}
           value={termsText}
-          onChange={handleTermsChange}
-          readOnly={disabled}
-          onClick={() => disabled && onLockedEdit()}
-          data-testid="terms-textarea"
+          onChange={setTermsText}
+          onSave={onSaveTerms}
+          disabled={disabled}
+          label="Notes and terms"
+          testid="terms-textarea"
         />
       </div>
       <div className="bc-card p-6" data-testid="project-total-panel">

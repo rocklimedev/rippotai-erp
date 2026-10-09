@@ -1,3 +1,4 @@
+import { RichText } from "./RichTextEditor";
 import React, { useRef, useState } from "react";
 import {
   Copy,
@@ -218,18 +219,11 @@ export function ItemRow({
 
       {/* NOTES */}
 
-      <EditableCell
-        value={item.notes || ""}
-        onChange={(v) =>
-          onPatch({
-            notes: v,
-          })
-        }
-        disabled={disabled}
-        onLockedEdit={onLockedEdit}
-        testid={`item-notes-${item.id}`}
-        className="min-w-[280px]"
-      />
+      <td className="boq-cell min-w-[280px]" data-testid={`item-notes-${item.id}`}>
+        <button type="button" className="text-left w-full" onClick={() => disabled ? onLockedEdit?.() : onOpenDetail(item)} aria-label={`Edit notes for ${item.name}`}>
+          {item.notes ? <RichText value={item.notes} /> : <span className="text-[#B5C4B6]">Add notes</span>}
+        </button>
+      </td>
 
       {/* LOCATION */}
 

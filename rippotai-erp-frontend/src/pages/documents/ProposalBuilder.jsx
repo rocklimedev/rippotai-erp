@@ -680,7 +680,7 @@ export default function ProposalBuilder({
           ...baseDocs.schedule,
           ...proposal.paymentSchedule,
           milestones: proposal.paymentSchedule.milestones?.map((m, index) => ({
-            ...baseDocs.schedule?.milestones?.[index],
+            ...baseDocs.schedule?.milestones?.find((saved) => saved.id === m._id || saved.milestoneCode === m.code),
             ...mapPaymentScheduleToUpdatePayload(proposal.paymentSchedule)
               .milestones[index],
             amount: m.amount,
@@ -807,7 +807,7 @@ export default function ProposalBuilder({
 
   if (loading) {
     return (
-      <Page>
+      <Page className="bp-workspace">
         <PageHeader crumbs={CRUMBS} title="Business proposal" />
         <EmptyState icon={Loader2} title="Checking project data…" />
       </Page>
@@ -820,7 +820,7 @@ export default function ProposalBuilder({
 
   if (step === 0) {
     return (
-      <Page>
+      <Page className="bp-workspace">
         <PageHeader
           crumbs={CRUMBS}
           title="Business proposal"
@@ -852,7 +852,7 @@ export default function ProposalBuilder({
   ============================================================ */
 
   return (
-    <Page>
+    <Page className="bp-workspace">
       <PageHeader
         crumbs={CRUMBS}
         title={proposal.projectDetail?.projectName || "Business proposal"}

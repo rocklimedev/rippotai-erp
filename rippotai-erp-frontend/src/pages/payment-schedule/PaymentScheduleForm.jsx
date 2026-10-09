@@ -1,3 +1,4 @@
+import MonthlyMilestoneBuilder from "@/components/payments/MonthlyMilestoneBuilder";
 import { termsToText, textToTermsHtml } from "@/lib/terms";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSharedProjectData } from '../../hooks/use-shared-project-data';
@@ -183,6 +184,10 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
           release_trigger: m.releaseTrigger || "",
           percentage: str(m.percentage),
           amount: str(m.amount),
+          due_date: (m.dueDate || "").slice(0, 10),
+          status: m.status,
+          paidAmount: m.paidAmount,
+          invoiceDate: m.invoiceDate,
         })),
     });
   }, [isEdit, existing, setValues]);
@@ -556,6 +561,16 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
           </span>
         </div>
 
+        <MonthlyMilestoneBuilder totalShare={totalPercentage} contractValue={contractValue}
+          existingCodes={milestones.map((m) => m.milestone_code)}
+          canReplace={milestones.every((m) => (!m.status || m.status === "PENDING") && !Number(m.paidAmount) && !m.invoiceDate)}
+          onGenerate={(rows, replace) => setValues((prev) => ({ ...prev, milestones: [
+            ...(replace ? [] : prev.milestones || []), ...rows.map((row) => ({ id: crypto.randomUUID(),
+              milestone_code: row.code, title: row.title, description: row.description, release_trigger: row.releaseTrigger,
+              due_date: row.dueDate, percentage: String(row.percentage), amount: String(row.amount),
+            })),
+          ] }))} />
+
         {milestones.length === 0 ? (
           <div className="cf-block">
             <EmptyState
@@ -646,6 +661,9 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
                   </div>
                 </div>
                 <Grid cols={2}>
+                  <Field label="Due date" optional>
+                    <TextInput type="date" value={milestone.due_date || ""} onChange={(e) => updateMilestone(index, "due_date", e.target.value)} />
+                  </Field>
                   <Field label="What it covers" optional>
                     <TextArea
                       rows={2}
@@ -759,6 +777,7 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
           title: milestone.title,
           description: milestone.description || undefined,
           releaseTrigger: milestone.release_trigger || undefined,
+          dueDate: milestone.due_date || null,
           percentage: pct,
           amount,
           sortOrder: index + 1,

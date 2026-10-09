@@ -1,3 +1,4 @@
+import "@/components/business-proposal/proposal-template.css";
 import { useGetBusinessProposalsQuery } from "@/api/documents/business-proposals.api";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -8,9 +9,9 @@ export default function BusinessProposalList() {
   const { currentData: rows = [], isFetching: loading, isError, refetch } = useGetBusinessProposalsQuery({ projectId, search });
   const error = isError ? "Could not load business proposals." : "";
 return (
-    <div className="bg-page p-6 space-y-5">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Business proposals</h1>
+    <div className="bp-workspace bp-library p-6 space-y-5">
+      <div className="bp-library-header flex flex-wrap gap-4 justify-between items-center">
+        <div><p className="bp-eyebrow">RIPPŌTAI · CLIENT DOCUMENTS</p><h1 className="text-2xl font-semibold">Business proposals</h1><p className="bp-library-description">From the first brief to the final proposal.</p></div>
         <Link
           className="bc-btn-primary"
           to={`/crm/business-proposal/workspace${projectId ? `?project_id=${encodeURIComponent(projectId)}` : ""}`}

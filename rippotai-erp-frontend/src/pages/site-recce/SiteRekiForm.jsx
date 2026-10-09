@@ -330,6 +330,7 @@ const mapBackendToFormValues = (data) => {
     material_movement_rule: data.material_movement_rule || "",
 
     existing_condition: data.existing_condition || "",
+    existing_site_layouts: data.existing_site_layouts || [],
 
     // ========================================================
     // ROOM / PHOTO DATA
@@ -361,8 +362,6 @@ const buildRoomsPayload = (rooms, photos) => {
     const roomPhotos = (photos || [])
       .filter((photo) => String(photo.room_id) === String(room.id))
       .map((photo) => ({
-        shot_number: toIntOrUndefined(photo.shot_number),
-
         layout_image_url: strOrUndefined(photo.layout_image_url),
 
         layout_file_name: strOrUndefined(photo.layout_file_name),
@@ -370,10 +369,6 @@ const buildRoomsPayload = (rooms, photos) => {
         photo_url: strOrUndefined(photo.photo_url),
 
         photo_file_name: strOrUndefined(photo.photo_file_name),
-
-        standing_position: strOrUndefined(photo.standing_position),
-
-        camera_direction: strOrUndefined(photo.camera_direction),
 
         notes: strOrUndefined(photo.notes),
       }));
@@ -467,6 +462,7 @@ const buildSiteReccePayload = (projectId, values) => {
     material_movement_rule: strOrUndefined(values.material_movement_rule),
 
     existing_condition: strOrUndefined(values.existing_condition),
+    existing_site_layouts: values.existing_site_layouts || [],
 
     rooms,
   };
@@ -578,6 +574,7 @@ export function SiteRekiForm() {
     material_movement_rule: "",
 
     existing_condition: "",
+    existing_site_layouts: [],
 
     rooms: [],
     photos: [],

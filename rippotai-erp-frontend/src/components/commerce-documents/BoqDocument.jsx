@@ -1,8 +1,9 @@
+import { RichText } from "@/components/boqs/RichTextEditor";
 // Bill of Quantities — client / internal / quantity-only / vendor-enquiry copies, and BOQ templates,
 // in the shared Rippotai print format.
 import React, { forwardRef, useMemo } from "react";
-import { PrintDocument, KV, Totals, Terms, SignOff, has, fmtDate, humanize } from "../print-document";
-import { COMMERCE_CLASS, amountInWords, qty, rs, termsList, totalLines } from "../print-document/commerce";
+import { PrintDocument, KV, Totals, SignOff, has, fmtDate, humanize } from "../print-document";
+import { COMMERCE_CLASS, amountInWords, qty, rs, totalLines } from "../print-document/commerce";
 import { useGetTermsTemplateQuery } from "@/api/meta/terms.api";
 
 export const BOQ_VARIANTS = {
@@ -64,7 +65,7 @@ const BoqDocument = forwardRef(function BoqDocument({ boq, variant = "client", t
           key: i.id,
           cells: [
             { text: String(sno), strong: false },
-            { text: i.name || i.notes, sub: [i.name ? i.notes : "", i.location, d.brand, d.spec].filter(has).join(" · "), strong: true },
+            { text: i.name || "Item", sub: <><RichText as="span" value={i.notes} />{[i.location, d.brand, d.spec].filter(has).join(" · ")}</>, strong: true },
             String(i.unit || "").toLowerCase(),
             qty(i.quantity),
             ...(hidePrice ? [] : [rs(i.rate), rs(amountOf(i))]),
@@ -96,7 +97,7 @@ const BoqDocument = forwardRef(function BoqDocument({ boq, variant = "client", t
             { label: "Final total", value: finalTotal, grand: true },
           ];
 
-    const terms = termsList(boq.terms_html || termsTpl?.content_html || termsTpl?.data?.content_html);
+    const terms = boq.terms_html || termsTpl?.content_html || termsTpl?.data?.content_html;
     const summarySection = template
       ? hidePrice
         ? []
@@ -158,7 +159,7 @@ const BoqDocument = forwardRef(function BoqDocument({ boq, variant = "client", t
         intro: hidePrice ? "Quantities only — please quote your rates against each line." : "",
         blocks: [...tables, ...summarySection],
       },
-      { title: "Terms & conditions", blocks: template ? [] : [<Terms key="t" items={terms} />] },
+      { title: "Terms & conditions", blocks: template ? [] : [<RichText key="t" value={terms} />] },
       template
         ? null
         : {

@@ -92,7 +92,7 @@ export function AddCategoryPanel({
                   {category.sort_order}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-serif-bc text-[15px] text-[#333333]">
+                  <div className="text-[15px] text-[#333333]">
                     {category.name}
                   </div>
                   <div className="text-[11.5px] text-[#B5C4B6]">
