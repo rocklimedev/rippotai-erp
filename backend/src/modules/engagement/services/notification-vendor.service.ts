@@ -12,6 +12,8 @@ export class NotificationForVendorService {
 
   async notifyVendorCreated(vendor: Vendor, actorId?: string): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'vendor',
+      entity_id: vendor.id,
       excludedUserId: actorId,
       type: NotificationType.VENDOR_CREATED,
       title: 'New Vendor Added',
@@ -21,6 +23,8 @@ export class NotificationForVendorService {
 
   async notifyVendorUpdated(vendor: Vendor, actorId?: string): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'vendor',
+      entity_id: vendor.id,
       excludedUserId: actorId,
       type: NotificationType.VENDOR_UPDATED,
       title: 'Vendor Updated',
@@ -35,6 +39,8 @@ export class NotificationForVendorService {
     actorId?: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'vendor',
+      entity_id: vendor.id,
       excludedUserId: actorId,
       type: NotificationType.VENDOR_STATUS_CHANGED,
       title: 'Vendor Status Changed',

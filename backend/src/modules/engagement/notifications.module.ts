@@ -1,3 +1,6 @@
+import { NotificationEventsService } from './notification-events.service';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { FrontendNotificationsInterceptor } from './frontend-notifications.interceptor';
 import { Global, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 
@@ -26,10 +29,12 @@ import { NotificationForLeadService } from './services/notification-lead.service
   imports: [SequelizeModule.forFeature([Notification, User]), RedisModule],
   controllers: [NotificationsController],
   providers: [
+    FrontendNotificationsInterceptor,
+    { provide: APP_INTERCEPTOR, useExisting: FrontendNotificationsInterceptor },
+    NotificationEventsService,
     NotificationsService,
     NotificationsGateway,
     NotificationBroadcastService,
-    NotificationForProjectService,
     NotificationForProjectService,
     NotificationForBriefService,
     NotificationForCalendarService,
@@ -46,7 +51,6 @@ import { NotificationForLeadService } from './services/notification-lead.service
     NotificationsService,
     NotificationsGateway,
     NotificationBroadcastService,
-    NotificationForProjectService,
     NotificationForProjectService,
     NotificationForBriefService,
     NotificationForCalendarService,

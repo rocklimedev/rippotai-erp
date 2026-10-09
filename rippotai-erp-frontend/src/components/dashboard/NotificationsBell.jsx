@@ -1,4 +1,10 @@
 import React from "react";
+import { toast } from "sonner";
+import {
+  notificationDestination,
+  notificationGroup,
+} from "@/lib/notifications";
+import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
 import { useNavigate } from "react-router-dom";
 import { Bell, Trash2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -24,9 +30,25 @@ export default function NotificationsBell() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const { data: notifications = [] } = useGetUserNotificationsQuery(
+  const [preferences] = useNotificationPreferences(user?.id);
+  const {
+    currentData: inbox = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useGetUserNotificationsQuery(
     { userId: user?.id },
-    { skip: !user?.id },
+    {
+      skip: !user?.id,
+      pollingInterval: 15000,
+      skipPollingIfUnfocused: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+      refetchOnMountOrArgChange: true,
+    },
+  );
+  const notifications = inbox.filter(
+    (n) => preferences[notificationGroup(n)] !== false,
   );
 
   const [markAsRead] = useMarkAsReadMutation();
@@ -37,30 +59,42 @@ export default function NotificationsBell() {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   const handleNotificationClick = async (notification) => {
-    if (!notification.is_read) {
-      await markAsRead(notification.id);
+    try {
+      if (!notification.is_read) await markAsRead(notification.id).unwrap();
+    } catch {
+      toast.error("Could not mark notification as read");
     }
-
-    if (notification.entity_type && notification.entity_id) {
-      navigate(`/${notification.entity_type}s/${notification.entity_id}`);
-    }
+    const destination = notificationDestination(notification);
+    if (destination) navigate(destination);
   };
 
   const handleDeleteNotification = async (e, id) => {
     e.preventDefault();
     e.stopPropagation();
 
-    await deleteNotification(id);
+    try {
+      await deleteNotification(id).unwrap();
+    } catch {
+      toast.error("Could not delete notification");
+    }
   };
 
   const handleClearAll = async () => {
     if (!user?.id) return;
 
-    await deleteUserNotifications(user.id);
+    try {
+      await deleteUserNotifications(user.id).unwrap();
+    } catch {
+      toast.error("Could not clear notifications");
+    }
   };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu
+      onOpenChange={(open) => {
+        if (open && user?.id) refetch();
+      }}
+    >
       <DropdownMenuTrigger asChild>
         <button
           data-testid="topbar-notifications"
@@ -119,7 +153,13 @@ export default function NotificationsBell() {
                 style={{
                   color: "#1F453B",
                 }}
-                onClick={() => markAllAsRead(user.id)}
+                onClick={async () => {
+                  try {
+                    await markAllAsRead(user.id).unwrap();
+                  } catch {
+                    toast.error("Could not mark notifications as read");
+                  }
+                }}
               >
                 Mark all read
               </button>
@@ -144,7 +184,15 @@ export default function NotificationsBell() {
             overflowY: "auto",
           }}
         >
-          {notifications.length === 0 && (
+          {isLoading && (
+            <div className="p-4 text-sm">Loading notifications…</div>
+          )}
+          {isError && (
+            <button className="p-4 text-sm" onClick={() => refetch()}>
+              Could not load notifications. Retry
+            </button>
+          )}
+          {!isLoading && !isError && notifications.length === 0 && (
             <div
               className="py-6 text-center text-[13px]"
               style={{
@@ -189,6 +237,14 @@ export default function NotificationsBell() {
                 >
                   {notification.message}
                 </div>
+                {notification.created_at && (
+                  <time
+                    className="text-xs text-muted-foreground"
+                    dateTime={notification.created_at}
+                  >
+                    {new Date(notification.created_at).toLocaleString()}
+                  </time>
+                )}
               </div>
 
               <button

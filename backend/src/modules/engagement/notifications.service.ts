@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import Redis from 'ioredis';
 import { REDIS_CLIENT } from '@/common/redis/redis.module';
@@ -15,6 +15,18 @@ export class NotificationsService {
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
+  private readonly logger = new Logger(NotificationsService.name);
+
+  private async invalidate(userIds: string[]) {
+    try {
+      await this.redis.del(...userIds.map((id) => this.unreadKey(id)));
+    } catch {
+      this.logger.warn(
+        'Notification cache unavailable; database remains authoritative',
+      );
+    }
+  }
+
   private unreadKey(userId: string) {
     return `notifications:unread:${userId}`;
   }
@@ -22,7 +34,7 @@ export class NotificationsService {
   async create(dto: CreateNotificationDto): Promise<Notification> {
     const notification = await this.notificationModel.create(dto as any);
 
-    await this.redis.del(this.unreadKey(dto.user_id));
+    await this.invalidate([dto.user_id]);
 
     this.notificationsGateway.emitToUser(
       dto.user_id,
@@ -41,9 +53,7 @@ export class NotificationsService {
 
     const affectedUsers = new Set(created.map((n) => n.user_id));
     if (affectedUsers.size) {
-      await this.redis.del(
-        ...Array.from(affectedUsers, (id) => this.unreadKey(id)),
-      );
+      await this.invalidate([...affectedUsers]);
     }
 
     for (const notification of created) {
@@ -55,15 +65,7 @@ export class NotificationsService {
   }
 
   async getUnreadCount(user_id: string): Promise<number> {
-    const cached = await this.redis.get(this.unreadKey(user_id));
-    if (cached !== null) return Number(cached);
-
-    const count = await this.notificationModel.count({
-      where: { user_id, is_read: false },
-    });
-
-    await this.redis.set(this.unreadKey(user_id), count, 'EX', 60); // 60s TTL
-    return count;
+    return this.notificationModel.count({ where: { user_id, is_read: false } });
   }
 
   async findAllForUser(
@@ -79,13 +81,16 @@ export class NotificationsService {
     });
   }
 
-  async markAsRead(id: string): Promise<Notification> {
-    const notification = await this.notificationModel.findByPk(id);
+  async markAsRead(id: string, user_id: string): Promise<Notification> {
+    const notification = await this.notificationModel.findOne({
+      where: { id, user_id },
+    });
     if (!notification)
       throw new NotFoundException(`Notification ${id} not found`);
 
-    await notification.update({ is_read: true, read_at: new Date() });
-    await this.redis.del(this.unreadKey(notification.user_id));
+    if (!notification.is_read)
+      await notification.update({ is_read: true, read_at: new Date() });
+    await this.invalidate([notification.user_id]);
     return notification;
   }
 
@@ -94,16 +99,18 @@ export class NotificationsService {
       { is_read: true, read_at: new Date() },
       { where: { user_id, is_read: false } },
     );
-    await this.redis.del(this.unreadKey(user_id));
+    await this.invalidate([user_id]);
   }
 
-  async remove(id: string): Promise<void> {
-    const notification = await this.notificationModel.findByPk(id);
+  async remove(id: string, user_id: string): Promise<void> {
+    const notification = await this.notificationModel.findOne({
+      where: { id, user_id },
+    });
     if (!notification)
       throw new NotFoundException(`Notification ${id} not found`);
 
     await notification.destroy();
-    await this.redis.del(this.unreadKey(notification.user_id));
+    await this.invalidate([notification.user_id]);
   }
   async deleteUserNotifications(user_id: string): Promise<void> {
     await this.notificationModel.destroy({
@@ -111,6 +118,6 @@ export class NotificationsService {
     });
 
     // Clear unread count cache
-    await this.redis.del(this.unreadKey(user_id));
+    await this.invalidate([user_id]);
   }
 }

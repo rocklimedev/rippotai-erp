@@ -6,15 +6,6 @@ export const notificationsApi = baseApi.injectEndpoints({
     // NOTIFICATIONS
     // =========================
 
-    createNotification: builder.mutation({
-      query: (body) => ({
-        url: "/notifications",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["Notifications"],
-    }),
-
     getUserNotifications: builder.query({
       query: ({ userId, unreadOnly }) => {
         const params = new URLSearchParams();
@@ -69,7 +60,6 @@ export const notificationsApi = baseApi.injectEndpoints({
 // =========================
 
 export const {
-  useCreateNotificationMutation,
   useGetUserNotificationsQuery,
   useMarkAsReadMutation,
   useMarkAllAsReadMutation,

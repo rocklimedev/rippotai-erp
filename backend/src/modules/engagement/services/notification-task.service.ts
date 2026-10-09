@@ -10,6 +10,8 @@ export class NotificationForTaskService {
 
   async notifyTaskCreated(task: Task, actorId: string): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'task',
+      entity_id: task.id,
       excludedUserId: actorId,
       type: NotificationType.TASK_CREATED,
       title: 'New Task Created',
@@ -19,6 +21,8 @@ export class NotificationForTaskService {
 
   async notifyTaskUpdated(task: Task, actorId: string): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'task',
+      entity_id: task.id,
       excludedUserId: actorId,
       type: NotificationType.TASK_UPDATED,
       title: 'Task Updated',
@@ -33,6 +37,8 @@ export class NotificationForTaskService {
     actorId: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'task',
+      entity_id: task.id,
       excludedUserId: actorId,
       type: NotificationType.TASK_STATUS_CHANGED,
       title: 'Task Status Changed',
@@ -42,6 +48,8 @@ export class NotificationForTaskService {
 
   async notifyTaskCompleted(task: Task, actorId: string): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'task',
+      entity_id: task.id,
       excludedUserId: actorId,
       type: NotificationType.TASK_COMPLETED,
       title: 'Task Completed',

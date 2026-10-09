@@ -17,6 +17,8 @@ export class NotificationForDrawingService {
     actorId: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'drawing',
+      entity_id: drawing.id,
       excludedUserId: actorId,
       type: NotificationType.DRAWING_UPLOADED,
       title: 'New Drawing Uploaded',

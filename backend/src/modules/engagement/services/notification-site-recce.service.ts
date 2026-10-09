@@ -14,6 +14,8 @@ export class NotificationForSiteRecceService {
     actorId: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'site_recce',
+      entity_id: recce.id,
       excludedUserId: actorId,
       type: NotificationType.SITE_RECCE_CREATED,
       title: 'New Site Recce Created',
@@ -26,6 +28,8 @@ export class NotificationForSiteRecceService {
     actorId: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'site_recce',
+      entity_id: recce.id,
       excludedUserId: actorId,
       type: NotificationType.SITE_RECCE_UPDATED,
       title: 'Site Recce Updated',
@@ -40,6 +44,8 @@ export class NotificationForSiteRecceService {
     actorId: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'site_recce',
+      entity_id: recce.id,
       excludedUserId: actorId,
       type: NotificationType.SITE_RECCE_STATUS_CHANGED,
       title: 'Site Recce Status Changed',

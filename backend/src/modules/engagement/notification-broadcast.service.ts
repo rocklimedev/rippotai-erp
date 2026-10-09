@@ -7,6 +7,8 @@ import { NotificationsService } from './notifications.service';
 import { NotificationType } from '@/common/enums';
 
 interface BroadcastParams {
+  entity_type?: string;
+  entity_id?: string;
   excludedUserId?: string;
   type: NotificationType;
   title: string;
@@ -26,8 +28,13 @@ export class NotificationBroadcastService {
     type,
     title,
     message,
+    entity_type,
+    entity_id,
   }: BroadcastParams): Promise<void> {
-    const where = excludedUserId ? { id: { [Op.ne]: excludedUserId } } : {};
+    const where = {
+      is_active: true,
+      ...(excludedUserId ? { id: { [Op.ne]: excludedUserId } } : {}),
+    };
 
     const users = await this.userModel.findAll({
       where,
@@ -42,6 +49,8 @@ export class NotificationBroadcastService {
         type,
         title,
         message,
+        entity_type,
+        entity_id,
       })),
     );
   }
