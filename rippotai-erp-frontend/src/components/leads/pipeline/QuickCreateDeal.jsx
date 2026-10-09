@@ -14,9 +14,41 @@ import { Modal } from "./Modal";
 import { errorText, parseRupees } from "./utils";
 
 const TYPES = ["Residential", "Commercial", "Institutional"];
+const DEFAULT_SOURCES = [
+  "Referral",
+  "Website",
+  "Social Media",
+  "Walk-in",
+  "Other",
+];
+
+// Digits only, max 10. Handles pasted "+91 98765 43210" / "098765 43210".
+const toTenDigits = (raw) => {
+  let digits = String(raw ?? "").replace(/\D/g, "");
+  if (digits.length > 10) {
+    if (digits.startsWith("91")) digits = digits.slice(2);
+    else if (digits.startsWith("0")) digits = digits.slice(1);
+  }
+  return digits.slice(0, 10);
+};
+
+const ALLOWED_KEYS = [
+  "Backspace",
+  "Delete",
+  "Tab",
+  "ArrowLeft",
+  "ArrowRight",
+  "Home",
+  "End",
+  "Enter",
+];
+const blockNonDigits = (e) => {
+  if (ALLOWED_KEYS.includes(e.key) || e.ctrlKey || e.metaKey) return;
+  if (!/^\d$/.test(e.key)) e.preventDefault();
+};
 
 const empty = (stage) => ({
-  clientMode: "existing",
+  clientMode: "existing", // default: pick an existing client
   clientId: "",
   newClientName: "",
   phone: "",
@@ -33,9 +65,9 @@ const empty = (stage) => ({
 });
 
 /**
- * Bigin-style quick create: client (pick or new), project name, value,
- * stage, owner, source, expected close. Everything else is edited later
- * in the deal drawer.
+ * Quick create: client (pick existing by default, or new), project name,
+ * value, stage, owner, source, expected close. Everything else is edited
+ * later in the deal drawer.
  */
 export default function QuickCreateDeal({
   open,
@@ -44,11 +76,15 @@ export default function QuickCreateDeal({
   meta,
   onCreated,
 }) {
-  const [form, setForm] = useState(empty(defaultStage));
+  const [form, setForm] = useState(() => empty(defaultStage));
   const [errors, setErrors] = useState({});
-  const { data: clients = [] } = useGetClientsQuery(undefined, { skip: !open });
+  const { data: clients = [], isSuccess: clientsLoaded } = useGetClientsQuery(
+    undefined,
+    { skip: !open },
+  );
   const [createLead, { isLoading }] = useCreateLeadMutation();
 
+  // Reset to "existing client" every time the modal opens.
   useEffect(() => {
     if (open) {
       setForm(empty(defaultStage));
@@ -56,47 +92,84 @@ export default function QuickCreateDeal({
     }
   }, [open, defaultStage]);
 
-  const set = (k, v) => {
-    setForm((f) => ({
-      ...f,
-      [k]: k === "phone" ? v.replace(/\D/g, "").slice(0, 10) : v,
-    }));
-    if (errors[k]) setErrors((e) => ({ ...e, [k]: undefined }));
-  };
-
   const sortedClients = useMemo(
     () =>
       [...(Array.isArray(clients) ? clients : [])].sort((a, b) =>
-        a.name.localeCompare(b.name),
+        (a.name || "").localeCompare(b.name || ""),
       ),
     [clients],
   );
+
+  // No clients to pick from? Fall back to "new client" so the user isn't stuck.
+  useEffect(() => {
+    if (open && clientsLoaded && sortedClients.length === 0) {
+      setForm((f) =>
+        f.clientMode === "existing" ? { ...f, clientMode: "new" } : f,
+      );
+    }
+  }, [open, clientsLoaded, sortedClients.length]);
+
+  const set = (k, v) => {
+    setForm((f) => ({ ...f, [k]: k === "phone" ? toTenDigits(v) : v }));
+    if (errors[k]) setErrors((e) => ({ ...e, [k]: undefined }));
+  };
+
+  const setMode = (mode) => {
+    setForm((f) => ({
+      ...f,
+      clientMode: mode,
+      clientId: mode === "existing" ? f.clientId : "",
+      newClientName: mode === "new" ? f.newClientName : "",
+      phone: mode === "new" ? f.phone : "",
+      email: mode === "new" ? f.email : "",
+    }));
+    setErrors((e) => ({
+      ...e,
+      clientId: undefined,
+      newClientName: undefined,
+      phone: undefined,
+    }));
+  };
+
   const selectedClient = sortedClients.find((c) => c.id === form.clientId);
   const amountValue = parseRupees(form.amount);
 
   const onClientPick = (id) => {
-    set("clientId", id);
     const c = sortedClients.find((x) => x.id === id);
-    if (c && !form.dealName.trim()) {
-      const surname = c.name.split(/\s+/).slice(-1)[0];
-      setForm((f) => ({
-        ...f,
-        clientId: id,
-        dealName: `${surname} ${form.type === "Residential" ? "Residence" : "Project"}`,
-      }));
-    }
+    setForm((f) => {
+      const next = { ...f, clientId: id };
+      if (c && !f.dealName.trim()) {
+        const surname = (c.name || "").split(/\s+/).slice(-1)[0];
+        next.dealName = `${surname} ${f.type === "Residential" ? "Residence" : "Project"}`;
+      }
+      return next;
+    });
+    if (errors.clientId) setErrors((e) => ({ ...e, clientId: undefined }));
   };
+
+  const sources = useMemo(
+    () => [
+      ...new Set(
+        (meta?.sources?.length ? meta.sources : DEFAULT_SOURCES)
+          .filter((s) => !/zoho|bigin/i.test(s))
+          .map((s) => (s === "Instagram" ? "Social Media" : s)),
+      ),
+    ],
+    [meta],
+  );
 
   const validate = () => {
     const e = {};
     if (form.clientMode === "existing" && !form.clientId)
       e.clientId = "Pick a client, or add a new one.";
-    if (form.clientMode === "new" && !form.newClientName.trim())
-      e.newClientName = "Enter the client's name.";
-    if (form.clientMode === "new" && !form.phone.trim() && !form.email.trim())
-      e.phone = "Add a phone number or email.";
-    if (form.clientMode === "new" && form.phone && form.phone.length !== 10)
-      e.phone = "Enter a 10-digit phone number.";
+    if (form.clientMode === "new") {
+      if (!form.newClientName.trim())
+        e.newClientName = "Enter the client's name.";
+      if (!form.phone && !form.email.trim())
+        e.phone = "Add a phone number or email.";
+      else if (form.phone && form.phone.length !== 10)
+        e.phone = "Enter a 10-digit phone number.";
+    }
     if (!form.dealName.trim())
       e.dealName = "Name the deal, e.g. “Malhotra Residence”.";
     if (form.amount && Number.isNaN(amountValue))
@@ -106,7 +179,7 @@ export default function QuickCreateDeal({
   };
 
   const submit = async () => {
-    if (!validate()) return;
+    if (isLoading || !validate()) return;
     const owner = meta?.owners?.find((o) => (o.id || o.name) === form.ownerId);
     const body = {
       dealName: form.dealName.trim(),
@@ -127,11 +200,11 @@ export default function QuickCreateDeal({
         : {
             newClient: {
               name: form.newClientName.trim(),
-              phone: form.phone.trim() || undefined,
+              phone: form.phone || undefined,
               email: form.email.trim() || undefined,
               contactPerson: form.contact.trim() || undefined,
             },
-            phone: form.phone.trim() || undefined,
+            phone: form.phone || undefined,
             email: form.email.trim() || undefined,
           }),
     };
@@ -140,8 +213,8 @@ export default function QuickCreateDeal({
       toast.success(
         `${deal.title} added to ${STAGES.find((s) => s.id === deal.stage)?.label}`,
       );
+      onCreated?.(deal); // before closing, so callers can flag "created"
       onOpenChange(false);
-      onCreated?.(deal);
     } catch (err) {
       toast.error(errorText(err, "Couldn't create the deal."));
     }
@@ -197,7 +270,7 @@ export default function QuickCreateDeal({
               id="qc-client"
               value={form.clientId}
               onChange={(e) => onClientPick(e.target.value)}
-              placeholder="Select a client…"
+              placeholder="Select an existing client…"
               invalid={!!errors.clientId}
             >
               {sortedClients.map((c) => (
@@ -210,7 +283,7 @@ export default function QuickCreateDeal({
               type="button"
               className="crm-linkbtn"
               style={{ justifySelf: "start" }}
-              onClick={() => set("clientMode", "new")}
+              onClick={() => setMode("new")}
             >
               + New client
             </button>
@@ -230,14 +303,16 @@ export default function QuickCreateDeal({
               autoFocus
               invalid={!!errors.newClientName}
             />
-            <button
-              type="button"
-              className="crm-linkbtn"
-              style={{ justifySelf: "start" }}
-              onClick={() => set("clientMode", "existing")}
-            >
-              Pick an existing client instead
-            </button>
+            {sortedClients.length > 0 && (
+              <button
+                type="button"
+                className="crm-linkbtn"
+                style={{ justifySelf: "start" }}
+                onClick={() => setMode("existing")}
+              >
+                Pick an existing client instead
+              </button>
+            )}
           </Field>
         )}
 
@@ -252,19 +327,17 @@ export default function QuickCreateDeal({
 
         {form.clientMode === "new" && (
           <>
-            <Field
-              label="Phone"
-              htmlFor="qc-phone"
-              error={errors.phone}
-              hint="Phone or email is enough."
-            >
+            <Field label="Phone" htmlFor="qc-phone" error={errors.phone}>
               <TextInput
                 id="qc-phone"
+                name="phone"
                 value={form.phone}
                 onChange={(e) => set("phone", e.target.value)}
+                onKeyDown={blockNonDigits}
                 placeholder="10-digit phone number"
                 inputMode="numeric"
-                maxLength={10}
+                pattern="[0-9]*"
+                autoComplete="tel-national"
                 invalid={!!errors.phone}
               />
             </Field>
@@ -354,21 +427,7 @@ export default function QuickCreateDeal({
             value={form.source}
             onChange={(e) => set("source", e.target.value)}
           >
-            {[
-              ...new Set(
-                (
-                  meta?.sources || [
-                    "Referral",
-                    "Website",
-                    "Social Media",
-                    "Walk-in",
-                    "Other",
-                  ]
-                )
-                  .filter((s) => !/zoho|bigin/i.test(s))
-                  .map((s) => (s === "Instagram" ? "Social Media" : s)),
-              ),
-            ].map((s) => (
+            {sources.map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>

@@ -60,7 +60,9 @@ export function sectionRoutes(appKey, realSlugs = []) {
       // Common per-app menu items get real shared pages; everything else the generic SectionPage.
       element:
         it.slug === "activity" ? (
-          <ActivityPage appKey={appKey === "adminConsole" ? undefined : appKey} />
+          <ActivityPage
+            appKey={appKey === "adminConsole" ? undefined : appKey}
+          />
         ) : it.slug === "roles" ? (
           <AppRolesPage appKey={appKey} />
         ) : (

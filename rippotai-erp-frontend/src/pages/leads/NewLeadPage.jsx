@@ -11,7 +11,10 @@ import {
   FormActions,
 } from "@/components/inos";
 import { Callout } from "@/components/forms/crm-form-ui";
-import { useCreateLeadMutation, useGetLeadsMetaQuery } from "../../api/connectors/leads.api";
+import {
+  useCreateLeadMutation,
+  useGetLeadsMetaQuery,
+} from "../../api/connectors/leads.api";
 import { STAGES, formatINR } from "../../hooks/stages";
 import { parseRupees } from "../../components/leads/pipeline/utils";
 
@@ -41,7 +44,9 @@ export default function NewLeadPage({ onCaptured }) {
   const location = useLocation();
   const [form, setForm] = useState(() => ({
     ...EMPTY_FORM,
-    stage: STAGES.some((s) => s.id === location.state?.stage) ? location.state.stage : "capture",
+    stage: STAGES.some((s) => s.id === location.state?.stage)
+      ? location.state.stage
+      : "capture",
   }));
   const [samePhone, setSamePhone] = useState(true);
   const [errors, setErrors] = useState({});
@@ -51,13 +56,24 @@ export default function NewLeadPage({ onCaptured }) {
   const { data: meta } = useGetLeadsMetaQuery();
 
   const sources = useMemo(() => {
-    const list = [...new Set((meta?.sources?.length ? meta.sources : SOURCES).filter((s) => !/zoho|bigin/i.test(s)).map((s) => s === "Instagram" ? "Social Media" : s))];
+    const list = [
+      ...new Set(
+        (meta?.sources?.length ? meta.sources : SOURCES)
+          .filter((s) => !/zoho|bigin/i.test(s))
+          .map((s) => (s === "Instagram" ? "Social Media" : s)),
+      ),
+    ];
     return list.includes(form.source) ? list : [form.source, ...list];
   }, [meta, form.source]);
 
   const onForm = (e) => {
     const { name, value } = e.target;
-    setForm((current) => ({ ...current, [name]: ["phone", "whatsapp"].includes(name) ? value.replace(/\D/g, "").slice(0, 10) : value }));
+    setForm((current) => ({
+      ...current,
+      [name]: ["phone", "whatsapp"].includes(name)
+        ? value.replace(/\D/g, "").slice(0, 10)
+        : value,
+    }));
     if (errors[name]) setErrors((x) => ({ ...x, [name]: undefined }));
     if (bannerErr) {
       setBanner("");
@@ -72,9 +88,12 @@ export default function NewLeadPage({ onCaptured }) {
     const next = {};
     if (!form.name.trim()) next.name = "Enter the lead's full name.";
     if (!form.phone.trim()) next.phone = "A phone number is required.";
-    else if (form.phone.length !== 10) next.phone = "Enter a 10-digit phone number.";
-    if (!samePhone && form.whatsapp && form.whatsapp.length !== 10) next.whatsapp = "Enter a 10-digit WhatsApp number.";
-    if (form.amount && Number.isNaN(amountValue)) next.amount = "Use a number, e.g. 45 L or 1.2 Cr.";
+    else if (form.phone.length !== 10)
+      next.phone = "Enter a 10-digit phone number.";
+    if (!samePhone && form.whatsapp && form.whatsapp.length !== 10)
+      next.whatsapp = "Enter a 10-digit WhatsApp number.";
+    if (form.amount && Number.isNaN(amountValue))
+      next.amount = "Use a number, e.g. 45 L or 1.2 Cr.";
     setErrors(next);
     if (Object.keys(next).length) return;
 
@@ -84,7 +103,9 @@ export default function NewLeadPage({ onCaptured }) {
         name: form.name.trim(),
         dealName: form.dealName.trim() || undefined,
         phone: form.phone.trim(),
-        whatsapp: samePhone ? form.phone.trim() : form.whatsapp.trim() || undefined,
+        whatsapp: samePhone
+          ? form.phone.trim()
+          : form.whatsapp.trim() || undefined,
         email: form.email.trim() || undefined,
         type: form.type,
         location: form.location.trim() || undefined,
@@ -95,13 +116,19 @@ export default function NewLeadPage({ onCaptured }) {
         source: form.source,
         stage: form.stage,
         expectedClose: form.expectedClose || undefined,
-        ...(owner ? (owner.id ? { ownerId: owner.id } : { owner: owner.name }) : {}),
+        ...(owner
+          ? owner.id
+            ? { ownerId: owner.id }
+            : { owner: owner.name }
+          : {}),
       }).unwrap();
       onCaptured?.(res);
       navigate(`/crm/pipeline?deal=${res.id}`);
     } catch (error) {
       const m = error?.data?.message;
-      setBanner(`We couldn't capture this lead${m ? `: ${Array.isArray(m) ? m.join(", ") : m}` : ". Please check the details and try again."}`);
+      setBanner(
+        `We couldn't capture this lead${m ? `: ${Array.isArray(m) ? m.join(", ") : m}` : ". Please check the details and try again."}`,
+      );
       setBannerErr(true);
     }
   };
@@ -109,7 +136,11 @@ export default function NewLeadPage({ onCaptured }) {
   return (
     <Page width="form">
       <PageHeader
-        crumbs={[{ label: "CRM", to: "/crm" }, { label: "Pipeline", to: "/crm/pipeline" }, { label: "New lead" }]}
+        crumbs={[
+          { label: "CRM", to: "/crm" },
+          { label: "Pipeline", to: "/crm/pipeline" },
+          { label: "New lead" },
+        ]}
         title="New lead"
         subtitle="Capture the essentials now — the deal lands in your pipeline and can be enriched later."
       />
@@ -124,8 +155,17 @@ export default function NewLeadPage({ onCaptured }) {
         }}
         noValidate
       >
-        <FormSection step={1} title="Contact" description="Who are you speaking with?">
-          <Field label="Full name" required htmlFor="lead-name" error={fieldError("name")}>
+        <FormSection
+          step={1}
+          title="Contact"
+          description="Who are you speaking with?"
+        >
+          <Field
+            label="Full name"
+            required
+            htmlFor="lead-name"
+            error={fieldError("name")}
+          >
             <TextInput
               id="lead-name"
               name="name"
@@ -138,7 +178,12 @@ export default function NewLeadPage({ onCaptured }) {
             />
           </Field>
 
-          <Field label="Phone" required htmlFor="lead-phone" error={fieldError("phone")}>
+          <Field
+            label="Phone"
+            required
+            htmlFor="lead-phone"
+            error={fieldError("phone")}
+          >
             <TextInput
               id="lead-phone"
               name="phone"
@@ -152,7 +197,11 @@ export default function NewLeadPage({ onCaptured }) {
             />
           </Field>
 
-          <Field label="WhatsApp" htmlFor="lead-whatsapp" error={fieldError("whatsapp")}>
+          <Field
+            label="WhatsApp"
+            htmlFor="lead-whatsapp"
+            error={fieldError("whatsapp")}
+          >
             <TextInput
               id="lead-whatsapp"
               name="whatsapp"
@@ -186,7 +235,11 @@ export default function NewLeadPage({ onCaptured }) {
           </Field>
         </FormSection>
 
-        <FormSection step={2} title="Project" description="Enough context to understand the opportunity.">
+        <FormSection
+          step={2}
+          title="Project"
+          description="Enough context to understand the opportunity."
+        >
           <Field label="Project type" full>
             <ChoiceGroup
               name="Project type"
@@ -196,7 +249,12 @@ export default function NewLeadPage({ onCaptured }) {
             />
           </Field>
 
-          <Field label="Location" optional htmlFor="lead-location" hint="City and state.">
+          <Field
+            label="Location"
+            optional
+            htmlFor="lead-location"
+            hint="City and state."
+          >
             <TextInput
               id="lead-location"
               name="location"
@@ -222,17 +280,39 @@ export default function NewLeadPage({ onCaptured }) {
           </Field>
         </FormSection>
 
-        <FormSection step={3} title="Qualification" description="How valuable and how urgent is this lead?">
+        <FormSection
+          step={3}
+          title="Qualification"
+          description="How valuable and how urgent is this lead?"
+        >
           <Field label="Budget range" htmlFor="lead-budget">
-            <SelectInput id="lead-budget" name="budget" value={form.budget} onChange={onForm}>
+            <SelectInput
+              id="lead-budget"
+              name="budget"
+              value={form.budget}
+              onChange={onForm}
+            >
               {BUDGETS.map((b) => (
                 <option key={b}>{b}</option>
               ))}
             </SelectInput>
           </Field>
 
-          <Field label="Lead source" htmlFor="lead-source" hint={form.source.startsWith("Referral") ? "Add the referrer's name in the lead notes later." : undefined}>
-            <SelectInput id="lead-source" name="source" value={form.source} onChange={onForm}>
+          <Field
+            label="Lead source"
+            htmlFor="lead-source"
+            hint={
+              form.source.startsWith("Referral")
+                ? "Add the referrer's name in the lead notes later."
+                : undefined
+            }
+          >
+            <SelectInput
+              id="lead-source"
+              name="source"
+              value={form.source}
+              onChange={onForm}
+            >
               {sources.map((s) => (
                 <option key={s}>{s}</option>
               ))}
@@ -249,9 +329,24 @@ export default function NewLeadPage({ onCaptured }) {
           </Field>
         </FormSection>
 
-        <FormSection step={4} title="Pipeline" description="Where the deal lands on the board and who owns it.">
-          <Field label="Deal / project name" optional htmlFor="lead-deal" hint="Defaults to the contact's name.">
-            <TextInput id="lead-deal" name="dealName" value={form.dealName} onChange={onForm} placeholder="e.g. Malhotra Residence, Vasant Vihar" />
+        <FormSection
+          step={4}
+          title="Pipeline"
+          description="Where the deal lands on the board and who owns it."
+        >
+          <Field
+            label="Deal / project name"
+            optional
+            htmlFor="lead-deal"
+            hint="Defaults to the contact's name."
+          >
+            <TextInput
+              id="lead-deal"
+              name="dealName"
+              value={form.dealName}
+              onChange={onForm}
+              placeholder="e.g. Malhotra Residence, Vasant Vihar"
+            />
           </Field>
 
           <Field
@@ -259,13 +354,29 @@ export default function NewLeadPage({ onCaptured }) {
             optional
             htmlFor="lead-amount"
             error={fieldError("amount")}
-            hint={amountValue && !Number.isNaN(amountValue) ? `= ${formatINR(amountValue, { compact: false })}` : "Leave empty to estimate from the budget range."}
+            hint={
+              amountValue && !Number.isNaN(amountValue)
+                ? `= ${formatINR(amountValue, { compact: false })}`
+                : "Leave empty to estimate from the budget range."
+            }
           >
-            <TextInput id="lead-amount" name="amount" value={form.amount} onChange={onForm} placeholder="e.g. 60 L or 1.5 Cr" invalid={Boolean(fieldError("amount"))} />
+            <TextInput
+              id="lead-amount"
+              name="amount"
+              value={form.amount}
+              onChange={onForm}
+              placeholder="e.g. 60 L or 1.5 Cr"
+              invalid={Boolean(fieldError("amount"))}
+            />
           </Field>
 
           <Field label="Stage" htmlFor="lead-stage">
-            <SelectInput id="lead-stage" name="stage" value={form.stage} onChange={onForm}>
+            <SelectInput
+              id="lead-stage"
+              name="stage"
+              value={form.stage}
+              onChange={onForm}
+            >
               {STAGES.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.label}
@@ -275,7 +386,12 @@ export default function NewLeadPage({ onCaptured }) {
           </Field>
 
           <Field label="Owner" htmlFor="lead-owner">
-            <SelectInput id="lead-owner" name="ownerId" value={form.ownerId} onChange={onForm}>
+            <SelectInput
+              id="lead-owner"
+              name="ownerId"
+              value={form.ownerId}
+              onChange={onForm}
+            >
               <option value="">Me</option>
               {(meta?.owners || []).map((o) => (
                 <option key={o.id || o.name} value={o.id || o.name}>
@@ -286,12 +402,22 @@ export default function NewLeadPage({ onCaptured }) {
           </Field>
 
           <Field label="Expected close" optional htmlFor="lead-close">
-            <TextInput id="lead-close" name="expectedClose" type="date" value={form.expectedClose} onChange={onForm} />
+            <TextInput
+              id="lead-close"
+              name="expectedClose"
+              type="date"
+              value={form.expectedClose}
+              onChange={onForm}
+            />
           </Field>
         </FormSection>
 
         <FormActions
-          note={meta?.zohoConnected ? "Saved in INOS and mirrored to Zoho Bigin" : "Saved to the INOS pipeline"}
+          note={
+            meta?.zohoConnected
+              ? "Saved in INOS and mirrored to Zoho Bigin"
+              : "Saved to the INOS pipeline"
+          }
           onCancel={() => navigate(-1)}
           submitLabel={isLoading ? "Capturing lead…" : "Capture lead"}
           submitting={isLoading}
@@ -302,6 +428,20 @@ export default function NewLeadPage({ onCaptured }) {
 }
 
 const PROJECT_TYPES = ["Residential", "Commercial", "Institutional"];
-const BUDGETS = ["Under ₹25L", "₹25L–₹75L", "₹75L–₹2Cr", "₹2Cr–₹5Cr", "₹5Cr+", "₹10Cr+", "₹15Cr+"];
+const BUDGETS = [
+  "Under ₹25L",
+  "₹25L–₹75L",
+  "₹75L–₹2Cr",
+  "₹2Cr–₹5Cr",
+  "₹5Cr+",
+  "₹10Cr+",
+  "₹15Cr+",
+];
 const TIMELINES = ["Immediate", "1–3 months", "3–6 months", "6+ months"];
-const SOURCES = ["Website", "Referral — add name in notes", "Social Media", "WhatsApp", "Walk-in"];
+const SOURCES = [
+  "Website",
+  "Referral — add name in notes",
+  "Social Media",
+  "WhatsApp",
+  "Walk-in",
+];

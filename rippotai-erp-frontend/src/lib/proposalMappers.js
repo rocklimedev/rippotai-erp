@@ -1030,7 +1030,13 @@ export function mapPaymentScheduleToUpdatePayload(ps) {
 
           percentage: numberOrZero(milestone.share),
           dueDate: milestone.dueDate || null,
-          amount: milestone.amount != null ? numberOrZero(milestone.amount) : Math.round(numberOrZero(ps.totalContractValue) * numberOrZero(milestone.share)) / 100,
+          amount:
+            milestone.amount != null
+              ? numberOrZero(milestone.amount)
+              : Math.round(
+                  numberOrZero(ps.totalContractValue) *
+                    numberOrZero(milestone.share),
+                ) / 100,
 
           milestoneNumber: index + 1,
 

@@ -107,7 +107,18 @@ export class PlanOfActionPhase extends Model<PlanOfActionPhase> {
     allowNull: true,
   })
   declare inclusion_note: string | null;
-
+  /**
+   * Free-form details / scope notes for this phase
+   * within this specific Plan of Action.
+   *
+   * Example:
+   * "Includes site survey, material sampling and vendor finalisation."
+   */
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  declare details: string | null;
   // ===================== Gantt =====================
 
   /**

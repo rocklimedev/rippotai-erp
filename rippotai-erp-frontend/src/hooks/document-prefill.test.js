@@ -73,8 +73,57 @@ test("site recce inherits brief fields, false, zero, and independent room rows",
   assert.equal(next.number_of_floors, 0);
   assert.equal(next.lift_available, false);
   assert.equal(next.carpet_area_sqft, 500);
-  assert.equal(next.floors[0].rooms[0].room_name, "Kitchen");
-  assert.notEqual(next.floors[0].rooms[0].id, "source-room");
+  assert.equal(next.rooms[0].room_name, "Kitchen");
+  assert.equal(next.rooms[0].notes, "Storage");
+  assert.equal(next.rooms[0].measurement_unit, "FT");
+  assert.ok(next.rooms[0].id.startsWith("room-"));
+  assert.notEqual(next.rooms[0].id, "source-room");
+});
+
+test("recce displays brief rooms even with legacy floor drafts and maps site restrictions", () => {
+  const context = {
+    documents: {
+      "client-brief": {
+        siteType: "BUILDER_FLOOR",
+        siteCondition: "EXISTING_VACANT",
+        spaceRequirements: [
+          {
+            spaceName: "Bedroom",
+            requirementDetails: "Wardrobe",
+            notes: "Keep window",
+          },
+        ],
+        siteRestrictions: [
+          { type: "societyRwaPermittedWorkTimings", details: "9–5" },
+          {
+            type: "materialMovementRestrictions",
+            details: "Service lift only",
+          },
+          { type: "nocOrSecurityDepositRequired", details: "NOC required" },
+        ],
+      },
+    },
+  };
+  const next = applyDocumentPrefill(
+    { floors: [{ rooms: [] }], rooms: [] },
+    context,
+    "recce",
+  );
+  assert.equal(next.rooms[0].room_name, "Bedroom");
+  assert.equal(next.rooms[0].notes, "Wardrobe\nKeep window");
+  assert.equal(next.site_type, "FLOOR");
+  assert.equal(next.existing_condition, "EXISTING VACANT");
+  assert.equal(next.working_hours_allowed, "9–5");
+  assert.equal(next.material_movement_rule, "Service lift only");
+  assert.equal(next.society_rwa_restrictions, "NOC required");
+  assert.equal(applyDocumentPrefill(next, context, "recce"), next);
+  const manual = {
+    rooms: [{ id: "saved-room", room_name: "Office" }],
+    working_hours_allowed: "10–4",
+  };
+  const preserved = applyDocumentPrefill(manual, context, "recce");
+  assert.equal(preserved.rooms, manual.rooms);
+  assert.equal(preserved.working_hours_allowed, "10–4");
 });
 
 test("scope receives recce rooms and brief scope without duplicating names", () => {

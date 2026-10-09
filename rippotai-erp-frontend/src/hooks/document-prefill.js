@@ -109,38 +109,66 @@ export function applyDocumentPrefill(current, context, type) {
     docs["planner-pmc"] ||
     docs["planner-consultancy"];
   if (type === "recce" && brief) {
+    const siteTypes = {
+      BUILDER_FLOOR: "FLOOR",
+      BUNGALOW: "KOTHI",
+      VILLA: "KOTHI",
+    };
     if (["FLAT", "FLOOR", "KOTHI", "RAW"].includes(brief.siteType))
       set("site_type", brief.siteType);
+    else set("site_type", siteTypes[brief.siteType]);
     if (brief.siteAreaUnit === "SQ_FT") set("carpet_area_sqft", brief.siteArea);
+    set(
+      "existing_condition",
+      brief.siteCondition === "OTHER"
+        ? brief.siteConditionOther
+        : brief.siteCondition?.replaceAll("_", " "),
+    );
+    const restrictions = [...(brief.siteRestrictions || [])].sort(
+      (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+    );
+    const restrictionText = (types) =>
+      restrictions
+        .filter((row) => types.includes(row.type) && row.details?.trim())
+        .map((row) => row.details.trim())
+        .join("\n");
+    set(
+      "working_hours_allowed",
+      restrictionText(["societyRwaPermittedWorkTimings"]),
+    );
+    set(
+      "material_movement_rule",
+      restrictionText(["materialMovementRestrictions"]),
+    );
+    set(
+      "society_rwa_restrictions",
+      restrictionText([
+        "nocOrSecurityDepositRequired",
+        "structuralChangesPermitted",
+        "neighbourSensitivities",
+      ]),
+    );
     const requirements = brief.spaceRequirements || [];
     collection(
-      "floors",
-      [
-        {
-          id: "prefill-floor",
-          floor_name: "Site Floor",
-          floor_order: 1,
-          approx_area_sqft:
-            brief.siteAreaUnit === "SQ_FT" ? (brief.siteArea ?? "") : "",
-          remarks: "",
-          rooms: requirements
-            .filter((room) => room.spaceName)
-            .map((room, index) => ({
-              id: `prefill-room-${index}`,
-              room_name: room.spaceName,
-              room_type: "OTHER",
-              room_type_other: room.spaceName,
-              unit: "ft",
-              remarks: room.requirementDetails || "",
-              length: "",
-              width: "",
-              height: "",
-            })),
-        },
-      ],
-      !current.floors?.length &&
-        !current.rooms?.length &&
-        requirements.length > 0,
+      "rooms",
+      [...requirements]
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+        .filter((room) => room.spaceName)
+        .map((room, index) => ({
+          id: `room-prefill-${index}`,
+          room_name: room.spaceName,
+          room_type: "OTHER",
+          room_type_other: room.spaceName,
+          measurement_unit: "FT",
+          notes: [room.requirementDetails, room.notes]
+            .filter(Boolean)
+            .join("\n"),
+          sort_order: index,
+          length: "",
+          width: "",
+          height: "",
+        })),
+      !current.rooms?.length,
     );
   }
   if (type === "scope") {
@@ -186,20 +214,18 @@ export function applyDocumentPrefill(current, context, type) {
           sort_order: categories.size,
           items: [],
         });
-      categories
-        .get(name)
-        .items.push({
-          id: `prefill-item-${item.id}`,
-          name: item.scopeOfWork,
-          location: item.projectSpace?.name || "",
-          notes: item.notes || "",
-          quantity: "",
-          rate: "",
-          unit: "",
-          unit_id: "",
-          calc_type: "M",
-          sort_order: categories.get(name).items.length,
-        });
+      categories.get(name).items.push({
+        id: `prefill-item-${item.id}`,
+        name: item.scopeOfWork,
+        location: item.projectSpace?.name || "",
+        notes: item.notes || "",
+        quantity: "",
+        rate: "",
+        unit: "",
+        unit_id: "",
+        calc_type: "M",
+        sort_order: categories.get(name).items.length,
+      });
     }
     collection("categories", [...categories.values()]);
   }

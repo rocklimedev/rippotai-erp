@@ -166,17 +166,12 @@ export function DrawingUpload() {
     title: "",
     drawingNumber: "",
     documentTypeId: "",
-    discipline: "Architecture",
-    issuePurpose: "",
-    status: "Draft",
     remarks: "",
   });
 
   const [revisionForm, setRevisionForm] = useState({
     revision: "A",
     issueDate: "",
-    issuePurpose: "",
-    status: "Draft",
     remarks: "",
     uploadedBy: "",
     uploadedByName: "",
@@ -219,7 +214,7 @@ export function DrawingUpload() {
     }
 
     if (!form.title.trim()) {
-      toast.error("Drawing title is required");
+      toast.error("Drawing name is required");
       return;
     }
 
@@ -245,9 +240,6 @@ export function DrawingUpload() {
         documentTypeId: form.documentTypeId || undefined,
         title: form.title,
         drawingNumber: form.drawingNumber,
-        discipline: form.discipline || undefined,
-        issuePurpose: form.issuePurpose || undefined,
-        status: form.status || "Draft",
         remarks: form.remarks || undefined,
       }).unwrap();
 
@@ -262,9 +254,6 @@ export function DrawingUpload() {
         data: {
           revision: revisionForm.revision || undefined,
           issueDate: revisionForm.issueDate || undefined,
-          issuePurpose:
-            revisionForm.issuePurpose || form.issuePurpose || undefined,
-          status: revisionForm.status || form.status || "Draft",
           remarks: revisionForm.remarks || form.remarks || undefined,
           uploadedBy: revisionForm.uploadedBy || undefined,
           uploadedByName: revisionForm.uploadedByName || undefined,
@@ -344,7 +333,7 @@ export function DrawingUpload() {
 
             {/* Title */}
             <div className="space-y-2">
-              <Label>Title</Label>
+              <Label>Name</Label>
               <Input
                 required
                 type="text"
@@ -361,16 +350,6 @@ export function DrawingUpload() {
                 type="text"
                 value={form.drawingNumber}
                 onChange={(e) => updateForm("drawingNumber", e.target.value)}
-              />
-            </div>
-
-            {/* Discipline */}
-            <div className="space-y-2">
-              <Label>Discipline</Label>
-              <Input
-                type="text"
-                value={form.discipline}
-                onChange={(e) => updateForm("discipline", e.target.value)}
               />
             </div>
 
@@ -394,36 +373,6 @@ export function DrawingUpload() {
                   updateRevisionForm("issueDate", e.target.value)
                 }
               />
-            </div>
-
-            {/* Issue Purpose */}
-            <div className="space-y-2">
-              <Label>Issue Purpose</Label>
-              <Input
-                type="text"
-                value={form.issuePurpose}
-                onChange={(e) => updateForm("issuePurpose", e.target.value)}
-              />
-            </div>
-
-            {/* Status */}
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select
-                value={form.status}
-                onValueChange={(value) => updateForm("status", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Draft">Draft</SelectItem>
-                  <SelectItem value="For Review">For Review</SelectItem>
-                  <SelectItem value="Approved">Approved</SelectItem>
-                  <SelectItem value="Rejected">Rejected</SelectItem>
-                  <SelectItem value="Superseded">Superseded</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             {/* Remarks */}
