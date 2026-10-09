@@ -14,6 +14,8 @@ export class NotificationForCalendarService {
     actorId: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'calendar_event',
+      entity_id: event.id,
       excludedUserId: actorId,
       type: NotificationType.CALENDAR_EVENT_CREATED,
       title: 'Calendar Event Created',
@@ -26,6 +28,8 @@ export class NotificationForCalendarService {
     actorId: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'calendar_event',
+      entity_id: event.id,
       excludedUserId: actorId,
       type: NotificationType.CALENDAR_EVENT_UPDATED,
       title: 'Calendar Event Updated',

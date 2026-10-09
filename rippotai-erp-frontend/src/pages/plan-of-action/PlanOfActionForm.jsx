@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 import { PlanOfActionSectionForm } from "../../components/plan-of-action/PlanOfActionSectionForm";
 import { useAutoSave } from "../../hooks/use-autosave";
-import { useSharedProjectData } from '../../hooks/use-shared-project-data';
+import { useSharedProjectData } from "../../hooks/use-shared-project-data";
 
 import {
   useGetProjectsQuery,
@@ -188,7 +188,7 @@ const mapPlanOfActionToForm = (plan) => {
           parallel_work_note: poaPhase.parallel_work_note || "",
 
           inclusion_note: poaPhase.inclusion_note || "",
-
+          details: poaPhase.details || "", // ← add
           gantt_start_offset_days: poaPhase.gantt_start_offset_days ?? 0,
 
           gantt_duration_days: poaPhase.gantt_duration_days ?? 0,
@@ -328,7 +328,7 @@ export function PlanOfActionForm() {
      FORM STATE
   ============================================================ */
 
-  const draftKey = `${SAVE_KEY}.${isEditMode ? id : projectId || 'new'}`;
+  const draftKey = `${SAVE_KEY}.${isEditMode ? id : projectId || "new"}`;
   const [values, setValues] = useAutoSave(draftKey, {
     Overview: {
       title: "Plan of Action",
@@ -345,7 +345,7 @@ export function PlanOfActionForm() {
 
     terms_template_id: "",
   });
-  useSharedProjectData(projectId, 'plan', values, setValues, !isEditMode);
+  useSharedProjectData(projectId, "plan", values, setValues, !isEditMode);
 
   /* ============================================================
      TERMS CREATE / EDIT STATE
@@ -499,7 +499,7 @@ export function PlanOfActionForm() {
             parallel_work_note: "",
 
             inclusion_note: "",
-
+            details: "", // ← add
             gantt_start_offset_days: 0,
 
             gantt_duration_days: 0,
@@ -601,7 +601,10 @@ export function PlanOfActionForm() {
     return (
       <>
         <div className="inos-form-grid">
-          <Field label="Find a phase" hint="Search the phase library by code, title or description.">
+          <Field
+            label="Find a phase"
+            hint="Search the phase library by code, title or description."
+          >
             <label className="inos-search" style={{ maxWidth: "none" }}>
               <Search aria-hidden />
               <input
@@ -742,40 +745,6 @@ export function PlanOfActionForm() {
                     />
                   </Field>
 
-                  <Field label="Gantt start offset" hint="Days from site start">
-                    <TextInput
-                      type="number"
-                      min="0"
-                      inputMode="numeric"
-                      value={phase.gantt_start_offset_days}
-                      onChange={(e) =>
-                        updatePhase(
-                          index,
-                          "gantt_start_offset_days",
-                          e.target.value === "" ? 0 : Number(e.target.value),
-                        )
-                      }
-                      placeholder="0"
-                    />
-                  </Field>
-
-                  <Field label="Gantt duration" hint="Days shown on the chart">
-                    <TextInput
-                      type="number"
-                      min="0"
-                      inputMode="numeric"
-                      value={phase.gantt_duration_days}
-                      onChange={(e) =>
-                        updatePhase(
-                          index,
-                          "gantt_duration_days",
-                          e.target.value === "" ? 0 : Number(e.target.value),
-                        )
-                      }
-                      placeholder="e.g. 30"
-                    />
-                  </Field>
-
                   <Field label="Parallel work note" optional>
                     <TextInput
                       value={phase.parallel_work_note}
@@ -793,6 +762,21 @@ export function PlanOfActionForm() {
                         updatePhase(index, "inclusion_note", e.target.value)
                       }
                       placeholder="e.g. Includes paint 1st coat"
+                    />
+                  </Field>
+                  <Field
+                    label="Details"
+                    optional
+                    full
+                    hint="Scope, deliverables or anything the client should know about this phase."
+                  >
+                    <TextArea
+                      style={{ minHeight: 90 }}
+                      value={phase.details}
+                      onChange={(e) =>
+                        updatePhase(index, "details", e.target.value)
+                      }
+                      placeholder="e.g. Includes site survey, material sampling and vendor finalisation."
                     />
                   </Field>
                 </div>
@@ -957,7 +941,9 @@ export function PlanOfActionForm() {
               value={selectedTeamId}
               onChange={(e) => handleTeamChange(e.target.value)}
               disabled={isLoadingTeams}
-              placeholder={isLoadingTeams ? "Loading teams…" : "Select admin team"}
+              placeholder={
+                isLoadingTeams ? "Loading teams…" : "Select admin team"
+              }
             >
               {teams.map((team) => (
                 <option key={team.id} value={team.id}>
@@ -1007,8 +993,16 @@ export function PlanOfActionForm() {
                     <RowCard
                       key={member.id}
                       index={index + 1}
-                      title={selectedMember ? getMemberUserName(selectedMember) : "New member"}
-                      meta={member.is_primary ? "Primary contact" : member.role_label || undefined}
+                      title={
+                        selectedMember
+                          ? getMemberUserName(selectedMember)
+                          : "New member"
+                      }
+                      meta={
+                        member.is_primary
+                          ? "Primary contact"
+                          : member.role_label || undefined
+                      }
                       onRemove={() => removeMember(index)}
                       removeLabel="Remove member"
                     >
@@ -1016,7 +1010,9 @@ export function PlanOfActionForm() {
                         <Field
                           label="Team member"
                           required
-                          error={missingUser ? "Select a team member." : undefined}
+                          error={
+                            missingUser ? "Select a team member." : undefined
+                          }
                         >
                           <SelectInput
                             value={member.user_id}
@@ -1109,7 +1105,11 @@ export function PlanOfActionForm() {
     }
 
     try {
-      const created = await createTermsTemplate({ ...termsCreateForm, name: termsCreateForm.name.trim(), content_html: textToTermsHtml(termsCreateForm.content_html) }).unwrap();
+      const created = await createTermsTemplate({
+        ...termsCreateForm,
+        name: termsCreateForm.name.trim(),
+        content_html: textToTermsHtml(termsCreateForm.content_html),
+      }).unwrap();
       toast.success("Terms template created");
       setTermsCreateOpen(false);
       resetTermsCreateForm();
@@ -1183,7 +1183,6 @@ export function PlanOfActionForm() {
           </div>
         ) : (
           <TextArea
-
             style={{ minHeight: 160 }}
             placeholder={placeholder}
             value={value}
@@ -1248,7 +1247,8 @@ export function PlanOfActionForm() {
                   (v) =>
                     setTermsCreateForm((f) => ({
                       ...f,
-                      content_html: typeof v === "function" ? v(f.content_html) : v,
+                      content_html:
+                        typeof v === "function" ? v(f.content_html) : v,
                     })),
                   termsCreatePreview,
                   setTermsCreatePreview,
@@ -1259,7 +1259,9 @@ Any variation in scope shall be treated as extra work.`,
               </Field>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+            <div
+              style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}
+            >
               <Button
                 variant="ghost"
                 onClick={() => {
@@ -1286,14 +1288,17 @@ Any variation in scope shall be treated as extra work.`,
             title={`Edit “${editingTermsTemplate.name}”`}
             meta={`Saving creates v${(editingTermsTemplate.current_version || 1) + 1}`}
             actions={
-              <IconButton label="Close" onClick={() => setEditingTermsTemplate(null)}>
+              <IconButton
+                label="Close"
+                onClick={() => setEditingTermsTemplate(null)}
+              >
                 <X />
               </IconButton>
             }
           >
             <p className="inos-hint" style={{ margin: 0 }}>
-              Documents that already used an earlier version keep their
-              original text.
+              Documents that already used an earlier version keep their original
+              text.
             </p>
 
             <Field label="Content" required>
@@ -1306,7 +1311,11 @@ Any variation in scope shall be treated as extra work.`,
               )}
             </Field>
 
-            <Field label="Change note" optional hint="Describe what changed, for version history.">
+            <Field
+              label="Change note"
+              optional
+              hint="Describe what changed, for version history."
+            >
               <TextInput
                 placeholder="e.g. Updated payment terms clause"
                 value={termsChangeNote}
@@ -1314,8 +1323,13 @@ Any variation in scope shall be treated as extra work.`,
               />
             </Field>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <Button variant="ghost" onClick={() => setEditingTermsTemplate(null)}>
+            <div
+              style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}
+            >
+              <Button
+                variant="ghost"
+                onClick={() => setEditingTermsTemplate(null)}
+              >
                 Cancel
               </Button>
               <Button
@@ -1349,7 +1363,12 @@ Any variation in scope shall be treated as extra work.`,
             }
           />
         ) : (
-          <div className="inos-choices" role="radiogroup" aria-label="Terms template" style={{ gridTemplateColumns: "1fr" }}>
+          <div
+            className="inos-choices"
+            role="radiogroup"
+            aria-label="Terms template"
+            style={{ gridTemplateColumns: "1fr" }}
+          >
             {termsTemplates.map((template) => {
               const isSelected = selectedId === template.id;
 
@@ -1370,17 +1389,31 @@ Any variation in scope shall be treated as extra work.`,
                         terms_template_id: template.id,
                       }))
                     }
-                    style={{ flex: 1, minWidth: 0, textAlign: "left", display: "flex", alignItems: "center", gap: 10 }}
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      textAlign: "left",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                    }}
                   >
                     {isSelected ? (
                       <CheckCircle2 size={18} aria-hidden />
                     ) : (
-                      <span className="crmf-nav__dot" style={{ width: 18, height: 18 }} aria-hidden />
+                      <span
+                        className="crmf-nav__dot"
+                        style={{ width: 18, height: 18 }}
+                        aria-hidden
+                      />
                     )}
                     <span style={{ minWidth: 0 }}>
-                      <span style={{ display: "block", color: "var(--text)" }}>{template.name}</span>
+                      <span style={{ display: "block", color: "var(--text)" }}>
+                        {template.name}
+                      </span>
                       <span className="inos-hint" style={{ fontWeight: 500 }}>
-                        {prettyStatus(template.scope)} · v{template.current_version}
+                        {prettyStatus(template.scope)} · v
+                        {template.current_version}
                       </span>
                     </span>
                   </button>
@@ -1575,7 +1608,7 @@ Any variation in scope shall be treated as extra work.`,
           parallel_work_note: phase.parallel_work_note || undefined,
 
           inclusion_note: phase.inclusion_note || undefined,
-
+          details: phase.details || undefined, // ← add
           gantt_start_offset_days:
             toNumberOrUndefined(phase.gantt_start_offset_days) ?? 0,
 
@@ -1720,8 +1753,8 @@ Any variation in scope shall be treated as extra work.`,
         "Name the plan and give the overall duration range. The duration label is worked out for you.",
       done: Boolean(
         overviewValues.execution_description?.trim() ||
-          overviewValues.total_duration_min_days !== "" ||
-          overviewValues.total_duration_max_days !== "",
+        overviewValues.total_duration_min_days !== "" ||
+        overviewValues.total_duration_max_days !== "",
       ),
     },
     Phases: {
@@ -1733,9 +1766,7 @@ Any variation in scope shall be treated as extra work.`,
     Team: {
       description:
         "Choose the admin team and assign who works on this project.",
-      done: (values.team_members || []).some(
-        (m) => m.user_id && m.role_label,
-      ),
+      done: (values.team_members || []).some((m) => m.user_id && m.role_label),
       count: (values.team_members || []).length,
     },
     "Terms & Conditions": {

@@ -20,6 +20,8 @@ export class NotificationForBriefService {
     actorId: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'brief',
+      entity_id: brief.id,
       excludedUserId: actorId,
       type: NotificationType.BRIEF_CREATED,
       title: 'Brief Created',
@@ -36,6 +38,8 @@ export class NotificationForBriefService {
     actorId: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'brief',
+      entity_id: brief.id,
       excludedUserId: actorId,
       type: NotificationType.BRIEF_UPDATED,
       title: 'Brief Updated',
@@ -52,6 +56,8 @@ export class NotificationForBriefService {
     actorId: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'brief',
+      entity_id: brief.id,
       excludedUserId: actorId,
       type: NotificationType.BRIEF_DELETED,
       title: 'Brief Deleted',

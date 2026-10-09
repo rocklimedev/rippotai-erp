@@ -192,6 +192,10 @@ export class LeadsService implements OnModuleInit {
     for (const modelName of [
       'SiteRecce',
       'BusinessProposal',
+      'BudgetEstimate',
+      'ProjectBrief',
+      'ScopeOfWork',
+      'PlanOfAction',
       'Document',
       'Lead',
     ]) {
@@ -227,28 +231,46 @@ export class LeadsService implements OnModuleInit {
   }
 
   async syncProjectStage(projectId: string, actor: Actor) {
-    const [evidence] = await this.select<{ recce: number; proposal: number }>(
+    const [evidence] = await this.select<Record<string, number>>(
       `
       SELECT
         EXISTS(SELECT 1 FROM site_recces WHERE project_id = ? AND deleted_at IS NULL) AS recce,
-        (EXISTS(SELECT 1 FROM business_proposals WHERE project_id = ?) AND
+        EXISTS(SELECT 1 FROM project_briefs WHERE project_id = ? AND deleted_at IS NULL) AS brief,
+        (EXISTS(SELECT 1 FROM business_proposals WHERE project_id = ?) OR
+         EXISTS(SELECT 1 FROM budget_estimates WHERE project_id = ? AND status NOT IN ('rejected', 'cancelled')) OR
+         EXISTS(SELECT 1 FROM scope_of_work WHERE project_id = ? AND deleted_at IS NULL AND UPPER(status) NOT IN ('REJECTED', 'ARCHIVED')) OR
          EXISTS(SELECT 1 FROM documents d JOIN document_types t ON t.id = d.document_type_id
            WHERE d.project_id = ? AND d.url IS NOT NULL AND d.url <> ''
            AND d.status NOT IN ('rejected', 'archived')
-           AND (LOWER(t.name) = 'business proposal' OR LOWER(t.code) IN ('business_proposal', 'business-proposal')))) AS proposal
+           AND (LOWER(t.name) = 'business proposal' OR LOWER(t.code) IN ('business_proposal', 'business-proposal')))) AS proposal,
+        EXISTS(SELECT 1 FROM budget_estimates WHERE project_id = ? AND status IN ('submitted', 'revised', 'approved')) AS negotiation,
+        EXISTS(SELECT 1 FROM documents d JOIN document_types t ON t.id = d.document_type_id
+          WHERE d.project_id = ? AND d.url IS NOT NULL AND d.url <> '' AND d.status = 'approved'
+          AND (LOWER(REPLACE(t.code, '_', '-')) IN ('agreement-consultancy', 'contract-execution')
+            OR LOWER(t.name) IN ('agreement-consultancy', 'contract-execution'))) AS contract,
+        EXISTS(SELECT 1 FROM plan_of_actions WHERE project_id = ? AND deleted_at IS NULL AND status = 'PUBLISHED') AS handoff
     `,
-      [projectId, projectId, projectId],
+      Array(9).fill(projectId),
     );
-    const stage = evidence?.proposal
-      ? LeadStage.PROP
-      : evidence?.recce
-        ? LeadStage.DISC
-        : null;
+    const stage =
+      Number(evidence?.handoff) && Number(evidence?.contract)
+        ? LeadStage.HANDOFF
+        : Number(evidence?.contract)
+          ? LeadStage.CONTRACT
+          : Number(evidence?.negotiation)
+            ? LeadStage.NEGO
+            : Number(evidence?.proposal)
+              ? LeadStage.PROP
+              : Number(evidence?.recce)
+                ? LeadStage.DISC
+                : Number(evidence?.brief)
+                  ? LeadStage.QUAL
+                  : null;
     if (!stage) return;
     const leads = await this.leadModel.findAll({ where: { projectId } });
     for (const lead of leads) {
       if (
-        OPEN_STAGES.has(lead.stage) &&
+        (OPEN_STAGES.has(lead.stage) || lead.stage === LeadStage.CONTRACT) &&
         STAGE_ORDER.indexOf(lead.stage) < STAGE_ORDER.indexOf(stage)
       ) {
         await this.moveStage(
@@ -526,7 +548,33 @@ export class LeadsService implements OnModuleInit {
     });
   }
 
+  private async reconcileDocumentStages() {
+    const leads = await this.leadModel.findAll({
+      attributes: ['projectId'],
+      where: {
+        projectId: { [Op.ne]: null },
+        stage: { [Op.in]: [...OPEN_STAGES, LeadStage.CONTRACT] },
+      },
+      group: ['projectId'],
+    });
+    for (const lead of leads) {
+      try {
+        await this.syncProjectStage(lead.projectId!, {
+          id: '',
+          name: 'Project documents',
+        });
+      } catch (error) {
+        this.logger.error(
+          `Lead document reconciliation failed for ${lead.projectId}: ${error.message}`,
+        );
+      }
+    }
+  }
+
   private async listDeals(f: LeadFilters) {
+    // Reconcile before applying stage filters so old/imported documents and
+    // bulk writes (which do not emit instance hooks) cannot leave a stale board.
+    await this.reconcileDocumentStages();
     const leads = await this.leadModel.findAll({
       where: this.buildWhere(f),
       order: [['created_at', 'DESC']],
@@ -634,6 +682,13 @@ export class LeadsService implements OnModuleInit {
 
   async getLead(id: string) {
     const lead = await this.findOr404(id);
+    if (lead.projectId) {
+      await this.syncProjectStage(lead.projectId, {
+        id: lead.ownerId || '',
+        name: 'Project documents',
+      });
+      await lead.reload();
+    }
     const [deal] = await this.hydrate([lead]);
 
     const [notes, activity, tasks] = await Promise.all([

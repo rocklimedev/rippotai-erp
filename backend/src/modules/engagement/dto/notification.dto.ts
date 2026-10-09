@@ -9,6 +9,15 @@ import {
 import { NotificationType } from '../../../common/enums';
 
 export class CreateNotificationDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  entity_type?: string;
+
+  @IsOptional()
+  @IsUUID()
+  entity_id?: string;
+
   @IsUUID()
   @IsNotEmpty()
   user_id: string;

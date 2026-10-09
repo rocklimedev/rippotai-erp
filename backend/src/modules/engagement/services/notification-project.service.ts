@@ -15,6 +15,8 @@ export class NotificationForProjectService {
     actorId?: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'project',
+      entity_id: project.id,
       excludedUserId: actorId,
       type: NotificationType.PROJECT_CREATED,
       title: 'Project Created',
@@ -27,6 +29,8 @@ export class NotificationForProjectService {
     actorId?: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'project',
+      entity_id: project.id,
       excludedUserId: actorId,
       type: NotificationType.PROJECT_UPDATED,
       title: 'Project Updated',
@@ -39,6 +43,8 @@ export class NotificationForProjectService {
     actorId?: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'project',
+      entity_id: project.id,
       excludedUserId: actorId,
       type: NotificationType.PROJECT_ARCHIVED,
       title: 'Project Archived',
@@ -51,6 +57,8 @@ export class NotificationForProjectService {
     actorId?: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'project',
+      entity_id: project.id,
       excludedUserId: actorId,
       type: NotificationType.PROJECT_RESTORED,
       title: 'Project Restored',

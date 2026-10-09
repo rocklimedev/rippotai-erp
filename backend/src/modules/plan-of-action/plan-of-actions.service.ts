@@ -18,6 +18,36 @@ import { UpdatePlanOfActionDto } from './dto/update-plan-of-action.dto';
 import { UpsertPhaseDto } from './dto/upsert-phase.dto';
 import { ApplyTermsDto } from '../metas/dto/apply-terms.dto';
 
+/**
+ * Columns of the plan_of_action_phases join row exposed to clients.
+ */
+const POA_PHASE_THROUGH_ATTRIBUTES = [
+  'id',
+  'plan_of_action_id',
+  'project_phase_id',
+
+  // Duration
+  'duration_min_days',
+  'duration_max_days',
+
+  // Notes
+  'parallel_work_note',
+  'inclusion_note',
+  'details',
+
+  // Gantt
+  'gantt_start_offset_days',
+  'gantt_duration_days',
+
+  // Ordering
+  'sort_order',
+
+  // Timestamps
+  'created_at',
+  'updated_at',
+  'deleted_at',
+];
+
 @Injectable()
 export class PlanOfActionsService {
   constructor(
@@ -40,6 +70,7 @@ export class PlanOfActionsService {
 
     private readonly sequelize: Sequelize,
   ) {}
+
   // ============================================================
   // Find All
   // ============================================================
@@ -65,6 +96,7 @@ export class PlanOfActionsService {
       order: [['created_at', 'DESC']],
     });
   }
+
   // ============================================================
   // Create
   // ============================================================
@@ -125,11 +157,6 @@ export class PlanOfActionsService {
             actingUserId,
             transaction,
           );
-        } else {
-          console.log(
-            'POA create — team_members MISSING or empty:',
-            dto.team_members,
-          );
         }
 
         return plan.id;
@@ -150,31 +177,7 @@ export class PlanOfActionsService {
         {
           association: 'phases',
           through: {
-            attributes: [
-              'id',
-              'plan_of_action_id',
-              'project_phase_id',
-
-              // Duration
-              'duration_min_days',
-              'duration_max_days',
-
-              // Notes
-              'parallel_work_note',
-              'inclusion_note',
-
-              // Gantt
-              'gantt_start_offset_days',
-              'gantt_duration_days',
-
-              // Ordering
-              'sort_order',
-
-              // Timestamps
-              'created_at',
-              'updated_at',
-              'deleted_at',
-            ],
+            attributes: POA_PHASE_THROUGH_ATTRIBUTES,
           },
         },
         {
@@ -216,10 +219,6 @@ export class PlanOfActionsService {
   // Find By Project
   // ============================================================
 
-  // ============================================================
-  // Find By Project
-  // ============================================================
-
   async findByProject(projectId: string) {
     return this.planOfActionModel.findAll({
       where: {
@@ -240,33 +239,8 @@ export class PlanOfActionsService {
         // --------------------------------------------------------
         {
           association: 'phases',
-
           through: {
-            attributes: [
-              'id',
-              'plan_of_action_id',
-              'project_phase_id',
-
-              // Duration
-              'duration_min_days',
-              'duration_max_days',
-
-              // Notes
-              'parallel_work_note',
-              'inclusion_note',
-
-              // Gantt
-              'gantt_start_offset_days',
-              'gantt_duration_days',
-
-              // Ordering
-              'sort_order',
-
-              // Timestamps
-              'created_at',
-              'updated_at',
-              'deleted_at',
-            ],
+            attributes: POA_PHASE_THROUGH_ATTRIBUTES,
           },
         },
 
@@ -282,6 +256,7 @@ export class PlanOfActionsService {
       order: [['created_at', 'DESC']],
     });
   }
+
   // ============================================================
   // Update
   // ============================================================
@@ -324,16 +299,7 @@ export class PlanOfActionsService {
       // --------------------------------------------------------
 
       if (dto.phases !== undefined) {
-        // Remove old POA -> ProjectPhase relationships.
-        //
-        // IMPORTANT:
-        // We do NOT delete ProjectPhase records themselves.
-        await this.planPhaseModel.destroy({
-          where: {
-            plan_of_action_id: id,
-          },
-          transaction,
-        });
+        await this.removePhaseLinks(id, transaction);
 
         if (dto.phases.length > 0) {
           await this.createPhasesForPlan(id, dto.phases, transaction);
@@ -380,6 +346,7 @@ export class PlanOfActionsService {
 
     return this.findOne(id);
   }
+
   // ============================================================
   // Remove
   // ============================================================
@@ -406,32 +373,12 @@ export class PlanOfActionsService {
     }
 
     await this.sequelize.transaction(async (transaction) => {
-      // --------------------------------------------------------
-      // Remove existing relationships only.
-      //
-      // IMPORTANT:
-      // Do NOT delete ProjectPhase records because they are
-      // independent/reusable entities.
-      // --------------------------------------------------------
-
-      await this.planPhaseModel.destroy({
-        where: {
-          plan_of_action_id: planId,
-        },
-        transaction,
-      });
-
-      // --------------------------------------------------------
-      // Create new phases + relationships
-      // --------------------------------------------------------
+      // Remove existing relationships only (never ProjectPhase records).
+      await this.removePhaseLinks(planId, transaction);
 
       if (phases.length) {
         await this.createPhasesForPlan(planId, phases, transaction);
       }
-
-      // --------------------------------------------------------
-      // Update phase count
-      // --------------------------------------------------------
 
       await plan.update(
         {
@@ -447,8 +394,33 @@ export class PlanOfActionsService {
   }
 
   // ============================================================
+  // Remove Phase Links
+  // ============================================================
+
+  /**
+   * Remove the POA -> ProjectPhase join rows for a plan.
+   *
+   * IMPORTANT:
+   * - ProjectPhase records are reusable and are NOT deleted.
+   * - `force: true` hard-deletes the join rows. PlanOfActionPhase is
+   *   paranoid, and the unique key uq_plan_of_action_phase does not
+   *   ignore soft-deleted rows, so a soft delete would make the
+   *   re-insert fail with ER_DUP_ENTRY.
+   */
+  private async removePhaseLinks(planId: string, transaction: Transaction) {
+    await this.planPhaseModel.destroy({
+      where: {
+        plan_of_action_id: planId,
+      },
+      force: true,
+      transaction,
+    });
+  }
+
+  // ============================================================
   // Create Phases For Plan
   // ============================================================
+
   private async createPhasesForPlan(
     planId: string,
     phases: UpsertPhaseDto[],
@@ -473,6 +445,7 @@ export class PlanOfActionsService {
 
           parallel_work_note: phase.parallel_work_note ?? null,
           inclusion_note: phase.inclusion_note ?? null,
+          details: phase.details ?? null,
 
           gantt_start_offset_days: phase.gantt_start_offset_days ?? 0,
           gantt_duration_days: phase.gantt_duration_days ?? 0,

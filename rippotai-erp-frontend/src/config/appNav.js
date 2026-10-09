@@ -179,7 +179,7 @@ export const APP_MENUS = {
         I("Client Brief", "brief/all"),
         I("Site Recce", "recce/all"),
         I("Scope of Work", "scope-of-work/all"),
-        I("Plan Of Action", "plan-of-action/all"),
+        I("Plan of Action", "plan-of-action/all"),
 
         // I("Scope Of Approval", "scope-of-approval/all"),
         // I("Pitch Deck", "pitch-deck/all"),

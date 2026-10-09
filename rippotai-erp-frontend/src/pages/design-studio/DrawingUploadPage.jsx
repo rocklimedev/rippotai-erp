@@ -40,14 +40,11 @@ import {
 import { useGetProjectsQuery } from "@/api/projects/project.api";
 import { useGetUsersQuery } from "@/api/users/user.api";
 
-import { FileThumb, ProjectPicker, Chips } from "./DrawingBits";
+import { FileThumb, ProjectPicker } from "./DrawingBits";
 import {
   ACCEPT,
   ACCEPT_EXT,
-  DISCIPLINES,
   PHASES,
-  SCALES,
-  SHEET_SIZES,
   STATUSES,
   errMessage,
   extOf,
@@ -57,7 +54,6 @@ import {
   latestRevision,
   maxSequence,
   nextRevisionLabel,
-  disciplineCode,
   projectCode,
   pad3,
   phaseLabel,
@@ -70,7 +66,6 @@ import "./drawings.css";
 
 const MIXED = Symbol("mixed");
 const MAX_BYTES = 500 * 1024 * 1024;
-const PURPOSES = ["For client approval", "For coordination", "For tender", "For construction", "For information", "As-built record"];
 const today = () => new Date().toISOString().slice(0, 10);
 let keySeq = 0;
 
@@ -83,14 +78,10 @@ export default function DrawingUploadPage() {
   const presetDrawingId = params.get("drawing") || "";
   const [projectId, setProjectId] = useState(params.get("project") || "");
   const [defaults, setDefaults] = useState(() => ({
+    title: "",
     phaseCode: "05_DESIGN",
-    discipline: "Architecture",
     revision: "",
-    status: "For Review",
-    issuePurpose: "For client approval",
     issueDate: today(),
-    scale: "1:100",
-    sheetSize: "A1",
     sheetNumber: "",
     drawnBy: "",
     checkedBy: "",
@@ -127,9 +118,6 @@ export default function DrawingUploadPage() {
     setDefaults((d) => ({
       ...d,
       phaseCode: presetDrawing.phaseCode || d.phaseCode,
-      discipline: presetDrawing.discipline || d.discipline,
-      scale: presetDrawing.scale || d.scale,
-      sheetSize: presetDrawing.sheetSize || d.sheetSize,
       sheetNumber: presetDrawing.sheetNumber || "",
     }));
   }, [presetDrawing]);
@@ -175,7 +163,7 @@ export default function DrawingUploadPage() {
         out[it.key] = "";
         continue;
       }
-      const prefix = `${projCode}-${disciplineCode(it.discipline)}-`;
+      const prefix = `${projCode}-`;
       if (counters[prefix] == null) counters[prefix] = maxSequence(used, prefix);
       counters[prefix] += 1;
       out[it.key] = `${prefix}${pad3(counters[prefix])}`;
@@ -185,10 +173,10 @@ export default function DrawingUploadPage() {
 
   const nextNumberPreview = useMemo(() => {
     if (!projectId) return "";
-    const prefix = `${projCode}-${disciplineCode(defaults.discipline)}-`;
+    const prefix = `${projCode}-`;
     const used = [...existingByNumber.keys(), ...Object.values(numbers)];
     return `${prefix}${pad3(maxSequence(used, prefix) + 1)}`;
-  }, [projectId, projCode, defaults.discipline, existingByNumber, numbers]);
+  }, [projectId, projCode, existingByNumber, numbers]);
 
   const issues = useMemo(() => {
     const res = {};
@@ -202,7 +190,7 @@ export default function DrawingUploadPage() {
       if (i.state === "done") return;
       const n = String(numbers[i.key] || "").toUpperCase();
       const e = {};
-      if (!i.title.trim()) e.title = "Title is required";
+      if (!i.title.trim()) e.title = "Name is required";
       if (!n) e.number = projectId ? "Drawing number is required" : "Pick a project to number this drawing";
       else if (counts[n] > 1) e.number = "Same number used twice in this batch";
       res[i.key] = e;
@@ -231,7 +219,7 @@ export default function DrawingUploadPage() {
           kind,
           previewUrl: kind === "image" ? URL.createObjectURL(file) : null,
           ...defaults,
-          title: usePreset ? presetDrawing.title : titleFromFilename(file.name),
+          title: usePreset ? presetDrawing.title : defaults.title || titleFromFilename(file.name),
           drawingNumber: usePreset ? presetDrawing.drawingNumber : "",
           autoNumber: !usePreset,
           state: "ready",
@@ -313,7 +301,7 @@ export default function DrawingUploadPage() {
     }
     if (!ready.length) return;
     if (invalidCount) {
-      toast.error(`${invalidCount} file${invalidCount > 1 ? "s need" : " needs"} a title or drawing number`);
+      toast.error(`${invalidCount} file${invalidCount > 1 ? "s need" : " needs"} a name or drawing number`);
       setSelected(ready.filter((i) => Object.keys(issues[i.key] || {}).length).map((i) => i.key));
       return;
     }
@@ -341,12 +329,7 @@ export default function DrawingUploadPage() {
               title: it.title.trim(),
               drawingNumber: it.drawingNumber.trim(),
               phaseCode: it.phaseCode,
-              discipline: it.discipline,
               sheetNumber: it.sheetNumber,
-              scale: it.scale,
-              sheetSize: it.sheetSize,
-              issuePurpose: it.issuePurpose,
-              status: it.status,
               remarks: it.remarks,
               drawnBy: it.drawnBy,
               checkedBy: it.checkedBy,
@@ -361,8 +344,6 @@ export default function DrawingUploadPage() {
           data: clean({
             revision: it.revision?.trim(),
             issueDate: it.issueDate,
-            issuePurpose: it.issuePurpose,
-            status: it.status,
             remarks: it.remarks,
             uploadedBy: user?.id,
             uploadedByName: user?.name,
@@ -422,9 +403,6 @@ export default function DrawingUploadPage() {
     </div>
   );
 
-  const statusVal = valueOf("status");
-  const discVal = valueOf("discipline");
-  const sizeVal = valueOf("sheetSize");
 
   return (
     <Page>
@@ -548,9 +526,9 @@ export default function DrawingUploadPage() {
             {!items.length ? (
               <div className="ds-steps">
                 {[
-                  ["Add files", "Drag sheets in from your computer. Titles are read from the file names."],
-                  ["Tag them once", "Pick the project, phase and discipline; numbers auto-continue the project's series."],
-                  ["Upload", "Each file is stored with its revision, status and issue date, ready to share."],
+                  ["Add files", "Drag sheets in from your computer. Names are read from the file names."],
+                  ["Tag them once", "Pick the project, phase; numbers auto-continue the project's series."],
+                  ["Upload", "Each file is stored with its revision and issue date, ready to share."],
                 ].map(([t, d], i) => (
                   <div className="ds-step" key={t}>
                     <span className="ds-step__n">{i + 1}</span>
@@ -600,12 +578,11 @@ export default function DrawingUploadPage() {
                         <FileThumb name={it.file.name} mime={it.file.type} src={it.previewUrl} />
                         <div className="ds-qrow__main">
                           <span className={`ds-qrow__title ${iss.title && triedSubmit ? "is-missing" : ""}`}>
-                            {it.title || "Untitled — add a title"}
+                            {it.title || "Unnamed — add a name"}
                           </span>
                           <span className="ds-qrow__meta">
                             <span className="ds-qrow__num">{num || "No number yet"}</span>
                             <span className="ds-rev">Rev {it.revision || (existing ? nextRevisionLabel(existing) : "A")}</span>
-                            <span>{it.discipline || "—"}</span>
                             <span>{phaseLabel(it.phaseCode)}</span>
                             <span>{formatBytes(it.file.size)}</span>
                             {existing && (
@@ -646,8 +623,8 @@ export default function DrawingUploadPage() {
                               <span className="ds-qrow__err">{it.error}</span>
                             </>
                           ) : (
-                            <Pill tone={statusTone(it.status)} size="sm">
-                              {it.status}
+                            <Pill tone="neutral" size="sm">
+                              Ready
                             </Pill>
                           )}
                         </div>
@@ -761,14 +738,6 @@ export default function DrawingUploadPage() {
                   <TextInput id="ds-sheet" {...bindText("sheetNumber")} placeholder={valueOf("sheetNumber") === MIXED ? "Mixed" : "e.g. 3 of 12"} />
                 </Field>
               </div>
-              <Field label="Discipline">
-                <Chips
-                  value={discVal === MIXED ? null : discVal}
-                  mixed={discVal === MIXED}
-                  onChange={(v) => setField("discipline", v || "Architecture")}
-                  options={DISCIPLINES.map((d) => d.value)}
-                />
-              </Field>
             </div>
 
             <div className="ds-group">
@@ -788,16 +757,16 @@ export default function DrawingUploadPage() {
                   </Button>
                 )}
               </div>
-              {single ? (
-                <>
-                  <Field label="Title" required htmlFor="ds-title" error={triedSubmit ? issues[single.key]?.title : null}>
+                  <Field label="Name" required htmlFor="ds-title" error={triedSubmit && single ? issues[single.key]?.title : null}>
                     <TextInput
                       id="ds-title"
-                      value={single.title}
-                      placeholder="e.g. Ground floor plan"
-                      onChange={(e) => patch(single.key, { title: e.target.value })}
+                      {...bindText("title")}
+                      maxLength={255}
+                      placeholder={valueOf("title") === MIXED ? "Mixed names — type to set for selected files" : "e.g. Ground floor plan"}
                     />
                   </Field>
+              {single ? (
+                <>
                   <Field
                     label="Drawing number"
                     required
@@ -807,7 +776,7 @@ export default function DrawingUploadPage() {
                       singleExisting
                         ? `Matches “${singleExisting.title}” — this file uploads as revision ${single.revision || nextRevisionLabel(singleExisting)}.`
                         : single.autoNumber
-                          ? "Auto-numbered from project + discipline. Type to override."
+                          ? "Auto-numbered from project. Type to override."
                           : "Custom number."
                     }
                   >
@@ -830,10 +799,10 @@ export default function DrawingUploadPage() {
               ) : (
                 <p className="inos-hint" style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>
                   {editable.length > 1
-                    ? "Titles come from each file name and numbers continue the series in queue order. Click a single file to edit its title or number."
+                    ? "Names come from each file name and numbers continue the series in queue order. Click a single file to edit its name or number."
                     : projectId
                       ? <>Next number in this series: <strong className="ds-mono" style={{ color: "var(--text)" }}>{nextNumberPreview}</strong></>
-                      : "Pick a project to start auto-numbering (project code · discipline · sequence)."}
+                      : "Pick a project to start auto-numbering (project code · sequence)."}
                 </p>
               )}
               <div className="ds-grid2">
@@ -847,39 +816,8 @@ export default function DrawingUploadPage() {
             </div>
 
             <div className="ds-group">
-              <h3 className="ds-group__title">Issue</h3>
-              <Field label="Status">
-                <Chips
-                  value={statusVal === MIXED ? null : statusVal}
-                  mixed={statusVal === MIXED}
-                  onChange={(v) => setField("status", v || "Draft")}
-                  options={STATUSES.filter((s) => s !== "Rejected")}
-                />
-              </Field>
-              <Field label="Issue purpose" htmlFor="ds-purpose">
-                <TextInput id="ds-purpose" list="ds-purposes" {...bindText("issuePurpose")} />
-                <datalist id="ds-purposes">
-                  {PURPOSES.map((p) => (
-                    <option key={p} value={p} />
-                  ))}
-                </datalist>
-              </Field>
-            </div>
-
-            <div className="ds-group">
-              <h3 className="ds-group__title">Sheet & people</h3>
+              <h3 className="ds-group__title">People</h3>
               <div className="ds-grid2">
-                <Field label="Scale" htmlFor="ds-scale">
-                  <TextInput id="ds-scale" list="ds-scales" {...bindText("scale")} />
-                  <datalist id="ds-scales">
-                    {SCALES.map((s) => (
-                      <option key={s} value={s} />
-                    ))}
-                  </datalist>
-                </Field>
-                <Field label="Sheet size">
-                  <Chips value={sizeVal === MIXED ? null : sizeVal} mixed={sizeVal === MIXED} onChange={(v) => setField("sheetSize", v)} options={SHEET_SIZES} allowEmpty />
-                </Field>
                 <Field label="Drawn by" htmlFor="ds-drawn">
                   <SelectInput id="ds-drawn" {...bindText("drawnBy")} placeholder="—">
                     {userList.map((u) => (

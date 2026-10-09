@@ -16,6 +16,8 @@ export class NotificationForQuotationService {
     const project = quotation.projectSnapshot as { name?: string };
 
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'quotation',
+      entity_id: quotation.id,
       excludedUserId: actorId,
       type: NotificationType.QUOTATION_CREATED,
       title: 'New Quotation Created',
@@ -30,6 +32,8 @@ export class NotificationForQuotationService {
     actorId?: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'quotation',
+      entity_id: quotation.id,
       excludedUserId: actorId,
       type: NotificationType.QUOTATION_UPDATED,
       title: 'Quotation Updated',
@@ -42,6 +46,8 @@ export class NotificationForQuotationService {
     actorId?: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'quotation',
+      entity_id: quotation.id,
       excludedUserId: actorId,
       type: NotificationType.QUOTATION_SUBMITTED,
       title: 'Quotation Submitted',
@@ -54,6 +60,8 @@ export class NotificationForQuotationService {
     actorId?: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'quotation',
+      entity_id: quotation.id,
       excludedUserId: actorId,
       type: NotificationType.QUOTATION_APPROVED,
       title: 'Quotation Approved',
@@ -67,6 +75,8 @@ export class NotificationForQuotationService {
     actorId?: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'quotation',
+      entity_id: quotation.id,
       excludedUserId: actorId,
       type: NotificationType.QUOTATION_RETURNED_FOR_EDITING,
       title: 'Quotation Returned for Editing',
@@ -82,6 +92,8 @@ export class NotificationForQuotationService {
     actorId?: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'quotation',
+      entity_id: quotation.id,
       excludedUserId: actorId,
       type: NotificationType.QUOTATION_DECLINED,
       title: 'Quotation Declined',
@@ -96,6 +108,8 @@ export class NotificationForQuotationService {
     actorId?: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'quotation',
+      entity_id: quotation.id,
       excludedUserId: actorId,
       type: NotificationType.QUOTATION_CANCELLED,
       title: 'Quotation Cancelled',
@@ -120,6 +134,8 @@ export class NotificationForQuotationService {
     actorId?: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'quotation',
+      entity_id: quotation.id,
       excludedUserId: actorId,
       type: NotificationType.QUOTATION_RESTORED,
       title: 'Quotation Restored',

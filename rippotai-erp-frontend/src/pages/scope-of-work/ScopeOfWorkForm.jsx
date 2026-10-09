@@ -21,7 +21,7 @@ import {
   Callout,
 } from "@/components/forms/crm-form-ui";
 import { useAutoSave } from "../../hooks/use-autosave";
-import { useSharedProjectData } from '../../hooks/use-shared-project-data';
+import { useSharedProjectData } from "../../hooks/use-shared-project-data";
 import { useGetProjectsQuery } from "../../api/projects/project.api";
 
 import {
@@ -36,23 +36,24 @@ import {
   useAddCategoryToProjectMutation,
   useGetProjectCategoriesQuery,
   useGetScopeCategoriesQuery,
+  useCreateScopeCategoryMutation,
 } from "../../api/documents/scope-of-work.api";
 
 const SAVE_KEY = "bc.scope-of-work";
 
+// Sentinel value for the "+ Add new category…" option in the dropdown
+const NEW_CATEGORY_VALUE = "__new_category__";
+
 const SCOPE_OF_WORK_SECTIONS = [
   { title: "Overview", type: "overview" },
-  { title: "Spaces", type: "spaces" },
   { title: "Scope Items", type: "items" },
+  { title: "Spaces", type: "spaces" },
 ];
 
 const PROJECT_MODE_OPTIONS = [
-  { value: "TURNKEY", label: "Turnkey" },
-  { value: "DESIGN_BUILD", label: "Design & build" },
-  { value: "DESIGN_ONLY", label: "Design only" },
-  { value: "EXECUTION_ONLY", label: "Execution only" },
-  { value: "CONSULTANCY", label: "Consultancy" },
-  { value: "OTHER", label: "Other" },
+  { value: "DESIGN_BUILD", label: "Design & Build" },
+  { value: "DESIGN_ONLY", label: "Design" },
+  { value: "BUILD_ONLY", label: "Build" },
 ];
 
 const STATUS_OPTIONS = [
@@ -104,7 +105,8 @@ export function ScopeOfWorkForm() {
   // PROJECT
   // ============================================================
 
-  const initialProjectId = searchParams.get("project_id") || searchParams.get("projectId") || "";
+  const initialProjectId =
+    searchParams.get("project_id") || searchParams.get("projectId") || "";
 
   const [projectId, setProjectId] = React.useState(initialProjectId);
 
@@ -112,10 +114,18 @@ export function ScopeOfWorkForm() {
   const [submitAttempted, setSubmitAttempted] = React.useState(false);
 
   // ============================================================
+  // NEW CATEGORY (inline add from the Category dropdown)
+  // ============================================================
+
+  // Which scope item row currently has the "new category" input open
+  const [newCategoryRowId, setNewCategoryRowId] = React.useState(null);
+  const [newCategoryName, setNewCategoryName] = React.useState("");
+
+  // ============================================================
   // FORM STATE
   // ============================================================
 
-  const draftKey = `${SAVE_KEY}.${scopeOfWorkId || projectId || 'new'}`;
+  const draftKey = `${SAVE_KEY}.${scopeOfWorkId || projectId || "new"}`;
   const [values, setValues] = useAutoSave(draftKey, {
     Overview: {
       scope_summary: "",
@@ -132,7 +142,7 @@ export function ScopeOfWorkForm() {
 
     Items: [],
   });
-  useSharedProjectData(projectId, 'scope', values, setValues, !scopeOfWorkId);
+  useSharedProjectData(projectId, "scope", values, setValues, !scopeOfWorkId);
 
   // ============================================================
   // LOAD EXISTING SCOPE OF WORK
@@ -170,6 +180,9 @@ export function ScopeOfWorkForm() {
 
   const [addCategoryToProject, { isLoading: isAddingCategory }] =
     useAddCategoryToProjectMutation();
+
+  const [createScopeCategory, { isLoading: isCreatingCategory }] =
+    useCreateScopeCategoryMutation();
 
   // ============================================================
   // PROJECT DATA
@@ -350,7 +363,11 @@ export function ScopeOfWorkForm() {
         />
       </Field>
 
-      <Field label="Status" full hint="Keep as draft until the client has reviewed it.">
+      <Field
+        label="Status"
+        full
+        hint="Keep as draft until the client has reviewed it."
+      >
         <Choices
           name="Status"
           value={overview.status || "DRAFT"}
@@ -377,16 +394,16 @@ export function ScopeOfWorkForm() {
         />
       </Field>
 
-      <Field label="Specific exclusions" full hint="One exclusion per line reads best in the document.">
+      <Field
+        label="Specific exclusions"
+        full
+        hint="One exclusion per line reads best in the document."
+      >
         <TextArea
           rows={4}
           value={overview.specific_exclusions || ""}
           onChange={(e) =>
-            handleFieldChange(
-              "Overview",
-              "specific_exclusions",
-              e.target.value,
-            )
+            handleFieldChange("Overview", "specific_exclusions", e.target.value)
           }
           placeholder="e.g. Loose furniture, appliances, structural changes"
         />
@@ -496,8 +513,11 @@ export function ScopeOfWorkForm() {
     return (
       <>
         {projectSpaces.length > 0 && (
-          <Callout title={`${projectSpaces.length} space${projectSpaces.length > 1 ? "s" : ""} already on this project`}>
-            {projectSpaces.map((space) => space.name).join(", ")}. These are available for scope items without adding them again.
+          <Callout
+            title={`${projectSpaces.length} space${projectSpaces.length > 1 ? "s" : ""} already on this project`}
+          >
+            {projectSpaces.map((space) => space.name).join(", ")}. These are
+            available for scope items without adding them again.
           </Callout>
         )}
 
@@ -521,12 +541,18 @@ export function ScopeOfWorkForm() {
                   removeLabel="Remove space"
                 >
                   <div className="inos-form-grid">
-                    <Field label="Space name" required error={missingName ? "Name this space." : undefined}>
+                    <Field
+                      label="Space name"
+                      required
+                      error={missingName ? "Name this space." : undefined}
+                    >
                       <TextInput
                         value={space.name || ""}
                         invalid={missingName}
                         autoFocus={!space.name}
-                        onChange={(e) => updateSpace(index, "name", e.target.value)}
+                        onChange={(e) =>
+                          updateSpace(index, "name", e.target.value)
+                        }
                         placeholder="e.g. Living room"
                       />
                     </Field>
@@ -610,6 +636,74 @@ export function ScopeOfWorkForm() {
       }));
     };
 
+    // ----------------------------------------------------------
+    // CATEGORY DROPDOWN + INLINE "ADD NEW CATEGORY"
+    // ----------------------------------------------------------
+
+    const cancelNewCategory = () => {
+      setNewCategoryRowId(null);
+      setNewCategoryName("");
+    };
+
+    const handleCategorySelect = (index, item, value) => {
+      if (value === NEW_CATEGORY_VALUE) {
+        setNewCategoryRowId(item.id);
+        setNewCategoryName("");
+        return;
+      }
+
+      setNewCategoryRowId(null);
+      updateItem(index, "scope_category_id", value);
+    };
+
+    const handleCreateCategory = async (index) => {
+      const name = newCategoryName.trim();
+
+      if (!name) {
+        return toast.error("Enter a category name.");
+      }
+
+      // Reuse an existing category instead of creating a duplicate
+      const existing = scopeCategories.find(
+        (c) => c.name?.trim().toLowerCase() === name.toLowerCase(),
+      );
+
+      if (existing) {
+        updateItem(index, "scope_category_id", existing.id);
+        cancelNewCategory();
+        return toast.info(`"${existing.name}" already exists, selected it.`);
+      }
+
+      try {
+        const created = await createScopeCategory({
+          name,
+          sortOrder: scopeCategories.length + 1,
+          isActive: true,
+        }).unwrap();
+
+        // Link to this project (non-critical, so don't block on failure)
+        if (projectId) {
+          try {
+            await addCategoryToProject({
+              projectId,
+              body: {
+                scopeCategoryId: created.id,
+                sortOrder: projectCategories.length + 1,
+              },
+            }).unwrap();
+          } catch (linkError) {
+            console.warn("Could not link category to project:", linkError);
+          }
+        }
+
+        updateItem(index, "scope_category_id", created.id);
+        cancelNewCategory();
+        toast.success(`Category "${created.name || name}" added.`);
+      } catch (error) {
+        toast.error(error?.data?.message || "Failed to add category.");
+      }
+    };
+
     const spaceOptions = [
       ...projectSpaces,
       ...spaces.filter(
@@ -635,6 +729,7 @@ export function ScopeOfWorkForm() {
                 (c) => c.id === item.scope_category_id,
               )?.name;
               const showErrors = itemsTouched;
+              const isAddingNewCategory = newCategoryRowId === item.id;
 
               return (
                 <RowCard
@@ -652,8 +747,16 @@ export function ScopeOfWorkForm() {
                     <Field
                       label="Space"
                       required
-                      error={showErrors && !item.project_space_id ? "Pick a space." : undefined}
-                      hint={spaceOptions.length ? undefined : "Add a space in the section above first."}
+                      error={
+                        showErrors && !item.project_space_id
+                          ? "Pick a space."
+                          : undefined
+                      }
+                      hint={
+                        spaceOptions.length
+                          ? undefined
+                          : "Add a space in the section above first."
+                      }
                     >
                       <SelectInput
                         value={item.project_space_id || ""}
@@ -674,13 +777,27 @@ export function ScopeOfWorkForm() {
                     <Field
                       label="Category"
                       required
-                      error={showErrors && !item.scope_category_id ? "Pick a category." : undefined}
+                      error={
+                        showErrors &&
+                        !item.scope_category_id &&
+                        !isAddingNewCategory
+                          ? "Pick a category."
+                          : undefined
+                      }
                     >
                       <SelectInput
-                        value={item.scope_category_id || ""}
-                        invalid={showErrors && !item.scope_category_id}
+                        value={
+                          isAddingNewCategory
+                            ? NEW_CATEGORY_VALUE
+                            : item.scope_category_id || ""
+                        }
+                        invalid={
+                          showErrors &&
+                          !item.scope_category_id &&
+                          !isAddingNewCategory
+                        }
                         onChange={(e) =>
-                          updateItem(index, "scope_category_id", e.target.value)
+                          handleCategorySelect(index, item, e.target.value)
                         }
                         placeholder="Select category"
                       >
@@ -689,14 +806,53 @@ export function ScopeOfWorkForm() {
                             {category.name}
                           </option>
                         ))}
+                        <option value={NEW_CATEGORY_VALUE}>
+                          + Add new category…
+                        </option>
                       </SelectInput>
+
+                      {isAddingNewCategory && (
+                        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                          <TextInput
+                            autoFocus
+                            value={newCategoryName}
+                            placeholder="New category name, e.g. Civil work"
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleCreateCategory(index);
+                              }
+                              if (e.key === "Escape") {
+                                cancelNewCategory();
+                              }
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            onClick={() => handleCreateCategory(index)}
+                            disabled={isCreatingCategory || isAddingCategory}
+                          >
+                            {isCreatingCategory || isAddingCategory
+                              ? "Adding…"
+                              : "Add"}
+                          </Button>
+                          <Button type="button" onClick={cancelNewCategory}>
+                            Cancel
+                          </Button>
+                        </div>
+                      )}
                     </Field>
 
                     <Field
                       label="Scope of work"
                       required
                       full
-                      error={showErrors && !item.scope_of_work?.trim() ? "Describe the work." : undefined}
+                      error={
+                        showErrors && !item.scope_of_work?.trim()
+                          ? "Describe the work."
+                          : undefined
+                      }
                     >
                       <TextArea
                         rows={3}
@@ -706,47 +862,6 @@ export function ScopeOfWorkForm() {
                           updateItem(index, "scope_of_work", e.target.value)
                         }
                         placeholder="e.g. Supply and install 600×1200 vitrified tiles with skirting"
-                      />
-                    </Field>
-
-                    <Field label="Inclusion">
-                      <Choices
-                        name="Inclusion"
-                        columns={2}
-                        value={item.is_excluded ? "excluded" : "included"}
-                        options={[
-                          { value: "included", label: "Included" },
-                          { value: "excluded", label: "Excluded" },
-                        ]}
-                        onChange={(value) => {
-                          const excluded = value === "excluded";
-
-                          setValues((prev) => ({
-                            ...prev,
-
-                            Items: (prev.Items || []).map((currentItem, i) =>
-                              i === index
-                                ? {
-                                    ...currentItem,
-
-                                    is_excluded: excluded,
-
-                                    is_included: !excluded,
-                                  }
-                                : currentItem,
-                            ),
-                          }));
-                        }}
-                      />
-                    </Field>
-
-                    <Field label="Notes" optional>
-                      <TextInput
-                        value={item.notes || ""}
-                        onChange={(e) =>
-                          updateItem(index, "notes", e.target.value)
-                        }
-                        placeholder="e.g. Client to approve tile sample"
                       />
                     </Field>
                   </div>
@@ -1198,7 +1313,8 @@ export function ScopeOfWorkForm() {
         isCreatingItem ||
         isUpdatingItem ||
         isDeletingItem ||
-        isAddingCategory
+        isAddingCategory ||
+        isCreatingCategory
       }
       renderSection={renderSection}
     />

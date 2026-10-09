@@ -45,7 +45,9 @@ export class UpsertPhaseDto {
   @IsOptional()
   @IsString()
   inclusion_note?: string;
-
+  @IsOptional()
+  @IsString()
+  details?: string;
   @IsOptional()
   @IsInt()
   @Min(0)

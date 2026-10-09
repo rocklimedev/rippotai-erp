@@ -13,6 +13,8 @@ export class NotificationForLeadService {
 
   async notifyLeadCreated(lead: Lead, actorId?: string): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'lead',
+      entity_id: lead.id,
       excludedUserId: actorId,
       type: NotificationType.LEAD_CREATED,
       title: 'New Lead Captured',
@@ -22,6 +24,8 @@ export class NotificationForLeadService {
 
   async notifyLeadUpdated(lead: Lead, actorId?: string): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'lead',
+      entity_id: lead.id,
       excludedUserId: actorId,
       type: NotificationType.LEAD_UPDATED,
       title: 'Lead Updated',
@@ -36,6 +40,8 @@ export class NotificationForLeadService {
     actorId?: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'lead',
+      entity_id: lead.id,
       excludedUserId: actorId,
       type: NotificationType.LEAD_STAGE_CHANGED,
       title: 'Lead Stage Changed',
@@ -62,6 +68,8 @@ export class NotificationForLeadService {
     actorId?: string,
   ): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'lead',
+      entity_id: lead.id,
       excludedUserId: actorId,
       type: NotificationType.LEAD_PROPOSAL_SENT,
       title: 'Proposal Sent',

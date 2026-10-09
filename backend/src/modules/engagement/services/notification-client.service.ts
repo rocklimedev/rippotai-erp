@@ -11,6 +11,8 @@ export class NotificationForClientService {
 
   async notifyClientCreated(client: Client, actorId: string): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'client',
+      entity_id: client.id,
       excludedUserId: actorId,
       type: NotificationType.CLIENT_CREATED,
       title: 'New Client Added',
@@ -20,6 +22,8 @@ export class NotificationForClientService {
 
   async notifyClientUpdated(client: Client, actorId: string): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'client',
+      entity_id: client.id,
       excludedUserId: actorId,
       type: NotificationType.CLIENT_UPDATED,
       title: 'Client Updated',
@@ -41,6 +45,8 @@ export class NotificationForClientService {
 
   async notifyClientRestored(client: Client, actorId: string): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'client',
+      entity_id: client.id,
       excludedUserId: actorId,
       type: NotificationType.CLIENT_RESTORED,
       title: 'Client Restored',

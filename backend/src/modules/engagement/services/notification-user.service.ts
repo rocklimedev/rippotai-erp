@@ -11,6 +11,8 @@ export class NotificationForUserService {
 
   async notifyUserCreated(user: User, actorId?: string): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'user',
+      entity_id: user.id,
       excludedUserId: actorId,
       type: NotificationType.USER_CREATED,
       title: 'New User Added',
@@ -20,6 +22,8 @@ export class NotificationForUserService {
 
   async notifyUserUpdated(user: User, actorId?: string): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'user',
+      entity_id: user.id,
       excludedUserId: actorId,
       type: NotificationType.USER_UPDATED,
       title: 'User Updated',
@@ -38,6 +42,8 @@ export class NotificationForUserService {
 
   async notifyAvatarUpdated(user: User, actorId: string): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'user',
+      entity_id: user.id,
       excludedUserId: actorId,
       type: NotificationType.USER_AVATAR_UPDATED,
       title: 'Avatar Updated',
@@ -47,6 +53,8 @@ export class NotificationForUserService {
 
   async notifyUserDeactivated(user: User, actorId?: string): Promise<void> {
     await this.notificationBroadcastService.broadcast({
+      entity_type: 'user',
+      entity_id: user.id,
       excludedUserId: actorId,
       type: NotificationType.USER_DEACTIVATED,
       title: 'User Deactivated',

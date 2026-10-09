@@ -6,6 +6,8 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
+import { AuthService } from '@/modules/auth/auth.service';
 import { NotificationPayload } from '../interfaces/notification-payload.interfaces';
 
 @WebSocketGateway({
@@ -21,18 +23,22 @@ export class NotificationsGateway
   server: Server;
 
   private readonly logger = new Logger(NotificationsGateway.name);
+  constructor(private readonly moduleRef: ModuleRef) {}
 
-  handleConnection(client: Socket) {
-    const userId = client.handshake.auth?.userId;
-
-    if (!userId) {
-      this.logger.warn(`Rejected connection with no userId (${client.id})`);
+  async handleConnection(client: Socket) {
+    try {
+      const token = client.handshake.auth?.token;
+      if (typeof token !== 'string' || !token) throw new Error('Missing token');
+      const auth = this.moduleRef.get(AuthService, { strict: false });
+      const user = await auth.getCurrentUser(token);
+      if (!user?.id) throw new Error('Invalid user');
+      await client.join(this.roomName(user.id));
+    } catch {
+      this.logger.warn(
+        `Rejected unauthenticated notification connection (${client.id})`,
+      );
       client.disconnect(true);
-      return;
     }
-
-    client.join(this.roomName(userId));
-    this.logger.debug(`User ${userId} connected via ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
@@ -41,12 +47,12 @@ export class NotificationsGateway
   }
 
   emitToUser(userId: string, notification: NotificationPayload) {
-    this.server.to(this.roomName(userId)).emit('notification', notification);
+    this.server?.to(this.roomName(userId)).emit('notification', notification);
   }
 
   emitToUsers(userIds: string[], notification: NotificationPayload) {
     this.server
-      .to(userIds.map((id) => this.roomName(id)))
+      ?.to(userIds.map((id) => this.roomName(id)))
       .emit('notification', notification);
   }
 

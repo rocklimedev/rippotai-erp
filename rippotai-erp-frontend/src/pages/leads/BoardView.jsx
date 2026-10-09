@@ -2,9 +2,30 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import * as Popover from "@radix-ui/react-popover";
 import { toast } from "sonner";
-import { Plus, LayoutGrid, List, SlidersHorizontal, X, RefreshCw, Workflow, Eye, EyeOff } from "lucide-react";
+import {
+  Plus,
+  LayoutGrid,
+  List,
+  SlidersHorizontal,
+  X,
+  RefreshCw,
+  Workflow,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 
-import { Page, PageHeader, Button, Segmented, SearchInput, SelectInput, TextInput, Field, EmptyState, Card } from "@/components/inos";
+import {
+  Page,
+  PageHeader,
+  Button,
+  Segmented,
+  SearchInput,
+  SelectInput,
+  TextInput,
+  Field,
+  EmptyState,
+  Card,
+} from "@/components/inos";
 import {
   useGetBoardQuery,
   useGetLeadsQuery,
@@ -32,7 +53,17 @@ const SORTS = [
   { value: "name-asc", label: "Name A–Z" },
 ];
 
-const FILTER_KEYS = ["owner", "source", "stage", "minValue", "maxValue", "from", "to", "closeFrom", "closeTo"];
+const FILTER_KEYS = [
+  "owner",
+  "source",
+  "stage",
+  "minValue",
+  "maxValue",
+  "from",
+  "to",
+  "closeFrom",
+  "closeTo",
+];
 
 const FILTER_LABEL = {
   owner: "Owner",
@@ -63,21 +94,36 @@ function FiltersPopover({ values, onApply, meta }) {
         if (o)
           setDraft({
             ...values,
-            minValue: values.minValue ? String(Number(values.minValue) / 1e5) + " L" : "",
-            maxValue: values.maxValue ? String(Number(values.maxValue) / 1e5) + " L" : "",
+            minValue: values.minValue
+              ? String(Number(values.minValue) / 1e5) + " L"
+              : "",
+            maxValue: values.maxValue
+              ? String(Number(values.maxValue) / 1e5) + " L"
+              : "",
           });
       }}
     >
       <Popover.Trigger asChild>
         <Button icon={SlidersHorizontal} data-testid="filters-btn">
-          Filters {active > 0 && <span className="crm-filter-count">{active}</span>}
+          Filters{" "}
+          {active > 0 && <span className="crm-filter-count">{active}</span>}
         </Button>
       </Popover.Trigger>
       <Popover.Portal>
-        <Popover.Content className="crm-popover" align="start" sideOffset={6} data-testid="filters-popover">
+        <Popover.Content
+          className="crm-popover"
+          align="start"
+          sideOffset={6}
+          data-testid="filters-popover"
+        >
           <div className="crm-popover__grid">
             <Field label="Owner">
-              <SelectInput value={draft.owner || ""} onChange={(e) => set("owner", e.target.value)} placeholder="Anyone" aria-label="Owner">
+              <SelectInput
+                value={draft.owner || ""}
+                onChange={(e) => set("owner", e.target.value)}
+                placeholder="Anyone"
+                aria-label="Owner"
+              >
                 {(meta?.owners || []).map((o) => (
                   <option key={o.id || o.name} value={o.name}>
                     {o.name}
@@ -86,7 +132,12 @@ function FiltersPopover({ values, onApply, meta }) {
               </SelectInput>
             </Field>
             <Field label="Source">
-              <SelectInput value={draft.source || ""} onChange={(e) => set("source", e.target.value)} placeholder="Any source" aria-label="Source">
+              <SelectInput
+                value={draft.source || ""}
+                onChange={(e) => set("source", e.target.value)}
+                placeholder="Any source"
+                aria-label="Source"
+              >
                 {(meta?.sources || []).map((s) => (
                   <option key={s} value={s}>
                     {s}
@@ -95,8 +146,15 @@ function FiltersPopover({ values, onApply, meta }) {
               </SelectInput>
             </Field>
             <Field label="Stage">
-              <SelectInput value={draft.stage || ""} onChange={(e) => set("stage", e.target.value)} placeholder="All stages" aria-label="Stage">
-                <option value="capture,qual,disc,prop,nego">All open stages</option>
+              <SelectInput
+                value={draft.stage || ""}
+                onChange={(e) => set("stage", e.target.value)}
+                placeholder="All stages"
+                aria-label="Stage"
+              >
+                <option value="capture,qual,disc,prop,nego">
+                  All open stages
+                </option>
                 {STAGES.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.label}
@@ -106,22 +164,48 @@ function FiltersPopover({ values, onApply, meta }) {
             </Field>
             <div />
             <Field label="Value from">
-              <TextInput value={draft.minValue || ""} onChange={(e) => set("minValue", e.target.value)} placeholder="e.g. 50 L" aria-label="Minimum value" />
+              <TextInput
+                value={draft.minValue || ""}
+                onChange={(e) => set("minValue", e.target.value)}
+                placeholder="e.g. 50 L"
+                aria-label="Minimum value"
+              />
             </Field>
             <Field label="Value to">
-              <TextInput value={draft.maxValue || ""} onChange={(e) => set("maxValue", e.target.value)} placeholder="e.g. 2 Cr" aria-label="Maximum value" />
+              <TextInput
+                value={draft.maxValue || ""}
+                onChange={(e) => set("maxValue", e.target.value)}
+                placeholder="e.g. 2 Cr"
+                aria-label="Maximum value"
+              />
             </Field>
             <Field label="Created from">
-              <TextInput type="date" value={draft.from || ""} onChange={(e) => set("from", e.target.value)} />
+              <TextInput
+                type="date"
+                value={draft.from || ""}
+                onChange={(e) => set("from", e.target.value)}
+              />
             </Field>
             <Field label="Created to">
-              <TextInput type="date" value={draft.to || ""} onChange={(e) => set("to", e.target.value)} />
+              <TextInput
+                type="date"
+                value={draft.to || ""}
+                onChange={(e) => set("to", e.target.value)}
+              />
             </Field>
             <Field label="Closing from">
-              <TextInput type="date" value={draft.closeFrom || ""} onChange={(e) => set("closeFrom", e.target.value)} />
+              <TextInput
+                type="date"
+                value={draft.closeFrom || ""}
+                onChange={(e) => set("closeFrom", e.target.value)}
+              />
             </Field>
             <Field label="Closing to">
-              <TextInput type="date" value={draft.closeTo || ""} onChange={(e) => set("closeTo", e.target.value)} />
+              <TextInput
+                type="date"
+                value={draft.closeTo || ""}
+                onChange={(e) => set("closeTo", e.target.value)}
+              />
             </Field>
           </div>
           <div className="crm-popover__foot">
@@ -167,11 +251,16 @@ export default function BoardView() {
   const showClosed = params.get("closed") !== "0";
   const openDealId = params.get("deal");
 
-  const filters = useMemo(() => Object.fromEntries(FILTER_KEYS.map((k) => [k, params.get(k) || ""])), [params]);
+  const filters = useMemo(
+    () => Object.fromEntries(FILTER_KEYS.map((k) => [k, params.get(k) || ""])),
+    [params],
+  );
 
   const update = (patch) => {
     const next = new URLSearchParams(params);
-    Object.entries(patch).forEach(([k, v]) => (v === "" || v == null ? next.delete(k) : next.set(k, String(v))));
+    Object.entries(patch).forEach(([k, v]) =>
+      v === "" || v == null ? next.delete(k) : next.set(k, String(v)),
+    );
     setParams(next, { replace: true });
   };
 
@@ -189,10 +278,17 @@ export default function BoardView() {
 
   // Board: when a stage filter is set, only show those columns
   const stageFilter = filters.stage ? filters.stage.split(",") : null;
-  const columns = (board.data?.columns || []).filter((c) => !stageFilter || stageFilter.includes(c.id));
-  const allDeals = view === "board" ? columns.flatMap((c) => c.leads) : list.data || [];
-  const openDeals = allDeals.filter((d) => ["capture", "qual", "disc", "prop", "nego"].includes(d.stage));
-  const wonDeals = allDeals.filter((d) => ["contract", "handoff"].includes(d.stage));
+  const columns = (board.data?.columns || []).filter(
+    (c) => !stageFilter || stageFilter.includes(c.id),
+  );
+  const allDeals =
+    view === "board" ? columns.flatMap((c) => c.leads) : list.data || [];
+  const openDeals = allDeals.filter((d) =>
+    ["capture", "qual", "disc", "prop", "nego"].includes(d.stage),
+  );
+  const wonDeals = allDeals.filter((d) =>
+    ["contract", "handoff"].includes(d.stage),
+  );
   const sum = (xs) => xs.reduce((a, d) => a + (d.amount || 0), 0);
 
   const doMove = async (deal, stage, opts = {}) => {
@@ -202,11 +298,21 @@ export default function BoardView() {
     }
     const from = deal.stage;
     try {
-      await moveStage({ id: deal.id, stage, lostReason: opts.lostReason || undefined }).unwrap();
+      await moveStage({
+        id: deal.id,
+        stage,
+        lostReason: opts.lostReason || undefined,
+      }).unwrap();
       if (!opts.silent) {
-        const label = stage === "contract" && !["contract", "handoff"].includes(from) ? "Marked won" : `Moved to ${stageOf(stage).label}`;
+        const label =
+          stage === "contract" && !["contract", "handoff"].includes(from)
+            ? "Marked won"
+            : `Moved to ${stageOf(stage).label}`;
         toast.success(`${label} — ${deal.title}`, {
-          action: { label: "Undo", onClick: () => moveStage({ id: deal.id, stage: from }) },
+          action: {
+            label: "Undo",
+            onClick: () => moveStage({ id: deal.id, stage: from }),
+          },
         });
       }
     } catch (err) {
@@ -253,14 +359,25 @@ export default function BoardView() {
                 onClick={() =>
                   syncZoho()
                     .unwrap()
-                    .then((r) => toast.success(`Bigin sync: ${r.created} new, ${r.updated} updated`))
-                    .catch((e) => toast.error(errorText(e, "Bigin sync failed.")))
+                    .then((r) =>
+                      toast.success(
+                        `Bigin sync: ${r.created} new, ${r.updated} updated`,
+                      ),
+                    )
+                    .catch((e) =>
+                      toast.error(errorText(e, "Bigin sync failed.")),
+                    )
                 }
               >
                 Sync Bigin
               </Button>
             )}
-            <Button variant="primary" icon={Plus} onClick={() => quickAdd("capture")} data-testid="new-deal-btn">
+            <Button
+              variant="primary"
+              icon={Plus}
+              onClick={() => quickAdd("capture")}
+              data-testid="new-deal-btn"
+            >
               Deal
             </Button>
           </>
@@ -279,9 +396,24 @@ export default function BoardView() {
             { value: "list", label: "List", icon: List },
           ]}
         />
-        <SearchInput value={q} onChange={(v) => update({ q: v })} placeholder="Search deals, clients, phone…" />
-        <FiltersPopover values={filters} onApply={(f) => update(f)} meta={meta} />
-        <SelectInput className="crm-select-sm" value={sort} onChange={(e) => update({ sort: e.target.value === "newest" ? "" : e.target.value })} aria-label="Sort">
+        <SearchInput
+          value={q}
+          onChange={(v) => update({ q: v })}
+          placeholder="Search deals, clients, phone…"
+        />
+        <FiltersPopover
+          values={filters}
+          onApply={(f) => update(f)}
+          meta={meta}
+        />
+        <SelectInput
+          className="crm-select-sm"
+          value={sort}
+          onChange={(e) =>
+            update({ sort: e.target.value === "newest" ? "" : e.target.value })
+          }
+          aria-label="Sort"
+        >
           {SORTS.map((s) => (
             <option key={s.value} value={s.value}>
               {s.label}
@@ -289,7 +421,11 @@ export default function BoardView() {
           ))}
         </SelectInput>
         {view === "board" && (
-          <Button variant="ghost" icon={showClosed ? EyeOff : Eye} onClick={() => update({ closed: showClosed ? "0" : "" })}>
+          <Button
+            variant="ghost"
+            icon={showClosed ? EyeOff : Eye}
+            onClick={() => update({ closed: showClosed ? "0" : "" })}
+          >
             {showClosed ? "Hide nurture & lost" : "Show nurture & lost"}
           </Button>
         )}
@@ -310,7 +446,11 @@ export default function BoardView() {
           {chips.map((c) => (
             <span className="crm-chip" key={c.k}>
               {c.text}
-              <button type="button" aria-label={`Remove ${c.text}`} onClick={() => update({ [c.k]: "" })}>
+              <button
+                type="button"
+                aria-label={`Remove ${c.text}`}
+                onClick={() => update({ [c.k]: "" })}
+              >
                 <X size={12} />
               </button>
             </span>
@@ -322,21 +462,63 @@ export default function BoardView() {
         <p className="inos-hint">Loading pipeline…</p>
       ) : error ? (
         <Card>
-          <EmptyState title="Couldn't load the pipeline" text="Check your connection and try again." action={<Button onClick={() => (view === "board" ? board.refetch() : list.refetch())}>Retry</Button>} />
+          <EmptyState
+            title="Couldn't load the pipeline"
+            text="Check your connection and try again."
+            action={
+              <Button
+                onClick={() =>
+                  view === "board" ? board.refetch() : list.refetch()
+                }
+              >
+                Retry
+              </Button>
+            }
+          />
         </Card>
       ) : view === "board" ? (
         allDeals.length === 0 && !q && !chips.length ? (
           <Card>
-            <EmptyState title="No deals yet" text="Add your first enquiry — it lands in Lead Capture." action={<Button variant="primary" icon={Plus} onClick={() => quickAdd("capture")}>New deal</Button>} />
+            <EmptyState
+              title="No deals yet"
+              text="Add your first enquiry — it lands in Lead Capture."
+              action={
+                <Button
+                  variant="primary"
+                  icon={Plus}
+                  onClick={() => quickAdd("capture")}
+                >
+                  New deal
+                </Button>
+              }
+            />
           </Card>
         ) : (
-          <KanbanBoard columns={columns} showClosed={showClosed || !!stageFilter} onMove={doMove} onOpen={openDeal} onQuickAdd={quickAdd} />
+          <KanbanBoard
+            columns={columns}
+            showClosed={showClosed || !!stageFilter}
+            onMove={doMove}
+            onOpen={openDeal}
+            onQuickAdd={quickAdd}
+          />
         )
       ) : (
-        <DealsList deals={list.data || []} meta={meta} onOpen={openDeal} onMove={doMove} onCreate={() => quickAdd("capture")} />
+        <DealsList
+          deals={list.data || []}
+          meta={meta}
+          onOpen={openDeal}
+          onMove={doMove}
+          onCreate={() => quickAdd("capture")}
+        />
       )}
 
-      <QuickCreateDeal open={createOpen} onOpenChange={setCreateOpen} defaultStage={createStage} meta={meta} onCreated={(d) => update({ deal: d.id })} />
+      <QuickCreateDeal
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        defaultStage={createStage}
+        meta={meta}
+        onCreated={(d) => update({ deal: d.id })}
+      />
 
       <DealDrawer
         dealId={openDealId}
@@ -347,7 +529,13 @@ export default function BoardView() {
         onAskLost={(d) => setLostDeal(d)}
       />
 
-      <LostReasonModal deal={lostDeal} open={!!lostDeal} onCancel={() => setLostDeal(null)} onConfirm={confirmLost} busy={lostBusy} />
+      <LostReasonModal
+        deal={lostDeal}
+        open={!!lostDeal}
+        onCancel={() => setLostDeal(null)}
+        onConfirm={confirmLost}
+        busy={lostBusy}
+      />
     </Page>
   );
 }
