@@ -14,10 +14,10 @@ The NestJS Auth module manages login/signup, JWT-backed sessions, logout, passwo
 | POST | `/forgot-password` | Public, throttled |
 | POST | `/reset-password` | Public, throttled; reset token required |
 | PATCH | `/change-password` | JWT; current password required |
-| GET | `/tokens/user/:userId` | JWT; own sessions or administrator |
-| PATCH | `/tokens/:id/revoke` | JWT; own session or administrator |
-| PATCH | `/tokens/user/:userId/revoke-all` | JWT; own sessions or administrator |
-| DELETE | `/tokens/:id` | JWT; administrator only |
+| GET | `/tokens/user/:userId` | JWT; own sessions, or administrator with `sessions:read-any` |
+| PATCH | `/tokens/:id/revoke` | JWT; own session, or administrator with `sessions:revoke-any` |
+| PATCH | `/tokens/user/:userId/revoke-all` | JWT; own sessions, or administrator with `sessions:revoke-any` |
+| DELETE | `/tokens/:id` | JWT; active staff administrator with `auth-tokens:delete` |
 
 Session creation is internal to login/signup; `POST /tokens` has been removed. The generic `/verification-tokens` create/validate/consume/delete endpoints are removed. See [auth token administration](./auth-token-administration.md) for ownership rules, safe response fields and the verification-token review.
 

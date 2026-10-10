@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Post,
@@ -14,6 +15,7 @@ import { CdnService } from './cdn.service';
 export class CdnController {
   constructor(private readonly cdnService: CdnService) {}
 
+  @RequirePermission('cdn:upload')
   @Post('upload')
   @UseGuards(CdnGuard)
   @UseInterceptors(

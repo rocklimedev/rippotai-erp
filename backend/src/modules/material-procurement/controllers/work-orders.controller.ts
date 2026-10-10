@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -23,6 +24,7 @@ export class WorkOrdersController {
   // POST /api/v1/work-orders
   // ============================================================
 
+  @RequirePermission('work-orders:create')
   @Post()
   create(@Body() dto: CreateWorkOrderDto) {
     return this.workOrdersService.create(dto);
@@ -38,6 +40,7 @@ export class WorkOrdersController {
   // ?status=DRAFT
   // ============================================================
 
+  @RequirePermission('work-orders:read')
   @Get()
   findAll(
     @Query('project_id') project_id?: string,
@@ -56,6 +59,7 @@ export class WorkOrdersController {
   // GET /api/v1/work-orders/:id
   // ============================================================
 
+  @RequirePermission('work-orders:read')
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.workOrdersService.findOne(id);
@@ -66,6 +70,7 @@ export class WorkOrdersController {
   // PATCH /api/v1/work-orders/:id
   // ============================================================
 
+  @RequirePermission('work-orders:update')
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateWorkOrderDto) {
     return this.workOrdersService.update(id, dto);
@@ -81,6 +86,7 @@ export class WorkOrdersController {
   // }
   // ============================================================
 
+  @RequirePermission('work-orders:update')
   @Patch(':id/status')
   updateStatus(
     @Param('id') id: string,
@@ -94,6 +100,7 @@ export class WorkOrdersController {
   // PATCH /api/v1/work-orders/:id/approve
   // ============================================================
 
+  @RequirePermission('work-orders:approve')
   @Patch(':id/approve')
   approve(@Param('id') id: string) {
     return this.workOrdersService.updateStatus(id, WorkOrderStatus.APPROVED);
@@ -115,6 +122,7 @@ export class WorkOrdersController {
   // to WorkOrderStatus and use it here.
   // ============================================================
 
+  @RequirePermission('work-orders:reject')
   @Patch(':id/reject')
   reject(@Param('id') id: string, @Body('reason') reason?: string) {
     return this.workOrdersService.reject(id, reason);
@@ -125,6 +133,7 @@ export class WorkOrdersController {
   // DELETE /api/v1/work-orders/:id
   // ============================================================
 
+  @RequirePermission('work-orders:delete')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.workOrdersService.remove(id);

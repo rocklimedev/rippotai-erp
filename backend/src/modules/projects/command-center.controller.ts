@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -47,6 +48,7 @@ interface AuthedRequest {
 export class CommandCenterController {
   constructor(private readonly commandCenterService: CommandCenterService) {}
 
+  @RequirePermission('command-center:refresh')
   @Post('refresh')
   refresh() {
     return this.commandCenterService.refresh();
@@ -65,21 +67,25 @@ export class CommandCenterController {
     };
   }
 
+  @RequirePermission('command-center:read')
   @Get('kpis')
   getKpis() {
     return this.commandCenterService.getKpis();
   }
 
+  @RequirePermission('command-center:read')
   @Get('portfolio')
   getPortfolio(@Query() query: PortfolioQueryDto) {
     return this.commandCenterService.getPortfolio(query);
   }
 
+  @RequirePermission('command-center:read')
   @Get('projects/:projectId/phases')
   getProjectPhases(@Param('projectId') projectId: string) {
     return this.commandCenterService.getProjectPhases(projectId);
   }
 
+  @RequirePermission('command-center:read')
   @Get('projects/:projectId/phases/:phaseId')
   getPhaseDetail(
     @Param('projectId') projectId: string,
@@ -88,16 +94,19 @@ export class CommandCenterController {
     return this.commandCenterService.getPhaseDetail(projectId, phaseId);
   }
 
+  @RequirePermission('command-center:read')
   @Get('actions')
   getActionRequired() {
     return this.commandCenterService.getActionRequired();
   }
 
+  @RequirePermission('command-center:read')
   @Get('documents')
   getDocumentControl() {
     return this.commandCenterService.getDocumentControl();
   }
 
+  @RequirePermission('command-center:upload')
   @Post('projects/:projectId/documents/upload')
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('file'))
@@ -115,6 +124,7 @@ export class CommandCenterController {
     );
   }
 
+  @RequirePermission('command-center:review')
   @Post('documents/:documentId/review')
   reviewDocument(
     @Param('documentId') documentId: string,
@@ -128,11 +138,13 @@ export class CommandCenterController {
     );
   }
 
+  @RequirePermission('command-center:read')
   @Get('tasks')
   getTaskQc() {
     return this.commandCenterService.getTaskQc();
   }
 
+  @RequirePermission('command-center:complete')
   @Post('projects/:projectId/tasks/:taskDefinitionId/complete')
   completeTask(
     @Param('projectId') projectId: string,
@@ -148,6 +160,7 @@ export class CommandCenterController {
     );
   }
 
+  @RequirePermission('command-center:approve')
   @Post('projects/:projectId/phases/:phaseId/approve-gate')
   approveGate(
     @Param('projectId') projectId: string,
@@ -163,16 +176,19 @@ export class CommandCenterController {
     );
   }
 
+  @RequirePermission('command-center:read')
   @Get('commercial')
   getCommercial() {
     return this.commandCenterService.getCommercial();
   }
 
+  @RequirePermission('command-center:read')
   @Get('team-workload')
   getTeamWorkload() {
     return this.commandCenterService.getTeamWorkload();
   }
 
+  @RequirePermission('command-center:read')
   @Get('activity')
   getActivity(@Query() query: ActivityQueryDto) {
     return this.commandCenterService.getActivity(

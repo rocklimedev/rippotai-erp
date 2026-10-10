@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 // microsoft/services/microsoft-onedrive.controller.ts
 
 import {
@@ -35,11 +36,13 @@ export class MicrosoftOneDriveController {
   // CENTRAL DRIVE
   // ============================================================
 
+  @RequirePermission('onedrive:read')
   @Get('status')
   async getStatus(@Req() req: RequestWithUser) {
     return this.oneDriveService.getStatus(req.user.id);
   }
 
+  @RequirePermission('onedrive:read')
   @Get()
   async getDrive(@Req() req: RequestWithUser) {
     return this.oneDriveService.getDrive(req.user.id);
@@ -49,6 +52,7 @@ export class MicrosoftOneDriveController {
   // ROOT
   // ============================================================
 
+  @RequirePermission('onedrive:read')
   @Get('root')
   async getRoot(@Req() req: RequestWithUser) {
     return this.oneDriveService.getRoot(req.user.id);
@@ -58,6 +62,7 @@ export class MicrosoftOneDriveController {
   // LIST FILES
   // ============================================================
 
+  @RequirePermission('onedrive:read')
   @Get('files')
   async listFiles(
     @Req() req: RequestWithUser,
@@ -72,6 +77,7 @@ export class MicrosoftOneDriveController {
   // SEARCH
   // ============================================================
 
+  @RequirePermission('onedrive:read')
   @Get('search')
   async search(
     @Req() req: RequestWithUser,
@@ -90,6 +96,7 @@ export class MicrosoftOneDriveController {
   // FILE METADATA
   // ============================================================
 
+  @RequirePermission('onedrive:read')
   @Get('files/:itemId')
   async getFileMetadata(
     @Req() req: RequestWithUser,
@@ -108,6 +115,7 @@ export class MicrosoftOneDriveController {
   // DOWNLOAD
   // ============================================================
 
+  @RequirePermission('onedrive:read')
   @Get('files/:itemId/download')
   async downloadFile(
     @Req() req: RequestWithUser,
@@ -152,6 +160,7 @@ export class MicrosoftOneDriveController {
   // UPLOAD SMALL
   // ============================================================
 
+  @RequirePermission('onedrive:upload')
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
@@ -193,6 +202,7 @@ export class MicrosoftOneDriveController {
   // UPLOAD LARGE
   // ============================================================
 
+  @RequirePermission('onedrive:upload')
   @Post('upload-large')
   @UseInterceptors(FileInterceptor('file'))
   async uploadLargeFile(
@@ -234,6 +244,7 @@ export class MicrosoftOneDriveController {
   // CREATE FOLDER
   // ============================================================
 
+  @RequirePermission('onedrive:create')
   @Post('folders')
   async createFolder(
     @Req() req: RequestWithUser,
@@ -261,6 +272,7 @@ export class MicrosoftOneDriveController {
   // RENAME
   // ============================================================
 
+  @RequirePermission('onedrive:update')
   @Patch('files/:itemId')
   async renameFile(
     @Req() req: RequestWithUser,
@@ -286,6 +298,7 @@ export class MicrosoftOneDriveController {
   // MOVE
   // ============================================================
 
+  @RequirePermission('onedrive:update')
   @Patch('files/:itemId/move')
   async moveFile(
     @Req() req: RequestWithUser,
@@ -311,6 +324,7 @@ export class MicrosoftOneDriveController {
   // DELETE
   // ============================================================
 
+  @RequirePermission('onedrive:delete')
   @Delete('files/:itemId')
   async deleteFile(
     @Req() req: RequestWithUser,

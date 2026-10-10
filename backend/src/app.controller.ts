@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import { Public } from '@/common/decorator/public.decorator';
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
@@ -9,6 +10,7 @@ export class AppController {
   /**
    * API root
    */
+  @RequirePermission('system:read')
   @Get()
   getHello() {
     return this.appService.getHello();
@@ -17,6 +19,7 @@ export class AppController {
   /**
    * General application health
    */
+  @RequirePermission('system:read')
   @Get('health')
   getHealth() {
     return this.appService.getHealth();
@@ -28,6 +31,7 @@ export class AppController {
    * Used by Docker, Kubernetes, load balancers,
    * uptime monitoring, etc.
    */
+  @RequirePermission('system:read')
   @Public()
   @Get('health/live')
   getLiveness() {
@@ -39,6 +43,7 @@ export class AppController {
    *
    * Indicates whether the API is ready to receive traffic.
    */
+  @RequirePermission('system:read')
   @Public()
   @Get('health/ready')
   getReadiness() {
@@ -48,6 +53,7 @@ export class AppController {
   /**
    * Runtime / system information
    */
+  @RequirePermission('system:read')
   @Get('system/info')
   getSystemInfo() {
     return this.appService.getSystemInfo();
@@ -56,6 +62,7 @@ export class AppController {
   /**
    * ERP module monitoring
    */
+  @RequirePermission('system:read')
   @Get('system/modules')
   getModules() {
     return this.appService.getModules();
@@ -64,6 +71,7 @@ export class AppController {
   /**
    * Complete monitoring summary
    */
+  @RequirePermission('system:read')
   @Get('system/summary')
   getSystemSummary() {
     return this.appService.getSystemSummary();

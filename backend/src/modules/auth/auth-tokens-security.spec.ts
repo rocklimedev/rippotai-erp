@@ -134,12 +134,21 @@ describe('Session token administration', () => {
   it.each(['ADMIN', 'SUPERADMIN'])(
     'allows %s to manage another user sessions',
     async (roleName) => {
-      const actor = { id: 'admin', roleName };
+      const actor = { id: 'admin', roleName, permissions: ['sessions:read-any', 'sessions:revoke-any'] };
       await call('get', 'user/owner', actor).expect(200);
       await call('patch', 'session/revoke', actor).expect(200);
       await call('patch', 'user/owner/revoke-all', actor).expect(200);
     },
   );
+
+  it('denies cross-user session operations to administrators without the explicit grant', async () => {
+    await call('get', 'user/owner', admin).expect(403);
+    await call('patch', 'session/revoke', admin).expect(403);
+    await call('patch', 'user/owner/revoke-all', admin).expect(403);
+    expect(model.findAll).not.toHaveBeenCalled();
+    expect(row.update).not.toHaveBeenCalled();
+    expect(model.update).not.toHaveBeenCalled();
+  });
 
   it('rejects null actors even with an administrator role', async () => {
     await call('get', 'user/owner', { id: null, roleName: 'ADMIN' }).expect(

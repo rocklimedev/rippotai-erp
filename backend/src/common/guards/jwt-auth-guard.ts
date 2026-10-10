@@ -16,7 +16,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
         context.getHandler(),
         context.getClass(),
-      ])
+      ]) === true
     ) {
       return true;
     }

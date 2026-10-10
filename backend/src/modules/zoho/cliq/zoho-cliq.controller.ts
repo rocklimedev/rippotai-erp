@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 // src/zoho/cliq/zoho-cliq.controller.ts
 
 import {
@@ -24,6 +25,7 @@ export class ZohoCliqController {
   // STATUS
   // ============================================================
 
+  @RequirePermission('zoho-cliq:read')
   @Get(':ownerKey/status')
   getStatus(@Param('ownerKey') ownerKey: string) {
     return this.cliqService.getStatus(ownerKey);
@@ -33,6 +35,7 @@ export class ZohoCliqController {
   // CHANNELS
   // ============================================================
 
+  @RequirePermission('zoho-cliq:read')
   @Get(':ownerKey/channels')
   listChannels(@Param('ownerKey') ownerKey: string) {
     return this.cliqService.listChannels(ownerKey);
@@ -51,6 +54,7 @@ export class ZohoCliqController {
   // user from another organization may not appear in /users.
   // ============================================================
 
+  @RequirePermission('zoho-cliq:read')
   @Get(':ownerKey/channels/:channelId/members')
   listChannelMembers(
     @Param('ownerKey') ownerKey: string,
@@ -70,6 +74,7 @@ export class ZohoCliqController {
   // filtering the organization /users directory.
   // ============================================================
 
+  @RequirePermission('zoho-cliq:read')
   @Get(':ownerKey/channels/:channelId/members/external')
   listExternalChannelMembers(
     @Param('ownerKey') ownerKey: string,
@@ -93,6 +98,7 @@ export class ZohoCliqController {
   // Useful for INOS project collaboration UI.
   // ============================================================
 
+  @RequirePermission('zoho-cliq:read')
   @Get(':ownerKey/channels/:channelId/details')
   getChannelWithMembers(
     @Param('ownerKey') ownerKey: string,
@@ -105,6 +111,7 @@ export class ZohoCliqController {
   // CHATS
   // ============================================================
 
+  @RequirePermission('zoho-cliq:read')
   @Get(':ownerKey/chats')
   listChats(@Param('ownerKey') ownerKey: string) {
     return this.cliqService.listChats(ownerKey);
@@ -114,6 +121,7 @@ export class ZohoCliqController {
   // CHAT DETAILS
   // ============================================================
 
+  @RequirePermission('zoho-cliq:read')
   @Get(':ownerKey/chats/:chatId')
   getChat(
     @Param('ownerKey') ownerKey: string,
@@ -135,6 +143,7 @@ export class ZohoCliqController {
   // History uses plural /messages.
   // ============================================================
 
+  @RequirePermission('zoho-cliq:read')
   @Get(':ownerKey/chats/:chatId/messages')
   getMessages(
     @Param('ownerKey') ownerKey: string,
@@ -171,6 +180,7 @@ export class ZohoCliqController {
   // Uses singular /message.
   // ============================================================
 
+  @RequirePermission('zoho-cliq:send')
   @Post(':ownerKey/chats/:chatId/message')
   sendMessage(
     @Param('ownerKey') ownerKey: string,
@@ -184,6 +194,7 @@ export class ZohoCliqController {
   // CHAT THREADS
   // ============================================================
 
+  @RequirePermission('zoho-cliq:read')
   @Get(':ownerKey/chats/:chatId/threads')
   listThreadsForChat(
     @Param('ownerKey') ownerKey: string,
@@ -201,6 +212,7 @@ export class ZohoCliqController {
   // GET /zoho/cliq/:ownerKey/chats/:chatId/files
   // ============================================================
 
+  @RequirePermission('zoho-cliq:read')
   @Get(':ownerKey/chats/:chatId/files')
   listFilesForChat(
     @Param('ownerKey') ownerKey: string,
@@ -234,6 +246,7 @@ export class ZohoCliqController {
   //   comment (optional)
   // ============================================================
 
+  @RequirePermission('zoho-cliq:upload')
   @Post(':ownerKey/chats/:chatId/files')
   @UseInterceptors(FileInterceptor('file'))
   uploadFileToChat(
@@ -253,6 +266,7 @@ export class ZohoCliqController {
   // It is NOT the channel object ID.
   // ============================================================
 
+  @RequirePermission('zoho-cliq:send')
   @Post(':ownerKey/channels/:channelUniqueName/message')
   sendChannelMessage(
     @Param('ownerKey') ownerKey: string,
@@ -277,6 +291,7 @@ export class ZohoCliqController {
   //   comment (optional)
   // ============================================================
 
+  @RequirePermission('zoho-cliq:upload')
   @Post(':ownerKey/channels/:channelUniqueName/files')
   @UseInterceptors(FileInterceptor('file'))
   uploadFileToChannel(
@@ -297,6 +312,7 @@ export class ZohoCliqController {
   // MY PINS
   // ============================================================
 
+  @RequirePermission('zoho-cliq:read')
   @Get(':ownerKey/pins')
   getMyPins(@Param('ownerKey') ownerKey: string) {
     return this.cliqService.getMyPins(ownerKey);
@@ -306,6 +322,7 @@ export class ZohoCliqController {
   // MY THREADS
   // ============================================================
 
+  @RequirePermission('zoho-cliq:read')
   @Get(':ownerKey/threads')
   listMyThreads(@Param('ownerKey') ownerKey: string) {
     return this.cliqService.listMyThreads(ownerKey);
@@ -328,6 +345,7 @@ export class ZohoCliqController {
   // GET /:ownerKey/channels/:channelId/members
   // ============================================================
 
+  @RequirePermission('zoho-cliq:read')
   @Get(':ownerKey/people')
   listPeople(
     @Param('ownerKey') ownerKey: string,
@@ -346,6 +364,7 @@ export class ZohoCliqController {
   // The API hook's email argument is encoded into emailId.
   // ============================================================
 
+  @RequirePermission('zoho-cliq:send')
   @Post(':ownerKey/people/:emailId/message')
   sendPersonMessage(
     @Param('ownerKey') ownerKey: string,
@@ -366,6 +385,7 @@ export class ZohoCliqController {
   //   comment (optional)
   // ============================================================
 
+  @RequirePermission('zoho-cliq:upload')
   @Post(':ownerKey/people/:emailId/files')
   @UseInterceptors(FileInterceptor('file'))
   uploadFileToPerson(
@@ -390,6 +410,7 @@ export class ZohoCliqController {
   // as binary content.
   // ============================================================
 
+  @RequirePermission('zoho-cliq:read')
   @Get(':ownerKey/files/:fileId')
   async downloadFile(
     @Param('ownerKey') ownerKey: string,

@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
@@ -9,18 +10,21 @@ export class WorkspaceController {
   constructor(private readonly svc: WorkspaceService) {}
 
   /** GET /clients/:id/overview — client + projects, documents, payment schedules, quotations, notes */
+  @RequirePermission('workspace:read')
   @Get('clients/:id/overview')
   clientOverview(@Param('id') id: string) {
     return this.svc.clientOverview(id);
   }
 
   /** GET /clients-summary — per-client project counts / values for the directory */
+  @RequirePermission('workspace:read')
   @Get('clients-summary')
   clientsSummary() {
     return this.svc.clientsSummary();
   }
 
   /** GET /calendar/feed?from&to&mine=1 — events + task due dates + milestones + payments + site visits */
+  @RequirePermission('workspace:read')
   @Get('calendar/feed')
   calendarFeed(
     @CurrentUser() user: any,
@@ -32,24 +36,28 @@ export class WorkspaceController {
   }
 
   /** GET /activity-logs/feed?app&entity_type&action&user_id&q&from&to&limit&offset */
+  @RequirePermission('workspace:read')
   @Get('activity-logs/feed')
   activityFeed(@Query() q: any) {
     return this.svc.activityFeed(q);
   }
 
   /** GET /site-ops/visits/assignments?projectId&status=active|inactive — all visit assignments (list page) */
+  @RequirePermission('workspace:read')
   @Get('site-ops/visits/assignments')
   visitAssignments(@Query('projectId') projectId?: string, @Query('status') status?: string) {
     return this.svc.visitAssignments({ projectId, status });
   }
 
   /** GET /site-ops/visits/log?projectId&from&to&status — visit log across projects */
+  @RequirePermission('workspace:read')
   @Get('site-ops/visits/log')
   visitLog(@Query() q: any) {
     return this.svc.visitLog(q);
   }
 
   /** GET /inventory-overview?projectId — stock per project × material + recent movements (Inventory app) */
+  @RequirePermission('workspace:read')
   @Get('inventory-overview')
   inventoryOverview(@Query('projectId') projectId?: string) {
     return this.svc.inventoryOverview(projectId);

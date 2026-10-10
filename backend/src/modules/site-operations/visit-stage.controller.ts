@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -20,21 +21,25 @@ import {
 export class VisitStageController {
   constructor(private readonly service: VisitStageService) {}
 
+  @RequirePermission('architect-visit-stages:read')
   @Get()
   findAll(@Query('include_inactive') inc?: string) {
     return this.service.findAll(inc === 'true');
   }
 
+  @RequirePermission('architect-visit-stages:read')
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.findOne(id);
   }
 
+  @RequirePermission('architect-visit-stages:create')
   @Post()
   create(@Body() dto: CreateVisitStageDto) {
     return this.service.create(dto);
   }
 
+  @RequirePermission('architect-visit-stages:update')
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -43,6 +48,7 @@ export class VisitStageController {
     return this.service.update(id, dto);
   }
 
+  @RequirePermission('architect-visit-stages:delete')
   @Delete(':id')
   deactivate(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.deactivate(id);

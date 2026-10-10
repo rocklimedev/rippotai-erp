@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -54,6 +55,7 @@ export class GoogleTasksController {
    * Returns task lists belonging to the
    * currently connected Google account.
    */
+  @RequirePermission('google-tasks:read')
   @Get('lists')
   async listTaskLists(@Req() req: AuthenticatedRequest) {
     const userId = this.getUserId(req);
@@ -66,6 +68,7 @@ export class GoogleTasksController {
    *
    * Defaults to the user's @default task list.
    */
+  @RequirePermission('google-tasks:read')
   @Get()
   async listTasks(
     @Req() req: AuthenticatedRequest,
@@ -102,6 +105,7 @@ export class GoogleTasksController {
   /**
    * GET /google/tasks/lists/:taskListId/tasks
    */
+  @RequirePermission('google-tasks:read')
   @Get('lists/:taskListId/tasks')
   async listTasksFromList(
     @Req() req: AuthenticatedRequest,
@@ -138,6 +142,7 @@ export class GoogleTasksController {
    *
    * Creates task in user's default task list.
    */
+  @RequirePermission('google-tasks:create')
   @Post()
   async createTask(@Req() req: AuthenticatedRequest, @Body() task: TaskInput) {
     const userId = this.getUserId(req);
@@ -148,6 +153,7 @@ export class GoogleTasksController {
   /**
    * POST /google/tasks/lists/:taskListId/tasks
    */
+  @RequirePermission('google-tasks:create')
   @Post('lists/:taskListId/tasks')
   async createTaskInList(
     @Req() req: AuthenticatedRequest,
@@ -162,6 +168,7 @@ export class GoogleTasksController {
   /**
    * PATCH /google/tasks/:taskId
    */
+  @RequirePermission('google-tasks:update')
   @Patch(':taskId')
   async updateTask(
     @Req() req: AuthenticatedRequest,
@@ -184,6 +191,7 @@ export class GoogleTasksController {
    * PATCH
    * /google/tasks/lists/:taskListId/tasks/:taskId
    */
+  @RequirePermission('google-tasks:update')
   @Patch('lists/:taskListId/tasks/:taskId')
   async updateTaskInList(
     @Req() req: AuthenticatedRequest,
@@ -199,6 +207,7 @@ export class GoogleTasksController {
   /**
    * POST /google/tasks/:taskId/complete
    */
+  @RequirePermission('google-tasks:complete')
   @Post(':taskId/complete')
   async completeTask(
     @Req() req: AuthenticatedRequest,
@@ -219,6 +228,7 @@ export class GoogleTasksController {
    * POST
    * /google/tasks/lists/:taskListId/tasks/:taskId/complete
    */
+  @RequirePermission('google-tasks:complete')
   @Post('lists/:taskListId/tasks/:taskId/complete')
   async completeTaskInList(
     @Req() req: AuthenticatedRequest,
@@ -233,6 +243,7 @@ export class GoogleTasksController {
   /**
    * DELETE /google/tasks/:taskId
    */
+  @RequirePermission('google-tasks:delete')
   @Delete(':taskId')
   async deleteTask(
     @Req() req: AuthenticatedRequest,
@@ -254,6 +265,7 @@ export class GoogleTasksController {
    * DELETE
    * /google/tasks/lists/:taskListId/tasks/:taskId
    */
+  @RequirePermission('google-tasks:delete')
   @Delete('lists/:taskListId/tasks/:taskId')
   async deleteTaskFromList(
     @Req() req: AuthenticatedRequest,

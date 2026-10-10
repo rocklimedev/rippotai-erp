@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -29,6 +30,7 @@ export class ProjectOverviewController {
   }
 
   /** Approved BOQ value vs committed cost (POs + work orders). */
+  @RequirePermission('projects:read')
   @Get(':id/financial')
   async financial(@Param('id', ParseUUIDPipe) projectId: string) {
     const [boq] = await this.q<{ approved: string | null; latest: string | null }>(
@@ -61,6 +63,7 @@ export class ProjectOverviewController {
   }
 
   /** Vendors engaged through POs / work orders, plus procurement-tracker vendors. */
+  @RequirePermission('projects:read')
   @Get(':id/vendors')
   async vendors(@Param('id', ParseUUIDPipe) projectId: string) {
     const engaged = await this.q(
@@ -84,6 +87,7 @@ export class ProjectOverviewController {
   }
 
   /** Delayed tasks and records waiting on an internal approval. */
+  @RequirePermission('projects:read')
   @Get(':id/pending-work')
   async pendingWork(@Param('id', ParseUUIDPipe) projectId: string) {
     const delayed = await this.q(
@@ -118,6 +122,7 @@ export class ProjectOverviewController {
   }
 
   /** Activity log rows for this project (and records inside it). */
+  @RequirePermission('projects:read')
   @Get(':id/activity')
   async activity(
     @Param('id', ParseUUIDPipe) projectId: string,
@@ -141,6 +146,7 @@ export class ProjectOverviewController {
 export class AppBadgesController {
   constructor(@InjectConnection() private readonly sequelize: Sequelize) {}
 
+  @RequirePermission('dashboard:read')
   @Get('app-badges')
   async appBadges() {
     const [row] = await this.sequelize.query<Record<string, string | number>>(

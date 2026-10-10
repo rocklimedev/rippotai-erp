@@ -7,10 +7,10 @@ Last reviewed: 2026-10-10
 
 | Route | Access |
 | --- | --- |
-| `GET user/:userId` | Own sessions, or any user's sessions for administrators |
-| `PATCH :id/revoke` | Own session, or any session for administrators |
-| `PATCH user/:userId/revoke-all` | Own sessions, or any user's sessions for administrators |
-| `DELETE :id` | Administrators only |
+| `GET user/:userId` | Own sessions; cross-user access requires administrator plus `sessions:read-any` |
+| `PATCH :id/revoke` | Own session; cross-user access requires administrator plus `sessions:revoke-any` |
+| `PATCH user/:userId/revoke-all` | Own sessions; cross-user access requires administrator plus `sessions:revoke-any` |
+| `DELETE :id` | Active staff administrator plus `auth-tokens:delete` |
 | `POST /auth/tokens` | Removed; session creation is internal to login/signup |
 
 Cross-user lookup and bulk revocation return 403 before querying/mutating sessions. Individual revocation resolves ownership then rejects unauthorized callers before updating. Missing session IDs return 404. Anonymous calls to retained endpoints return 401. List and revoke responses expose only session metadata (ID, user ID, type, device/IP, expiry, revocation, last use and creation time), excluding token hashes and nested user records. Internal authentication lookup still loads the user and role; logout and password changes retain their internal revocation paths.

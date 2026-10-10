@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -29,6 +30,7 @@ const pick = (b: any) => {
 export class NotesController {
   constructor(@InjectModel(Note) private readonly notes: typeof Note) {}
 
+  @RequirePermission('notes:read')
   @Get()
   async list(
     @CurrentUser() user: any,
@@ -49,6 +51,7 @@ export class NotesController {
     return this.notes.findAll({ where, order: [['pinned', 'DESC'], ['updated_at', 'DESC']], limit: 500 });
   }
 
+  @RequirePermission('notes:read')
   @Get(':id')
   async one(@Param('id') id: string) {
     const n = await this.notes.findByPk(id);
@@ -56,6 +59,7 @@ export class NotesController {
     return n;
   }
 
+  @RequirePermission('notes:create')
   @Post()
   async create(@Body() body: any, @CurrentUser() user: any) {
     const data = pick(body);
@@ -63,6 +67,7 @@ export class NotesController {
     return this.notes.create({ ...data, created_by: user?.id ?? null });
   }
 
+  @RequirePermission('notes:update')
   @Patch(':id')
   async update(@Param('id') id: string, @Body() body: any) {
     const n = await this.one(id);
@@ -72,6 +77,7 @@ export class NotesController {
     return n;
   }
 
+  @RequirePermission('notes:delete')
   @Delete(':id')
   async remove(@Param('id') id: string) {
     const n = await this.one(id);

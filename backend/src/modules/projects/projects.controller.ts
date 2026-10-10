@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -36,6 +37,7 @@ export class ProjectsController {
   // =========================
   // CREATE
   // =========================
+  @RequirePermission('projects:create')
   @Post()
   create(@Body() dto: CreateProjectDto, @CurrentUser() user?: User) {
     return this.projectsService.create(dto, user);
@@ -44,6 +46,7 @@ export class ProjectsController {
   // =========================
   // GET ALL
   // =========================
+  @RequirePermission('projects:read')
   @Get()
   findAll(
     @Query('status') status?: string,
@@ -73,46 +76,55 @@ export class ProjectsController {
   // =========================
   // DASHBOARD ROUTES
   // =========================
+  @RequirePermission('projects:read')
   @Get('summary')
   getSummary() {
     return this.dashboardService.getProjectsSummary();
   }
 
+  @RequirePermission('projects:read')
   @Get('full')
   getFull() {
     return this.dashboardService.getProjectsFull();
   }
 
+  @RequirePermission('projects:read')
   @Get('progress')
   getProgress() {
     return this.dashboardService.getProjectsProgress();
   }
 
+  @RequirePermission('projects:read')
   @Get('upcoming-milestones')
   getUpcomingMilestones(@Query('limit') limit = '4') {
     return this.dashboardService.getUpcomingMilestones(Number(limit));
   }
 
+  @RequirePermission('projects:read')
   @Get('progress-trend')
   getProgressTrend(@Query('months') months = '6') {
     return this.dashboardService.getProjectsProgressTrend(Number(months));
   }
 
+  @RequirePermission('projects:read')
   @Get('phase-mix')
   getPhaseMix() {
     return this.dashboardService.getProjectsPhaseMix();
   }
 
+  @RequirePermission('projects:read')
   @Get('variance-by-project')
   getVarianceByProject(@Query('limit') limit = '6') {
     return this.dashboardService.getProjectsVarianceByProject(Number(limit));
   }
 
+  @RequirePermission('projects:read')
   @Get('milestones/upcoming')
   getUpcomingMilestonesGlobal(@Query('limit') limit = '5') {
     return this.dashboardService.getUpcomingMilestonesGlobal(Number(limit));
   }
 
+  @RequirePermission('projects:read')
   @Get('activity/recent')
   getRecentActivity(@Query('limit') limit = '10') {
     return this.dashboardService.getRecentActivity(Number(limit));
@@ -121,6 +133,7 @@ export class ProjectsController {
   // =========================
   // GET ONE
   // =========================
+  @RequirePermission('projects:read')
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
@@ -132,6 +145,7 @@ export class ProjectsController {
   // =========================
   // UPDATE
   // =========================
+  @RequirePermission('projects:update')
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -144,6 +158,7 @@ export class ProjectsController {
   // =========================
   // ARCHIVE
   // =========================
+  @RequirePermission('projects:update')
   @Patch(':id/archive')
   archive(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user?: User) {
     return this.projectsService.archive(id, user);
@@ -152,6 +167,7 @@ export class ProjectsController {
   // =========================
   // RESTORE
   // =========================
+  @RequirePermission('projects:restore')
   @Patch(':id/restore')
   restore(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user?: User) {
     return this.projectsService.restore(id, user);
@@ -160,6 +176,7 @@ export class ProjectsController {
   // =========================
   // DELETE
   // =========================
+  @RequirePermission('projects:delete')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(
@@ -169,6 +186,7 @@ export class ProjectsController {
     return this.projectsService.remove(id, user);
   }
 
+  @RequirePermission('projects:create')
   @Post(':id/team')
   addTeamMember(
     @Param('id') projectId: string,
@@ -178,11 +196,13 @@ export class ProjectsController {
     return this.projectsService.addTeamMember(projectId, dto, user);
   }
 
+  @RequirePermission('projects:read')
   @Get(':id/team')
   getTeam(@Param('id') projectId: string) {
     return this.projectsService.getTeam(projectId);
   }
 
+  @RequirePermission('projects:update')
   @Patch(':id/team/:teamMemberId')
   updateTeamMember(
     @Param('id') projectId: string,
@@ -192,6 +212,7 @@ export class ProjectsController {
     return this.projectsService.updateTeamMember(projectId, teamMemberId, dto);
   }
 
+  @RequirePermission('projects:delete')
   @Delete(':id/team/:teamMemberId')
   removeTeamMember(
     @Param('id') projectId: string,

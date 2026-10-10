@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   BadRequestException,
   Body,
@@ -34,6 +35,7 @@ export class ZohoCalendarController {
    * ?category=...
    * ?showhiddencal=true
    */
+  @RequirePermission('zoho-calendar:read')
   @Get(':ownerKey/calendars')
   listCalendars(
     @Param('ownerKey') ownerKey: string,
@@ -52,6 +54,7 @@ export class ZohoCalendarController {
    *
    * /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid
    */
+  @RequirePermission('zoho-calendar:read')
   @Get(':ownerKey/calendars/:calendarUid')
   getCalendar(
     @Param('ownerKey') ownerKey: string,
@@ -65,6 +68,7 @@ export class ZohoCalendarController {
    *
    * /api/v1/zoho/calendar/:ownerKey/calendars
    */
+  @RequirePermission('zoho-calendar:create')
   @Post(':ownerKey/calendars')
   createCalendar(
     @Param('ownerKey') ownerKey: string,
@@ -88,6 +92,7 @@ export class ZohoCalendarController {
    * &end=20260930T235959Z
    * &byinstance=true
    */
+  @RequirePermission('zoho-calendar:read')
   @Get(':ownerKey/calendars/:calendarUid/events')
   listEvents(
     @Param('ownerKey') ownerKey: string,
@@ -133,6 +138,7 @@ export class ZohoCalendarController {
    *
    * /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid/events/:eventUid
    */
+  @RequirePermission('zoho-calendar:read')
   @Get(':ownerKey/calendars/:calendarUid/events/:eventUid')
   getEvent(
     @Param('ownerKey') ownerKey: string,
@@ -147,6 +153,7 @@ export class ZohoCalendarController {
    *
    * /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid/events
    */
+  @RequirePermission('zoho-calendar:create')
   @Post(':ownerKey/calendars/:calendarUid/events')
   createEvent(
     @Param('ownerKey') ownerKey: string,
@@ -161,6 +168,7 @@ export class ZohoCalendarController {
    *
    * /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid/events/:eventUid
    */
+  @RequirePermission('zoho-calendar:update')
   @Put(':ownerKey/calendars/:calendarUid/events/:eventUid')
   updateEvent(
     @Param('ownerKey') ownerKey: string,
@@ -181,6 +189,7 @@ export class ZohoCalendarController {
    *
    * /api/v1/zoho/calendar/:ownerKey/calendars/:calendarUid/events/:eventUid
    */
+  @RequirePermission('zoho-calendar:delete')
   @Delete(':ownerKey/calendars/:calendarUid/events/:eventUid')
   deleteEvent(
     @Param('ownerKey') ownerKey: string,
@@ -208,6 +217,7 @@ export class ZohoCalendarController {
    * ?start=20260923T000000Z
    * &end=20260930T235959Z
    */
+  @RequirePermission('zoho-calendar:read')
   @Get(':ownerKey/calendars/:calendarUid/events/:eventUid/instances')
   getEventInstances(
     @Param('ownerKey') ownerKey: string,
@@ -246,6 +256,7 @@ export class ZohoCalendarController {
    *   "title": "Site visit tomorrow at 11 AM"
    * }
    */
+  @RequirePermission('zoho-calendar:create')
   @Post(':ownerKey/smart-add')
   smartAddEvent(
     @Param('ownerKey') ownerKey: string,

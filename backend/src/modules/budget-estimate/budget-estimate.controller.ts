@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -25,6 +26,7 @@ export class BudgetEstimateController {
   // POST /budget-estimates
   // ============================================================
 
+  @RequirePermission('budget-estimates:create')
   @Post()
   create(@Body() dto: CreateBudgetEstimateDto, @Req() req: any) {
     return this.budgetEstimateService.create(dto, req.user?.id);
@@ -35,6 +37,7 @@ export class BudgetEstimateController {
   // POST /budget-estimates/from-boq/:boqId
   // ============================================================
 
+  @RequirePermission('budget-estimates:create')
   @Post('from-boq/:boqId')
   createFromBoq(@Param('boqId', ParseUUIDPipe) boqId: string, @Req() req: any) {
     return this.budgetEstimateService.createFromBoq(boqId, req.user?.id);
@@ -46,6 +49,7 @@ export class BudgetEstimateController {
   // GET /budget-estimates?projectId=UUID
   // ============================================================
 
+  @RequirePermission('budget-estimates:read')
   @Get()
   findAll(@Query('projectId') projectId?: string) {
     return this.budgetEstimateService.findAll(projectId);
@@ -56,6 +60,7 @@ export class BudgetEstimateController {
   // GET /budget-estimates/:id
   // ============================================================
 
+  @RequirePermission('budget-estimates:read')
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.budgetEstimateService.findOne(id);
@@ -66,6 +71,7 @@ export class BudgetEstimateController {
   // PATCH /budget-estimates/:id
   // ============================================================
 
+  @RequirePermission('budget-estimates:update')
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -80,6 +86,7 @@ export class BudgetEstimateController {
   // POST /budget-estimates/:id/recalculate
   // ============================================================
 
+  @RequirePermission('budget-estimates:recalculate')
   @Post(':id/recalculate')
   recalculate(@Param('id', ParseUUIDPipe) id: string) {
     return this.budgetEstimateService.recalculate(id);
@@ -90,6 +97,7 @@ export class BudgetEstimateController {
   // POST /budget-estimates/:id/lock
   // ============================================================
 
+  @RequirePermission('budget-estimates:lock')
   @Post(':id/lock')
   lock(@Param('id', ParseUUIDPipe) id: string) {
     return this.budgetEstimateService.lock(id);
@@ -100,6 +108,7 @@ export class BudgetEstimateController {
   // POST /budget-estimates/:id/unlock
   // ============================================================
 
+  @RequirePermission('budget-estimates:lock')
   @Post(':id/unlock')
   unlock(@Param('id', ParseUUIDPipe) id: string) {
     return this.budgetEstimateService.unlock(id);
@@ -110,6 +119,7 @@ export class BudgetEstimateController {
   // DELETE /budget-estimates/:id
   // ============================================================
 
+  @RequirePermission('budget-estimates:delete')
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.budgetEstimateService.remove(id);

@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -34,6 +35,7 @@ export class ProjectShortlistController {
    * POST /project-shortlists
    * Create VENDOR or MATERIAL shortlist for a project (seeds 12×3 skeleton by default)
    */
+  @RequirePermission('project-shortlists:create')
   @Post()
   async create(@Body() dto: CreateProjectShortlistDto) {
     // TODO: extract userId from request (JWT / session)
@@ -43,6 +45,7 @@ export class ProjectShortlistController {
   /**
    * GET /project-shortlists?project_id=&shortlist_type=
    */
+  @RequirePermission('project-shortlists:read')
   @Get()
   async findAll(@Query() query: QueryProjectShortlistDto) {
     return this.service.findAll(query);
@@ -51,6 +54,7 @@ export class ProjectShortlistController {
   /**
    * GET /project-shortlists/:id
    */
+  @RequirePermission('project-shortlists:read')
   @Get(':id')
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.findOne(id);
@@ -60,6 +64,7 @@ export class ProjectShortlistController {
    * GET /project-shortlists/by-project/:projectId/:type
    * Convenience: fetch by project + type
    */
+  @RequirePermission('project-shortlists:read')
   @Get('by-project/:projectId/:type')
   async findByProjectAndType(
     @Param('projectId', ParseUUIDPipe) projectId: string,
@@ -72,16 +77,19 @@ export class ProjectShortlistController {
    * GET /project-shortlists/:id/grid
    * Returns Excel-like grid structure for frontend rendering
    */
+  @RequirePermission('project-shortlists:read')
   @Get(':id/grid')
   async getGrid(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.getGridView(id);
   }
 
+  @RequirePermission('project-shortlists:read')
   @Get(':id/workspace')
   async getWorkspace(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.getGridView(id);
   }
 
+  @RequirePermission('project-shortlists:update')
   @Put(':id/workspace/row')
   async saveWorkspaceRow(
     @Param('id', ParseUUIDPipe) id: string,
@@ -95,6 +103,7 @@ export class ProjectShortlistController {
    * GET /project-shortlists/:id/export
    * Download single shortlist as Excel
    */
+  @RequirePermission('project-shortlists:export')
   @Get(':id/export')
   async exportOne(
     @Param('id', ParseUUIDPipe) id: string,
@@ -107,6 +116,7 @@ export class ProjectShortlistController {
    * GET /project-shortlists/export-both/:projectId
    * Download both VENDOR + MATERIAL sheets for a project
    */
+  @RequirePermission('project-shortlists:export')
   @Get('export-both/:projectId')
   async exportBoth(
     @Param('projectId', ParseUUIDPipe) projectId: string,
@@ -118,6 +128,7 @@ export class ProjectShortlistController {
   /**
    * PUT /project-shortlists/:id
    */
+  @RequirePermission('project-shortlists:update')
   @Put(':id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -129,6 +140,7 @@ export class ProjectShortlistController {
   /**
    * DELETE /project-shortlists/:id
    */
+  @RequirePermission('project-shortlists:delete')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id', ParseUUIDPipe) id: string) {

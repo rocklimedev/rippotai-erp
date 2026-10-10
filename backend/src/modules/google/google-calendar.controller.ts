@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -83,6 +84,7 @@ export class GoogleCalendarController {
    * Returns all calendars belonging to the
    * currently connected Google account.
    */
+  @RequirePermission('google-calendar:read')
   @Get('calendars')
   async listCalendars(@Req() req: AuthenticatedRequest) {
     const userId = this.getUserId(req);
@@ -93,6 +95,7 @@ export class GoogleCalendarController {
   /**
    * GET /google/calendar/calendars/:calendarId
    */
+  @RequirePermission('google-calendar:read')
   @Get('calendars/:calendarId')
   async getCalendar(
     @Req() req: AuthenticatedRequest,
@@ -111,6 +114,7 @@ export class GoogleCalendarController {
    * &timeMin=2026-09-08T00:00:00+05:30
    * &timeMax=2026-09-09T00:00:00+05:30
    */
+  @RequirePermission('google-calendar:read')
   @Get('events')
   async listEvents(
     @Req() req: AuthenticatedRequest,
@@ -144,6 +148,7 @@ export class GoogleCalendarController {
   /**
    * POST /google/calendar/events
    */
+  @RequirePermission('google-calendar:create')
   @Post('events')
   async createEvent(
     @Req() req: AuthenticatedRequest,
@@ -160,6 +165,7 @@ export class GoogleCalendarController {
    * Allows explicitly creating an event
    * inside a selected personal calendar.
    */
+  @RequirePermission('google-calendar:create')
   @Post('calendars/:calendarId/events')
   async createEventInCalendar(
     @Req() req: AuthenticatedRequest,
@@ -174,6 +180,7 @@ export class GoogleCalendarController {
   /**
    * PATCH /google/calendar/events/:eventId
    */
+  @RequirePermission('google-calendar:update')
   @Patch('events/:eventId')
   async updateEvent(
     @Req() req: AuthenticatedRequest,
@@ -189,6 +196,7 @@ export class GoogleCalendarController {
   /**
    * PATCH /google/calendar/calendars/:calendarId/events/:eventId
    */
+  @RequirePermission('google-calendar:update')
   @Patch('calendars/:calendarId/events/:eventId')
   async updateEventInCalendar(
     @Req() req: AuthenticatedRequest,
@@ -205,6 +213,7 @@ export class GoogleCalendarController {
   /**
    * DELETE /google/calendar/events/:eventId
    */
+  @RequirePermission('google-calendar:delete')
   @Delete('events/:eventId')
   async deleteEvent(
     @Req() req: AuthenticatedRequest,
@@ -224,6 +233,7 @@ export class GoogleCalendarController {
    * DELETE
    * /google/calendar/calendars/:calendarId/events/:eventId
    */
+  @RequirePermission('google-calendar:delete')
   @Delete('calendars/:calendarId/events/:eventId')
   async deleteEventFromCalendar(
     @Req() req: AuthenticatedRequest,

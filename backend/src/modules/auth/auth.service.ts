@@ -144,6 +144,7 @@ export class AuthService {
       role_id: authToken.user?.role_id,
       roleId: authToken.user?.role_id ?? null,
       roleName: authToken.user?.role?.name ?? null,
+      is_active: authToken.user?.is_active,
       permissions: grants
         .filter((grant) => grant.permission)
         .map(

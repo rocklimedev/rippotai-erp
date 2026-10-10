@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -21,21 +22,25 @@ import { UpdateMilestoneDto } from './dto/update-milestone.dto';
 export class PaymentSchedulesController {
   constructor(private readonly service: PaymentSchedulesService) {}
 
+  @RequirePermission('payment-schedules:create')
   @Post()
   create(@Body() dto: CreatePaymentScheduleDto) {
     return this.service.create(dto);
   }
 
+  @RequirePermission('payment-schedules:read')
   @Get()
   findAll(@Query('projectId') projectId?: string) {
     return this.service.findAll(projectId);
   }
 
+  @RequirePermission('payment-schedules:read')
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.findOne(id);
   }
 
+  @RequirePermission('payment-schedules:update')
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -44,6 +49,7 @@ export class PaymentSchedulesController {
     return this.service.update(id, dto);
   }
 
+  @RequirePermission('payment-schedules:delete')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseUUIDPipe) id: string) {
@@ -52,6 +58,7 @@ export class PaymentSchedulesController {
 
   // ---------- Milestones ----------
 
+  @RequirePermission('payment-schedules:create')
   @Post(':id/milestones')
   addMilestone(
     @Param('id', ParseUUIDPipe) id: string,
@@ -60,11 +67,13 @@ export class PaymentSchedulesController {
     return this.service.addMilestone(id, dto);
   }
 
+  @RequirePermission('payment-schedules:read')
   @Get(':id/milestones')
   findMilestones(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.findMilestones(id);
   }
 
+  @RequirePermission('payment-schedules:read')
   @Get(':id/milestones/:milestoneId')
   findMilestone(
     @Param('id', ParseUUIDPipe) id: string,
@@ -73,6 +82,7 @@ export class PaymentSchedulesController {
     return this.service.findMilestone(id, milestoneId);
   }
 
+  @RequirePermission('payment-schedules:update')
   @Patch(':id/milestones/:milestoneId')
   updateMilestone(
     @Param('id', ParseUUIDPipe) id: string,
@@ -82,6 +92,7 @@ export class PaymentSchedulesController {
     return this.service.updateMilestone(id, milestoneId, dto);
   }
 
+  @RequirePermission('payment-schedules:delete')
   @Delete(':id/milestones/:milestoneId')
   @HttpCode(HttpStatus.NO_CONTENT)
   removeMilestone(

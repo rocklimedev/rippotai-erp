@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -24,6 +25,7 @@ export class ProjectPhaseController {
   // POST /projects-phases
   // ============================================================
 
+  @RequirePermission('projects-phases:create')
   @Post()
   create(@Body() dto: CreateProjectPhaseDto) {
     return this.projectPhaseService.create(dto);
@@ -34,6 +36,7 @@ export class ProjectPhaseController {
   // GET /projects-phases
   // ============================================================
 
+  @RequirePermission('projects-phases:read')
   @Get()
   findAll(@Query('search') search?: string) {
     return this.projectPhaseService.findAll(search);
@@ -44,6 +47,7 @@ export class ProjectPhaseController {
   // GET /projects-phases/:id
   // ============================================================
 
+  @RequirePermission('projects-phases:read')
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe)
@@ -57,6 +61,7 @@ export class ProjectPhaseController {
   // PATCH /projects-phases/:id
   // ============================================================
 
+  @RequirePermission('projects-phases:update')
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe)
@@ -72,6 +77,7 @@ export class ProjectPhaseController {
   // DELETE /projects-phases/:id
   // ============================================================
 
+  @RequirePermission('projects-phases:delete')
   @Delete(':id')
   remove(
     @Param('id', ParseUUIDPipe)

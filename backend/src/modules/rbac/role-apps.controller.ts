@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 // role-apps.controller.ts
 import {
   Controller,
@@ -18,21 +19,25 @@ import { CreateRoleAppDto, BulkAssignAppsDto } from './dto/role-app.dto';
 export class RoleAppsController {
   constructor(private readonly roleAppsService: RoleAppsService) {}
 
+  @RequirePermission('role-apps:grant')
   @Post()
   grant(@Body() dto: CreateRoleAppDto) {
     return this.roleAppsService.grant(dto);
   }
 
+  @RequirePermission('role-apps:assign')
   @Post('bulk')
   bulkAssign(@Body() dto: BulkAssignAppsDto) {
     return this.roleAppsService.bulkAssign(dto);
   }
 
+  @RequirePermission('role-apps:read')
   @Get('matrix')
   getMatrix() {
     return this.roleAppsService.getMatrix();
   }
 
+  @RequirePermission('role-apps:read')
   @Get()
   findAll(@Query('role_id') role_id?: string) {
     return role_id
@@ -41,6 +46,7 @@ export class RoleAppsController {
   }
 
   // Full-replace for a role's app set — the checklist-style admin screen.
+  @RequirePermission('role-apps:update')
   @Put(':role_id')
   setForRole(
     @Param('role_id') role_id: string,
@@ -53,6 +59,7 @@ export class RoleAppsController {
     );
   }
 
+  @RequirePermission('role-apps:revoke')
   @Delete(':role_id/:app_code')
   @HttpCode(HttpStatus.NO_CONTENT)
   revoke(

@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -66,6 +67,7 @@ export class MaterialRequirementController {
    * Vendor rates are maintained separately through
    * MaterialRateSheet.
    */
+  @RequirePermission('procurement-requirements:create')
   @Post()
   create(@Body() dto: CreateMaterialRequirementDto) {
     return this.service.create(dto);
@@ -90,6 +92,7 @@ export class MaterialRequirementController {
    * - material.vendors
    * - quotations
    */
+  @RequirePermission('procurement-requirements:read')
   @Get()
   findAll(@Query('projectId') projectId?: string) {
     return this.service.findAll(projectId);
@@ -111,6 +114,7 @@ export class MaterialRequirementController {
    * - material vendors
    * - quotations
    */
+  @RequirePermission('procurement-requirements:read')
   @Get('project/:projectId')
   getMaterialRequirementsByProject(@Param('projectId') projectId: string) {
     return this.service.getMaterialRequirementsByProject(projectId);
@@ -126,6 +130,7 @@ export class MaterialRequirementController {
    *
    * GET /procurement/requirements/:id
    */
+  @RequirePermission('procurement-requirements:read')
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findOne(id);
@@ -140,6 +145,7 @@ export class MaterialRequirementController {
    *
    * PATCH /procurement/requirements/:id
    */
+  @RequirePermission('procurement-requirements:update')
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateMaterialRequirementDto) {
     return this.service.update(id, dto);
@@ -159,6 +165,7 @@ export class MaterialRequirementController {
    *   "status": "DRAFT"
    * }
    */
+  @RequirePermission('procurement-requirements:update')
   @Patch(':id/status')
   setStatus(
     @Param('id') id: string,
@@ -179,6 +186,7 @@ export class MaterialRequirementController {
    *
    * DELETE /procurement/requirements/:id
    */
+  @RequirePermission('procurement-requirements:delete')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.service.remove(id);

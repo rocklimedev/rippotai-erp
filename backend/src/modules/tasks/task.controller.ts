@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -34,6 +35,7 @@ export class TasksController {
   // =========================
   // GET ALL TASKS
   // =========================
+  @RequirePermission('tasks:read')
   @Get()
   findAll(
     @Query('status') status?: string,
@@ -54,6 +56,7 @@ export class TasksController {
   // =========================
   // GLOBAL BOARD
   // =========================
+  @RequirePermission('tasks:read')
   @Get('board')
   getBoard() {
     return this.tasksService.getBoard();
@@ -62,6 +65,7 @@ export class TasksController {
   // =========================
   // MY TASKS
   // =========================
+  @RequirePermission('tasks:read')
   @Get('my-tasks')
   getMyTasks(@Req() req: AuthRequest) {
     return this.tasksService.getMyTasks(req.user.id);
@@ -70,6 +74,7 @@ export class TasksController {
   // =========================
   // MY BOARD
   // =========================
+  @RequirePermission('tasks:read')
   @Get('my-board')
   getMyBoard(@Req() req: AuthRequest) {
     return this.tasksService.getMyBoard(req.user.id);
@@ -78,6 +83,7 @@ export class TasksController {
   // =========================
   // GET ONE
   // =========================
+  @RequirePermission('tasks:read')
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.tasksService.findOne(id);
@@ -86,6 +92,7 @@ export class TasksController {
   // =========================
   // CREATE
   // =========================
+  @RequirePermission('tasks:create')
   @Post()
   create(@Body() createTaskDto: CreateTaskDto, @Req() req: AuthRequest) {
     return this.tasksService.create(createTaskDto, req.user.id, req.user);
@@ -94,6 +101,7 @@ export class TasksController {
   // =========================
   // UPDATE
   // =========================
+  @RequirePermission('tasks:update')
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -106,6 +114,7 @@ export class TasksController {
   // =========================
   // TOGGLE STATUS
   // =========================
+  @RequirePermission('tasks:update')
   @Patch(':id/toggle')
   toggleStatus(@Param('id') id: string, @Req() req: AuthRequest) {
     return this.tasksService.toggleStatus(id, req.user);
@@ -114,6 +123,7 @@ export class TasksController {
   // =========================
   // DELETE
   // =========================
+  @RequirePermission('tasks:delete')
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: AuthRequest) {
     return this.tasksService.remove(id, req.user);

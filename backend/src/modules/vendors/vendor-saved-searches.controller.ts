@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -65,11 +66,13 @@ export class VendorSavedSearchesController {
     );
   }
 
+  @RequirePermission('vendors-saved-searches:read')
   @Get()
   list(@CurrentUser() user: { id: string }) {
     return this.load(user.id);
   }
 
+  @RequirePermission('vendors-saved-searches:create')
   @Post()
   async create(
     @CurrentUser() user: { id: string },
@@ -87,6 +90,7 @@ export class VendorSavedSearchesController {
     return item;
   }
 
+  @RequirePermission('vendors-saved-searches:delete')
   @Delete(':id')
   async remove(@CurrentUser() user: { id: string }, @Param('id') id: string) {
     const list = await this.load(user.id);

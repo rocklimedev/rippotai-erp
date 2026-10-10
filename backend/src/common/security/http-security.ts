@@ -1,5 +1,6 @@
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
+import { HttpSecurityTelemetryService } from './http-security-telemetry.service';
 
 export function configureHttpSecurity(app: NestExpressApplication) {
   // Trust only the configured proxy hops/networks, never arbitrary forwarded IPs.
@@ -28,4 +29,9 @@ export function configureHttpSecurity(app: NestExpressApplication) {
       crossOriginResourcePolicy: { policy: 'cross-origin' },
     }),
   );
+  const telemetry = app.get(HttpSecurityTelemetryService);
+  app.use((req, res, next) => {
+    telemetry.observe(req, res);
+    next();
+  });
 }

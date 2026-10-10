@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -24,6 +25,7 @@ export class ShortlistEntryController {
   /**
    * POST /shortlist-entries
    */
+  @RequirePermission('shortlist-entries:create')
   @Post()
   async create(@Body() dto: CreateShortlistEntryDto) {
     return this.service.create(dto);
@@ -32,6 +34,7 @@ export class ShortlistEntryController {
   /**
    * POST /shortlist-entries/bulk
    */
+  @RequirePermission('shortlist-entries:create')
   @Post('bulk')
   async bulkCreate(@Body() dto: BulkCreateShortlistEntriesDto) {
     return this.service.bulkCreate(dto);
@@ -40,6 +43,7 @@ export class ShortlistEntryController {
   /**
    * GET /shortlist-entries?...
    */
+  @RequirePermission('shortlist-entries:read')
   @Get()
   async findAll(@Query() query: QueryShortlistEntryDto) {
     return this.service.findAll(query);
@@ -48,6 +52,7 @@ export class ShortlistEntryController {
   /**
    * GET /shortlist-entries/:id
    */
+  @RequirePermission('shortlist-entries:read')
   @Get(':id')
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.findOne(id);
@@ -56,6 +61,7 @@ export class ShortlistEntryController {
   /**
    * PUT /shortlist-entries/:id
    */
+  @RequirePermission('shortlist-entries:update')
   @Put(':id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -68,6 +74,7 @@ export class ShortlistEntryController {
    * POST /shortlist-entries/:id/select
    * Mark this entry as the selected one for its trade
    */
+  @RequirePermission('shortlist-entries:select')
   @Post(':id/select')
   async select(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.selectEntry(id);
@@ -76,6 +83,7 @@ export class ShortlistEntryController {
   /**
    * DELETE /shortlist-entries/:id
    */
+  @RequirePermission('shortlist-entries:delete')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id', ParseUUIDPipe) id: string) {

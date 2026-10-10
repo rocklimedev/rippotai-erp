@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -30,6 +31,7 @@ export class CalendarController {
    * Get all calendar events (Admin)
    * GET /calendar/events
    */
+  @RequirePermission('calendar-events:read')
   @Get()
   findAll(@Query() query: QueryCalendarEventDto) {
     return this.calendarService.findAll(query);
@@ -39,6 +41,7 @@ export class CalendarController {
    * Get my calendar events
    * GET /calendar/events/my-events
    */
+  @RequirePermission('calendar-events:read')
   @Get('my-events')
   getMyEvents(
     @CurrentUser() user: User,
@@ -51,6 +54,7 @@ export class CalendarController {
    * Get today's events
    * GET /calendar/events/today
    */
+  @RequirePermission('calendar-events:read')
   @Get('today')
   getTodayEvents(@CurrentUser() user: User) {
     return this.calendarService.getTodayEvents(user.id);
@@ -60,6 +64,7 @@ export class CalendarController {
    * Get upcoming events
    * GET /calendar/events/upcoming?days=30
    */
+  @RequirePermission('calendar-events:read')
   @Get('upcoming')
   getUpcomingEvents(
     @CurrentUser() user: User,
@@ -72,6 +77,7 @@ export class CalendarController {
    * Dashboard statistics
    * GET /calendar/events/stats
    */
+  @RequirePermission('calendar-events:read')
   @Get('stats')
   getStats(@CurrentUser() user: User) {
     return this.calendarService.getMyStats(user.id);
@@ -81,6 +87,7 @@ export class CalendarController {
    * Get events for a project
    * GET /calendar/events/project/:projectId
    */
+  @RequirePermission('calendar-events:read')
   @Get('project/:projectId')
   getProjectEvents(@Param('projectId', ParseUUIDPipe) projectId: string) {
     return this.calendarService.getProjectEvents(projectId);
@@ -90,6 +97,7 @@ export class CalendarController {
    * Get single event
    * GET /calendar/events/:id
    */
+  @RequirePermission('calendar-events:read')
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.calendarService.findOne(id);
@@ -99,6 +107,7 @@ export class CalendarController {
    * Create calendar event
    * POST /calendar/events
    */
+  @RequirePermission('calendar-events:create')
   @Post()
   create(@Body() dto: CreateCalendarEventDto, @CurrentUser() user: User) {
     return this.calendarService.create(dto, user);
@@ -108,6 +117,7 @@ export class CalendarController {
    * Update calendar event
    * PATCH /calendar/events/:id
    */
+  @RequirePermission('calendar-events:update')
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -121,6 +131,7 @@ export class CalendarController {
    * Delete calendar event
    * DELETE /calendar/events/:id
    */
+  @RequirePermission('calendar-events:delete')
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.calendarService.remove(id, user);

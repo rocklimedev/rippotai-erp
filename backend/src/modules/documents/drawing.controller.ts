@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -29,11 +30,13 @@ const FILE_UPLOAD_OPTIONS = {
 export class DrawingsController {
   constructor(private readonly drawingsService: DrawingsService) {}
 
+  @RequirePermission('drawings:create')
   @Post()
   create(@Body() dto: CreateDrawingDto) {
     return this.drawingsService.create(dto);
   }
 
+  @RequirePermission('drawings:read')
   @Get()
   findAll(
     @Query('projectId') projectId?: string,
@@ -48,11 +51,13 @@ export class DrawingsController {
     });
   }
 
+  @RequirePermission('drawings:read')
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.drawingsService.findOne(id);
   }
 
+  @RequirePermission('drawings:update')
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -61,6 +66,7 @@ export class DrawingsController {
     return this.drawingsService.update(id, dto);
   }
 
+  @RequirePermission('drawings:delete')
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.drawingsService.remove(id);
@@ -68,6 +74,7 @@ export class DrawingsController {
 
   // ---- Revisions ----
 
+  @RequirePermission('drawings:create')
   @Post(':id/revisions')
   @UseInterceptors(FileInterceptor('file', FILE_UPLOAD_OPTIONS))
   addRevision(
@@ -78,11 +85,13 @@ export class DrawingsController {
     return this.drawingsService.addRevision(id, dto, file);
   }
 
+  @RequirePermission('drawings:read')
   @Get(':id/revisions')
   listRevisions(@Param('id', ParseUUIDPipe) id: string) {
     return this.drawingsService.listRevisions(id);
   }
 
+  @RequirePermission('drawings:read')
   @Get(':id/revisions/:revisionId/download')
   async downloadRevision(
     @Param('id', ParseUUIDPipe) id: string,
@@ -108,6 +117,7 @@ export class DrawingsController {
     res.send(buffer);
   }
 
+  @RequirePermission('drawings:delete')
   @Delete(':id/revisions/:revisionId')
   removeRevision(
     @Param('id', ParseUUIDPipe) id: string,

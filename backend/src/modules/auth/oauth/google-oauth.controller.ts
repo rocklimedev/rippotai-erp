@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import { Public } from '@/common/decorator/public.decorator';
 // auth/oauth/google-oauth.controller.ts
 import {
@@ -23,6 +24,7 @@ export class GoogleOAuthController {
     private readonly oauthState: OAuthStateService,
   ) {}
 
+  @RequirePermission('auth-google:connect')
   @UseGuards(JwtAuthGuard)
   @Get('authorize')
   authorize(
@@ -40,6 +42,7 @@ export class GoogleOAuthController {
 
   // Public: Google redirects here with no auth headers, so no guard —
   // trust only the signed state, never req.user.
+  @RequirePermission('auth-google:callback')
   @Public()
   @Get('callback')
   async callback(@Query('code') code: string, @Query('state') state: string) {
@@ -53,12 +56,14 @@ export class GoogleOAuthController {
     return { connected: true, userId: token.userId, scope: token.scope };
   }
 
+  @RequirePermission('auth-google:read')
   @UseGuards(JwtAuthGuard)
   @Get('status')
   async status(@Req() req: RequestWithUser) {
     return { connected: await this.googleAuthService.isConnected(req.user.id) };
   }
 
+  @RequirePermission('auth-google:delete')
   @UseGuards(JwtAuthGuard)
   @Delete()
   async disconnect(@Req() req: RequestWithUser) {

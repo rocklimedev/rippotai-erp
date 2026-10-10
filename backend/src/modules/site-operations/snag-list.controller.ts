@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   BadRequestException,
   Body,
@@ -32,12 +33,15 @@ export class SnagListController {
     private readonly service: SnagListService,
     private readonly cdn: CdnService,
   ) {}
+  @RequirePermission('site-ops-snag-lists:create')
   @Post() create(@Body() dto: CreateSnagListDto, @Req() req: any) {
     return this.service.create(dto, req.user?.id);
   }
+  @RequirePermission('site-ops-snag-lists:read')
   @Get() list(@Query() query: QuerySnagListDto) {
     return this.service.list(query);
   }
+  @RequirePermission('site-ops-snag-lists:upload')
   @Post('photos')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -50,6 +54,7 @@ export class SnagListController {
       throw new BadRequestException('An image file is required');
     return this.cdn.uploadFile(file);
   }
+  @RequirePermission('site-ops-snag-lists:export')
   @Get(':id/export') async download(
     @Param('id', ParseUUIDPipe) id: string,
     @Res() res: Response,
@@ -65,9 +70,11 @@ export class SnagListController {
     );
     res.send(row.excel_data);
   }
+  @RequirePermission('site-ops-snag-lists:read')
   @Get(':id') findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.findOne(id);
   }
+  @RequirePermission('site-ops-snag-lists:update')
   @Patch(':id') update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateSnagListDto,

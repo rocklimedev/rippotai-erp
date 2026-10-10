@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -27,31 +28,37 @@ import {
 export class LibraryController {
   constructor(private readonly libraryService: LibraryService) {}
 
+  @RequirePermission('library:read')
   @Get('categories')
   findCategories() {
     return this.libraryService.findCategories();
   }
 
+  @RequirePermission('library:create')
   @Post('categories')
   createCategory(@Body() dto: CreateLibraryCategoryDto) {
     return this.libraryService.createCategory(dto);
   }
 
+  @RequirePermission('library:read')
   @Get('items')
   findItems(@Query() query: QueryLibraryItemsDto) {
     return this.libraryService.findItems(query);
   }
 
+  @RequirePermission('library:read')
   @Get('items/:id')
   findOneItem(@Param('id') id: string) {
     return this.libraryService.findOneItem(id);
   }
 
+  @RequirePermission('library:create')
   @Post('items')
   createItem(@Body() dto: CreateLibraryItemDto, @CurrentUser() user?: User) {
     return this.libraryService.createItem(dto, user?.id);
   }
 
+  @RequirePermission('library:update')
   @Patch('items/:id')
   updateItem(
     @Param('id') id: string,
@@ -61,6 +68,7 @@ export class LibraryController {
     return this.libraryService.updateItem(id, dto, user?.id);
   }
 
+  @RequirePermission('library:delete')
   @Delete('items/:id')
   removeItem(@Param('id') id: string, @CurrentUser() user?: User) {
     return this.libraryService.removeItem(id, user?.id);
