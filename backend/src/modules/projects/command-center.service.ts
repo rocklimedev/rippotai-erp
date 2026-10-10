@@ -188,9 +188,7 @@ export class CommandCenterService {
   async getPortfolio(
     query: PortfolioQueryDto,
   ): Promise<PortfolioProjectResponseDto[]> {
-    let rows = await this.cache.getOrLoad('portfolio', () =>
-      this.buildPortfolio(),
-    );
+    let rows = (await this.getPortfolioReadModel()).rows;
 
     if (query.health && query.health !== HealthFilter.ALL) {
       rows = rows.filter(
@@ -206,7 +204,13 @@ export class CommandCenterService {
     return rows;
   }
 
-  private async buildPortfolio(): Promise<PortfolioProjectResponseDto[]> {
+  private getPortfolioReadModel() {
+    return this.cache.getOrLoad('portfolio-read-model:v1', () =>
+      this.buildPortfolioReadModel(),
+    );
+  }
+
+  private async buildPortfolioReadModel() {
     const projects = await this.projectModel.findAll({
       include: [{ model: ProjectType, as: 'project_type' }],
       order: [['updated_at', 'DESC']],
@@ -217,7 +221,19 @@ export class CommandCenterService {
       projects.map((project) => this.buildProjectRow(project, siteQc)),
     );
 
-    return rows;
+    const values = projects.map((project) => ({
+      id: project.id,
+      approvedValue: Number(project.approved_value ?? 0),
+    }));
+    return {
+      rows,
+      values,
+      totalValue: values.reduce(
+        (sum, project) => sum + project.approvedValue,
+        0,
+      ),
+      siteQc,
+    };
   }
   async getProjectPhases(projectId: string): Promise<ProjectPhasesResponseDto> {
     return this.cache.getOrLoad('project:' + projectId, () =>
@@ -237,12 +253,8 @@ export class CommandCenterService {
   }
 
   private async buildKpis() {
-    const rows = await this.getPortfolio({});
+    const { rows, totalValue } = await this.getPortfolioReadModel();
     const allPhases = rows.flatMap((r) => r.phases);
-    const totalValue = (await this.projectModel.findAll()).reduce(
-      (s, p) => s + Number(p.approved_value ?? 0),
-      0,
-    );
 
     return {
       live: rows.length,
@@ -793,7 +805,7 @@ export class CommandCenterService {
   }
 
   private async buildTaskQc() {
-    const rows = await this.getPortfolio({});
+    const { rows, siteQc: failures } = await this.getPortfolioReadModel();
     const openTasks: Array<{
       id: string;
       name: string;
@@ -831,9 +843,7 @@ export class CommandCenterService {
 
     // Open site QC failures (Site Operations sign-offs) count as failed QC checks too.
     const byId = new Map(rows.map((r) => [r.id, r]));
-    const siteQc = (await this.openSiteQcFailures()).filter((q) =>
-      byId.has(q.project_id),
-    );
+    const siteQc = failures.filter((q) => byId.has(q.project_id));
     const siteItems = siteQc.map((q) => {
       const row = byId.get(q.project_id)!;
       return {
@@ -885,12 +895,10 @@ export class CommandCenterService {
   }
 
   private async buildCommercial() {
-    const projects = await this.projectModel.findAll();
-    const totalValue = projects.reduce(
-      (s, p) => s + Number(p.approved_value ?? 0),
-      0,
+    const { rows, values, totalValue } = await this.getPortfolioReadModel();
+    const valueById = new Map(
+      values.map((project) => [project.id, project.approvedValue]),
     );
-    const rows = await this.getPortfolio({});
     const boqPhaseNumber = 10; // BOQ & Costing — adjust if your seed differs
 
     let approvedValue = 0;
@@ -898,14 +906,12 @@ export class CommandCenterService {
     let inProgress = 0;
     let passed = 0;
 
-    rows.forEach((row, i) => {
+    rows.forEach((row) => {
       const boqPhase = row.phases.find((p) => p.phaseNumber === boqPhaseNumber);
       if (!boqPhase) return;
       if (boqPhase.state === PhaseRollupState.COMPLETE) {
         passed += 1;
-        approvedValue += Number(
-          projects.find((p) => p.id === row.id)?.approved_value ?? 0,
-        );
+        approvedValue += valueById.get(row.id) ?? 0;
       } else if (boqPhase.state === PhaseRollupState.AWAITING_GATE) {
         awaiting += 1;
       } else if (

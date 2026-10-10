@@ -12,8 +12,8 @@ import { DailySiteReport } from './daily-site-report.model';
 @Table({ tableName: 'manpower_entries', timestamps: true })
 export class ManpowerEntry extends Model<ManpowerEntry> {
   @ForeignKey(() => DailySiteReport)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  dailySiteReportId: number;
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  dailySiteReportId: string;
 
   @BelongsTo(() => DailySiteReport)
   dailySiteReport: DailySiteReport;

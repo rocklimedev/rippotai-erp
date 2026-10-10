@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import BoqDocument, { BOQ_VARIANTS, boqFileName } from "@/components/commerce-documents/BoqDocument";
 import { downloadWhenReady, OFFSCREEN_STYLE } from "@/components/print-document/commerce";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { getBoqAccess } from "@/lib/boq-access";
 import { toast } from "sonner";
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
 import {
@@ -73,6 +75,7 @@ import { PreExportChecklistModal } from "../../components/boqs/PreExportCheckMod
 export default function BoqWorkspace() {
   const { id } = useParams();
   const nav = useNavigate();
+  const { user } = useAuth();
 
   const { data: boq, isLoading } = useGetBoqByIdQuery(id);
   const [updateBoq] = useUpdateBoqMutation();
@@ -116,6 +119,7 @@ export default function BoqWorkspace() {
   const [pickerFor, setPickerFor] = useState(null);
 
   const disabled = isBoqDisabled(boq);
+  const { isOwner, canSubmit, canApprove } = getBoqAccess(boq, user);
   const onLockedEdit = useCallback(() => setLockedOpen(true), []);
 
   const withSaveChip = async (promise) => {
@@ -355,6 +359,7 @@ export default function BoqWorkspace() {
   };
 
   const handleSubmitForApproval = async () => {
+    if (!canSubmit) return;
     try {
       await submitForApproval({ id, note: "Please review" }).unwrap();
       toast.success("Submitted for approval");
@@ -366,6 +371,7 @@ export default function BoqWorkspace() {
   // Approve → lock, then render the client copy with the print kit (new format) and attach it to
   // the project's Documents (category "Approvals"). No server-side PDF template is involved.
   const handleApprove = async () => {
+    if (!canApprove) return;
     let approved;
     try {
       approved = await approveBoq({ id, remarks: "Approved" }).unwrap();
@@ -444,6 +450,7 @@ export default function BoqWorkspace() {
   // Keyboard shortcuts + click-outside to clear selection
   useEffect(() => {
     const onKey = (e) => {
+      if (!isOwner) return;
       const isInput = ["INPUT", "TEXTAREA", "SELECT"].includes(
         document.activeElement?.tagName,
       );
@@ -480,7 +487,7 @@ export default function BoqWorkspace() {
       window.removeEventListener("click", onClick);
     };
     // eslint-disable-next-line
-  }, [selectedIds]);
+  }, [selectedIds, isOwner]);
 
   if (isLoading || !boq) {
     return (
@@ -544,13 +551,13 @@ export default function BoqWorkspace() {
                 <Lock size={12} /> Locked
               </span>
             )}
-            <button
+            {isOwner && <button
               onClick={() => setDupOpen(true)}
               className="h-9 px-3 rounded-lg border border-[#B5C4B6] hover:bg-[#EAEEF0] text-[12.5px] font-semibold text-[#6B7B7C] flex items-center gap-1.5"
               data-testid="duplicate-version-btn"
             >
               <Copy size={13} /> Duplicate Version
-            </button>
+            </button>}
             <button
               onClick={() => nav(`/ledger/boq/${id}/versions`)}
               className="h-9 px-3 rounded-lg border border-[#B5C4B6] hover:bg-[#EAEEF0] text-[12.5px] font-semibold text-[#6B7B7C] flex items-center gap-1.5"
@@ -565,7 +572,7 @@ export default function BoqWorkspace() {
             >
               <Download size={13} /> Download BOQ
             </button>
-            {boq.status === "draft" && (
+            {canSubmit && (
               <button
                 onClick={handleSubmitForApproval}
                 className="h-9 px-3 rounded-lg bg-[#1F453B] hover:bg-[#1F453B] text-white text-[12.5px] font-semibold flex items-center gap-1.5"
@@ -574,7 +581,7 @@ export default function BoqWorkspace() {
                 <Send size={13} /> Send for Approval
               </button>
             )}
-            {boq.status === "awaiting_approval" && (
+            {canApprove && (
               <button
                 onClick={() => setApprovalOpen(true)}
                 className="h-9 px-3 rounded-lg bg-[#1F453B] hover:bg-[#1F453B] text-white text-[12.5px] font-semibold flex items-center gap-1.5"
@@ -607,6 +614,7 @@ export default function BoqWorkspace() {
                 <DropdownMenuItem onClick={() => setPreExportVariant("vendor_enquiry")}>
                   Download vendor enquiry (PDF)
                 </DropdownMenuItem>
+                {isOwner && <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-[#333333]"
@@ -620,6 +628,7 @@ export default function BoqWorkspace() {
                 >
                   Archive / Delete Draft
                 </DropdownMenuItem>
+                </>}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -627,6 +636,7 @@ export default function BoqWorkspace() {
       </header>
 
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {isOwner ? <>
         <BoqSummaryHeader boq={boq} disabled={disabled} />
 
         <section className="flex items-center gap-3 flex-wrap">
@@ -761,8 +771,15 @@ export default function BoqWorkspace() {
           onUpdateMisc={handleUpdateMisc}
           onDeleteMisc={handleDeleteMisc}
         />
+        </> : <>
+          <p className="text-[13px] text-[#6B7B7C]" data-testid="boq-read-only">
+            Read-only — only the BOQ owner can edit or perform workflow actions.
+          </p>
+          <BoqDocument boq={boq} variant="internal" />
+        </>}
       </main>
 
+      {isOwner && <>
       <AddCategoryPanel
         open={addCatOpen}
         onClose={setAddCatOpen}
@@ -869,7 +886,7 @@ export default function BoqWorkspace() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={approvalOpen} onOpenChange={setApprovalOpen}>
+      <Dialog open={canApprove && approvalOpen} onOpenChange={setApprovalOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Approve BOQ</DialogTitle>
@@ -887,7 +904,7 @@ export default function BoqWorkspace() {
             </button>
             <button
               onClick={handleApprove}
-              disabled={approving || attaching}
+              disabled={!canApprove || approving || attaching}
               className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold disabled:opacity-60"
               data-testid="approve-confirm"
             >
@@ -905,6 +922,7 @@ export default function BoqWorkspace() {
         busy={creatingVersion}
         onCreateNewVersion={createNewVersionFromLock}
       />
+      </>}
 
       <PreExportChecklistModal
         boqId={id}
@@ -930,13 +948,13 @@ export default function BoqWorkspace() {
         </div>
       )}
 
-      <AddItemPicker
+      {isOwner && <AddItemPicker
         open={!!pickerFor}
         defaultCategoryId={pickerFor?.cid}
         categories={boq?.categories || []}
         onClose={() => setPickerFor(null)}
         onPick={addItemFromPicker}
-      />
+      />}
     </div>
   );
 }

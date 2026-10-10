@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
   Optional,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
@@ -483,6 +484,9 @@ export class BoqService {
     dto: SubmitForApprovalDto,
     actorId?: string,
   ) {
+    if (!actorId?.trim()) {
+      throw new UnauthorizedException('An authenticated BOQ actor is required');
+    }
     const boq = await this.getOrThrow(id);
     if (
       boq.status !== BoqStatus.DRAFT &&
@@ -494,7 +498,7 @@ export class BoqService {
     }
     await boq.update({
       status: BoqStatus.AWAITING_APPROVAL,
-      updated_by: actorId ?? null,
+      updated_by: actorId,
     });
 
     await this.activity.log({
@@ -509,6 +513,9 @@ export class BoqService {
   }
 
   async approve(id: string, dto: ApproveBoqDto, actorId?: string) {
+    if (!actorId?.trim()) {
+      throw new UnauthorizedException('An authenticated BOQ actor is required');
+    }
     const boq = await this.getOrThrow(id);
     if (boq.status !== BoqStatus.AWAITING_APPROVAL) {
       throw new BadRequestException(
@@ -519,7 +526,7 @@ export class BoqService {
       status: BoqStatus.APPROVED,
       locked: true,
       approved_at: new Date(),
-      approved_by: actorId ?? null,
+      approved_by: actorId,
     });
 
     await this.activity.log({

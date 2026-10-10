@@ -1,16 +1,14 @@
-# React + Vite
+# Vendor quotation frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Review owner: ERP frontend maintainers
+Last reviewed: 2026-10-10
 
-Currently, two official plugins are available:
+Separate React/Vite application for vendor quotation workflows. The main ERP and Command Center frontend lives in `../rippotai-erp-frontend`.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Install dependencies: `npm ci`
+- Development server: `npm run dev`
+- Production build: `npm run build`
+- Preview build: `npm run preview`
+- Lint: `npm run lint` (Oxlint)
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Source is in `src`. See the [documentation index](../documentation/README.md) for quotation domain notes and the [ERP frontend README](../rippotai-erp-frontend/README.md) for the Command Center application.

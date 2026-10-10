@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
 
@@ -6,6 +11,19 @@ import { AuthToken } from './models/auth-token.model';
 import { CreateAuthTokenDto } from './dto/auth-token.dto';
 import { User } from '@/modules/users/models/user.model';
 import { Role } from '@/modules/rbac/models/role.model';
+import type { CurrentUserPayload } from '@/common/interfaces/current-user-payload.interface';
+
+const SESSION_ATTRIBUTES = [
+  'id',
+  'user_id',
+  'type',
+  'device_info',
+  'ip_address',
+  'expires_at',
+  'revoked_at',
+  'last_used_at',
+  'created_at',
+];
 
 @Injectable()
 export class AuthTokensService {
@@ -13,6 +31,54 @@ export class AuthTokensService {
     @InjectModel(AuthToken)
     private readonly authTokenModel: typeof AuthToken,
   ) {}
+
+  private isAdmin(actor: CurrentUserPayload): boolean {
+    if (!actor?.id?.trim())
+      throw new UnauthorizedException('Authenticated actor required');
+    return actor.roleName === 'ADMIN' || actor.roleName === 'SUPERADMIN';
+  }
+
+  private assertSessionOwner(userId: string, actor: CurrentUserPayload) {
+    if (!this.isAdmin(actor) && actor.id !== userId) {
+      throw new ForbiddenException('You can only manage your own sessions');
+    }
+  }
+
+  private sessionMetadata(token: AuthToken) {
+    return Object.fromEntries(
+      SESSION_ATTRIBUTES.map((field) => [field, token.get(field)]),
+    );
+  }
+
+  async listSessions(userId: string, actor: CurrentUserPayload) {
+    this.assertSessionOwner(userId, actor);
+    return this.authTokenModel.findAll({
+      where: { user_id: userId },
+      attributes: SESSION_ATTRIBUTES,
+      order: [['created_at', 'DESC']],
+      raw: true,
+    });
+  }
+
+  async revokeSession(id: string, actor: CurrentUserPayload) {
+    this.isAdmin(actor);
+    const token = await this.authTokenModel.findByPk(id);
+    if (!token) throw new NotFoundException('Session not found');
+    this.assertSessionOwner(token.user_id, actor);
+    await token.update({ revoked_at: new Date() });
+    return this.sessionMetadata(token);
+  }
+
+  async revokeUserSessions(userId: string, actor: CurrentUserPayload) {
+    this.assertSessionOwner(userId, actor);
+    return this.revokeAllForUser(userId);
+  }
+
+  async deleteSession(id: string, actor: CurrentUserPayload) {
+    if (!this.isAdmin(actor))
+      throw new ForbiddenException('Only administrators can delete sessions');
+    return this.remove(id);
+  }
 
   async create(dto: CreateAuthTokenDto): Promise<AuthToken> {
     return this.authTokenModel.create(dto as any);
@@ -45,7 +111,6 @@ export class AuthTokensService {
           include: [{ model: Role, as: 'role', attributes: ['id', 'name'] }],
         },
       ],
-      logging: console.log, // shows the actual SQL + JOINs executed
     });
 
     return result;

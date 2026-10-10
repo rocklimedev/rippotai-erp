@@ -1,5 +1,10 @@
 # Search API Specification
 
+Review owner: ERP backend maintainers (Search module)
+Last reviewed: 2026-10-10
+
+This file includes design examples that may differ from live response shapes. The implemented authorization policy and staging validation procedure are documented in [Search security](../search-security.md).
+
 **Version:** 2.0  
 **Base path:** `/search`
 
@@ -160,9 +165,9 @@ GET /search/health
 
 ## 6. Permission Behaviour
 
-- All endpoints receive the authenticated user.
-- Non-admin users only see documents belonging to projects they are members of (or public visibility rules).
-- Activity log search is restricted to admin / auditor roles.
+- All endpoints require JWT authentication. Full and entity reindex require ADMIN or SUPERADMIN.
+- Non-admin users see only records with a project ID in the server-resolved set of projects they created or are assigned to. Missing scope fails closed; no projects means no results.
+- Unscoped records are hidden from non-admin users. Caller-supplied project lists and administrator flags are ignored.
 - `includeDeleted` is admin-only.
 
 ---

@@ -1,44 +1,47 @@
 import {
   Controller,
   Get,
-  Post,
   Patch,
   Delete,
-  Body,
   Param,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthTokensService } from './auth-tokens.service';
-import { CreateAuthTokenDto } from './dto/auth-token.dto';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
+import { CurrentUser } from '@/common/decorator/current-user.decorator';
+import type { CurrentUserPayload } from '@/common/interfaces/current-user-payload.interface';
 
 @Controller('auth/tokens')
+@UseGuards(JwtAuthGuard)
 export class AuthTokensController {
   constructor(private readonly authTokensService: AuthTokensService) {}
 
-  @Post()
-  create(@Body() dto: CreateAuthTokenDto) {
-    return this.authTokensService.create(dto);
-  }
-
   @Get('user/:userId')
-  findAllForUser(@Param('userId') userId: string) {
-    return this.authTokensService.findAllForUser(userId);
+  findAllForUser(
+    @Param('userId') userId: string,
+    @CurrentUser() actor: CurrentUserPayload,
+  ) {
+    return this.authTokensService.listSessions(userId, actor);
   }
 
   @Patch(':id/revoke')
-  revoke(@Param('id') id: string) {
-    return this.authTokensService.revoke(id);
+  revoke(@Param('id') id: string, @CurrentUser() actor: CurrentUserPayload) {
+    return this.authTokensService.revokeSession(id, actor);
   }
 
   @Patch('user/:userId/revoke-all')
-  revokeAllForUser(@Param('userId') userId: string) {
-    return this.authTokensService.revokeAllForUser(userId);
+  revokeAllForUser(
+    @Param('userId') userId: string,
+    @CurrentUser() actor: CurrentUserPayload,
+  ) {
+    return this.authTokensService.revokeUserSessions(userId, actor);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string) {
-    return this.authTokensService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() actor: CurrentUserPayload) {
+    return this.authTokensService.deleteSession(id, actor);
   }
 }

@@ -6,9 +6,14 @@ import {
   Param,
   Req,
   Logger,
+  UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
-import { GlobalSearchService, SearchUserContext } from './global-search.service';
+import { GlobalSearchService } from './global-search.service';
 import { AutocompleteService } from './autocomplete.service';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
+import { SearchScopeService } from './search-scope.service';
+import { isSearchAdmin } from './search-access';
 import { GlobalSearchQueryDto, SuggestQueryDto } from './dto/global-search.dto';
 
 import { ProjectSearchService } from './services/project-search.service';
@@ -29,6 +34,7 @@ import { DeliveryChallanSearchService } from './services/delivery-challan-search
 import { BudgetEstimateSearchService } from './services/budget-estimate-search.service';
 
 @Controller('search')
+@UseGuards(JwtAuthGuard)
 export class SearchController {
   private readonly logger = new Logger(SearchController.name);
 
@@ -51,6 +57,7 @@ export class SearchController {
     private readonly workOrderSearch: WorkOrderSearchService,
     private readonly deliveryChallanSearch: DeliveryChallanSearchService,
     private readonly budgetEstimateSearch: BudgetEstimateSearchService,
+    private readonly scope: SearchScopeService,
   ) {}
 
   // ================================================================
@@ -59,7 +66,7 @@ export class SearchController {
 
   @Get()
   async search(@Query() query: GlobalSearchQueryDto, @Req() req: any) {
-    const user = this.extractUser(req);
+    const user = await this.scope.resolve(req.user);
     return this.globalSearch.search(query, user);
   }
 
@@ -69,7 +76,7 @@ export class SearchController {
 
   @Get('suggest')
   async suggest(@Query() query: SuggestQueryDto, @Req() req: any) {
-    const user = this.extractUser(req);
+    const user = await this.scope.resolve(req.user);
     return {
       suggestions: await this.autocomplete.suggest(query, user),
     };
@@ -80,83 +87,83 @@ export class SearchController {
   // ================================================================
 
   @Get('projects')
-  searchProjects(@Query('q') q: string) {
-    return this.projectSearch.search(q);
+  searchProjects(@Query('q') q: string, @Req() req: any) {
+    return this.searchEntity('project', q, req);
   }
 
   @Get('clients')
-  searchClients(@Query('q') q: string) {
-    return this.clientSearch.search(q);
+  searchClients(@Query('q') q: string, @Req() req: any) {
+    return this.searchEntity('client', q, req);
   }
 
   @Get('users')
-  searchUsers(@Query('q') q: string) {
-    return this.userSearch.search(q);
+  searchUsers(@Query('q') q: string, @Req() req: any) {
+    return this.searchEntity('user', q, req);
   }
 
   @Get('leads')
-  searchLeads(@Query('q') q: string) {
-    return this.leadSearch.search(q);
+  searchLeads(@Query('q') q: string, @Req() req: any) {
+    return this.searchEntity('lead', q, req);
   }
 
   @Get('vendors')
-  searchVendors(@Query('q') q: string) {
-    return this.vendorSearch.search(q);
+  searchVendors(@Query('q') q: string, @Req() req: any) {
+    return this.searchEntity('vendor', q, req);
   }
 
   @Get('boqs')
-  searchBoqs(@Query('q') q: string) {
-    return this.boqSearch.search(q);
+  searchBoqs(@Query('q') q: string, @Req() req: any) {
+    return this.searchEntity('boq', q, req);
   }
 
   @Get('briefs')
-  searchBriefs(@Query('q') q: string) {
-    return this.briefSearch.search(q);
+  searchBriefs(@Query('q') q: string, @Req() req: any) {
+    return this.searchEntity('project_brief', q, req);
   }
 
   @Get('quotations')
-  searchQuotations(@Query('q') q: string) {
-    return this.quotationSearch.search(q);
+  searchQuotations(@Query('q') q: string, @Req() req: any) {
+    return this.searchEntity('quotation', q, req);
   }
 
   @Get('site-recces')
-  searchSiteRecces(@Query('q') q: string) {
-    return this.siteRecceSearch.search(q);
+  searchSiteRecces(@Query('q') q: string, @Req() req: any) {
+    return this.searchEntity('site_recce', q, req);
   }
 
   @Get('tasks')
-  searchTasks(@Query('q') q: string) {
-    return this.taskSearch.search(q);
+  searchTasks(@Query('q') q: string, @Req() req: any) {
+    return this.searchEntity('task', q, req);
   }
 
   @Get('calendar')
-  searchCalendar(@Query('q') q: string) {
-    return this.calendarSearch.search(q);
+  searchCalendar(@Query('q') q: string, @Req() req: any) {
+    return this.searchEntity('calendar_event', q, req);
   }
 
   @Get('documents')
-  searchDocuments(@Query('q') q: string) {
-    return this.documentSearch.search(q);
+  searchDocuments(@Query('q') q: string, @Req() req: any) {
+    return this.searchEntity('document', q, req);
   }
 
   @Get('drawings')
-  searchDrawings(@Query('q') q: string) {
-    return this.drawingSearch.search(q);
+  searchDrawings(@Query('q') q: string, @Req() req: any) {
+    return this.searchEntity('drawing', q, req);
   }
 
   @Get('work-orders')
-  searchWorkOrders(@Query('q') q: string) {
-    return this.workOrderSearch.search(q);
+  searchWorkOrders(@Query('q') q: string, @Req() req: any) {
+    return this.searchEntity('work_order', q, req);
   }
 
   @Get('delivery-challans')
-  searchDeliveryChallans(@Query('q') q: string) {
-    return this.deliveryChallanSearch.search(q);
+  searchDeliveryChallans(@Query('q') q: string, @Req() req: any) {
+    return this.searchEntity('delivery_challan', q, req);
   }
 
   @Get('budget-estimates')
-  searchBudgetEstimates(@Query('q') q: string) {
-    return this.budgetEstimateSearch.search(q);
+  searchBudgetEstimates(@Query('q') q: string, @Req() req: any) {
+    return this.searchEntity('budget_estimate', q, req);
   }
 
   // ================================================================
@@ -164,7 +171,8 @@ export class SearchController {
   // ================================================================
 
   @Post('reindex/all')
-  async reindexAll() {
+  async reindexAll(@Req() req: any) {
+    this.requireAdmin(req);
     const jobs: Array<[string, () => Promise<any>]> = [
       ['projects', () => this.projectSearch.reindexAll()],
       ['clients', () => this.clientSearch.reindexAll()],
@@ -208,7 +216,8 @@ export class SearchController {
   }
 
   @Post('reindex/:entity')
-  async reindexEntity(@Param('entity') entity: string) {
+  async reindexEntity(@Param('entity') entity: string, @Req() req: any) {
+    this.requireAdmin(req);
     const map: Record<string, () => Promise<any>> = {
       projects: () => this.projectSearch.reindexAll(),
       clients: () => this.clientSearch.reindexAll(),
@@ -283,18 +292,20 @@ export class SearchController {
   // HELPERS
   // ================================================================
 
-  private extractUser(req: any): SearchUserContext {
-    const u = req.user ?? {};
-    return {
-      id: u.id ?? u.sub ?? 'anonymous',
-      role: u.role ?? u.roleName,
-      isAdmin:
-        u.isAdmin === true ||
-        u.role === 'admin' ||
-        u.role === 'ADMIN' ||
-        (Array.isArray(u.roles) &&
-          (u.roles.includes('admin') || u.roles.includes('ADMIN'))),
-      projectIds: u.projectIds ?? u.allowedProjectIds ?? [],
-    };
+  private requireAdmin(req: any) {
+    if (!isSearchAdmin({ id: req.user?.id, role: req.user?.roleName })) {
+      throw new ForbiddenException('Only administrators can reindex search');
+    }
+  }
+
+  private async searchEntity(type: string, q: string, req: any) {
+    const user = await this.scope.resolve(req.user);
+    if (!q?.trim()) return [];
+    const result = await this.globalSearch.search({ q, types: type }, user);
+    return result.results.map((hit) => ({
+      ...hit.meta,
+      id: hit.id,
+      score: hit.score,
+    }));
   }
 }

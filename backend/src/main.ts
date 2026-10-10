@@ -7,9 +7,11 @@ import * as fs from 'fs';
 import { AppModule } from './app.module';
 import { RedisIoAdapter } from './redis-io.adapter';
 import { StripSecretsInterceptor } from './common/interceptors/strip-secrets.interceptor';
+import { configureHttpSecurity } from './common/security/http-security';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  configureHttpSecurity(app);
   // Saved comparison snapshots include BOQ lines and vendor rates.
   app.useBodyParser('json', { limit: '3mb' });
 

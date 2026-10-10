@@ -1,3 +1,4 @@
+import { Public } from '@/common/decorator/public.decorator';
 // auth/oauth/zoho-oauth.controller.ts
 
 import {
@@ -34,7 +35,10 @@ export class ZohoOAuthController {
    */
   @UseGuards(JwtAuthGuard)
   @Get('authorize-url')
-  async authorizeUrl(@Req() req: RequestWithUser, @Query('scopes') scopes?: string) {
+  async authorizeUrl(
+    @Req() req: RequestWithUser,
+    @Query('scopes') scopes?: string,
+  ) {
     const userId = req.user.id;
 
     const state = this.oauthState.sign({
@@ -46,11 +50,12 @@ export class ZohoOAuthController {
       ? scopes.split(',').map((scope) => scope.trim())
       : undefined;
 
-    const authorizationUrl = await this.zohoAuthService.buildAdditionalAuthorizationUrl(
-      userId,
-      state,
-      scopeList,
-    );
+    const authorizationUrl =
+      await this.zohoAuthService.buildAdditionalAuthorizationUrl(
+        userId,
+        state,
+        scopeList,
+      );
 
     return {
       authorizationUrl,
@@ -63,6 +68,7 @@ export class ZohoOAuthController {
    * This endpoint MUST remain public because Zoho does not send
    * your application's JWT Authorization header.
    */
+  @Public()
   @Get('callback')
   async callback(@Query('code') code: string, @Query('state') state: string) {
     if (!code || !state) {

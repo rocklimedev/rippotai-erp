@@ -98,7 +98,7 @@ export class DailySiteReportService {
   }
 
   private async replaceManpower(
-    reportId: number,
+    reportId: string,
     rows: CreateDailySiteReportDto['manpower'],
     transaction: Transaction,
   ) {
@@ -123,7 +123,7 @@ export class DailySiteReportService {
   private async assertDateFree(
     projectId: string,
     reportDate: string,
-    exceptId?: number,
+    exceptId?: string,
   ) {
     const existing = await this.reportModel.findOne({
       where: {
@@ -166,7 +166,7 @@ export class DailySiteReportService {
   }
 
   async updateReport(
-    id: number,
+    id: string,
     dto: UpdateDailySiteReportDto,
   ): Promise<DailySiteReport> {
     const report = await this.getReportOrThrow(id);
@@ -189,7 +189,7 @@ export class DailySiteReportService {
   }
 
   /** Marks the report as shared with the client (e.g. after an email/notification goes out). */
-  async markShared(id: number): Promise<DailySiteReport> {
+  async markShared(id: string): Promise<DailySiteReport> {
     const report = await this.getReportOrThrow(id);
     await report.update({
       isShared: true,
@@ -199,7 +199,7 @@ export class DailySiteReportService {
     return this.getReportOrThrow(id);
   }
 
-  async deleteReport(id: number): Promise<{ id: number; deleted: true }> {
+  async deleteReport(id: string): Promise<{ id: string; deleted: true }> {
     const report = await this.getReportOrThrow(id);
     await this.sequelize.transaction(async (transaction) => {
       await this.manpowerModel.destroy({
@@ -211,7 +211,7 @@ export class DailySiteReportService {
     return { id, deleted: true };
   }
 
-  async getReportOrThrow(id: number): Promise<DailySiteReport> {
+  async getReportOrThrow(id: string): Promise<DailySiteReport> {
     const report = await this.reportModel.findByPk(id, {
       include: this.include,
     });

@@ -1,4 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import {
+  isSearchAdmin,
+  searchScopeFilter,
+  SearchUserContext,
+} from './search-access';
+export type { SearchUserContext } from './search-access';
 import { SearchService } from './search.service';
 import {
   GlobalSearchResult,
@@ -71,13 +77,6 @@ const ENTITY_TO_INDEX: Record<string, string> = {
   budget_estimate: 'budget_estimates',
   activity_log: 'activity_logs',
 };
-
-export interface SearchUserContext {
-  id: string;
-  role?: string;
-  isAdmin?: boolean;
-  projectIds?: string[]; // projects the user can see
-}
 
 @Injectable()
 export class GlobalSearchService {
@@ -197,18 +196,22 @@ export class GlobalSearchService {
 
     const indices = requested
       .map((t) => ENTITY_TO_INDEX[t] ?? t)
-      .filter((idx) => DEFAULT_INDICES.includes(idx) || true);
+      .filter((idx) => DEFAULT_INDICES.includes(idx));
+
+    if (indices.length !== requested.length) {
+      throw new BadRequestException('Unsupported search entity type');
+    }
 
     return indices.length ? indices : DEFAULT_INDICES;
   }
 
   private buildQuery(dto: GlobalSearchQueryDto, user: SearchUserContext) {
     const must: any[] = [];
-    const filter: any[] = [];
+    const filter: any[] = [searchScopeFilter(user)];
     const mustNot: any[] = [];
 
     // Soft-delete filter
-    if (!dto.includeDeleted || !user.isAdmin) {
+    if (!dto.includeDeleted || !isSearchAdmin(user)) {
       mustNot.push({ term: { is_deleted: true } });
     }
 
@@ -259,26 +262,6 @@ export class GlobalSearchService {
       if (dto.from) range.gte = dto.from;
       if (dto.to) range.lte = dto.to;
       filter.push({ range: { updated_at: range } });
-    }
-
-    // Permission filter
-    if (!user.isAdmin && user.projectIds?.length) {
-      filter.push({
-        bool: {
-          should: [
-            { terms: { project_id: user.projectIds } },
-            { bool: { must_not: { exists: { field: 'project_id' } } } }, // global entities
-          ],
-          minimum_should_match: 1,
-        },
-      });
-    } else if (!user.isAdmin && !user.projectIds?.length) {
-      // User has no projects – only allow non-project-scoped entities
-      filter.push({
-        bool: {
-          must_not: { exists: { field: 'project_id' } },
-        },
-      });
     }
 
     return {

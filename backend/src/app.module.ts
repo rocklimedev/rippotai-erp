@@ -70,6 +70,7 @@ import { ClientPortalModule } from './modules/client-portal/client-portal.module
 import { ProjectPlannerModule } from './modules/projects/project-planner.module';
 import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { SyncModule } from './modules/sync/sync.module';
+import { HttpSecurityModule } from './common/security/http-security.module';
 
 @Module({
   imports: [
@@ -81,6 +82,7 @@ import { SyncModule } from './modules/sync/sync.module';
       envFilePath: '.env',
       load: [databaseConfig],
     }),
+    HttpSecurityModule,
 
     // ============================================================
     // Database
