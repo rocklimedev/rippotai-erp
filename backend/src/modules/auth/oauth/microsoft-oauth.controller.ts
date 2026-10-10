@@ -1,3 +1,4 @@
+import { Public } from '@/common/decorator/public.decorator';
 // auth/oauth/microsoft-oauth.controller.ts
 
 import {
@@ -112,6 +113,7 @@ export class MicrosoftOAuthController {
    * DO NOT require JWT here because the browser
    * redirect will not contain your INOS JWT.
    */
+  @Public()
   @Get('callback')
   async callback(
     @Query('code') code: string,

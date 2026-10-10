@@ -148,8 +148,8 @@ export function buildRecceSections(recce) {
     sections.push({
       title: "Room-wise measurements",
       rows: {
-        cols: ["Room", "#Length", "#Width", "#Height", "Existing finishes & notes"],
-        template: "30% 17mm 17mm 17mm 1fr",
+        cols: ["Room", "#Length", "#Width", "#Height", "#Area", "Existing finishes & notes"],
+        template: "24% 15mm 15mm 15mm 20mm 1fr",
         items: measured.map((r) => {
           const u = UNIT[r.measurement_unit] || (r.measurement_unit || "ft").toLowerCase();
           return {
@@ -159,6 +159,7 @@ export function buildRecceSections(recce) {
               dim(r.length, u),
               dim(r.width, u),
               dim(r.height, u),
+              has(r.area) ? `${num(r.area, 2)} sq ${u}` : "—",
               [r.existing_flooring && `Flooring: ${r.existing_flooring}`, r.existing_ceiling && `Ceiling: ${r.existing_ceiling}`, r.notes]
                 .filter(has)
                 .join("\n"),

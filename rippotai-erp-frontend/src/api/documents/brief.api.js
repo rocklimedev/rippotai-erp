@@ -2,6 +2,13 @@ import { baseApi } from "../../store/baseApi";
 
 export const projectBriefsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    uploadBriefReferenceImage: builder.mutation({
+      query: (file) => {
+        const body = new FormData();
+        body.append("file", file);
+        return { url: "/project-briefs/reference-images", method: "POST", body };
+      },
+    }),
     // =========================================================
     // PROJECT BRIEFS
     // =========================================================
@@ -118,6 +125,7 @@ export const {
   useLazyGetProjectBriefQuery,
 
   // Mutations
+  useUploadBriefReferenceImageMutation,
   useCreateProjectBriefMutation,
   useUpdateProjectBriefMutation,
   useUpdateProjectBriefStatusMutation,

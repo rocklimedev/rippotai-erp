@@ -39,14 +39,6 @@ export const authApi = baseApi.injectEndpoints({
     // AUTH TOKENS CONTROLLER
     // =========================
 
-    createAuthToken: builder.mutation({
-      query: (body) => ({
-        url: "/auth/tokens",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["AuthTokens"],
-    }),
 
     getAuthTokensByUser: builder.query({
       query: (userId) => `/auth/tokens/user/${userId}`,
@@ -99,39 +91,6 @@ export const authApi = baseApi.injectEndpoints({
       invalidatesTags: ["AuthTokens"],
     }),
 
-    // =========================
-    // VERIFICATION TOKENS
-    // =========================
-
-    createVerificationToken: builder.mutation({
-      query: (body) => ({
-        url: "/auth/verification-tokens",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["VerificationTokens"],
-    }),
-
-    validateVerificationToken: builder.query({
-      query: (token) => `/auth/verification-tokens/validate?token=${token}`,
-      providesTags: ["VerificationTokens"],
-    }),
-
-    consumeVerificationToken: builder.mutation({
-      query: (id) => ({
-        url: `/auth/verification-tokens/${id}/consume`,
-        method: "PATCH",
-      }),
-      invalidatesTags: ["VerificationTokens"],
-    }),
-
-    deleteVerificationToken: builder.mutation({
-      query: (id) => ({
-        url: `/auth/verification-tokens/${id}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["VerificationTokens"],
-    }),
   }),
   overrideExisting: false,
 });
@@ -142,7 +101,6 @@ export const {
   useLogoutMutation,
   useMeQuery,
   useLazyMeQuery,
-  useCreateAuthTokenMutation,
   useGetAuthTokensByUserQuery,
   useRevokeAuthTokenMutation,
   useRevokeAllAuthTokensForUserMutation,
@@ -150,8 +108,4 @@ export const {
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useChangePasswordMutation,
-  useCreateVerificationTokenMutation,
-  useValidateVerificationTokenQuery,
-  useConsumeVerificationTokenMutation,
-  useDeleteVerificationTokenMutation,
 } = authApi;

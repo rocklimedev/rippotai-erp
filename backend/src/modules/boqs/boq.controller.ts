@@ -9,6 +9,7 @@ import {
   Query,
   Res,
   BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
 import { Req } from '@nestjs/common';
 import type { Response } from 'express';
@@ -32,6 +33,9 @@ import {
   SubmitForApprovalDto,
 } from './dto/boq-workflow.dto';
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
+import { PermissionsGuard } from '@/common/guards/permissions.guard';
 import { User } from '@/modules/users/models/user.model';
 import { BoqDashboardService } from './boq-dashboard.service';
 import { ApplyTermsDto } from '../metas/dto/apply-terms.dto';
@@ -142,6 +146,8 @@ export class BoqController {
 
   // Workflow
   @Post(':id/submit-for-approval')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('boq:submit')
   submitForApproval(
     @Param('id') id: string,
     @Body() dto: SubmitForApprovalDto,
@@ -151,6 +157,8 @@ export class BoqController {
   }
 
   @Post(':id/approve')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('boq:approve')
   approve(
     @Param('id') id: string,
     @Body() dto: ApproveBoqDto,

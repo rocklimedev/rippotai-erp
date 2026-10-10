@@ -28,6 +28,19 @@ export function changeSiteRecceField(current, key, value) {
   }
   return next;
 }
+export function changeRoomField(room, key, value) {
+  const next = { ...room, [key]: value };
+  if (key === "length" || key === "width") {
+    const length = Number(next.length);
+    const width = Number(next.width);
+    const product = length * width;
+    next.area = String(next.length ?? "").trim() !== "" && String(next.width ?? "").trim() !== "" &&
+      Number.isFinite(product) && length >= 0 && width >= 0
+      ? Number(product.toFixed(2)) : "";
+  }
+  return next;
+}
+
 export function commitRoomDraft(rooms, photos, draft) {
   const { _photos = [], _draftId, ...room } = draft;
   room.id = room.id || _draftId;

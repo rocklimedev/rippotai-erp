@@ -7,6 +7,7 @@ import { Client } from '../clients/models/client.model';
 import { Milestone } from './models/milestone.model';
 import { InjectConnection } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
+import { CommandCenterCacheService } from './command-center-cache.service';
 @Injectable()
 export class ProjectDashboardService {
   constructor(
@@ -18,6 +19,7 @@ export class ProjectDashboardService {
     private milestoneModel: typeof Milestone,
     @InjectConnection()
     private readonly sequelize: Sequelize,
+    private readonly cache: CommandCenterCacheService,
   ) {}
 
   // =============================================
@@ -27,6 +29,12 @@ export class ProjectDashboardService {
   // GET /projects/summary
   // =============================================
   async getProjectsSummary() {
+    return this.cache.getOrLoad('dashboard:projects:summary', () =>
+      this.buildProjectsSummary(),
+    );
+  }
+
+  private async buildProjectsSummary() {
     const summary = await this.projectModel.findAll({
       attributes: [
         [fn('COUNT', col('id')), 'total'],
@@ -136,6 +144,13 @@ export class ProjectDashboardService {
   // GET /dashboards/projects/progress-trend
   // =============================================
   async getProjectsProgressTrend(months = 6) {
+    return this.cache.getOrLoad(
+      `dashboard:projects:progress-trend:${months}`,
+      () => this.buildProjectsProgressTrend(months),
+    );
+  }
+
+  private async buildProjectsProgressTrend(months: number) {
     const data = await this.sequelize.query(
       `
       SELECT
@@ -159,6 +174,12 @@ export class ProjectDashboardService {
   // GET /dashboards/projects/phase-mix
   // ============================================
   async getProjectsPhaseMix() {
+    return this.cache.getOrLoad('dashboard:projects:phase-mix', () =>
+      this.buildProjectsPhaseMix(),
+    );
+  }
+
+  private async buildProjectsPhaseMix() {
     const result = await this.projectModel.findAll({
       attributes: ['current_phase', [fn('COUNT', col('id')), 'count']],
       where: { deleted_at: null },

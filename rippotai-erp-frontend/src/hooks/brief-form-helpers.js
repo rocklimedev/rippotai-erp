@@ -237,10 +237,14 @@ export const normalizeProjectBrief = (brief) => {
       .filter(Boolean),
 
     references: [...(brief.references ?? [])]
+      .filter((item) => !item?.fileUrl)
       .sort((a, b) => Number(a?.sortOrder ?? 0) - Number(b?.sortOrder ?? 0))
-      .map((item) => item?.description ?? item)
+      .map((item) => typeof item === "string" ? item : item?.description || item?.referenceUrl || item?.title)
       .filter(Boolean)
       .join("\n"),
+    referenceTextRows: (brief.references ?? []).filter((item) => !item?.fileUrl),
+    referenceImages: [...(brief.references ?? [])].filter((item) => item?.fileUrl)
+      .sort((a, b) => Number(a?.sortOrder ?? 0) - Number(b?.sortOrder ?? 0)),
 
     phases,
     occupants,
@@ -376,10 +380,13 @@ export const buildProjectBriefPayload = (projectId, values) => {
         styleDirection === "OTHER" ? values.styleDirectionOther || null : null,
     })),
 
-    references: splitLines(values.references).map((description, index) => ({
-      description,
-      sortOrder: index,
-    })),
+    references: [
+      ...splitLines(values.references).map((description) => {
+        const original = (values.referenceTextRows || []).find((row) => (row.description || row.referenceUrl || row.title) === description);
+        return original ? { id: original.id, title: original.title, description: original.description, referenceUrl: original.referenceUrl } : { description };
+      }),
+      ...(values.referenceImages || []).filter((row) => row.fileUrl).map((row) => ({ id: row.id, title: row.title, fileUrl: row.fileUrl, description: row.description, referenceUrl: row.referenceUrl })),
+    ].map((row, index) => ({ ...row, sortOrder: index })),
 
     phases:
       values.phasingRequired === "Yes"

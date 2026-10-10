@@ -1,3 +1,4 @@
+import { Public } from '@/common/decorator/public.decorator';
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
 
@@ -27,6 +28,7 @@ export class AppController {
    * Used by Docker, Kubernetes, load balancers,
    * uptime monitoring, etc.
    */
+  @Public()
   @Get('health/live')
   getLiveness() {
     return this.appService.getLiveness();
@@ -37,6 +39,7 @@ export class AppController {
    *
    * Indicates whether the API is ready to receive traffic.
    */
+  @Public()
   @Get('health/ready')
   getReadiness() {
     return this.appService.getReadiness();

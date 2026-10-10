@@ -41,6 +41,8 @@ export function BriefSectionForm({
   projectsLoading,
   crumbs,
   onCancel,
+  onReferenceImagesUpload,
+  uploadingReferences = false,
 }) {
   const navigate = useNavigate();
 
@@ -118,6 +120,29 @@ export function BriefSectionForm({
 
     const fieldValue = values?.[field.key] ?? "";
     const set = (v) => handleFieldChange(section, field.key, v);
+
+    if (field.type === "reference-images") {
+      const images = Array.isArray(fieldValue) ? fieldValue : [];
+      return (
+        <Field key={field.key} label={field.label} hint="Upload JPG, PNG, WebP or GIF images, up to 10 MB each." full>
+          <input type="file" aria-label="Upload reference images" accept="image/jpeg,image/png,image/webp,image/gif" multiple disabled={uploadingReferences || isSubmitting} onChange={(event) => {
+            const files = Array.from(event.target.files || []);
+            event.target.value = "";
+            onReferenceImagesUpload?.(files);
+          }} />
+          {uploadingReferences && <p role="status">Uploading reference images…</p>}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginTop: 12 }}>
+            {images.map((image, index) => (
+              <div key={image.id || image.fileUrl}>
+                <a href={image.fileUrl} target="_blank" rel="noreferrer"><img src={image.fileUrl} alt={image.title || "Reference image"} style={{ width: "100%", height: 160, objectFit: "contain" }} /></a>
+                <TextInput aria-label={`Reference image ${index + 1} name`} value={image.title || ""} placeholder="Image name" maxLength={255} onChange={(event) => set(images.map((row, i) => i === index ? { ...row, title: event.target.value } : row))} />
+                <IconButton danger label={`Remove reference image ${index + 1}`} onClick={() => set(images.filter((_, i) => i !== index))}><Trash2 /></IconButton>
+              </div>
+            ))}
+          </div>
+        </Field>
+      );
+    }
 
     // ---- TABLE (compact inline rows) ----
     if (field.type === "table") {
@@ -369,7 +394,7 @@ export function BriefSectionForm({
         note={`${filledCount} field${filledCount !== 1 ? "s" : ""} completed`}
         onCancel={onCancel || (() => navigate(-1))}
         submitLabel={isSubmitting ? "Saving…" : submitLabel}
-        submitDisabled={isSubmitting}
+        submitDisabled={isSubmitting || uploadingReferences}
         onSubmit={onSubmit}
       />
 

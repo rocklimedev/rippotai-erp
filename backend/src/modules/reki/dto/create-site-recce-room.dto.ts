@@ -66,6 +66,11 @@ export class CreateSiteRecceRoomDto {
   height?: number;
 
   @IsOptional()
+  @IsNumber()
+  @Min(0)
+  area?: number;
+
+  @IsOptional()
   @IsEnum(MeasurementUnit)
   measurement_unit?: MeasurementUnit;
 

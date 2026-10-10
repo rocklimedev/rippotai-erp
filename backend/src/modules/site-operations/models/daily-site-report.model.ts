@@ -7,6 +7,7 @@ import {
   BelongsTo,
   Default,
   HasMany,
+  PrimaryKey,
 } from 'sequelize-typescript';
 import { Project } from '@/modules/projects/models/projects.model';
 import { ManpowerEntry } from './manpower-entry.model';
@@ -73,6 +74,11 @@ export interface PhotoLine {
   indexes: [{ unique: true, fields: ['projectId', 'reportDate'] }],
 })
 export class DailySiteReport extends Model<DailySiteReport> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column({ type: DataType.CHAR(36), allowNull: false })
+  declare id: string;
+
   @ForeignKey(() => Project)
   @Column({ type: DataType.CHAR(36), allowNull: false })
   projectId: string;

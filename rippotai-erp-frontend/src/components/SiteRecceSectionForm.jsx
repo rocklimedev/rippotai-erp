@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Image as ImageIcon, Pencil, Ruler, Upload, X, ShieldCheck } from "lucide-react";
-import { commitRoomDraft } from "@/hooks/site-recce-form-helpers";
+import { commitRoomDraft, changeRoomField } from "@/hooks/site-recce-form-helpers";
 
 import { Button, Field, TextInput, TextArea, FormActions } from "@/components/inos";
 import {
@@ -32,6 +32,7 @@ const EMPTY_ROOM = {
   length: "",
   width: "",
   height: "",
+  area: "",
   measurement_unit: "FT",
   existing_flooring: "",
   existing_ceiling: "",
@@ -187,10 +188,7 @@ function RoomEditor({ room, onChange, onCancel, onSave, onFileUpload }) {
     finally { setPendingUploads((count) => count - 1); }
   };
   const update = (key, value) => {
-    onChange({
-      ...room,
-      [key]: value,
-    });
+    onChange((current) => changeRoomField(current, key, value));
   };
 
   return (
@@ -239,8 +237,9 @@ function RoomEditor({ room, onChange, onCancel, onSave, onFileUpload }) {
           ["length", "Length", "e.g. 14"],
           ["width", "Width", "e.g. 12"],
           ["height", "Height", "e.g. 10"],
+          ["area", "Area", "e.g. 168"],
         ].map(([key, label, ph]) => (
-          <Field key={key} label={label} hint={`In ${(MEASUREMENT_UNIT_OPTIONS.find((o) => o.value === (room.measurement_unit || "FT"))?.label || "feet").toLowerCase()}`}>
+          <Field key={key} label={label} hint={key === "area" ? `Length × width, in square ${(MEASUREMENT_UNIT_OPTIONS.find((o) => o.value === (room.measurement_unit || "FT"))?.label || "feet").toLowerCase()}. Adjust if needed.` : `In ${(MEASUREMENT_UNIT_OPTIONS.find((o) => o.value === (room.measurement_unit || "FT"))?.label || "feet").toLowerCase()}`}>
             <TextInput
               type="number"
               inputMode="decimal"
@@ -799,6 +798,7 @@ export function SiteRecceSectionForm({
                       ["Length", withUnit(room.length, room.measurement_unit)],
                       ["Width", withUnit(room.width, room.measurement_unit)],
                       ["Height", withUnit(room.height, room.measurement_unit)],
+                      ["Area", isFilled(room.area) ? `${room.area} sq ${(room.measurement_unit || "FT").toLowerCase()}` : ""],
                       [
                         "Photos",
                         String(

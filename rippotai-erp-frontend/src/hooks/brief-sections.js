@@ -447,6 +447,7 @@ export const BRIEF_SECTIONS = [
     title: "References & Inspiration",
     key: "references",
     fields: [
+      { key: "referenceImages", label: "Reference images", type: "reference-images", fullWidth: true },
       {
         key: "references",
         label: "References",

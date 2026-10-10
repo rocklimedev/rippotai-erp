@@ -9,6 +9,8 @@ import { SearchService } from './search.service';
 import { GlobalSearchService } from './global-search.service';
 import { AutocompleteService } from './autocomplete.service';
 import { BulkIndexerService } from './indexing/bulk-indexer.service';
+import { SearchScopeService } from './search-scope.service';
+import { TeamMember } from '../users/models/team-member.model';
 
 import { ProjectSearchService } from './services/project-search.service';
 import { ClientSearchService } from './services/client-search.service';
@@ -67,6 +69,7 @@ import { BudgetEstimate } from '../budget-estimate/models/budget-estimate.model'
     }),
 
     SequelizeModule.forFeature([
+      TeamMember,
       Project,
       Client,
       User,
@@ -89,6 +92,7 @@ import { BudgetEstimate } from '../budget-estimate/models/budget-estimate.model'
   controllers: [SearchController],
 
   providers: [
+    SearchScopeService,
     SearchService,
     GlobalSearchService,
     AutocompleteService,

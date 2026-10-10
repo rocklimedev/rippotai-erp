@@ -1,3 +1,5 @@
+import { Public } from '@/common/decorator/public.decorator';
+import { Throttle } from '@nestjs/throttler';
 import {
   Body,
   Controller,
@@ -34,11 +36,15 @@ export class AuthController {
     private readonly forgotPasswordService: ForgotPasswordService,
   ) {}
 
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('login')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password);
   }
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('signup')
   async signup(@Body() dto: SignupDto) {
     return this.authService.signup(dto);
@@ -61,12 +67,16 @@ export class AuthController {
     return { success: true };
   }
 
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('forgot-password')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.forgotPasswordService.forgotPassword(dto);
   }
 
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('reset-password')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async resetPassword(@Body() dto: ResetPasswordDto) {

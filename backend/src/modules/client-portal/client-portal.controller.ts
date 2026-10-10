@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Headers, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Public } from '@/common/decorator/public.decorator';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
 import { ClientPortalService } from './client-portal.service';
@@ -10,12 +20,19 @@ export class ClientPortalController {
   constructor(private readonly svc: ClientPortalService) {}
 
   @Post('client-links')
-  create(@Body() dto: any, @CurrentUser() user: any, @Headers('origin') origin?: string) {
+  create(
+    @Body() dto: any,
+    @CurrentUser() user: any,
+    @Headers('origin') origin?: string,
+  ) {
     return this.svc.createLink(dto, user, origin);
   }
 
   @Get('client-links')
-  list(@Query('project_id') projectId?: string, @Headers('origin') origin?: string) {
+  list(
+    @Query('project_id') projectId?: string,
+    @Headers('origin') origin?: string,
+  ) {
     return this.svc.listLinks(projectId, origin);
   }
 
@@ -45,12 +62,18 @@ export class ClientPortalController {
   }
 
   @Post('projects/:id/handover/deliver')
-  deliver(@Param('id') id: string, @Body() body: any, @CurrentUser() user: any, @Headers('origin') origin?: string) {
+  deliver(
+    @Param('id') id: string,
+    @Body() body: any,
+    @CurrentUser() user: any,
+    @Headers('origin') origin?: string,
+  ) {
     return this.svc.deliver(id, body, user, origin);
   }
 }
 
 /** Public, token-only endpoints used by /client/:token (no login). */
+@Public()
 @Controller('public/client/:token')
 export class PublicClientController {
   constructor(private readonly svc: ClientPortalService) {}
@@ -66,7 +89,11 @@ export class PublicClientController {
   }
 
   @Post('boq/:boqId/approve')
-  approve(@Param('token') token: string, @Param('boqId') boqId: string, @Body() body: any) {
+  approve(
+    @Param('token') token: string,
+    @Param('boqId') boqId: string,
+    @Body() body: any,
+  ) {
     return this.svc.publicBoqDecision(token, boqId, body);
   }
 

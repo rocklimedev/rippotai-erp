@@ -1,3 +1,4 @@
+import { Public } from '@/common/decorator/public.decorator';
 // auth/oauth/google-oauth.controller.ts
 import {
   Controller,
@@ -39,6 +40,7 @@ export class GoogleOAuthController {
 
   // Public: Google redirects here with no auth headers, so no guard —
   // trust only the signed state, never req.user.
+  @Public()
   @Get('callback')
   async callback(@Query('code') code: string, @Query('state') state: string) {
     if (!code || !state) throw new BadRequestException('Missing code or state');

@@ -12,7 +12,13 @@ import {
   Patch,
   Post,
   Query,
+  BadRequestException,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { CdnService } from '../cdn/cdn.service';
 
 import { ProjectBriefsService } from './brief.service';
 
@@ -22,7 +28,17 @@ import { UpdateProjectBriefDto } from './dto/update-project-brief.dto';
 @UseGuards(JwtAuthGuard)
 @Controller('project-briefs')
 export class ProjectBriefsController {
-  constructor(private readonly projectBriefsService: ProjectBriefsService) {}
+  constructor(private readonly projectBriefsService: ProjectBriefsService, private readonly cdnService: CdnService) {}
+
+  @Post('reference-images')
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }))
+  uploadReferenceImage(@UploadedFile() file?: Express.Multer.File) {
+    if (!file || !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.mimetype)) {
+      throw new BadRequestException('Upload a JPG, PNG, WebP or GIF image.');
+    }
+    const extensions: Record<string, string> = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' };
+    return this.cdnService.uploadFile({ ...file, originalname: `reference${extensions[file.mimetype]}` });
+  }
 
   // =========================================================
   // CREATE

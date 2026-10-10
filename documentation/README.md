@@ -1,14 +1,18 @@
 # rippotai-erp / vendors-quote — Documentation
 
+Review owner: ERP maintainers
+Last reviewed: 2026-10-10
+
 Internal ERP module for managing vendor quotations against architecture/construction projects. Monorepo with a NestJS API and a React SPA.
 
-> Generated from the current state of the `rocklimedev/rippotai-erp` repository (`main` branch). Where the code was ambiguous or a file wasn't found, that's called out explicitly rather than guessed — search each doc for "verify" / "confirm" notes before treating those specific points as ground truth.
+The linked module documents have individual scopes and review histories. The dashboard read model document reflects the current implementation; older module notes may require verification against source.
 
 ## Repo layout
 
 ```
 rippotai-erp/
 ├── backend/          NestJS API (Sequelize + MySQL, JWT auth, Socket.IO)
+├── rippotai-erp-frontend/ React ERP SPA
 ├── vendor-quote/      React SPA (Redux Toolkit Query, Radix/shadcn UI, Tailwind)
 ├── docker-compose.yml Backend service definition (prod image from GHCR)
 ├── db.sql             Partial schema dump — see note in SETUP.md
@@ -22,8 +26,11 @@ rippotai-erp/
 | Understand the overall system | [ARCHITECTURE.md](./ARCHITECTURE.md) |
 | Run the project locally | [SETUP.md](./SETUP.md) |
 | Ship/deploy it | [DEPLOYMENT.md](./DEPLOYMENT.md) |
-| Work on a specific backend feature | [backend/](./backend/) — one file per NestJS module |
-| Work on the frontend | [frontend/](./frontend/) |
+| Work on a specific backend feature | [API README](../backend/README.md) and module documents below |
+| Work on the frontend | [ERP frontend README](../rippotai-erp-frontend/README.md) |
+| Understand Command Center and portfolio aggregation | [Dashboard read models](./dashboard-read-models.md) |
+| Review session administration and retired verification routes | [Auth token administration](./auth-token-administration.md) |
+| Review search access and staging index validation | [Search security](./search-security.md) |
 
 ## Domain in one paragraph
 

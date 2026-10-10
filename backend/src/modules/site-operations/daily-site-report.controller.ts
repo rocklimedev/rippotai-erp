@@ -7,7 +7,6 @@ import {
   Body,
   Param,
   Query,
-  ParseIntPipe,
   ParseUUIDPipe,
   UploadedFile,
   UseInterceptors,
@@ -91,25 +90,25 @@ export class DailySiteReportController {
   }
 
   @Get(':id')
-  get(@Param('id', ParseIntPipe) id: number) {
+  get(@Param('id', ParseUUIDPipe) id: string) {
     return this.reportService.getReportOrThrow(id);
   }
 
   @Patch(':id')
   update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateDailySiteReportDto,
   ) {
     return this.reportService.updateReport(id, dto);
   }
 
   @Post(':id/share')
-  share(@Param('id', ParseIntPipe) id: number) {
+  share(@Param('id', ParseUUIDPipe) id: string) {
     return this.reportService.markShared(id);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.reportService.deleteReport(id);
   }
 }

@@ -1,16 +1,16 @@
-# React + Vite
+# Rippotai ERP frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Review owner: ERP frontend maintainers
+Last reviewed: 2026-10-10
 
-Currently, two official plugins are available:
+React 19 SPA built with Vite, Redux Toolkit Query, React Router, Tailwind and Radix UI. This is the ERP frontend; `vendor-quote` is a separate application.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Install: `npm ci`
+- Development: `npm run dev`
+- Production build: `npm run build` (outputs `dist`)
+- Preview production build: `npm run preview`
+- BOQ access tests: `node --test src/lib/boq-access.test.js`
 
-## React Compiler
+Command Center consumes `/command-center` through `src/api/projects/command-center.api.js`. Its portfolio and dashboard freshness is governed by the API's [read models](../documentation/dashboard-read-models.md). The server remains authoritative for mutation permissions. BOQ workspace ownership and workflow button visibility are derived from the authenticated user and BOQ creator.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+See `src/lib/config.js` and `src/store/baseApi.js` for API connection configuration; do not commit credentials in environment files.
