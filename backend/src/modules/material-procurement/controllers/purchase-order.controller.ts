@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -26,6 +27,7 @@ export class PurchaseOrderController {
   // POST /purchase-orders
   // ============================================================
 
+  @RequirePermission('purchase-orders:create')
   @Post()
   create(@Body() dto: CreatePurchaseOrderDto, @Req() req: any) {
     return this.purchaseOrderService.create(dto, req.user?.id);
@@ -36,6 +38,7 @@ export class PurchaseOrderController {
   // GET /purchase-orders
   // ============================================================
 
+  @RequirePermission('purchase-orders:read')
   @Get()
   findAll(
     @Query('projectId') projectId?: string,
@@ -54,6 +57,7 @@ export class PurchaseOrderController {
   // GET /purchase-orders/:id
   // ============================================================
 
+  @RequirePermission('purchase-orders:read')
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.purchaseOrderService.findOne(id);
@@ -64,6 +68,7 @@ export class PurchaseOrderController {
   // PATCH /purchase-orders/:id
   // ============================================================
 
+  @RequirePermission('purchase-orders:update')
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdatePurchaseOrderDto) {
     return this.purchaseOrderService.update(id, dto);
@@ -74,6 +79,7 @@ export class PurchaseOrderController {
   // POST /purchase-orders/:id/approve
   // ============================================================
 
+  @RequirePermission('purchase-orders:approve')
   @Post(':id/approve')
   approve(@Param('id') id: string, @Req() req: any) {
     return this.purchaseOrderService.approve(id, req.user?.id);
@@ -84,6 +90,7 @@ export class PurchaseOrderController {
   // POST /purchase-orders/:id/cancel
   // ============================================================
 
+  @RequirePermission('purchase-orders:cancel')
   @Post(':id/cancel')
   cancel(@Param('id') id: string) {
     return this.purchaseOrderService.cancel(id);
@@ -94,6 +101,7 @@ export class PurchaseOrderController {
   // DELETE /purchase-orders/:id
   // ============================================================
 
+  @RequirePermission('purchase-orders:delete')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.purchaseOrderService.delete(id);

@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -20,6 +21,7 @@ import {
 export class QuotationItemsController {
   constructor(private readonly quotationItemsService: QuotationItemsService) {}
 
+  @RequirePermission('quotation-items:create')
   @Post()
   create(
     @Param('quotationId') quotationId: string,
@@ -28,11 +30,13 @@ export class QuotationItemsController {
     return this.quotationItemsService.create(quotationId, dto);
   }
 
+  @RequirePermission('quotation-items:read')
   @Get()
   findAll(@Param('quotationId') quotationId: string) {
     return this.quotationItemsService.findAllForQuotation(quotationId);
   }
 
+  @RequirePermission('quotation-items:update')
   @Put()
   replaceAll(
     @Param('quotationId') quotationId: string,
@@ -44,11 +48,13 @@ export class QuotationItemsController {
     );
   }
 
+  @RequirePermission('quotation-items:update')
   @Patch(':itemId')
   update(@Param('itemId') itemId: string, @Body() dto: UpdateQuotationItemDto) {
     return this.quotationItemsService.update(itemId, dto);
   }
 
+  @RequirePermission('quotation-items:delete')
   @Delete(':itemId')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('itemId') itemId: string) {

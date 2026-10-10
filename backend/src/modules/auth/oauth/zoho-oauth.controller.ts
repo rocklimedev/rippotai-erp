@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import { Public } from '@/common/decorator/public.decorator';
 // auth/oauth/zoho-oauth.controller.ts
 
@@ -33,6 +34,7 @@ export class ZohoOAuthController {
    *
    * We return the Zoho URL instead of redirecting from this endpoint.
    */
+  @RequirePermission('auth-zoho:connect')
   @UseGuards(JwtAuthGuard)
   @Get('authorize-url')
   async authorizeUrl(
@@ -68,6 +70,7 @@ export class ZohoOAuthController {
    * This endpoint MUST remain public because Zoho does not send
    * your application's JWT Authorization header.
    */
+  @RequirePermission('auth-zoho:callback')
   @Public()
   @Get('callback')
   async callback(@Query('code') code: string, @Query('state') state: string) {
@@ -90,6 +93,7 @@ export class ZohoOAuthController {
     };
   }
 
+  @RequirePermission('auth-zoho:read')
   @UseGuards(JwtAuthGuard)
   @Get('status')
   async status(@Req() req: RequestWithUser) {
@@ -98,6 +102,7 @@ export class ZohoOAuthController {
     };
   }
 
+  @RequirePermission('auth-zoho:delete')
   @UseGuards(JwtAuthGuard)
   @Delete()
   async disconnect(@Req() req: RequestWithUser) {

@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -29,6 +30,7 @@ export class UsersController {
   // =========================================================
   // CREATE USER (Admin)
   // =========================================================
+  @RequirePermission('users:create')
   @Post()
   create(@Body() dto: CreateUserDto, @CurrentUser() actor?: any) {
     return this.usersService.create(dto, actor);
@@ -37,6 +39,7 @@ export class UsersController {
   // =========================================================
   // GET ALL USERS
   // =========================================================
+  @RequirePermission('users:read')
   @Get()
   findAll(
     @Query('role_id') role_id?: string,
@@ -54,6 +57,7 @@ export class UsersController {
   // Example:
   // GET /users/by-role/Site%20Engineer
   // =========================================================
+  @RequirePermission('users:read')
   @Get('by-role/:roleName')
   findUsersByRoleName(@Param('roleName') roleName: string) {
     return this.usersService.findUsersByRoleName(roleName);
@@ -62,6 +66,7 @@ export class UsersController {
   // =========================================================
   // GET ONE USER
   // =========================================================
+  @RequirePermission('users:read')
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
@@ -70,6 +75,7 @@ export class UsersController {
   // =========================================================
   // UPDATE PROFILE (Self)
   // =========================================================
+  @RequirePermission('profile:update-own')
   @Patch(':id/profile')
   updateProfile(
     @Param('id') id: string,
@@ -86,6 +92,7 @@ export class UsersController {
   // =========================================================
   // UPLOAD AVATAR
   // =========================================================
+  @RequirePermission('profile:update-own')
   @Patch(':id/avatar')
   @UseInterceptors(
     FileInterceptor('avatar', {
@@ -122,6 +129,7 @@ export class UsersController {
   // =========================================================
   // UPDATE USER (Admin)
   // =========================================================
+  @RequirePermission('users:update')
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -134,6 +142,7 @@ export class UsersController {
   // =========================================================
   // DEACTIVATE USER
   // =========================================================
+  @RequirePermission('users:update')
   @Patch(':id/deactivate')
   deactivate(@Param('id') id: string, @CurrentUser() actor?: any) {
     return this.usersService.deactivate(id, actor);
@@ -142,6 +151,7 @@ export class UsersController {
   // =========================================================
   // DELETE USER
   // =========================================================
+  @RequirePermission('users:delete')
   @Delete(':id')
   remove(@Param('id') id: string, @CurrentUser() actor?: any) {
     return this.usersService.remove(id, actor);

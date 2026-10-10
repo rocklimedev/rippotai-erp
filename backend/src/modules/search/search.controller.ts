@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -64,6 +65,7 @@ export class SearchController {
   // GLOBAL SEARCH
   // ================================================================
 
+  @RequirePermission('search:read')
   @Get()
   async search(@Query() query: GlobalSearchQueryDto, @Req() req: any) {
     const user = await this.scope.resolve(req.user);
@@ -74,6 +76,7 @@ export class SearchController {
   // AUTOCOMPLETE
   // ================================================================
 
+  @RequirePermission('search:read')
   @Get('suggest')
   async suggest(@Query() query: SuggestQueryDto, @Req() req: any) {
     const user = await this.scope.resolve(req.user);
@@ -86,81 +89,97 @@ export class SearchController {
   // ENTITY-SPECIFIC SEARCH
   // ================================================================
 
+  @RequirePermission('search:read')
   @Get('projects')
   searchProjects(@Query('q') q: string, @Req() req: any) {
     return this.searchEntity('project', q, req);
   }
 
+  @RequirePermission('search:read')
   @Get('clients')
   searchClients(@Query('q') q: string, @Req() req: any) {
     return this.searchEntity('client', q, req);
   }
 
+  @RequirePermission('search:read')
   @Get('users')
   searchUsers(@Query('q') q: string, @Req() req: any) {
     return this.searchEntity('user', q, req);
   }
 
+  @RequirePermission('search:read')
   @Get('leads')
   searchLeads(@Query('q') q: string, @Req() req: any) {
     return this.searchEntity('lead', q, req);
   }
 
+  @RequirePermission('search:read')
   @Get('vendors')
   searchVendors(@Query('q') q: string, @Req() req: any) {
     return this.searchEntity('vendor', q, req);
   }
 
+  @RequirePermission('search:read')
   @Get('boqs')
   searchBoqs(@Query('q') q: string, @Req() req: any) {
     return this.searchEntity('boq', q, req);
   }
 
+  @RequirePermission('search:read')
   @Get('briefs')
   searchBriefs(@Query('q') q: string, @Req() req: any) {
     return this.searchEntity('project_brief', q, req);
   }
 
+  @RequirePermission('search:read')
   @Get('quotations')
   searchQuotations(@Query('q') q: string, @Req() req: any) {
     return this.searchEntity('quotation', q, req);
   }
 
+  @RequirePermission('search:read')
   @Get('site-recces')
   searchSiteRecces(@Query('q') q: string, @Req() req: any) {
     return this.searchEntity('site_recce', q, req);
   }
 
+  @RequirePermission('search:read')
   @Get('tasks')
   searchTasks(@Query('q') q: string, @Req() req: any) {
     return this.searchEntity('task', q, req);
   }
 
+  @RequirePermission('search:read')
   @Get('calendar')
   searchCalendar(@Query('q') q: string, @Req() req: any) {
     return this.searchEntity('calendar_event', q, req);
   }
 
+  @RequirePermission('search:read')
   @Get('documents')
   searchDocuments(@Query('q') q: string, @Req() req: any) {
     return this.searchEntity('document', q, req);
   }
 
+  @RequirePermission('search:read')
   @Get('drawings')
   searchDrawings(@Query('q') q: string, @Req() req: any) {
     return this.searchEntity('drawing', q, req);
   }
 
+  @RequirePermission('search:read')
   @Get('work-orders')
   searchWorkOrders(@Query('q') q: string, @Req() req: any) {
     return this.searchEntity('work_order', q, req);
   }
 
+  @RequirePermission('search:read')
   @Get('delivery-challans')
   searchDeliveryChallans(@Query('q') q: string, @Req() req: any) {
     return this.searchEntity('delivery_challan', q, req);
   }
 
+  @RequirePermission('search:read')
   @Get('budget-estimates')
   searchBudgetEstimates(@Query('q') q: string, @Req() req: any) {
     return this.searchEntity('budget_estimate', q, req);
@@ -170,6 +189,7 @@ export class SearchController {
   // REINDEX
   // ================================================================
 
+  @RequirePermission('search:reindex')
   @Post('reindex/all')
   async reindexAll(@Req() req: any) {
     this.requireAdmin(req);
@@ -215,6 +235,7 @@ export class SearchController {
     };
   }
 
+  @RequirePermission('search:reindex')
   @Post('reindex/:entity')
   async reindexEntity(@Param('entity') entity: string, @Req() req: any) {
     this.requireAdmin(req);
@@ -262,6 +283,7 @@ export class SearchController {
   // HEALTH
   // ================================================================
 
+  @RequirePermission('search:read')
   @Get('health')
   health() {
     return {

@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Post,
@@ -18,6 +19,7 @@ import { CdnGuard } from '@/common/guards/cdn.guard';
 export class UserSignatureController {
   constructor(private readonly signatureService: UserSignaturesService) {}
 
+  @RequirePermission('user-signatures:upload')
   @Post()
   @UseInterceptors(FileInterceptor('signature'))
   async uploadSignature(
@@ -39,12 +41,14 @@ export class UserSignatureController {
     );
   }
 
+  @RequirePermission('user-signatures:read')
   @Get(':userId')
   @UseGuards(CdnGuard)
   async getSignature(@Param('userId') userId: string) {
     return this.signatureService.findByUserId(userId);
   }
 
+  @RequirePermission('user-signatures:delete')
   @Delete(':userId')
   @UseGuards(CdnGuard)
   async deleteSignature(@Param('userId') userId: string) {

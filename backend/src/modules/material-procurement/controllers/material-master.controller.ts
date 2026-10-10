@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -35,6 +36,7 @@ export class MaterialMasterController {
    * Vendor-specific information is managed separately through:
    * POST /materials/:id/vendors
    */
+  @RequirePermission('materials:create')
   @Post()
   create(@Body() dto: CreateMaterialMasterDto, @Req() req: any) {
     return this.materialService.create(dto, req.user?.id);
@@ -55,6 +57,7 @@ export class MaterialMasterController {
    * ?unit_id=<uuid>
    * ?isActive=true
    */
+  @RequirePermission('materials:read')
   @Get()
   findAll(
     @Query('search') search?: string,
@@ -86,6 +89,7 @@ export class MaterialMasterController {
    * └── Vendors
    *     └── Vendor
    */
+  @RequirePermission('materials:read')
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.materialService.findOne(id);
@@ -103,6 +107,7 @@ export class MaterialMasterController {
    * Vendor fields such as price/vendor_id/etc.
    * must be updated using the vendor endpoints below.
    */
+  @RequirePermission('materials:update')
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -121,6 +126,7 @@ export class MaterialMasterController {
    *
    * Soft-deactivates the material.
    */
+  @RequirePermission('materials:delete')
   @Delete(':id')
   deactivate(@Param('id') id: string, @Req() req: any) {
     return this.materialService.deactivate(id, req.user?.id);
@@ -145,6 +151,7 @@ export class MaterialMasterController {
    *   "is_active": true
    * }
    */
+  @RequirePermission('materials:create')
   @Post(':id/vendors')
   addVendor(
     @Param('id') materialId: string,
@@ -171,6 +178,7 @@ export class MaterialMasterController {
    *   "is_active": true
    * }
    */
+  @RequirePermission('materials:update')
   @Patch(':id/vendors/:materialVendorId')
   updateVendor(
     @Param('id') materialId: string,
@@ -199,6 +207,7 @@ export class MaterialMasterController {
    *
    * PATCH /materials/:id/vendors/:materialVendorId/deactivate
    */
+  @RequirePermission('materials:delete')
   @Delete(':id/vendors/:materialVendorId')
   removeVendor(
     @Param('id') materialId: string,
@@ -224,6 +233,7 @@ export class MaterialMasterController {
    * Any other preferred vendor for this material
    * will automatically lose its preferred flag.
    */
+  @RequirePermission('materials:update')
   @Patch(':id/vendors/:materialVendorId/preferred')
   setPreferredVendor(
     @Param('id') materialId: string,
@@ -249,6 +259,7 @@ export class MaterialMasterController {
    * If this vendor was preferred, another active vendor
    * will automatically be promoted.
    */
+  @RequirePermission('materials:update')
   @Patch(':id/vendors/:materialVendorId/deactivate')
   deactivateVendor(
     @Param('id') materialId: string,
@@ -274,6 +285,7 @@ export class MaterialMasterController {
    * If there is currently no preferred active vendor,
    * this vendor will be promoted automatically.
    */
+  @RequirePermission('materials:update')
   @Patch(':id/vendors/:materialVendorId/activate')
   activateVendor(
     @Param('id') materialId: string,

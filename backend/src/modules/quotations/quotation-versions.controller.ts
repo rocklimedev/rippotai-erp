@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -15,6 +16,7 @@ export class QuotationVersionsController {
   constructor(private readonly versionsService: QuotationVersionsService) {}
 
   // List versions for a quotation
+  @RequirePermission('quotations:read')
   @Get(':quotationId/versions')
   list(@Param('quotationId') quotationId: string) {
     return this.versionsService.listVersions(quotationId);
@@ -22,6 +24,7 @@ export class QuotationVersionsController {
 
   // Create a new version (snapshot) for a quotation
   // Body: { created_by?: string, remarks?: string }
+  @RequirePermission('quotations:create')
   @Post(':quotationId/versions')
   create(
     @Param('quotationId') quotationId: string,
@@ -36,12 +39,14 @@ export class QuotationVersionsController {
   }
 
   // Get a single version by its id
+  @RequirePermission('quotations:read')
   @Get('versions/:id')
   get(@Param('id') id: string) {
     return this.versionsService.getVersion(id);
   }
 
   // Delete a version
+  @RequirePermission('quotations:delete')
   @Delete('versions/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   delete(@Param('id') id: string) {
@@ -50,6 +55,7 @@ export class QuotationVersionsController {
 
   // Restore a version into the quotation
   // Body: { restored_by?: string }
+  @RequirePermission('quotations:restore')
   @Post('versions/:id/restore')
   restore(@Param('id') id: string, @Body('restored_by') restored_by?: string) {
     return this.versionsService.restoreVersion(id, restored_by ?? null);

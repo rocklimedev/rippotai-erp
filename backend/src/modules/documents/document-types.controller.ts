@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -26,6 +27,7 @@ export class DocumentTypesController {
   /**
    * Create document type
    */
+  @RequirePermission('document-types:create')
   @Post()
   create(@Body() dto: CreateDocumentTypeDto) {
     return this.documentTypesService.create(dto);
@@ -34,6 +36,7 @@ export class DocumentTypesController {
   /**
    * Get all document types
    */
+  @RequirePermission('document-types:read')
   @Get()
   findAll(
     @Query('phaseCode') phaseCode?: string,
@@ -49,6 +52,7 @@ export class DocumentTypesController {
     });
   }
 
+  @RequirePermission('document-types:read')
   @Get('project-phase-tree')
   getProjectDocumentPhaseTree() {
     return this.projectDocumentPhaseService.getAllProjectsDocumentPhaseTree();
@@ -70,6 +74,7 @@ export class DocumentTypesController {
    *               ├── documentIds
    *               └── completion information
    */
+  @RequirePermission('document-types:read')
   @Get('projects/:projectId/phases')
   getProjectDocumentPhases(
     @Param('projectId', ParseUUIDPipe) projectId: string,
@@ -82,6 +87,7 @@ export class DocumentTypesController {
   /**
    * Get single document type
    */
+  @RequirePermission('document-types:read')
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.documentTypesService.findOne(id);
@@ -90,6 +96,7 @@ export class DocumentTypesController {
   /**
    * Update document type
    */
+  @RequirePermission('document-types:update')
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -101,6 +108,7 @@ export class DocumentTypesController {
   /**
    * Delete document type
    */
+  @RequirePermission('document-types:delete')
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.documentTypesService.remove(id);

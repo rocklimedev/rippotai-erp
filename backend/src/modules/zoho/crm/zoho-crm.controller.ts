@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -99,6 +100,7 @@ export class ZohoCrmController {
   /**
    * GET /api/v1/zoho/bigin/:ownerKey/settings/modules
    */
+  @RequirePermission('zoho-bigin:read')
   @Get(':ownerKey/settings/modules')
   getModules(@Param('ownerKey') ownerKey: string) {
     return this.ZohoCrmService.getModules(ownerKey);
@@ -108,6 +110,7 @@ export class ZohoCrmController {
    * GET /api/v1/zoho/bigin/:ownerKey/settings/fields
    * Optional: ?module=Pipelines
    */
+  @RequirePermission('zoho-bigin:read')
   @Get(':ownerKey/settings/fields')
   getFields(
     @Param('ownerKey') ownerKey: string,
@@ -119,6 +122,7 @@ export class ZohoCrmController {
   /**
    * GET /api/v1/zoho/bigin/:ownerKey/users
    */
+  @RequirePermission('zoho-bigin:read')
   @Get(':ownerKey/users')
   getUsers(
     @Param('ownerKey') ownerKey: string,
@@ -130,6 +134,7 @@ export class ZohoCrmController {
   /**
    * GET /api/v1/zoho/bigin/:ownerKey/org
    */
+  @RequirePermission('zoho-bigin:read')
   @Get(':ownerKey/org')
   getOrg(@Param('ownerKey') ownerKey: string) {
     return this.ZohoCrmService.getOrg(ownerKey);
@@ -142,6 +147,7 @@ export class ZohoCrmController {
   /**
    * GET /api/v1/zoho/bigin/:ownerKey/modules/:module
    */
+  @RequirePermission('zoho-bigin:read')
   @Get(':ownerKey/modules/:module')
   getRecords(
     @Param('ownerKey') ownerKey: string,
@@ -155,6 +161,7 @@ export class ZohoCrmController {
    * GET /api/v1/zoho/bigin/:ownerKey/modules/:module/search
    * Keep BEFORE the :id route.
    */
+  @RequirePermission('zoho-bigin:read')
   @Get(':ownerKey/modules/:module/search')
   searchRecords(
     @Param('ownerKey') ownerKey: string,
@@ -167,6 +174,7 @@ export class ZohoCrmController {
   /**
    * GET /api/v1/zoho/bigin/:ownerKey/modules/:module/:id
    */
+  @RequirePermission('zoho-bigin:read')
   @Get(':ownerKey/modules/:module/:id')
   getRecord(
     @Param('ownerKey') ownerKey: string,
@@ -182,6 +190,7 @@ export class ZohoCrmController {
    *
    * When module is Pipelines, normalize form keys → Bigin API names.
    */
+  @RequirePermission('zoho-bigin:create')
   @Post(':ownerKey/modules/:module')
   createRecord(
     @Param('ownerKey') ownerKey: string,
@@ -201,6 +210,7 @@ export class ZohoCrmController {
   /**
    * POST /api/v1/zoho/bigin/:ownerKey/modules/:module/bulk
    */
+  @RequirePermission('zoho-bigin:create')
   @Post(':ownerKey/modules/:module/bulk')
   createRecords(
     @Param('ownerKey') ownerKey: string,
@@ -222,6 +232,7 @@ export class ZohoCrmController {
   /**
    * PUT /api/v1/zoho/bigin/:ownerKey/modules/:module/:id
    */
+  @RequirePermission('zoho-bigin:update')
   @Put(':ownerKey/modules/:module/:id')
   updateRecord(
     @Param('ownerKey') ownerKey: string,
@@ -242,6 +253,7 @@ export class ZohoCrmController {
   /**
    * DELETE /api/v1/zoho/bigin/:ownerKey/modules/:module/:id
    */
+  @RequirePermission('zoho-bigin:delete')
   @Delete(':ownerKey/modules/:module/:id')
   deleteRecord(
     @Param('ownerKey') ownerKey: string,
@@ -255,6 +267,7 @@ export class ZohoCrmController {
   // CONTACTS
   // ============================================================
 
+  @RequirePermission('zoho-bigin:read')
   @Get(':ownerKey/contacts')
   getContacts(
     @Param('ownerKey') ownerKey: string,
@@ -263,11 +276,13 @@ export class ZohoCrmController {
     return this.ZohoCrmService.getContacts(ownerKey, query);
   }
 
+  @RequirePermission('zoho-bigin:read')
   @Get(':ownerKey/contacts/:id')
   getContact(@Param('ownerKey') ownerKey: string, @Param('id') id: string) {
     return this.ZohoCrmService.getContact(ownerKey, id);
   }
 
+  @RequirePermission('zoho-bigin:create')
   @Post(':ownerKey/contacts')
   createContact(
     @Param('ownerKey') ownerKey: string,
@@ -276,6 +291,7 @@ export class ZohoCrmController {
     return this.ZohoCrmService.createContact(ownerKey, body);
   }
 
+  @RequirePermission('zoho-bigin:update')
   @Put(':ownerKey/contacts/:id')
   updateContact(
     @Param('ownerKey') ownerKey: string,
@@ -285,6 +301,7 @@ export class ZohoCrmController {
     return this.ZohoCrmService.updateContact(ownerKey, id, body);
   }
 
+  @RequirePermission('zoho-bigin:delete')
   @Delete(':ownerKey/contacts/:id')
   deleteContact(@Param('ownerKey') ownerKey: string, @Param('id') id: string) {
     return this.ZohoCrmService.deleteContact(ownerKey, id);
@@ -294,6 +311,7 @@ export class ZohoCrmController {
   // COMPANIES
   // ============================================================
 
+  @RequirePermission('zoho-bigin:read')
   @Get(':ownerKey/companies')
   getCompanies(
     @Param('ownerKey') ownerKey: string,
@@ -302,11 +320,13 @@ export class ZohoCrmController {
     return this.ZohoCrmService.getCompanies(ownerKey, query);
   }
 
+  @RequirePermission('zoho-bigin:read')
   @Get(':ownerKey/companies/:id')
   getCompany(@Param('ownerKey') ownerKey: string, @Param('id') id: string) {
     return this.ZohoCrmService.getCompany(ownerKey, id);
   }
 
+  @RequirePermission('zoho-bigin:create')
   @Post(':ownerKey/companies')
   createCompany(
     @Param('ownerKey') ownerKey: string,
@@ -315,6 +335,7 @@ export class ZohoCrmController {
     return this.ZohoCrmService.createCompany(ownerKey, body);
   }
 
+  @RequirePermission('zoho-bigin:update')
   @Put(':ownerKey/companies/:id')
   updateCompany(
     @Param('ownerKey') ownerKey: string,
@@ -324,6 +345,7 @@ export class ZohoCrmController {
     return this.ZohoCrmService.updateCompany(ownerKey, id, body);
   }
 
+  @RequirePermission('zoho-bigin:delete')
   @Delete(':ownerKey/companies/:id')
   deleteCompany(@Param('ownerKey') ownerKey: string, @Param('id') id: string) {
     return this.ZohoCrmService.deleteCompany(ownerKey, id);
@@ -333,6 +355,7 @@ export class ZohoCrmController {
   // PIPELINES / DEALS
   // ============================================================
 
+  @RequirePermission('zoho-bigin:read')
   @Get(':ownerKey/pipelines')
   getPipelines(
     @Param('ownerKey') ownerKey: string,
@@ -341,6 +364,7 @@ export class ZohoCrmController {
     return this.ZohoCrmService.getPipelines(ownerKey, query);
   }
 
+  @RequirePermission('zoho-bigin:read')
   @Get(':ownerKey/pipelines/:id')
   getPipeline(@Param('ownerKey') ownerKey: string, @Param('id') id: string) {
     return this.ZohoCrmService.getPipeline(ownerKey, id);
@@ -357,6 +381,7 @@ export class ZohoCrmController {
    *   "Stage" | "stage": "..."
    * }
    */
+  @RequirePermission('zoho-bigin:create')
   @Post(':ownerKey/pipelines')
   createPipeline(
     @Param('ownerKey') ownerKey: string,
@@ -365,10 +390,12 @@ export class ZohoCrmController {
     const payload = this.normalizePipelineBody(body);
     return this.ZohoCrmService.createPipeline(ownerKey, payload);
   }
+  @RequirePermission('zoho-bigin:read')
   @Get(':ownerKey/settings/pipeline-stage-map')
   getPipelineStageMap(@Param('ownerKey') ownerKey: string) {
     return this.ZohoCrmService.getPipelineStageMap(ownerKey);
   }
+  @RequirePermission('zoho-bigin:update')
   @Put(':ownerKey/pipelines/:id')
   updatePipeline(
     @Param('ownerKey') ownerKey: string,
@@ -379,6 +406,7 @@ export class ZohoCrmController {
     return this.ZohoCrmService.updatePipeline(ownerKey, id, payload);
   }
 
+  @RequirePermission('zoho-bigin:delete')
   @Delete(':ownerKey/pipelines/:id')
   deletePipeline(@Param('ownerKey') ownerKey: string, @Param('id') id: string) {
     return this.ZohoCrmService.deletePipeline(ownerKey, id);
@@ -388,6 +416,7 @@ export class ZohoCrmController {
   // TASKS
   // ============================================================
 
+  @RequirePermission('zoho-bigin:read')
   @Get(':ownerKey/tasks')
   getTasks(
     @Param('ownerKey') ownerKey: string,
@@ -396,11 +425,13 @@ export class ZohoCrmController {
     return this.ZohoCrmService.getTasks(ownerKey, query);
   }
 
+  @RequirePermission('zoho-bigin:read')
   @Get(':ownerKey/tasks/:id')
   getTask(@Param('ownerKey') ownerKey: string, @Param('id') id: string) {
     return this.ZohoCrmService.getTask(ownerKey, id);
   }
 
+  @RequirePermission('zoho-bigin:create')
   @Post(':ownerKey/tasks')
   createTask(
     @Param('ownerKey') ownerKey: string,
@@ -409,6 +440,7 @@ export class ZohoCrmController {
     return this.ZohoCrmService.createTask(ownerKey, body);
   }
 
+  @RequirePermission('zoho-bigin:update')
   @Put(':ownerKey/tasks/:id')
   updateTask(
     @Param('ownerKey') ownerKey: string,
@@ -418,6 +450,7 @@ export class ZohoCrmController {
     return this.ZohoCrmService.updateTask(ownerKey, id, body);
   }
 
+  @RequirePermission('zoho-bigin:delete')
   @Delete(':ownerKey/tasks/:id')
   deleteTask(@Param('ownerKey') ownerKey: string, @Param('id') id: string) {
     return this.ZohoCrmService.deleteTask(ownerKey, id);
@@ -427,6 +460,7 @@ export class ZohoCrmController {
   // EVENTS
   // ============================================================
 
+  @RequirePermission('zoho-bigin:read')
   @Get(':ownerKey/events')
   getEvents(
     @Param('ownerKey') ownerKey: string,
@@ -435,11 +469,13 @@ export class ZohoCrmController {
     return this.ZohoCrmService.getEvents(ownerKey, query);
   }
 
+  @RequirePermission('zoho-bigin:read')
   @Get(':ownerKey/events/:id')
   getEvent(@Param('ownerKey') ownerKey: string, @Param('id') id: string) {
     return this.ZohoCrmService.getEvent(ownerKey, id);
   }
 
+  @RequirePermission('zoho-bigin:create')
   @Post(':ownerKey/events')
   createEvent(
     @Param('ownerKey') ownerKey: string,
@@ -448,6 +484,7 @@ export class ZohoCrmController {
     return this.ZohoCrmService.createEvent(ownerKey, body);
   }
 
+  @RequirePermission('zoho-bigin:update')
   @Put(':ownerKey/events/:id')
   updateEvent(
     @Param('ownerKey') ownerKey: string,
@@ -457,6 +494,7 @@ export class ZohoCrmController {
     return this.ZohoCrmService.updateEvent(ownerKey, id, body);
   }
 
+  @RequirePermission('zoho-bigin:delete')
   @Delete(':ownerKey/events/:id')
   deleteEvent(@Param('ownerKey') ownerKey: string, @Param('id') id: string) {
     return this.ZohoCrmService.deleteEvent(ownerKey, id);

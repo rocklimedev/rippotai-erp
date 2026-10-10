@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import { AdminDprDocumentService } from './admin-dpr-document.service';
 import type { Response } from 'express';
 import { Res } from '@nestjs/common';
@@ -30,21 +31,25 @@ export class AdminDailyReportController {
     private readonly documents: AdminDprDocumentService,
   ) {}
 
+  @RequirePermission('dpr-admin-reports:create')
   @Post()
   create(@Body() dto: CreateAdminDailyReportDto, @Req() req: any) {
     return this.service.create(dto, req.user?.id);
   }
 
+  @RequirePermission('dpr-admin-reports:read')
   @Get()
   findAll(@Query() query: QueryAdminDailyReportDto) {
     return this.service.findAll(query);
   }
 
+  @RequirePermission('dpr-admin-reports:read')
   @Get('summary')
   summary(@Query('date') date: string = new Date().toISOString().slice(0, 10)) {
     return this.service.daySummary(date);
   }
 
+  @RequirePermission('dpr-admin-reports:export')
   @Get('export')
   async export(
     @Query() query: QueryAdminDailyReportDto,
@@ -64,11 +69,13 @@ export class AdminDailyReportController {
     res.send(row.excel_data);
   }
 
+  @RequirePermission('dpr-admin-reports:read')
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.findOne(id);
   }
 
+  @RequirePermission('dpr-admin-reports:update')
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -78,6 +85,7 @@ export class AdminDailyReportController {
     return this.service.update(id, dto, req.user?.id);
   }
 
+  @RequirePermission('dpr-admin-reports:delete')
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
     return this.service.remove(id, req.user?.id);

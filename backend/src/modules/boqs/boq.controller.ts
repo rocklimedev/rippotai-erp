@@ -66,42 +66,50 @@ export class BoqController {
   ) {}
 
   // ==================== DASHBOARD (static routes first) ====================
+  @RequirePermission('boq:read')
   @Get('summary')
   getSummary() {
     return this.dashboardService.getSummary();
   }
 
+  @RequirePermission('boq:read')
   @Get('productivity')
   getProductivity() {
     return this.dashboardService.getProductivity();
   }
 
+  @RequirePermission('boq:read')
   @Get('project-wise')
   getProjectWise() {
     return this.dashboardService.getProjectWise();
   }
 
+  @RequirePermission('boq:read')
   @Get('value-trend')
   getValueTrend(@Query('months') months?: string) {
     return this.dashboardService.getValueTrend(months ? Number(months) : 6);
   }
 
+  @RequirePermission('boq:read')
   @Get('monthly-volume')
   getMonthlyVolume(@Query('months') months?: string) {
     return this.dashboardService.getMonthlyVolume(months ? Number(months) : 6);
   }
 
+  @RequirePermission('boq:read')
   @Get('status-mix')
   getStatusMix() {
     return this.dashboardService.getStatusMix();
   }
 
+  @RequirePermission('boq:read')
   @Get('recently-edited')
   getRecentlyEdited(@Query('limit') limit?: string) {
     return this.dashboardService.getRecentlyEdited(limit ? Number(limit) : 5);
   }
 
   // ==================== LIST & CRUD ====================
+  @RequirePermission('boq:read')
   @Get()
   findAll(
     @Query('project_id') projectId?: string,
@@ -114,12 +122,14 @@ export class BoqController {
   // ==================== VERSION & WORKFLOW ROUTES (more specific first) ====================
 
   // Version history
+  @RequirePermission('boq:read')
   @Get(':id/versions')
   getVersionHistory(@Param('id') id: string) {
     return this.boqService.getVersionHistory(id);
   }
 
   // Compare versions
+  @RequirePermission('boq:read')
   @Get(':id/compare')
   compare(@Param('id') id: string, @Query('vs') vs: string) {
     if (!vs) {
@@ -128,11 +138,13 @@ export class BoqController {
     return this.boqService.compareVersions(id, vs);
   }
 
+  @RequirePermission('boq:create')
   @Post('combine')
   async combine(@Body() dto: { boqIds: string[]; title?: string }, @Req() req) {
     return this.boqService.combineBoqs(dto, req.user?.id);
   }
   // Rename version (global versionId route)
+  @RequirePermission('boq:update')
   @Patch('versions/:versionId')
   renameVersion(
     @Param('versionId') versionId: string,
@@ -167,6 +179,7 @@ export class BoqController {
     return this.boqService.approve(id, dto, user?.id);
   }
 
+  @RequirePermission('boq:create')
   @Post(':id/duplicate-version')
   duplicateVersion(
     @Param('id') id: string,
@@ -176,22 +189,26 @@ export class BoqController {
     return this.boqService.duplicateVersion(id, dto, user?.id);
   }
 
+  @RequirePermission('boq:create')
   @Post(':id/new-version')
   newVersion(@Param('id') id: string, @CurrentUser() user?: User) {
     return this.boqService.newVersion(id, user?.id);
   }
 
   // ==================== SINGLE BOQ CRUD (general :id route — keep near the end) ====================
+  @RequirePermission('boq:read')
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.boqService.findOne(id);
   }
 
+  @RequirePermission('boq:create')
   @Post()
   create(@Body() dto: CreateBoqDto, @CurrentUser() user?: User) {
     return this.boqService.create(dto, user?.id);
   }
 
+  @RequirePermission('boq:update')
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -201,12 +218,14 @@ export class BoqController {
     return this.boqService.update(id, dto, user?.id);
   }
 
+  @RequirePermission('boq:delete')
   @Delete(':id')
   remove(@Param('id') id: string, @CurrentUser() user?: User) {
     return this.boqService.remove(id, user?.id);
   }
 
   // ==================== CATEGORIES & ITEMS ====================
+  @RequirePermission('boq:create')
   @Post(':id/categories')
   addCategory(
     @Param('id') id: string,
@@ -217,6 +236,7 @@ export class BoqController {
     return this.boqService.addCategory(id, dto, user?.id);
   }
 
+  @RequirePermission('boq:update')
   @Patch(':id/terms')
   applyTerms(
     @Param('id') id: string,
@@ -225,6 +245,7 @@ export class BoqController {
   ) {
     return this.boqService.applyTerms(id, dto, req.user?.id);
   }
+  @RequirePermission('boq:update')
   @Patch(':id/categories/:categoryId')
   updateCategory(
     @Param('id') id: string,
@@ -234,6 +255,7 @@ export class BoqController {
     return this.boqService.updateCategory(id, categoryId, dto);
   }
 
+  @RequirePermission('boq:delete')
   @Delete(':id/categories/:categoryId')
   removeCategory(
     @Param('id') id: string,
@@ -243,6 +265,7 @@ export class BoqController {
     return this.boqService.removeCategory(id, categoryId, user?.id);
   }
 
+  @RequirePermission('boq:create')
   @Post(':id/categories/:categoryId/items')
   addItem(
     @Param('id') id: string,
@@ -257,6 +280,7 @@ export class BoqController {
     );
   }
 
+  @RequirePermission('boq:update')
   @Patch(':id/items/:itemId')
   updateItem(
     @Param('id') id: string,
@@ -267,6 +291,7 @@ export class BoqController {
     return this.boqService.updateItem(id, itemId, dto, user?.id);
   }
 
+  @RequirePermission('boq:delete')
   @Delete(':id/items/:itemId')
   removeItem(
     @Param('id') id: string,
@@ -276,6 +301,7 @@ export class BoqController {
     return this.boqService.removeItem(id, itemId, user?.id);
   }
 
+  @RequirePermission('boq:update')
   @Post(':id/items/reorder')
   reorderItems(
     @Param('id') id: string,
@@ -285,6 +311,7 @@ export class BoqController {
     return this.boqService.reorderItems(id, dto, user?.id);
   }
 
+  @RequirePermission('boq:update')
   @Post(':id/items/bulk')
   bulkUpdateItems(
     @Param('id') id: string,
@@ -302,6 +329,7 @@ export class BoqController {
 
   // NOTE: registered after '/items/*' and before the reorder route so
   // ':miscId' below never shadows a more specific path.
+  @RequirePermission('boq:create')
   @Post(':id/miscellaneous')
   addMiscellaneous(
     @Param('id') id: string,
@@ -311,6 +339,7 @@ export class BoqController {
     return this.boqService.addMiscellaneous(id, dto, user?.id);
   }
 
+  @RequirePermission('boq:update')
   @Post(':id/miscellaneous/reorder')
   reorderMiscellaneous(
     @Param('id') id: string,
@@ -320,6 +349,7 @@ export class BoqController {
     return this.boqService.reorderMiscellaneous(id, dto.ordered_ids, user?.id);
   }
 
+  @RequirePermission('boq:update')
   @Patch(':id/miscellaneous/:miscId')
   updateMiscellaneous(
     @Param('id') id: string,
@@ -330,6 +360,7 @@ export class BoqController {
     return this.boqService.updateMiscellaneous(id, miscId, dto, user?.id);
   }
 
+  @RequirePermission('boq:delete')
   @Delete(':id/miscellaneous/:miscId')
   removeMiscellaneous(
     @Param('id') id: string,
@@ -340,6 +371,7 @@ export class BoqController {
   }
 
   // ==================== EXPORT ====================
+  @RequirePermission('boq:export')
   @Get(':id/export/excel')
   async exportExcel(@Param('id') id: string, @Res() res: Response) {
     const { buffer, filename } = await this.exportService.toExcel(id);
@@ -356,6 +388,7 @@ export class BoqController {
    * downloads and the copy attached on approval are produced client-side with the shared
    * print kit (components/commerce-documents/BoqDocument). Kept for API compatibility only.
    */
+  @RequirePermission('boq:export')
   @Post(':id/export/pdf')
   async exportPdf(
     @Param('id') id: string,
@@ -373,6 +406,7 @@ export class BoqController {
     res.send(buffer);
   }
 
+  @RequirePermission('boq:export')
   @Post(':id/export/pdf-thumbnail')
   async exportPdfThumbnail(
     @Param('id') id: string,
@@ -393,6 +427,7 @@ export class BoqController {
 export class BoqCatalogController {
   constructor(private readonly boqService: BoqService) {}
 
+  @RequirePermission('boq-catalog:read')
   @Get()
   getCatalog() {
     return this.boqService.getCatalog();

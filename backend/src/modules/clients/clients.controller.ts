@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -28,6 +29,7 @@ export class ClientsController {
   // =========================
   // CREATE
   // =========================
+  @RequirePermission('clients:create')
   @Post()
   create(@Body() dto: CreateClientDto, @CurrentUser() user: User) {
     return this.clientsService.create(dto, user);
@@ -36,6 +38,7 @@ export class ClientsController {
   // =========================
   // GET ALL
   // =========================
+  @RequirePermission('clients:read')
   @Get()
   findAll(
     @Query('includeDeleted', new ParseBoolPipe({ optional: true }))
@@ -47,6 +50,7 @@ export class ClientsController {
   // =========================
   // GET ONE
   // =========================
+  @RequirePermission('clients:read')
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
@@ -59,6 +63,7 @@ export class ClientsController {
   // =========================
   // UPDATE
   // =========================
+  @RequirePermission('clients:update')
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -71,6 +76,7 @@ export class ClientsController {
   // =========================
   // RESTORE
   // =========================
+  @RequirePermission('clients:restore')
   @Patch(':id/restore')
   restore(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.clientsService.restore(id, user);
@@ -79,6 +85,7 @@ export class ClientsController {
   // =========================
   // DELETE (Soft Delete)
   // =========================
+  @RequirePermission('clients:delete')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(

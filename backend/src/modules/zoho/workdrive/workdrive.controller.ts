@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -16,6 +17,7 @@ import { UploadFileDto } from './dto/upload-file.dto';
 export class WorkDriveController {
   constructor(private readonly workDriveService: WorkDriveService) {}
 
+  @RequirePermission('zoho-workdrive:upload')
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async upload(@UploadedFile() file: Express.Multer.File, @Body() dto: UploadFileDto) {
@@ -28,11 +30,13 @@ export class WorkDriveController {
     );
   }
 
+  @RequirePermission('zoho-workdrive:read')
   @Get('folders/:folderId/files')
   async listFiles(@Param('folderId') folderId: string, @Query('ownerKey') ownerKey: string) {
     return this.workDriveService.listFiles(ownerKey, folderId);
   }
 
+  @RequirePermission('zoho-workdrive:create')
   @Post('folders')
   async createFolder(
     @Body('ownerKey') ownerKey: string,

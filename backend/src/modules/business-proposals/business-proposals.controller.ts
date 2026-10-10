@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -35,6 +36,7 @@ export class BusinessProposalsController {
     @InjectModel(BusinessProposal)
     private readonly proposals: typeof BusinessProposal,
   ) {}
+  @RequirePermission('business-proposals:read')
   @Get() list(
     @Query('project_id') projectId?: string,
     @Query('search') search?: string,
@@ -48,11 +50,13 @@ export class BusinessProposalsController {
       order: [['updatedAt', 'DESC']],
     });
   }
+  @RequirePermission('business-proposals:read')
   @Get(':id') async get(@Param('id', ParseUUIDPipe) id: string) {
     const proposal = await this.proposals.findByPk(id);
     if (!proposal) throw new NotFoundException('Business proposal not found');
     return proposal;
   }
+  @RequirePermission('business-proposals:create')
   @Post() async create(
     @Body() body: SaveBusinessProposalDto,
     @CurrentUser() user: any,
@@ -65,6 +69,7 @@ export class BusinessProposalsController {
       updated_by: user.id,
     });
   }
+  @RequirePermission('business-proposals:update')
   @Put(':id') async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: SaveBusinessProposalDto,

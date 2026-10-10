@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import { CurrentUserPayload } from '@/common/interfaces/current-user-payload.interface';
 import { UpdateBriefStatusDto } from './dto/update-brief-status.dto';
@@ -30,6 +31,7 @@ import { UpdateProjectBriefDto } from './dto/update-project-brief.dto';
 export class ProjectBriefsController {
   constructor(private readonly projectBriefsService: ProjectBriefsService, private readonly cdnService: CdnService) {}
 
+  @RequirePermission('project-briefs:upload')
   @Post('reference-images')
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }))
   uploadReferenceImage(@UploadedFile() file?: Express.Multer.File) {
@@ -44,6 +46,7 @@ export class ProjectBriefsController {
   // CREATE
   // =========================================================
 
+  @RequirePermission('project-briefs:create')
   @Post()
   create(@Body() dto: CreateProjectBriefDto) {
     return this.projectBriefsService.create(dto);
@@ -53,6 +56,7 @@ export class ProjectBriefsController {
   // LIST
   // =========================================================
 
+  @RequirePermission('project-briefs:read')
   @Get()
   findAll(@Query('projectId') projectId?: string) {
     return this.projectBriefsService.findAll(projectId);
@@ -62,6 +66,7 @@ export class ProjectBriefsController {
   // LATEST BY PROJECT
   // =========================================================
 
+  @RequirePermission('project-briefs:read')
   @Get('project/:projectId/latest')
   findLatestByProject(@Param('projectId') projectId: string) {
     return this.projectBriefsService.findLatestByProject(projectId);
@@ -71,6 +76,7 @@ export class ProjectBriefsController {
   // DETAIL
   // =========================================================
 
+  @RequirePermission('project-briefs:read')
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.projectBriefsService.findOne(id);
@@ -80,6 +86,7 @@ export class ProjectBriefsController {
   // UPDATE
   // =========================================================
 
+  @RequirePermission('project-briefs:update')
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateProjectBriefDto) {
     return this.projectBriefsService.update(id, dto);
@@ -89,6 +96,7 @@ export class ProjectBriefsController {
   // STATUS
   // =========================================================
 
+  @RequirePermission('project-briefs:update')
   @Patch(':id/status')
   updateStatus(
     @Param('id') id: string,
@@ -102,6 +110,7 @@ export class ProjectBriefsController {
   // NEW VERSION
   // =========================================================
 
+  @RequirePermission('project-briefs:create')
   @Post(':id/new-version')
   createNewVersion(@Param('id') id: string) {
     return this.projectBriefsService.createNewVersion(id);
@@ -111,6 +120,7 @@ export class ProjectBriefsController {
   // DELETE
   // =========================================================
 
+  @RequirePermission('project-briefs:delete')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.projectBriefsService.remove(id);

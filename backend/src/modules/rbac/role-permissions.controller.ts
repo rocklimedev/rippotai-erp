@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -21,19 +22,23 @@ export class RolePermissionsController {
     private readonly rolePermissionsService: RolePermissionsService,
   ) {}
 
+  @RequirePermission('role-permissions:grant')
   @Post()
   grant(@Body() dto: CreateRolePermissionDto) {
     return this.rolePermissionsService.grant(dto);
   }
+  @RequirePermission('role-permissions:read')
   @Get('matrix')
   getMatrix() {
     return this.rolePermissionsService.getMatrix();
   }
+  @RequirePermission('role-permissions:assign')
   @Post('bulk')
   bulkAssign(@Body() dto: BulkAssignPermissionsDto) {
     return this.rolePermissionsService.bulkAssign(dto);
   }
 
+  @RequirePermission('role-permissions:read')
   @Get()
   findAll(@Query('role_id') role_id?: string) {
     return role_id
@@ -41,6 +46,7 @@ export class RolePermissionsController {
       : this.rolePermissionsService.findAll();
   }
 
+  @RequirePermission('role-permissions:revoke')
   @Delete(':role_id/:permission_id')
   @HttpCode(HttpStatus.NO_CONTENT)
   revoke(

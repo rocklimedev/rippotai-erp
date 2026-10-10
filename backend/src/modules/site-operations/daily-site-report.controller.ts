@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -30,6 +31,7 @@ export class DailySiteReportController {
   ) {}
 
   /** GET /site-ops/daily-reports?projectId=&from=&to=&status=&hasIssues=true */
+  @RequirePermission('site-ops-daily-reports:read')
   @Get()
   listAll(
     @Query('projectId') projectId?: string,
@@ -49,12 +51,14 @@ export class DailySiteReportController {
     });
   }
 
+  @RequirePermission('site-ops-daily-reports:create')
   @Post()
   create(@Body() dto: CreateDailySiteReportDto) {
     return this.reportService.createReport(dto);
   }
 
   /** Site photo upload (multipart `file`) → { url, filename }. Stored through the shared CDN service. */
+  @RequirePermission('site-ops-daily-reports:upload')
   @Post('photos')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -72,6 +76,7 @@ export class DailySiteReportController {
   }
 
   /** GET /site-ops/daily-reports/projects/:projectId?from=2026-08-01&to=2026-08-31 */
+  @RequirePermission('site-ops-daily-reports:read')
   @Get('projects/:projectId')
   list(
     @Param('projectId', ParseUUIDPipe) projectId: string,
@@ -81,6 +86,7 @@ export class DailySiteReportController {
     return this.reportService.listReports({ projectId, from, to });
   }
 
+  @RequirePermission('site-ops-daily-reports:read')
   @Get('projects/:projectId/date/:reportDate')
   getByDate(
     @Param('projectId', ParseUUIDPipe) projectId: string,
@@ -89,11 +95,13 @@ export class DailySiteReportController {
     return this.reportService.getReportByDate(projectId, reportDate);
   }
 
+  @RequirePermission('site-ops-daily-reports:read')
   @Get(':id')
   get(@Param('id', ParseUUIDPipe) id: string) {
     return this.reportService.getReportOrThrow(id);
   }
 
+  @RequirePermission('site-ops-daily-reports:update')
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -102,11 +110,13 @@ export class DailySiteReportController {
     return this.reportService.updateReport(id, dto);
   }
 
+  @RequirePermission('site-ops-daily-reports:share')
   @Post(':id/share')
   share(@Param('id', ParseUUIDPipe) id: string) {
     return this.reportService.markShared(id);
   }
 
+  @RequirePermission('site-ops-daily-reports:delete')
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.reportService.deleteReport(id);
@@ -118,6 +128,7 @@ export class DailySiteReportController {
 export class SiteOpsDashboardController {
   constructor(private readonly dashboard: SiteOpsDashboardService) {}
 
+  @RequirePermission('site-ops:read')
   @Get('dashboard')
   get(@Query('projectId') projectId?: string) {
     return this.dashboard.getDashboard(projectId || undefined);

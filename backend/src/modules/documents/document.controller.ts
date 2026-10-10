@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -42,11 +43,13 @@ export class DocumentsController {
   // DOCUMENT DASHBOARD
   // ============================================================
 
+  @RequirePermission('documents:read')
   @Get('dashboard/stats')
   getDashboardStats() {
     return this.documentsDashboardService.getDashboardStats();
   }
 
+  @RequirePermission('documents:read')
   @Get('dashboard/recent')
   getRecentDocuments(@Query('limit') limit?: string) {
     const parsedLimit = limit ? Number(limit) : 6;
@@ -56,11 +59,13 @@ export class DocumentsController {
     );
   }
 
+  @RequirePermission('documents:read')
   @Get('dashboard/pending')
   getPendingDocuments() {
     return this.documentsDashboardService.getPendingDocuments();
   }
 
+  @RequirePermission('documents:read')
   @Get('dashboard/expiring-quotations')
   getExpiringQuotations(@Query('withinDays') withinDays?: string) {
     const parsedDays = withinDays ? Number(withinDays) : 7;
@@ -70,16 +75,19 @@ export class DocumentsController {
     );
   }
 
+  @RequirePermission('documents:read')
   @Get('dashboard/boq-variance')
   getBoqVariance() {
     return this.documentsDashboardService.getBoqVariance();
   }
 
+  @RequirePermission('documents:read')
   @Get('dashboard/draft-estimates')
   getDraftEstimates() {
     return this.documentsDashboardService.getDraftEstimates();
   }
 
+  @RequirePermission('documents:read')
   @Get('dashboard/project-wise')
   getProjectWiseDocuments(@Query('limit') limit?: string) {
     const parsedLimit = limit ? Number(limit) : 5;
@@ -98,6 +106,7 @@ export class DocumentsController {
    *
    * Create a document with optional file upload.
    */
+  @RequirePermission('documents:create')
   @Post()
   @UseInterceptors(FileInterceptor('file', FILE_UPLOAD_OPTIONS))
   create(
@@ -124,6 +133,7 @@ export class DocumentsController {
    * GET /documents?projectId=<uuid>
    * GET /documents?documentTypeId=<uuid>
    */
+  @RequirePermission('documents:read')
   @Get()
   findAll(
     @Query('projectId') projectId?: string,
@@ -142,6 +152,7 @@ export class DocumentsController {
   /**
    * GET /documents/:id
    */
+  @RequirePermission('documents:read')
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.documentsService.findOne(id);
@@ -150,6 +161,7 @@ export class DocumentsController {
   /**
    * PATCH /documents/:id
    */
+  @RequirePermission('documents:update')
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -161,6 +173,7 @@ export class DocumentsController {
   /**
    * POST /documents/:id/file
    */
+  @RequirePermission('documents:update')
   @Post(':id/file')
   @UseInterceptors(FileInterceptor('file', FILE_UPLOAD_OPTIONS))
   replaceFile(
@@ -173,6 +186,7 @@ export class DocumentsController {
   /**
    * GET /documents/:id/download
    */
+  @RequirePermission('documents:read')
   @Get(':id/download')
   async download(@Param('id', ParseUUIDPipe) id: string, @Res() res: Response) {
     const document = await this.documentsService.findOne(id);
@@ -214,6 +228,7 @@ export class DocumentsController {
   // DOCUMENT LOCKING
   // ============================================================
 
+  @RequirePermission('documents:update')
   @Patch(':id/lock')
   lock(
     @Param('id', ParseUUIDPipe) id: string,
@@ -222,6 +237,7 @@ export class DocumentsController {
     return this.documentsService.lock(id, userId);
   }
 
+  @RequirePermission('documents:update')
   @Patch(':id/unlock')
   unlock(
     @Param('id', ParseUUIDPipe) id: string,
@@ -234,6 +250,7 @@ export class DocumentsController {
   // DELETE DOCUMENT
   // ============================================================
 
+  @RequirePermission('documents:delete')
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.documentsService.remove(id);
@@ -243,6 +260,7 @@ export class DocumentsController {
   // DOCUMENT VERSIONS
   // ============================================================
 
+  @RequirePermission('documents:create')
   @Post(':id/versions')
   @UseInterceptors(FileInterceptor('file', FILE_UPLOAD_OPTIONS))
   addVersion(
@@ -253,11 +271,13 @@ export class DocumentsController {
     return this.documentsService.addVersion(id, dto, file);
   }
 
+  @RequirePermission('documents:read')
   @Get(':id/versions')
   listVersions(@Param('id', ParseUUIDPipe) id: string) {
     return this.documentsService.listVersions(id);
   }
 
+  @RequirePermission('documents:delete')
   @Delete(':id/versions/:versionId')
   removeVersion(
     @Param('id', ParseUUIDPipe) id: string,
@@ -270,6 +290,7 @@ export class DocumentsController {
   // DOCUMENT ATTACHMENTS
   // ============================================================
 
+  @RequirePermission('documents:create')
   @Post(':id/attachments')
   @UseInterceptors(FileInterceptor('file', FILE_UPLOAD_OPTIONS))
   addAttachment(
@@ -280,11 +301,13 @@ export class DocumentsController {
     return this.documentsService.addAttachment(id, dto, file);
   }
 
+  @RequirePermission('documents:read')
   @Get(':id/attachments')
   listAttachments(@Param('id', ParseUUIDPipe) id: string) {
     return this.documentsService.listAttachments(id);
   }
 
+  @RequirePermission('documents:delete')
   @Delete(':id/attachments/:attachmentId')
   removeAttachment(
     @Param('id', ParseUUIDPipe) id: string,

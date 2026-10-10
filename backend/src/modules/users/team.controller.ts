@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -41,6 +42,7 @@ export class TeamController {
    * /team/PROJECT/:projectId
    * /team/PLAN_OF_ACTION/:poaId
    */
+  @RequirePermission('team:read')
   @Get(':ownerType/:ownerId')
   list(
     @Param('ownerType', new ParseEnumPipe(TeamMemberOwnerType))
@@ -55,6 +57,7 @@ export class TeamController {
   /**
    * POST /team/:ownerType/:ownerId
    */
+  @RequirePermission('team:create')
   @Post(':ownerType/:ownerId')
   add(
     @Param('ownerType', new ParseEnumPipe(TeamMemberOwnerType))
@@ -73,6 +76,7 @@ export class TeamController {
    *
    * Replace complete owner-scoped roster.
    */
+  @RequirePermission('team:update')
   @Put(':ownerType/:ownerId')
   replaceAll(
     @Param('ownerType', new ParseEnumPipe(TeamMemberOwnerType))
@@ -89,6 +93,7 @@ export class TeamController {
   /**
    * PATCH /team/members/:id
    */
+  @RequirePermission('team:update')
   @Patch('members/:id')
   updateMember(
     @Param('id', ParseUUIDPipe)
@@ -102,6 +107,7 @@ export class TeamController {
   /**
    * DELETE /team/members/:id
    */
+  @RequirePermission('team:delete')
   @Delete('members/:id')
   removeMember(
     @Param('id', ParseUUIDPipe)
@@ -117,6 +123,7 @@ export class TeamController {
   /**
    * GET /team/teams
    */
+  @RequirePermission('team:read')
   @Get('teams')
   findAllTeams() {
     return this.teamService.findAllTeams();
@@ -125,6 +132,7 @@ export class TeamController {
   /**
    * POST /team/teams
    */
+  @RequirePermission('team:create')
   @Post('teams')
   createTeam(@Body() dto: CreateTeamDto) {
     return this.teamService.createTeam(dto);
@@ -133,6 +141,7 @@ export class TeamController {
   /**
    * GET /team/teams/:id
    */
+  @RequirePermission('team:read')
   @Get('teams/:id')
   getTeam(
     @Param('id', ParseUUIDPipe)
@@ -144,6 +153,7 @@ export class TeamController {
   /**
    * PATCH /team/teams/:id
    */
+  @RequirePermission('team:update')
   @Patch('teams/:id')
   updateTeam(
     @Param('id', ParseUUIDPipe)
@@ -157,6 +167,7 @@ export class TeamController {
   /**
    * PATCH /team/teams/:id/activate
    */
+  @RequirePermission('team:update')
   @Patch('teams/:id/activate')
   activateTeam(
     @Param('id', ParseUUIDPipe)
@@ -168,6 +179,7 @@ export class TeamController {
   /**
    * PATCH /team/teams/:id/deactivate
    */
+  @RequirePermission('team:update')
   @Patch('teams/:id/deactivate')
   deactivateTeam(
     @Param('id', ParseUUIDPipe)
@@ -179,6 +191,7 @@ export class TeamController {
   /**
    * DELETE /team/teams/:id
    */
+  @RequirePermission('team:delete')
   @Delete('teams/:id')
   deleteTeam(
     @Param('id', ParseUUIDPipe)
@@ -194,6 +207,7 @@ export class TeamController {
   /**
    * GET /team/teams/:teamId/members
    */
+  @RequirePermission('team:read')
   @Get('teams/:teamId/members')
   getTeamMembers(
     @Param('teamId', ParseUUIDPipe)
@@ -205,6 +219,7 @@ export class TeamController {
   /**
    * POST /team/teams/:teamId/members
    */
+  @RequirePermission('team:create')
   @Post('teams/:teamId/members')
   addTeamMember(
     @Param('teamId', ParseUUIDPipe)
@@ -218,6 +233,7 @@ export class TeamController {
   /**
    * GET /team/teams/members/:memberId
    */
+  @RequirePermission('team:read')
   @Get('teams/members/:memberId')
   getTeamMember(
     @Param('memberId', ParseUUIDPipe)
@@ -229,6 +245,7 @@ export class TeamController {
   /**
    * PATCH /team/teams/members/:memberId
    */
+  @RequirePermission('team:update')
   @Patch('teams/members/:memberId')
   updateTeamMember(
     @Param('memberId', ParseUUIDPipe)
@@ -242,6 +259,7 @@ export class TeamController {
   /**
    * PATCH /team/teams/members/:memberId/primary
    */
+  @RequirePermission('team:update')
   @Patch('teams/members/:memberId/primary')
   makeMemberPrimary(
     @Param('memberId', ParseUUIDPipe)
@@ -253,6 +271,7 @@ export class TeamController {
   /**
    * DELETE /team/teams/members/:memberId
    */
+  @RequirePermission('team:delete')
   @Delete('teams/members/:memberId')
   removeTeamMember(
     @Param('memberId', ParseUUIDPipe)
@@ -268,6 +287,7 @@ export class TeamController {
   /**
    * GET /team/sections
    */
+  @RequirePermission('team:read')
   @Get('sections')
   findAllSections() {
     return this.teamService.findAllSections();
@@ -276,6 +296,7 @@ export class TeamController {
   /**
    * POST /team/sections
    */
+  @RequirePermission('team:create')
   @Post('sections')
   createSection(@Body() dto: CreateTeamSectionDto) {
     return this.teamService.createSection(dto);
@@ -284,6 +305,7 @@ export class TeamController {
   /**
    * GET /team/sections/:id
    */
+  @RequirePermission('team:read')
   @Get('sections/:id')
   getSection(
     @Param('id', ParseUUIDPipe)
@@ -295,6 +317,7 @@ export class TeamController {
   /**
    * PATCH /team/sections/:id
    */
+  @RequirePermission('team:update')
   @Patch('sections/:id')
   updateSection(
     @Param('id', ParseUUIDPipe)
@@ -308,6 +331,7 @@ export class TeamController {
   /**
    * DELETE /team/sections/:id
    */
+  @RequirePermission('team:delete')
   @Delete('sections/:id')
   deleteSection(
     @Param('id', ParseUUIDPipe)
@@ -323,6 +347,7 @@ export class TeamController {
   /**
    * GET /team/teams/:teamId/access
    */
+  @RequirePermission('team:read')
   @Get('teams/:teamId/access')
   getTeamAccessMatrix(
     @Param('teamId', ParseUUIDPipe)
@@ -334,6 +359,7 @@ export class TeamController {
   /**
    * GET /team/teams/:teamId/section-access
    */
+  @RequirePermission('team:read')
   @Get('teams/:teamId/section-access')
   getTeamSectionAccess(
     @Param('teamId', ParseUUIDPipe)
@@ -345,6 +371,7 @@ export class TeamController {
   /**
    * GET /team/teams/:teamId/section-access/:sectionId
    */
+  @RequirePermission('team:read')
   @Get('teams/:teamId/section-access/:sectionId')
   getSectionAccess(
     @Param('teamId', ParseUUIDPipe)
@@ -359,6 +386,7 @@ export class TeamController {
   /**
    * PUT /team/teams/:teamId/section-access/:sectionId
    */
+  @RequirePermission('team:update')
   @Put('teams/:teamId/section-access/:sectionId')
   setSectionAccess(
     @Param('teamId', ParseUUIDPipe)
@@ -375,6 +403,7 @@ export class TeamController {
   /**
    * POST /team/teams/:teamId/section-access/bulk
    */
+  @RequirePermission('team:update')
   @Post('teams/:teamId/section-access/bulk')
   bulkSetSectionAccess(
     @Param('teamId', ParseUUIDPipe)
@@ -388,6 +417,7 @@ export class TeamController {
   /**
    * DELETE /team/teams/:teamId/section-access/:sectionId
    */
+  @RequirePermission('team:delete')
   @Delete('teams/:teamId/section-access/:sectionId')
   removeSectionAccess(
     @Param('teamId', ParseUUIDPipe)
@@ -406,6 +436,7 @@ export class TeamController {
   /**
    * GET /team/users/:userId
    */
+  @RequirePermission('team:read')
   @Get('users/:userId')
   getUserTeams(
     @Param('userId', ParseUUIDPipe)
@@ -417,6 +448,7 @@ export class TeamController {
   /**
    * GET /team/users/:userId/sections/:sectionId/access
    */
+  @RequirePermission('team:read')
   @Get('users/:userId/sections/:sectionId/access')
   getUserSectionAccess(
     @Param('userId', ParseUUIDPipe)

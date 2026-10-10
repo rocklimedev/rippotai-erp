@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -17,12 +18,14 @@ import { MockupStatus } from '../../common/enums/site-operations.enums';
 export class MockupController {
   constructor(private readonly mockupService: MockupService) {}
 
+  @RequirePermission('site-ops-mockups:create')
   @Post()
   propose(@Body() dto: ProposeMockupDto) {
     return this.mockupService.propose(dto);
   }
 
   /** GET /site-ops/mockups?projectId=<uuid>&status=APPROVED — all projects when projectId is omitted. */
+  @RequirePermission('site-ops-mockups:read')
   @Get()
   listAll(
     @Query('projectId') projectId?: string,
@@ -31,17 +34,20 @@ export class MockupController {
     return this.mockupService.list({ projectId: projectId || undefined, status: status || undefined });
   }
 
+  @RequirePermission('site-ops-mockups:update')
   @Patch(':id/review')
   review(@Param('id', ParseIntPipe) id: number, @Body() dto: ReviewMockupDto) {
     return this.mockupService.review(id, dto);
   }
 
+  @RequirePermission('site-ops-mockups:read')
   @Get(':id')
   get(@Param('id', ParseIntPipe) id: number) {
     return this.mockupService.getOrThrow(id);
   }
 
   /** GET /site-ops/mockups/projects/:projectId?status=APPROVED */
+  @RequirePermission('site-ops-mockups:read')
   @Get('projects/:projectId')
   list(
     @Param('projectId', ParseUUIDPipe) projectId: string,

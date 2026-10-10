@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -22,6 +23,7 @@ import { ApplyTermsDto } from '../metas/dto/apply-terms.dto';
 export class PlanOfActionsController {
   constructor(private readonly planOfActionsService: PlanOfActionsService) {}
 
+  @RequirePermission('plan-of-actions:read')
   @Get()
   findAll(@Query('project_id') projectId?: string) {
     if (projectId) {
@@ -31,16 +33,19 @@ export class PlanOfActionsController {
     return this.planOfActionsService.findAll();
   }
 
+  @RequirePermission('plan-of-actions:create')
   @Post()
   create(@Body() dto: CreatePlanOfActionDto) {
     return this.planOfActionsService.create(dto);
   }
 
+  @RequirePermission('plan-of-actions:read')
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.planOfActionsService.findOne(id);
   }
 
+  @RequirePermission('plan-of-actions:update')
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -49,11 +54,13 @@ export class PlanOfActionsController {
     return this.planOfActionsService.update(id, dto);
   }
 
+  @RequirePermission('plan-of-actions:delete')
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.planOfActionsService.remove(id);
   }
 
+  @RequirePermission('plan-of-actions:update')
   @Put(':id/phases')
   replacePhases(
     @Param('id', ParseUUIDPipe) id: string,
@@ -62,6 +69,7 @@ export class PlanOfActionsController {
     return this.planOfActionsService.replacePhases(id, phases);
   }
 
+  @RequirePermission('plan-of-actions:update')
   @Put(':id/terms')
   applyTerms(
     @Param('id', ParseUUIDPipe) id: string,
@@ -70,6 +78,7 @@ export class PlanOfActionsController {
     return this.planOfActionsService.applyTerms(id, dto);
   }
 
+  @RequirePermission('plan-of-actions:publish')
   @Post(':id/publish')
   publish(@Param('id', ParseUUIDPipe) id: string) {
     return this.planOfActionsService.publish(id);

@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -25,6 +26,7 @@ export class NotificationsController {
     return userId;
   }
 
+  @RequirePermission('notifications:read')
   @Get('user/:userId')
   findAllForUser(
     @Param('userId') userId: string,
@@ -37,6 +39,7 @@ export class NotificationsController {
     );
   }
 
+  @RequirePermission('notifications:read')
   @Get('user/:userId/unread-count')
   unreadCount(@Param('userId') userId: string, @Req() request: any) {
     return this.notificationsService.getUnreadCount(
@@ -44,22 +47,26 @@ export class NotificationsController {
     );
   }
 
+  @RequirePermission('notifications:update')
   @Patch(':id/read')
   markAsRead(@Param('id') id: string, @Req() request: any) {
     return this.notificationsService.markAsRead(id, request.user.id);
   }
 
+  @RequirePermission('notifications:update')
   @Patch('user/:userId/read-all')
   markAllAsRead(@Param('userId') userId: string, @Req() request: any) {
     return this.notificationsService.markAllAsRead(this.owner(userId, request));
   }
 
+  @RequirePermission('notifications:delete')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string, @Req() request: any) {
     return this.notificationsService.remove(id, request.user.id);
   }
 
+  @RequirePermission('notifications:delete')
   @Delete('user/:userId')
   @HttpCode(HttpStatus.NO_CONTENT)
   deleteUserNotifications(

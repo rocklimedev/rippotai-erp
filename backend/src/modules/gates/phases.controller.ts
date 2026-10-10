@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
@@ -10,6 +11,7 @@ import { PhasesService } from './phases.service';
 export class PhasesController {
   constructor(private readonly phasesService: PhasesService) {}
 
+  @RequirePermission('phase-definitions:read')
   @Get()
   @ApiOperation({
     summary:

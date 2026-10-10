@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 // src/modules/project-planner/controllers/project-planner.controller.ts
 
 import {
@@ -37,6 +38,7 @@ import {
 export class ProjectPlannerController {
   constructor(private readonly projectPlannerService: ProjectPlannerService) {}
 
+  @RequirePermission('project-planners:read')
   @Get('projects/:projectId/planners/workbook.xlsx')
   async downloadWorkbook(
     @Param('projectId', new ParseUUIDPipe()) projectId: string,
@@ -66,6 +68,7 @@ export class ProjectPlannerController {
    * - PMC
    * - VENDOR_PROCUREMENT
    */
+  @RequirePermission('project-planners:create')
   @Post('projects/:projectId/planners/initialize')
   initializeProjectPlanners(
     @Param('projectId', new ParseUUIDPipe())
@@ -83,6 +86,7 @@ export class ProjectPlannerController {
   /**
    * Create one individual planner.
    */
+  @RequirePermission('project-planners:create')
   @Post('projects/:projectId/planners')
   createPlanner(
     @Param('projectId', new ParseUUIDPipe())
@@ -97,6 +101,7 @@ export class ProjectPlannerController {
   /**
    * Get every planner under a project.
    */
+  @RequirePermission('project-planners:read')
   @Get('projects/:projectId/planners')
   getProjectPlanners(
     @Param('projectId', new ParseUUIDPipe())
@@ -117,6 +122,7 @@ export class ProjectPlannerController {
    * - planner items
    * - locations
    */
+  @RequirePermission('project-planners:read')
   @Get('projects/:projectId/planners/overview')
   getProjectPlannerOverview(
     @Param('projectId', new ParseUUIDPipe())
@@ -128,6 +134,7 @@ export class ProjectPlannerController {
   /**
    * Get one complete planner.
    */
+  @RequirePermission('project-planners:read')
   @Get('planners/:plannerId')
   getPlannerById(
     @Param('plannerId', new ParseUUIDPipe())
@@ -139,6 +146,7 @@ export class ProjectPlannerController {
   /**
    * Update planner-level settings.
    */
+  @RequirePermission('project-planners:update')
   @Patch('planners/:plannerId')
   updatePlanner(
     @Param('plannerId', new ParseUUIDPipe())
@@ -153,6 +161,7 @@ export class ProjectPlannerController {
   /**
    * Soft-delete planner.
    */
+  @RequirePermission('project-planners:delete')
   @Delete('planners/:plannerId')
   deletePlanner(
     @Param('plannerId', new ParseUUIDPipe())
@@ -174,6 +183,7 @@ export class ProjectPlannerController {
    * CONSULTANCY
    * PMC
    */
+  @RequirePermission('project-planners:generate')
   @Post('planners/:plannerId/generate-template')
   generatePlannerFromTemplate(
     @Param('plannerId', new ParseUUIDPipe())
@@ -210,6 +220,7 @@ export class ProjectPlannerController {
    *   ├── Bathroom
    *   └── Lobby
    */
+  @RequirePermission('project-planners:create')
   @Post('projects/:projectId/locations')
   createLocation(
     @Param('projectId', new ParseUUIDPipe())
@@ -224,6 +235,7 @@ export class ProjectPlannerController {
   /**
    * Get nested project location tree.
    */
+  @RequirePermission('project-planners:read')
   @Get('projects/:projectId/locations')
   getProjectLocations(
     @Param('projectId', new ParseUUIDPipe())
@@ -235,6 +247,7 @@ export class ProjectPlannerController {
   /**
    * Update floor / room / area / zone.
    */
+  @RequirePermission('project-planners:update')
   @Patch('locations/:locationId')
   updateLocation(
     @Param('locationId', new ParseUUIDPipe())
@@ -265,6 +278,7 @@ export class ProjectPlannerController {
    * CIVIL WORK
    *   FLOORING
    */
+  @RequirePermission('project-planners:create')
   @Post('planners/:plannerId/items')
   createPlannerItem(
     @Param('plannerId', new ParseUUIDPipe())
@@ -283,6 +297,7 @@ export class ProjectPlannerController {
    *
    * ?phaseId=<uuid>
    */
+  @RequirePermission('project-planners:read')
   @Get('planners/:plannerId/items')
   getPlannerItems(
     @Param('plannerId', new ParseUUIDPipe())
@@ -302,6 +317,7 @@ export class ProjectPlannerController {
    * - assignee
    * - floor/location statuses
    */
+  @RequirePermission('project-planners:read')
   @Get('planner-items/:itemId')
   getPlannerItem(
     @Param('itemId', new ParseUUIDPipe())
@@ -313,6 +329,7 @@ export class ProjectPlannerController {
   /**
    * Update Consultancy / PMC work item.
    */
+  @RequirePermission('project-planners:update')
   @Patch('planner-items/:itemId')
   updatePlannerItem(
     @Param('itemId', new ParseUUIDPipe())
@@ -327,6 +344,7 @@ export class ProjectPlannerController {
   /**
    * Soft-delete planner item.
    */
+  @RequirePermission('project-planners:delete')
   @Delete('planner-items/:itemId')
   deletePlannerItem(
     @Param('itemId', new ParseUUIDPipe())
@@ -352,6 +370,7 @@ export class ProjectPlannerController {
    * First Floor
    * Second Floor
    */
+  @RequirePermission('project-planners:create')
   @Post('planner-items/:itemId/locations')
   attachLocations(
     @Param('itemId', new ParseUUIDPipe())
@@ -366,6 +385,7 @@ export class ProjectPlannerController {
   /**
    * Remove one location from a planner item.
    */
+  @RequirePermission('project-planners:delete')
   @Delete('planner-items/:itemId/locations/:locationId')
   removeLocationFromItem(
     @Param('itemId', new ParseUUIDPipe())
@@ -398,6 +418,7 @@ export class ProjectPlannerController {
    * Parent planner item progress is then automatically
    * recalculated by the service.
    */
+  @RequirePermission('project-planners:update')
   @Patch('planner-item-locations/:itemLocationId')
   updateItemLocation(
     @Param('itemLocationId', new ParseUUIDPipe())
@@ -429,6 +450,7 @@ export class ProjectPlannerController {
    * Electrical Contractor
    * Plumbing Contractor
    */
+  @RequirePermission('project-planners:create')
   @Post('planners/:plannerId/procurement')
   createProcurementItem(
     @Param('plannerId', new ParseUUIDPipe())
@@ -449,6 +471,7 @@ export class ProjectPlannerController {
    *
    * ?itemType=LABOUR
    */
+  @RequirePermission('project-planners:read')
   @Get('planners/:plannerId/procurement')
   getProcurementItems(
     @Param('plannerId', new ParseUUIDPipe())
@@ -466,6 +489,7 @@ export class ProjectPlannerController {
   /**
    * Update Material / Labour procurement entry.
    */
+  @RequirePermission('project-planners:update')
   @Patch('procurement-items/:itemId')
   updateProcurementItem(
     @Param('itemId', new ParseUUIDPipe())
@@ -480,6 +504,7 @@ export class ProjectPlannerController {
   /**
    * Soft-delete procurement entry.
    */
+  @RequirePermission('project-planners:delete')
   @Delete('procurement-items/:itemId')
   deleteProcurementItem(
     @Param('itemId', new ParseUUIDPipe())

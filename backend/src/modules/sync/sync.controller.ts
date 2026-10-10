@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   BadRequestException,
   Body,
@@ -26,14 +27,17 @@ class ReconcileReminderDto {
 @ApiBearerAuth()
 export class SyncController {
   constructor(private readonly reminders: ReminderSyncService) {}
+  @RequirePermission('sync:read')
   @Get('tasks/portals')
   taskPortals(@CurrentUser() user: any) {
     return this.reminders.taskPortals(user.id);
   }
+  @RequirePermission('sync:read')
   @Get('tasks/portals/:portalId/projects')
   taskProjects(@CurrentUser() user: any, @Param('portalId') portalId: string) {
     return this.reminders.taskProjects(user.id, portalId);
   }
+  @RequirePermission('sync:read')
   @Get('calendar/destinations')
   calendarDestinations(@CurrentUser() user: any) {
     return this.reminders.calendarDestinations(user.id);
@@ -43,10 +47,12 @@ export class SyncController {
       throw new BadRequestException('Expected tasks or calendar');
     return value;
   }
+  @RequirePermission('sync:read')
   @Get(':kind/settings')
   settings(@CurrentUser() user: any, @Param('kind') kind: string) {
     return this.reminders.getSettings(user.id, this.kind(kind));
   }
+  @RequirePermission('sync:update')
   @Put(':kind/settings')
   save(
     @CurrentUser() user: any,
@@ -55,10 +61,12 @@ export class SyncController {
   ) {
     return this.reminders.saveSettings(user.id, this.kind(kind), body);
   }
+  @RequirePermission('sync:read')
   @Get(':kind/status')
   status(@CurrentUser() user: any, @Param('kind') kind: string) {
     return this.reminders.status(user.id, this.kind(kind));
   }
+  @RequirePermission('sync:sync')
   @Post(':kind/push')
   @HttpCode(200)
   push(
@@ -68,6 +76,7 @@ export class SyncController {
   ) {
     return this.reminders.sync(user.id, this.kind(kind), body);
   }
+  @RequirePermission('sync:sync')
   @Post(':kind/full')
   @HttpCode(200)
   full(
@@ -77,12 +86,14 @@ export class SyncController {
   ) {
     return this.push(user, kind, body);
   }
+  @RequirePermission('sync:sync')
   @Post(':kind/pull')
   pull() {
     throw new BadRequestException(
       'Local database owns reminder data. Pull sync is disabled.',
     );
   }
+  @RequirePermission('sync:sync')
   @Post(':kind/reconcile/:localId')
   @HttpCode(200)
   reconcile(
@@ -98,6 +109,7 @@ export class SyncController {
       body.remote_id,
     );
   }
+  @RequirePermission('sync:read')
   @Get('status')
   async allStatus(@CurrentUser() user: any) {
     const [tasks, calendar] = await Promise.all([
@@ -106,6 +118,7 @@ export class SyncController {
     ]);
     return { tasks, calendar };
   }
+  @RequirePermission('sync:sync')
   @Post('full')
   @HttpCode(200)
   async allSync(@CurrentUser() user: any, @Body() body: SyncOptionsDto) {

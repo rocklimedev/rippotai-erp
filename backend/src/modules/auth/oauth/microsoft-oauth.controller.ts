@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import { Public } from '@/common/decorator/public.decorator';
 // auth/oauth/microsoft-oauth.controller.ts
 
@@ -40,6 +41,7 @@ export class MicrosoftOAuthController {
    * GET:
    * /auth/microsoft/authorize
    */
+  @RequirePermission('auth-microsoft:connect')
   @UseGuards(JwtAuthGuard)
   @Get('authorize')
   authorize(
@@ -78,6 +80,7 @@ export class MicrosoftOAuthController {
    *
    * GET /auth/microsoft/authorize-url
    */
+  @RequirePermission('auth-microsoft:connect')
   @UseGuards(JwtAuthGuard)
   @Get('authorize-url')
   authorizeUrl(
@@ -113,6 +116,7 @@ export class MicrosoftOAuthController {
    * DO NOT require JWT here because the browser
    * redirect will not contain your INOS JWT.
    */
+  @RequirePermission('auth-microsoft:callback')
   @Public()
   @Get('callback')
   async callback(
@@ -168,6 +172,7 @@ export class MicrosoftOAuthController {
   /**
    * Check Microsoft connection.
    */
+  @RequirePermission('auth-microsoft:read')
   @UseGuards(JwtAuthGuard)
   @Get('status')
   async status(@Req() req: RequestWithUser) {
@@ -179,6 +184,7 @@ export class MicrosoftOAuthController {
   /**
    * Disconnect Microsoft.
    */
+  @RequirePermission('auth-microsoft:delete')
   @UseGuards(JwtAuthGuard)
   @Delete()
   async disconnect(@Req() req: RequestWithUser) {

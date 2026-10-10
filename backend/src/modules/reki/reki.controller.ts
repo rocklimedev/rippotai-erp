@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -31,6 +32,7 @@ export class SiteRecceController {
   // POST /site-recces
   // ============================================================
 
+  @RequirePermission('site-recces:create')
   @Post()
   async create(@Body() dto: CreateSiteRecceDto, @Req() req: any) {
     const userId = req.user?.id ?? null;
@@ -43,6 +45,7 @@ export class SiteRecceController {
   // GET /site-recces
   // ============================================================
 
+  @RequirePermission('site-recces:read')
   @Get()
   async findAll() {
     return this.siteRecceService.findAll();
@@ -53,6 +56,7 @@ export class SiteRecceController {
   // GET /site-recces/project/:projectId
   // ============================================================
 
+  @RequirePermission('site-recces:read')
   @Get('project/:projectId')
   async findByProject(
     @Param('projectId', new ParseUUIDPipe())
@@ -66,6 +70,7 @@ export class SiteRecceController {
   // GET /site-recces/:id
   // ============================================================
 
+  @RequirePermission('site-recces:read')
   @Get(':id')
   async findOne(
     @Param('id', new ParseUUIDPipe())
@@ -79,6 +84,7 @@ export class SiteRecceController {
   // PATCH /site-recces/:id
   // ============================================================
 
+  @RequirePermission('site-recces:update')
   @Patch(':id')
   async update(
     @Param('id', new ParseUUIDPipe())
@@ -98,6 +104,7 @@ export class SiteRecceController {
   // DELETE /site-recces/:id
   // ============================================================
 
+  @RequirePermission('site-recces:delete')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(
@@ -112,6 +119,7 @@ export class SiteRecceController {
   // POST /site-recces/:id/restore
   // ============================================================
 
+  @RequirePermission('site-recces:restore')
   @Post(':id/restore')
   async restore(
     @Param('id', new ParseUUIDPipe())
@@ -135,6 +143,7 @@ export class SiteRecceController {
   // notes
   // ============================================================
 
+  @RequirePermission('site-recces:upload')
   @Post(':siteRecceId/rooms/:roomId/photos')
   @UseInterceptors(FileInterceptor('file'))
   async uploadPhoto(
@@ -168,6 +177,7 @@ export class SiteRecceController {
   // and then sends the URL with the recce payload.
   // ============================================================
 
+  @RequirePermission('site-recces:upload')
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadImage(
@@ -188,6 +198,7 @@ export class SiteRecceController {
   // updates database.
   // ============================================================
 
+  @RequirePermission('site-recces:update')
   @Patch('photos/:photoId')
   @UseInterceptors(FileInterceptor('file'))
   async replacePhoto(
@@ -207,6 +218,7 @@ export class SiteRecceController {
   // /site-recces/photos/:photoId/layout
   // ============================================================
 
+  @RequirePermission('site-recces:upload')
   @Patch('photos/:photoId/layout')
   @UseInterceptors(FileInterceptor('file'))
   async uploadLayoutImage(
@@ -230,6 +242,7 @@ export class SiteRecceController {
   // 3. Database record
   // ============================================================
 
+  @RequirePermission('site-recces:delete')
   @Delete('photos/:photoId')
   @HttpCode(HttpStatus.NO_CONTENT)
   async removePhoto(

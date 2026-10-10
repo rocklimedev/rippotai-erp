@@ -38,9 +38,11 @@ export class AuthTokensService {
     return actor.roleName === 'ADMIN' || actor.roleName === 'SUPERADMIN';
   }
 
-  private assertSessionOwner(userId: string, actor: CurrentUserPayload) {
-    if (!this.isAdmin(actor) && actor.id !== userId) {
-      throw new ForbiddenException('You can only manage your own sessions');
+  private assertSessionOwner(userId: string, actor: CurrentUserPayload, permission: string) {
+    const admin = this.isAdmin(actor);
+    if (actor.id === userId) return;
+    if (!admin || !Array.isArray(actor.permissions) || !actor.permissions.includes(permission)) {
+      throw new ForbiddenException('Cross-user sessions require an administrator and explicit permission');
     }
   }
 
@@ -51,7 +53,7 @@ export class AuthTokensService {
   }
 
   async listSessions(userId: string, actor: CurrentUserPayload) {
-    this.assertSessionOwner(userId, actor);
+    this.assertSessionOwner(userId, actor, 'sessions:read-any');
     return this.authTokenModel.findAll({
       where: { user_id: userId },
       attributes: SESSION_ATTRIBUTES,
@@ -64,13 +66,13 @@ export class AuthTokensService {
     this.isAdmin(actor);
     const token = await this.authTokenModel.findByPk(id);
     if (!token) throw new NotFoundException('Session not found');
-    this.assertSessionOwner(token.user_id, actor);
+    this.assertSessionOwner(token.user_id, actor, 'sessions:revoke-any');
     await token.update({ revoked_at: new Date() });
     return this.sessionMetadata(token);
   }
 
   async revokeUserSessions(userId: string, actor: CurrentUserPayload) {
-    this.assertSessionOwner(userId, actor);
+    this.assertSessionOwner(userId, actor, 'sessions:revoke-any');
     return this.revokeAllForUser(userId);
   }
 

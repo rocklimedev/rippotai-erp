@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 // boq-template.controller.ts
 import {
   Body,
@@ -22,21 +23,25 @@ import {
 export class BoqTemplateController {
   constructor(private readonly templates: BoqTemplateService) {}
 
+  @RequirePermission('boq-templates:read')
   @Get()
   findAll() {
     return this.templates.findAll();
   }
 
+  @RequirePermission('boq-templates:read')
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.templates.findOne(id);
   }
 
+  @RequirePermission('boq-templates:create')
   @Post()
   create(@Body() dto: CreateTemplateDto, @Req() req: any) {
     return this.templates.create(dto, req.user?.id);
   }
 
+  @RequirePermission('boq-templates:update')
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -46,6 +51,7 @@ export class BoqTemplateController {
     return this.templates.update(id, dto, req.user?.id);
   }
 
+  @RequirePermission('boq-templates:delete')
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: any) {
     return this.templates.remove(id, req.user?.id);
@@ -53,11 +59,13 @@ export class BoqTemplateController {
 
   // ---- Categories ----
 
+  @RequirePermission('boq-templates:create')
   @Post(':id/categories')
   addCategory(@Param('id') id: string, @Body('name') name: string) {
     return this.templates.addCategory(id, name);
   }
 
+  @RequirePermission('boq-templates:delete')
   @Delete(':id/categories/:categoryId')
   deleteCategory(
     @Param('id') id: string,
@@ -68,6 +76,7 @@ export class BoqTemplateController {
 
   // ---- Items ----
 
+  @RequirePermission('boq-templates:create')
   @Post(':id/categories/:categoryId/items')
   addItem(
     @Param('id') id: string,
@@ -77,6 +86,7 @@ export class BoqTemplateController {
     return this.templates.addItem(id, categoryId, body);
   }
 
+  @RequirePermission('boq-templates:update')
   @Patch(':id/items/:itemId')
   updateItem(
     @Param('id') id: string,
@@ -86,11 +96,13 @@ export class BoqTemplateController {
     return this.templates.updateItem(id, itemId, body);
   }
 
+  @RequirePermission('boq-templates:delete')
   @Delete(':id/items/:itemId')
   deleteItem(@Param('id') id: string, @Param('itemId') itemId: string) {
     return this.templates.deleteItem(id, itemId);
   }
 
+  @RequirePermission('boq-templates:update')
   @Post(':id/items/reorder')
   reorderItems(
     @Param('id') id: string,

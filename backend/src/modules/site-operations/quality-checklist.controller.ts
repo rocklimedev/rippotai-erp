@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -44,6 +45,7 @@ export class QualityChecklistController {
    * Create a new quality checklist
    * POST /quality-checklists
    */
+  @RequirePermission('quality-checklists:create')
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createChecklist(
@@ -61,11 +63,13 @@ export class QualityChecklistController {
    * GET /quality-checklists/templates
    * Source: QUALITY CHECK LIST.xlsx detailed sheets
    */
+  @RequirePermission('quality-checklists:read')
   @Get('templates')
   listWorkHeadTemplates() {
     return this.qualityChecklistService.listWorkHeadTemplates();
   }
 
+  @RequirePermission('quality-checklists:read')
   @Get()
   listChecklists(@Query() filter: FilterQualityChecklistDto) {
     return this.qualityChecklistService.getChecklists(filter);
@@ -75,6 +79,7 @@ export class QualityChecklistController {
    * Get checkpoint template for one work head
    * GET /quality-checklists/templates/:workHead
    */
+  @RequirePermission('quality-checklists:read')
   @Get('templates/:workHead')
   getWorkHeadTemplate(
     @Param('workHead', new ParseEnumPipe(WorkHead)) workHead: WorkHead,
@@ -87,6 +92,7 @@ export class QualityChecklistController {
    * POST /quality-checklists/from-template
    * Body: { project_id, work_head, description? }
    */
+  @RequirePermission('quality-checklists:create')
   @Post('from-template')
   @HttpCode(HttpStatus.CREATED)
   async createFromWorkHead(
@@ -105,6 +111,7 @@ export class QualityChecklistController {
    * Get checklist by ID
    * GET /quality-checklists/:id
    */
+  @RequirePermission('quality-checklists:read')
   @Get(':id')
   async getChecklistById(
     @Param('id') id: string,
@@ -116,6 +123,7 @@ export class QualityChecklistController {
    * Get all checklists for a project
    * GET /quality-checklists/project/:projectId
    */
+  @RequirePermission('quality-checklists:read')
   @Get('project/:projectId')
   async getChecklistsByProject(
     @Param('projectId') projectId: string,
@@ -132,6 +140,7 @@ export class QualityChecklistController {
    * Update checklist
    * PUT /quality-checklists/:id
    */
+  @RequirePermission('quality-checklists:update')
   @Put(':id')
   async updateChecklist(
     @Param('id') id: string,
@@ -149,6 +158,7 @@ export class QualityChecklistController {
    * Delete checklist
    * DELETE /quality-checklists/:id
    */
+  @RequirePermission('quality-checklists:delete')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteChecklist(@Param('id') id: string): Promise<void> {
@@ -159,6 +169,7 @@ export class QualityChecklistController {
    * Mark checklist as complete
    * PUT /quality-checklists/:id/complete
    */
+  @RequirePermission('quality-checklists:update')
   @Put(':id/complete')
   async completeChecklist(
     @Param('id') id: string,
@@ -170,6 +181,7 @@ export class QualityChecklistController {
    * Get checklist summary/statistics
    * GET /quality-checklists/:id/summary
    */
+  @RequirePermission('quality-checklists:read')
   @Get(':id/summary')
   async getChecklistSummary(
     @Param('id') id: string,
@@ -181,6 +193,7 @@ export class QualityChecklistController {
    * Export checklist data
    * GET /quality-checklists/:id/export
    */
+  @RequirePermission('quality-checklists:export')
   @Get(':id/export')
   async exportChecklistData(@Param('id') id: string): Promise<any> {
     return this.qualityChecklistService.exportChecklistData(id);
@@ -190,6 +203,7 @@ export class QualityChecklistController {
    * Add item to checklist
    * POST /quality-checklists/:checklistId/items
    */
+  @RequirePermission('quality-checklists:create')
   @Post(':checklistId/items')
   @HttpCode(HttpStatus.CREATED)
   async addChecklistItem(
@@ -208,6 +222,7 @@ export class QualityChecklistController {
    * Get all items in a checklist
    * GET /quality-checklists/:checklistId/items
    */
+  @RequirePermission('quality-checklists:read')
   @Get(':checklistId/items')
   async getChecklistItems(
     @Param('checklistId') checklistId: string,
@@ -221,6 +236,7 @@ export class QualityChecklistController {
    * Get items by phase
    * GET /quality-checklists/:checklistId/items/phase/:phase
    */
+  @RequirePermission('quality-checklists:read')
   @Get(':checklistId/items/phase/:phase')
   async getItemsByPhase(
     @Param('checklistId') checklistId: string,
@@ -234,6 +250,7 @@ export class QualityChecklistController {
    * PUT /quality-checklists/items/:itemId
    */
   // Static bulk route must precede the item-ID route.
+  @RequirePermission('quality-checklists:update')
   @Put('items/bulk-update')
   async bulkUpdateChecklistItems(
     @Body() bulkUpdateDto: BulkUpdateChecklistItemsDto,
@@ -245,11 +262,13 @@ export class QualityChecklistController {
     );
   }
 
+  @RequirePermission('quality-checklists:export')
   @Get('project/:projectId/export-workbook')
   exportProjectWorkbook(@Param('projectId', ParseUUIDPipe) projectId: string) {
     return this.qualityChecklistService.exportProjectWorkbook(projectId);
   }
 
+  @RequirePermission('quality-checklists:update')
   @Put('items/:itemId')
   async updateChecklistItem(
     @Param('itemId') itemId: string,
@@ -267,6 +286,7 @@ export class QualityChecklistController {
    * Delete checklist item
    * DELETE /quality-checklists/items/:itemId
    */
+  @RequirePermission('quality-checklists:delete')
   @Delete('items/:itemId')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteChecklistItem(@Param('itemId') itemId: string): Promise<void> {

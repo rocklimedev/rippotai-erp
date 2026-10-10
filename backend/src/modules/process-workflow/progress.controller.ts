@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -14,16 +15,19 @@ import { UpdateStepProgressDto, SignOffStepDto } from './dto/tracking.dto';
 export class ProgressController {
   constructor(private readonly progressService: ProgressService) {}
 
+  @RequirePermission('workflow-progress:create')
   @Post('init')
   init(@Param('projectId', ParseIntPipe) projectId: number) {
     return this.progressService.initializeProjectProgress(projectId);
   }
 
+  @RequirePermission('workflow-progress:read')
   @Get()
   getProjectProgress(@Param('projectId', ParseIntPipe) projectId: number) {
     return this.progressService.getProjectProgress(projectId);
   }
 
+  @RequirePermission('workflow-progress:update')
   @Patch('steps/:stepId')
   updateStepProgress(
     @Param('projectId', ParseIntPipe) projectId: number,
@@ -33,6 +37,7 @@ export class ProgressController {
     return this.progressService.updateStepProgress(projectId, stepId, dto);
   }
 
+  @RequirePermission('workflow-progress:sign-off')
   @Post('steps/:stepId/sign-off')
   signOff(
     @Param('projectId', ParseIntPipe) projectId: number,

@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
   Get,
@@ -42,6 +43,7 @@ export class QuotationsController {
   // =========================
   // CREATE
   // =========================
+  @RequirePermission('quotations:create')
   @Post()
   create(@Body() dto: CreateQuotationDto, @CurrentUser() user?: any) {
     return this.quotationsService.create(dto, user);
@@ -50,6 +52,7 @@ export class QuotationsController {
   // =========================
   // GET ALL
   // =========================
+  @RequirePermission('quotations:read')
   @Get()
   findAll(
     @Query('status') status?: QuotationStatus,
@@ -68,16 +71,19 @@ export class QuotationsController {
   // =========================
   // DASHBOARD
   // =========================
+  @RequirePermission('quotations:read')
   @Get('summary')
   getSummary() {
     return this.quotationDashboardService.getSummary();
   }
 
+  @RequirePermission('quotations:read')
   @Get('project-wise')
   getProjectWise() {
     return this.quotationDashboardService.getProjectWise();
   }
 
+  @RequirePermission('quotations:read')
   @Get('expiring-soon')
   getExpiringSoon(@Query('within_days') within_days?: string) {
     return this.quotationDashboardService.getExpiringSoon(
@@ -85,11 +91,13 @@ export class QuotationsController {
     );
   }
 
+  @RequirePermission('quotations:read')
   @Get('boq-variance')
   getBoqVariance() {
     return this.quotationDashboardService.getBoqVariance();
   }
 
+  @RequirePermission('quotations:read')
   @Get('value-trend')
   getValueTrend(@Query('months') months?: string) {
     return this.quotationDashboardService.getValueTrend(
@@ -97,11 +105,13 @@ export class QuotationsController {
     );
   }
 
+  @RequirePermission('quotations:read')
   @Get('status-mix')
   getStatusMix() {
     return this.quotationDashboardService.getStatusMix();
   }
 
+  @RequirePermission('quotations:read')
   @Get('variation-by-project')
   getVariationByProject(@Query('limit') limit?: string) {
     return this.quotationDashboardService.getVariationByProject(
@@ -112,6 +122,7 @@ export class QuotationsController {
   // =========================
   // COMPARISON
   // =========================
+  @RequirePermission('quotations:read')
   @Get('compare')
   async compare(@Query('ids') ids: string) {
     if (!ids) {
@@ -126,6 +137,7 @@ export class QuotationsController {
     return this.quotationsService.compareQuotations(idList);
   }
 
+  @RequirePermission('quotations:create')
   @Post('quotation-comparisons')
   saveComparison(
     @Body() dto: CreateQuotationComparisonDto,
@@ -137,6 +149,7 @@ export class QuotationsController {
   // =========================
   // SINGLE QUOTATION ROUTES
   // =========================
+  @RequirePermission('quotations:export')
   @Get(':id/export/excel')
   async exportExcel(@Param('id') id: string, @Res() res: Response) {
     const { buffer, filename } = await this.quotationExportService.toExcel(id);
@@ -148,11 +161,13 @@ export class QuotationsController {
     res.send(buffer);
   }
 
+  @RequirePermission('quotations:read')
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.quotationsService.findOne(id);
   }
 
+  @RequirePermission('quotations:update')
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -162,6 +177,7 @@ export class QuotationsController {
     return this.quotationsService.update(id, dto, user);
   }
 
+  @RequirePermission('quotations:submit')
   @Patch(':id/submit')
   submit(
     @Param('id') id: string,
@@ -171,6 +187,7 @@ export class QuotationsController {
     return this.quotationsService.submit(id, submitted_by, user);
   }
 
+  @RequirePermission('quotations:approve')
   @Patch(':id/approve')
   approve(
     @Param('id') id: string,
@@ -180,6 +197,7 @@ export class QuotationsController {
     return this.quotationsService.approve(id, dto, user);
   }
 
+  @RequirePermission('quotations:update')
   @Patch(':id/return')
   returnForEditing(
     @Param('id') id: string,
@@ -189,6 +207,7 @@ export class QuotationsController {
     return this.quotationsService.returnForEditing(id, dto, user);
   }
 
+  @RequirePermission('quotations:update')
   @Patch(':id/decline')
   decline(
     @Param('id') id: string,
@@ -198,6 +217,7 @@ export class QuotationsController {
     return this.quotationsService.decline(id, dto, user);
   }
 
+  @RequirePermission('quotations:update')
   @Patch(':id/cancel')
   cancel(
     @Param('id') id: string,
@@ -207,11 +227,13 @@ export class QuotationsController {
     return this.quotationsService.cancel(id, updated_by, user);
   }
 
+  @RequirePermission('quotations:restore')
   @Patch(':id/restore')
   restore(@Param('id') id: string, @CurrentUser() user?: any) {
     return this.quotationsService.restore(id, user);
   }
 
+  @RequirePermission('quotations:select')
   @Post(':id/mark-selected')
   markSelected(
     @Param('id') id: string,
@@ -224,6 +246,7 @@ export class QuotationsController {
   // =========================
   // DELETE
   // =========================
+  @RequirePermission('quotations:delete')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   softDelete(
@@ -234,6 +257,7 @@ export class QuotationsController {
     return this.quotationsService.softDelete(id, deleted_by, user);
   }
 
+  @RequirePermission('quotations:delete')
   @Delete(':id/permanent')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {

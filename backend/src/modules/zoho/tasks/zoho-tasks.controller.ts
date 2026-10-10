@@ -1,3 +1,4 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
   Controller,
@@ -28,6 +29,7 @@ export class ZohoTasksController {
   /**
    * GET /api/v1/zoho/projects/:ownerKey/portals
    */
+  @RequirePermission('zoho-projects:read')
   @Get(':ownerKey/portals')
   listPortals(@Param('ownerKey') ownerKey: string) {
     return this.zohoTasksService.listPortals(ownerKey);
@@ -42,6 +44,7 @@ export class ZohoTasksController {
   /**
    * GET /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects
    */
+  @RequirePermission('zoho-projects:read')
   @Get(':ownerKey/portals/:portalId/projects')
   listProjects(
     @Param('ownerKey') ownerKey: string,
@@ -54,6 +57,7 @@ export class ZohoTasksController {
   /**
    * POST /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects
    */
+  @RequirePermission('zoho-projects:create')
   @Post(':ownerKey/portals/:portalId/projects')
   createProject(
     @Param('ownerKey') ownerKey: string,
@@ -66,6 +70,7 @@ export class ZohoTasksController {
   /**
    * GET /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects/:projectId
    */
+  @RequirePermission('zoho-projects:read')
   @Get(':ownerKey/portals/:portalId/projects/:projectId')
   getProject(
     @Param('ownerKey') ownerKey: string,
@@ -79,6 +84,7 @@ export class ZohoTasksController {
    * PATCH /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects/:projectId
    * (was PUT — V3's Zoho-side project update is partial, PATCH is the accurate verb here)
    */
+  @RequirePermission('zoho-projects:update')
   @Patch(':ownerKey/portals/:portalId/projects/:projectId')
   updateProject(
     @Param('ownerKey') ownerKey: string,
@@ -97,6 +103,7 @@ export class ZohoTasksController {
   /**
    * DELETE /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects/:projectId
    */
+  @RequirePermission('zoho-projects:delete')
   @Delete(':ownerKey/portals/:portalId/projects/:projectId')
   deleteProject(
     @Param('ownerKey') ownerKey: string,
@@ -115,6 +122,7 @@ export class ZohoTasksController {
   /**
    * GET /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects/:projectId/tasklists
    */
+  @RequirePermission('zoho-projects:read')
   @Get(':ownerKey/portals/:portalId/projects/:projectId/tasklists')
   listTasklists(
     @Param('ownerKey') ownerKey: string,
@@ -133,6 +141,7 @@ export class ZohoTasksController {
   /**
    * POST /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects/:projectId/tasklists
    */
+  @RequirePermission('zoho-projects:create')
   @Post(':ownerKey/portals/:portalId/projects/:projectId/tasklists')
   createTasklist(
     @Param('ownerKey') ownerKey: string,
@@ -152,6 +161,7 @@ export class ZohoTasksController {
    * PATCH /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects/:projectId/tasklists/:tasklistId
    * (was PUT — same PATCH rationale as updateProject)
    */
+  @RequirePermission('zoho-projects:update')
   @Patch(
     ':ownerKey/portals/:portalId/projects/:projectId/tasklists/:tasklistId',
   )
@@ -174,6 +184,7 @@ export class ZohoTasksController {
   /**
    * DELETE /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects/:projectId/tasklists/:tasklistId
    */
+  @RequirePermission('zoho-projects:delete')
   @Delete(
     ':ownerKey/portals/:portalId/projects/:projectId/tasklists/:tasklistId',
   )
@@ -194,6 +205,7 @@ export class ZohoTasksController {
   /**
    * GET /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects/:projectId/tasklists/:tasklistId/tasks
    */
+  @RequirePermission('zoho-projects:read')
   @Get(
     ':ownerKey/portals/:portalId/projects/:projectId/tasklists/:tasklistId/tasks',
   )
@@ -222,6 +234,7 @@ export class ZohoTasksController {
   /**
    * GET /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects/:projectId/tasks
    */
+  @RequirePermission('zoho-projects:read')
   @Get(':ownerKey/portals/:portalId/projects/:projectId/tasks')
   listTasks(
     @Param('ownerKey') ownerKey: string,
@@ -240,6 +253,7 @@ export class ZohoTasksController {
   /**
    * POST /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects/:projectId/tasks
    */
+  @RequirePermission('zoho-projects:create')
   @Post(':ownerKey/portals/:portalId/projects/:projectId/tasks')
   createTask(
     @Param('ownerKey') ownerKey: string,
@@ -253,6 +267,7 @@ export class ZohoTasksController {
   /**
    * GET /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects/:projectId/tasks/:taskId
    */
+  @RequirePermission('zoho-projects:read')
   @Get(':ownerKey/portals/:portalId/projects/:projectId/tasks/:taskId')
   getTask(
     @Param('ownerKey') ownerKey: string,
@@ -268,6 +283,7 @@ export class ZohoTasksController {
    * (was PUT — V3 docs show PATCH .../tasks/{task_id} for partial task updates,
    * e.g. updating just assignee/due_date/a custom field)
    */
+  @RequirePermission('zoho-projects:update')
   @Patch(':ownerKey/portals/:portalId/projects/:projectId/tasks/:taskId')
   updateTask(
     @Param('ownerKey') ownerKey: string,
@@ -288,6 +304,7 @@ export class ZohoTasksController {
   /**
    * DELETE /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects/:projectId/tasks/:taskId
    */
+  @RequirePermission('zoho-projects:delete')
   @Delete(':ownerKey/portals/:portalId/projects/:projectId/tasks/:taskId')
   deleteTask(
     @Param('ownerKey') ownerKey: string,
@@ -309,6 +326,7 @@ export class ZohoTasksController {
    * verify whether V3 still exposes this or whether ordering is now done
    * via a field on the PATCH task payload before relying on this route.
    */
+  @RequirePermission('zoho-projects:update')
   @Post(':ownerKey/portals/:portalId/projects/:projectId/tasks/:taskId/reorder')
   reorderTask(
     @Param('ownerKey') ownerKey: string,
@@ -331,6 +349,7 @@ export class ZohoTasksController {
    * ⚠️ Not confirmed in V3 docs — check whether this maps to a V3
    * "activities" module endpoint or has been folded into taskstatushistory.
    */
+  @RequirePermission('zoho-projects:read')
   @Get(
     ':ownerKey/portals/:portalId/projects/:projectId/tasks/:taskId/activities',
   )
@@ -353,6 +372,7 @@ export class ZohoTasksController {
    * ⚠️ Not confirmed in V3 docs — verify follow/unfollow still exists as a
    * dedicated action endpoint in V3.
    */
+  @RequirePermission('zoho-projects:update')
   @Post(':ownerKey/portals/:portalId/projects/:projectId/tasks/:taskId/follow')
   followTask(
     @Param('ownerKey') ownerKey: string,
@@ -372,6 +392,7 @@ export class ZohoTasksController {
    * POST /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects/:projectId/tasks/:taskId/unfollow
    * ⚠️ Same caveat as followTask above.
    */
+  @RequirePermission('zoho-projects:update')
   @Post(
     ':ownerKey/portals/:portalId/projects/:projectId/tasks/:taskId/unfollow',
   )
@@ -398,6 +419,7 @@ export class ZohoTasksController {
   /**
    * GET /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects/:projectId/tasks/:taskId/subtasks
    */
+  @RequirePermission('zoho-projects:read')
   @Get(':ownerKey/portals/:portalId/projects/:projectId/tasks/:taskId/subtasks')
   listSubtasks(
     @Param('ownerKey') ownerKey: string,
@@ -416,6 +438,7 @@ export class ZohoTasksController {
   /**
    * POST /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects/:projectId/tasks/:taskId/subtasks
    */
+  @RequirePermission('zoho-projects:create')
   @Post(
     ':ownerKey/portals/:portalId/projects/:projectId/tasks/:taskId/subtasks',
   )
@@ -445,6 +468,7 @@ export class ZohoTasksController {
    * GET /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects/:projectId/tasklayouts
    * ⚠️ Not confirmed in V3 docs — verify exact V3 layouts path before relying on this.
    */
+  @RequirePermission('zoho-projects:read')
   @Get(':ownerKey/portals/:portalId/projects/:projectId/tasklayouts')
   getTaskLayouts(
     @Param('ownerKey') ownerKey: string,
@@ -458,6 +482,7 @@ export class ZohoTasksController {
    * GET /api/v1/zoho/projects/:ownerKey/portals/:portalId/projects/:projectId/tasks-views
    * ⚠️ Not confirmed in V3 docs — verify against V3 "views" module.
    */
+  @RequirePermission('zoho-projects:read')
   @Get(':ownerKey/portals/:portalId/projects/:projectId/tasks-views')
   getTaskViews(
     @Param('ownerKey') ownerKey: string,
@@ -473,6 +498,7 @@ export class ZohoTasksController {
    * exists (no trailing slash), but "mytasks-views" specifically wasn't found;
    * verify this maps correctly on the service side.
    */
+  @RequirePermission('zoho-projects:read')
   @Get(':ownerKey/portals/:portalId/mytasks-views')
   getMyTasksViews(
     @Param('ownerKey') ownerKey: string,

@@ -1,5 +1,6 @@
+import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import { Public } from '@/common/decorator/public.decorator';
-import { Throttle } from '@nestjs/throttler';
+import { AuthThrottle } from '@/common/security/auth-throttle.decorator';
 import {
   Body,
   Controller,
@@ -36,25 +37,29 @@ export class AuthController {
     private readonly forgotPasswordService: ForgotPasswordService,
   ) {}
 
+  @RequirePermission('auth:login')
   @Public()
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @AuthThrottle()
   @Post('login')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password);
   }
+  @RequirePermission('auth:signup')
   @Public()
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @AuthThrottle()
   @Post('signup')
   async signup(@Body() dto: SignupDto) {
     return this.authService.signup(dto);
   }
+  @RequirePermission('account:read')
   @Get('me')
   @UseGuards(JwtAuthGuard)
   async me(@Req() req: RequestWithUser) {
     return { user: req.user };
   }
 
+  @RequirePermission('account:logout')
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   async logout(@Req() req: RequestWithUser) {
@@ -67,22 +72,25 @@ export class AuthController {
     return { success: true };
   }
 
+  @RequirePermission('auth:forgot-password')
   @Public()
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @AuthThrottle()
   @Post('forgot-password')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.forgotPasswordService.forgotPassword(dto);
   }
 
+  @RequirePermission('auth:reset-password')
   @Public()
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @AuthThrottle()
   @Post('reset-password')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.password);
   }
 
+  @RequirePermission('account:change-password')
   @Patch('change-password')
   @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))
