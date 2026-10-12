@@ -11,7 +11,7 @@ Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before
 
 Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.
 
-There are 967 routes, 941 staff routes and 401 assignable staff capabilities.
+There are 974 routes, 948 staff routes and 405 assignable staff capabilities.
 
 ## Catalogue by module
 
@@ -22,6 +22,7 @@ There are 967 routes, 941 staff routes and 401 assignable staff capabilities.
 | boqs | `boq-activity:read`, `boq-catalog:read`, `boq-templates:create`, `boq-templates:delete`, `boq-templates:read`, `boq-templates:update`, `boq:approve`, `boq:create`, `boq:delete`, `boq:export`, `boq:read`, `boq:submit`, `boq:update`, `library:create`, `library:delete`, `library:read`, `library:update` |
 | brief | `project-briefs:create`, `project-briefs:delete`, `project-briefs:read`, `project-briefs:update`, `project-briefs:upload` |
 | budget-estimate | `budget-estimates:create`, `budget-estimates:delete`, `budget-estimates:lock`, `budget-estimates:read`, `budget-estimates:recalculate`, `budget-estimates:update` |
+| budget-guide | `budget-guides:create`, `budget-guides:delete`, `budget-guides:read`, `budget-guides:update` |
 | business-proposals | `business-proposals:create`, `business-proposals:read`, `business-proposals:update` |
 | calendar | `calendar-events:create`, `calendar-events:delete`, `calendar-events:read`, `calendar-events:update` |
 | cdn | `cdn:upload` |
@@ -175,6 +176,13 @@ There are 967 routes, 941 staff routes and 401 assignable staff capabilities.
 | budget-estimate | `DELETE /budget-estimates/:id` | BudgetEstimateController.remove | `budget-estimates:delete` | staff |
 | budget-estimate | `POST /budget-estimates/:id/unlock` | BudgetEstimateController.unlock | `budget-estimates:lock` | staff |
 | budget-estimate | `PATCH /budget-estimates/:id` | BudgetEstimateController.update | `budget-estimates:update` | staff |
+| budget-guide | `POST /budget-guides` | BudgetGuideController.create | `budget-guides:create` | staff |
+| budget-guide | `GET /budget-guides/:id` | BudgetGuideController.findOne | `budget-guides:read` | staff |
+| budget-guide | `GET /budget-guides` | BudgetGuideController.list | `budget-guides:read` | staff |
+| budget-guide | `DELETE /budget-guides/:id` | BudgetGuideController.remove | `budget-guides:delete` | staff |
+| budget-guide | `GET /budget-guides/template` | BudgetGuideController.template | `budget-guides:read` | staff |
+| budget-guide | `POST /budget-guides/:id/transfer` | BudgetGuideController.transfer | `budget-guides:create` | staff |
+| budget-guide | `PATCH /budget-guides/:id` | BudgetGuideController.update | `budget-guides:update` | staff |
 | business-proposals | `POST /business-proposals` | BusinessProposalsController.create | `business-proposals:create` | staff |
 | business-proposals | `GET /business-proposals/:id` | BusinessProposalsController.get | `business-proposals:read` | staff |
 | business-proposals | `GET /business-proposals` | BusinessProposalsController.list | `business-proposals:read` | staff |

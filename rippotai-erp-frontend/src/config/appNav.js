@@ -336,6 +336,7 @@ export const APP_MENUS = {
         I("Payment Schedules", "payment-schedule/all"),
 
         I("Budget Estimates", "budget-estimates/all"),
+        I("Budget Guides", "budget-guides/all"),
       ],
     },
     {

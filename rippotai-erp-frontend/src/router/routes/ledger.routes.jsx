@@ -18,6 +18,9 @@ import BoqActivityPage from "@/pages/boq/BoqActivitypage";
 import BoqVersions from "@/pages/boq/BoqVersions";
 import BoqWorkspace from "@/pages/boq/BoqWorkspace";
 import BoqPreview from "@/pages/boq/BoqPreview";
+import BudgetGuideList from "@/pages/budget-guide/BudgetGuideList";
+import BudgetGuideEditor from "@/pages/budget-guide/BudgetGuideEditor";
+import BudgetGuidePreview from "@/pages/budget-guide/BudgetGuidePreview";
 export const ledgerRoutes = [
   {
     type: "layout",
@@ -76,6 +79,9 @@ export const ledgerRoutes = [
         path: "budget-estimates/all",
         element: <BudgetEstimateList />,
       },
+      { path: "budget-guides/all", element: <BudgetGuideList /> },
+      { path: "budget-guides/new", element: <BudgetGuideEditor /> },
+      { path: "budget-guides/:id/edit", element: <BudgetGuideEditor /> },
       {
         path: "forms/budget-estimate",
         element: <BudgetEstimateForm />,
@@ -105,6 +111,7 @@ export const ledgerRoutes = [
   // These live outside the AppLayout shell (full-bleed workspace views)
   { path: "/ledger/boq/:id", element: <BoqWorkspace /> },
   { path: "/ledger/boq/:id/preview", element: <BoqPreview /> },
+  { path: "/ledger/budget-guides/:id", element: <BudgetGuidePreview /> },
 ];
 
 export default ledgerRoutes;

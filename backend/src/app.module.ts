@@ -60,6 +60,7 @@ import { SiteOperationsModule } from './modules/site-operations/site-operations.
 import { MaterialProcurementModule } from './modules/material-procurement/material-procurement.module';
 import { ScopeOfWorkModule } from './modules/scope-of-work/scope-of-work.module';
 import { BudgetEstimateModule } from './modules/budget-estimate/budget-estimate.module';
+import { BudgetGuideModule } from './modules/budget-guide/budget-guide.module';
 import { BusinessProposalsModule } from './modules/business-proposals/business-proposals.module';
 import { GatesModule } from './modules/gates/gates.module';
 import { ZohoModule } from './modules/zoho/zoho.module';
@@ -150,6 +151,7 @@ import { HttpSecurityModule } from './common/security/http-security.module';
     DashboardsModule,
     LeadsModule,
     BudgetEstimateModule,
+    BudgetGuideModule,
     BusinessProposalsModule,
     // ============================================================
     // Infrastructure

@@ -1,0 +1,8 @@
+{
+  "rootDir": "../src",
+  "testEnvironment": "node",
+  "testRegex": "(budget-guide/.*|common/security/staff-rbac)\\.spec\\.ts$",
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "moduleNameMapper": { "^@/(.*)$": "<rootDir>/$1" },
+  "transform": { "^.+\\.ts$": "ts-jest" }
+}

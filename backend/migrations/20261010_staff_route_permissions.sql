@@ -53,6 +53,10 @@ INSERT IGNORE INTO permissions (id, name, resource, action, description, created
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'budget-estimates:read', 'budget-estimates', 'read', 'Staff API capability: budget-estimates:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'budget-estimates:recalculate', 'budget-estimates', 'recalculate', 'Staff API capability: budget-estimates:recalculate', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'budget-estimates:update', 'budget-estimates', 'update', 'Staff API capability: budget-estimates:update', NOW());
+INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'budget-guides:create', 'budget-guides', 'create', 'Staff API capability: budget-guides:create', NOW());
+INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'budget-guides:delete', 'budget-guides', 'delete', 'Staff API capability: budget-guides:delete', NOW());
+INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'budget-guides:read', 'budget-guides', 'read', 'Staff API capability: budget-guides:read', NOW());
+INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'budget-guides:update', 'budget-guides', 'update', 'Staff API capability: budget-guides:update', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'business-proposals:create', 'business-proposals', 'create', 'Staff API capability: business-proposals:create', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'business-proposals:read', 'business-proposals', 'read', 'Staff API capability: business-proposals:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'business-proposals:update', 'business-proposals', 'update', 'Staff API capability: business-proposals:update', NOW());
@@ -457,6 +461,10 @@ WHERE r.name IN ('ADMIN', 'SUPERADMIN') AND CONCAT(p.resource, ':', p.action) IN
   'budget-estimates:read',
   'budget-estimates:recalculate',
   'budget-estimates:update',
+  'budget-guides:create',
+  'budget-guides:delete',
+  'budget-guides:read',
+  'budget-guides:update',
   'business-proposals:create',
   'business-proposals:read',
   'business-proposals:update',
