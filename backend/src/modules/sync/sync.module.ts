@@ -11,6 +11,10 @@ import { ReminderSyncService } from './reminder-sync.service';
 import { SyncController } from './sync.controller';
 import { TaskSyncService } from './task-sync.service';
 import { CalendarSyncService } from './sync-calendar.service';
+import { AuthModule } from '../auth/auth.module';
+import { LocalZohoSyncService } from './local-zoho-sync.service';
+import { TaskZohoSyncController } from './task-zoho-sync.controller';
+import { CalendarZohoSyncController } from './calendar-zoho-sync.controller';
 @Module({
   imports: [
     SequelizeModule.forFeature([
@@ -20,9 +24,10 @@ import { CalendarSyncService } from './sync-calendar.service';
       ReminderSyncRecord,
     ]),
     ZohoModule,
+    AuthModule,
   ],
-  controllers: [SyncController],
-  providers: [ReminderSyncService, TaskSyncService, CalendarSyncService],
+  controllers: [SyncController, TaskZohoSyncController, CalendarZohoSyncController],
+  providers: [ReminderSyncService, TaskSyncService, CalendarSyncService, LocalZohoSyncService],
   exports: [TaskSyncService, CalendarSyncService],
 })
 export class SyncModule {}

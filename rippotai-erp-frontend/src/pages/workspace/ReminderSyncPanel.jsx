@@ -9,8 +9,11 @@ import {
   useGetReminderProjectsQuery,
   useReconcileReminderMutation,
   useGetReminderCalendarsQuery,
+  useGetReminderUsersQuery,
+  useLazyReminderAuthorizeQuery,
+  useSyncRemindersMutation,
 } from "@/api/workspace/reminder-sync.api";
-import { useLazyZohoAuthorizeUrlQuery } from "@/api/auth/authConnectors.api";
+import { useAuth } from "@/context/AuthContext";
 
 const errorMessage = (e) =>
   String(e?.data?.message || e?.error || "Could not update Zoho reminders");
@@ -24,8 +27,11 @@ const defaults = {
   timezone: "Asia/Kolkata",
   task_reminder_time: "09:00",
   reminder_minutes: 30,
+  include_undated_tasks: true,
 };
 export default function ReminderSyncPanel({ kind }) {
+  const { user } = useAuth();
+  const canManage = user?.permissions?.includes(kind === "tasks" ? "tasks:update" : "calendar-events:update");
   const { data, isLoading, isError, error, refetch } =
     useGetReminderStatusQuery(kind, {
       pollingInterval: 30000,
@@ -34,21 +40,26 @@ export default function ReminderSyncPanel({ kind }) {
   const [draft, setDraft] = useState(null);
 
   const calendars = useGetReminderCalendarsQuery(undefined, {
-    skip: kind !== "calendar",
+    skip: kind !== "calendar" || !data?.connected,
     refetchOnMountOrArgChange: true,
   });
   const [remoteIds, setRemoteIds] = useState({});
   const [save, saving] = useSaveReminderSettingsMutation();
   const [reconcile, reconciling] = useReconcileReminderMutation();
-  const [authorize, authorizing] = useLazyZohoAuthorizeUrlQuery();
-  const busy = saving.isLoading || reconciling.isLoading;
+  const [authorize, authorizing] = useLazyReminderAuthorizeQuery();
+  const [sync, syncing] = useSyncRemindersMutation();
+  const busy = saving.isLoading || reconciling.isLoading || syncing.isLoading || !canManage;
   const form = draft || { ...defaults, ...data?.settings };
   const portals = useGetReminderPortalsQuery(undefined, {
-    skip: kind !== "tasks",
+    skip: kind !== "tasks" || !data?.connected,
     refetchOnMountOrArgChange: true,
   });
   const projects = useGetReminderProjectsQuery(form.portal_id, {
-    skip: kind !== "tasks" || !form.portal_id,
+    skip: kind !== "tasks" || !form.portal_id || !data?.connected,
+    refetchOnMountOrArgChange: true,
+  });
+  const zohoUsers = useGetReminderUsersQuery({ portalId: form.portal_id, projectId: form.project_id }, {
+    skip: kind !== "tasks" || !form.portal_id || !form.project_id || !data?.connected,
     refetchOnMountOrArgChange: true,
   });
   const fields =
@@ -57,7 +68,7 @@ export default function ReminderSyncPanel({ kind }) {
           ["portal_id", "Zoho portal"],
           ["project_id", "Zoho project"],
           ["tasklist_id", "Task list ID (optional)"],
-          ["assignee_id", "Your Zoho Projects user ID"],
+          ["assignee_id", "Your Zoho user in this project"],
           ["task_reminder_time", "Reminder time on due date"],
         ]
       : [
@@ -66,9 +77,7 @@ export default function ReminderSyncPanel({ kind }) {
         ];
   const connect = async () => {
     try {
-      const scopes =
-        "ZohoProjects.tasks.ALL,ZohoProjects.portals.READ,ZohoProjects.projects.READ,ZohoCalendar.calendar.READ,ZohoCalendar.event.ALL";
-      const response = await authorize(scopes).unwrap();
+      const response = await authorize(kind).unwrap();
       if (!response?.authorizationUrl)
         throw new Error("Zoho authorization URL was not returned");
       const link = document.createElement("a");
@@ -85,6 +94,7 @@ export default function ReminderSyncPanel({ kind }) {
   const submit = async (event) => {
     event.preventDefault();
     const body = { enabled: form.enabled, timezone: form.timezone };
+    if (kind === "tasks") body.include_undated_tasks = Boolean(form.include_undated_tasks);
     for (const [key] of fields)
       body[key] =
         key === "reminder_minutes"
@@ -93,7 +103,7 @@ export default function ReminderSyncPanel({ kind }) {
     try {
       await save({ kind, body }).unwrap();
       setDraft(null);
-      toast.success("Reminder settings saved");
+      toast.success("Zoho sync settings saved");
     } catch (e) {
       toast.error(errorMessage(e));
     }
@@ -111,12 +121,12 @@ export default function ReminderSyncPanel({ kind }) {
       >
         <div>
           <strong>
-            {kind === "tasks" ? "Task reminders" : "Calendar reminders"}
+            {kind === "tasks" ? "Tasks → Zoho Projects" : "Calendar → Zoho Calendar"}
           </strong>
           <p style={{ margin: "6px 0" }}>
             Your local{" "}
-            {kind === "tasks" ? "tasks with due dates" : "calendar events"}{" "}
-            drive Zoho reminders.{" "}
+            {kind === "tasks" ? "tasks" : "calendar events"}{" "}
+            are the source for Zoho.{" "}
             {data?.settings?.enabled
               ? "Automatic sync runs every minute."
               : "Automatic sync is paused."}
@@ -136,16 +146,26 @@ export default function ReminderSyncPanel({ kind }) {
           {data.last_sync ? new Date(data.last_sync).toLocaleString() : "Never"}
         </p>
       )}
+      <p>{data?.connected ? "Zoho account connected." : "Connect your Zoho account to choose a destination."}{" "}
+        <Button variant="ghost" size="sm" onClick={() => {
+          refetch();
+          if (!portals.isUninitialized) portals.refetch();
+          if (!projects.isUninitialized) projects.refetch();
+          if (!calendars.isUninitialized) calendars.refetch();
+          if (!zohoUsers.isUninitialized) zohoUsers.refetch();
+        }}>Refresh connection</Button>
+      </p>
+      {!canManage && <p>You need permission to update {kind === "tasks" ? "tasks" : "calendar events"} to manage your Zoho sync.</p>}
       {data?.settings?.last_error && (
         <p role="alert">{data.settings.last_error}</p>
       )}
       <div>
         <p>
           {kind === "tasks"
-            ? "Syncs tasks assigned to you, plus unassigned tasks you created. Enter your Zoho Projects user ID so Zoho sends reminders to you."
+            ? "Syncs tasks assigned to you, plus unassigned tasks you created. Choose your own Zoho user to receive task reminders."
             : "Syncs calendar events you created. Task deadlines use task reminders."}
         </p>
-        {(kind === "tasks" ? [portals, projects] : [calendars]).map(
+        {(kind === "tasks" ? [portals, projects, zohoUsers] : [calendars]).map(
           (query, index) =>
             query.isError && (
               <p key={index} role="alert">
@@ -171,7 +191,7 @@ export default function ReminderSyncPanel({ kind }) {
           <p>No personal calendars found in this account.</p>
         )}
         <Button onClick={connect} disabled={busy || authorizing.isFetching}>
-          Connect Zoho reminders
+          {data?.connected ? "Reconnect Zoho permissions" : "Connect Zoho"}
         </Button>
         <form
           onSubmit={submit}
@@ -203,8 +223,8 @@ export default function ReminderSyncPanel({ kind }) {
                       ...form,
                       [key]: event.target.value,
                       ...(key === "portal_id"
-                        ? { project_id: "", tasklist_id: "" }
-                        : { tasklist_id: "" }),
+                        ? { project_id: "", tasklist_id: "", assignee_id: "" }
+                        : { tasklist_id: "", assignee_id: "" }),
                     })
                   }
                 >
@@ -231,6 +251,15 @@ export default function ReminderSyncPanel({ kind }) {
                       {item.name}
                     </option>
                   ))}
+                </select>
+              ) : key === "assignee_id" ? (
+                <select className="inos-input" value={form.assignee_id} required={form.enabled}
+                  disabled={busy || !form.project_id || zohoUsers.isFetching || !data?.connected}
+                  onChange={(e) => setDraft({ ...form, assignee_id: e.target.value })}>
+                  <option value="">Select your Zoho user</option>
+                  {form.assignee_id && !zohoUsers.currentData?.some(item => item.id === form.assignee_id) &&
+                    <option value={form.assignee_id}>Saved user ({form.assignee_id})</option>}
+                  {zohoUsers.currentData?.map(item => <option key={item.id} value={item.id}>{item.name}{item.email ? ` · ${item.email}` : ""}</option>)}
                 </select>
               ) : key === "calendar_id" ? (
                 <select
@@ -286,8 +315,13 @@ export default function ReminderSyncPanel({ kind }) {
               disabled={busy || isLoading || isError}
               onChange={(e) => setDraft({ ...form, enabled: e.target.checked })}
             />{" "}
-            Automatic reminders
+            Automatic sync
           </label>
+          {kind === "tasks" && <label>
+            <input type="checkbox" checked={Boolean(form.include_undated_tasks)} disabled={busy || isLoading || isError}
+              onChange={(e) => setDraft({ ...form, include_undated_tasks: e.target.checked })} />{" "}
+            Include tasks without a due date
+          </label>}
           <Button
             type="submit"
             variant="primary"
@@ -295,6 +329,7 @@ export default function ReminderSyncPanel({ kind }) {
               busy ||
               isLoading ||
               isError ||
+              (form.enabled && !data?.connected) ||
               (form.enabled &&
                 kind === "calendar" &&
                 !calendars.data?.some(
@@ -309,6 +344,21 @@ export default function ReminderSyncPanel({ kind }) {
           Pausing stops future syncs; existing Zoho reminders remain active.
           Changes to your tasks and events sync automatically.
         </p>
+        <Button disabled={busy || !data?.connected || !data?.settings?.enabled || !!draft} onClick={async () => {
+          try {
+            const result = await sync({ kind }).unwrap();
+            if (result.success) toast.success(`Synced: ${result.created} created, ${result.updated} updated, ${result.deleted} removed`);
+            else toast.warning(`Sync needs attention: ${result.failed} failed, ${result.uncertain} need review`);
+          } catch (e) { toast.error(errorMessage(e)); }
+        }}>Sync now</Button>{" "}
+        <Button disabled={busy || !data?.connected || !data?.failed || !!draft} onClick={async () => {
+          try {
+            const result = await sync({ kind, retry_failed: true }).unwrap();
+            if (result.success) toast.success("Failed records retried");
+            else toast.warning("Some records still need attention");
+          } catch (e) { toast.error(errorMessage(e)); }
+        }}>Retry failed</Button>
+        {!!draft && <p>Save your settings before syncing.</p>}
       </div>
       {data?.errors?.length > 0 && (
         <details>
@@ -318,7 +368,7 @@ export default function ReminderSyncPanel({ kind }) {
               <Link
                 to={kind === "tasks" ? `/tasks/${item.local_id}` : "/calendar"}
               >
-                {item.local_id}
+                {item.title || item.local_id}
               </Link>
               : {item.message}
               {item.status === "uncertain" && (

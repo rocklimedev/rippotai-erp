@@ -1,5 +1,6 @@
 // Native INOS tasks: board by status (drag & drop) + list, with My tasks / All / Overdue / Blocked / Done views.
 import React, { useMemo, useState } from "react";
+import ZohoSyncControl from "./ZohoSyncControl";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -56,6 +57,7 @@ const VIEW_TABS = [
   { value: "board", label: "Board", to: "/tasks" },
   { value: "mine", label: "My tasks", to: "/tasks/mine" },
   { value: "all", label: "All tasks", to: "/tasks/all" },
+  { value: "crucial", label: "Crucial Work", to: "/tasks/crucial-work" },
   { value: "overdue", label: "Overdue", to: "/tasks/overdue" },
   { value: "blocked", label: "Blocked", to: "/tasks/blocked" },
   { value: "completed", label: "Done", to: "/tasks/completed" },
@@ -116,6 +118,7 @@ function TaskCard({ task, onOpen, onDragStart }) {
         }}
       >
         {task.title}
+        {task.is_crucial && <Pill tone="warn" size="sm">Crucial Work</Pill>}
       </div>
       {task.project?.name && <Meta>{task.project.name}</Meta>}
       <div
@@ -279,6 +282,7 @@ function TaskTable({ tasks, onOpen, onToggle }) {
                     }}
                   >
                     {t.title}
+                    {t.is_crucial && <Pill tone="warn" size="sm">Crucial Work</Pill>}
                   </div>
                   <Meta>{t.project?.name || "No project"}</Meta>
                 </td>
@@ -451,6 +455,7 @@ export default function TasksPage({ view = "board" }) {
             : "Plan, assign and track work across every project."
         }
         actions={
+          <><ZohoSyncControl kind="tasks" />
           <Button
             variant="primary"
             icon={Plus}
@@ -459,6 +464,7 @@ export default function TasksPage({ view = "board" }) {
           >
             New task
           </Button>
+          </>
         }
       />
 

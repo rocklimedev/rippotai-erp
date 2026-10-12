@@ -1,5 +1,6 @@
 // Task detail: /tasks/:id
 import React, { useState } from "react";
+import ZohoSyncControl from "./ZohoSyncControl";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Pencil, Trash2, CheckCircle2, RotateCcw, ListTodo } from "lucide-react";
@@ -55,6 +56,11 @@ export default function TaskDetail() {
         subtitle={t.project?.name ? <>Part of <Link to={`/projects/${t.project.id}`} style={{ color: "var(--brand)", fontWeight: 600 }}>{t.project.name}</Link></> : "Not linked to a project"}
         actions={
           <>
+            <ZohoSyncControl kind="tasks" entityId={id} />
+            <Button disabled={saving} onClick={async () => {
+              try { await updateTask({ id, is_crucial: !t.is_crucial }).unwrap(); toast.success(t.is_crucial ? "Crucial Work marker removed" : "Marked as Crucial Work"); }
+              catch (e) { toast.error(e?.data?.message || "Couldn't change Crucial Work marker"); }
+            }}>{t.is_crucial ? "Remove Crucial Work marker" : "Mark as Crucial Work"}</Button>
             <Button icon={Pencil} onClick={() => navigate(`/tasks/${id}/edit`)} data-testid="edit-task">Edit</Button>
             {done ? (
               <Button icon={RotateCcw} onClick={() => setStatus("todo")} loading={saving}>Reopen</Button>
@@ -66,6 +72,10 @@ export default function TaskDetail() {
       />
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 2fr) minmax(280px, 1fr)", gap: 20, alignItems: "start" }}>
         <div style={{ display: "grid", gap: 20 }}>
+          {t.is_crucial && <Card title={`Crucial Work · Ref ${t.crucial_ref}`}>
+            <p style={{ whiteSpace: "pre-wrap" }}>{t.crucial_reason || "Add the reason in Edit task."}</p>
+            <Link to="/tasks/crucial-work">Open register and exports</Link>
+          </Card>}
           <Card title="Details">
             {t.description ? (
               <p style={{ margin: 0, whiteSpace: "pre-wrap", lineHeight: 1.6, color: "var(--text)" }}>{t.description}</p>
@@ -109,7 +119,7 @@ export default function TaskDetail() {
             <dt>Created</dt><dd>{fmtDate(t.created_at)}</dd>
           </dl>
           <div style={{ borderTop: "1px solid var(--line)", marginTop: 16, paddingTop: 12 }}>
-            {confirm ? (
+            {t.is_crucial ? <Meta>Crucial work stays in the register. Mark it done when verified complete.</Meta> : confirm ? (
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <Meta style={{ flex: 1 }}>Delete this task for everyone?</Meta>
                 <Button size="sm" variant="ghost" onClick={() => setConfirm(false)}>Keep</Button>

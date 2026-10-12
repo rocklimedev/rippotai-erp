@@ -73,6 +73,7 @@ import { MicrosoftModule } from '../microsoft/microsoft.module';
     OAuthStateService,
   ],
   exports: [
+    OAuthStateService,
     AuthService,
     AuthTokensService,
     VerificationTokensService,

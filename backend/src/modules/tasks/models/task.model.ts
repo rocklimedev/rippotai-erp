@@ -9,6 +9,7 @@ import {
   Default,
   CreatedAt,
   UpdatedAt,
+  AutoIncrement,
 } from 'sequelize-typescript';
 import { Optional } from 'sequelize';
 
@@ -20,6 +21,9 @@ export type TaskStatusValue = 'todo' | 'in_progress' | 'review' | 'blocked' | 'c
 export interface TaskAttributes {
   id: string;
   title: string;
+  crucial_ref: number;
+  is_crucial: boolean;
+  crucial_reason: string | null;
   project_id: string | null;
   created_by: string | null;
   priority: 'low' | 'medium' | 'high' | 'critical';
@@ -38,6 +42,9 @@ export interface TaskAttributes {
 export interface TaskCreationAttributes extends Optional<
   TaskAttributes,
   | 'id'
+  | 'crucial_ref'
+  | 'is_crucial'
+  | 'crucial_reason'
   | 'project_id'
   | 'created_by'
   | 'priority'
@@ -70,6 +77,16 @@ export class Task extends Model<TaskAttributes, TaskCreationAttributes> {
     allowNull: false,
   })
   declare title: string;
+
+  @AutoIncrement
+  @Column({ type: DataType.INTEGER.UNSIGNED, allowNull: false, unique: true })
+  declare crucial_ref: number;
+
+  @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+  declare is_crucial: boolean;
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare crucial_reason: string | null;
 
   @ForeignKey(() => Project)
   @Column({

@@ -13,6 +13,20 @@ const routes = scan();
 const reflector = new Reflector();
 const portal = new PortalAccessGuard(reflector);
 const permissions = new PermissionsGuard(reflector);
+
+it('includes shared document routes in the project read permission audit', () => {
+  for (const handler of ['fetch', 'prefill']) {
+    expect(routes).toContainEqual(
+      expect.objectContaining({
+        controller: 'SharedProjectDataController',
+        handler,
+        permission: 'projects:read',
+        public: false,
+      }),
+    );
+  }
+});
+
 function context(route: any, user: any, params = {}): ExecutionContext {
   const controller = class {};
   Object.defineProperty(controller, 'name', { value: route.controller });

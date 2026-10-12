@@ -2030,6 +2030,26 @@
     "file": "src/modules/documents/drawing.controller.ts"
   },
   {
+    "module": "documents",
+    "controller": "SharedProjectDataController",
+    "handler": "fetch",
+    "method": "GET",
+    "path": "/projects/:id/shared-document-data",
+    "permission": "projects:read",
+    "public": false,
+    "file": "src/modules/documents/shared-project-data.controller.ts"
+  },
+  {
+    "module": "documents",
+    "controller": "SharedProjectDataController",
+    "handler": "prefill",
+    "method": "GET",
+    "path": "/projects/:id/document-prefill/:sequence",
+    "permission": "projects:read",
+    "public": false,
+    "file": "src/modules/documents/shared-project-data.controller.ts"
+  },
+  {
     "module": "engagement",
     "controller": "ActivityLogsController",
     "handler": "findAll",
@@ -7241,6 +7261,66 @@
   },
   {
     "module": "sync",
+    "controller": "CalendarZohoSyncController",
+    "handler": "authorize",
+    "method": "GET",
+    "path": "/calendar/zoho-sync/authorize",
+    "permission": "calendar-events:update",
+    "public": false,
+    "file": "src/modules/sync/calendar-zoho-sync.controller.ts"
+  },
+  {
+    "module": "sync",
+    "controller": "CalendarZohoSyncController",
+    "handler": "destinations",
+    "method": "GET",
+    "path": "/calendar/zoho-sync/destinations",
+    "permission": "calendar-events:read",
+    "public": false,
+    "file": "src/modules/sync/calendar-zoho-sync.controller.ts"
+  },
+  {
+    "module": "sync",
+    "controller": "CalendarZohoSyncController",
+    "handler": "push",
+    "method": "POST",
+    "path": "/calendar/zoho-sync/push",
+    "permission": "calendar-events:update",
+    "public": false,
+    "file": "src/modules/sync/calendar-zoho-sync.controller.ts"
+  },
+  {
+    "module": "sync",
+    "controller": "CalendarZohoSyncController",
+    "handler": "reconcile",
+    "method": "POST",
+    "path": "/calendar/zoho-sync/reconcile/:localId",
+    "permission": "calendar-events:update",
+    "public": false,
+    "file": "src/modules/sync/calendar-zoho-sync.controller.ts"
+  },
+  {
+    "module": "sync",
+    "controller": "CalendarZohoSyncController",
+    "handler": "save",
+    "method": "PUT",
+    "path": "/calendar/zoho-sync/settings",
+    "permission": "calendar-events:update",
+    "public": false,
+    "file": "src/modules/sync/calendar-zoho-sync.controller.ts"
+  },
+  {
+    "module": "sync",
+    "controller": "CalendarZohoSyncController",
+    "handler": "status",
+    "method": "GET",
+    "path": "/calendar/zoho-sync/status",
+    "permission": "calendar-events:read",
+    "public": false,
+    "file": "src/modules/sync/calendar-zoho-sync.controller.ts"
+  },
+  {
+    "module": "sync",
     "controller": "SyncController",
     "handler": "allStatus",
     "method": "GET",
@@ -7360,6 +7440,86 @@
     "file": "src/modules/sync/sync.controller.ts"
   },
   {
+    "module": "sync",
+    "controller": "TaskZohoSyncController",
+    "handler": "authorize",
+    "method": "GET",
+    "path": "/tasks/zoho-sync/authorize",
+    "permission": "tasks:update",
+    "public": false,
+    "file": "src/modules/sync/task-zoho-sync.controller.ts"
+  },
+  {
+    "module": "sync",
+    "controller": "TaskZohoSyncController",
+    "handler": "portals",
+    "method": "GET",
+    "path": "/tasks/zoho-sync/portals",
+    "permission": "tasks:read",
+    "public": false,
+    "file": "src/modules/sync/task-zoho-sync.controller.ts"
+  },
+  {
+    "module": "sync",
+    "controller": "TaskZohoSyncController",
+    "handler": "projects",
+    "method": "GET",
+    "path": "/tasks/zoho-sync/portals/:portalId/projects",
+    "permission": "tasks:read",
+    "public": false,
+    "file": "src/modules/sync/task-zoho-sync.controller.ts"
+  },
+  {
+    "module": "sync",
+    "controller": "TaskZohoSyncController",
+    "handler": "push",
+    "method": "POST",
+    "path": "/tasks/zoho-sync/push",
+    "permission": "tasks:update",
+    "public": false,
+    "file": "src/modules/sync/task-zoho-sync.controller.ts"
+  },
+  {
+    "module": "sync",
+    "controller": "TaskZohoSyncController",
+    "handler": "reconcile",
+    "method": "POST",
+    "path": "/tasks/zoho-sync/reconcile/:localId",
+    "permission": "tasks:update",
+    "public": false,
+    "file": "src/modules/sync/task-zoho-sync.controller.ts"
+  },
+  {
+    "module": "sync",
+    "controller": "TaskZohoSyncController",
+    "handler": "save",
+    "method": "PUT",
+    "path": "/tasks/zoho-sync/settings",
+    "permission": "tasks:update",
+    "public": false,
+    "file": "src/modules/sync/task-zoho-sync.controller.ts"
+  },
+  {
+    "module": "sync",
+    "controller": "TaskZohoSyncController",
+    "handler": "status",
+    "method": "GET",
+    "path": "/tasks/zoho-sync/status",
+    "permission": "tasks:read",
+    "public": false,
+    "file": "src/modules/sync/task-zoho-sync.controller.ts"
+  },
+  {
+    "module": "sync",
+    "controller": "TaskZohoSyncController",
+    "handler": "users",
+    "method": "GET",
+    "path": "/tasks/zoho-sync/portals/:portalId/projects/:projectId/users",
+    "permission": "tasks:read",
+    "public": false,
+    "file": "src/modules/sync/task-zoho-sync.controller.ts"
+  },
+  {
     "module": "system",
     "controller": "AppController",
     "handler": "getHealth",
@@ -7442,6 +7602,26 @@
   {
     "module": "tasks",
     "controller": "TasksController",
+    "handler": "crucialTemplate",
+    "method": "GET",
+    "path": "/tasks/crucial-work/template",
+    "permission": "tasks:read",
+    "public": false,
+    "file": "src/modules/tasks/task.controller.ts"
+  },
+  {
+    "module": "tasks",
+    "controller": "TasksController",
+    "handler": "exportCrucialWork",
+    "method": "GET",
+    "path": "/tasks/crucial-work/export",
+    "permission": "tasks:read",
+    "public": false,
+    "file": "src/modules/tasks/task.controller.ts"
+  },
+  {
+    "module": "tasks",
+    "controller": "TasksController",
     "handler": "findAll",
     "method": "GET",
     "path": "/tasks",
@@ -7465,6 +7645,16 @@
     "handler": "getBoard",
     "method": "GET",
     "path": "/tasks/board",
+    "permission": "tasks:read",
+    "public": false,
+    "file": "src/modules/tasks/task.controller.ts"
+  },
+  {
+    "module": "tasks",
+    "controller": "TasksController",
+    "handler": "getCrucialWork",
+    "method": "GET",
+    "path": "/tasks/crucial-work",
     "permission": "tasks:read",
     "public": false,
     "file": "src/modules/tasks/task.controller.ts"
@@ -7496,6 +7686,16 @@
     "method": "DELETE",
     "path": "/tasks/:id",
     "permission": "tasks:delete",
+    "public": false,
+    "file": "src/modules/tasks/task.controller.ts"
+  },
+  {
+    "module": "tasks",
+    "controller": "TasksController",
+    "handler": "saveCrucialCheck",
+    "method": "POST",
+    "path": "/tasks/:id/crucial-check",
+    "permission": "tasks:update",
     "public": false,
     "file": "src/modules/tasks/task.controller.ts"
   },

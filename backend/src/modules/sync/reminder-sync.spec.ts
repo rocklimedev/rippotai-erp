@@ -133,6 +133,59 @@ describe('Zoho reminder mirror', () => {
       status: 'synced',
     });
   });
+
+  it('includes undated tasks when selected and retains the same owner scope', async () => {
+    setting.config = { ...config, include_undated_tasks: true };
+    tasks.findAll.mockResolvedValue([{ ...task, due_date: null }]);
+    expect(await service.sync(user, 'tasks')).toMatchObject({ success: true, created: 1 });
+    const where = tasks.findAll.mock.calls[0][0].where;
+    expect(where.due_date).toBeUndefined();
+    expect(where[Op.or]).toEqual([{ assigned_to: user }, { created_by: user, assigned_to: null }]);
+    expect(zohoTasks.createTask.mock.calls[0][3]).toMatchObject({ clear_date: true, clear_reminders: true });
+  });
+
+  it('shows local changes as pending instead of reporting a stale mirror as synced', async () => {
+    await service.sync(user, 'tasks');
+    tasks.findAll.mockResolvedValue([{ ...task, title: 'Local title changed' }]);
+    const status = await service.status(user, 'tasks');
+    expect(status).toMatchObject({ synced: 0, pending: 1, records: [{ local_id: task.id, title: 'Local title changed', status: 'pending' }] });
+  });
+
+  it('loads selectable active project users without rounding their IDs', async () => {
+    zohoTasks.listProjectUsers = jest.fn().mockResolvedValue({ users: [
+      { id: '170876000006360599', name: 'Owner', email: 'owner@example.test', active: true },
+      { id: 'inactive', name: 'Inactive', active: false },
+    ] });
+    expect(await service.taskUsers(user, 'portal', 'project')).toEqual([
+      { id: '170876000006360599', name: 'Owner', email: 'owner@example.test' },
+    ]);
+    expect(zohoTasks.listProjectUsers).toHaveBeenCalledWith(user, 'portal', 'project');
+    zohoTasks.listProjectUsers.mockResolvedValue({ users: [{ id: 170876000006360599 }] });
+    await expect(service.taskUsers(user, 'portal', 'project')).rejects.toThrow('invalid user ID');
+  });
+
+  it('uses due-only selection for legacy settings and all tasks for a new connection', async () => {
+    expect((await service.getSettings(user, 'tasks')).include_undated_tasks).toBe(false);
+    settings.findOne.mockResolvedValue(null);
+    expect((await service.getSettings(user, 'tasks')).include_undated_tasks).toBe(true);
+  });
+
+  it('preserves the mapping when an all-task mirror loses its due date', async () => {
+    setting.config = { ...config, include_undated_tasks: true };
+    await service.sync(user, 'tasks');
+    tasks.findAll.mockResolvedValue([{ ...task, due_date: null }]);
+    expect(await service.sync(user, 'tasks')).toMatchObject({ success: true, updated: 1, deleted: 0 });
+    expect(zohoTasks.updateTask.mock.calls[0][4]).toMatchObject({ clear_date: true, clear_reminders: true });
+    expect(zohoTasks.createTask).toHaveBeenCalledTimes(1);
+    expect(zohoTasks.deleteTask).not.toHaveBeenCalled();
+  });
+
+  it('includes crucial-work context in the Zoho description without changing the title', () => {
+    const payload = taskPayload({ ...task, is_crucial: true, crucial_ref: 19, crucial_reason: 'Do not cover before inspection' }, config);
+    expect(payload.title).toBe(task.title);
+    expect(payload.description).toContain('Crucial Work · Ref 19');
+    expect(payload.description).toContain('Do not cover before inspection');
+  });
   it('lists calendar UIDs rather than numeric account/calendar IDs', async () => {
     expect(await service.calendarDestinations(user)).toEqual([
       { uid: 'calendar-uid', name: 'Personal' },
