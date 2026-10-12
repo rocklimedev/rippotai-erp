@@ -1,3 +1,4 @@
+import ProjectDocumentsBoard from "../../components/projects/ProjectDocumentsBoard";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
@@ -934,7 +935,7 @@ export default function ProjectWorkspace() {
       {tab === "phases" && <PhasesCard phases={phases} progress={progress} detailed />}
 
       {tab === "documents" && (
-        <DocumentsPanel docs={docs} loading={docsLoading} onToggleVisibility={toggleDocVisibility} onOpenAll={openDocs} />
+        <ProjectDocumentsBoard projectId={id} />
       )}
 
       {tab === "drawings" && <ProjectDrawingsPanel projectId={id} />}

@@ -1,3 +1,4 @@
+import { documentPhaseWhere, belongsToDocumentPhase } from './document-phase';
 import { DocumentEvidenceService } from '../gates/conditions/document-evidence.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -89,12 +90,13 @@ export class ProjectDocumentPhaseService {
     const documentTypes = await this.documentTypeModel.findAll({
       where: {
         isActive: true,
+        ...documentPhaseWhere(phases),
       },
       include: [
         {
           model: this.projectPhaseModel,
           as: 'projectPhase',
-          required: true,
+          required: false,
           where: {
             module: 'DOCUMENTS',
           },
@@ -164,7 +166,7 @@ export class ProjectDocumentPhaseService {
     const documentTypesByPhase = new Map<string, any[]>();
 
     for (const documentType of documentTypes) {
-      const projectPhaseId = documentType.projectPhaseId;
+      const projectPhaseId = phases.find((phase) => belongsToDocumentPhase(documentType, phase))?.id;
 
       if (!projectPhaseId) {
         continue;
@@ -264,6 +266,7 @@ export class ProjectDocumentPhaseService {
 
                   documentIds: uploaded.map((document) => document.id),
 
+                  latestDocumentStatus: uploaded[0]?.status ?? null,
                   latestDocumentId: uploaded[0]?.id || null,
 
                   latestUploadedAt:
@@ -499,12 +502,13 @@ export class ProjectDocumentPhaseService {
     const documentTypes = await this.documentTypeModel.findAll({
       where: {
         isActive: true,
+        ...documentPhaseWhere(phases),
       },
       include: [
         {
           model: ProjectPhase,
           as: 'projectPhase',
-          required: true,
+          required: false,
           where: {
             module: 'DOCUMENTS',
           },
@@ -524,7 +528,7 @@ export class ProjectDocumentPhaseService {
       where: {
         projectId,
       },
-      attributes: ['id', 'documentTypeId', 'createdAt', 'updatedAt'],
+      attributes: ['id', 'documentTypeId', 'status', 'createdAt', 'updatedAt'],
       order: [['createdAt', 'DESC']],
     });
 
@@ -560,7 +564,7 @@ export class ProjectDocumentPhaseService {
     const documentTypesByPhase = new Map<string, DocumentType[]>();
 
     for (const documentType of documentTypes) {
-      const projectPhaseId = documentType.projectPhaseId;
+      const projectPhaseId = phases.find((phase) => belongsToDocumentPhase(documentType, phase))?.id;
 
       if (!projectPhaseId) {
         continue;
@@ -631,6 +635,7 @@ export class ProjectDocumentPhaseService {
 
               documentIds: uploaded.map((document) => document.id),
 
+              latestDocumentStatus: uploaded[0]?.status ?? null,
               latestDocumentId: uploaded[0]?.id ?? null,
 
               latestUploadedAt: uploaded[0]?.createdAt ?? null,

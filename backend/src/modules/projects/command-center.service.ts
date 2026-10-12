@@ -1,3 +1,4 @@
+import { belongsToDocumentPhase, documentPhaseWhere } from '../documents/document-phase';
 import {
   BadRequestException,
   ForbiddenException,
@@ -296,11 +297,9 @@ export class CommandCenterService {
     projectId = project.id;
 
     const [docTypes, taskDefs, taskExecs] = await Promise.all([
-      // NOTE: DocumentType links to a phase via the denormalized
-      // phaseCode string, not a phase_id FK — see the module-level
-      // caveat about module scoping at the top of this file.
+      // Prefer the phase relationship, with a fallback for legacy catalogue rows.
       this.docTypeModel.findAll({
-        where: { phaseCode: phase.phase_code, isActive: true },
+        where: { ...documentPhaseWhere([phase]), isActive: true },
         order: [['sequence', 'ASC']],
       }),
       this.taskDefModel.findAll({ where: { phase_id: phaseId } }),
@@ -426,13 +425,12 @@ export class CommandCenterService {
     const currentPhase =
       phases.find((ph) => ph.phase_code === project.current_phase) ?? phases[0];
 
-    const phaseCodesInModule = phases.map((p) => p.phase_code);
 
     const [docTypes, taskDefs, gates, requirements, documents, taskExecs] =
       await Promise.all([
         this.docTypeModel.findAll({
           where: {
-            phaseCode: phaseCodesInModule,
+            ...documentPhaseWhere(phases),
             isActive: true,
           },
         }),
@@ -509,7 +507,7 @@ export class CommandCenterService {
       this.rollupPhase(
         phase,
         currentPhase,
-        docTypes.filter((dt) => dt.phaseCode === phase.phase_code),
+        docTypes.filter((dt) => belongsToDocumentPhase(dt, phase)),
         taskDefs,
         reqByTypeId,
         taskExecByDefId,

@@ -216,7 +216,7 @@ function DocumentTypeRow({ documentType, projectId, onUpload, onDownload }) {
           <div className="pj-list-item__sub">
             {[
               documentType?.description,
-              evidence?.detail || (isUploaded ? `${uploadCount} upload${uploadCount !== 1 ? "s" : ""}` : "Pending"),
+              (uploadCount > 0 && !isUploaded && !isNative && !isDrawing ? `Uploaded · ${documentType?.latestDocumentStatus === "submitted" || documentType?.latestDocumentStatus === "under_review" ? "Awaiting review" : documentType?.latestDocumentStatus || "Evidence pending"}` : evidence?.detail) || (isUploaded ? `${uploadCount} upload${uploadCount !== 1 ? "s" : ""}` : "Pending"),
               documentType?.latestUploadedAt && `Latest ${formatDate(documentType.latestUploadedAt)}`,
               allowsMultiple && "Multiple allowed",
             ]
@@ -230,7 +230,7 @@ function DocumentTypeRow({ documentType, projectId, onUpload, onDownload }) {
             <InosButton size="sm" variant={isUploaded ? "secondary" : "primary"} icon={ArrowRight} onClick={() => onUpload(documentType, projectId)}>
               {isNative ? (evidence.recordId ? "Open source" : "Create") : "Open drawings"}
             </InosButton>
-          ) : !isUploaded ? (
+          ) : !isUploaded && uploadCount === 0 ? (
             <InosButton size="sm" variant="primary" icon={Upload} onClick={() => onUpload(documentType, projectId)}>
               Upload
             </InosButton>
