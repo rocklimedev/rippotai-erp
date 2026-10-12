@@ -1150,6 +1150,76 @@
     "file": "src/modules/budget-estimate/budget-estimate.controller.ts"
   },
   {
+    "module": "budget-guide",
+    "controller": "BudgetGuideController",
+    "handler": "create",
+    "method": "POST",
+    "path": "/budget-guides",
+    "permission": "budget-guides:create",
+    "public": false,
+    "file": "src/modules/budget-guide/budget-guide.controller.ts"
+  },
+  {
+    "module": "budget-guide",
+    "controller": "BudgetGuideController",
+    "handler": "findOne",
+    "method": "GET",
+    "path": "/budget-guides/:id",
+    "permission": "budget-guides:read",
+    "public": false,
+    "file": "src/modules/budget-guide/budget-guide.controller.ts"
+  },
+  {
+    "module": "budget-guide",
+    "controller": "BudgetGuideController",
+    "handler": "list",
+    "method": "GET",
+    "path": "/budget-guides",
+    "permission": "budget-guides:read",
+    "public": false,
+    "file": "src/modules/budget-guide/budget-guide.controller.ts"
+  },
+  {
+    "module": "budget-guide",
+    "controller": "BudgetGuideController",
+    "handler": "remove",
+    "method": "DELETE",
+    "path": "/budget-guides/:id",
+    "permission": "budget-guides:delete",
+    "public": false,
+    "file": "src/modules/budget-guide/budget-guide.controller.ts"
+  },
+  {
+    "module": "budget-guide",
+    "controller": "BudgetGuideController",
+    "handler": "template",
+    "method": "GET",
+    "path": "/budget-guides/template",
+    "permission": "budget-guides:read",
+    "public": false,
+    "file": "src/modules/budget-guide/budget-guide.controller.ts"
+  },
+  {
+    "module": "budget-guide",
+    "controller": "BudgetGuideController",
+    "handler": "transfer",
+    "method": "POST",
+    "path": "/budget-guides/:id/transfer",
+    "permission": "budget-guides:create",
+    "public": false,
+    "file": "src/modules/budget-guide/budget-guide.controller.ts"
+  },
+  {
+    "module": "budget-guide",
+    "controller": "BudgetGuideController",
+    "handler": "update",
+    "method": "PATCH",
+    "path": "/budget-guides/:id",
+    "permission": "budget-guides:update",
+    "public": false,
+    "file": "src/modules/budget-guide/budget-guide.controller.ts"
+  },
+  {
     "module": "business-proposals",
     "controller": "BusinessProposalsController",
     "handler": "create",
