@@ -1,6 +1,7 @@
 // Calendar: month / week / agenda over INOS events + task due dates, milestones, payment dues,
 // quotation expiries and site visits. /calendar (team), /calendar/mine, /calendar/team
 import React, { useMemo, useState } from "react";
+import ZohoSyncControl, { ZohoSyncBadge } from "./ZohoSyncControl";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -415,6 +416,17 @@ function ItemModal({ it, onClose, onEdit }) {
       }
     >
       <dl className="inos-kv">
+        {(it.source === "event" || it.source === "task") && (
+          <>
+            <dt>Zoho</dt>
+            <dd>
+              <ZohoSyncBadge
+                kind={it.source === "task" ? "tasks" : "calendar"}
+                entityId={it.id}
+              />
+            </dd>
+          </>
+        )}
         <dt>When</dt>
         <dd>
           {fmtDate(it.date, {
@@ -517,11 +529,18 @@ export default function CalendarView({ scope = "team" }) {
   }, [mode, cursor]);
 
   const { data, isLoading, isFetching, isError, refetch } =
-    useGetWsCalendarFeedQuery({
-      from: `${ymd(range.start)}T00:00:00`,
-      to: `${ymd(range.end)}T23:59:59`,
-      mine,
-    }, { pollingInterval: 30000, refetchOnFocus: true, refetchOnReconnect: true });
+    useGetWsCalendarFeedQuery(
+      {
+        from: `${ymd(range.start)}T00:00:00`,
+        to: `${ymd(range.end)}T23:59:59`,
+        mine,
+      },
+      {
+        pollingInterval: 30000,
+        refetchOnFocus: true,
+        refetchOnReconnect: true,
+      },
+    );
   const items = useMemo(
     () => (data?.items || []).filter((it) => !hidden.has(it.source)),
     [data, hidden],
@@ -570,14 +589,17 @@ export default function CalendarView({ scope = "team" }) {
             : "Meetings, site visits, task deadlines, milestones and payment dues across the studio."
         }
         actions={
-          <Button
-            variant="primary"
-            icon={Plus}
-            onClick={() => setCreating({ date: new Date() })}
-            data-testid="new-event"
-          >
-            New event
-          </Button>
+          <>
+            <ZohoSyncControl kind="calendar" />
+            <Button
+              variant="primary"
+              icon={Plus}
+              onClick={() => setCreating({ date: new Date() })}
+              data-testid="new-event"
+            >
+              New event
+            </Button>
+          </>
         }
       />
       <Tabs

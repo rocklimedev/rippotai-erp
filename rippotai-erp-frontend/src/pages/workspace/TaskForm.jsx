@@ -8,7 +8,7 @@ import { useGetWsTaskQuery, useCreateWsTaskMutation, useUpdateWsTaskMutation } f
 import { TASK_STATUSES, TASK_PRIORITIES } from "./taskMeta";
 import { ProjectPicker, UserPicker, ymd, Loading } from "./shared";
 
-const blank = { title: "", description: "", project_id: null, assigned_to: null, priority: "medium", status: "todo", start_date: "", due_date: "", workload_estimate_hours: "" };
+const blank = { title: "", description: "", project_id: null, assigned_to: null, priority: "medium", status: "todo", start_date: "", due_date: "", workload_estimate_hours: "", is_crucial: false, crucial_reason: "" };
 
 export default function TaskForm() {
   const { id } = useParams();
@@ -22,6 +22,7 @@ export default function TaskForm() {
 
   const [f, setF] = useState(() => ({
     ...blank,
+    is_crucial: sp.get("crucial") === "1",
     project_id: sp.get("project_id") || null,
     assigned_to: user?.id || null,
     due_date: sp.get("due") || ymd(new Date(Date.now() + 2 * 86400000)),
@@ -34,6 +35,8 @@ export default function TaskForm() {
       setF({
         title: task.title || "",
         description: task.description || "",
+        is_crucial: !!task.is_crucial,
+        crucial_reason: task.crucial_reason || "",
         project_id: task.project_id,
         assigned_to: task.assigned_to,
         priority: task.priority,
@@ -60,6 +63,8 @@ export default function TaskForm() {
     const body = {
       title: f.title.trim(),
       description: f.description.trim() || null,
+      is_crucial: f.is_crucial,
+      crucial_reason: f.crucial_reason.trim() || null,
       project_id: f.project_id || null,
       assigned_to: f.assigned_to || null,
       priority: f.priority,
@@ -104,6 +109,15 @@ export default function TaskForm() {
         </FormSection>
 
         <FormSection step={2} title="Priority and status" columns={1}>
+          <Field label="Crucial Work" hint="Keep this item in the crucial works register and include it in Word and PDF exports.">
+            <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input type="checkbox" checked={f.is_crucial} onChange={(e) => setF((s) => ({ ...s, is_crucial: e.target.checked }))} data-testid="task-crucial" />
+              Mark as Crucial Work
+            </label>
+          </Field>
+          {f.is_crucial && <Field label="Why it’s crucial" full hint="Explain the risk or what must not be missed.">
+            <TextArea rows={3} maxLength={4000} value={f.crucial_reason} onChange={set("crucial_reason")} placeholder="e.g. Waterproofing must be verified before tiling" data-testid="task-crucial-reason" />
+          </Field>}
           <Field label="Priority">
             <ChoiceGroup name="Priority" value={f.priority} onChange={set("priority")} options={TASK_PRIORITIES} />
           </Field>

@@ -354,6 +354,7 @@ export const APP_MENUS = {
       items: [
         I("My Tasks", "mine"),
         I("All Tasks", "all"),
+        I("Crucial Work", "crucial-work"),
         I("Overdue", "overdue"),
         I("New Task", "new"),
       ],

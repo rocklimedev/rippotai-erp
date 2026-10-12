@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
 
@@ -34,12 +34,14 @@ export class TasksService {
     assigned_to?: string;
     priority?: string;
     q?: string;
+    is_crucial?: boolean;
   } = {}) {
     const where: any = {};
     if (filters.status) where.status = filters.status;
     if (filters.project_id) where.project_id = filters.project_id;
     if (filters.assigned_to) where.assigned_to = filters.assigned_to;
     if (filters.priority) where.priority = filters.priority;
+    if (filters.is_crucial !== undefined) where.is_crucial = filters.is_crucial;
     if (filters.q) where.title = { [Op.like]: `%${filters.q}%` };
     return this.taskModel.findAll({
       where,
@@ -85,6 +87,8 @@ export class TasksService {
 
     const task = await this.taskModel.create({
       title: createTaskDto.title,
+      is_crucial: createTaskDto.is_crucial ?? false,
+      crucial_reason: createTaskDto.crucial_reason ?? null,
       project_id: createTaskDto.project_id ?? null,
       created_by: actorId,
       priority: createTaskDto.priority ?? 'medium',
@@ -227,6 +231,9 @@ export class TasksService {
   // =========================
   async remove(id: string, user?: any) {
     const task = await this.findOne(id);
+    if (task.is_crucial) {
+      throw new BadRequestException('Crucial work is retained in the register. Mark it completed instead of deleting it.');
+    }
     const taskTitle = task.title;
 
     await task.destroy();

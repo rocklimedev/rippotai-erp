@@ -3,15 +3,44 @@
 import { baseApi } from "../../store/baseApi";
 
 const api = baseApi.enhanceEndpoints({
-  addTagTypes: ["WsTasks", "WsNotes", "WsCalendar", "WsActivity", "WsClientOverview"],
+  addTagTypes: ["WsTasks", "WsNotes", "WsCalendar", "WsActivity", "WsClientOverview", "ReminderSync"],
 });
 
 const clean = (o = {}) =>
   Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "all"));
 
+const downloadCrucialWork = async (response) => {
+  if (!response.ok) return response.json();
+  const filename = response.headers.get("Content-Disposition")?.match(/filename="([^"]+)"/)?.[1] ||
+    (response.headers.get("Content-Type")?.includes("pdf") ? "crucial-work.pdf" : "crucial-work.docx");
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return { downloaded: true };
+};
+
 export const workspaceApi = api.injectEndpoints({
   endpoints: (b) => ({
     /* ---------------- tasks ---------------- */
+    getCrucialWork: b.query({
+      query: (params) => ({ url: "/tasks/crucial-work", params: clean(params) }),
+      providesTags: [{ type: "WsTasks", id: "LIST" }],
+    }),
+    saveCrucialCheck: b.mutation({
+      query: ({ id, ...body }) => ({ url: `/tasks/${id}/crucial-check`, method: "POST", body }),
+      invalidatesTags: [{ type: "WsTasks", id: "LIST" }],
+    }),
+    exportCrucialWork: b.mutation({
+      query: (params) => ({ url: "/tasks/crucial-work/export", params: clean(params), responseHandler: downloadCrucialWork }),
+    }),
+    downloadCrucialTemplate: b.mutation({
+      query: () => ({ url: "/tasks/crucial-work/template", responseHandler: downloadCrucialWork }),
+    }),
     getWsTasks: b.query({
       query: (params = {}) => ({ url: "/tasks", params: clean(params) }),
       providesTags: (r) => [...(r || []).map((t) => ({ type: "WsTasks", id: t.id })), { type: "WsTasks", id: "LIST" }],
@@ -26,7 +55,7 @@ export const workspaceApi = api.injectEndpoints({
     }),
     createWsTask: b.mutation({
       query: (body) => ({ url: "/tasks", method: "POST", body }),
-      invalidatesTags: [{ type: "WsTasks", id: "LIST" }, "WsCalendar", "WsActivity"],
+      invalidatesTags: [{ type: "WsTasks", id: "LIST" }, "WsCalendar", "WsActivity", { type: "ReminderSync", id: "tasks" }],
     }),
     updateWsTask: b.mutation({
       query: ({ id, ...body }) => ({ url: `/tasks/${id}`, method: "PATCH", body }),
@@ -50,11 +79,11 @@ export const workspaceApi = api.injectEndpoints({
           undo.forEach((u) => u.undo());
         }
       },
-      invalidatesTags: (r, e, { id }) => [{ type: "WsTasks", id }, { type: "WsTasks", id: "LIST" }, "WsCalendar", "WsActivity"],
+      invalidatesTags: (r, e, { id }) => [{ type: "WsTasks", id }, { type: "WsTasks", id: "LIST" }, "WsCalendar", "WsActivity", { type: "ReminderSync", id: "tasks" }],
     }),
     deleteWsTask: b.mutation({
       query: (id) => ({ url: `/tasks/${id}`, method: "DELETE" }),
-      invalidatesTags: [{ type: "WsTasks", id: "LIST" }, "WsCalendar", "WsActivity"],
+      invalidatesTags: [{ type: "WsTasks", id: "LIST" }, "WsCalendar", "WsActivity", { type: "ReminderSync", id: "tasks" }],
     }),
 
     /* ---------------- notes ---------------- */
@@ -82,15 +111,15 @@ export const workspaceApi = api.injectEndpoints({
     }),
     createWsEvent: b.mutation({
       query: (body) => ({ url: "/calendar/events", method: "POST", body }),
-      invalidatesTags: ["WsCalendar", "WsActivity"],
+      invalidatesTags: ["WsCalendar", "WsActivity", { type: "ReminderSync", id: "calendar" }],
     }),
     updateWsEvent: b.mutation({
       query: ({ id, ...body }) => ({ url: `/calendar/events/${id}`, method: "PATCH", body }),
-      invalidatesTags: ["WsCalendar", "WsActivity"],
+      invalidatesTags: ["WsCalendar", "WsActivity", { type: "ReminderSync", id: "calendar" }],
     }),
     deleteWsEvent: b.mutation({
       query: (id) => ({ url: `/calendar/events/${id}`, method: "DELETE" }),
-      invalidatesTags: ["WsCalendar", "WsActivity"],
+      invalidatesTags: ["WsCalendar", "WsActivity", { type: "ReminderSync", id: "calendar" }],
     }),
 
     /* ---------------- activity ---------------- */
@@ -117,6 +146,10 @@ export const workspaceApi = api.injectEndpoints({
 });
 
 export const {
+  useGetCrucialWorkQuery,
+  useSaveCrucialCheckMutation,
+  useExportCrucialWorkMutation,
+  useDownloadCrucialTemplateMutation,
   useGetWsTasksQuery,
   useGetWsMyTasksQuery,
   useGetWsTaskQuery,

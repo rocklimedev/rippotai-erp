@@ -64,6 +64,15 @@ export class ZohoTasksService {
     );
   }
 
+  async listProjectUsers(userId: string, portalId: string, projectId: string) {
+    this.validateUserId(userId);
+    this.validatePortalId(portalId);
+    this.validateProjectId(projectId);
+    return this.zohoHttpService.get(userId,
+      `${this.baseUrl}/${encodeURIComponent(portalId)}/projects/${encodeURIComponent(projectId)}/users/`,
+      { baseURL: await this.getProjectsBaseUrl(userId), params: { user_type: 'active' } });
+  }
+
   async createProject(
     userId: string,
     portalId: string,
@@ -336,7 +345,7 @@ export class ZohoTasksService {
     this.validateTaskId(taskId);
     const baseURL = await this.getProjectsBaseUrl(userId);
 
-    const body = this.toZohoTaskBody(dto as Record<string, any>);
+    const body = this.toZohoTaskBody(dto as Record<string, any>, true);
 
     return this.zohoHttpService.post(
       userId,
@@ -522,7 +531,7 @@ export class ZohoTasksService {
    * Classic API wants name, priority (High/Medium/Low/None),
    * end_date as MM-DD-YYYY, person_responsible, tasklist_id, etc.
    */
-  private toZohoTaskBody(dto: Record<string, any>) {
+  private toZohoTaskBody(dto: Record<string, any>, updating = false) {
     const body: Record<string, any> = {};
 
     const name = dto.title ?? dto.name;
@@ -563,6 +572,13 @@ export class ZohoTasksService {
         String(dto.start_date || due),
         dto.timezone,
       );
+    }
+
+    // Zoho's classic update API explicitly supports clear_date. Omitted dates
+    // leave the old remote deadline intact, so undated mirrors must clear it.
+    if (updating && dto.clear_date === true) body.clear_date = true;
+    if (updating && dto.clear_reminders === true) {
+      body.reminder_string = JSON.stringify({ reminder: [] });
     }
 
     if (dto.reminderDate) {

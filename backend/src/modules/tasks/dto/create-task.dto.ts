@@ -7,6 +7,7 @@ import {
   IsUUID,
   Min,
   MaxLength,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -26,6 +27,15 @@ export enum TaskStatus {
 }
 
 export class CreateTaskDto {
+  @IsOptional()
+  @IsBoolean()
+  is_crucial?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  crucial_reason?: string | null;
+
   @IsString()
   @MaxLength(255)
   title: string;

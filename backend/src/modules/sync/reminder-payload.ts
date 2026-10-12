@@ -70,7 +70,8 @@ export function calendarPayload(event: any, config: Record<string, any>) {
 export function taskPayload(task: any, config: Record<string, any>) {
   return {
     title: task.title,
-    description: task.description || '',
+    description: [task.description || '', task.is_crucial
+      ? `Crucial Work${task.crucial_ref ? ` · Ref ${task.crucial_ref}` : ''}\nWhy it’s crucial: ${task.crucial_reason || 'Not specified'}` : ''].filter(Boolean).join('\n\n'),
     priority: task.priority,
     status: task.status === 'review' ? 'in_progress' : task.status,
     due_date: task.due_date ? new Date(task.due_date).toISOString() : undefined,
@@ -87,5 +88,7 @@ export function taskPayload(task: any, config: Record<string, any>) {
         : undefined,
     reminder_time: config.task_reminder_time || '09:00',
     timezone: config.timezone || 'Asia/Kolkata',
+    clear_date: !task.due_date,
+    clear_reminders: task.status === 'completed' || !task.due_date,
   };
 }

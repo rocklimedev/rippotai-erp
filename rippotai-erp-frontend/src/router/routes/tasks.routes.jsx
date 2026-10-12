@@ -5,6 +5,7 @@ import AppLayout from "@/layouts/AppLayout";
 import TasksPage from "@/pages/workspace/TasksPage";
 import TaskForm from "@/pages/workspace/TaskForm";
 import TaskDetail from "@/pages/workspace/TaskDetail";
+import CrucialWorkPage from "@/pages/workspace/CrucialWorkPage";
 import NotesPage from "@/pages/workspace/NotesPage";
 
 // Zoho Projects board (connector) — kept reachable at /tasks/zoho
@@ -19,7 +20,7 @@ export const tasksRoutes = [
 
     dynamicSections: {
       appKey: "tasks",
-      exclude: ["mine", "all", "overdue", "blocked", "completed", "new", "notes", "zoho"],
+      exclude: ["mine", "all", "crucial-work", "overdue", "blocked", "completed", "new", "notes", "zoho"],
     },
 
     children: [
@@ -28,6 +29,7 @@ export const tasksRoutes = [
       { index: true, element: <TasksPage view="board" /> },
       { path: "mine", element: <TasksPage view="mine" /> },
       { path: "all", element: <TasksPage view="all" /> },
+      { path: "crucial-work", element: <CrucialWorkPage /> },
       { path: "overdue", element: <TasksPage view="overdue" /> },
       { path: "blocked", element: <TasksPage view="blocked" /> },
       { path: "completed", element: <TasksPage view="completed" /> },

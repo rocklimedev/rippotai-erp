@@ -11,7 +11,7 @@ Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before
 
 Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.
 
-There are 947 routes, 921 staff routes and 401 assignable staff capabilities.
+There are 967 routes, 941 staff routes and 401 assignable staff capabilities.
 
 ## Catalogue by module
 
@@ -28,7 +28,7 @@ There are 947 routes, 921 staff routes and 401 assignable staff capabilities.
 | client-portal | `client-portal:create`, `client-portal:deliver`, `client-portal:prepare`, `client-portal:read`, `client-portal:revoke` |
 | clients | `clients:create`, `clients:delete`, `clients:read`, `clients:restore`, `clients:update` |
 | dashboard | `dashboards:read`, `dashboards:reset`, `dashboards:update` |
-| documents | `document-requirements:create`, `document-requirements:delete`, `document-requirements:read`, `document-requirements:update`, `document-types:create`, `document-types:delete`, `document-types:read`, `document-types:update`, `documents:create`, `documents:delete`, `documents:deliver`, `documents:read`, `documents:update`, `drawings:create`, `drawings:delete`, `drawings:read`, `drawings:update` |
+| documents | `document-requirements:create`, `document-requirements:delete`, `document-requirements:read`, `document-requirements:update`, `document-types:create`, `document-types:delete`, `document-types:read`, `document-types:update`, `documents:create`, `documents:delete`, `documents:deliver`, `documents:read`, `documents:update`, `drawings:create`, `drawings:delete`, `drawings:read`, `drawings:update`, `projects:read` |
 | engagement | `activity-logs:create`, `activity-logs:read`, `notifications:delete`, `notifications:read`, `notifications:update` |
 | gates | `gates:clear`, `gates:read`, `gates:reopen`, `phase-definitions:read` |
 | google | `google-calendar:create`, `google-calendar:delete`, `google-calendar:read`, `google-calendar:update`, `google-tasks:complete`, `google-tasks:create`, `google-tasks:delete`, `google-tasks:read`, `google-tasks:update` |
@@ -48,7 +48,7 @@ There are 947 routes, 921 staff routes and 401 assignable staff capabilities.
 | search | `search:read`, `search:reindex` |
 | settings | `settings:create`, `settings:delete`, `settings:read`, `settings:update` |
 | site-operations | `architect-quality:create`, `architect-quality:delete`, `architect-quality:read`, `architect-quality:update`, `architect-snags:create`, `architect-snags:delete`, `architect-snags:read`, `architect-snags:update`, `architect-visit-stages:create`, `architect-visit-stages:delete`, `architect-visit-stages:read`, `architect-visit-stages:update`, `dpr-admin-documents:create`, `dpr-admin-documents:export`, `dpr-admin-documents:read`, `dpr-admin-logs:create`, `dpr-admin-logs:delete`, `dpr-admin-logs:read`, `dpr-admin-logs:update`, `dpr-admin-reports:create`, `dpr-admin-reports:delete`, `dpr-admin-reports:export`, `dpr-admin-reports:read`, `dpr-admin-reports:update`, `quality-checklists:create`, `quality-checklists:delete`, `quality-checklists:export`, `quality-checklists:read`, `quality-checklists:update`, `site-ops-checklists:create`, `site-ops-checklists:read`, `site-ops-daily-reports:create`, `site-ops-daily-reports:delete`, `site-ops-daily-reports:read`, `site-ops-daily-reports:share`, `site-ops-daily-reports:update`, `site-ops-daily-reports:upload`, `site-ops-mockups:create`, `site-ops-mockups:read`, `site-ops-mockups:update`, `site-ops-qc:read`, `site-ops-qc:sign-off`, `site-ops-rfis:create`, `site-ops-rfis:read`, `site-ops-rfis:update`, `site-ops-snag-lists:create`, `site-ops-snag-lists:export`, `site-ops-snag-lists:read`, `site-ops-snag-lists:update`, `site-ops-snag-lists:upload`, `site-ops-visits:assign`, `site-ops-visits:check-in`, `site-ops-visits:create`, `site-ops-visits:read`, `site-ops-visits:update`, `site-ops:read` |
-| sync | `sync:read`, `sync:sync`, `sync:update` |
+| sync | `calendar-events:read`, `calendar-events:update`, `sync:read`, `sync:sync`, `sync:update`, `tasks:read`, `tasks:update` |
 | system | `system:read` |
 | tasks | `tasks:create`, `tasks:delete`, `tasks:read`, `tasks:update` |
 | users | `team:create`, `team:delete`, `team:read`, `team:update`, `user-signatures:delete`, `user-signatures:read`, `user-signatures:upload`, `users:create`, `users:delete`, `users:read`, `users:update` |
@@ -263,6 +263,8 @@ There are 947 routes, 921 staff routes and 401 assignable staff capabilities.
 | documents | `DELETE /drawings/:id` | DrawingsController.remove | `drawings:delete` | staff |
 | documents | `DELETE /drawings/:id/revisions/:revisionId` | DrawingsController.removeRevision | `drawings:delete` | staff |
 | documents | `PATCH /drawings/:id` | DrawingsController.update | `drawings:update` | staff |
+| documents | `GET /projects/:id/shared-document-data` | SharedProjectDataController.fetch | `projects:read` | staff |
+| documents | `GET /projects/:id/document-prefill/:sequence` | SharedProjectDataController.prefill | `projects:read` | staff |
 | engagement | `GET /activity-logs` | ActivityLogsController.findAll | `activity-logs:read` | staff |
 | engagement | `GET /activity-logs/entity-label` | ActivityLogsController.getByEntityLabel | `activity-logs:read` | staff |
 | engagement | `POST /activity-logs` | ActivityLogsController.log | `activity-logs:create` | staff |
@@ -784,6 +786,12 @@ There are 947 routes, 921 staff routes and 401 assignable staff capabilities.
 | site-operations | `GET /architect/visit-stages` | VisitStageController.findAll | `architect-visit-stages:read` | staff |
 | site-operations | `GET /architect/visit-stages/:id` | VisitStageController.findOne | `architect-visit-stages:read` | staff |
 | site-operations | `PATCH /architect/visit-stages/:id` | VisitStageController.update | `architect-visit-stages:update` | staff |
+| sync | `GET /calendar/zoho-sync/authorize` | CalendarZohoSyncController.authorize | `calendar-events:update` | staff |
+| sync | `GET /calendar/zoho-sync/destinations` | CalendarZohoSyncController.destinations | `calendar-events:read` | staff |
+| sync | `POST /calendar/zoho-sync/push` | CalendarZohoSyncController.push | `calendar-events:update` | staff |
+| sync | `POST /calendar/zoho-sync/reconcile/:localId` | CalendarZohoSyncController.reconcile | `calendar-events:update` | staff |
+| sync | `PUT /calendar/zoho-sync/settings` | CalendarZohoSyncController.save | `calendar-events:update` | staff |
+| sync | `GET /calendar/zoho-sync/status` | CalendarZohoSyncController.status | `calendar-events:read` | staff |
 | sync | `GET /sync/status` | SyncController.allStatus | `sync:read` | staff |
 | sync | `POST /sync/full` | SyncController.allSync | `sync:sync` | staff |
 | sync | `GET /sync/calendar/destinations` | SyncController.calendarDestinations | `sync:read` | staff |
@@ -796,6 +804,14 @@ There are 947 routes, 921 staff routes and 401 assignable staff capabilities.
 | sync | `GET /sync/:kind/status` | SyncController.status | `sync:read` | staff |
 | sync | `GET /sync/tasks/portals` | SyncController.taskPortals | `sync:read` | staff |
 | sync | `GET /sync/tasks/portals/:portalId/projects` | SyncController.taskProjects | `sync:read` | staff |
+| sync | `GET /tasks/zoho-sync/authorize` | TaskZohoSyncController.authorize | `tasks:update` | staff |
+| sync | `GET /tasks/zoho-sync/portals` | TaskZohoSyncController.portals | `tasks:read` | staff |
+| sync | `GET /tasks/zoho-sync/portals/:portalId/projects` | TaskZohoSyncController.projects | `tasks:read` | staff |
+| sync | `POST /tasks/zoho-sync/push` | TaskZohoSyncController.push | `tasks:update` | staff |
+| sync | `POST /tasks/zoho-sync/reconcile/:localId` | TaskZohoSyncController.reconcile | `tasks:update` | staff |
+| sync | `PUT /tasks/zoho-sync/settings` | TaskZohoSyncController.save | `tasks:update` | staff |
+| sync | `GET /tasks/zoho-sync/status` | TaskZohoSyncController.status | `tasks:read` | staff |
+| sync | `GET /tasks/zoho-sync/portals/:portalId/projects/:projectId/users` | TaskZohoSyncController.users | `tasks:read` | staff |
 | system | `GET /health` | AppController.getHealth | `system:read` | staff |
 | system | `GET /` | AppController.getHello | `system:read` | staff |
 | system | `GET /health/live` | AppController.getLiveness | `system:read` | public |
@@ -804,12 +820,16 @@ There are 947 routes, 921 staff routes and 401 assignable staff capabilities.
 | system | `GET /system/info` | AppController.getSystemInfo | `system:read` | staff |
 | system | `GET /system/summary` | AppController.getSystemSummary | `system:read` | staff |
 | tasks | `POST /tasks` | TasksController.create | `tasks:create` | staff |
+| tasks | `GET /tasks/crucial-work/template` | TasksController.crucialTemplate | `tasks:read` | staff |
+| tasks | `GET /tasks/crucial-work/export` | TasksController.exportCrucialWork | `tasks:read` | staff |
 | tasks | `GET /tasks` | TasksController.findAll | `tasks:read` | staff |
 | tasks | `GET /tasks/:id` | TasksController.findOne | `tasks:read` | staff |
 | tasks | `GET /tasks/board` | TasksController.getBoard | `tasks:read` | staff |
+| tasks | `GET /tasks/crucial-work` | TasksController.getCrucialWork | `tasks:read` | staff |
 | tasks | `GET /tasks/my-board` | TasksController.getMyBoard | `tasks:read` | staff |
 | tasks | `GET /tasks/my-tasks` | TasksController.getMyTasks | `tasks:read` | staff |
 | tasks | `DELETE /tasks/:id` | TasksController.remove | `tasks:delete` | staff |
+| tasks | `POST /tasks/:id/crucial-check` | TasksController.saveCrucialCheck | `tasks:update` | staff |
 | tasks | `PATCH /tasks/:id/toggle` | TasksController.toggleStatus | `tasks:update` | staff |
 | tasks | `PATCH /tasks/:id` | TasksController.update | `tasks:update` | staff |
 | users | `PATCH /team/teams/:id/activate` | TeamController.activateTeam | `team:update` | staff |

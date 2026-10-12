@@ -84,10 +84,11 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
         }
       : { created_by: userId };
   }
-  private async localRecords(userId: string, kind: ReminderKind) {
+  private async localRecords(userId: string, kind: ReminderKind, config: Record<string, any> = {}) {
     const where = this.scope(userId, kind);
     return kind === 'tasks'
-      ? this.tasks.findAll({ where: { ...where, due_date: { [Op.ne]: null } } })
+      ? this.tasks.findAll({ where: config.include_undated_tasks
+          ? where : { ...where, due_date: { [Op.ne]: null } } })
       : this.events.findAll({ where });
   }
   private payload(row: any, kind: ReminderKind, config: Record<string, any>) {
@@ -103,6 +104,7 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
     return {
       enabled: row?.enabled ?? false,
       ...(row?.config ?? {}),
+      ...(kind === 'tasks' ? { include_undated_tasks: row ? Boolean(row.config?.include_undated_tasks) : true } : {}),
       last_run: row?.last_run ?? null,
       last_error: row?.last_error ?? null,
     };
@@ -117,6 +119,20 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
       id: String(item.id_string || item.id),
       name: item.name || String(item.id_string || item.id),
     }));
+  }
+
+  async taskUsers(userId: string, portalId: string, projectId: string) {
+    const response = await this.zohoTasks.listProjectUsers(userId, portalId, projectId);
+    const data = response?.data ?? response;
+    const users = Array.isArray(data) ? data : data?.users;
+    if (!Array.isArray(users)) throw new BadRequestException('Could not load Zoho project users. Reconnect Zoho and try again.');
+    return users.filter(user => user.active !== false).map(user => {
+      const id = user.id_string ?? user.id;
+      if (!id || (typeof id === 'number' && !Number.isSafeInteger(id))) {
+        throw new BadRequestException('Zoho returned an invalid user ID. Reconnect and try again.');
+      }
+      return { id: String(id), name: user.name || String(id), email: user.email || '' };
+    });
   }
 
   async taskPortals(userId: string) {
@@ -234,7 +250,7 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
     });
     const token = await this.claim(row);
     try {
-      if (kind === 'calendar' && config.calendar_id)
+      if (enabled && kind === 'calendar' && config.calendar_id)
         await this.validateCalendarDestination(userId, config.calendar_id);
       // Keep existing remote destinations stable: retargeting must not orphan old reminders.
       const mappings = await this.records.count({
@@ -275,7 +291,17 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
     const mappings = await this.records.findAll({
       where: { user_id: userId, kind },
     });
-    const local = await this.localRecords(userId, kind);
+    const local = await this.localRecords(userId, kind, settings);
+    const localStatus = local.map(row => {
+      const mapping = mappings.find(m => m.local_id === row.id);
+      let state = mapping?.status || 'pending';
+      try {
+        if (state === 'synced' && mapping?.fingerprint !== fingerprint(this.payload(row, kind, settings))) state = 'pending';
+      } catch { state = 'pending'; }
+      return { local_id: row.id, title: row.title, status: state,
+        remote_id: mapping?.remote_id || null, synced_at: mapping?.synced_at || null,
+        error: mapping?.error || null };
+    });
     let pending = 0;
     for (const row of local) {
       const mapping = mappings.find((m) => m.local_id === row.id);
@@ -300,7 +326,7 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
     return {
       settings,
       total: local.length,
-      synced: mappings.filter((m) => m.status === 'synced').length,
+      synced: localStatus.filter((m) => m.status === 'synced').length,
       pending,
       failed: mappings.filter((m) => m.status === 'failed').length,
       uncertain: mappings.filter((m) => m.status === 'uncertain').length,
@@ -310,9 +336,11 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
           local_id: m.local_id,
           message: m.error,
           status: m.status,
+          title: local.find(row => row.id === m.local_id)?.title || 'Removed or reassigned item',
         })),
       last_sync: settings.last_run,
       direction: 'local_to_zoho',
+      records: localStatus,
     };
   }
 
@@ -345,7 +373,7 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
           userId,
           settings.config.calendar_id,
         );
-      const rows = await this.localRecords(userId, kind);
+      const rows = await this.localRecords(userId, kind, settings.config);
       const mappings = await this.records.findAll({
         where: { user_id: userId, kind },
       });

@@ -8,10 +8,20 @@ import {
   IsUUID,
   Min,
   MaxLength,
+  IsBoolean,
 } from 'class-validator';
 import { TaskPriority, TaskStatus } from './create-task.dto';
 
 export class UpdateTaskDto {
+  @IsOptional()
+  @IsBoolean()
+  is_crucial?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  crucial_reason?: string | null;
+
   @IsOptional()
   @IsString()
   @MaxLength(255)

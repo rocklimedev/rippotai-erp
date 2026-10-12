@@ -11,6 +11,7 @@ import {
 
 export class ReminderSettingsDto {
   @IsBoolean() enabled: boolean;
+  @IsOptional() @IsBoolean() include_undated_tasks?: boolean;
   @IsOptional() @IsString() @MaxLength(255) portal_id?: string;
   @IsOptional() @IsString() @MaxLength(255) project_id?: string;
   @IsOptional() @IsString() @MaxLength(255) tasklist_id?: string;

@@ -6,6 +6,11 @@
     "deleteOutDir": true,
     "assets": [
       {
+        "include": "modules/tasks/templates/*",
+        "outDir": "dist/src",
+        "watchAssets": true
+      },
+      {
         "include": "modules/site-operations/templates/*.xlsx",
         "outDir": "dist/src",
         "watchAssets": true
