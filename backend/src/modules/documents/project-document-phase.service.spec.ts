@@ -2,7 +2,7 @@ import { ProjectDocumentPhaseService } from './project-document-phase.service';
 
 describe('project document checklist evidence', () => {
   it.each([true, false])('uses source evidence in both trees (satisfied=%s)', async (satisfied) => {
-    const type = { id: 'brief', code: 'BRIEF_CLIENT_BRIEF', projectPhaseId: 'phase', requirementType: 'REQUIRED' };
+    const type = { id: 'brief', code: 'BRIEF_CLIENT_BRIEF', projectPhaseId: 'phase', phaseCode: 'STALE', requirementType: 'REQUIRED' };
     const evidence = { satisfied, source: 'DATABASE', recordId: 'record', actionUrl: '/crm/brief/record' };
     const resolver = { resolve: jest.fn().mockResolvedValue(evidence) };
     const documents = {
@@ -12,7 +12,7 @@ describe('project document checklist evidence', () => {
     };
     const service = new ProjectDocumentPhaseService(
       { findAll: async () => [{ id: 'project', name: 'Project' }] } as any,
-      { findAll: async () => [{ id: 'phase', title: 'Brief' }] } as any,
+      { findAll: async () => [{ id: 'phase', phase_code: 'BRIEF', title: 'Brief' }] } as any,
       { findAll: async () => [type] } as any,
       documents as any,
       resolver as any,

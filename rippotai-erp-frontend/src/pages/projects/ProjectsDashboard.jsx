@@ -1,3 +1,4 @@
+import ProjectDocumentsBoard from "../../components/projects/ProjectDocumentsBoard";
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -85,26 +86,6 @@ const STATUS_LABEL = {
   archived: "Archived",
   on_hold: "On hold",
 };
-
-const DOCUMENT_TEMPLATES = [
-  {
-    id: "site-visit-schedule-template",
-    name: "Site visit schedule template",
-    description: "Standard template for planning and recording project site visits.",
-    type: "Template",
-    format: "PDF",
-    file: "/templates/site-visit-schedule-template.pdf",
-  },
-  {
-    id: "how-we-work",
-    name: "How we work",
-    description:
-      "Overview of the standard project workflow, processes, responsibilities, and ways of working.",
-    type: "Guideline",
-    format: "PDF",
-    file: "/templates/how-we-work.pdf",
-  },
-];
 
 const VIEW_KEY = "inos.projects.view";
 
@@ -460,64 +441,6 @@ function ProjectTable({ projects, phaseTree, actions }) {
    DOCUMENTS TAB
 ============================================================ */
 
-function DocumentsView() {
-  const nav = useNavigate();
-  return (
-    <Card
-      flush
-      title="Templates & guidelines"
-      subtitle="Approved templates available to every project team."
-      actions={
-        <Button variant="secondary" size="sm" icon={FolderOpen} onClick={() => nav("/projects/documents/all")}>
-          Project documents
-        </Button>
-      }
-    >
-      <div className="inos-table-wrap">
-        <table className="inos-table">
-          <thead>
-            <tr>
-              <th>Document</th>
-              <th>Type</th>
-              <th>Format</th>
-              <th className="actions" aria-label="Download" />
-            </tr>
-          </thead>
-          <tbody>
-            {DOCUMENT_TEMPLATES.map((document) => (
-              <tr key={document.id}>
-                <td>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-                    <span className="inos-icon-tile inos-icon-tile--sm">
-                      <FileText aria-hidden />
-                    </span>
-                    <div style={{ minWidth: 0 }}>
-                      <div className="pj-cell-title">{document.name}</div>
-                      <div className="pj-cell-sub">{document.description}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="muted">{document.type}</td>
-                <td>
-                  <Pill tone="brand" dot={false} size="sm">
-                    {document.format}
-                  </Pill>
-                </td>
-                <td className="actions">
-                  <a href={document.file} download className="inos-btn inos-btn--soft inos-btn--sm">
-                    <Download aria-hidden />
-                    <span>Download</span>
-                  </a>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Card>
-  );
-}
-
 /* ============================================================
    MAIN
 ============================================================ */
@@ -707,12 +630,12 @@ export default function ProjectsDashboard() {
         onChange={setTab}
         options={[
           { value: "all", label: "Projects", count: projects.length },
-          { value: "documents", label: "Documents", count: DOCUMENT_TEMPLATES.length },
+          { value: "documents", label: "Documents", count: projects.length },
         ]}
       />
 
       {tab === "documents" ? (
-        <DocumentsView />
+        <ProjectDocumentsBoard projects={projects} />
       ) : (
         <>
           <Toolbar>

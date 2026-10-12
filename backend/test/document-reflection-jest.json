@@ -1,0 +1,7 @@
+{
+  "rootDir": "../src",
+  "testRegex": "(modules/documents/(document-reflection|project-document-phase.service)|modules/projects/command-center.*|modules/gates/conditions/document-evidence)\\.spec\\.ts$",
+  "transform": { "^.+\\.ts$": "ts-jest" },
+  "moduleNameMapper": { "^@/(.*)$": "<rootDir>/$1" },
+  "testEnvironment": "node"
+}

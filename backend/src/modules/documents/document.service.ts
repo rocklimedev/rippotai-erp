@@ -39,6 +39,8 @@ export class DocumentsService {
     private readonly attachmentModel: typeof DocumentAttachment,
 
     private readonly cdnService: CdnService,
+    @InjectModel(DocumentType)
+    private readonly documentTypeModel: typeof DocumentType,
   ) {}
 
   // ============================================================
@@ -118,6 +120,16 @@ export class DocumentsService {
     file?: Express.Multer.File,
   ): Promise<Document> {
     let fileFields: Partial<Document> = {};
+    let status = dto.status;
+    if (file && !status) {
+      const documentType = dto.documentTypeId
+        ? await this.documentTypeModel.findByPk(dto.documentTypeId)
+        : null;
+      if (dto.documentTypeId && !documentType) {
+        throw new NotFoundException('Document type not found');
+      }
+      status = documentType && !documentType.requiresApproval ? 'approved' : 'submitted';
+    }
 
     if (file) {
       const { filename, url } = await this.cdnService.uploadFile(file);
@@ -134,6 +146,7 @@ export class DocumentsService {
     return this.documentModel.create({
       ...dto,
       ...fileFields,
+      ...(status ? { status } : {}),
     } as any);
   }
 

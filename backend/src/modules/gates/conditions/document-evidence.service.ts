@@ -47,6 +47,26 @@ export class DocumentEvidenceService {
         requireApproval,
       ))!;
     }
+    if (type.targetType !== 'DRAWING') {
+      const latest = await this.documents.findOne({
+        where: { projectId, documentTypeId: type.id },
+        order: [['created_at', 'DESC'], ['id', 'DESC']],
+      });
+      const satisfied = !!latest && (requireApproval
+        ? latest.status === 'approved'
+        : ['submitted', 'under_review', 'approved'].includes(latest.status ?? ''));
+      return {
+        satisfied,
+        source: 'UPLOAD',
+        sourceTable: 'documents',
+        sourceLabel: 'Uploaded document',
+        recordId: latest?.id ?? null,
+        status: latest?.status ?? 'MISSING',
+        detail: satisfied ? 'Uploaded evidence meets the requirement.'
+          : latest ? `Document uploaded; status: ${latest.status}.`
+          : 'Upload the required evidence.',
+      };
+    }
     const satisfied = await this.uploadSatisfied(
       projectId,
       type,

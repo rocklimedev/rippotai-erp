@@ -1,5 +1,6 @@
 import { useDispatch } from "react-redux";
 import "./CommandCenter.css";
+import { downloadDocument } from "../hooks/shared";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import GateChecklist from "@/components/command-center/GateChecklist";
@@ -348,7 +349,7 @@ function PhaseLegend() {
   );
 }
 
-function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlash }) {
+export function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlash, documentsOnly = false }) {
   const {
     data: detail,
     isLoading,
@@ -356,8 +357,8 @@ function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlash }) {
     error,
     refetch,
   } = useGetProjectPhaseDetailQuery(
-    { projectId: project.code, phaseId: phase.id },
-    { skip: !project?.code || !phase?.id },
+    { projectId: project.id || project.code, phaseId: phase.id },
+    { skip: !(project?.id || project?.code) || !phase?.id },
   );
 
   const [completeTask, { isLoading: completingTask }] =
@@ -382,7 +383,7 @@ function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlash }) {
       {isError && <ErrorRow error={error} onRetry={refetch} />}
 
       {detail && (
-        <div className="cc-detail-grid">
+        <div className="cc-detail-grid" style={documentsOnly ? { gridTemplateColumns: "1fr" } : undefined}>
           <div>
             <p className="cc-detail-head">
               <FileText aria-hidden /> Documents
@@ -396,7 +397,15 @@ function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlash }) {
                     <span className="cc-checklist__name">
                       <span className="cc-truncate">{d.name}</span>
                       {!d.mandatory && <span className="cc-muted">optional</span>}
+                      {!ok && d.evidence?.recordId && d.evidence.source === "UPLOAD" && (
+                        <span className="cc-muted">{sentence(d.evidence.status)}</span>
+                      )}
                     </span>
+                    {d.evidence?.source === "UPLOAD" && d.evidence.recordId && (
+                      <Button variant="ghost" size="sm" onClick={() => downloadDocument(d.evidence.recordId)}>
+                        Download
+                      </Button>
+                    )}
                     {d.evidence?.source === "DATABASE" ? (
                       <span className="cc-checklist__side">
                         <span className="cc-muted">
@@ -405,9 +414,13 @@ function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlash }) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => onOpen?.navigate(d.evidence.actionUrl)}
+                          onClick={() => {
+                            const url = d.evidence.actionUrl;
+                            if (url) onOpen?.navigate(`${url}${url.includes("?") ? "&" : "?"}project_id=${encodeURIComponent(project.id)}`);
+                          }}
+                          disabled={!d.evidence.actionUrl}
                         >
-                          Open record
+                          {d.evidence.recordId ? "Open record" : "Create document"}
                         </Button>
                       </span>
                     ) : d.status === "MISSING" ? (
@@ -415,14 +428,13 @@ function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlash }) {
                         variant="soft"
                         size="sm"
                         icon={UploadCloud}
-                        disabled={d.targetType === "DRAWING"}
                         title={
                           d.targetType === "DRAWING"
                             ? "Submit and review this item through the drawings workflow"
                             : undefined
                         }
                         onClick={() =>
-                          onOpen?.uploadDoc?.({
+                          d.targetType === "DRAWING" ? onOpen?.navigate(`/design-studio/all?project=${encodeURIComponent(project.id)}`) : onOpen?.uploadDoc?.({
                             documentTypeId: d.id,
                             name: d.name,
                             role: d.role,
@@ -433,7 +445,7 @@ function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlash }) {
                           })
                         }
                       >
-                        {d.targetType === "DRAWING" ? "Drawing required" : "Upload"}
+                        {d.targetType === "DRAWING" ? "Open drawings" : d.evidence?.recordId ? "Replace upload" : "Upload"}
                       </Button>
                     ) : (
                       <Pill tone="ok" size="sm">{sentence(d.status)}</Pill>
@@ -446,7 +458,7 @@ function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlash }) {
               )}
             </ul>
           </div>
-          <div>
+          {!documentsOnly && <div>
             <p className="cc-detail-head">
               <ListChecks aria-hidden /> Execution and QC checks
             </p>
@@ -498,11 +510,11 @@ function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlash }) {
                 <li className="cc-muted">No checks configured for this phase.</li>
               )}
             </ul>
-          </div>
+          </div>}
         </div>
       )}
 
-      {detail &&
+      {!documentsOnly && detail &&
         !isError &&
         (detail.gates?.length ? (
           detail.gates.map((gate) => (
@@ -1117,7 +1129,7 @@ function ActivityTimeline() {
 // UPLOAD DOCUMENT MODAL — POST /command-center/projects/:id/documents/upload
 // ------------------------------------------------------------
 
-function UploadDocumentModal({ target, onClose, onUploaded, onFlash }) {
+export function UploadDocumentModal({ target, onClose, onUploaded, onFlash }) {
   const [file, setFile] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [notes, setNotes] = useState("");
