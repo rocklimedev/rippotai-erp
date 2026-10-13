@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { UniqueConstraintError } from 'sequelize';
@@ -10,6 +11,7 @@ import { Sequelize } from 'sequelize-typescript';
 import { RolePermission } from './models/role_permission.model';
 import { Role } from '../rbac/models/role.model';
 import { Permission } from './models/permission.model';
+import packages from './permission-packages.json';
 import {
   CreateRolePermissionDto,
   BulkAssignPermissionsDto,
@@ -29,6 +31,31 @@ export class RolePermissionsService {
 
     private readonly sequelize: Sequelize,
   ) {}
+
+  getPackages() {
+    return packages;
+  }
+
+  async applyPackage(role_id: string, package_id: string) {
+    const permissionPackage = packages.find((p) => p.id === package_id);
+    if (!permissionPackage) throw new NotFoundException('Permission package not found');
+    return this.sequelize.transaction(async (transaction) => {
+      const role = await this.roleModel.findByPk(role_id, { transaction });
+      if (!role) throw new NotFoundException('Role not found');
+      const permissions = await this.permissionModel.findAll({ transaction });
+      const required = new Set(permissionPackage.permissions);
+      const matching = permissions.filter((p) => required.has(`${p.resource}:${p.action}`));
+      const available = new Set(matching.map((p) => `${p.resource}:${p.action}`));
+      const missing = [...required].filter((p) => !available.has(p));
+      if (missing.length) throw new BadRequestException({
+        message: 'Permission catalogue is incomplete; no grants were applied', missing,
+      });
+      await this.rolePermissionModel.bulkCreate(matching.map((p) => ({
+        role_id, permission_id: p.id, granted_by: null,
+      })) as any, { transaction, ignoreDuplicates: true });
+      return { role_id, package_id, permission_count: matching.length };
+    });
+  }
 
   async grant(dto: CreateRolePermissionDto): Promise<RolePermission> {
     try {

@@ -9,7 +9,7 @@ export default registerAs(
     port: Number(process.env.DB_PORT) || 3306,
     username: process.env.DB_USER,
     password: process.env.DB_PASS,
-    database: 'spsyn8lm_rippotai_erp',
+    database: process.env.DB_NAME,
     autoLoadModels: true,
     synchronize: false,
     logging: process.env.NODE_ENV === 'development',

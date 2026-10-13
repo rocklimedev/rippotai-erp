@@ -5492,6 +5492,16 @@
   {
     "module": "rbac",
     "controller": "RolePermissionsController",
+    "handler": "applyPackage",
+    "method": "POST",
+    "path": "/role-permissions/packages/apply",
+    "permission": "role-permissions:assign",
+    "public": false,
+    "file": "src/modules/rbac/role-permissions.controller.ts"
+  },
+  {
+    "module": "rbac",
+    "controller": "RolePermissionsController",
     "handler": "bulkAssign",
     "method": "POST",
     "path": "/role-permissions/bulk",
@@ -5515,6 +5525,16 @@
     "handler": "getMatrix",
     "method": "GET",
     "path": "/role-permissions/matrix",
+    "permission": "role-permissions:read",
+    "public": false,
+    "file": "src/modules/rbac/role-permissions.controller.ts"
+  },
+  {
+    "module": "rbac",
+    "controller": "RolePermissionsController",
+    "handler": "getPackages",
+    "method": "GET",
+    "path": "/role-permissions/packages",
     "permission": "role-permissions:read",
     "public": false,
     "file": "src/modules/rbac/role-permissions.controller.ts"

@@ -105,6 +105,14 @@ export const rbacApi = baseApi.injectEndpoints({
       invalidatesTags: ["RolePermissions"],
     }),
 
+    getPermissionPackages: builder.query({
+      query: () => '/role-permissions/packages',
+    }),
+    applyPermissionPackage: builder.mutation({
+      query: (body) => ({ url: '/role-permissions/packages/apply', method: 'POST', body }),
+      invalidatesTags: ['RolePermissions'],
+    }),
+
     bulkAssignPermissions: builder.mutation({
       query: (body) => ({
         url: "/role-permissions/bulk",
@@ -207,6 +215,8 @@ export const {
 
   // role-permissions
   useGrantPermissionToRoleMutation,
+  useGetPermissionPackagesQuery,
+  useApplyPermissionPackageMutation,
   useBulkAssignPermissionsMutation,
   useGetRolePermissionsQuery,
   useRevokeRolePermissionMutation,
