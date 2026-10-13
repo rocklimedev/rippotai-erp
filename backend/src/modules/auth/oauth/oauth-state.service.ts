@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 
 export interface OAuthState {
@@ -8,14 +9,34 @@ export interface OAuthState {
 
 @Injectable()
 export class OAuthStateService {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  private getSecret(): string {
+    const secret = this.configService.get<string>('OAUTH_STATE_SECRET');
+    if (!secret?.trim()) {
+      throw new InternalServerErrorException('OAUTH_STATE_SECRET is not configured');
+    }
+    return secret;
+  }
 
   // Short-lived, separate secret/audience from your session JWTs if possible.
   sign(state: OAuthState): string {
-    return this.jwtService.sign(state, { expiresIn: '10m' });
+    return this.jwtService.sign(state, {
+      secret: this.getSecret(),
+      expiresIn: '10m',
+      audience: 'oauth-state',
+      issuer: 'inos-api',
+    });
   }
 
   verify(token: string): OAuthState {
-    return this.jwtService.verify<OAuthState>(token);
+    return this.jwtService.verify<OAuthState>(token, {
+      secret: this.getSecret(),
+      audience: 'oauth-state',
+      issuer: 'inos-api',
+    });
   }
 }
