@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS `access_rules` (
   KEY `idx_access_subject` (`subject_type`,`subject_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.access_rules: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.activity_logs
 CREATE TABLE IF NOT EXISTS `activity_logs` (
@@ -56,7 +56,6 @@ CREATE TABLE IF NOT EXISTS `activity_logs` (
   CONSTRAINT `activity_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.admin_daily_logs
 CREATE TABLE IF NOT EXISTS `admin_daily_logs` (
@@ -89,7 +88,6 @@ CREATE TABLE IF NOT EXISTS `admin_daily_logs` (
   CONSTRAINT `fk_adl_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.admin_daily_reports
 CREATE TABLE IF NOT EXISTS `admin_daily_reports` (
@@ -123,7 +121,6 @@ CREATE TABLE IF NOT EXISTS `admin_daily_reports` (
   CONSTRAINT `fk_adr_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.admin_dpr_documents
 CREATE TABLE IF NOT EXISTS `admin_dpr_documents` (
@@ -149,7 +146,6 @@ CREATE TABLE IF NOT EXISTS `admin_dpr_documents` (
   KEY `idx_admin_dpr_documents_project` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.apps
 CREATE TABLE IF NOT EXISTS `apps` (
@@ -159,7 +155,21 @@ CREATE TABLE IF NOT EXISTS `apps` (
   PRIMARY KEY (`code`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.apps: ~13 rows (approximately)
+INSERT INTO `apps` (`code`, `name`, `is_active`) VALUES
+	('accounts', 'Accounts', 1),
+	('boq', 'BOQ', 1),
+	('calendar', 'Calendar', 1),
+	('crm', 'CRM', 1),
+	('dashboard', 'Dashboard', 1),
+	('documents', 'Documents', 1),
+	('inventory', 'Inventory', 1),
+	('leads', 'Leads', 1),
+	('projects', 'Projects', 1),
+	('quotations', 'Quotations', 1),
+	('settings', 'Settings', 1),
+	('tasks', 'Tasks', 1),
+	('vendors', 'Vendors', 1);
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.architect_site_visits
 CREATE TABLE IF NOT EXISTS `architect_site_visits` (
@@ -197,7 +207,7 @@ CREATE TABLE IF NOT EXISTS `architect_site_visits` (
   CONSTRAINT `fk_asv_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.architect_site_visits: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.architect_visit_stages
 CREATE TABLE IF NOT EXISTS `architect_visit_stages` (
@@ -214,7 +224,29 @@ CREATE TABLE IF NOT EXISTS `architect_visit_stages` (
   UNIQUE KEY `uq_avs_visit_no` (`visit_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.architect_visit_stages: ~21 rows (approximately)
+INSERT INTO `architect_visit_stages` (`id`, `visit_no`, `stage`, `checks_purpose`, `visit_type`, `remarks`, `is_active`, `created_at`, `updated_at`) VALUES
+	('0f883dd9-b298-487e-8e58-fec4029e0981', 13, 'After false ceiling POP', 'Ceiling level, corners, cut-outs, cove details, light locations mark', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('1d9d15c4-ce64-4023-8ce6-2e8ea9f2717d', 14, 'Before fixed furniture / carpentry', 'Final wall/floor dimensions, electrical & plumbing points, furniture clearances, appliance dimensions, fixing requirements', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('2e06a0a0-1356-44cb-aed6-218614152748', 15, 'During fixed furniture / wall panelling', 'Material, alignment, dimensions, edge details, hardware, electrical integration, junctions', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('31c87a2d-2e3c-45f5-a6fd-d9e58817d1d6', 3, 'Column & beam laying', 'Check column and beam location', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('43c08f40-0807-49b9-b08f-cfc6e82f1019', 1, 'Pre construction / Site handover', 'Existing site conditions, dimensions, levels, structural elements, site constraints, existing MEP points', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('5e55a1d8-b592-438f-8161-bf01e3d2b185', 6, 'Before wall chasing', 'Switch/socket locations, heights, TV/data points, plumbing points, AC points, special electrical requirements', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('5ffdc698-b8ad-43c0-a54c-6b917210942c', 5, 'Before / During walling', 'Check layout, room dimensions, D & W openings', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('71d24438-fdfc-4318-9ed3-4612918fbf8d', 21, 'Final handover', 'Final finishes, cleanliness, protection removal, drawings/documents, warranties/manuals, handover checklist', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('7610949d-9a8d-4642-9b67-716f6e6322c5', 4, 'Before slab casting', 'Check shuttering, slab level, shafts, openings, conduits if any, sleeves provision, structure', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('8d238999-e719-4148-9d97-b8d51f0b9f0b', 20, 'Snag list closure check', 'Verify all snag points are rectified; check rework quality', '', NULL, 0, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('b92bf1ee-020c-40e4-82df-dfa9448504eb', 16, 'Before painting / final finishes', 'Surface preparation, putty, primer, colour/sample approval, repaired surfaces, protection of completed works', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('bcdd870c-d9e0-4687-a5d5-a9ea6e488607', 11, 'During flooring / tiling', 'Tile layout, starting point, pattern, joints, border/cut pieces, drain alignment, slope', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('bd16bbf1-4d1c-4721-acd2-46203bacedff', 18, 'After fixtures and final installation', 'Sanitary fixtures, switches, lights, fans, AC grilles, hardware, accessories, furniture alignment', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('c00ca9a7-15c7-4d49-97f9-3671c64bc72e', 12, 'During / After false ceiling framework & wiring', 'Ceiling level, cove details, AC diffusers (if any), curtain pockets, access panels/trap doors, lights location, fan point, plywork for chandeliers/AC/curtains, profile channels', '', 'Before false ceiling: ceiling electrical check', 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('c3065ba6-b09c-4082-8150-5d450a5a080f', 7, 'Plumbing / electrical first fix check before plaster', 'Location & height check, routine check', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('cb6e629b-2c3b-4e06-a842-63dfc81e84bb', 8, 'After MEP first fix – before plaster', 'Electrical & plumbing routing, pipe sizes, slopes, sleeves, concealed boxes, AC piping/drain, coordination with furniture/ceiling', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('d51548a7-70d0-4ac7-99ed-89dd5a7a165f', 9, 'After bathroom waterproofing', 'Leakage test, water retention, drain slope, wall treatment', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('dab36ed2-c036-4f70-8442-0e2377c9f278', 10, 'After floor PCC', 'Floor levels, slopes, bathroom slope, finished floor levels, thresholds', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('ea8f78f8-0d63-4e8f-8db8-dc258e4272bc', 17, 'During final finishes', 'Paint finish, wallpaper, polish/PU, glass, mirrors, hardware, visible junctions', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('f85161f6-bf29-467e-b3eb-da5d60c0e0b2', 2, 'After foundation layout / start of structural work', 'Check layout as per drawings, levels, grids, dimensions', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52'),
+	('fe6f9a60-cefa-4400-aa24-560ae177fef3', 19, 'Pre handover inspections', 'Complete snag inspection: finishes, dimensions, functionality, MEP, furniture, doors/windows, cleaning', '', NULL, 1, '2026-09-30 09:47:24', '2026-10-07 11:19:52');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.auth_tokens
 CREATE TABLE IF NOT EXISTS `auth_tokens` (
@@ -235,7 +267,293 @@ CREATE TABLE IF NOT EXISTS `auth_tokens` (
   CONSTRAINT `auth_tokens_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.auth_tokens: ~102 rows (approximately)
+INSERT INTO `auth_tokens` (`id`, `user_id`, `token_hash`, `type`, `device_info`, `ip_address`, `expires_at`, `revoked_at`, `last_used_at`, `created_at`) VALUES
+	('0070f9ec-5b33-4330-8f7c-241cda2040a2', 'd739bccb-7123-11f1-8bb6-52540021303b', '54e39042470e243be2546565c944109e83307c7c75776d1cf4c5ffc2e9c1416b', 'refresh', NULL, NULL, '2026-09-19 10:43:51', NULL, '2026-09-14 05:55:13', '2026-09-12 10:43:51'),
+	('00bb29e9-5d8d-46ba-8cc9-762264654d33', 'd739bccb-7123-11f1-8bb6-52540021303b', '602c7875b40dd4386bd29da37e8f7acf0d2e530cffa054d5dff96f12a263a35f', 'refresh', NULL, NULL, '2026-08-13 07:58:23', NULL, '2026-08-06 07:58:26', '2026-08-06 07:58:23'),
+	('0234ff5e-083a-49b9-af32-3888a35e18d0', 'd739bccb-7123-11f1-8bb6-52540021303b', '00e6518ab338393c7c4458ecc1610f30839a4026ea80b0a9cbb7073b546b1b37', 'refresh', NULL, NULL, '2026-10-17 12:47:35', NULL, NULL, '2026-10-10 12:47:35'),
+	('02a1b650-772b-4e90-a888-5bd194f3338e', 'd739bccb-7123-11f1-8bb6-52540021303b', '6271ba887615febcdb0fa5fc1a24b77f2ff31aa4ef6e6a9050f68c80bcd5f824', 'refresh', NULL, NULL, '2026-08-01 09:51:09', NULL, '2026-07-25 11:50:47', '2026-07-25 09:51:09'),
+	('036df8e5-1513-4640-846e-be2cf38ace76', '9034b40f-08a6-4e04-a402-fe7397b29717', '54ceee28f2146223b616eb5c496098b6a61a35b3e1c51378f0bcf9a0483e1c5c', 'refresh', NULL, NULL, '2026-10-20 05:07:59', '2026-10-13 05:11:26', '2026-10-13 05:11:26', '2026-10-13 05:07:59'),
+	('06a59914-71f0-45e7-a1be-d1566613041b', 'd739bccb-7123-11f1-8bb6-52540021303b', '6a39ce91a412485efadf816b685c384bcb49bfb383394544ddcf484242cb1bfb', 'refresh', NULL, NULL, '2026-10-07 05:16:27', NULL, '2026-09-30 05:41:27', '2026-09-30 05:16:27'),
+	('0957c0d5-c529-4e49-8929-ba7b3e3c7bd1', 'd739bccb-7123-11f1-8bb6-52540021303b', '51e0919125441ac24f92edbc49650649a901aa5c7498fcc31cd2452db5a53805', 'refresh', NULL, NULL, '2026-09-26 10:09:17', NULL, '2026-09-19 11:18:50', '2026-09-19 10:09:17'),
+	('095c312a-f8f2-4c9e-bec4-ce3ea4296443', 'd739bccb-7123-11f1-8bb6-52540021303b', '944516013ca53b72f4f2956a168f2fc350597ebb3e8d743eab37b88b358f4a19', 'refresh', NULL, NULL, '2026-09-14 10:54:13', NULL, '2026-09-08 11:55:03', '2026-09-07 10:54:13'),
+	('0a24ca74-a580-4c52-9640-cd5834af116b', 'd739bccb-7123-11f1-8bb6-52540021303b', '51123eb91679992bd5b6619794528d8c315ab5a491d87f10d542933e4a59b48a', 'refresh', NULL, NULL, '2026-10-07 09:32:59', NULL, '2026-09-30 12:20:41', '2026-09-30 09:32:59'),
+	('0a2898dc-f899-4214-b9a7-39e0017f0723', 'd739bccb-7123-11f1-8bb6-52540021303b', '6b2246a30f5cbd17834a9192f6a39800ade1f91d56efdcd9a4ea093a8bc74e59', 'refresh', NULL, NULL, '2026-09-26 06:52:20', NULL, '2026-09-19 08:23:30', '2026-09-19 06:52:20'),
+	('0a31cd15-64af-4689-b775-2429a4f079f0', '27d1ec8a-9748-474f-96ec-be0642297ee8', 'd4ab641a173314a9beddccabe02764b583d660151cd5874744882be075f7c828', 'refresh', NULL, NULL, '2026-08-31 20:08:49', NULL, '2026-08-27 10:35:27', '2026-08-24 20:08:49'),
+	('0a7323b4-1206-4fe2-9ea8-4ff2f25b2f64', 'd739bccb-7123-11f1-8bb6-52540021303b', '52513188b073a3b10761b9162d84d79892417f74790da4f4aeaa44ee41517bba', 'refresh', NULL, NULL, '2026-08-01 08:43:55', '2026-07-25 08:44:00', '2026-07-25 08:44:00', '2026-07-25 08:43:55'),
+	('0aaa73d6-fb5e-42ef-a915-6a1ca10a22d2', '93e0fd29-bd4f-11f1-a7ce-52540021303b', '101eb5ec1e3016e89a3d50d179496f7ce49716eb5e0fa738f8565e45f7fbae0f', 'refresh', NULL, NULL, '2026-10-17 11:39:33', '2026-10-12 03:50:41', '2026-10-12 03:50:41', '2026-10-10 11:39:33'),
+	('0b16402a-24d8-4b5a-87f2-82664c3bcbdd', 'd739bccb-7123-11f1-8bb6-52540021303b', 'b64157af817c8bb7d7a27b61813b37668b99aa27429deb21c01b7732b9ca5e95', 'refresh', NULL, NULL, '2026-06-29 09:27:49', '2026-07-25 05:25:37', '2026-06-29 03:57:46', '2026-06-29 03:57:46'),
+	('0b1a5eef-7d14-444e-a30d-3ebb96a00a4d', 'd739bccb-7123-11f1-8bb6-52540021303b', 'cb5b7eb9498269376da30d6d1b84cd66ab128f198a5fa2f076daafd64fb0e084', 'refresh', NULL, NULL, '2026-09-24 08:22:40', NULL, '2026-09-18 04:40:00', '2026-09-17 08:22:40'),
+	('0b697ccb-2eda-4696-a2f7-ae4b47338dbc', 'd739bccb-7123-11f1-8bb6-52540021303b', 'b63b8d45d2871e2b306de8537a0a559b88b05552b7c1ec6254ccd85596c34e93', 'refresh', NULL, NULL, '2026-10-10 19:07:49', '2026-10-05 11:02:43', '2026-10-05 11:02:43', '2026-10-03 19:07:49'),
+	('0c0af06d-72e9-4fb5-86a5-91f4f0bdabc0', 'd739bccb-7123-11f1-8bb6-52540021303b', '99e3abf9c760c1bb61b19ec77f60663cf13cddf955f5a22cc891f2d42f5d68d4', 'refresh', NULL, NULL, '2026-09-15 11:11:23', '2026-09-08 11:11:28', '2026-09-08 11:11:28', '2026-09-08 11:11:23'),
+	('0c37eaf6-dd69-436a-8dcf-916d64d89ed8', 'd739bccb-7123-11f1-8bb6-52540021303b', '44c7102198af960ed601d929d4390164bf655687611b8f6a986fc97c550a4640', 'refresh', NULL, NULL, '2026-09-24 05:21:26', NULL, '2026-09-17 08:15:47', '2026-09-17 05:21:26'),
+	('0caaa045-24eb-4e18-b1e2-41cd80003b22', 'd739bccb-7123-11f1-8bb6-52540021303b', '1d3384b23c6a9ac1433a12a73e58d2c64358b9c832f64673bb5802a8f56567f4', 'refresh', NULL, NULL, '2026-08-31 03:55:29', NULL, '2026-08-24 11:29:34', '2026-08-24 03:55:29'),
+	('0cedce75-55dc-4ac5-9875-d39b813970c3', 'd739bccb-7123-11f1-8bb6-52540021303b', '1ff7fb5ce07aeb247b468a29389b762fee2e7217840217582a26d1c4b410808a', 'refresh', NULL, NULL, '2026-08-03 06:51:41', NULL, '2026-08-03 06:51:31', '2026-07-27 06:51:41'),
+	('0dc43ec2-d45e-469f-85ba-e105237a8b67', '27d1ec8a-9748-474f-96ec-be0642297ee8', '0567625fbb66be71b1d398065607caa8b3611fbd1c1f16fe4fb0ddb67a2c4b3d', 'refresh', NULL, NULL, '2026-08-01 06:04:36', NULL, '2026-07-28 12:29:16', '2026-07-25 06:04:36'),
+	('0fafc867-c6f8-4fe2-9e24-9fb0038e9994', '99632848-7f08-47b6-b200-ef55c0a4f8ec', 'aecf472bc223b4b962e1fbfb54b652c695914ff2b6767156c253c862dcf8d65e', 'refresh', NULL, NULL, '2026-10-12 11:15:10', NULL, '2026-10-12 11:15:00', '2026-10-05 11:15:10'),
+	('1123fdfb-9835-4d86-a173-4a4d5f7d7934', 'd739bccb-7123-11f1-8bb6-52540021303b', '7a3853907e1dc20e6e69cf5f5e804c62cb63727f7ba69d259abd3a108a88e44d', 'refresh', NULL, NULL, '2026-07-07 06:24:02', '2026-06-30 06:24:05', '2026-06-30 06:24:04', '2026-06-30 06:24:02'),
+	('11304190-8805-4fe3-aadb-edbfaa45f9c1', 'd739bccb-7123-11f1-8bb6-52540021303b', '51aa4c34057718a6862a8aa4bf3514891e048cde212c295fce958434974607d3', 'refresh', NULL, NULL, '2026-06-29 09:20:55', '2026-07-25 05:25:37', '2026-06-29 03:50:53', '2026-06-29 03:50:53'),
+	('114f1856-1200-44b4-b7cf-cdffec40a198', 'd739bccb-7123-11f1-8bb6-52540021303b', '9dd483fd0be69797f235160a45e4d491e826c9a44ff335280abefebd83e7d294', 'refresh', NULL, NULL, '2026-09-29 09:51:43', NULL, '2026-09-23 07:21:26', '2026-09-22 09:51:43'),
+	('11587032-3aa6-4af5-a3f7-75d34aa422fa', 'd739bccb-7123-11f1-8bb6-52540021303b', 'a5f2bf2f4c201b7baa59cbc0005e491dd926d2e560550c1255c8a642031604e4', 'refresh', NULL, NULL, '2026-09-28 06:42:58', NULL, '2026-09-21 09:55:28', '2026-09-21 06:42:58'),
+	('126825b5-4608-4085-ab32-623dd97c3657', 'd739bccb-7123-11f1-8bb6-52540021303b', '03308599a543a0aade4a370a963470c46910a1eb2de1419a66a159345aa79b17', 'refresh', NULL, NULL, '2026-09-18 08:35:14', '2026-09-11 09:40:14', '2026-09-11 09:40:14', '2026-09-11 08:35:14'),
+	('13acc4fc-87c6-48e9-a484-cbc0bd66df65', 'd739bccb-7123-11f1-8bb6-52540021303b', '85de44e88fe6658d2e27c042332ac9a7beb782171e831967b1d538cb9ed073fc', 'refresh', NULL, NULL, '2026-10-12 11:03:50', NULL, '2026-10-08 10:01:59', '2026-10-05 11:03:50'),
+	('14276b17-3b73-4dbf-8b31-23356c7828df', 'd739bccb-7123-11f1-8bb6-52540021303b', '3b5ad655ee355ffd371204155166744e90e9b78138d1017be09c7aaa668bfb7b', 'refresh', NULL, NULL, '2026-09-03 04:08:33', NULL, '2026-08-27 07:21:58', '2026-08-27 04:08:33'),
+	('1520d6d3-5f8c-46b8-80c3-609ea7e76c5c', 'd739bccb-7123-11f1-8bb6-52540021303b', '42d868c8ec990abcbd9520aeee4a534042becb1d30de2e9081a0f259ec02cab2', 'refresh', NULL, NULL, '2026-09-02 03:59:09', NULL, '2026-08-26 05:07:41', '2026-08-26 03:59:09'),
+	('1570c216-4257-4fcd-9e4f-80ded21896be', 'd739bccb-7123-11f1-8bb6-52540021303b', '79bb418be0dc5dc146f82de8cc13cecca49a1a1464a9d130ec1e5f94b232f449', 'refresh', NULL, NULL, '2026-09-24 03:43:20', NULL, '2026-09-17 05:21:10', '2026-09-17 03:43:20'),
+	('15bce296-687e-4228-af0c-edcdabfcab02', 'd739bccb-7123-11f1-8bb6-52540021303b', '864d6cd80bd07684509612e5d9fcb5ea9eb301de31ae7c11bf1c3e5ca605b1cd', 'refresh', NULL, NULL, '2026-10-14 04:00:52', '2026-10-07 04:02:24', '2026-10-07 04:02:24', '2026-10-07 04:00:52'),
+	('16414786-f4be-45f7-aa61-f54884993054', 'd739bccb-7123-11f1-8bb6-52540021303b', 'f2b6c4ffb98a4cb522c1e0294eff42e5ec4cca0ba441cd3dc8f223b526b1b26b', 'refresh', NULL, NULL, '2026-10-10 07:06:15', '2026-10-03 07:22:06', '2026-10-03 07:22:06', '2026-10-03 07:06:15'),
+	('16a7b6ae-339e-4cfb-830b-0ecc300c41a5', '27d1ec8a-9748-474f-96ec-be0642297ee8', 'f490b277a314054107517f3027dae4a049ed302f4c651ef8ee8d46ada619735c', 'refresh', NULL, NULL, '2026-08-21 06:57:29', NULL, '2026-08-14 07:01:05', '2026-08-14 06:57:29'),
+	('18b9de1c-6fb1-44d6-aa4e-9c03dec3f99a', 'd739bccb-7123-11f1-8bb6-52540021303b', '670e23a8a1d6685f3f06800d4001793715568b3793fde447694daf6970013146', 'refresh', NULL, NULL, '2026-07-27 04:37:51', '2026-07-25 05:25:37', '2026-07-20 07:12:56', '2026-07-20 04:37:51'),
+	('1a35d723-d20f-4dd3-a42a-e32a8e6f4f11', 'd739bccb-7123-11f1-8bb6-52540021303b', 'd6b3195396324320744127484fa052d8cc4c85e260283ffa22b90bb7a0b61c4e', 'refresh', NULL, NULL, '2026-09-15 12:09:39', NULL, '2026-09-08 12:09:46', '2026-09-08 12:09:39'),
+	('1b273605-0740-4708-bba1-177e10ebdef6', 'd739bccb-7123-11f1-8bb6-52540021303b', 'a5d46862e439e9da15440162433bf7aa4151cbf3bd418c4abda045fb5cdb7d27', 'refresh', NULL, NULL, '2026-10-17 10:37:27', '2026-10-10 11:29:37', '2026-10-10 11:29:37', '2026-10-10 10:37:28'),
+	('1b74a11e-5238-4077-8fce-99f323ede116', 'd739bccb-7123-11f1-8bb6-52540021303b', '25ed338770764dae763965b10d8e4e9acdb92bf3677006bbc082e8bf5dbed210', 'refresh', NULL, NULL, '2026-08-24 07:27:17', NULL, '2026-08-17 08:19:38', '2026-08-17 07:27:17'),
+	('1b8d44c5-867f-4a98-8a94-329fa3dc26e5', 'd739bccb-7123-11f1-8bb6-52540021303b', 'affdc5e662bb8b188ea04ee49c25aa853d487639e403d068943272edc27e828b', 'refresh', NULL, NULL, '2026-08-24 10:15:23', NULL, '2026-08-17 10:15:47', '2026-08-17 10:15:23'),
+	('1b947bd3-6ceb-4a92-a937-ad0bc5eb7420', 'd739bccb-7123-11f1-8bb6-52540021303b', 'a122b816c8f2d33b1d7eecbb6c3fff4403d75b2121e380be438e66741818ff62', 'refresh', NULL, NULL, '2026-07-11 03:41:05', '2026-07-25 05:25:37', '2026-07-07 04:53:48', '2026-07-04 03:41:05'),
+	('1b9a539b-9235-4420-8b80-a4dfd54d8788', 'd739bccb-7123-11f1-8bb6-52540021303b', '58849ceabcac0a9a97b55b4ff8cff88d70c5743e2012624a1c13ea24decab94e', 'refresh', NULL, NULL, '2026-07-07 07:30:32', '2026-07-25 05:25:37', '2026-07-06 15:46:03', '2026-06-30 07:30:32'),
+	('1bf05154-afea-40d6-9afd-551f14372862', 'd739bccb-7123-11f1-8bb6-52540021303b', '3aff5cfbb6372934d1528938f4cbcec38891c62db761c6844ded589ad7f5a99a', 'refresh', NULL, NULL, '2026-10-13 06:22:52', NULL, '2026-10-06 07:53:55', '2026-10-06 06:22:52'),
+	('1d46b399-d879-4063-85f2-ae8f8f27dfac', 'd739bccb-7123-11f1-8bb6-52540021303b', 'f12d3507fbb02c3d59c2890c7fbed0e2679b69986a4d543a0b955c2a0b67404a', 'refresh', NULL, NULL, '2026-07-08 06:27:47', '2026-07-25 05:25:37', '2026-07-04 06:28:05', '2026-07-01 06:27:47'),
+	('1d9c4595-7f17-4486-ac0a-428f758fd91e', 'd739bccb-7123-11f1-8bb6-52540021303b', 'd791f726a2d9469d60647be31f5417f961f0e2173b4eb8881faf8f8be1a23e6e', 'refresh', NULL, NULL, '2026-08-04 05:04:06', NULL, '2026-07-28 08:23:33', '2026-07-28 05:04:06'),
+	('1da3b48f-a0c8-4ae5-88ac-d6fe90a6d1db', 'd739bccb-7123-11f1-8bb6-52540021303b', '5cfd7e333afadea1818fd968e4ea1f096be8381e01656fb531d0c5789b24bb20', 'refresh', NULL, NULL, '2026-09-09 03:58:55', NULL, '2026-09-04 04:47:08', '2026-09-02 03:58:55'),
+	('1f523892-dbd7-4b46-aed6-dc7991277b78', '27d1ec8a-9748-474f-96ec-be0642297ee8', '1eef261484c6a27d951c68b3ffc71cdc4342bc844d1617d6e2929e55dcd4771a', 'refresh', NULL, NULL, '2026-08-18 14:24:39', '2026-08-11 14:24:43', '2026-08-11 14:24:43', '2026-08-11 14:24:39'),
+	('1f78aee4-eddb-4810-84fb-b543d916d756', 'd739bccb-7123-11f1-8bb6-52540021303b', 'bbfc227d9c4a241ba8106d409cc7d6aa2088dde76d690eee376b96dc6eab67de', 'refresh', NULL, NULL, '2026-06-29 09:21:52', '2026-07-25 05:25:37', '2026-06-29 03:51:49', '2026-06-29 03:51:49'),
+	('20ebba66-1153-427b-9e16-ec00a812c2d0', 'd739bccb-7123-11f1-8bb6-52540021303b', 'cb39b1b2a80a5085a4930825974b7eea6e2e3d01e64ea654b43e5e3d3565937a', 'refresh', NULL, NULL, '2026-09-25 09:37:12', '2026-09-21 12:46:04', '2026-09-21 12:46:04', '2026-09-18 09:37:12'),
+	('22d166a6-778a-416b-b7a2-2584f1da8dde', 'd739bccb-7123-11f1-8bb6-52540021303b', 'dc8ab2c3d9c4d05c045ae2b7438fa4d4c3a7adc204a1666fc477614e32d7b062', 'refresh', NULL, NULL, '2026-09-15 11:14:15', NULL, '2026-09-14 10:27:39', '2026-09-08 11:14:15'),
+	('2377b668-f98d-4597-b260-327558ba6de2', 'd739bccb-7123-11f1-8bb6-52540021303b', 'cf4c60169d247e25556ba01b9121dde08016012acc64b6080fd805ded1efce6b', 'refresh', NULL, NULL, '2026-08-03 06:45:28', '2026-07-27 10:10:57', '2026-07-27 10:10:56', '2026-07-27 06:45:28'),
+	('245f5201-9889-4478-a104-3f8c85bc81f4', 'd739bccb-7123-11f1-8bb6-52540021303b', '37cb4e62f0dc0cd4ca53175690c9538790b284ef769db82951ecfe982e535224', 'refresh', NULL, NULL, '2026-07-27 06:38:25', '2026-07-25 05:25:37', '2026-07-20 12:41:50', '2026-07-20 06:38:25'),
+	('24641cc8-5382-42e6-a039-b2910e83b04e', 'd739bccb-7123-11f1-8bb6-52540021303b', '89a0a9fc3ba9b9d1e46cdbdf37a3c87e99459de61e0a8dd6ba5bd51fbe5fe90c', 'refresh', NULL, NULL, '2026-08-01 06:48:05', '2026-07-25 06:54:14', '2026-07-25 06:54:14', '2026-07-25 06:48:05'),
+	('2466816e-f145-427b-a57c-5a57e1fa280c', 'd739bccb-7123-11f1-8bb6-52540021303b', '9982a0818cdc8b60488c4de1aff6a6aa8ecb70c1a63ff98cd01530a01ed389c9', 'refresh', NULL, NULL, '2026-07-18 07:34:40', '2026-07-25 05:25:37', '2026-07-11 09:28:07', '2026-07-11 07:34:40'),
+	('258441b3-5703-47a9-9a78-aebea2b3df0b', 'd739bccb-7123-11f1-8bb6-52540021303b', '4392b533311ea948a85c948f1a93277cbee3b5bf2618a16f85d0500dfd93846d', 'refresh', NULL, NULL, '2026-07-20 10:46:18', '2026-07-13 10:47:42', '2026-07-13 10:47:42', '2026-07-13 10:46:18'),
+	('264c5be5-76f1-4085-a767-1d4d44188130', 'd739bccb-7123-11f1-8bb6-52540021303b', 'dfe6482a9228f17ff461a479d088fa69b17fe77426eaae549ea3acabd1983939', 'refresh', NULL, NULL, '2026-09-01 07:20:41', NULL, '2026-08-25 07:42:11', '2026-08-25 07:20:41'),
+	('276a581a-b203-4dcf-bf6b-618a08aa0110', 'd739bccb-7123-11f1-8bb6-52540021303b', '9a4e5b8bc003dd56bae83b4da4abd4f9c58b16da660788f8c379f72eb776fb6e', 'refresh', NULL, NULL, '2026-08-10 05:22:25', NULL, '2026-08-03 10:34:11', '2026-08-03 05:22:25'),
+	('288ff776-bc4b-41d8-878c-e1c23386b6a1', 'd739bccb-7123-11f1-8bb6-52540021303b', 'b0d0714aad48996163cbe310bb7e39475f24ca03718209c58caf3d682ffa60ad', 'refresh', NULL, NULL, '2026-09-25 09:57:58', NULL, '2026-09-18 09:58:42', '2026-09-18 09:57:58'),
+	('2adc5174-20f3-49ac-97ec-a5782ef18556', 'd739bccb-7123-11f1-8bb6-52540021303b', 'b4e310b7657d438c40f4f1724a8607f675efab2ce8487022d729ebd2a79bfae5', 'refresh', NULL, NULL, '2026-07-27 06:38:20', '2026-07-25 05:25:37', '2026-07-20 06:40:30', '2026-07-20 06:38:20'),
+	('2b25ba95-c04d-4541-a7be-00255368f64a', '9034b40f-08a6-4e04-a402-fe7397b29717', 'ec9709485913f4bdfeafc406c6c5b40c085b434d8e622be833ee5e2f5dff2366', 'refresh', NULL, NULL, '2026-10-20 05:10:42', NULL, '2026-10-13 05:12:08', '2026-10-13 05:10:42'),
+	('2c276ca8-41f1-40dd-9120-2f7343a088b0', 'd739bccb-7123-11f1-8bb6-52540021303b', '65b968f0b5c9382b904e042b0d8088ff95a77ebd2d7c7355e84feb6fd0fccc0a', 'refresh', NULL, NULL, '2026-10-10 06:08:58', NULL, '2026-10-03 11:26:45', '2026-10-03 06:08:58'),
+	('2c74dd75-f6fb-42c8-9e38-cc85a1ff37a3', 'd739bccb-7123-11f1-8bb6-52540021303b', '9a943706d5f45c0f4c0e5950b5a5611de1f73002029a4fc01c89f1af59c22b3d', 'refresh', NULL, NULL, '2026-07-07 06:19:32', '2026-06-30 06:19:34', '2026-06-30 06:19:34', '2026-06-30 06:19:32'),
+	('2caa2345-3304-478b-8621-94e8b81276f5', 'd739bccb-7123-11f1-8bb6-52540021303b', 'eecdd936d94311b3f7f77d8d11079a0ffb8f8790f02d36d4fd675d0bfd31de2b', 'refresh', NULL, NULL, '2026-10-19 12:06:07', NULL, '2026-10-13 05:39:18', '2026-10-12 12:06:07'),
+	('2d71fa9e-f2c3-4812-ad1c-01e90e49822b', '21252981-f16a-4c36-a445-f3bf76d88b06', 'f6f4b67a8a70696a059ca5fbb4fa474daa3fefe5d3b221a4d4a0b7e8b2daadfa', 'refresh', NULL, NULL, '2026-10-20 05:28:57', NULL, '2026-10-13 07:55:01', '2026-10-13 05:28:57'),
+	('2d9ca5db-84c6-402d-8c60-4ee73263b5f3', 'd739bccb-7123-11f1-8bb6-52540021303b', '7e613904469a2620cb8401d924ae388b21c38e80e430268a9162c756fc8ba9d0', 'refresh', NULL, NULL, '2026-09-18 12:22:31', NULL, NULL, '2026-09-11 12:22:31'),
+	('2ffeed9b-e282-4931-93e6-b3fd851ca49f', 'd739bccb-7123-11f1-8bb6-52540021303b', 'b249dc285e9e2454fd80a7baed570397615b5082601ca0b2c3a028ed519cef62', 'refresh', NULL, NULL, '2026-09-01 12:21:17', NULL, '2026-09-01 08:24:19', '2026-08-25 12:21:17'),
+	('301c359b-0f6f-4bd0-bd4b-65f6b1255e3a', 'd739bccb-7123-11f1-8bb6-52540021303b', '09534067b1ecfdfbbb249af1fa07a0c1528c7e29e10b86646113bdd72cd7cf2a', 'refresh', NULL, NULL, '2026-10-16 09:52:42', NULL, '2026-10-10 08:07:12', '2026-10-09 09:52:42'),
+	('314c1a70-d222-44a1-8679-47e845e429e1', 'd739bccb-7123-11f1-8bb6-52540021303b', '6ab5c895e29448618ec8b502fdf805d398300f842481aa55cc1fa1b4e67dfcad', 'refresh', NULL, NULL, '2026-10-17 08:43:19', NULL, '2026-10-10 10:19:00', '2026-10-10 08:43:19'),
+	('325723d5-2dfa-4760-9a5d-77b05059e2e8', 'd739bccb-7123-11f1-8bb6-52540021303b', '65638068e892bce8964f6eaa72179320bac7eadd5de7546db22f6ac173594ea4', 'refresh', NULL, NULL, '2026-09-02 07:52:27', NULL, '2026-08-26 12:04:14', '2026-08-26 07:52:27'),
+	('35d3f805-2cf0-4d49-ae0f-2bccec887fac', 'd739bccb-7123-11f1-8bb6-52540021303b', '36d105a8a4bebccdb9856f80e2c2b80cb44854074f91084a910585340a07cdf5', 'refresh', NULL, NULL, '2026-09-23 07:52:53', NULL, '2026-09-16 11:31:24', '2026-09-16 07:52:53'),
+	('36bc3297-de2b-41ac-97bb-f5abe31d1530', 'd739bccb-7123-11f1-8bb6-52540021303b', 'c81e99bf97feb4aa583285a796bf9b3f1d02bb149952f6933dc6f89bbdfa2ee1', 'refresh', NULL, NULL, '2026-10-14 04:02:46', NULL, '2026-10-07 04:46:02', '2026-10-07 04:02:46'),
+	('382fce58-4772-4f26-a460-cf921f5ab589', 'd739bccb-7123-11f1-8bb6-52540021303b', '1855fe4f9aadc6cb4eb47c922c9263f7a113e717e4767c439beadbaafbe65b2c', 'refresh', NULL, NULL, '2026-09-14 05:06:46', '2026-09-07 11:36:52', '2026-09-07 11:36:52', '2026-09-07 05:06:46'),
+	('389b6c6b-436d-42e6-aab2-9f9c9a77066a', '99632848-7f08-47b6-b200-ef55c0a4f8ec', 'aad617be666ab22fb48c9030d8b990a9ba676929182b7a5786d9acca935c928a', 'refresh', NULL, NULL, '2026-10-17 11:30:37', '2026-10-10 11:38:44', '2026-10-10 11:38:44', '2026-10-10 11:30:37'),
+	('395bf1f5-d971-4b19-b111-254657e68deb', '99632848-7f08-47b6-b200-ef55c0a4f8ec', '8079bcdbb09e7379d1b3363df14082fdd2a6190322edf1fdc721cdab566df0e3', 'refresh', NULL, NULL, '2026-10-07 05:40:02', NULL, '2026-09-30 11:11:21', '2026-09-30 05:40:02'),
+	('39b80888-3cdc-4943-91bd-8130dc35c564', '99632848-7f08-47b6-b200-ef55c0a4f8ec', '2467d453fab24c2009b91150d3959425bb5483a3da4eca821ea2791357aa68ba', 'refresh', NULL, NULL, '2026-10-02 05:45:41', NULL, '2026-09-28 12:39:45', '2026-09-25 05:45:41'),
+	('39d0aaae-54da-40a1-83d8-21c6ebffee49', 'd739bccb-7123-11f1-8bb6-52540021303b', 'e70b2efa96d2c966f3ffbed0e1aa6471d2e0f0a34c8343b8126b44769dfec2a1', 'refresh', NULL, NULL, '2026-10-04 05:46:47', '2026-10-03 19:07:30', '2026-10-03 19:07:30', '2026-09-27 05:46:47'),
+	('3afc4f10-5a66-4d93-9cf6-6ba4ffd0577b', 'd739bccb-7123-11f1-8bb6-52540021303b', '9deedf13a7ccd76218d224546fa10a5395b81c5fb9698a0e966e3a20628bd22e', 'refresh', NULL, NULL, '2026-10-20 04:11:05', NULL, '2026-10-13 07:09:47', '2026-10-13 04:11:05'),
+	('3afe2717-4dce-40f9-a072-6716ca92b029', 'd739bccb-7123-11f1-8bb6-52540021303b', 'b0e01a5e79b16b5e6eefca663809dcff09d3b5f53a4b10b80f13715f7f6839ab', 'refresh', NULL, NULL, '2026-10-07 07:01:35', NULL, '2026-10-01 10:43:07', '2026-09-30 07:01:35'),
+	('3b926ef0-e2b6-4428-b07a-4c669638e641', 'd739bccb-7123-11f1-8bb6-52540021303b', '6ee9f954d7a7d46eb2625715693c9b14cdcbb59abc0e01e4b3604da57e0c3d85', 'refresh', NULL, NULL, '2026-08-31 11:29:03', NULL, '2026-08-31 09:07:17', '2026-08-24 11:29:03'),
+	('3bff8023-bc78-4a18-951c-bdac373f8d87', 'd739bccb-7123-11f1-8bb6-52540021303b', 'cf59a04944d60d22e0276de78427381ba760a8f474808dcdc6d4e66522baa829', 'refresh', NULL, NULL, '2026-09-28 06:38:03', NULL, '2026-09-21 06:39:41', '2026-09-21 06:38:03'),
+	('3c1767f7-62ca-4b26-ad65-4cd7637b07a0', 'd739bccb-7123-11f1-8bb6-52540021303b', '04cf196cdf5fec2f0fdccf38c8afb3f817651a8ef8e91ec4eb4f8c1553b3680d', 'refresh', NULL, NULL, '2026-07-28 04:10:38', '2026-07-25 05:25:37', '2026-07-24 11:47:27', '2026-07-21 04:10:38'),
+	('3cbcca36-cc5a-42ac-be10-dd473535f1fc', '99632848-7f08-47b6-b200-ef55c0a4f8ec', '9aa7936cae1ee04a9e6ecbb6f09c848cceb04e12e1b1f4ba88ab9582df1e4bb1', 'refresh', NULL, NULL, '2026-09-30 12:50:38', NULL, '2026-09-25 04:39:06', '2026-09-23 12:50:38'),
+	('3cf7f5b6-8d8b-4ba5-b7b5-730a952dd438', '21252981-f16a-4c36-a445-f3bf76d88b06', '100e26eaf44f0353de5575e1084ec6fd7c0fb04c01ec809ab50eeb976552fdc2', 'refresh', NULL, NULL, '2026-10-20 04:06:45', '2026-10-13 04:07:35', '2026-10-13 04:07:35', '2026-10-13 04:06:45'),
+	('3df994db-e121-4726-9ef7-2b54ba7b7690', 'd739bccb-7123-11f1-8bb6-52540021303b', 'b2a3dc1ab7003eb0af7fb186249dd3362419eb7d78aca9738e8c47abc04b1197', 'refresh', NULL, NULL, '2026-09-12 07:35:32', NULL, '2026-09-05 07:36:07', '2026-09-05 07:35:32'),
+	('403fad6a-3919-41c3-ba1c-4128039eb2d2', 'd739bccb-7123-11f1-8bb6-52540021303b', 'e1f0f9299d845fba717b3d881f04a75dd5dcc26f80f1082df738de6580da23a6', 'refresh', NULL, NULL, '2026-10-19 03:57:10', NULL, '2026-10-12 03:59:49', '2026-10-12 03:57:10'),
+	('4181ae88-79ba-487d-8b55-fbb1b348fb10', 'd739bccb-7123-11f1-8bb6-52540021303b', 'bba601e5fa4fffa09860a77439ae42e2aad6f4a458a21247522b43881aaf620c', 'refresh', NULL, NULL, '2026-10-10 05:31:47', NULL, '2026-10-03 05:34:06', '2026-10-03 05:31:47'),
+	('42444751-39c6-48d9-bfa1-6c3b1e69ec9f', 'd739bccb-7123-11f1-8bb6-52540021303b', 'a8850d68f4b5ee1812cf6f870f3e51192dd802aaaa1ae9f437f24841dc52a75e', 'refresh', NULL, NULL, '2026-09-16 04:29:10', NULL, '2026-09-09 04:35:28', '2026-09-09 04:29:10'),
+	('42d10ce8-170b-4976-8d3c-82e2f9d2ecd2', 'd739bccb-7123-11f1-8bb6-52540021303b', 'f389b0b83f2bc14b062ffe2b4b862349dc838a670128df380123497451357a73', 'refresh', NULL, NULL, '2026-07-21 07:06:37', '2026-07-25 05:25:37', '2026-07-14 07:09:45', '2026-07-14 07:06:37'),
+	('44054f1f-90c6-4740-afa7-f4028aab7531', 'd739bccb-7123-11f1-8bb6-52540021303b', 'a3f15fb393cd472a08d915a068ec53d333be267b81db807bad50fbb6ea422df4', 'refresh', NULL, NULL, '2026-10-19 03:50:50', '2026-10-12 12:00:10', '2026-10-12 12:00:10', '2026-10-12 03:50:50'),
+	('4442192b-f0a6-40ef-b4cf-0694af32ceb3', 'd739bccb-7123-11f1-8bb6-52540021303b', '53ddb3f21a33b65c2187881ba8c8f549f623aac1a4cbe419fbff9877b92766fe', 'refresh', NULL, NULL, '2026-09-07 04:11:27', NULL, '2026-08-31 06:45:14', '2026-08-31 04:11:27'),
+	('4471157f-60f6-4c33-a838-1fb2d013336a', 'd739bccb-7123-11f1-8bb6-52540021303b', 'ea6b879550cc383531d53581107c04b28b0feb7f50b88e0225b17fb8236937b3', 'refresh', NULL, NULL, '2026-07-24 04:34:10', '2026-07-25 05:25:37', '2026-07-17 05:26:58', '2026-07-17 04:34:10'),
+	('453bd533-048b-48a7-b275-75d192ed8c43', '99632848-7f08-47b6-b200-ef55c0a4f8ec', '6d740db14d25dc9db931fb840802e3f149f5a0f824c34f94a200e6b50dd64f71', 'refresh', NULL, NULL, '2026-09-30 05:33:46', NULL, '2026-09-23 11:17:43', '2026-09-23 05:33:46'),
+	('46685b97-0f0c-440f-a94e-5c35c0b5feba', '0ffc53c1-7213-11f1-8bb6-52540021303b', 'b3a3aee3fa85ff829bae320c0e97f1873945dfe05de2c660058ce30fd6ac95e4', 'refresh', NULL, NULL, '2026-10-05 07:42:07', '2026-10-03 07:06:08', '2026-10-03 07:06:08', '2026-09-28 07:42:07'),
+	('473e59d7-c59e-4e42-aadc-f5007b330cd6', 'd739bccb-7123-11f1-8bb6-52540021303b', 'e88a67b5e94009dcc51b3f69b0a5ced73ef618a9c2842cb7f596dc593a3abd35', 'refresh', NULL, NULL, '2026-07-31 10:38:28', '2026-07-25 05:25:37', '2026-07-24 10:47:27', '2026-07-24 10:38:28'),
+	('476c34dd-1b4c-46eb-bb33-9416bdc41439', 'd739bccb-7123-11f1-8bb6-52540021303b', '78348bec8d08691b02d2b47995edd222b6d559b723263807ebe7a877b29335d8', 'refresh', NULL, NULL, '2026-09-28 11:31:29', NULL, '2026-09-22 04:29:23', '2026-09-21 11:31:29'),
+	('48b70343-ed3f-4232-8e81-b924fc3c2a61', 'd739bccb-7123-11f1-8bb6-52540021303b', '27b673c54619a1e34bd87c22b2eccc64ad77dbd123a990b31a6ca039b79fd67d', 'refresh', NULL, NULL, '2026-09-23 11:11:34', NULL, '2026-09-22 07:43:52', '2026-09-16 11:11:34'),
+	('4bba16e2-475b-483f-b570-969341025c13', 'd739bccb-7123-11f1-8bb6-52540021303b', 'af3174a18fe023e71c66a97fc13f02a8f5922a9ac1ccbd276c6d5b90336f319d', 'refresh', NULL, NULL, '2026-08-10 06:52:06', NULL, '2026-08-06 08:10:54', '2026-08-03 06:52:06'),
+	('4db596f9-c092-4f22-bff6-2c2bb7f190d5', 'd739bccb-7123-11f1-8bb6-52540021303b', '2cd83fba3aef821d442f87af1c7b10f6037e344356826a5865c2853b6ffdb0ac', 'refresh', NULL, NULL, '2026-09-18 06:48:43', NULL, '2026-09-17 12:12:15', '2026-09-11 06:48:43'),
+	('4fa0d8f1-9ab2-4dd7-8e32-ffee7e6099d9', 'd739bccb-7123-11f1-8bb6-52540021303b', '73928529517c577bca538211f5761a9f8af6bb11b1a0f711df7ce7ccb30ecf8f', 'refresh', NULL, NULL, '2026-07-27 10:38:11', '2026-07-25 05:25:37', '2026-07-24 10:06:11', '2026-07-20 10:38:11'),
+	('51dddf70-ead9-4207-9ed2-a5afca260219', 'd739bccb-7123-11f1-8bb6-52540021303b', '252651169958206192b4c3240892079f1c3c6ca2e4e84a1552bef7633a7270a5', 'refresh', NULL, NULL, '2026-10-10 11:29:20', NULL, '2026-10-05 05:28:12', '2026-10-03 11:29:20'),
+	('51fb5492-286a-4b84-9ae7-2f370a4fbbc7', 'd739bccb-7123-11f1-8bb6-52540021303b', '46310d63d6b50e4187e9897688e59982e0bd8e0947f85633f3625446be9f6b15', 'refresh', NULL, NULL, '2026-10-20 04:07:40', '2026-10-13 04:10:18', '2026-10-13 04:10:18', '2026-10-13 04:07:40'),
+	('521331fb-e6e4-421f-9cd7-ab22e1b7ba17', 'd739bccb-7123-11f1-8bb6-52540021303b', '9b865b861f6e775a6da7a640d84dc9596c9be419043ecbf25089a780d00e0311', 'refresh', NULL, NULL, '2026-07-06 05:35:25', '2026-07-25 05:25:37', '2026-06-30 07:29:56', '2026-06-29 05:35:25'),
+	('527bd798-d0ce-4b77-9398-4b8099f98931', '27d1ec8a-9748-474f-96ec-be0642297ee8', '0827868f0ca014d5fb952f59a31ee70b040d38c891b41a65447e07fa2faabeb4', 'refresh', NULL, NULL, '2026-08-01 06:03:55', '2026-07-25 06:04:27', '2026-07-25 06:04:27', '2026-07-25 06:03:55'),
+	('52b4b295-af76-424f-b2db-fa4fb8e7845f', 'd739bccb-7123-11f1-8bb6-52540021303b', '26960538aac2df466357c936fa1d1c5f2724dd0b71a35e59aa95b8f23588c1a6', 'refresh', NULL, NULL, '2026-06-29 09:24:06', '2026-07-25 05:25:37', '2026-06-29 03:54:03', '2026-06-29 03:54:03'),
+	('52ec4ac1-cee9-47b2-aeda-ae36a2a7b59b', 'd739bccb-7123-11f1-8bb6-52540021303b', '93e56fe739b0a479c27ce30b16f3f1e38ad1b814563d48478b5e1b7c60afd01d', 'refresh', NULL, NULL, '2026-10-13 10:47:40', '2026-10-06 10:51:37', '2026-10-06 10:51:37', '2026-10-06 10:47:40'),
+	('52f4e193-60b3-4d6a-b0b3-a60290ad2de1', 'd739bccb-7123-11f1-8bb6-52540021303b', 'e336874ab9ed9387bcb664ba3a76ed8ce05828508f486ee3a56131d8962bb3d8', 'refresh', NULL, NULL, '2026-08-01 05:26:07', '2026-07-25 06:03:51', '2026-07-25 06:03:51', '2026-07-25 05:26:07'),
+	('52f6ee31-bb30-40af-892e-27667373be4e', 'd739bccb-7123-11f1-8bb6-52540021303b', '85745293bf9a22d3556a56eb047aba85e042abeb6d944206449d47744fd5fcd9', 'refresh', NULL, NULL, '2026-09-01 09:42:26', NULL, '2026-08-25 11:08:19', '2026-08-25 09:42:26'),
+	('5374b18f-79fd-4c21-a69f-8e37d15901de', 'd739bccb-7123-11f1-8bb6-52540021303b', '69a6f5f570ebea90184b0a9bf492e4aafc3560d811369a8fe8005ce0568fad0a', 'refresh', NULL, NULL, '2026-10-10 04:24:25', NULL, '2026-10-03 05:21:35', '2026-10-03 04:24:25'),
+	('53e8ec0e-32b7-463f-8163-2825b55755f0', 'd739bccb-7123-11f1-8bb6-52540021303b', '49c65819d6c9a64ca8ec73854308f409c17e3cdbe19a3fa1076939d8976a56b5', 'refresh', NULL, NULL, '2026-10-02 17:35:33', NULL, NULL, '2026-09-25 17:35:33'),
+	('54021e86-57ba-41ae-aa71-37a39a26f577', 'd739bccb-7123-11f1-8bb6-52540021303b', '92b3f80fb22109c86d0da0e09c85ca39c1297346eb3026620119602aa3eb105a', 'refresh', NULL, NULL, '2026-07-23 03:39:17', '2026-07-25 05:25:37', '2026-07-16 11:18:29', '2026-07-16 03:39:17'),
+	('54c860a9-57db-493f-88fc-7eab59782915', 'd739bccb-7123-11f1-8bb6-52540021303b', '8031245cabaa930e3011ce13477c1c950ae189f0e1970695501dfaa527e38cb6', 'refresh', NULL, NULL, '2026-10-10 07:22:20', '2026-10-05 06:16:13', '2026-10-05 06:16:13', '2026-10-03 07:22:20'),
+	('565801b9-87d7-4da8-a13d-8ce2b2868c17', 'd739bccb-7123-11f1-8bb6-52540021303b', 'ced03493e66cdfe016015e81963c16a2cecbe90711eb6259a214779dd5f22f7b', 'refresh', NULL, NULL, '2026-10-18 03:03:29', NULL, '2026-10-11 04:06:52', '2026-10-11 03:03:29'),
+	('583aa742-27e0-44d3-b12c-a188b246bd8e', 'd739bccb-7123-11f1-8bb6-52540021303b', '4f5df8f69debfa3096f7d1f90988d78fcd811a9a7f5793ee2283f26517d2e5d3', 'refresh', NULL, NULL, '2026-10-02 05:44:13', '2026-09-28 07:42:00', '2026-09-28 07:42:00', '2026-09-25 05:44:13'),
+	('58c79bd9-560c-4482-b715-c4d15ccefb2e', 'd739bccb-7123-11f1-8bb6-52540021303b', '25800cf82c25fc9c6573849902cfbe2fbfc8c845b12b62a4e8bfa3c88d7a97f8', 'refresh', NULL, NULL, '2026-10-19 04:02:58', NULL, '2026-10-12 06:29:31', '2026-10-12 04:02:58'),
+	('59064982-9ddd-412a-9540-f0d15a19b60d', 'd739bccb-7123-11f1-8bb6-52540021303b', 'db94f5dc5d84a65c1c3f9a0d2c2985a795e5fd10c14e9b5e9ec1464f81d1127b', 'refresh', NULL, NULL, '2026-07-28 05:34:56', '2026-07-25 05:25:37', '2026-07-23 05:43:16', '2026-07-21 05:34:56'),
+	('5a689d6c-2af8-48c7-a99a-a2fdd89c5353', 'd739bccb-7123-11f1-8bb6-52540021303b', '7e50cdfd3a025481018bebbcc731308181c02999e6004706994a5c7e81a58bf7', 'refresh', NULL, NULL, '2026-09-08 06:20:25', NULL, '2026-09-01 08:10:02', '2026-09-01 06:20:25'),
+	('5bf52a7d-6981-4655-a997-c40bab09dbc7', '99632848-7f08-47b6-b200-ef55c0a4f8ec', 'c75c4cee5ee572291b66e1d48e7d570a5ad3e3a2836dc0273bf3fae6d1f1c6b6', 'refresh', NULL, NULL, '2026-09-28 12:46:09', '2026-09-23 10:51:36', '2026-09-23 10:51:36', '2026-09-21 12:46:09'),
+	('5c269809-555d-43a5-9038-28fea41572ad', 'd739bccb-7123-11f1-8bb6-52540021303b', 'e9487c0514144d6d1e55571991190662f5b3938201a0bba31ffe448c1b72b98d', 'refresh', NULL, NULL, '2026-09-25 10:27:33', NULL, '2026-09-18 10:35:13', '2026-09-18 10:27:33'),
+	('5d4a5252-590a-4a59-b77a-68f163696592', 'd739bccb-7123-11f1-8bb6-52540021303b', '5ee372128aa90b87eeb6cd0cc9c9544ba9910ed17231d4d74b9af108272b1ac5', 'refresh', NULL, NULL, '2026-07-10 06:12:47', '2026-07-25 05:25:37', '2026-07-03 06:15:06', '2026-07-03 06:12:47'),
+	('5dd01e49-ff86-497a-b7b3-aa50298be4c7', 'd739bccb-7123-11f1-8bb6-52540021303b', '930bcf2e346ed0f2eefba1b2786100564bb39b30ff52fd2307fe98a8858e6355', 'refresh', NULL, NULL, '2026-09-22 11:57:45', NULL, '2026-09-16 07:09:43', '2026-09-15 11:57:45'),
+	('5e050557-aff6-482c-a3bc-fe92f55149f9', 'd739bccb-7123-11f1-8bb6-52540021303b', '0c42654588702585c2ed1fd843db06261ec0727625d357c0fba2b94058b884c7', 'refresh', NULL, NULL, '2026-10-01 07:16:25', NULL, '2026-09-30 12:45:15', '2026-09-24 07:16:25'),
+	('5e385e19-0bad-4977-8343-9146badb5572', 'd739bccb-7123-11f1-8bb6-52540021303b', '2c0c28803f5cd394a1742dc0d98e30691bd2a80604874a9c49aff3afa1a78576', 'refresh', NULL, NULL, '2026-08-21 07:13:27', NULL, '2026-08-14 12:22:15', '2026-08-14 07:13:27'),
+	('5e851821-5706-44c7-8197-ebde63f43b53', 'd739bccb-7123-11f1-8bb6-52540021303b', '1844699ae2549a96c6ddd79ff2474db86e8bbe59a37b86ea2ed36af9d88eb0cc', 'refresh', NULL, NULL, '2026-10-16 04:36:02', NULL, '2026-10-09 04:40:24', '2026-10-09 04:36:02'),
+	('60dd0027-d326-45cc-8969-26614d65591b', 'd739bccb-7123-11f1-8bb6-52540021303b', '5f15fb30b3d3c4a377c12701a29efc159e36a4210ecdf3d1cd319b44b5b550ab', 'refresh', NULL, NULL, '2026-10-17 11:38:48', '2026-10-10 11:39:25', '2026-10-10 11:39:25', '2026-10-10 11:38:48'),
+	('639ffe62-dbd5-48a3-9bde-0c04fa0f5a73', 'd739bccb-7123-11f1-8bb6-52540021303b', 'b6229a7f71863a582d0d219ecc116d0ab4996112b36c89a2923000535d39d020', 'refresh', NULL, NULL, '2026-10-17 17:26:35', '2026-10-11 03:03:27', '2026-10-11 03:03:27', '2026-10-10 17:26:35'),
+	('641df5f8-4e3b-4908-9d2e-433ee84a17b8', 'd739bccb-7123-11f1-8bb6-52540021303b', 'e5249dfd3221495c9f0adb0ca30125dc695c15ae66ed85d1f9be8c9b788f6cd9', 'refresh', NULL, NULL, '2026-07-06 09:16:44', '2026-07-25 05:25:37', '2026-07-03 07:13:03', '2026-06-29 09:16:44'),
+	('641fd500-6906-4618-a9be-c2f71f965130', 'd739bccb-7123-11f1-8bb6-52540021303b', '2548d96ad5a3792f82114435180309d5631ea188608022851af7a7ab540cb984', 'refresh', NULL, NULL, '2026-07-06 08:01:57', '2026-07-25 05:25:37', '2026-06-29 08:02:16', '2026-06-29 08:01:57'),
+	('644c2dfd-ea6d-49e4-851e-b13faa38bdb2', 'd739bccb-7123-11f1-8bb6-52540021303b', '8872af2057725f93ca38a8ab863127f3bb7ca95ec20235819d7f020e1a711f37', 'refresh', NULL, NULL, '2026-07-18 07:34:01', '2026-07-25 05:25:37', '2026-07-11 08:29:19', '2026-07-11 07:34:01'),
+	('644ca8b7-9429-419d-989f-b8ed5f5ced6e', 'd739bccb-7123-11f1-8bb6-52540021303b', '945d33575f8299eb4c9d931287fa850704a0445293de8d6823d3f330d2f270e4', 'refresh', NULL, NULL, '2026-07-06 04:04:16', '2026-07-25 05:25:37', '2026-06-29 05:34:11', '2026-06-29 04:04:16'),
+	('64530673-79ab-4251-b311-fb3fa5245321', 'd739bccb-7123-11f1-8bb6-52540021303b', 'e585135b9ef3c7b53a07104c51c67b0f1ac178c8d9546c41715fbd190181ea51', 'refresh', NULL, NULL, '2026-07-10 07:45:56', '2026-07-25 05:25:37', '2026-07-06 09:16:19', '2026-07-03 07:45:56'),
+	('68a38248-90fb-4754-96e5-9a0e5642d801', 'd739bccb-7123-11f1-8bb6-52540021303b', '432f03c8eed71ae8bee052dff1d798ee53da1aae7a759c6eb18c266744781950', 'refresh', NULL, NULL, '2026-08-05 07:59:06', NULL, '2026-07-29 09:39:32', '2026-07-29 07:59:06'),
+	('697b0bc7-da46-4087-b570-89a17692fb5c', 'd739bccb-7123-11f1-8bb6-52540021303b', 'e8c90ef65e83aa9b99de8b2860a6fac87a10b112103f8de05eb42bf1c32027e1', 'refresh', NULL, NULL, '2026-07-07 07:30:45', '2026-07-25 05:25:37', '2026-06-30 15:33:10', '2026-06-30 07:30:45'),
+	('6a99d2fa-5b9c-48c0-a2f0-3ae3d44e5480', 'd739bccb-7123-11f1-8bb6-52540021303b', '691b99ef3afab0d18dec0f7c211ac4e133a025b9df4e095a25d8d4ea531808a8', 'refresh', NULL, NULL, '2026-09-25 07:40:32', NULL, '2026-09-18 09:55:28', '2026-09-18 07:40:32'),
+	('6ad4247e-91fe-4ee5-ba38-68284e6752f2', 'd739bccb-7123-11f1-8bb6-52540021303b', 'b1e1e0e1dd90157c38d47110ee620637870fdae9e9701a8030df0e481b26ccd5', 'refresh', NULL, NULL, '2026-06-29 09:18:43', '2026-07-25 05:25:37', '2026-06-29 03:48:40', '2026-06-29 03:48:40'),
+	('6bbc745e-ff59-4e7d-b3cc-d0d060e8f454', 'd739bccb-7123-11f1-8bb6-52540021303b', '81f235363ae74d546db2d5d4446d8f8343f11f301091faf095e96042a729d3d3', 'refresh', NULL, NULL, '2026-08-29 11:59:03', NULL, '2026-08-22 12:01:45', '2026-08-22 11:59:03'),
+	('6c5ddb8b-9ec6-4233-b166-599166e43c05', 'd739bccb-7123-11f1-8bb6-52540021303b', '238ce7bd7ffcc08781f6c2a1e54fc5a088c2da4534c82d2de48ff50552acaca6', 'refresh', NULL, NULL, '2026-07-20 01:51:40', '2026-07-25 05:25:37', '2026-07-13 10:46:15', '2026-07-13 01:51:40'),
+	('6e7ab9a6-69c1-49d7-953c-051bd5ae6677', 'd739bccb-7123-11f1-8bb6-52540021303b', '0dce28a12d4c658768de295de2ffecd19b77b4806489ba3f00bf2ee54a4ad34e', 'refresh', NULL, NULL, '2026-09-11 04:59:16', NULL, '2026-09-04 05:02:42', '2026-09-04 04:59:16'),
+	('71cd4fbb-e5c6-482e-9b8a-81ea96fa16ff', 'd739bccb-7123-11f1-8bb6-52540021303b', '8d01e94ab4befad3c1910f1e3b94a3e913a5d301b692176fe3d3b6fab38f11bf', 'refresh', NULL, NULL, '2026-09-22 11:16:26', NULL, '2026-09-15 11:33:21', '2026-09-15 11:16:26'),
+	('72cbd571-7303-47d4-98fd-711acd5a7ede', 'd739bccb-7123-11f1-8bb6-52540021303b', 'd97a7108f4fb1ff042625d7bbe10809f0291234a1501d383b379a7cdfc108440', 'refresh', NULL, NULL, '2026-10-20 05:11:35', NULL, '2026-10-13 06:57:41', '2026-10-13 05:11:35'),
+	('73b79385-0fe2-48db-82f2-58e6e0f908be', 'd739bccb-7123-11f1-8bb6-52540021303b', '56dad63dbefe5b75fb5f64a68289d64d84f23f1831ed9e8c319e1505cc92245e', 'refresh', NULL, NULL, '2026-08-01 06:28:39', '2026-07-27 06:44:23', '2026-07-27 06:44:23', '2026-07-25 06:28:39'),
+	('7489e54e-93f8-43f5-95aa-c9be8c69d6eb', 'd739bccb-7123-11f1-8bb6-52540021303b', 'ab2d821b15ce44e3df5e852b69aa0d13550be344b738f855ccc3ffc998a69139', 'refresh', NULL, NULL, '2026-07-20 11:50:12', '2026-07-13 11:53:13', '2026-07-13 11:53:13', '2026-07-13 11:50:12'),
+	('74f0bc6f-dea1-49b1-97ac-ad0d32ba7726', 'd739bccb-7123-11f1-8bb6-52540021303b', '74178d40643012a4d7e3b7e0ae816e8a27da6ac77e48b03f0fb15a54a8fe093c', 'refresh', NULL, NULL, '2026-10-14 09:36:27', NULL, '2026-10-07 10:14:41', '2026-10-07 09:36:27'),
+	('75809e73-fbd7-40b4-8124-aa5ff711d570', 'd739bccb-7123-11f1-8bb6-52540021303b', '0391aef63c000815347c8068e30214d3524b10f2a2f9014c9c9078e1979feea5', 'refresh', NULL, NULL, '2026-10-15 10:22:43', NULL, '2026-10-12 06:24:58', '2026-10-08 10:22:43'),
+	('76214d7d-4804-4ae5-b116-21b8e485f734', 'd739bccb-7123-11f1-8bb6-52540021303b', '5c9f85009cddb6062fb16f29152a70463aae261885f12ea99636b8bf18098191', 'refresh', NULL, NULL, '2026-10-10 05:50:55', NULL, '2026-10-03 06:06:43', '2026-10-03 05:50:55'),
+	('771e1ade-cf05-4d52-8c91-cc0e8fda615a', 'd739bccb-7123-11f1-8bb6-52540021303b', '0b4adcf74e24497c5eee9db1fca5c1fb1e8edced8b4fba4ec6bdcb9128c13b9f', 'refresh', NULL, NULL, '2026-10-19 12:00:34', '2026-10-13 04:06:37', '2026-10-13 04:06:37', '2026-10-12 12:00:34'),
+	('793bcea4-87fe-4965-907c-3122600d4a60', 'd739bccb-7123-11f1-8bb6-52540021303b', '9bd804fcfb6509dd23d05de563c8dd86694711cd45a0287ad58411545ac9d7b8', 'refresh', NULL, NULL, '2026-08-01 04:19:42', '2026-07-25 05:25:37', '2026-07-25 05:25:37', '2026-07-25 04:19:42'),
+	('7a78a6e0-263f-49b3-9d9a-a3b3b5c0e151', 'd739bccb-7123-11f1-8bb6-52540021303b', '02d9e2a0e49bd3ca4bb8450677ba8b6a676ffc2b93db9289bea8327f6e08052c', 'refresh', NULL, NULL, '2026-10-17 12:49:30', NULL, '2026-10-11 03:01:56', '2026-10-10 12:49:30'),
+	('7e29da8d-a54a-4ec3-9eb5-fe8585f13479', 'd739bccb-7123-11f1-8bb6-52540021303b', '23392fb83fd9ec02e6771252758f1b39093c218271c81d07dc8c7646580f9389', 'refresh', NULL, NULL, '2026-10-05 05:28:29', NULL, '2026-09-28 08:09:35', '2026-09-28 05:28:29'),
+	('7e8cc035-8a55-446c-9b77-db3e5a393bc9', 'd739bccb-7123-11f1-8bb6-52540021303b', 'be9b63bb8099d84e3574cfde85fc4c1fa77f0fc9ac92ea795b7ff83dc114e98d', 'refresh', NULL, NULL, '2026-07-31 11:33:08', '2026-07-25 05:25:37', '2026-07-24 11:34:41', '2026-07-24 11:33:08'),
+	('7fa8ce77-6c1d-4cf5-82e0-f98317728260', '99632848-7f08-47b6-b200-ef55c0a4f8ec', '4ce629a852d85ac7eb3efbd66938493f25c03390316e587450a96f2ed523ad39', 'refresh', NULL, NULL, '2026-09-30 11:18:07', '2026-09-23 12:11:25', '2026-09-23 12:11:25', '2026-09-23 11:18:07'),
+	('7fd1efb1-5aab-4aa4-a7fb-aee1962b1684', 'd739bccb-7123-11f1-8bb6-52540021303b', '9e65aa8c613fcfa5c163dc829778d75490c5166f5871a6be20026862434d3de1', 'refresh', NULL, NULL, '2026-08-27 04:40:30', NULL, '2026-08-21 05:27:44', '2026-08-20 04:40:30'),
+	('804984fc-515e-4299-b20b-674ee028b6ef', 'd739bccb-7123-11f1-8bb6-52540021303b', '8326204346150e1b696e97ef61004edf22d77d7144cfff5d613a80dbb011f9aa', 'refresh', NULL, NULL, '2026-07-06 08:02:15', '2026-07-25 05:25:37', '2026-06-30 06:04:03', '2026-06-29 08:02:15'),
+	('8099de42-efa6-4638-b995-ededb0115e11', 'd739bccb-7123-11f1-8bb6-52540021303b', '00d2c35f778b35f168f69f247b806d39d73d7ad47fad812c7377f083b750fb19', 'refresh', NULL, NULL, '2026-07-07 06:17:13', '2026-07-25 05:25:37', '2026-06-30 06:17:14', '2026-06-30 06:17:13'),
+	('80d7eff0-c71b-4a3e-84ae-7bb54bb26010', 'd739bccb-7123-11f1-8bb6-52540021303b', '701dfd837a192155500abe455398f10640c278b2d8a4029b5354774b8ab9e98a', 'refresh', NULL, NULL, '2026-09-18 09:40:20', NULL, '2026-09-11 12:00:32', '2026-09-11 09:40:20'),
+	('8259f471-8144-4769-bc55-36a4aa758153', 'd739bccb-7123-11f1-8bb6-52540021303b', '76f9bb7c4fc80e57e91b9e5e7f089e7e4ff0ee82443b0d7972dadfa222083f74', 'refresh', NULL, NULL, '2026-10-17 08:08:56', '2026-10-10 08:43:13', '2026-10-10 08:43:13', '2026-10-10 08:08:56'),
+	('825c3936-9c28-42b9-a502-db4fe7a4b44f', 'd739bccb-7123-11f1-8bb6-52540021303b', '5d19494d5596fe23aff1bb726a8ea3a3d7050519f4b05f309a3ff6df4b793273', 'refresh', NULL, NULL, '2026-07-07 08:36:59', '2026-07-25 05:25:37', '2026-07-02 07:56:44', '2026-06-30 08:36:59'),
+	('832596b7-62ad-4468-ad43-79f9066e7c3f', 'd739bccb-7123-11f1-8bb6-52540021303b', '9b647588de551114ad22669a853dda326db031f1ee2611dc65eee29c32856062', 'refresh', NULL, NULL, '2026-09-30 10:51:42', NULL, '2026-09-24 05:20:15', '2026-09-23 10:51:42'),
+	('840f6b4f-9c4b-43cc-bef6-ceb7a4fb56ad', 'd739bccb-7123-11f1-8bb6-52540021303b', 'b061e8ab01080b2b378ad3bfd40ccdf3532ec08129654d332d5d83f42845b159', 'refresh', NULL, NULL, '2026-07-25 05:26:16', '2026-07-25 05:25:37', '2026-07-18 05:38:14', '2026-07-18 05:26:16'),
+	('8435ff9f-349f-4d4c-a113-2f3d68c436ec', 'd739bccb-7123-11f1-8bb6-52540021303b', 'd419d28d3a0ffbd7be7163c0f48855e104fd3176d32935de86174ac6a5047cd9', 'refresh', NULL, NULL, '2026-07-21 05:07:18', '2026-07-14 08:57:31', '2026-07-14 08:57:30', '2026-07-14 05:07:18'),
+	('84512be3-bc07-46b4-95c1-ac3c7a735902', '9034b40f-08a6-4e04-a402-fe7397b29717', '3af99d35ef2eef59c6655cc5de88c310e5450b1e2a6c1bd82e54b796dec0cb31', 'refresh', NULL, NULL, '2026-10-20 05:15:18', NULL, '2026-10-13 07:55:00', '2026-10-13 05:15:18'),
+	('85b24726-db12-4775-ac99-f465e66bd0a4', 'd739bccb-7123-11f1-8bb6-52540021303b', 'a8e69593a3de3968f9c98d6a97388876b143108278fc3420147db4ee6e8a14b3', 'refresh', NULL, NULL, '2026-07-30 09:22:40', '2026-07-25 05:25:37', '2026-07-23 11:43:50', '2026-07-23 09:22:40'),
+	('86a5a216-f661-4ed6-9fe1-b27481208b8d', 'd739bccb-7123-11f1-8bb6-52540021303b', '909d3af7c42050250215ccff8ceecc44e92814a6ccb5f262975f6b0308a7b4ef', 'refresh', NULL, NULL, '2026-09-01 07:52:01', '2026-08-25 09:40:07', '2026-08-25 09:40:07', '2026-08-25 07:52:01'),
+	('86d338e1-ef52-46f5-bcbc-c8485ff23cf9', 'd739bccb-7123-11f1-8bb6-52540021303b', '430de4870e00c09ac1087ed3a874903e2beefebcfb3ad475f3d6edb4ad6d522d', 'refresh', NULL, NULL, '2026-07-21 06:12:13', '2026-07-25 05:25:37', '2026-07-15 10:58:23', '2026-07-14 06:12:13'),
+	('8801a87c-3924-4a90-9211-faaabf789928', 'd739bccb-7123-11f1-8bb6-52540021303b', '8e5fae94a675b4d5a4839e5b757e74d69af70d2b19794b663862f7141e7d620f', 'refresh', NULL, NULL, '2026-09-21 05:55:55', NULL, '2026-09-15 10:17:19', '2026-09-14 05:55:55'),
+	('88027cda-bed0-4b37-8183-b0d18287125e', '21252981-f16a-4c36-a445-f3bf76d88b06', '6873c5cf06320286e11dda603eb6743a9e31686d269ff89d25954c14cdd97769', 'refresh', NULL, NULL, '2026-10-19 12:02:18', '2026-10-12 12:07:00', '2026-10-12 12:07:00', '2026-10-12 12:02:18'),
+	('88ff00c6-0a5a-42b1-97b4-1f40bed84062', 'd739bccb-7123-11f1-8bb6-52540021303b', 'e583497c0901032b95ae48fb82649df3a884226274beb257945a0e0a9af3422e', 'refresh', NULL, NULL, '2026-07-07 06:16:09', '2026-07-25 05:25:37', '2026-06-30 06:16:09', '2026-06-30 06:16:09'),
+	('898db0cb-2c2c-4928-bd11-88aadff0cb02', 'd739bccb-7123-11f1-8bb6-52540021303b', 'a2c28c24b2dff06fc73b3ff9f2a4d807c258fa898f3f6a3bfede12919e7a1925', 'refresh', NULL, NULL, '2026-08-01 08:20:50', '2026-07-25 08:33:17', '2026-07-25 08:33:17', '2026-07-25 08:20:50'),
+	('89b4a01a-60b5-42f5-83ac-9c87396a9e40', 'd739bccb-7123-11f1-8bb6-52540021303b', 'f5da149706eca7db1c4991e58f88794d7565f35499ca10e122d7481675e4903c', 'refresh', NULL, NULL, '2026-07-24 05:39:46', '2026-07-25 05:25:37', '2026-07-17 11:32:47', '2026-07-17 05:39:46'),
+	('8b1f7f5b-9dfc-41a3-86f2-ad7793bb8c37', 'd739bccb-7123-11f1-8bb6-52540021303b', '09c6f2f7e2870e4b304eb125e35b077a05ab8aa8ac94e725ff323ae8c2232f44', 'refresh', NULL, NULL, '2026-10-13 10:47:08', NULL, '2026-10-06 10:47:21', '2026-10-06 10:47:08'),
+	('8d751433-af8c-41ee-873b-f29e4c35e53e', 'd739bccb-7123-11f1-8bb6-52540021303b', '2a6585183520abfb2092667b4e885f116cb02baf22b934c5eaca3130d69b9533', 'refresh', NULL, NULL, '2026-10-06 10:04:11', NULL, '2026-09-29 10:31:39', '2026-09-29 10:04:11'),
+	('8e0d38c2-8989-4d35-974a-517e9ff91787', 'd739bccb-7123-11f1-8bb6-52540021303b', '0b78aa83df79896b39f6ccf23b955b238ce1d0ecf306aeb771bbcb99d6cdbd6e', 'refresh', NULL, NULL, '2026-09-09 03:40:24', '2026-09-07 04:11:10', '2026-09-07 04:11:10', '2026-09-02 03:40:24'),
+	('9026d0bc-0953-45ce-b03c-3f2fa735454f', 'd739bccb-7123-11f1-8bb6-52540021303b', '26e6af9e00d84d893087fb4ba651eb6294428ca3d00a4afb1575c2e063213ac2', 'refresh', NULL, NULL, '2026-08-25 11:55:44', NULL, '2026-08-20 04:35:01', '2026-08-18 11:55:44'),
+	('91d86fd1-4371-4ba1-8bed-663b3925ddf2', 'd739bccb-7123-11f1-8bb6-52540021303b', '78f9093a56f453a4d3db3304946f185bb66206f56ae2caebf1ff01345c0ec6f6', 'refresh', NULL, NULL, '2026-08-01 05:25:51', '2026-07-25 05:26:03', '2026-07-25 05:26:03', '2026-07-25 05:25:51'),
+	('91de9942-58ad-44f6-83a3-20d5cf020c9e', 'd739bccb-7123-11f1-8bb6-52540021303b', '0ce61a5eb881ac69e9b52c6d5e3090780627144d87887374f9f2cee3d50ddf8f', 'refresh', NULL, NULL, '2026-09-25 04:40:50', NULL, '2026-09-18 07:15:03', '2026-09-18 04:40:50'),
+	('91fcb840-56b8-41e0-8ffe-db7187860ea6', 'd739bccb-7123-11f1-8bb6-52540021303b', '9c59cb22934527b0c57e6ed0ebcec0573ee0110d659ee2272af6b31cbb5ae69c', 'refresh', NULL, NULL, '2026-10-07 05:46:42', NULL, '2026-09-30 05:46:58', '2026-09-30 05:46:42'),
+	('9282349c-228b-42d9-aebe-27f7c20f2098', 'd739bccb-7123-11f1-8bb6-52540021303b', '521bbb52de19603fc4287c536d10b6884114722a06f36e04fc5d2fb8215ab2b9', 'refresh', NULL, NULL, '2026-09-16 12:29:07', NULL, '2026-09-16 11:25:23', '2026-09-09 12:29:07'),
+	('928ca9ee-4ddc-451b-9a56-c770b24597ec', 'd739bccb-7123-11f1-8bb6-52540021303b', '9926f00a6bff6aecfc1cd56385d002d28dca520ac113ef37db4929589110f0b1', 'refresh', NULL, NULL, '2026-10-06 03:50:19', NULL, '2026-09-29 07:02:48', '2026-09-29 03:50:19'),
+	('92b6e4e1-2842-470c-9240-288db114aff5', 'd739bccb-7123-11f1-8bb6-52540021303b', 'e20dad65792a130d245c262f94640c67fd2afd5274678a4538a7ce4d2975ef97', 'refresh', NULL, NULL, '2026-07-27 07:17:25', '2026-07-25 05:25:37', '2026-07-20 11:38:51', '2026-07-20 07:17:25'),
+	('92f3d6c4-e791-48da-a1a8-171bea87394c', 'd739bccb-7123-11f1-8bb6-52540021303b', '0e72c43d9d2eeb4a4662e30d24e59281082b54a24cfb0ead0a31fce6e00d9d1c', 'refresh', NULL, NULL, '2026-07-25 10:49:31', '2026-07-25 05:25:37', '2026-07-20 03:50:53', '2026-07-18 10:49:31'),
+	('93279a07-5ded-4928-8c9b-1c2a29bbffe7', 'd739bccb-7123-11f1-8bb6-52540021303b', 'd76a53b7e6e4dc3f8bcfb06555ed75f1535b2b60952d54aaf7a3467505dc09a0', 'refresh', NULL, NULL, '2026-08-18 12:01:22', NULL, NULL, '2026-08-11 12:01:22'),
+	('977e78e3-c65a-46f6-9176-68ff22b6e730', 'd739bccb-7123-11f1-8bb6-52540021303b', '184d5ef67cff3e63eb8f62d0ceb2595adabaf3101021b44d1e99ca815ede432d', 'refresh', NULL, NULL, '2026-08-01 06:04:30', '2026-07-25 06:38:42', '2026-07-25 06:38:42', '2026-07-25 06:04:30'),
+	('97f5971c-8c62-4f72-80a5-b2d0abd63cfe', 'd739bccb-7123-11f1-8bb6-52540021303b', '66cf0b0847dd5c840fb4d7529bfead3b758e8c28247376e3092693ebb385ddfd', 'refresh', NULL, NULL, '2026-07-21 07:10:09', '2026-07-25 05:25:37', '2026-07-14 07:17:31', '2026-07-14 07:10:09'),
+	('97fec8a8-a82c-4fbd-8aa7-87c0865cb005', 'd739bccb-7123-11f1-8bb6-52540021303b', '43593fbf5c19f37e266a5901f63e18b5c0d297f9c46663849a5ec88030636f56', 'refresh', NULL, NULL, '2026-10-14 06:31:56', NULL, '2026-10-07 07:01:05', '2026-10-07 06:31:56'),
+	('983b29f2-7fa9-4871-bdea-69586e313931', 'd739bccb-7123-11f1-8bb6-52540021303b', '239a9f6ea78c85ccc7a0d441b4b0a79748c6e8a6656ec807b3b5a46deecc5112', 'refresh', NULL, NULL, '2026-07-30 14:54:38', '2026-07-25 05:25:37', '2026-07-24 10:01:51', '2026-07-23 14:54:38'),
+	('98963aa9-0a3b-42d1-ac8d-c202aab50b8e', '99632848-7f08-47b6-b200-ef55c0a4f8ec', '8d31b7de1ff9a8be809aaa0891dca8778af222225d30e4a03f38e8d3357a579e', 'refresh', NULL, NULL, '2026-10-19 11:48:46', NULL, '2026-10-13 07:55:00', '2026-10-12 11:48:46'),
+	('9917b5ad-deae-4ce3-bfe5-255144909b48', 'd739bccb-7123-11f1-8bb6-52540021303b', '891e6412f487a92b53fec1b48a06ebb3bfad8e26116fbedca95b48b064d8da10', 'refresh', NULL, NULL, '2026-10-12 12:20:48', NULL, '2026-10-06 03:34:44', '2026-10-05 12:20:48'),
+	('9a752a77-6d8c-4962-b08b-a0e32402c7ef', 'd739bccb-7123-11f1-8bb6-52540021303b', '83d846ac3ade1dc99a4c4b80cac585965f90af2a671cf8e38642151450d76134', 'refresh', NULL, NULL, '2026-07-25 03:42:20', '2026-07-25 05:25:37', '2026-07-18 04:04:53', '2026-07-18 03:42:20'),
+	('9c391e7c-7d0a-425d-be48-a48141df6eef', 'd739bccb-7123-11f1-8bb6-52540021303b', 'ff707842cd5537b0dabf8879cfaa979727a911d35090f6c75bf8803116a67461', 'refresh', NULL, NULL, '2026-07-07 06:24:26', '2026-07-25 05:25:37', '2026-06-30 08:36:59', '2026-06-30 06:24:26'),
+	('9ebe5d72-d9d3-4d69-9926-ec403fa42026', 'd739bccb-7123-11f1-8bb6-52540021303b', '0e19b74a9b1b33115d4edebd7039c09debf63ce932670c2026c4e0961a71c71b', 'refresh', NULL, NULL, '2026-07-21 07:17:42', '2026-07-25 05:25:37', '2026-07-14 07:38:14', '2026-07-14 07:17:42'),
+	('a06f56bc-8a97-4aa8-920d-090ea1e09f38', '27d1ec8a-9748-474f-96ec-be0642297ee8', 'da5e550040c7571d73e2250b7974a2190763b733c9514f11bd57de8a9838bd8d', 'refresh', NULL, NULL, '2026-09-09 12:57:13', NULL, '2026-09-02 13:10:22', '2026-09-02 12:57:13'),
+	('a0efa843-cf72-4e4f-8418-1681fbc99f4d', 'd739bccb-7123-11f1-8bb6-52540021303b', '6bfa67ba52e69c6ace71bdfc04f81c518c68b2e6ca0d67f5801901434b58647e', 'refresh', NULL, NULL, '2026-09-30 07:47:10', '2026-09-24 07:16:21', '2026-09-24 07:16:21', '2026-09-23 07:47:10'),
+	('a22b9788-f826-4965-b33c-fa812fade55d', 'd739bccb-7123-11f1-8bb6-52540021303b', 'a250c77bd08081fdd3cccc4fc79ce3a41532819f5b9ff40d21b7d0ebdc64c6dc', 'refresh', NULL, NULL, '2026-09-17 03:50:31', NULL, '2026-09-10 07:56:52', '2026-09-10 03:50:31'),
+	('a23403c4-8ec9-4af4-abe1-c80556d45970', 'd739bccb-7123-11f1-8bb6-52540021303b', '5779e146fa30ecec627ea2d9c4a56dea17c3e51b91efb8beaff37cd16b97c7e0', 'refresh', NULL, NULL, '2026-09-22 10:33:32', '2026-09-15 11:15:02', '2026-09-15 11:15:02', '2026-09-15 10:33:32'),
+	('a36e9d86-186d-4c95-b40b-3c788c1f4312', 'd739bccb-7123-11f1-8bb6-52540021303b', '4beb79485909371e83e6cc9603f0ced37ed0a1757ba9fee8b3d9c46e76cf7eda', 'refresh', NULL, NULL, '2026-10-19 06:59:37', '2026-10-13 05:07:54', '2026-10-13 05:07:54', '2026-10-12 06:59:37'),
+	('a4dde99a-aaed-48da-af4e-cc083ac087ee', 'd739bccb-7123-11f1-8bb6-52540021303b', 'fb3047fd9e0a74a49547bdef5e377e5aafbc9771180c720b7cc7a3b443ae4f8d', 'refresh', NULL, NULL, '2026-07-07 06:20:03', '2026-06-30 06:20:06', '2026-06-30 06:20:06', '2026-06-30 06:20:03'),
+	('a66078e1-3d3f-4955-a110-53dd64d0d3f1', 'd739bccb-7123-11f1-8bb6-52540021303b', '88bf799278777549d7f7cf6e21c8ce8fccbbab8fad7d7e368b3eaec32e00b6d4', 'refresh', NULL, NULL, '2026-07-31 10:48:17', '2026-07-25 05:25:37', '2026-07-24 11:11:56', '2026-07-24 10:48:17'),
+	('a6624062-826b-4583-887a-0c111b4eadb9', 'd739bccb-7123-11f1-8bb6-52540021303b', 'ead43863dd471f3d333a0c4bac7408991056e044d79cf0f8397c680d5d56f593', 'refresh', NULL, NULL, '2026-10-13 10:51:41', NULL, '2026-10-10 04:34:30', '2026-10-06 10:51:41'),
+	('a739d3da-cbbb-4bc5-85b8-9c6dfff489a3', 'd739bccb-7123-11f1-8bb6-52540021303b', '03c92572758dc7e7659011c152759beaf697afacb9ca9791eb0b9b9c51879d17', 'refresh', NULL, NULL, '2026-07-30 05:46:19', '2026-07-23 09:22:34', '2026-07-23 09:22:34', '2026-07-23 05:46:19'),
+	('a7702cc2-691e-479a-b748-1ac2159c89d5', 'd739bccb-7123-11f1-8bb6-52540021303b', 'd8639550bba1b4d17723c7ff13ac121920d75aa837030466465e0a18e22c4666', 'refresh', NULL, NULL, '2026-06-27 16:56:53', '2026-07-25 05:25:37', '2026-06-27 11:26:53', '2026-06-27 11:26:53'),
+	('a99cfbf1-ae7c-42c7-8916-7c1e94a5bc25', 'd739bccb-7123-11f1-8bb6-52540021303b', '5c784dadc77f670963512b43355d18f118a35d9e83afce81381fe3fc153de154', 'refresh', NULL, NULL, '2026-08-05 04:07:22', NULL, '2026-07-29 04:50:51', '2026-07-29 04:07:22'),
+	('aaa00440-17a1-4fc2-a033-fbaf8acac4a8', 'd739bccb-7123-11f1-8bb6-52540021303b', '7f3a28d2e940877221f2099eeb9d7c68d1f8221f30a0109efba62e9303bffe9d', 'refresh', NULL, NULL, '2026-07-28 05:26:34', '2026-07-21 05:28:10', '2026-07-21 05:28:10', '2026-07-21 05:26:34'),
+	('aba4eba1-23bd-43ab-9b43-04b85f81763c', 'd739bccb-7123-11f1-8bb6-52540021303b', '9df500731d9f98da9ea64a2cd0015485707ad62f6c224c49b5dc0ce7b09e0b26', 'refresh', NULL, NULL, '2026-10-15 06:22:45', NULL, '2026-10-09 09:48:13', '2026-10-08 06:22:45'),
+	('acfa9eb3-7c4c-417a-baad-47640748cd1c', 'd739bccb-7123-11f1-8bb6-52540021303b', '71bc9a7cba305c4e8e32d04c9e7eaacd74cdc21314d8966cbee8aa835d6a3c10', 'refresh', NULL, NULL, '2026-08-13 05:41:36', NULL, NULL, '2026-08-06 05:41:36'),
+	('ad2cc6c4-c64e-45f0-b131-3180df7a6bba', 'd739bccb-7123-11f1-8bb6-52540021303b', '387841c11532eab0107fb233ea6f1822d17c03e6ef58f9093a489f5327fd2f4b', 'refresh', NULL, NULL, '2026-07-08 04:11:52', '2026-07-25 05:25:37', '2026-07-01 08:07:09', '2026-07-01 04:11:52'),
+	('ad4b6fa1-b949-49c2-8055-a9f52da6f64d', 'd739bccb-7123-11f1-8bb6-52540021303b', '89f06d1d09cacbcde057ef607064d3aa41eb78190cecfa6f1627e93a7b734615', 'refresh', NULL, NULL, '2026-08-01 15:12:22', NULL, '2026-07-25 15:12:25', '2026-07-25 15:12:22'),
+	('b0e38f67-2610-469e-b626-5876a8303741', 'd739bccb-7123-11f1-8bb6-52540021303b', '46229753e773469d0d2803e6da12f3c7815ebe073f147c54d69ee1eabbbbce14', 'refresh', NULL, NULL, '2026-10-13 09:26:05', NULL, '2026-10-06 11:33:14', '2026-10-06 09:26:05'),
+	('b4ec471f-bf2d-415e-a2b5-303052029013', 'd739bccb-7123-11f1-8bb6-52540021303b', '77b9f623296af1ca01c3d9b34d51de5ef43ba33512cd7b2a194cc2298ee39191', 'refresh', NULL, NULL, '2026-09-02 05:21:05', NULL, '2026-08-26 07:04:24', '2026-08-26 05:21:05'),
+	('b531bc25-da34-409f-8393-580c2a4516c1', 'd739bccb-7123-11f1-8bb6-52540021303b', 'd9cd2530f45f2c4907164f1bde076827b6f59d1cde83a2cfb9b263b8f249966a', 'refresh', NULL, NULL, '2026-10-07 03:39:47', NULL, '2026-09-30 04:02:06', '2026-09-30 03:39:47'),
+	('b5906f7e-50fb-4852-8311-c2ae21a62cf2', 'd739bccb-7123-11f1-8bb6-52540021303b', '3e828839278a480bd38af302f96b97a25a1b7e8c7270f8855aaa9da36dd77b0c', 'refresh', NULL, NULL, '2026-07-07 06:21:42', '2026-06-30 06:23:54', '2026-06-30 06:23:54', '2026-06-30 06:21:42'),
+	('b5ac1db1-d2e6-4a3a-bb4f-1a25dc205f82', 'd739bccb-7123-11f1-8bb6-52540021303b', '58b094e6a84fc7d1ab4a008a02179ac66b4d22e395aaaefda41dd13546f1f363', 'refresh', NULL, NULL, '2026-08-24 08:21:57', '2026-08-17 10:13:02', '2026-08-17 10:13:02', '2026-08-17 08:21:57'),
+	('b8a38f03-caa1-41ae-bc87-2def1cad18a1', 'd739bccb-7123-11f1-8bb6-52540021303b', '3886d902676eba2076d7de715c6be3398eb74c645ffc21911745571f6c41be63', 'refresh', NULL, NULL, '2026-09-08 04:38:58', NULL, '2026-09-01 04:54:47', '2026-09-01 04:38:58'),
+	('b92a2b63-3849-4036-b651-bfc9f2a2ef21', 'd739bccb-7123-11f1-8bb6-52540021303b', '22744dcfcfb6ffbc60b5478705f4ea20b9383c469eb2edd2fd5a1e783f25dfaa', 'refresh', NULL, NULL, '2026-10-12 06:16:18', '2026-10-06 06:40:33', '2026-10-06 06:40:33', '2026-10-05 06:16:18'),
+	('bad05b5b-24b8-43d6-ad23-4b9ae4427a34', 'd739bccb-7123-11f1-8bb6-52540021303b', '6901af8f5a6aafaf91519e2f007fba7f9d8ef6cd3e33f8044d382fb3191143ef', 'refresh', NULL, NULL, '2026-08-25 05:01:09', NULL, '2026-08-18 06:28:47', '2026-08-18 05:01:09'),
+	('baef078d-4e6b-4934-9607-367e410a469a', 'd739bccb-7123-11f1-8bb6-52540021303b', 'da0042b91d01cefda0463353cccbd8d3699deae4ce1a97ceeb270edf65f2268c', 'refresh', NULL, NULL, '2026-09-14 06:21:49', NULL, '2026-09-07 10:50:54', '2026-09-07 06:21:49'),
+	('bbbe181a-1f5e-43d2-ab0c-a65eb6ce535a', 'd739bccb-7123-11f1-8bb6-52540021303b', '5445ce97ea9afb115f661bda89a2fb4b956f5d0f9c5d746d2a1a84a0c9e95ff4', 'refresh', NULL, NULL, '2026-07-20 04:24:07', '2026-07-25 05:25:37', '2026-07-13 12:35:20', '2026-07-13 04:24:07'),
+	('be493fc8-bc30-4385-95cf-27d8965ae68a', 'd739bccb-7123-11f1-8bb6-52540021303b', 'd482cc77a8910741ccb98077c3bc8174f09362d3a7524f8cd73626d6d5047d08', 'refresh', NULL, NULL, '2026-07-27 14:58:59', '2026-07-25 05:25:37', '2026-07-22 10:27:43', '2026-07-20 14:58:59'),
+	('be5dce53-c3d5-4bff-8432-d84587770505', '21252981-f16a-4c36-a445-f3bf76d88b06', '43e728e188910a37f4053496ec639a8fb0f40afbf24376c135d13d184cb2e6ad', 'refresh', NULL, NULL, '2026-10-19 12:00:20', '2026-10-12 12:00:30', '2026-10-12 12:00:30', '2026-10-12 12:00:20'),
+	('beb68097-75e2-4615-9296-396ec0f7a594', 'd739bccb-7123-11f1-8bb6-52540021303b', '1e1f4f16e77e0f43eac580354cccc3f0be5fd2fba511f11520db4bcc3f0f3ab9', 'refresh', NULL, NULL, '2026-10-05 04:13:05', NULL, '2026-09-28 04:21:54', '2026-09-28 04:13:05'),
+	('bf2673c8-d91e-482c-b3ce-f7b00321b292', '27d1ec8a-9748-474f-96ec-be0642297ee8', '5097f30b77e3b86a20c85a5b0bc263d78c9393500d77dd0f36ab9f42035b5a7e', 'refresh', NULL, NULL, '2026-08-18 14:24:51', '2026-08-11 14:25:00', '2026-08-11 14:25:00', '2026-08-11 14:24:51'),
+	('bf4c96b4-baff-4690-ae6d-a6414331e98d', 'd739bccb-7123-11f1-8bb6-52540021303b', 'a71444295fb397daf7c05330c964a5b1c1e7b3c11b9b1f8beb4f66418054d40d', 'refresh', NULL, NULL, '2026-07-28 04:27:07', '2026-07-25 05:25:37', '2026-07-21 04:32:54', '2026-07-21 04:27:07'),
+	('bffa9394-5c44-43d2-aa31-9b3a708a277e', 'd739bccb-7123-11f1-8bb6-52540021303b', '95753547fdb5e6f5fe2ff2d6ff35c2867185b3252c190322e0808cb582a50334', 'refresh', NULL, NULL, '2026-07-25 05:57:34', '2026-07-18 10:49:21', '2026-07-18 10:49:21', '2026-07-18 05:57:34'),
+	('c0dee7ca-0e6f-4df3-a7a3-6254db761fe6', 'd739bccb-7123-11f1-8bb6-52540021303b', '52b73224f8bb9a389118c7d6b8fd8bb4bbf4190643a9ff2fb57c58e27a0d3091', 'refresh', NULL, NULL, '2026-07-06 07:58:33', '2026-07-25 05:25:37', '2026-06-29 08:00:32', '2026-06-29 07:58:33'),
+	('c27b0eb0-385d-4e7d-9a4d-6cc4aecfdade', 'd739bccb-7123-11f1-8bb6-52540021303b', '6a765cbe5ff34e061e63021ed87026a35cf938c7a797921482530431009c6c88', 'refresh', NULL, NULL, '2026-07-22 10:52:47', '2026-07-25 05:25:37', '2026-07-18 11:18:30', '2026-07-15 10:52:47'),
+	('c2daa46d-0931-4362-9cfc-78caceb77760', 'd739bccb-7123-11f1-8bb6-52540021303b', '90166db399b57965df444d7c2e88ee3335d48dc25f6d1703934ca35a8364f876', 'refresh', NULL, NULL, '2026-07-20 12:47:25', '2026-07-14 03:39:46', '2026-07-14 03:39:45', '2026-07-13 12:47:25'),
+	('c3db287c-fc11-4d58-ba89-1d9b82350bc0', 'd739bccb-7123-11f1-8bb6-52540021303b', 'bd4667ccd9346266e801874b06913c877515944f479d4fb1eba0066af6343a84', 'refresh', NULL, NULL, '2026-07-24 07:10:30', '2026-07-25 05:25:37', '2026-07-17 07:26:05', '2026-07-17 07:10:30'),
+	('c5bd1d2a-ca9c-41fc-9581-952311a277d8', 'd739bccb-7123-11f1-8bb6-52540021303b', '3f2bbf6781e5cb87c29d7429c366292573d8560517a8296b86a867103a8464dd', 'refresh', NULL, NULL, '2026-10-10 16:12:37', NULL, '2026-10-04 11:04:21', '2026-10-03 16:12:37'),
+	('c6c6d44d-674b-42fa-b4a8-1ff3968a36d9', 'd739bccb-7123-11f1-8bb6-52540021303b', '3856d047e4b213cc8b65eb8049f223af1579e949a16d0dd679346b1e686b41d7', 'refresh', NULL, NULL, '2026-07-30 12:03:00', '2026-07-25 05:25:37', '2026-07-23 12:03:53', '2026-07-23 12:03:00'),
+	('c7db6eab-bc7c-40b3-b0a2-d50c15c7a331', 'd739bccb-7123-11f1-8bb6-52540021303b', '68530408428668603c9b5070aae687d640a4dd82cb94307d46f7cdf68a338439', 'refresh', NULL, NULL, '2026-08-17 03:50:59', NULL, '2026-08-14 12:23:36', '2026-08-10 03:50:59'),
+	('c81e91cb-d1ff-4c60-a346-597c0a6367d4', 'd739bccb-7123-11f1-8bb6-52540021303b', '67c476de3ceb56ba6c21d6c5c780e733dc165ec365b2a5c04964d3366d889cc6', 'refresh', NULL, NULL, '2026-10-17 11:12:45', '2026-10-10 11:17:02', '2026-10-10 11:17:02', '2026-10-10 11:12:45'),
+	('c8478bba-a74d-43ea-bf82-109a83eb6757', 'd739bccb-7123-11f1-8bb6-52540021303b', 'e342c7a8f3ad4ad3afbceab4aae5caef3b5935d3aaa5ec154e91b059a5001988', 'refresh', NULL, NULL, '2026-10-06 07:26:59', NULL, '2026-09-29 12:24:11', '2026-09-29 07:26:59'),
+	('c8dc0e75-b296-4259-b4d8-75613ced7971', 'd739bccb-7123-11f1-8bb6-52540021303b', '4a8d70fb3c679b04ccb0051cc6d7ea0b3795a7166d5aa4dd778e97a2eab3a41c', 'refresh', NULL, NULL, '2026-07-27 14:51:06', '2026-07-25 05:25:37', '2026-07-23 15:18:42', '2026-07-20 14:51:06'),
+	('c92dbc2a-d6bb-4813-b0b0-c15e86489f2a', 'd739bccb-7123-11f1-8bb6-52540021303b', 'f74c4612a40a5145952cab56fcc64ded1964ef4e80c79d3bc3288a204f75b548', 'refresh', NULL, NULL, '2026-10-14 05:07:58', NULL, '2026-10-07 06:09:55', '2026-10-07 05:07:58'),
+	('cc370181-e8b7-48a5-96bb-452bac39bf1e', 'd739bccb-7123-11f1-8bb6-52540021303b', '55bdcc64d343c079ccbb7b0b5b95159f1d1a852d7c92cea24a41120e20d84d68', 'refresh', NULL, NULL, '2026-09-26 09:13:19', NULL, '2026-09-19 09:49:48', '2026-09-19 09:13:19'),
+	('ce2a00aa-7259-4835-a155-a151509da232', 'd739bccb-7123-11f1-8bb6-52540021303b', 'ce36ebf662333cea1f49d7d772326c8698fd0734aa018b9600278301cef589f1', 'refresh', NULL, NULL, '2026-10-12 05:34:29', NULL, '2026-10-05 10:59:18', '2026-10-05 05:34:29'),
+	('ce4e1be1-4493-495c-9720-79b0b374c767', 'd739bccb-7123-11f1-8bb6-52540021303b', '030a2710fa9bbd4e1f0c4b16dcc921188214b572fba60e38f1f8c677660f03aa', 'refresh', NULL, NULL, '2026-09-16 06:46:19', NULL, '2026-09-09 12:18:13', '2026-09-09 06:46:19'),
+	('cf885c1c-a59b-497a-a89b-5b8851127a73', 'd739bccb-7123-11f1-8bb6-52540021303b', 'f5e7704c0dbff1df780779932b931b35e636969468fbfd7c582e968cf18bac81', 'refresh', NULL, NULL, '2026-10-15 04:33:29', NULL, '2026-10-08 06:19:29', '2026-10-08 04:33:29'),
+	('cfb2dacc-74cb-422a-b840-53120f38dec0', 'd739bccb-7123-11f1-8bb6-52540021303b', 'dfa55190704077912f0b7157120435168aef4e771fe634f6e1f960e905541395', 'refresh', NULL, NULL, '2026-09-15 11:12:50', NULL, '2026-09-09 08:19:00', '2026-09-08 11:12:50'),
+	('cfc9afe8-2fcb-44e3-be2f-3ca2f0453f7a', '99632848-7f08-47b6-b200-ef55c0a4f8ec', '0fb753bef06b389672b80da06807905df11ae2a0b552349062a6dae5df3cc68e', 'refresh', NULL, NULL, '2026-10-10 04:30:41', '2026-10-05 11:15:09', '2026-10-05 11:15:08', '2026-10-03 04:30:41'),
+	('d0238278-4278-4323-8ee5-5738fd39c7a4', 'd739bccb-7123-11f1-8bb6-52540021303b', 'f7ac556e5be5f148146e0a6824cbcef3c2b7ed75b2a9a68ed2b0b1ec779102c5', 'refresh', NULL, NULL, '2026-08-24 03:40:50', NULL, '2026-08-17 07:10:27', '2026-08-17 03:40:50'),
+	('d200d836-ec3c-424b-b4d8-f93f29f70905', 'd739bccb-7123-11f1-8bb6-52540021303b', '9fb4bd655bc5795a918c04325a14b1c9c5b1ab0866206639821855502a182bb8', 'refresh', NULL, NULL, '2026-07-21 08:59:13', '2026-07-25 05:25:37', '2026-07-14 12:10:40', '2026-07-14 08:59:13'),
+	('d255f881-3a24-400b-8ba3-c21cafadcfe9', 'd739bccb-7123-11f1-8bb6-52540021303b', '79c67b6efc6ffda2ffca520dd5b8c5a4a35ce51a1b06bd74677c2564b7c981ba', 'refresh', NULL, NULL, '2026-08-01 12:29:22', NULL, '2026-07-26 07:33:45', '2026-07-25 12:29:22'),
+	('d29618b6-8c43-48eb-86e9-8ffe4f4ed1ce', 'd739bccb-7123-11f1-8bb6-52540021303b', '27f350f8c026fa238fc055edd336ecd064963994a201fc31e14916b7dd45e752', 'refresh', NULL, NULL, '2026-07-07 06:10:28', '2026-07-25 05:25:37', '2026-06-30 06:11:54', '2026-06-30 06:10:28'),
+	('d3998a77-8e00-4859-b881-2cc868747995', 'd739bccb-7123-11f1-8bb6-52540021303b', '2bc0a8f31d89977bf663d763843f9597013684b48734fd4fb041bb338c5a0796', 'refresh', NULL, NULL, '2026-10-01 07:08:36', NULL, '2026-09-24 07:24:49', '2026-09-24 07:08:36'),
+	('d3eb4322-03eb-4b9d-8b82-215f9211f11f', 'd739bccb-7123-11f1-8bb6-52540021303b', 'a7e6193c7f7e5a53af7f39cae227f714ffbfdec4b6432f9180a7f9c3250ed0df', 'refresh', NULL, NULL, '2026-09-29 04:30:12', '2026-09-22 09:51:36', '2026-09-22 09:51:36', '2026-09-22 04:30:12'),
+	('d4ec6d9d-f254-4e8d-b649-0fcafe7f3160', 'd739bccb-7123-11f1-8bb6-52540021303b', '323898eb5362eb4687a07b5f8582c5943661377e4d23865685787bdb9045d3c0', 'refresh', NULL, NULL, '2026-06-29 09:31:27', '2026-07-25 05:25:37', '2026-06-29 04:01:24', '2026-06-29 04:01:24'),
+	('d5b8363c-1e2c-486a-8454-19724d7af1bd', 'd739bccb-7123-11f1-8bb6-52540021303b', '05c54ce181e71d00cbf86f9ac8a20cc0a04b5c686505e4797f4602b7e6bf949c', 'refresh', NULL, NULL, '2026-08-15 08:02:13', NULL, '2026-08-08 08:02:14', '2026-08-08 08:02:13'),
+	('d60d61f6-ea4b-4a14-864b-9cf6452fd271', '21252981-f16a-4c36-a445-f3bf76d88b06', '8b4680f05c3582af4fccba5ac48934eea9c4a9318b5e3dbd2d8afd4957a86bda', 'refresh', NULL, NULL, '2026-10-20 04:11:04', NULL, '2026-10-13 07:54:57', '2026-10-13 04:11:04'),
+	('d6225478-87b2-42c4-9579-25ab2be688bc', 'd739bccb-7123-11f1-8bb6-52540021303b', '075102373dba33742ba4628bc78398a9fa0a5b6f4120f7bba3956376a5a487af', 'refresh', NULL, NULL, '2026-09-25 15:33:54', NULL, '2026-09-18 15:34:34', '2026-09-18 15:33:54'),
+	('d6779d65-79e3-4d64-938e-937b83965f2d', 'd739bccb-7123-11f1-8bb6-52540021303b', '166fef4d846228563dd869e22519a7fab7c336c6a961423c19eb7f62c230d351', 'refresh', NULL, NULL, '2026-07-27 11:59:00', '2026-07-25 05:25:37', '2026-07-20 12:09:37', '2026-07-20 11:59:00'),
+	('d7467785-a82f-4ec8-8f70-e74153db40e5', 'd739bccb-7123-11f1-8bb6-52540021303b', '4d724930f63f3f6751d19e33057b3501cc746030b071b6e445edff9252ac5e85', 'refresh', NULL, NULL, '2026-10-14 07:04:19', NULL, '2026-10-07 09:34:03', '2026-10-07 07:04:19'),
+	('d781d61f-e1ad-4adc-ad92-42b4f15a3809', 'd739bccb-7123-11f1-8bb6-52540021303b', 'a76d52e99964cebe019e72da8f7a8ff7c1248b0f0cd4e54344dc909358689fa5', 'refresh', NULL, NULL, '2026-09-19 04:03:50', NULL, '2026-09-12 10:36:39', '2026-09-12 04:03:50'),
+	('d7b9a3a1-777d-483e-8197-08cf21540529', 'd739bccb-7123-11f1-8bb6-52540021303b', 'de6cea4f5813ee0ae843daba66aa9bca2b5791e375d978e0b5b0be0820aec179', 'refresh', NULL, NULL, '2026-08-24 04:34:00', NULL, '2026-08-22 11:08:16', '2026-08-17 04:34:00'),
+	('d86d5682-2352-4b67-a76a-13d6cc4c8167', 'd739bccb-7123-11f1-8bb6-52540021303b', 'b2c173ef149ac87b73293de0eb9b30b4bc8bd4fd852da07180114f7f923b58d7', 'refresh', NULL, NULL, '2026-07-26 08:14:47', '2026-07-25 05:25:37', '2026-07-19 08:18:26', '2026-07-19 08:14:47'),
+	('da91967a-c2e8-42f5-a9cf-9500275f8d26', 'd739bccb-7123-11f1-8bb6-52540021303b', '95cfb7c9d9ca41a35531c2230382fdfdf2203ccba5253b14289860f2b55235c0', 'refresh', NULL, NULL, '2026-07-28 05:28:15', '2026-07-25 05:25:37', NULL, '2026-07-21 05:28:15'),
+	('daceb80f-0c7b-438d-a0b3-24112110f511', 'd739bccb-7123-11f1-8bb6-52540021303b', '4683fd4daed94e7fa59ce04e45904fd60b171fe29a255187eec8c5f1f8a770e0', 'refresh', NULL, NULL, '2026-07-20 11:53:17', '2026-07-13 11:53:33', '2026-07-13 11:53:33', '2026-07-13 11:53:17'),
+	('dde1a8ef-ee01-48ee-bd38-23135f9710b3', 'd739bccb-7123-11f1-8bb6-52540021303b', '8033b8eaa2f4285fd1dbdcc15dd6077c096a2bd4ab4243f4e7091829cd0038c2', 'refresh', NULL, NULL, '2026-07-21 08:57:37', '2026-07-14 08:58:47', '2026-07-14 08:58:47', '2026-07-14 08:57:37'),
+	('de5bb341-deac-40bf-8a31-f8f8b5a87d71', 'd739bccb-7123-11f1-8bb6-52540021303b', '592d8a5b9ffab90ae5d3f48c2c4fb90763df8236890b2f2e90ef189e63122989', 'refresh', NULL, NULL, '2026-06-27 16:57:59', '2026-07-25 05:25:37', '2026-06-27 11:27:59', '2026-06-27 11:27:59'),
+	('dec514f2-3f7e-42c7-96bf-3619bdbc1ab9', 'd739bccb-7123-11f1-8bb6-52540021303b', '69a641d179f488172ac712751c64e3bdb44521506d7e46b8623f91cad58f72ab', 'refresh', NULL, NULL, '2026-07-22 07:43:52', '2026-07-25 05:25:37', '2026-07-15 11:44:09', '2026-07-15 07:43:52'),
+	('e04b24ab-906a-4a8e-b8a7-ac633b7308f6', 'd739bccb-7123-11f1-8bb6-52540021303b', 'aecc1de5a4f2fa28e934eb76c896a763dc04fe32867234ecfb91ee27743d5ee0', 'refresh', NULL, NULL, '2026-10-08 07:09:24', NULL, '2026-10-06 17:51:47', '2026-10-01 07:09:24'),
+	('e421b9c9-f589-4954-9ca6-574867fcfdfc', 'd739bccb-7123-11f1-8bb6-52540021303b', 'b42c8a1a4bcc351da3c4c7685524e84b2e18a829049468bb549910c2ca2218c1', 'refresh', NULL, NULL, '2026-09-03 11:00:29', NULL, '2026-08-27 11:45:06', '2026-08-27 11:00:29'),
+	('e4bb2a1c-61e6-45fc-ae92-7167b967d512', 'd739bccb-7123-11f1-8bb6-52540021303b', '308b002278bb9d61bfede48154471b72363a66397974a7eafe05434509acaef7', 'refresh', NULL, NULL, '2026-08-31 11:30:40', NULL, '2026-08-25 07:14:14', '2026-08-24 11:30:40'),
+	('e50632ad-0518-4db4-8b18-a6c8da505968', 'd739bccb-7123-11f1-8bb6-52540021303b', 'd2b5ff9f0b90264335db616779b6d52f1264bca7ba792afe61c77a2afba96405', 'refresh', NULL, NULL, '2026-09-02 07:19:03', NULL, '2026-08-26 08:17:03', '2026-08-26 07:19:03'),
+	('e544271a-00f2-498b-b96d-8c45b9083b2a', 'd739bccb-7123-11f1-8bb6-52540021303b', '730546d6f0cf7e89ea1eb5df5db9983d4622b70adc67755a583ec148131e7234', 'refresh', NULL, NULL, '2026-07-21 03:39:48', '2026-07-25 05:25:37', '2026-07-14 05:04:54', '2026-07-14 03:39:48'),
+	('e6d54264-b696-424b-96a3-9e3b768b5691', 'd739bccb-7123-11f1-8bb6-52540021303b', '9e106f7d9e85c6a3a73bb30042b4928051197c755c415b3251f901ccb470cdda', 'refresh', NULL, NULL, '2026-10-10 04:09:04', NULL, '2026-10-03 04:10:34', '2026-10-03 04:09:04'),
+	('e71dfd3c-05db-468a-ba7a-1c7f00a7d0ec', 'd739bccb-7123-11f1-8bb6-52540021303b', 'ccb9b7e1a53fdc66167b6166780f7c72db4183469d008571fe9c602c03beafba', 'refresh', NULL, NULL, '2026-09-30 09:52:51', NULL, '2026-09-24 05:23:27', '2026-09-23 09:52:51'),
+	('e8ec58ba-fe2d-4f0b-b174-c1c205998746', 'd739bccb-7123-11f1-8bb6-52540021303b', '0f6755fc684e38fd48d0b87a300059570042e3fc13638442baac8fb592f1bd87', 'refresh', NULL, NULL, '2026-10-13 06:40:39', '2026-10-10 10:36:17', '2026-10-10 10:36:17', '2026-10-06 06:40:39'),
+	('ea03ce15-a17f-4e1c-9767-0b5bf6b1534a', 'd739bccb-7123-11f1-8bb6-52540021303b', '0ab0ddf498a51082667ce2828a27d622471b3a3a86ac005784b78cb8f857c3cc', 'refresh', NULL, NULL, '2026-07-06 05:37:49', '2026-07-25 05:25:37', '2026-06-29 07:58:14', '2026-06-29 05:37:49'),
+	('eae85c30-f189-4b92-854f-0789720da3fa', 'd739bccb-7123-11f1-8bb6-52540021303b', '85c590c26c1aff750f0fc6b12750b9f53775d16855f4fa8f5bfe9315e04d436c', 'refresh', NULL, NULL, '2026-07-28 05:07:21', '2026-07-21 05:26:30', '2026-07-21 05:26:29', '2026-07-21 05:07:21'),
+	('eb2f7744-7cd2-4654-a8c4-319be05db3fa', 'd739bccb-7123-11f1-8bb6-52540021303b', '6ab622968fa31c74f332e5a23e73fe8630e1968be0f055a3d94f9af103976a84', 'refresh', NULL, NULL, '2026-07-20 10:47:50', '2026-07-25 05:25:37', '2026-07-13 12:07:41', '2026-07-13 10:47:50'),
+	('eb44345e-09f5-463d-b847-522b1f2176c0', 'd739bccb-7123-11f1-8bb6-52540021303b', '82c6c3a32c20db10793516549571814c7c19bbd3e5ba40b04d61299a803aa08e', 'refresh', NULL, NULL, '2026-08-05 05:07:07', NULL, '2026-07-29 05:16:48', '2026-07-29 05:07:07'),
+	('eb74ff3c-9879-43f9-9f89-15d7fb2e60a7', 'd739bccb-7123-11f1-8bb6-52540021303b', '1fb871e99ff9f29d26f73f2d92cc8b9b49549f1cd306a7ae3d7d67a263a3fe72', 'refresh', NULL, NULL, '2026-09-07 06:53:41', NULL, '2026-08-31 12:37:52', '2026-08-31 06:53:41'),
+	('ed349444-b85d-4164-943d-d029e5f2ad04', 'd739bccb-7123-11f1-8bb6-52540021303b', '9acf89532986d2c0fdadee3bb64a8d7abc281e5a911d71bffb08257a7b69ac71', 'refresh', NULL, NULL, '2026-07-22 04:08:13', '2026-07-25 05:25:37', '2026-07-15 07:25:16', '2026-07-15 04:08:13'),
+	('eeb071dd-5478-436e-9a43-ed79f3461bdb', '27d1ec8a-9748-474f-96ec-be0642297ee8', '9737d9b8a8a401eb0dc8f551967cdfad501fa1a3aa076c411e0fd8586b02f67b', 'refresh', NULL, NULL, '2026-08-01 09:44:11', NULL, '2026-07-25 09:44:14', '2026-07-25 09:44:11'),
+	('f2147282-2f42-4e25-8a04-4b5a61014291', 'd739bccb-7123-11f1-8bb6-52540021303b', '9fd802d14fccabab5c274a62e6f205749cc11fdb4f2c0ba9ec9fc4a4510f071b', 'refresh', NULL, NULL, '2026-09-28 06:41:02', NULL, '2026-09-21 06:41:23', '2026-09-21 06:41:02'),
+	('f240f48f-2a0f-49f5-8b23-01655c1d7b88', 'd739bccb-7123-11f1-8bb6-52540021303b', 'f49106e8332d1c5c7021d8e6895dadf5ace76d93265235572e1e8ec921f10fd0', 'refresh', NULL, NULL, '2026-07-06 08:01:30', '2026-07-25 05:25:37', NULL, '2026-06-29 08:01:30'),
+	('f2bc464e-f5d2-451e-8825-58c1ed25e89a', 'd739bccb-7123-11f1-8bb6-52540021303b', 'f7693b5a82d50396535e20d7453afef920f5a028900a6c73a2545261d09716dd', 'refresh', NULL, NULL, '2026-09-14 11:44:22', NULL, '2026-09-08 06:14:21', '2026-09-07 11:44:22'),
+	('f3eabf19-b711-4cdf-8088-21b5b6aeaedd', 'd739bccb-7123-11f1-8bb6-52540021303b', '0174b1ff5b0cd868aa5d8a2f1589089a8beeeef1e8d03c44b3db88c14c3e73db', 'refresh', NULL, NULL, '2026-07-07 06:18:21', '2026-07-25 05:25:37', '2026-06-30 06:18:21', '2026-06-30 06:18:21'),
+	('f49516ab-ef5f-44bf-b8c6-664a866fdef1', 'd739bccb-7123-11f1-8bb6-52540021303b', 'ae1e214dff2e45e82b3b6e30da95bd14c2a9f13df3fbaf1d70fe2bc0a17bb12b', 'refresh', NULL, NULL, '2026-07-25 04:08:08', '2026-07-25 05:25:37', '2026-07-18 05:20:38', '2026-07-18 04:08:08'),
+	('f4be53ab-985a-46ba-a123-e011196774ce', 'd739bccb-7123-11f1-8bb6-52540021303b', '41af94605d5e927d047a94c2fd7e9c19c2412c80aaae91aec426914523f5bab7', 'refresh', NULL, NULL, '2026-08-18 04:56:30', NULL, '2026-08-14 07:07:11', '2026-08-11 04:56:30'),
+	('f659f33a-1dd4-4b8c-90c1-5cdd72b5cd43', 'd739bccb-7123-11f1-8bb6-52540021303b', '83cfb313018ea040e9f574619042cfd74ad4a542729f0ed435f935f6c4839bd4', 'refresh', NULL, NULL, '2026-07-21 07:38:26', '2026-07-25 05:25:37', '2026-07-14 07:42:47', '2026-07-14 07:38:26'),
+	('f78cf53b-8876-404a-a1e3-24340df179ad', 'd739bccb-7123-11f1-8bb6-52540021303b', '7884f2298ade3f5da8fcd6ec1aecd6c5aa2645cadfa5aa78b618cd655343011c', 'refresh', NULL, NULL, '2026-09-16 04:41:33', '2026-09-09 05:52:53', '2026-09-09 05:52:53', '2026-09-09 04:41:33'),
+	('f9fe593d-62a9-40fc-beaf-1460980b3b1f', 'd739bccb-7123-11f1-8bb6-52540021303b', 'b8435d920ef048b941061c5a1b0510e715e216491d5d9cfe9c40049ec3e6caf7', 'refresh', NULL, NULL, '2026-10-12 11:00:58', NULL, '2026-10-05 12:16:03', '2026-10-05 11:00:58'),
+	('fa26387f-e1a6-4ca4-8252-1bde44815d7f', 'd739bccb-7123-11f1-8bb6-52540021303b', 'd6f330283da583f0b5d7b0e69562cbd6370e512ee3d84550eb6c16ac5635d93d', 'refresh', NULL, NULL, '2026-07-20 12:07:41', '2026-07-25 05:25:37', '2026-07-13 12:47:21', '2026-07-13 12:07:41'),
+	('fd8e4c99-49a3-4316-b896-8cc11c84cf35', 'd739bccb-7123-11f1-8bb6-52540021303b', '7b13f36c04d59afb470dab4993dac1c617721676cb64bbfefedcd5e13fcf76df', 'refresh', NULL, NULL, '2026-09-14 11:36:55', NULL, NULL, '2026-09-07 11:36:55'),
+	('fee80325-a1ae-475b-92c4-aff51046120c', 'd739bccb-7123-11f1-8bb6-52540021303b', '3b9a2db231575f0a2be50ff66ae7d67caa75c0b8f770b98882996c04e49682d1', 'refresh', NULL, NULL, '2026-07-18 09:33:30', '2026-07-25 05:25:37', '2026-07-11 09:35:37', '2026-07-11 09:33:30'),
+	('ffb610ee-b72d-4f7a-9ae9-21cbd89f77fe', 'd739bccb-7123-11f1-8bb6-52540021303b', '206e1d53695a78f943a86e85b7d34a0ba49aba8b9b09e7898dc3c4027c1f73da', 'refresh', NULL, NULL, '2026-09-17 08:31:08', NULL, '2026-09-11 08:15:14', '2026-09-10 08:31:08');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.automation_audit_logs
 CREATE TABLE IF NOT EXISTS `automation_audit_logs` (
@@ -251,7 +569,7 @@ CREATE TABLE IF NOT EXISTS `automation_audit_logs` (
   KEY `ix_automation_audit_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.automation_audit_logs: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.automation_escalations
 CREATE TABLE IF NOT EXISTS `automation_escalations` (
@@ -280,7 +598,7 @@ CREATE TABLE IF NOT EXISTS `automation_escalations` (
   CONSTRAINT `fk_automation_escalations_rule` FOREIGN KEY (`rule_id`) REFERENCES `automation_rules` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.automation_escalations: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.automation_rules
 CREATE TABLE IF NOT EXISTS `automation_rules` (
@@ -305,7 +623,7 @@ CREATE TABLE IF NOT EXISTS `automation_rules` (
   KEY `ix_automation_rules_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.automation_rules: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.automation_runs
 CREATE TABLE IF NOT EXISTS `automation_runs` (
@@ -335,7 +653,7 @@ CREATE TABLE IF NOT EXISTS `automation_runs` (
   CONSTRAINT `fk_automation_runs_rule` FOREIGN KEY (`rule_id`) REFERENCES `automation_rules` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.automation_runs: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.boq_activities
 CREATE TABLE IF NOT EXISTS `boq_activities` (
@@ -351,7 +669,6 @@ CREATE TABLE IF NOT EXISTS `boq_activities` (
   CONSTRAINT `fk_activity_boq` FOREIGN KEY (`boq_id`) REFERENCES `boqs` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.boq_categories
 CREATE TABLE IF NOT EXISTS `boq_categories` (
@@ -366,7 +683,82 @@ CREATE TABLE IF NOT EXISTS `boq_categories` (
   CONSTRAINT `fk_boq_category_boq` FOREIGN KEY (`boq_id`) REFERENCES `boqs` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.boq_categories: ~48 rows (approximately)
+INSERT INTO `boq_categories` (`id`, `boq_id`, `name`, `sort_order`, `created_at`, `updated_at`) VALUES
+	('00b1f322-e42c-4369-b108-a1d1455bcc23', 'c7df002d-0abe-46cb-bb37-e2f8a81390c8', 'Painting Works', 5, '2026-07-14 06:09:07', '2026-07-14 06:09:07'),
+	('0802c034-bfa5-4d8c-b7f3-6e9637af0558', 'c7df002d-0abe-46cb-bb37-e2f8a81390c8', 'Plumbing Works', 3, '2026-07-14 06:09:06', '2026-07-14 06:09:06'),
+	('0a65ede6-3848-42aa-bad6-62089c57b6ea', '53aa2973-b18f-40fa-bd5a-5a5803f17226', 'NEW INLINEW', 2, '2026-07-24 10:07:13', '2026-07-24 10:07:13'),
+	('0b8004b2-a03b-493f-af21-2a28c2f9b237', 'd1a48f05-dc1b-4683-9b9a-752e7bb4f703', 'METAL WORK', 1, '2026-08-25 17:13:25', '2026-08-25 17:13:25'),
+	('0e2b0e3b-4743-4b12-978e-76a461e0ff9b', 'e4c50291-53c6-473d-acb6-3c239736b21a', 'METAL WORK', 1, '2026-09-16 07:58:16', '2026-09-16 07:58:16'),
+	('0ec4b1e5-8865-4889-babd-9bb5e9d695a2', '6202fca1-e77f-47d7-a432-a355b3103ae9', 'Painting Works', 5, '2026-07-18 04:20:05', '2026-07-18 04:20:05'),
+	('10b583e2-6c14-4920-bbc5-00c4f1098867', '6202fca1-e77f-47d7-a432-a355b3103ae9', 'Electrical Works', 2, '2026-07-18 04:20:05', '2026-07-18 04:20:05'),
+	('1621b40f-4228-4c7b-8705-ed161071d1e5', '4a2ffdac-5b82-4b7f-afd5-cb3ac7c22f45', 'NEW INLINEW', 0, '2026-07-24 07:30:27', '2026-07-24 07:30:27'),
+	('16b01c61-85c8-4513-94de-41644d5e0737', '48d237e7-acc5-4573-bb2b-6b27be1a9a34', 'EXTRA MUTILINE ZONING', 0, '2026-07-24 06:27:14', '2026-07-24 06:27:14'),
+	('1c6a5ae6-c6cb-48bd-a58b-2ab8f57959e5', 'e3669897-2256-4640-84b7-6d421ee11e4e', 'Civil Work', 0, '2026-07-14 07:39:17', '2026-07-14 07:39:17'),
+	('1d6de85c-7f44-11f1-b721-52540021303b', '0ae2195f-8bc8-4913-879d-e8abdfa4b4bf', 'Civil Works', 1, '2026-07-14 10:53:15', '2026-07-14 10:53:15'),
+	('1d6df0a7-7f44-11f1-b721-52540021303b', '0ae2195f-8bc8-4913-879d-e8abdfa4b4bf', 'Electrical Works', 2, '2026-07-14 10:53:15', '2026-07-14 10:53:15'),
+	('1d6df1de-7f44-11f1-b721-52540021303b', '0ae2195f-8bc8-4913-879d-e8abdfa4b4bf', 'Plumbing Works', 3, '2026-07-14 10:53:15', '2026-07-14 10:53:15'),
+	('1d6df267-7f44-11f1-b721-52540021303b', '0ae2195f-8bc8-4913-879d-e8abdfa4b4bf', 'Interior Works', 4, '2026-07-14 10:53:15', '2026-07-14 10:53:15'),
+	('1d6df2ff-7f44-11f1-b721-52540021303b', '0ae2195f-8bc8-4913-879d-e8abdfa4b4bf', 'Painting Works', 5, '2026-07-14 10:53:15', '2026-07-14 10:53:15'),
+	('1eaf3cd6-79d8-4d63-ae4b-a42cf019b07a', 'dc978f41-03c4-4ae8-ac0a-163571b9d5b6', 'Civil Work', 0, '2026-10-10 08:12:01', '2026-10-10 08:12:01'),
+	('216a9e33-09d3-4f93-bd49-950ba8f42b35', '60eda06d-3441-4509-90c4-1a5c6e293217', 'Kitchen Work', 0, '2026-07-14 06:32:34', '2026-07-14 06:32:34'),
+	('22ed28fb-cdf4-4450-b941-b1f567b43f02', 'e3669897-2256-4640-84b7-6d421ee11e4e', 'Electrical', 0, '2026-07-14 07:39:25', '2026-07-14 07:39:25'),
+	('245f1c61-ed90-44af-a467-4ca8a2aa5c8e', '60eda06d-3441-4509-90c4-1a5c6e293217', 'Civil Work', 0, '2026-07-14 06:32:22', '2026-07-14 06:32:22'),
+	('2f817e45-d3a7-443e-a7b1-c66da8db8fa0', 'd1a48f05-dc1b-4683-9b9a-752e7bb4f703', 'CIVIL WORKS EXTENSION-WITH METAL WORK', 0, '2026-08-25 17:13:25', '2026-08-25 17:13:25'),
+	('38125139-ac8d-44b7-9506-e461a5eb3796', '6202fca1-e77f-47d7-a432-a355b3103ae9', 'Civil Works', 1, '2026-07-18 04:20:04', '2026-07-18 04:20:04'),
+	('3dea9c4e-2bf7-453f-805d-87adfc5be1c2', 'e4c50291-53c6-473d-acb6-3c239736b21a', 'Civil Work', 2, '2026-09-16 07:58:23', '2026-09-16 07:58:23'),
+	('415830d8-297e-4e75-b1a8-c4fa2e20b1a7', '72b190a2-cc35-48fd-bca4-497fd6239938', 'new category', 0, '2026-07-24 10:05:26', '2026-07-24 10:05:26'),
+	('4415c412-a071-46c8-b3fe-ace559106cec', '39fca688-73c3-484e-82cb-14c9720ae04f', 'Electrical Works', 0, '2026-10-11 03:06:54', '2026-10-11 03:06:54'),
+	('44faca5b-19ba-41c7-9dbb-aa94569e43a1', 'c8ac940c-8ba8-4b1f-88aa-d82417970f3a', 'EXTRA MUTILINE ZONING', 0, '2026-07-24 05:30:40', '2026-07-24 05:30:40'),
+	('4a1eea5d-8763-45e1-8666-c0b8feb32c91', 'cccc80a8-42e7-4cbc-bb4c-415b29f9b5da', 'Civil Work', 0, '2026-07-14 11:10:25', '2026-07-14 11:10:25'),
+	('4b435690-64f7-4d38-b3a6-4c45f9229052', '4a2ffdac-5b82-4b7f-afd5-cb3ac7c22f45', 'Kitchen Work', 2, '2026-07-24 07:30:28', '2026-07-24 07:30:28'),
+	('4fe6072d-a5db-4ea0-aa11-02ca2159c0db', 'c747297b-9dcb-416e-9e66-2d76af975fd6', 'Civil Work', 0, '2026-07-23 11:47:41', '2026-07-23 11:47:41'),
+	('5059adc3-635b-4ef7-bd57-350b2b0d88dc', '86067a3e-957c-4f67-bfed-71fe5f5ecc38', 'Kitchen Work', 2, '2026-07-16 04:53:53', '2026-07-16 04:53:53'),
+	('511ef65e-2faf-4a09-93a2-caf313232849', '72b190a2-cc35-48fd-bca4-497fd6239938', 'NEW INLINEW', 0, '2026-07-24 10:05:57', '2026-07-24 10:05:57'),
+	('523a4133-520b-4740-8d32-d57d781dc249', 'ea07b558-af09-48b4-b927-69a8fbcafc7f', 'EXTRA MUTILINE ZONING', 0, '2026-10-08 11:47:53', '2026-10-08 11:47:53'),
+	('52869e48-0890-4700-88fb-f199b57f85f2', '84a5dc76-b673-487d-876a-09d7817306e7', 'Kitchen Work', 0, '2026-07-24 07:30:04', '2026-07-24 07:30:04'),
+	('53f60058-7a0c-4801-9209-0c3ce4c3a5b8', '53aa2973-b18f-40fa-bd5a-5a5803f17226', 'new category', 1, '2026-07-24 10:07:13', '2026-07-24 10:07:13'),
+	('54db4dd8-c1fe-4074-bc5a-2508c06fb2c6', '041eb29e-17cb-4ea4-a188-0b4b0413eef0', 'Electrical', 0, '2026-07-18 04:17:31', '2026-07-18 04:17:31'),
+	('5649077c-ae31-4128-ad47-40c80ef3b995', '4a2ffdac-5b82-4b7f-afd5-cb3ac7c22f45', 'new cat', 1, '2026-07-24 07:30:28', '2026-07-24 07:30:28'),
+	('59201f50-8e0d-4e8c-a602-b90f85906ca6', 'e3669897-2256-4640-84b7-6d421ee11e4e', 'Sanitary Fittings', 0, '2026-07-14 07:39:28', '2026-07-14 07:39:28'),
+	('643d830c-8d5a-40d4-a52b-9f58ff85ca22', 'e4c50291-53c6-473d-acb6-3c239736b21a', 'CIVIL WORKS EXTENSION-WITH METAL WORK', 0, '2026-09-16 07:58:13', '2026-09-16 07:58:13'),
+	('66789e66-a353-4c48-a941-0ae139786998', '8e0f43ef-0a82-446a-92a2-9ec228939150', 'Doors & Windows', 0, '2026-07-22 04:09:18', '2026-07-22 04:09:18'),
+	('679896f6-293a-4431-b939-0f8fee64b4c3', 'cccc80a8-42e7-4cbc-bb4c-415b29f9b5da', 'Electrical', 0, '2026-07-14 11:12:27', '2026-07-14 11:12:27'),
+	('68059e6d-b273-47a7-a36c-ada7860ba1c8', 'e3669897-2256-4640-84b7-6d421ee11e4e', 'Flooring', 0, '2026-07-14 07:39:20', '2026-07-14 07:39:20'),
+	('68f3355e-da9d-4746-ba79-7794eb0b6744', '8d5531db-b029-4bda-b633-24173af8ac05', 'Wall Finishes', 0, '2026-10-09 04:38:44', '2026-10-09 04:38:44'),
+	('68f5b1b6-0f46-40d8-b8c5-7365f665f741', 'e56c2294-aada-4191-9cf7-f39968749c19', 'Wall Finishes', 0, '2026-07-15 05:23:51', '2026-07-15 05:23:51'),
+	('6bf7770c-8f6c-4b9d-ab2b-075d4e3a977c', '118d5e76-c31e-4166-b210-6dcb98c5624e', 'Civil Work', 0, '2026-07-16 04:55:16', '2026-07-16 04:55:16'),
+	('6d7cc8b0-f237-40b7-a4ff-b8967ee141a7', '60eda06d-3441-4509-90c4-1a5c6e293217', 'Doors & Windows', 0, '2026-07-14 06:32:27', '2026-07-14 06:32:27'),
+	('6fb36614-0ce6-4d6a-b73c-5b45a4cd3666', '6202fca1-e77f-47d7-a432-a355b3103ae9', 'Interior Works', 4, '2026-07-18 04:20:05', '2026-07-18 04:20:05'),
+	('7367b116-d5c0-4f74-8b49-a336cec720dc', 'e3669897-2256-4640-84b7-6d421ee11e4e', 'Wall Finishes', 0, '2026-07-14 07:39:22', '2026-07-14 07:39:22'),
+	('80a1aedf-d605-4913-a64a-796e2dbacc74', '86067a3e-957c-4f67-bfed-71fe5f5ecc38', 'Sanitary Fittings', 1, '2026-07-16 04:53:53', '2026-07-16 04:53:53'),
+	('8111c5b6-06e3-494b-8694-edbfd0fac939', 'ecb9df74-6112-4434-8873-cdcc0bddf32d', 'Electrical', 0, '2026-08-25 06:06:36', '2026-08-25 06:06:36'),
+	('81d1d703-efa6-4272-a6cf-da58ea7b7dd7', '367c251b-28a1-4f34-8e91-5c6b6d4af1ac', 'METAL WORK', 0, '2026-08-25 15:42:59', '2026-08-25 15:42:59'),
+	('829007f5-a5b8-418b-847f-36ffe19d19f2', '6202fca1-e77f-47d7-a432-a355b3103ae9', 'Plumbing Works', 3, '2026-07-18 04:20:05', '2026-07-18 04:20:05'),
+	('8a692fa9-61ce-4c39-8268-dc857df3a0dd', 'c7df002d-0abe-46cb-bb37-e2f8a81390c8', 'Civil Works', 1, '2026-07-14 06:09:06', '2026-07-14 06:09:06'),
+	('91f3a428-1645-46aa-8a70-8530798016d2', 'c7df002d-0abe-46cb-bb37-e2f8a81390c8', 'Interior Works', 4, '2026-07-14 06:09:07', '2026-07-14 06:09:07'),
+	('9e408b34-8808-4a5a-8f2f-66e1e759a4ce', '53aa2973-b18f-40fa-bd5a-5a5803f17226', 'Flooring', 0, '2026-07-24 10:07:13', '2026-07-24 10:07:13'),
+	('a5709bc5-47cc-454f-a79c-6301ed2cedfe', '39fca688-73c3-484e-82cb-14c9720ae04f', 'Furniture & Fixtures', 1, '2026-10-11 03:06:54', '2026-10-11 03:06:54'),
+	('a6e47040-b7b8-47cb-99b8-b62566370de7', '8e0f43ef-0a82-446a-92a2-9ec228939150', 'Civil Work', 0, '2026-07-22 04:22:30', '2026-07-22 04:22:30'),
+	('adea3ada-2768-4231-98c7-efb88ea60975', '4a2ffdac-5b82-4b7f-afd5-cb3ac7c22f45', 'EXTRA MUTILINE ZONING', 3, '2026-07-24 07:30:28', '2026-07-24 07:30:28'),
+	('ae9a6adb-8963-43af-8dd2-74340d212603', 'd486c1a8-04b7-45ea-a7c1-de63e2e2a24e', 'EXTRA MUTILINE ZONING', 0, '2026-10-08 11:49:46', '2026-10-08 11:49:46'),
+	('b12918e4-4fc9-4bf2-ac73-bca8750e0e0e', '157cb9fd-8ede-446e-90c9-d4c081eafbc5', 'Waterproofing', 0, '2026-08-25 08:05:45', '2026-08-25 08:05:45'),
+	('b145d9ac-8145-40f7-8cc7-8914efc50a67', '041eb29e-17cb-4ea4-a188-0b4b0413eef0', 'Civil Work', 0, '2026-07-18 04:17:31', '2026-07-18 04:17:31'),
+	('b1706264-e0ca-4708-baee-f4bedb4cbdaa', '2da2d926-8e0e-448b-8411-a591c19398c1', 'NEW INLINEW', 0, '2026-07-23 10:55:51', '2026-07-23 10:55:51'),
+	('b811d731-0db6-4a29-83e0-a873d213b9c5', '8324d570-da55-4ddb-9ed5-5033e60667bb', 'new category', 0, '2026-08-31 06:42:43', '2026-08-31 06:42:43'),
+	('c618c4bf-a534-40f3-8c9f-60b4e42dce3e', '7aa23de9-5233-4f68-84e1-42aba3610027', 'CIVIL WORKS EXTENSION-WITH METAL WORK', 0, '2026-08-25 17:10:44', '2026-08-25 17:10:44'),
+	('d3f891ca-2ecb-43e5-acc2-bd4fdd4aa0c2', 'c7df002d-0abe-46cb-bb37-e2f8a81390c8', 'Electrical Works', 2, '2026-07-14 06:09:06', '2026-07-14 06:09:06'),
+	('d5d47ddb-219d-471c-8568-97ee057f59b9', '86067a3e-957c-4f67-bfed-71fe5f5ecc38', 'Civil Work', 0, '2026-07-16 04:53:53', '2026-07-16 04:53:53'),
+	('db090ba8-aaba-43d3-925c-079c599bcf47', '182f4651-4a91-4535-bb46-3e6c7066d61f', 'Civil Work', 0, '2026-07-15 11:28:22', '2026-07-15 11:28:22'),
+	('dddc0abe-8ecc-4693-9f72-5397203bada7', '94d1d89b-d6de-4a97-9483-95673b8407b2', 'Flooring', 0, '2026-07-24 10:06:24', '2026-07-24 10:06:24'),
+	('e44bda8d-b61c-441c-8731-78bbc83cc9cf', '2da2d926-8e0e-448b-8411-a591c19398c1', 'new cat', 0, '2026-07-23 10:35:32', '2026-07-23 10:35:32'),
+	('e4aa654c-d462-4e8d-adaa-d9955185f19d', '8d5531db-b029-4bda-b633-24173af8ac05', 'EXTRA MUTILINE ZONING', 0, '2026-10-09 04:38:38', '2026-10-09 04:38:38'),
+	('e6c94046-d6f4-498c-bc9c-3c0968c5d44f', '930e7888-9033-4427-aa62-962f84d8195a', 'Civil Work', 0, '2026-07-18 11:35:24', '2026-07-18 11:35:24'),
+	('f359e4c4-f5e9-4280-9cca-1c3e0bfcd338', '84a5dc76-b673-487d-876a-09d7817306e7', 'EXTRA MUTILINE ZONING', 0, '2026-07-24 07:29:54', '2026-07-24 07:29:54'),
+	('f6ff5cd8-a24f-4b83-89d9-b81c942bab53', 'dc978f41-03c4-4ae8-ac0a-163571b9d5b6', 'EXTRA MUTILINE ZONING', 0, '2026-10-10 08:11:55', '2026-10-10 08:11:55'),
+	('fbe63356-3fd6-4cf1-9c4d-0da9f3d308c0', 'ecb9df74-6112-4434-8873-cdcc0bddf32d', 'Flooring', 0, '2026-08-25 06:06:42', '2026-08-25 06:06:42'),
+	('fceff15d-7b0f-4267-823f-2de5174488fd', '8324d570-da55-4ddb-9ed5-5033e60667bb', 'False Ceiling', 0, '2026-08-31 06:43:09', '2026-08-31 06:43:09'),
+	('fea133af-0acc-4963-87b9-7981139f3058', '3c961d0c-b476-4088-ae8c-99a4fca23828', 'EXTRA MUTILINE ZONING', 0, '2026-07-23 11:28:21', '2026-07-23 11:28:21');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.boq_items
 CREATE TABLE IF NOT EXISTS `boq_items` (
@@ -394,7 +786,6 @@ CREATE TABLE IF NOT EXISTS `boq_items` (
   CONSTRAINT `fk_boq_item_library` FOREIGN KEY (`library_item_id`) REFERENCES `library_items` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.boq_miscellaneous
 CREATE TABLE IF NOT EXISTS `boq_miscellaneous` (
@@ -411,7 +802,6 @@ CREATE TABLE IF NOT EXISTS `boq_miscellaneous` (
   CONSTRAINT `fk_boq_miscellaneous_boq` FOREIGN KEY (`boq_id`) REFERENCES `boqs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.boq_template_categories
 CREATE TABLE IF NOT EXISTS `boq_template_categories` (
@@ -426,7 +816,7 @@ CREATE TABLE IF NOT EXISTS `boq_template_categories` (
   CONSTRAINT `fk_template_category_template` FOREIGN KEY (`template_id`) REFERENCES `boq_templates` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.boq_template_categories: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.boq_template_items
 CREATE TABLE IF NOT EXISTS `boq_template_items` (
@@ -448,7 +838,7 @@ CREATE TABLE IF NOT EXISTS `boq_template_items` (
   CONSTRAINT `fk_template_item_library` FOREIGN KEY (`library_item_id`) REFERENCES `library_items` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.boq_template_items: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.boq_templates
 CREATE TABLE IF NOT EXISTS `boq_templates` (
@@ -464,7 +854,9 @@ CREATE TABLE IF NOT EXISTS `boq_templates` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.boq_templates: ~0 rows (approximately)
+INSERT INTO `boq_templates` (`id`, `name`, `template_tier`, `description`, `created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`) VALUES
+	('0c7af640-fff1-45ad-9d8b-13432ff82c23', 'klkmlkml', NULL, NULL, NULL, NULL, '2026-09-14 05:22:14', '2026-10-07 09:43:05', '2026-10-07 09:43:05');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.boq_versions
 CREATE TABLE IF NOT EXISTS `boq_versions` (
@@ -480,7 +872,6 @@ CREATE TABLE IF NOT EXISTS `boq_versions` (
   CONSTRAINT `fk_boq_versions_boq` FOREIGN KEY (`boq_id`) REFERENCES `boqs` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.boqs
 CREATE TABLE IF NOT EXISTS `boqs` (
@@ -521,7 +912,6 @@ CREATE TABLE IF NOT EXISTS `boqs` (
   CONSTRAINT `fk_boqs_version` FOREIGN KEY (`boq_version_id`) REFERENCES `boq_versions` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.budget_estimate_categories
 CREATE TABLE IF NOT EXISTS `budget_estimate_categories` (
@@ -539,7 +929,14 @@ CREATE TABLE IF NOT EXISTS `budget_estimate_categories` (
   CONSTRAINT `fk_budget_estimate_categories_library` FOREIGN KEY (`library_category_id`) REFERENCES `library_categories` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.budget_estimate_categories: ~6 rows (approximately)
+INSERT INTO `budget_estimate_categories` (`id`, `estimate_id`, `library_category_id`, `name`, `sort_order`, `created_at`, `updated_at`) VALUES
+	('1ae4e72f-b8f4-463f-9ebb-30767eea62e5', 'c980b197-540f-4da3-9f9a-b38dddb14f41', NULL, 'Architectural Works', 0, '2026-10-10 08:25:25', '2026-10-10 08:25:25'),
+	('43205120-6756-48b4-a3ce-6a002d4c5754', '6ced8267-73c4-4383-8893-36d23c46d94e', NULL, 'Electrical Works', 1, '2026-10-10 10:14:48', '2026-10-10 10:14:48'),
+	('4b6adc89-0032-4719-a4d2-fbfb00becdce', 'c980b197-540f-4da3-9f9a-b38dddb14f41', NULL, 'Fire & Safety', 1, '2026-10-10 08:25:25', '2026-10-10 08:25:25'),
+	('6f294d47-291e-4784-8e7d-c37a1163bf70', '8a1b43d7-83b5-4f85-b030-149526f8e857', NULL, 'Civil Works', 0, '2026-10-07 09:53:48', '2026-10-07 09:53:48'),
+	('d4b836a0-7b3c-4211-b0f4-eba7295a64d4', '8a1b43d7-83b5-4f85-b030-149526f8e857', NULL, 'Electrical Works', 1, '2026-10-07 09:53:48', '2026-10-07 09:53:48'),
+	('ffe1e42c-461e-41a0-9287-466ba69dccf5', '6ced8267-73c4-4383-8893-36d23c46d94e', NULL, 'Furniture & Fixtures', 0, '2026-10-10 10:14:48', '2026-10-10 10:14:48');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.budget_estimate_items
 CREATE TABLE IF NOT EXISTS `budget_estimate_items` (
@@ -575,7 +972,6 @@ CREATE TABLE IF NOT EXISTS `budget_estimate_items` (
   CONSTRAINT `fk_budget_estimate_items_unit` FOREIGN KEY (`unit_id`) REFERENCES `units` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.budget_estimate_miscellaneous
 CREATE TABLE IF NOT EXISTS `budget_estimate_miscellaneous` (
@@ -592,7 +988,6 @@ CREATE TABLE IF NOT EXISTS `budget_estimate_miscellaneous` (
   CONSTRAINT `fk_budget_estimate_misc_estimate` FOREIGN KEY (`estimate_id`) REFERENCES `budget_estimates` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.budget_estimate_versions
 CREATE TABLE IF NOT EXISTS `budget_estimate_versions` (
@@ -612,7 +1007,7 @@ CREATE TABLE IF NOT EXISTS `budget_estimate_versions` (
   CONSTRAINT `fk_budget_estimate_versions_estimate` FOREIGN KEY (`estimate_id`) REFERENCES `budget_estimates` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.budget_estimate_versions: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.budget_estimates
 CREATE TABLE IF NOT EXISTS `budget_estimates` (
@@ -667,7 +1062,38 @@ CREATE TABLE IF NOT EXISTS `budget_estimates` (
   CONSTRAINT `fk_budget_estimates_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+
+-- Dumping structure for table spsyn8lm_rippotai_erp.budget_guides
+CREATE TABLE IF NOT EXISTS `budget_guides` (
+  `id` char(36) COLLATE utf8_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `project_id` char(36) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `source_guide_id` char(36) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `project_type` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `location` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `prepared_by` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `currency` char(3) COLLATE utf8_unicode_ci NOT NULL,
+  `area_unit` varchar(80) COLLATE utf8_unicode_ci NOT NULL,
+  `built_up_area` decimal(18,4) DEFAULT NULL,
+  `issue_date` date NOT NULL,
+  `validity_months` int(11) NOT NULL,
+  `rate_validity_days` int(11) NOT NULL,
+  `status` enum('draft','published','archived') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'draft',
+  `introduction` text COLLATE utf8_unicode_ci NOT NULL,
+  `plans` json NOT NULL,
+  `pricing_notes` json NOT NULL,
+  `next_steps` json NOT NULL,
+  `revision` int(11) NOT NULL DEFAULT '1',
+  `created_by` char(36) COLLATE utf8_unicode_ci NOT NULL,
+  `updated_by` char(36) COLLATE utf8_unicode_ci NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `budget_guides_project` (`project_id`),
+  KEY `budget_guides_status_updated` (`status`,`updated_at`),
+  KEY `budget_guides_source` (`source_guide_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.business_proposals
 CREATE TABLE IF NOT EXISTS `business_proposals` (
@@ -684,7 +1110,6 @@ CREATE TABLE IF NOT EXISTS `business_proposals` (
   KEY `business_proposals_updated` (`updated_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.calendar_events
 CREATE TABLE IF NOT EXISTS `calendar_events` (
@@ -708,8 +1133,6 @@ CREATE TABLE IF NOT EXISTS `calendar_events` (
   CONSTRAINT `fk_calendar_events_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
-
 -- Dumping structure for table spsyn8lm_rippotai_erp.checklist_template_items
 CREATE TABLE IF NOT EXISTS `checklist_template_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -724,7 +1147,7 @@ CREATE TABLE IF NOT EXISTS `checklist_template_items` (
   CONSTRAINT `fk_checklist_template_items_template` FOREIGN KEY (`template_id`) REFERENCES `checklist_templates` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.checklist_template_items: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.checklist_templates
 CREATE TABLE IF NOT EXISTS `checklist_templates` (
@@ -743,7 +1166,7 @@ CREATE TABLE IF NOT EXISTS `checklist_templates` (
   KEY `idx_checklist_templates_is_active` (`is_active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.checklist_templates: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.client_link_responses
 CREATE TABLE IF NOT EXISTS `client_link_responses` (
@@ -764,7 +1187,7 @@ CREATE TABLE IF NOT EXISTS `client_link_responses` (
   CONSTRAINT `fk_client_link_responses_link` FOREIGN KEY (`link_id`) REFERENCES `client_links` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.client_link_responses: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.client_links
 CREATE TABLE IF NOT EXISTS `client_links` (
@@ -791,7 +1214,6 @@ CREATE TABLE IF NOT EXISTS `client_links` (
   KEY `ix_client_links_email` (`client_email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.clients
 CREATE TABLE IF NOT EXISTS `clients` (
@@ -810,7 +1232,24 @@ CREATE TABLE IF NOT EXISTS `clients` (
   KEY `idx_clients_deleted_at` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+
+-- Dumping structure for table spsyn8lm_rippotai_erp.crucial_task_checks
+CREATE TABLE IF NOT EXISTS `crucial_task_checks` (
+  `id` char(36) COLLATE utf8_unicode_ci NOT NULL,
+  `task_id` char(36) COLLATE utf8_unicode_ci NOT NULL,
+  `cycle_date` date NOT NULL,
+  `cycle` enum('daily','weekly') COLLATE utf8_unicode_ci NOT NULL,
+  `check_status` enum('checked','in_progress','not_checked') COLLATE utf8_unicode_ci NOT NULL,
+  `follow_up` text COLLATE utf8_unicode_ci,
+  `checked_by` char(36) COLLATE utf8_unicode_ci NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `crucial_task_cycle_unique` (`task_id`,`cycle_date`,`cycle`),
+  KEY `crucial_check_cycle` (`cycle_date`,`cycle`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- Dumping data for table spsyn8lm_rippotai_erp.crucial_task_checks: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.daily_site_reports
 CREATE TABLE IF NOT EXISTS `daily_site_reports` (
@@ -848,7 +1287,6 @@ CREATE TABLE IF NOT EXISTS `daily_site_reports` (
   KEY `idx_daily_site_reports_is_shared` (`is_shared`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.delivery_challan_items
 CREATE TABLE IF NOT EXISTS `delivery_challan_items` (
@@ -880,7 +1318,7 @@ CREATE TABLE IF NOT EXISTS `delivery_challan_items` (
   CONSTRAINT `fk_delivery_challan_items_purchase_order_item` FOREIGN KEY (`purchase_order_item_id`) REFERENCES `purchase_order_items` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.delivery_challan_items: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.delivery_challans
 CREATE TABLE IF NOT EXISTS `delivery_challans` (
@@ -920,7 +1358,7 @@ CREATE TABLE IF NOT EXISTS `delivery_challans` (
   CONSTRAINT `fk_delivery_challans_material_requirement` FOREIGN KEY (`material_requirement_id`) REFERENCES `material_requirements` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.delivery_challans: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.document_attachments
 CREATE TABLE IF NOT EXISTS `document_attachments` (
@@ -939,7 +1377,7 @@ CREATE TABLE IF NOT EXISTS `document_attachments` (
   CONSTRAINT `fk_document_attachments_document` FOREIGN KEY (`document_id`) REFERENCES `documents` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.document_attachments: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.document_requirements
 CREATE TABLE IF NOT EXISTS `document_requirements` (
@@ -961,7 +1399,6 @@ CREATE TABLE IF NOT EXISTS `document_requirements` (
   CONSTRAINT `fk_document_requirements_type` FOREIGN KEY (`document_type_id`) REFERENCES `document_types` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.document_types
 CREATE TABLE IF NOT EXISTS `document_types` (
@@ -992,7 +1429,96 @@ CREATE TABLE IF NOT EXISTS `document_types` (
   CONSTRAINT `fk_document_types_project_phase` FOREIGN KEY (`project_phase_id`) REFERENCES `project_phases` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.document_types: ~83 rows (approximately)
+INSERT INTO `document_types` (`id`, `code`, `name`, `phase_code`, `project_phase_id`, `phase_name`, `section_code`, `section_name`, `sequence`, `target_type`, `requirement_type`, `allows_multiple`, `requires_revision`, `requires_approval`, `description`, `is_active`, `created_at`, `updated_at`) VALUES
+	('2241a298-a1fd-11f1-99c8-52540021303b', 'BRIEF_CLIENT_BRIEF', 'Client Brief', '01_BRIEF', 'df430513-9a8b-526e-981a-a33cea8e94ff', 'BRIEF', '1.1', 'BRIEF', 1, 'DOCUMENT', 'REQUIRED', 1, 0, 0, 'Requirements, scope, budget and expectations captured in one document.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241ad19-a1fd-11f1-99c8-52540021303b', 'BRIEF_SCOPE_OF_WORK', 'Scope of Work', '01_BRIEF', 'df430513-9a8b-526e-981a-a33cea8e94ff', 'BRIEF', '1.4', 'BRIEF', 2, 'DOCUMENT', 'REQUIRED', 1, 1, 1, 'Written from the project scope and escalated into Scope of Approval after the recce.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241af39-a1fd-11f1-99c8-52540021303b', 'RECCE_SITE_RECCE', 'Site Recce', '02_RECCE', '3aa4d822-dca3-5e58-be3e-91f9eecaa311', 'SITE SURVEY / RECCE', '2.1', 'SITE SURVEY / RECCE', 1, 'DOCUMENT', 'REQUIRED', 1, 0, 0, 'Measurements, photographs and existing conditions recorded during joint site visit.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241b087-a1fd-11f1-99c8-52540021303b', 'RECCE_SITE_ANALYSIS', 'Site Analysis', '02_RECCE', '3aa4d822-dca3-5e58-be3e-91f9eecaa311', 'SITE SURVEY / RECCE', '2.2', 'SITE SURVEY / RECCE', 2, 'DOCUMENT', 'REQUIRED', 1, 1, 0, 'Orientation, services, access, structure and constraints read from the survey.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241b1d2-a1fd-11f1-99c8-52540021303b', 'RECCE_SITE_BRIEF', 'Site Brief', '02_RECCE', '3aa4d822-dca3-5e58-be3e-91f9eecaa311', 'SITE SURVEY / RECCE', '2.3', 'SITE SURVEY / RECCE', 3, 'DOCUMENT', 'REQUIRED', 1, 1, 0, 'Detailed recce converted into the brief used by the delivery team.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241b329-a1fd-11f1-99c8-52540021303b', 'RECCE_SCOPE_OF_APPROVAL', 'Scope of Approval', '02_RECCE', '3aa4d822-dca3-5e58-be3e-91f9eecaa311', 'SITE SURVEY / RECCE', '2.4', 'SITE SURVEY / RECCE', 4, 'DOCUMENT', 'REQUIRED', 1, 1, 1, 'Finalised scope identifying client or statutory approvals and applicable gates.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241b455-a1fd-11f1-99c8-52540021303b', 'PRE_EXISTING_LAYOUT', 'Existing Layout — As-Built', '03_PRE_DESIGN', 'a0628b6a-0206-5acd-8fcc-9838fc245781', 'PRE-DESIGN', '3.1', 'PRE-DESIGN', 1, 'DRAWING', 'REQUIRED', 1, 1, 0, 'As-is layout drawn from survey measurements.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241b569-a1fd-11f1-99c8-52540021303b', 'PRE_PROPOSED_LAYOUT', 'Proposed Layout', '03_PRE_DESIGN', 'a0628b6a-0206-5acd-8fcc-9838fc245781', 'PRE-DESIGN', '3.2', 'PRE-DESIGN', 2, 'DRAWING', 'REQUIRED', 1, 1, 0, 'New layout developed from the client brief.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241b698-a1fd-11f1-99c8-52540021303b', 'PRE_REFERENCE_MOODBOARD', 'Reference Presentation and Moodboard', '03_PRE_DESIGN', 'a0628b6a-0206-5acd-8fcc-9838fc245781', 'PRE-DESIGN', '3.3', 'PRE-DESIGN', 3, 'DOCUMENT', 'REQUIRED', 1, 1, 0, 'Direction and material story developed alongside the proposed layout.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241b878-a1fd-11f1-99c8-52540021303b', 'PRE_PITCH_PROPOSAL', 'Pitch / Proposal + Business Proposal', '03_PRE_DESIGN', 'a0628b6a-0206-5acd-8fcc-9838fc245781', 'PRE-DESIGN', '3.4', 'PRE-DESIGN', 4, 'DOCUMENT', 'REQUIRED', 1, 1, 1, 'Design pitch and commercial proposal presented together to win the project.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241ba60-a1fd-11f1-99c8-52540021303b', 'PRE_CONCEPT_DESIGN_01', 'Concept Design 01 — 3D', '03_PRE_DESIGN', 'a0628b6a-0206-5acd-8fcc-9838fc245781', 'PRE-DESIGN', '3.5', 'PRE-DESIGN', 5, 'DOCUMENT', 'REQUIRED', 1, 1, 1, 'First client-facing 3D concept presented with the pitch.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241bb92-a1fd-11f1-99c8-52540021303b', 'PLAN_PAYMENT_RECEIPT', 'Payment Receipt', '04_PLANNING', 'bf4191fb-1601-53e1-b84f-ec7a21a56d6d', 'PLANNING PHASE', '4.1', 'PLANNING PHASE', 1, 'DOCUMENT', 'REQUIRED', 1, 0, 0, 'Receipt for token amount.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241bca5-a1fd-11f1-99c8-52540021303b', 'PLAN_PAYMENT_SCHEDULE', 'Payment Schedule', '04_PLANNING', 'bf4191fb-1601-53e1-b84f-ec7a21a56d6d', 'PLANNING PHASE', '4.2', 'PLANNING PHASE', 2, 'DOCUMENT', 'REQUIRED', 1, 1, 1, 'Milestones and terms against the deliverable list.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241bdd1-a1fd-11f1-99c8-52540021303b', 'PLAN_SIGNED_CONTRACT', 'Signed Contract', '04_PLANNING', 'bf4191fb-1601-53e1-b84f-ec7a21a56d6d', 'PLANNING PHASE', '4.3', 'PLANNING PHASE', 3, 'DOCUMENT', 'CONDITIONAL', 1, 1, 1, 'Executed contract for projects where RIPPOTAI is delivering execution.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241bf02-a1fd-11f1-99c8-52540021303b', 'PLAN_SIGNED_AGREEMENT', 'Signed Agreement', '04_PLANNING', 'bf4191fb-1601-53e1-b84f-ec7a21a56d6d', 'PLANNING PHASE', '4.4', 'PLANNING PHASE', 4, 'DOCUMENT', 'CONDITIONAL', 1, 1, 1, 'Executed consultancy agreement where the scope is design consultancy.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241c02a-a1fd-11f1-99c8-52540021303b', 'PLAN_DRAWINGS_PLAN', 'Drawings Plan', '04_PLANNING', 'bf4191fb-1601-53e1-b84f-ec7a21a56d6d', 'PLANNING PHASE', '4.5', 'PLANNING PHASE', 5, 'DOCUMENT', 'REQUIRED', 1, 1, 0, 'Plan against which drawing production is scheduled.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241c14f-a1fd-11f1-99c8-52540021303b', 'PLAN_EXECUTION_PLAN', 'Execution Plan', '04_PLANNING', 'bf4191fb-1601-53e1-b84f-ec7a21a56d6d', 'PLANNING PHASE', '4.5', 'PLANNING PHASE', 6, 'DOCUMENT', 'REQUIRED', 1, 1, 0, 'Execution plan for downstream delivery.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241c3b4-a1fd-11f1-99c8-52540021303b', 'PLAN_PROJECT_TIMELINE', 'Project Timeline', '04_PLANNING', 'bf4191fb-1601-53e1-b84f-ec7a21a56d6d', 'PLANNING PHASE', '4.5', 'PLANNING PHASE', 7, 'DOCUMENT', 'REQUIRED', 1, 1, 0, 'Programme against which downstream work is scheduled.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241c4d2-a1fd-11f1-99c8-52540021303b', 'PLAN_INITIAL_ESTIMATE', 'Initial Estimate', '04_PLANNING', 'bf4191fb-1601-53e1-b84f-ec7a21a56d6d', 'PLANNING PHASE', '4.5', 'PLANNING PHASE', 8, 'DOCUMENT', 'REQUIRED', 1, 1, 0, 'Opening project estimate.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241c600-a1fd-11f1-99c8-52540021303b', 'PLAN_STANDARD_BOQ', 'Standard BOQ', '04_PLANNING', 'bf4191fb-1601-53e1-b84f-ec7a21a56d6d', 'PLANNING PHASE', '4.5', 'PLANNING PHASE', 9, 'DOCUMENT', 'REQUIRED', 1, 1, 0, 'Standard BOQ prepared as part of the opening planning package.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241c730-a1fd-11f1-99c8-52540021303b', 'DES_CONCEPT_DESIGN_02', 'Concept Design 02 — 3D with Material + Furniture Layout', '05_DESIGN', 'cb595cbe-ba42-5fc3-af81-39e798fce957', 'DESIGN', '5.1', 'DESIGN', 1, 'DOCUMENT', 'REQUIRED', 1, 1, 1, 'Concept 02 incorporating materials and furniture layout.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241c842-a1fd-11f1-99c8-52540021303b', 'DES_DESIGN_DEVELOPMENT_01', 'Design Development 01', '05_DESIGN', 'cb595cbe-ba42-5fc3-af81-39e798fce957', 'DESIGN', '5.3', 'DESIGN', 2, 'DOCUMENT', 'REQUIRED', 1, 1, 1, 'Concept resolved into a workable design.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241c959-a1fd-11f1-99c8-52540021303b', 'DES_DESIGN_DEVELOPMENT_02', 'Design Development 02 — With Material', '05_DESIGN', 'cb595cbe-ba42-5fc3-af81-39e798fce957', 'DESIGN', '5.4', 'DESIGN', 3, 'DOCUMENT', 'REQUIRED', 1, 1, 1, 'Final materials pinned against the developed design.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241cb36-a1fd-11f1-99c8-52540021303b', 'VENDOR_SHORTLIST', 'Vendor Shortlist', 'A_VENDOR_TRADES', 'f5886765-a1ea-56b4-a176-0f187c0f7205', 'VENDOR & TRADES', 'A.1', 'VENDOR & TRADES', 1, 'DOCUMENT', 'REQUIRED', 1, 0, 0, 'Shortlist covering the contractor teams and trades.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241cc5d-a1fd-11f1-99c8-52540021303b', 'VENDOR_SITE_VISIT_SCHEDULE', 'Site Visit Schedule', 'A_VENDOR_TRADES', 'f5886765-a1ea-56b4-a176-0f187c0f7205', 'VENDOR & TRADES', 'A.2', 'VENDOR & TRADES', 2, 'DOCUMENT', 'REQUIRED', 1, 0, 0, 'Vendor and contractor site visit schedule assigned and aligned by Admin.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241cd95-a1fd-11f1-99c8-52540021303b', 'VENDOR_SITE_MEASUREMENT_SHEET', 'Vendor Site Measurement Sheet', 'A_VENDOR_TRADES', 'f5886765-a1ea-56b4-a176-0f187c0f7205', 'VENDOR & TRADES', 'A.2', 'VENDOR & TRADES', 3, 'DOCUMENT', 'REQUIRED', 1, 0, 0, 'Site measurements collected from shortlisted vendors.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241ced3-a1fd-11f1-99c8-52540021303b', 'VENDOR_ESTIMATE', 'Estimate', 'A_VENDOR_TRADES', 'f5886765-a1ea-56b4-a176-0f187c0f7205', 'VENDOR & TRADES', 'A.5', 'VENDOR & TRADES', 4, 'DOCUMENT', 'REQUIRED', 1, 1, 1, 'RIPPOTAI estimate; rates and quotes remain estimates until approved.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241d002-a1fd-11f1-99c8-52540021303b', 'VENDOR_QUOTATION', 'Quotation', 'A_VENDOR_TRADES', 'f5886765-a1ea-56b4-a176-0f187c0f7205', 'VENDOR & TRADES', 'A.6', 'VENDOR & TRADES', 5, 'DOCUMENT', 'REQUIRED', 1, 1, 1, 'Approved, priced, contractual document per trade.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241d138-a1fd-11f1-99c8-52540021303b', 'VENDOR_BOQ', 'BOQ', 'A_VENDOR_TRADES', 'f5886765-a1ea-56b4-a176-0f187c0f7205', 'VENDOR & TRADES', 'A.7', 'VENDOR & TRADES', 6, 'DOCUMENT', 'REQUIRED', 1, 1, 1, 'BOQ created once tender drawings are final and quotations are approved.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241d26a-a1fd-11f1-99c8-52540021303b', 'VENDOR_CONTRACTOR_LINEUP', 'Contractor Lineup', 'A_VENDOR_TRADES', 'f5886765-a1ea-56b4-a176-0f187c0f7205', 'VENDOR & TRADES', 'A.8', 'VENDOR & TRADES', 7, 'DOCUMENT', 'REQUIRED', 1, 0, 1, 'Confirmed contractor teams against the trades they own on site.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241d3a0-a1fd-11f1-99c8-52540021303b', 'MAT_MATERIAL_REQUIREMENT', 'Material Requirement', 'B_MATERIAL', '35ccb713-885f-59f6-9a8f-5aad10fe48ed', 'MATERIAL & PROCUREMENT', 'B.1', 'MATERIAL & PROCUREMENT', 1, 'DOCUMENT', 'REQUIRED', 1, 0, 0, 'Material selections, budget, style and requirements from the design team.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241d4bc-a1fd-11f1-99c8-52540021303b', 'MAT_MATERIAL_RATES_SHEET', 'Material Rates Sheet', 'B_MATERIAL', '35ccb713-885f-59f6-9a8f-5aad10fe48ed', 'MATERIAL & PROCUREMENT', 'B.2', 'MATERIAL & PROCUREMENT', 2, 'DOCUMENT', 'REQUIRED', 1, 1, 0, 'Samples, rates and availability feeding material selection.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241d5ee-a1fd-11f1-99c8-52540021303b', 'MAT_MATERIAL_LAYOUT_SPECIFICATION', 'Material Layouts and Specification', 'B_MATERIAL', '35ccb713-885f-59f6-9a8f-5aad10fe48ed', 'MATERIAL & PROCUREMENT', 'B.3', 'MATERIAL & PROCUREMENT', 3, 'DRAWING', 'REQUIRED', 1, 1, 1, 'Selected materials pinned to drawings for quantification and quotation.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241d72e-a1fd-11f1-99c8-52540021303b', 'MAT_MATERIAL_ESTIMATE', 'Material Estimate', 'B_MATERIAL', '35ccb713-885f-59f6-9a8f-5aad10fe48ed', 'MATERIAL & PROCUREMENT', 'B.4', 'MATERIAL & PROCUREMENT', 4, 'DOCUMENT', 'REQUIRED', 1, 1, 1, 'Material estimate before quotation approval.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241d86f-a1fd-11f1-99c8-52540021303b', 'MAT_MATERIAL_QUOTATION', 'Material Quotation', 'B_MATERIAL', '35ccb713-885f-59f6-9a8f-5aad10fe48ed', 'MATERIAL & PROCUREMENT', 'B.4', 'MATERIAL & PROCUREMENT', 5, 'DOCUMENT', 'REQUIRED', 1, 1, 1, 'Approved material quotation.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241d9bb-a1fd-11f1-99c8-52540021303b', 'MAT_PURCHASE_ORDERS', 'Purchase Orders', 'B_MATERIAL', '35ccb713-885f-59f6-9a8f-5aad10fe48ed', 'MATERIAL & PROCUREMENT', 'B.5', 'MATERIAL & PROCUREMENT', 6, 'DOCUMENT', 'REQUIRED', 1, 1, 1, 'Approved materials purchased and scheduled against site stages.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241daeb-a1fd-11f1-99c8-52540021303b', 'MAT_DELIVERY_CHALLANS', 'Delivery Challans', 'B_MATERIAL', '35ccb713-885f-59f6-9a8f-5aad10fe48ed', 'MATERIAL & PROCUREMENT', 'B.6', 'MATERIAL & PROCUREMENT', 7, 'DOCUMENT', 'REQUIRED', 1, 0, 0, 'Stage-wise material delivery records.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241dc1b-a1fd-11f1-99c8-52540021303b', 'MAT_SITE_INVENTORY_REGISTER', 'Site Inventory Register', 'B_MATERIAL', '35ccb713-885f-59f6-9a8f-5aad10fe48ed', 'MATERIAL & PROCUREMENT', 'B.7', 'MATERIAL & PROCUREMENT', 8, 'DOCUMENT', 'REQUIRED', 1, 0, 0, 'Site material inventory register reconciled against purchase orders.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241dd50-a1fd-11f1-99c8-52540021303b', 'TENDER_BUILDING_LAYOUT', 'Tender — Building Layout', '06_TENDER', '2a0de81d-a43a-5fb5-96ba-94257a9bc75e', 'TENDER DRAWINGS', '6.1', 'TENDER DRAWINGS', 1, 'DRAWING', 'REQUIRED', 1, 1, 1, 'Floor layout; demolition layout is included where needed.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241dea1-a1fd-11f1-99c8-52540021303b', 'TENDER_DEMOLITION_LAYOUT', 'Tender — Demolition Layout', '06_TENDER', '2a0de81d-a43a-5fb5-96ba-94257a9bc75e', 'TENDER DRAWINGS', '6.1', 'TENDER DRAWINGS', 2, 'DRAWING', 'CONDITIONAL', 1, 1, 1, 'Demolition layout where demolition scope exists.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241e081-a1fd-11f1-99c8-52540021303b', 'TENDER_SECTION_ELEVATION', 'Tender — Section & Elevation', '06_TENDER', '2a0de81d-a43a-5fb5-96ba-94257a9bc75e', 'TENDER DRAWINGS', '6.2', 'TENDER DRAWINGS', 3, 'DRAWING', 'REQUIRED', 1, 1, 1, 'Building sections and elevations for vendor pricing.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241e208-a1fd-11f1-99c8-52540021303b', 'TENDER_CIVIL_LAYOUT', 'Tender — Civil Layout', '06_TENDER', '2a0de81d-a43a-5fb5-96ba-94257a9bc75e', 'TENDER DRAWINGS', '6.3', 'TENDER DRAWINGS', 4, 'DRAWING', 'REQUIRED', 1, 1, 1, 'Civil layout for tender pricing.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241e393-a1fd-11f1-99c8-52540021303b', 'TENDER_ELECTRICAL_LAYOUT', 'Tender — Electrical', '06_TENDER', '2a0de81d-a43a-5fb5-96ba-94257a9bc75e', 'TENDER DRAWINGS', '6.4', 'TENDER DRAWINGS', 5, 'DRAWING', 'REQUIRED', 1, 1, 1, 'Electrical layout for tender pricing.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241e535-a1fd-11f1-99c8-52540021303b', 'TENDER_PLUMBING_LAYOUT', 'Tender — Plumbing', '06_TENDER', '2a0de81d-a43a-5fb5-96ba-94257a9bc75e', 'TENDER DRAWINGS', '6.5', 'TENDER DRAWINGS', 6, 'DRAWING', 'REQUIRED', 1, 1, 1, 'Plumbing layout for tender pricing.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241e67e-a1fd-11f1-99c8-52540021303b', 'TENDER_HVAC_LAYOUT', 'Tender — HVAC', '06_TENDER', '2a0de81d-a43a-5fb5-96ba-94257a9bc75e', 'TENDER DRAWINGS', '6.6', 'TENDER DRAWINGS', 7, 'DRAWING', 'REQUIRED', 1, 1, 1, 'AC / HVAC layout for tender pricing.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241e7c5-a1fd-11f1-99c8-52540021303b', 'TENDER_TYPICAL_DETAILS', 'Tender — Typical Details', '06_TENDER', '2a0de81d-a43a-5fb5-96ba-94257a9bc75e', 'TENDER DRAWINGS', '6.7', 'TENDER DRAWINGS', 8, 'DRAWING', 'CONDITIONAL', 1, 1, 1, 'Metal structure or interior elements that need pricing.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241e927-a1fd-11f1-99c8-52540021303b', 'TENDER_LANDSCAPING', 'Tender — Landscaping', '06_TENDER', '2a0de81d-a43a-5fb5-96ba-94257a9bc75e', 'TENDER DRAWINGS', '6.8', 'TENDER DRAWINGS', 9, 'DRAWING', 'CONDITIONAL', 1, 1, 1, 'Landscape drawing where the project has external scope.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241ea77-a1fd-11f1-99c8-52540021303b', 'WORK_DEMOLITION_DETAILS', 'Demolition Details', '07_WORKING', '3a44a34e-db2f-5793-9bbd-dde8d2365828', 'WORKING DRAWINGS', '7.1', 'WORKING DRAWINGS', 1, 'DRAWING', 'CONDITIONAL', 1, 1, 1, 'Construction detailing for demolition work.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241ebac-a1fd-11f1-99c8-52540021303b', 'WORK_CIVIL_DETAILS', 'Civil Details', '07_WORKING', '3a44a34e-db2f-5793-9bbd-dde8d2365828', 'WORKING DRAWINGS', '7.2', 'WORKING DRAWINGS', 2, 'DRAWING', 'REQUIRED', 1, 1, 1, 'Civil detailing for execution.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241ece8-a1fd-11f1-99c8-52540021303b', 'WORK_STRUCTURE_LAYOUT', 'Structure Layout', '07_WORKING', '3a44a34e-db2f-5793-9bbd-dde8d2365828', 'WORKING DRAWINGS', '7.2', 'WORKING DRAWINGS', 3, 'DRAWING', 'REQUIRED', 1, 1, 1, 'Structure layout for execution.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241ee2b-a1fd-11f1-99c8-52540021303b', 'WORK_DOOR_WINDOW_SCHEDULE', 'Door & Window Schedule', '07_WORKING', '3a44a34e-db2f-5793-9bbd-dde8d2365828', 'WORKING DRAWINGS', '7.3', 'WORKING DRAWINGS', 4, 'DRAWING', 'REQUIRED', 1, 1, 1, 'Door and window schedule for Glass & Window.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241ef8c-a1fd-11f1-99c8-52540021303b', 'WORK_STONE_JAMB_DETAILS', 'Stone Jamb Details', '07_WORKING', '3a44a34e-db2f-5793-9bbd-dde8d2365828', 'WORKING DRAWINGS', '7.3', 'WORKING DRAWINGS', 5, 'DRAWING', 'CONDITIONAL', 1, 1, 1, 'Stone jamb details where applicable.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241f192-a1fd-11f1-99c8-52540021303b', 'WORK_FLOORING_LAYOUT', 'Flooring Layout', '07_WORKING', '3a44a34e-db2f-5793-9bbd-dde8d2365828', 'WORKING DRAWINGS', '7.4', 'WORKING DRAWINGS', 6, 'DRAWING', 'REQUIRED', 1, 1, 1, 'Floor layout for execution.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241f2ef-a1fd-11f1-99c8-52540021303b', 'WORK_FLOORING_DETAILS', 'Flooring Details', '07_WORKING', '3a44a34e-db2f-5793-9bbd-dde8d2365828', 'WORKING DRAWINGS', '7.4', 'WORKING DRAWINGS', 7, 'DRAWING', 'REQUIRED', 1, 1, 1, 'Flooring construction details.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241f42d-a1fd-11f1-99c8-52540021303b', 'WORK_BATHROOM_DETAILS', 'Bathroom Details', '07_WORKING', '3a44a34e-db2f-5793-9bbd-dde8d2365828', 'WORKING DRAWINGS', '7.4', 'WORKING DRAWINGS', 8, 'DRAWING', 'REQUIRED', 1, 1, 1, 'Bathroom construction details.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241f562-a1fd-11f1-99c8-52540021303b', 'WORK_CEILING_LAYOUT', 'Ceiling Layout', '07_WORKING', '3a44a34e-db2f-5793-9bbd-dde8d2365828', 'WORKING DRAWINGS', '7.5', 'WORKING DRAWINGS', 9, 'DRAWING', 'REQUIRED', 1, 1, 1, 'Ceiling layout for False Ceiling / POP.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241f6a5-a1fd-11f1-99c8-52540021303b', 'WORK_CEILING_DETAILS', 'Ceiling Details', '07_WORKING', '3a44a34e-db2f-5793-9bbd-dde8d2365828', 'WORKING DRAWINGS', '7.5', 'WORKING DRAWINGS', 10, 'DRAWING', 'REQUIRED', 1, 1, 1, 'Ceiling detailing.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241f7c0-a1fd-11f1-99c8-52540021303b', 'WORK_WALL_ELEVATIONS', 'Wall Elevations', '07_WORKING', '3a44a34e-db2f-5793-9bbd-dde8d2365828', 'WORKING DRAWINGS', '7.6', 'WORKING DRAWINGS', 11, 'DRAWING', 'REQUIRED', 1, 1, 1, 'Wall elevations for Mill Work and Painting.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241f8e3-a1fd-11f1-99c8-52540021303b', 'MOD_KITCHEN_DETAILS', 'Kitchen Details', '07_WORKING', '3a44a34e-db2f-5793-9bbd-dde8d2365828', 'WORKING DRAWINGS', '7.7', 'MODULAR', 12, 'DRAWING', 'CONDITIONAL', 1, 1, 1, 'Kitchen details where kitchen is included in project scope.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241fa0f-a1fd-11f1-99c8-52540021303b', 'MOD_TV_UNIT_DETAILS', 'TV Unit Details', '07_WORKING', '3a44a34e-db2f-5793-9bbd-dde8d2365828', 'WORKING DRAWINGS', '7.8', 'MODULAR', 13, 'DRAWING', 'CONDITIONAL', 1, 1, 1, 'TV unit details where included in scope.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241fb34-a1fd-11f1-99c8-52540021303b', 'MOD_WARDROBE_STORAGE_DETAILS', 'Wardrobe & Storage Details', '07_WORKING', '3a44a34e-db2f-5793-9bbd-dde8d2365828', 'WORKING DRAWINGS', '7.9', 'MODULAR', 14, 'DRAWING', 'CONDITIONAL', 1, 1, 1, 'Wardrobe, storage, crockery and bar unit details as required by scope.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241fc52-a1fd-11f1-99c8-52540021303b', 'MOD_BED_BACK_DETAILS', 'Bed Back Details', '07_WORKING', '3a44a34e-db2f-5793-9bbd-dde8d2365828', 'WORKING DRAWINGS', '7.10', 'MODULAR', 15, 'DRAWING', 'CONDITIONAL', 1, 1, 1, 'Bed back details where included in scope.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241fd85-a1fd-11f1-99c8-52540021303b', 'MOD_WALL_PANELING_DETAILS', 'Wall Panelling Details', '07_WORKING', '3a44a34e-db2f-5793-9bbd-dde8d2365828', 'WORKING DRAWINGS', '7.11', 'MODULAR', 16, 'DRAWING', 'CONDITIONAL', 1, 1, 1, 'Additional wall panelling details where included in scope.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2241fec7-a1fd-11f1-99c8-52540021303b', 'WORK_LANDSCAPE_DETAILS', 'Landscape Details', '07_WORKING', '3a44a34e-db2f-5793-9bbd-dde8d2365828', 'WORKING DRAWINGS', '7.12', 'WORKING DRAWINGS', 17, 'DRAWING', 'CONDITIONAL', 1, 1, 1, 'Detailed landscaping where the project carries external scope.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('22420012-a1fd-11f1-99c8-52540021303b', 'EXEC_FINAL_BOQ', 'Final BOQ', '08_EXECUTION', '5cec1504-2f7a-5667-832f-4a96b85e8d44', 'EXECUTION', '8.0', 'EXECUTION', 1, 'DOCUMENT', 'REQUIRED', 1, 1, 1, 'Final BOQ owned by Accounts & Finance and created with the quotations.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('22420854-a1fd-11f1-99c8-52540021303b', 'EXEC_QC_CHECKLIST_TEMPLATE', 'QC Checklist Template', '08_EXECUTION', '5cec1504-2f7a-5667-832f-4a96b85e8d44', 'EXECUTION', 'QC', 'QUALITY CHECK', 2, 'DOCUMENT', 'REQUIRED', 1, 1, 0, 'Standard checklist template used throughout execution.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('224209eb-a1fd-11f1-99c8-52540021303b', 'EXEC_PHASE_QC_SIGNOFF', 'Phase QC Sign-off', '08_EXECUTION', '5cec1504-2f7a-5667-832f-4a96b85e8d44', 'EXECUTION', 'QC', 'QUALITY CHECK', 3, 'DOCUMENT', 'REQUIRED', 1, 0, 1, 'Phase-level quality sign-off before the next trade starts.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('22420b64-a1fd-11f1-99c8-52540021303b', 'EXEC_WATERPROOFING_WARRANTY', 'Waterproofing Warranty', '08_EXECUTION', '5cec1504-2f7a-5667-832f-4a96b85e8d44', 'EXECUTION', '5.7', 'CIVIL WORK', 4, 'DOCUMENT', 'CONDITIONAL', 1, 0, 1, 'Waterproofing warranty and sign-off.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('22420ce3-a1fd-11f1-99c8-52540021303b', 'EXEC_TERMITE_TREATMENT_CERTIFICATE', 'Termite Treatment Certificate', '08_EXECUTION', '5cec1504-2f7a-5667-832f-4a96b85e8d44', 'EXECUTION', '5.8', 'CIVIL WORK', 5, 'DOCUMENT', 'CONDITIONAL', 1, 0, 1, 'Certificate for termite treatment.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('22420e2c-a1fd-11f1-99c8-52540021303b', 'EXEC_ARCHITECT_SITE_VISIT_SCHEDULE', 'Architect Site Visit Schedule', '08_EXECUTION', '5cec1504-2f7a-5667-832f-4a96b85e8d44', 'EXECUTION', '8.1', 'CONTINUOUS', 6, 'DOCUMENT', 'REQUIRED', 1, 0, 0, 'Fixed architect site visit schedule generated at execution start.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('22423237-a1fd-11f1-99c8-52540021303b', 'EXEC_SITE_VISIT_LOG', 'Site Visit Log', '08_EXECUTION', '5cec1504-2f7a-5667-832f-4a96b85e8d44', 'EXECUTION', '8.1', 'CONTINUOUS', 7, 'DOCUMENT', 'REQUIRED', 1, 0, 0, 'Site visit records for Supervisor and Architect.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('22423420-a1fd-11f1-99c8-52540021303b', 'EXEC_DAILY_PROGRESS_REPORT', 'Daily Progress Report', '08_EXECUTION', '5cec1504-2f7a-5667-832f-4a96b85e8d44', 'EXECUTION', '8.2', 'CONTINUOUS', 8, 'DOCUMENT', 'REQUIRED', 1, 0, 0, 'Daily site report issued to the whole team.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('22423583-a1fd-11f1-99c8-52540021303b', 'EXEC_SITE_MOCKUP_PROCESS_GUIDE', 'Site Mockup Process Guide', '08_EXECUTION', '5cec1504-2f7a-5667-832f-4a96b85e8d44', 'EXECUTION', '8.3', 'CONTINUOUS', 9, 'DOCUMENT', 'CONDITIONAL', 1, 0, 0, 'Process guide for finishes and details proven at full size before volume production.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('224236ba-a1fd-11f1-99c8-52540021303b', 'EXEC_DESIGN_CLARIFICATION', 'Design Clarification', '08_EXECUTION', '5cec1504-2f7a-5667-832f-4a96b85e8d44', 'EXECUTION', '8.4', 'CONTINUOUS', 10, 'DOCUMENT', 'CONDITIONAL', 1, 1, 1, 'Design decisions and site clarifications recorded during execution.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2242380e-a1fd-11f1-99c8-52540021303b', 'EXEC_CIVIL_QUALITY_CHECKLIST', 'Civil Quality Checklist', '08_EXECUTION', '5cec1504-2f7a-5667-832f-4a96b85e8d44', 'EXECUTION', '5', 'CIVIL WORK', 11, 'DOCUMENT', 'REQUIRED', 1, 0, 1, 'Quality checklist covering civil work.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('2242395a-a1fd-11f1-99c8-52540021303b', 'EXEC_FINISHING_QUALITY_CHECKLIST', 'Finishing Quality Checklist', '08_EXECUTION', '5cec1504-2f7a-5667-832f-4a96b85e8d44', 'EXECUTION', '14', 'FINISHING', 12, 'DOCUMENT', 'REQUIRED', 1, 0, 1, 'Quality checklist covering finishing work.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('22423a8c-a1fd-11f1-99c8-52540021303b', 'EXEC_ELECTRICAL_COMPLETION_CERTIFICATE', 'Electrical Completion Certificate', '08_EXECUTION', '5cec1504-2f7a-5667-832f-4a96b85e8d44', 'EXECUTION', '14.6', 'FINISHING', 13, 'DOCUMENT', 'REQUIRED', 1, 0, 1, 'Electrical completion certificate.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('22423bb3-a1fd-11f1-99c8-52540021303b', 'HANDOVER_SNAG_LIST', 'Snag List', '09_HANDOVER', '46eb9f32-06c1-5d8f-b486-0730f4d7a0cb', 'SNAG & HANDOVER', '9.1', 'SNAG & HANDOVER', 1, 'DOCUMENT', 'REQUIRED', 1, 1, 1, 'Trade-by-trade snag list and rectification record.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('22423cc2-a1fd-11f1-99c8-52540021303b', 'HANDOVER_COMPLETION_CERTIFICATE', 'Completion Certificate', '09_HANDOVER', '46eb9f32-06c1-5d8f-b486-0730f4d7a0cb', 'SNAG & HANDOVER', '9.3', 'SNAG & HANDOVER', 2, 'DOCUMENT', 'REQUIRED', 1, 1, 1, 'Final client walkthrough and completion sign-off.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('22423de6-a1fd-11f1-99c8-52540021303b', 'HANDOVER_WARRANTY_PACK', 'Warranty Pack', '09_HANDOVER', '46eb9f32-06c1-5d8f-b486-0730f4d7a0cb', 'SNAG & HANDOVER', '9.4', 'SNAG & HANDOVER', 3, 'DOCUMENT', 'REQUIRED', 1, 0, 0, 'Consolidated warranties handed over to the client.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('22424072-a1fd-11f1-99c8-52540021303b', 'HANDOVER_AS_BUILT_DRAWING_SET', 'As-Built Drawing Set', '09_HANDOVER', '46eb9f32-06c1-5d8f-b486-0730f4d7a0cb', 'SNAG & HANDOVER', '9.4', 'SNAG & HANDOVER', 4, 'DRAWING', 'REQUIRED', 1, 1, 1, 'Final as-built drawing set.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('224241d3-a1fd-11f1-99c8-52540021303b', 'HANDOVER_CARE_MAINTENANCE_NOTES', 'Care & Maintenance Notes', '09_HANDOVER', '46eb9f32-06c1-5d8f-b486-0730f4d7a0cb', 'SNAG & HANDOVER', '9.4', 'SNAG & HANDOVER', 5, 'DOCUMENT', 'REQUIRED', 1, 0, 0, 'Care and maintenance notes handed over to the client.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('224242ea-a1fd-11f1-99c8-52540021303b', 'HANDOVER_CONSOLIDATED_BILLS', 'Consolidated Bills', '09_HANDOVER', '46eb9f32-06c1-5d8f-b486-0730f4d7a0cb', 'SNAG & HANDOVER', '9.4', 'SNAG & HANDOVER', 6, 'DOCUMENT', 'REQUIRED', 1, 0, 1, 'Commercial close-out document consolidating project bills.', 1, '2026-08-27 15:23:19', '2026-09-14 16:34:49'),
+	('67bb4e98-bd50-11f1-a7ce-52540021303b', 'CLIENT_GUIDE', 'Client Guide', 'PRE_DESIGN', NULL, 'Pre Design', NULL, NULL, 10, 'DOCUMENT', 'REQUIRED', 0, 0, 0, 'Client guide containing project information, process overview, expectations and required client inputs.', 1, '2026-10-01 09:57:26', '2026-10-01 09:57:26'),
+	('67c5e546-bd50-11f1-a7ce-52540021303b', 'PITCH_DECK', 'Pitch Deck', 'PRE_DESIGN', NULL, 'Pre Design', NULL, NULL, 20, 'DOCUMENT', 'REQUIRED', 0, 0, 0, 'Project pitch deck presenting the design approach, project vision, scope and key proposal information.', 1, '2026-10-01 09:57:26', '2026-10-01 09:57:26'),
+	('67cf7e01-bd50-11f1-a7ce-52540021303b', 'AGREEMENT_CONSULTANCY', 'Agreement - Consultancy', 'PRE_DESIGN', NULL, 'Pre Design', NULL, NULL, 30, 'DOCUMENT', 'REQUIRED', 0, 1, 1, 'Consultancy agreement defining the services, responsibilities, commercial terms and deliverables.', 1, '2026-10-01 09:57:26', '2026-10-01 09:57:26'),
+	('67d920ab-bd50-11f1-a7ce-52540021303b', 'CONTRACT_EXECUTION', 'Contract - Execution', 'PRE_DESIGN', NULL, 'Pre Design', NULL, NULL, 40, 'DOCUMENT', 'REQUIRED', 0, 1, 1, 'Execution contract defining the agreed scope, commercial terms, responsibilities and execution conditions.', 1, '2026-10-01 09:57:26', '2026-10-01 09:57:26'),
+	('67e2a9fc-bd50-11f1-a7ce-52540021303b', 'MATERIAL_PALETTE', 'Material Palette', 'PRE_DESIGN', NULL, 'Pre Design', NULL, NULL, 50, 'DOCUMENT', 'REQUIRED', 0, 1, 1, 'Material palette documenting selected materials, finishes, colours, textures and related specifications.', 1, '2026-10-01 09:57:26', '2026-10-01 09:57:26');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.document_versions
 CREATE TABLE IF NOT EXISTS `document_versions` (
@@ -1016,7 +1542,7 @@ CREATE TABLE IF NOT EXISTS `document_versions` (
   CONSTRAINT `fk_document_versions_document` FOREIGN KEY (`document_id`) REFERENCES `documents` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.document_versions: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.documents
 CREATE TABLE IF NOT EXISTS `documents` (
@@ -1057,7 +1583,6 @@ CREATE TABLE IF NOT EXISTS `documents` (
   CONSTRAINT `fk_documents_type` FOREIGN KEY (`document_type_id`) REFERENCES `document_types` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.drawing_revisions
 CREATE TABLE IF NOT EXISTS `drawing_revisions` (
@@ -1084,7 +1609,6 @@ CREATE TABLE IF NOT EXISTS `drawing_revisions` (
   CONSTRAINT `fk_drawing_revisions_drawing` FOREIGN KEY (`drawing_id`) REFERENCES `drawings` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.drawings
 CREATE TABLE IF NOT EXISTS `drawings` (
@@ -1121,7 +1645,6 @@ CREATE TABLE IF NOT EXISTS `drawings` (
   CONSTRAINT `fk_drawings_type` FOREIGN KEY (`document_type_id`) REFERENCES `document_types` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.gate_conditions
 CREATE TABLE IF NOT EXISTS `gate_conditions` (
@@ -1139,7 +1662,30 @@ CREATE TABLE IF NOT EXISTS `gate_conditions` (
   CONSTRAINT `gate_conditions_ibfk_1` FOREIGN KEY (`gate_definition_id`) REFERENCES `gate_definitions` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.gate_conditions: ~22 rows (approximately)
+INSERT INTO `gate_conditions` (`id`, `gate_definition_id`, `type`, `label`, `params`, `optional`, `sort_order`, `created_at`, `updated_at`) VALUES
+	('116656ab-02f8-5af6-b922-942727fb558a', '0e3a8b35-ed25-5a29-9ccf-6204c317be5e', 'DOCUMENT_APPROVED', 'Approved: PRE_PROPOSED_LAYOUT', '{"documentTypeCode": "PRE_PROPOSED_LAYOUT"}', 0, 3, '2026-09-12 10:14:54', '2026-09-12 10:14:54'),
+	('1b08506d-1c13-5807-b032-9919742bc98f', '08a47294-c9f0-5dd7-ad84-ab8e66c20eec', 'DOCUMENT_APPROVED', 'Approved: VENDOR_ESTIMATE', '{"documentTypeCode": "VENDOR_ESTIMATE"}', 0, 13, '2026-09-12 10:14:54', '2026-09-12 10:14:54'),
+	('1be7431b-330e-54d9-86c0-1eaee109a98c', '50c9cb7c-ea87-5ee9-abcd-c3d01730429d', 'DOCUMENT_TYPE_ALL_APPROVED', 'Required evidence: 07_WORKING', '{"phaseCode": "07_WORKING"}', 0, 18, '2026-09-12 10:14:55', '2026-09-12 10:14:55'),
+	('1e73a648-898b-52e9-b019-a5e9db820117', '7be85e9f-1869-5cd4-b672-d5ddb4d8e80a', 'DOCUMENT_APPROVED', 'Approved: PLAN_SIGNED_AGREEMENT', '{"documentTypeCode": "PLAN_SIGNED_AGREEMENT"}', 1, 6, '2026-09-12 10:14:54', '2026-09-12 10:14:54'),
+	('31d7941b-8b5e-5c60-b0b7-5b8de2e138ef', '08a47294-c9f0-5dd7-ad84-ab8e66c20eec', 'DOCUMENT_APPROVED', 'Approved: VENDOR_QUOTATION', '{"documentTypeCode": "VENDOR_QUOTATION"}', 0, 14, '2026-09-12 10:14:54', '2026-09-12 10:14:54'),
+	('36682058-bbad-5621-9813-b293a71d896f', 'f53ef67d-685f-539f-94b2-d6db327247d0', 'DOCUMENT_TYPE_ALL_APPROVED', 'Required evidence: 06_TENDER', '{"phaseCode": "06_TENDER"}', 0, 12, '2026-09-12 10:14:54', '2026-09-12 10:14:54'),
+	('530aa162-4730-5298-8968-6f7386fee492', '7be85e9f-1869-5cd4-b672-d5ddb4d8e80a', 'DOCUMENT_APPROVED', 'Approved: PLAN_SIGNED_CONTRACT', '{"documentTypeCode": "PLAN_SIGNED_CONTRACT"}', 1, 7, '2026-09-12 10:14:54', '2026-09-12 10:14:54'),
+	('73e53e3d-b670-5b49-9bc5-2a6902da37df', 'b85b6507-d68c-5336-bfdf-cb085ec1ce87', 'MANUAL_APPROVAL', 'Client final walkthrough and sign-off', '{}', 0, 22, '2026-09-12 10:14:55', '2026-09-12 10:14:55'),
+	('74db003a-b872-5146-9ab0-66561ad77b3d', 'b85b6507-d68c-5336-bfdf-cb085ec1ce87', 'DOCUMENT_TYPE_ALL_APPROVED', 'Required evidence: 09_HANDOVER', '{"phaseCode": "09_HANDOVER"}', 0, 20, '2026-09-12 10:14:55', '2026-09-12 10:14:55'),
+	('7e53e605-3294-50b2-ab46-4edf3f4c7204', 'b934edeb-4f36-5826-bf19-8eb6dec21014', 'PAYMENT_MILESTONE_PAID', 'Paid milestone: TOKEN', '{"milestoneCode": "TOKEN"}', 0, 8, '2026-09-12 10:14:54', '2026-09-12 10:14:54'),
+	('7eef8f79-df71-5f3b-8ccc-4c6a02bdbf1e', '74c20532-c9f0-57e9-bc47-85b3ed2f6d48', 'DOCUMENT_TYPE_ALL_APPROVED', 'Required evidence: 05_DESIGN', '{"phaseCode": "05_DESIGN"}', 0, 11, '2026-09-12 10:14:54', '2026-09-12 10:14:54'),
+	('81afde0c-189b-5fd2-aeb9-5422de440e0c', '0e3a8b35-ed25-5a29-9ccf-6204c317be5e', 'DOCUMENT_TYPE_ALL_APPROVED', 'Required evidence: 02_RECCE', '{"phaseCode": "02_RECCE"}', 0, 2, '2026-09-12 10:14:53', '2026-09-12 10:14:53'),
+	('8c7cc877-c26a-56a8-9eb4-e211d83a8392', '05fe5ae3-24f7-59a6-b561-cbb61c8425a2', 'DOCUMENT_APPROVED', 'Approved: WORK_CIVIL_DETAILS', '{"documentTypeCode": "WORK_CIVIL_DETAILS"}', 0, 16, '2026-09-12 10:14:54', '2026-09-12 10:14:54'),
+	('959dc2bd-b0bf-5b92-9f3c-500a7f095e02', 'c3bbdf55-3269-5039-98ad-1968bdbfa15a', 'DOCUMENT_APPROVED', 'Approved: DES_CONCEPT_DESIGN_02', '{"documentTypeCode": "DES_CONCEPT_DESIGN_02"}', 0, 10, '2026-09-12 10:14:54', '2026-09-12 10:14:54'),
+	('a54aceb6-11a9-5508-ae3e-2ccf46947711', 'b85b6507-d68c-5336-bfdf-cb085ec1ce87', 'DOCUMENT_TYPE_ALL_APPROVED', 'Required evidence: 08_EXECUTION', '{"phaseCode": "08_EXECUTION"}', 0, 19, '2026-09-12 10:14:55', '2026-09-12 10:14:55'),
+	('b8620468-0227-5bde-a8a0-bc92f3475712', '6e013338-2fd4-5706-aa2a-d5e4f972405b', 'DOCUMENT_TYPE_ALL_APPROVED', 'Required evidence: 03_PRE_DESIGN', '{"phaseCode": "03_PRE_DESIGN"}', 0, 4, '2026-09-12 10:14:54', '2026-09-12 10:14:54'),
+	('d45aef83-bf27-5485-b96a-11ce554a3355', '1916686c-758c-5edb-b543-1364cd87dc1c', 'PAYMENT_MILESTONE_PAID', 'Paid milestone: PHASE_01', '{"milestoneCode": "PHASE_01"}', 0, 9, '2026-09-12 10:14:54', '2026-09-12 10:14:54'),
+	('d4b7e257-d7af-54d2-a844-239d8af01cf8', '7be85e9f-1869-5cd4-b672-d5ddb4d8e80a', 'DOCUMENT_TYPE_ALL_APPROVED', 'Required evidence: 04_PLANNING', '{"phaseCode": "04_PLANNING"}', 0, 5, '2026-09-12 10:14:54', '2026-09-12 10:14:54'),
+	('d5d6e70c-d618-5425-8062-e6a41a3c3ccc', '05fe5ae3-24f7-59a6-b561-cbb61c8425a2', 'DOCUMENT_APPROVED', 'Approved: WORK_STRUCTURE_LAYOUT', '{"documentTypeCode": "WORK_STRUCTURE_LAYOUT"}', 0, 17, '2026-09-12 10:14:55', '2026-09-12 10:14:55'),
+	('e4a0d681-3301-516a-8ea1-fc1ed355848d', '05fe5ae3-24f7-59a6-b561-cbb61c8425a2', 'DOCUMENT_TYPE_ALL_APPROVED', 'Required evidence: A_VENDOR_TRADES', '{"phaseCode": "A_VENDOR_TRADES"}', 0, 15, '2026-09-12 10:14:54', '2026-09-12 10:14:54'),
+	('f7b3dda4-bade-574f-988b-55444a16311e', 'b85b6507-d68c-5336-bfdf-cb085ec1ce87', 'DOCUMENT_TYPE_ALL_APPROVED', 'Required evidence: B_MATERIAL', '{"phaseCode": "B_MATERIAL"}', 0, 21, '2026-09-12 10:14:55', '2026-09-12 10:14:55'),
+	('fe555a82-ef14-5971-895f-315fcbb9d8a0', '0e3a8b35-ed25-5a29-9ccf-6204c317be5e', 'DOCUMENT_TYPE_ALL_APPROVED', 'Required evidence: 01_BRIEF', '{"phaseCode": "01_BRIEF"}', 0, 1, '2026-09-12 10:14:53', '2026-09-12 10:14:53');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.gate_definitions
 CREATE TABLE IF NOT EXISTS `gate_definitions` (
@@ -1163,7 +1709,20 @@ CREATE TABLE IF NOT EXISTS `gate_definitions` (
   CONSTRAINT `fk_gate_definitions_opens_phase` FOREIGN KEY (`opens_phase_id`) REFERENCES `gate_phase_definitions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.gate_definitions: ~12 rows (approximately)
+INSERT INTO `gate_definitions` (`id`, `code`, `name`, `sequence_order`, `trigger_condition`, `handoff_between`, `progress_threshold_pct`, `opens_phase_id`, `allows_override`, `is_active`, `created_at`, `updated_at`, `phase_code`) VALUES
+	('05fe5ae3-24f7-59a6-b561-cbb61c8425a2', 'CONTRACTOR_LINEUP_HANDOFF', 'CONTRACTOR LINEUP HANDOFF', 10, NULL, NULL, 0.00, '226e8d00-7ad3-51d4-8275-6545b955b4ca', 0, 1, '2026-09-12 04:44:53', '2026-09-12 04:44:53', 'A_VENDOR_TRADES'),
+	('08a47294-c9f0-5dd7-ad84-ab8e66c20eec', 'ESTIMATE_APPROVED', 'ESTIMATE APPROVED', 9, NULL, NULL, 0.00, NULL, 0, 1, '2026-09-12 04:44:53', '2026-09-12 04:44:53', 'A_VENDOR_TRADES'),
+	('0e3a8b35-ed25-5a29-9ccf-6204c317be5e', 'LAYOUT_FINALISED', 'LAYOUT FINALISED', 1, NULL, NULL, 0.00, '4933e9ea-1801-5dbf-b5a2-77c130faae83', 0, 1, '2026-09-12 04:44:53', '2026-09-12 04:44:53', '03_PRE_DESIGN'),
+	('1916686c-758c-5edb-b543-1364cd87dc1c', 'PAYMENT_PHASE_01', 'PAYMENT PHASE 01', 7, NULL, NULL, 0.00, 'decfc696-08b4-5d84-8a18-9ea425263cf1', 0, 1, '2026-09-12 04:44:53', '2026-09-12 04:44:53', '05_DESIGN'),
+	('50c9cb7c-ea87-5ee9-abcd-c3d01730429d', 'WORKING_DRAWINGS_GFC', 'WORKING DRAWINGS GFC', 11, NULL, NULL, 0.00, NULL, 0, 1, '2026-09-12 04:44:53', '2026-09-12 04:44:53', '07_WORKING'),
+	('6e013338-2fd4-5706-aa2a-d5e4f972405b', 'CLIENT_SIGNOFF_PITCH_CONCEPT01', 'CLIENT SIGNOFF PITCH CONCEPT01', 2, NULL, NULL, 0.00, '70dd9bc6-e4b9-5d56-8fcf-ca706e09aee3', 0, 1, '2026-09-12 04:44:53', '2026-09-12 04:44:53', '03_PRE_DESIGN'),
+	('74c20532-c9f0-57e9-bc47-85b3ed2f6d48', 'DESIGN_CLOSED', 'DESIGN CLOSED', 6, NULL, NULL, 0.00, NULL, 0, 1, '2026-09-12 04:44:53', '2026-09-12 04:44:53', '05_DESIGN'),
+	('7be85e9f-1869-5cd4-b672-d5ddb4d8e80a', 'PROJECT_MOBILISED', 'PROJECT MOBILISED', 4, NULL, NULL, 0.00, 'ebfbb363-f883-5708-87bc-a8964ae3bc59', 0, 1, '2026-09-12 04:44:53', '2026-09-12 04:44:53', '04_PLANNING'),
+	('b85b6507-d68c-5336-bfdf-cb085ec1ce87', 'FINAL_CLIENT_SIGNOFF', 'FINAL CLIENT SIGNOFF', 12, NULL, NULL, 100.00, NULL, 0, 1, '2026-09-12 04:44:53', '2026-09-12 04:44:53', '09_HANDOVER'),
+	('b934edeb-4f36-5826-bf19-8eb6dec21014', 'TOKEN_RECEIVED', 'TOKEN RECEIVED', 3, NULL, NULL, 0.00, NULL, 0, 1, '2026-09-12 04:44:53', '2026-09-12 04:44:53', '04_PLANNING'),
+	('c3bbdf55-3269-5039-98ad-1968bdbfa15a', 'CONCEPT02_FINALISED', 'CONCEPT02 FINALISED', 5, NULL, NULL, 0.00, '1c066883-29e6-52dc-81a5-9e9ce9b74c41', 0, 1, '2026-09-12 04:44:53', '2026-09-12 04:44:53', '05_DESIGN'),
+	('f53ef67d-685f-539f-94b2-d6db327247d0', 'TENDER_DRAWINGS_FINALISED', 'TENDER DRAWINGS FINALISED', 8, NULL, NULL, 0.00, '2d7b2953-14e1-5086-9c8b-f8493503a00c', 0, 1, '2026-09-12 04:44:53', '2026-09-12 04:44:53', '06_TENDER');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.gate_phase_definitions
 CREATE TABLE IF NOT EXISTS `gate_phase_definitions` (
@@ -1184,7 +1743,19 @@ CREATE TABLE IF NOT EXISTS `gate_phase_definitions` (
   KEY `idx_gate_phase_definitions_lead_team` (`lead_team_code`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.gate_phase_definitions: ~11 rows (approximately)
+INSERT INTO `gate_phase_definitions` (`id`, `code`, `title`, `sort_order`, `is_parallel`, `lead_team_code`, `note`, `span`, `created_at`, `updated_at`) VALUES
+	('1c066883-29e6-52dc-81a5-9e9ce9b74c41', 'B_MATERIAL', 'B MATERIAL', 11, 1, NULL, NULL, NULL, '2026-09-12 04:44:53', '2026-09-12 04:44:53'),
+	('226e8d00-7ad3-51d4-8275-6545b955b4ca', '08_EXECUTION', '08 EXECUTION', 8, 0, NULL, NULL, NULL, '2026-09-12 04:44:52', '2026-09-12 04:44:52'),
+	('2d7b2953-14e1-5086-9c8b-f8493503a00c', '07_WORKING', '07 WORKING', 7, 0, NULL, NULL, NULL, '2026-09-12 04:44:52', '2026-09-12 04:44:52'),
+	('33f35a10-ff72-5449-b99b-b0e7ab056c75', '09_HANDOVER', '09 HANDOVER', 9, 0, NULL, NULL, NULL, '2026-09-12 04:44:52', '2026-09-12 04:44:52'),
+	('4933e9ea-1801-5dbf-b5a2-77c130faae83', 'A_VENDOR_TRADES', 'A VENDOR TRADES', 10, 1, NULL, NULL, NULL, '2026-09-12 04:44:52', '2026-09-12 04:44:52'),
+	('5007a9b5-0a5c-55c4-ae0c-4236d9174f38', '03_PRE_DESIGN', '03 PRE DESIGN', 3, 0, NULL, NULL, NULL, '2026-09-12 04:44:51', '2026-09-12 04:44:51'),
+	('70dd9bc6-e4b9-5d56-8fcf-ca706e09aee3', '04_PLANNING', '04 PLANNING', 4, 0, NULL, NULL, NULL, '2026-09-12 04:44:52', '2026-09-12 04:44:52'),
+	('bea92db7-80aa-56b9-b39c-674c1f55ed4c', '01_BRIEF', '01 BRIEF', 1, 0, NULL, NULL, NULL, '2026-09-12 04:44:51', '2026-09-12 04:44:51'),
+	('decfc696-08b4-5d84-8a18-9ea425263cf1', '06_TENDER', '06 TENDER', 6, 0, NULL, NULL, NULL, '2026-09-12 04:44:52', '2026-09-12 04:44:52'),
+	('ebfbb363-f883-5708-87bc-a8964ae3bc59', '05_DESIGN', '05 DESIGN', 5, 0, NULL, NULL, NULL, '2026-09-12 04:44:52', '2026-09-12 04:44:52'),
+	('f0561004-bf80-51d7-98c6-f6df94cec2ed', '02_RECCE', '02 RECCE', 2, 0, NULL, NULL, NULL, '2026-09-12 04:44:51', '2026-09-12 04:44:51');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.gate_transition_logs
 CREATE TABLE IF NOT EXISTS `gate_transition_logs` (
@@ -1205,7 +1776,7 @@ CREATE TABLE IF NOT EXISTS `gate_transition_logs` (
   CONSTRAINT `gate_transition_logs_ibfk_2` FOREIGN KEY (`gate_definition_id`) REFERENCES `gate_definitions` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.gate_transition_logs: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.google_tokens
 CREATE TABLE IF NOT EXISTS `google_tokens` (
@@ -1222,7 +1793,7 @@ CREATE TABLE IF NOT EXISTS `google_tokens` (
   CONSTRAINT `google_tokens_userId_fk` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.google_tokens: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.handover_packages
 CREATE TABLE IF NOT EXISTS `handover_packages` (
@@ -1240,7 +1811,7 @@ CREATE TABLE IF NOT EXISTS `handover_packages` (
   KEY `ix_handover_packages_project` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.handover_packages: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.inventory_transactions
 CREATE TABLE IF NOT EXISTS `inventory_transactions` (
@@ -1289,7 +1860,6 @@ CREATE TABLE IF NOT EXISTS `inventory_transactions` (
   CONSTRAINT `fk_inventory_transactions_material` FOREIGN KEY (`material_id`) REFERENCES `material_masters` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.lead_activity
 CREATE TABLE IF NOT EXISTS `lead_activity` (
@@ -1304,7 +1874,6 @@ CREATE TABLE IF NOT EXISTS `lead_activity` (
   CONSTRAINT `fk_lead_activity_lead` FOREIGN KEY (`lead_id`) REFERENCES `leads` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.lead_notes
 CREATE TABLE IF NOT EXISTS `lead_notes` (
@@ -1318,7 +1887,7 @@ CREATE TABLE IF NOT EXISTS `lead_notes` (
   CONSTRAINT `fk_lead_notes_lead` FOREIGN KEY (`lead_id`) REFERENCES `leads` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.lead_notes: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.lead_tasks
 CREATE TABLE IF NOT EXISTS `lead_tasks` (
@@ -1334,7 +1903,7 @@ CREATE TABLE IF NOT EXISTS `lead_tasks` (
   KEY `idx_lead_tasks_lead` (`lead_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.lead_tasks: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.leads
 CREATE TABLE IF NOT EXISTS `leads` (
@@ -1385,7 +1954,6 @@ CREATE TABLE IF NOT EXISTS `leads` (
   KEY `idx_leads_zoho` (`zoho_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.library_categories
 CREATE TABLE IF NOT EXISTS `library_categories` (
@@ -1398,7 +1966,23 @@ CREATE TABLE IF NOT EXISTS `library_categories` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.library_categories: ~12 rows (approximately)
+INSERT INTO `library_categories` (`id`, `name`, `sort_order`, `created_at`, `updated_at`, `deleted_at`) VALUES
+	('13fb3036-2ea5-4b9c-9455-b5babae9afd3', 'EXTRA MUTILINE ZONING', 0, '2026-07-23 10:45:02', '2026-07-23 10:45:02', NULL),
+	('a5b6e3d0-7e91-11f1-b721-52540021303b', 'Civil Work', 1, '2026-07-13 13:35:44', '2026-07-13 13:35:44', NULL),
+	('a5b72998-7e91-11f1-b721-52540021303b', 'Flooring', 2, '2026-07-13 13:35:44', '2026-07-13 13:35:44', NULL),
+	('a5b72e9c-7e91-11f1-b721-52540021303b', 'Wall Finishes', 3, '2026-07-13 13:35:44', '2026-07-13 13:35:44', NULL),
+	('a5b72efe-7e91-11f1-b721-52540021303b', 'Electrical', 4, '2026-07-13 13:35:44', '2026-07-13 13:35:44', NULL),
+	('a5b72f39-7e91-11f1-b721-52540021303b', 'Plumbing', 5, '2026-07-13 13:35:44', '2026-07-13 13:35:44', NULL),
+	('a5b72ff0-7e91-11f1-b721-52540021303b', 'Sanitary Fittings', 6, '2026-07-13 13:35:44', '2026-07-13 13:35:44', NULL),
+	('a5b7302c-7e91-11f1-b721-52540021303b', 'Doors & Windows', 7, '2026-07-13 13:35:44', '2026-07-13 13:35:44', NULL),
+	('a5b7305d-7e91-11f1-b721-52540021303b', 'Painting', 8, '2026-07-13 13:35:44', '2026-07-13 13:35:44', NULL),
+	('a5b73094-7e91-11f1-b721-52540021303b', 'False Ceiling', 9, '2026-07-13 13:35:44', '2026-07-13 13:35:44', NULL),
+	('a5b730c7-7e91-11f1-b721-52540021303b', 'Kitchen Work', 10, '2026-07-13 13:35:44', '2026-07-13 13:35:44', NULL),
+	('a5b730f8-7e91-11f1-b721-52540021303b', 'Waterproofing', 11, '2026-07-13 13:35:44', '2026-07-13 13:35:44', NULL),
+	('a5b73128-7e91-11f1-b721-52540021303b', 'External Development', 12, '2026-07-13 13:35:44', '2026-07-13 13:35:44', NULL),
+	('a6eb61a9-09e1-4a50-93d0-44d8901fffe4', 'NEW INLINEW', 0, '2026-07-23 10:49:15', '2026-07-23 10:49:15', NULL),
+	('def4dc69-9245-4961-adec-76ad2cfaf9cd', 'new category', 0, '2026-07-22 04:05:43', '2026-07-22 04:05:43', NULL);
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.library_items
 CREATE TABLE IF NOT EXISTS `library_items` (
@@ -1419,7 +2003,91 @@ CREATE TABLE IF NOT EXISTS `library_items` (
   CONSTRAINT `fk_library_item_category` FOREIGN KEY (`category_id`) REFERENCES `library_categories` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.library_items: ~79 rows (approximately)
+INSERT INTO `library_items` (`id`, `name`, `category_id`, `category_name`, `unit_id`, `unit`, `default_rate`, `notes`, `is_active`, `created_at`, `updated_at`, `deleted_at`) VALUES
+	('131ad9be-7e92-11f1-b721-52540021303b', 'RCC Concrete M25 Grade', 'a5b6e3d0-7e91-11f1-b721-52540021303b', 'Civil Work', NULL, 'Cum', 8500.00, 'Ready mix concrete work', 1, '2026-07-13 13:38:47', '2026-07-21 13:36:14', '2026-07-21 13:36:14'),
+	('1ae0f458-764f-4718-9047-0968fbe162b6', 'RCC WORK', 'a5b6e3d0-7e91-11f1-b721-52540021303b', 'Civil Work', '1a520798-e982-463d-a969-6646c24d2be0', 'CFT.', 195.15, 'RCC Grade M25 in lintels/beams, excluding reinforcement steel.', 1, '2026-07-23 11:37:32', '2026-07-23 11:37:32', NULL),
+	('24e11a37-7f46-11f1-b721-52540021303b', 'Cement 43 Grade', 'a5b6e3d0-7e91-11f1-b721-52540021303b', 'Civil Work', NULL, 'Bag', 420.00, 'Premium quality cement', 1, '2026-07-14 11:07:46', '2026-07-21 13:36:01', '2026-07-21 13:36:01'),
+	('24e17766-7f46-11f1-b721-52540021303b', 'TMT Steel Bar 12mm', 'a5b7302c-7e91-11f1-b721-52540021303b', 'Doors & Windows', NULL, 'Kg', 75.50, 'High strength reinforcement steel', 1, '2026-07-14 11:07:46', '2026-07-21 13:36:10', '2026-07-21 13:36:10'),
+	('24e17bad-7f46-11f1-b721-52540021303b', 'River Sand', 'a5b6e3d0-7e91-11f1-b721-52540021303b', 'Civil Work', NULL, 'Ton', 1800.00, 'Construction grade river sand', 1, '2026-07-14 11:07:46', '2026-07-21 13:36:13', '2026-07-21 13:36:13'),
+	('24e17dac-7f46-11f1-b721-52540021303b', 'Floor Tiles 600x600mm', 'a5b72998-7e91-11f1-b721-52540021303b', 'Flooring', NULL, 'Sqft', 85.00, 'Premium ceramic floor tiles', 1, '2026-07-14 11:07:46', '2026-07-21 13:36:38', '2026-07-21 13:36:38'),
+	('24e17ea8-7f46-11f1-b721-52540021303b', 'Granite Flooring', 'a5b72998-7e91-11f1-b721-52540021303b', 'Flooring', NULL, 'Sqft', 180.00, 'Natural granite flooring material', 1, '2026-07-14 11:07:46', '2026-07-21 13:36:41', '2026-07-21 13:36:41'),
+	('24e19e5d-7f46-11f1-b721-52540021303b', 'Wall Putty', 'a5b72e9c-7e91-11f1-b721-52540021303b', 'Wall Finishes', NULL, 'Kg', 40.00, 'Smooth wall finishing material', 1, '2026-07-14 11:07:46', '2026-07-21 13:36:07', '2026-07-21 13:36:07'),
+	('24e19fe5-7f46-11f1-b721-52540021303b', 'Interior Wall Paint', 'a5b72e9c-7e91-11f1-b721-52540021303b', 'Wall Finishes', NULL, 'Liter', 350.00, 'Premium interior paint', 1, '2026-07-14 11:07:46', '2026-07-21 13:36:28', '2026-07-21 13:36:28'),
+	('24e1a092-7f46-11f1-b721-52540021303b', 'Copper Wire 2.5mm', 'a5b72efe-7e91-11f1-b721-52540021303b', 'Electrical', NULL, 'Meter', 85.00, 'ISI certified copper wire', 1, '2026-07-14 11:07:46', '2026-07-21 13:36:31', '2026-07-21 13:36:31'),
+	('24e1a127-7f46-11f1-b721-52540021303b', 'Modular Switch 6A', 'a5b72efe-7e91-11f1-b721-52540021303b', 'Electrical', NULL, 'Nos', 120.00, 'Electrical switch fitting', 1, '2026-07-14 11:07:46', '2026-07-21 13:36:20', '2026-07-21 13:36:20'),
+	('24e1a1b3-7f46-11f1-b721-52540021303b', 'PVC Pipe 4 Inch', 'a5b72f39-7e91-11f1-b721-52540021303b', 'Plumbing', NULL, 'Meter', 320.00, 'Heavy duty drainage pipe', 1, '2026-07-14 11:07:46', '2026-07-21 13:36:16', '2026-07-21 13:36:16'),
+	('24e1a23b-7f46-11f1-b721-52540021303b', 'CPVC Pipe 1 Inch', 'a5b72f39-7e91-11f1-b721-52540021303b', 'Plumbing', NULL, 'Meter', 150.00, 'Water supply piping', 1, '2026-07-14 11:07:46', '2026-07-21 13:36:33', '2026-07-21 13:36:33'),
+	('24e1a2c9-7f46-11f1-b721-52540021303b', 'Wash Basin Ceramic', 'a5b72ff0-7e91-11f1-b721-52540021303b', 'Sanitary Fittings', NULL, 'Nos', 4500.00, 'Premium ceramic wash basin', 1, '2026-07-14 11:07:46', '2026-07-21 13:36:06', '2026-07-21 13:36:06'),
+	('24e1a344-7f46-11f1-b721-52540021303b', 'Western Toilet Seat', 'a5b72ff0-7e91-11f1-b721-52540021303b', 'Sanitary Fittings', NULL, 'Nos', 8500.00, 'Bathroom sanitary fitting', 1, '2026-07-14 11:07:46', '2026-07-14 09:03:23', '2026-07-14 09:03:23'),
+	('24e1a3cb-7f46-11f1-b721-52540021303b', 'Flush Door', 'a5b7302c-7e91-11f1-b721-52540021303b', 'Doors & Windows', NULL, 'Nos', 7500.00, 'Engineered wooden flush door', 1, '2026-07-14 11:07:46', '2026-07-21 13:36:39', '2026-07-21 13:36:39'),
+	('24e1a44d-7f46-11f1-b721-52540021303b', 'Aluminium Window Frame', 'a5b7302c-7e91-11f1-b721-52540021303b', 'Doors & Windows', NULL, 'Sqft', 650.00, 'Aluminium sliding window', 1, '2026-07-14 11:07:46', '2026-07-21 13:35:49', '2026-07-21 13:35:49'),
+	('24e1a4d1-7f46-11f1-b721-52540021303b', 'Exterior Paint', 'a5b7305d-7e91-11f1-b721-52540021303b', 'Painting', NULL, 'Liter', 420.00, 'Weather resistant exterior paint', 1, '2026-07-14 11:07:46', '2026-07-21 13:36:36', '2026-07-21 13:36:36'),
+	('24e1a587-7f46-11f1-b721-52540021303b', 'Gypsum Board Ceiling', 'a5b73094-7e91-11f1-b721-52540021303b', 'False Ceiling', NULL, 'Sqft', 120.00, 'Gypsum false ceiling work', 1, '2026-07-14 11:07:46', '2026-07-21 13:36:42', '2026-07-21 13:36:42'),
+	('24e1a608-7f46-11f1-b721-52540021303b', 'Kitchen Platform Granite', 'a5b730c7-7e91-11f1-b721-52540021303b', 'Kitchen Work', NULL, 'Sqft', 250.00, 'Granite kitchen countertop', 1, '2026-07-14 11:07:46', '2026-07-21 13:36:26', '2026-07-21 13:36:26'),
+	('24e1a6ef-7f46-11f1-b721-52540021303b', 'Waterproofing Chemical', 'a5b730f8-7e91-11f1-b721-52540021303b', 'Waterproofing', NULL, 'Kg', 220.00, 'Waterproofing treatment chemical', 1, '2026-07-14 11:07:46', '2026-07-21 13:36:04', '2026-07-21 13:36:04'),
+	('24e1a77b-7f46-11f1-b721-52540021303b', 'Boundary Wall Work', 'a5b73128-7e91-11f1-b721-52540021303b', 'External Development', NULL, 'Sqft', 950.00, 'External civil development work', 1, '2026-07-14 11:07:46', '2026-07-21 13:35:53', '2026-07-21 13:35:53'),
+	('2971f71a-52b6-4236-b8bd-79199b535f21', 'New item adding', 'a5b7305d-7e91-11f1-b721-52540021303b', 'Painting', 'c740a76c-746e-11f1-8bb6-52540021303b', 'Bdl', 120.78, 'New item addingNew item addingNew item addingNew item addingNew item addingNew item addingNew item addingNew item addingNew item addingNew item addingNew item addingNew item adding', 1, '2026-07-23 11:01:53', '2026-07-23 11:27:58', '2026-07-23 11:27:58'),
+	('2a3bdad6-b757-483a-81f5-6c64eb277fc2', 'Main passenger gate (MS)', NULL, 'METAL WORK', NULL, 'Nos.', 0.00, '', 1, '2026-08-25 15:47:49', '2026-08-25 15:47:49', NULL),
+	('2ba4db2f-d592-499a-bd22-70c9483ee0ce', 'Front railing', NULL, 'METAL WORK', NULL, 'Nos.', 0.00, 'Providing and fixing MS railing at front elevation using fabricated sections, welded joints ground smooth, fixed to line and level with anchor fasteners, finished with primer and enamel paint.', 1, '2026-08-25 15:45:20', '2026-08-25 15:45:20', NULL),
+	('3368d28a-7f46-11f1-b721-52540021303b', 'PCC Concrete 1:4:8', 'a5b6e3d0-7e91-11f1-b721-52540021303b', 'Civil Work', NULL, 'Cubic Meter', 5500.00, 'Plain cement concrete foundation work', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:19', '2026-07-21 13:36:19'),
+	('3368d8e5-7f46-11f1-b721-52540021303b', 'RCC Concrete M25', 'a5b72ff0-7e91-11f1-b721-52540021303b', 'Sanitary Fittings', NULL, 'Cubic Meter', 7000.00, 'Reinforced concrete work', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:15', '2026-07-21 13:36:15'),
+	('3368dc7c-7f46-11f1-b721-52540021303b', 'Brick Masonry Work', 'a5b6e3d0-7e91-11f1-b721-52540021303b', 'Civil Work', NULL, 'Cubic Meter', 8500.00, 'First class brick masonry', 1, '2026-07-14 11:08:11', '2026-07-21 13:35:57', '2026-07-21 13:35:57'),
+	('3368de71-7f46-11f1-b721-52540021303b', 'AAC Block 6 Inch', 'a5b72e9c-7e91-11f1-b721-52540021303b', 'Wall Finishes', NULL, 'Nos', 85.00, 'Lightweight AAC construction block', 1, '2026-07-14 11:08:11', '2026-07-21 13:35:46', '2026-07-21 13:35:46'),
+	('3368dfcb-7f46-11f1-b721-52540021303b', 'Marble Flooring', 'a5b72998-7e91-11f1-b721-52540021303b', 'Flooring', NULL, 'Sqft', 250.00, 'Premium marble flooring', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:22', '2026-07-21 13:36:22'),
+	('3368e07e-7f46-11f1-b721-52540021303b', 'Vitrified Tiles', 'a5b72998-7e91-11f1-b721-52540021303b', 'Flooring', NULL, 'Sqft', 95.00, 'Polished vitrified floor tiles', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:08', '2026-07-21 13:36:08'),
+	('3368e132-7f46-11f1-b721-52540021303b', 'Tile Adhesive', 'a5b72998-7e91-11f1-b721-52540021303b', 'Flooring', NULL, 'Bag', 450.00, 'Tile fixing adhesive', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:11', '2026-07-21 13:36:11'),
+	('3368e1e5-7f46-11f1-b721-52540021303b', 'Floor Skirting', 'a5b72998-7e91-11f1-b721-52540021303b', 'Flooring', NULL, 'Rft', 55.00, 'Floor edge finishing work', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:38', '2026-07-21 13:36:38'),
+	('3368e29d-7f46-11f1-b721-52540021303b', 'Wall Texture Finish', 'a5b72e9c-7e91-11f1-b721-52540021303b', 'Wall Finishes', NULL, 'Sqft', 90.00, 'Decorative wall texture coating', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:07', '2026-07-21 13:36:07'),
+	('3368e337-7f46-11f1-b721-52540021303b', 'Gypsum Wall Plaster', 'a5b72e9c-7e91-11f1-b721-52540021303b', 'Wall Finishes', NULL, 'Sqft', 45.00, 'Smooth gypsum plaster finish', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:42', '2026-07-21 13:36:42'),
+	('336921f8-7f46-11f1-b721-52540021303b', 'POP Wall Finish', 'a5b72e9c-7e91-11f1-b721-52540021303b', 'Wall Finishes', NULL, 'Sqft', 60.00, 'POP finishing work', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:17', '2026-07-21 13:36:17'),
+	('3369249a-7f46-11f1-b721-52540021303b', 'LED Ceiling Light', 'a5b72efe-7e91-11f1-b721-52540021303b', 'Electrical', NULL, 'Nos', 850.00, 'Energy efficient LED light', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:24', '2026-07-21 13:36:24'),
+	('33692618-7f46-11f1-b721-52540021303b', 'Distribution Board 8 Way', 'a5b72efe-7e91-11f1-b721-52540021303b', 'Electrical', NULL, 'Nos', 4500.00, 'Electrical distribution panel', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:34', '2026-07-21 13:36:34'),
+	('336927df-7f46-11f1-b721-52540021303b', 'MCB 32 Amp', 'a5b72efe-7e91-11f1-b721-52540021303b', 'Electrical', NULL, 'Nos', 450.00, 'Safety circuit breaker', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:21', '2026-07-21 13:36:21'),
+	('33692978-7f46-11f1-b721-52540021303b', 'Electrical Conduit Pipe', 'a5b72efe-7e91-11f1-b721-52540021303b', 'Electrical', NULL, 'Meter', 35.00, 'PVC electrical conduit pipe', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:35', '2026-07-21 13:36:35'),
+	('33692aab-7f46-11f1-b721-52540021303b', 'UPVC Water Pipe', 'a5b72f39-7e91-11f1-b721-52540021303b', 'Plumbing', NULL, 'Meter', 180.00, 'UPVC water supply pipe', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:09', '2026-07-21 13:36:09'),
+	('33692b48-7f46-11f1-b721-52540021303b', 'Brass Angle Valve', 'a5b72f39-7e91-11f1-b721-52540021303b', 'Plumbing', NULL, 'Nos', 350.00, 'Brass plumbing valve', 1, '2026-07-14 11:08:11', '2026-07-21 13:35:55', '2026-07-21 13:35:55'),
+	('33692be3-7f46-11f1-b721-52540021303b', 'Floor Drain', 'a5b72f39-7e91-11f1-b721-52540021303b', 'Plumbing', NULL, 'Nos', 750.00, 'Bathroom floor drain fitting', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:37', '2026-07-21 13:36:37'),
+	('33692c91-7f46-11f1-b721-52540021303b', 'Bathroom Mixer Tap', 'a5b72ff0-7e91-11f1-b721-52540021303b', 'Sanitary Fittings', NULL, 'Nos', 4500.00, 'Premium bathroom mixer', 1, '2026-07-14 11:08:11', '2026-07-21 13:35:50', '2026-07-21 13:35:50'),
+	('33692d2c-7f46-11f1-b721-52540021303b', 'Kitchen Sink Stainless Steel', 'a5b72ff0-7e91-11f1-b721-52540021303b', 'Sanitary Fittings', NULL, 'Nos', 3500.00, 'SS kitchen sink', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:25', '2026-07-21 13:36:25'),
+	('33692de0-7f46-11f1-b721-52540021303b', 'Main Entrance Door', 'a5b7302c-7e91-11f1-b721-52540021303b', 'Doors & Windows', NULL, 'Nos', 25000.00, 'Decorative wooden entrance door', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:23', '2026-07-21 13:36:23'),
+	('33692e79-7f46-11f1-b721-52540021303b', 'Sliding Glass Window', 'a5b7302c-7e91-11f1-b721-52540021303b', 'Doors & Windows', NULL, 'Sqft', 950.00, 'Aluminium sliding glass window', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:12', '2026-07-21 13:36:12'),
+	('33692f22-7f46-11f1-b721-52540021303b', 'Primer Coat', 'a5b7305d-7e91-11f1-b721-52540021303b', 'Painting', NULL, 'Liter', 180.00, 'Wall primer application', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:17', '2026-07-21 13:36:17'),
+	('33692fab-7f46-11f1-b721-52540021303b', 'Enamel Paint', 'a5b7305d-7e91-11f1-b721-52540021303b', 'Painting', NULL, 'Liter', 450.00, 'Metal and wood enamel paint', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:35', '2026-07-21 13:36:35'),
+	('33693043-7f46-11f1-b721-52540021303b', 'POP False Ceiling Design', 'a5b73094-7e91-11f1-b721-52540021303b', 'False Ceiling', NULL, 'Sqft', 180.00, 'Designer POP ceiling work', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:18', '2026-07-21 13:36:18'),
+	('336930d6-7f46-11f1-b721-52540021303b', 'Cove Lighting Work', 'a5b73094-7e91-11f1-b721-52540021303b', 'False Ceiling', NULL, 'Rft', 120.00, 'Decorative ceiling lighting', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:32', '2026-07-21 13:36:32'),
+	('33693179-7f46-11f1-b721-52540021303b', 'Modular Kitchen Cabinet', 'a5b730c7-7e91-11f1-b721-52540021303b', 'Kitchen Work', NULL, 'Sqft', 1800.00, 'Modular kitchen storage cabinet', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:20', '2026-07-21 13:36:20'),
+	('33693213-7f46-11f1-b721-52540021303b', 'Kitchen Chimney', 'a5b730c7-7e91-11f1-b721-52540021303b', 'Kitchen Work', NULL, 'Nos', 18000.00, 'Kitchen exhaust chimney', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:27', '2026-07-21 13:36:27'),
+	('336932b2-7f46-11f1-b721-52540021303b', 'Terrace Waterproofing', 'a5b730f8-7e91-11f1-b721-52540021303b', 'Waterproofing', NULL, 'Sqft', 90.00, 'Terrace leakage prevention work', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:12', '2026-07-21 13:36:12'),
+	('3369334f-7f46-11f1-b721-52540021303b', 'Bathroom Waterproofing', 'a5b72f39-7e91-11f1-b721-52540021303b', 'Plumbing', NULL, 'Sqft', 120.00, 'Bathroom waterproofing treatment', 1, '2026-07-14 11:08:11', '2026-07-21 13:35:52', '2026-07-21 13:35:52'),
+	('336933f6-7f46-11f1-b721-52540021303b', 'Compound Wall Construction', 'a5b73128-7e91-11f1-b721-52540021303b', 'External Development', NULL, 'Rft', 1800.00, 'Boundary wall construction work', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:30', '2026-07-21 13:36:30'),
+	('33693492-7f46-11f1-b721-52540021303b', 'Garden Landscaping', 'a5b73128-7e91-11f1-b721-52540021303b', 'External Development', NULL, 'Sqft', 150.00, 'Landscape development work', 1, '2026-07-14 11:08:11', '2026-07-21 13:36:40', '2026-07-21 13:36:40'),
+	('37505e4b-54dc-4335-a7c4-2a93d4f427e7', 'Terrace metal shed with lifting', NULL, 'METAL WORK', NULL, 'Sqft', 0.00, 'Providing and fixing MS tubular truss framework with profiled roofing sheet and glass-wool insulation layer. Includes hoisting and lifting of all fabricated members to terrace level, alignment to line and level, welding, grinding of joints, one coat red-oxide primer and two coats synthetic enamel finish.', 1, '2026-08-25 15:44:09', '2026-08-25 15:44:09', NULL),
+	('3b41f865-3df9-4427-962d-be6be9f50022', 'dhruv', NULL, 'EXTRA MUTILINE ZONING', NULL, 'Nos.', 1.00, '', 1, '2026-10-08 11:48:35', '2026-10-08 11:48:35', NULL),
+	('3fbf5b8e-6e61-4d49-a474-7726ec089d22', 'VRF stand', NULL, 'METAL WORK', NULL, 'Nos.', 0.00, '', 1, '2026-08-25 15:48:37', '2026-08-25 15:48:37', NULL),
+	('40634593-363b-4238-87ff-3c4987b8bdff', 'Cartage', NULL, 'METAL WORK', NULL, 'Nos.', 0.00, '', 1, '2026-08-25 15:48:58', '2026-08-25 15:48:58', NULL),
+	('4a712ec1-a44a-46c2-be8e-1fbc635c6516', 'Strengthening work at metal pillar junctions', NULL, 'CIVIL WORKS EXTENSION-WITH METAL WORK', NULL, 'Nos.', 0.00, '', 1, '2026-08-25 17:10:55', '2026-08-25 17:10:55', NULL),
+	('7b3361c9-147f-4f51-b81d-95fc46b55405', 'Temporary access staircase (front facade)', NULL, 'METAL WORK', NULL, 'Nos.', 0.00, 'Fabrication and erection of temporary MS access staircase at front elevation, including stringers, treads, intermediate bracing and base anchoring, for safe access during execution period.', 1, '2026-08-25 15:45:00', '2026-08-25 15:45:00', NULL),
+	('7beabc84-ac04-4d38-99ef-05e470c7bcac', 'Dismantling of temporary staircase', NULL, 'METAL WORK', NULL, 'Nos.', 0.00, '', 1, '2026-08-25 15:50:13', '2026-08-25 15:50:13', NULL),
+	('85f8a334-75d6-45c2-acbc-fbd2f2e367d9', 'NE WITEM 123', 'a5b7305d-7e91-11f1-b721-52540021303b', 'Painting', 'c740a6a9-746e-11f1-8bb6-52540021303b', 'Day', 120.00, '', 1, '2026-07-22 04:28:58', '2026-07-23 10:14:22', '2026-07-23 10:14:22'),
+	('8b9276d7-f90a-43eb-8352-022643fb08e7', 'SDFSDFSDF', 'a6eb61a9-09e1-4a50-93d0-44d8901fffe4', 'NEW INLINEW', '328f54cc-e46f-4c9f-a8ea-04a4376bd563', 'CBM', 18.09, 'SDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDFSDF', 1, '2026-07-23 10:49:33', '2026-07-23 11:28:00', '2026-07-23 11:28:00'),
+	('9bcd8164-14dd-431a-9b96-c950c4abdbf5', 'Centering & Shuttering', 'a5b6e3d0-7e91-11f1-b721-52540021303b', 'Civil Work', 'cf4d3bfc-fdaa-4a30-934b-1654b1bcbaad', 'SQFT', 76.32, 'Centering and shuttering for lintels/beams.', 1, '2026-07-23 11:39:31', '2026-07-23 11:39:31', NULL),
+	('9f5922bb-65dc-43c9-8c6a-205765ce3325', 'Main gate (MS)', NULL, 'METAL WORK', NULL, 'Nos.', 0.00, '', 1, '2026-08-25 15:47:20', '2026-08-25 15:47:20', NULL),
+	('b27cb57d-31a3-4ebe-95aa-8bcdb36e5b11', 'Demolition & Dismantling', 'a5b6e3d0-7e91-11f1-b721-52540021303b', 'Civil Work', '1a520798-e982-463d-a969-6646c24d2be0', 'CFT.', 71.28, 'Demolition & Dismantling', 1, '2026-07-23 11:34:45', '2026-07-23 11:34:45', NULL),
+	('b616fc81-acb6-4b1c-ae24-f5c133710937', 'AC platform', NULL, 'METAL WORK', NULL, 'Nos.', 0.00, '', 1, '2026-08-25 15:48:25', '2026-08-25 15:48:25', NULL),
+	('bad7f03b-dd9b-44e3-bcf1-557202fb9c7d', 'Miscellaneous / Site Support', 'a5b6e3d0-7e91-11f1-b721-52540021303b', 'Civil Work', 'bb27df14-910d-4f81-a663-006a2d254c0f', 'L.S', 253300.00, 'Debris disposal, repair work, and site support allowance.', 1, '2026-07-23 11:42:06', '2026-07-23 11:42:06', NULL),
+	('ce25613f-c6a1-4d36-a09a-f0d9719d6901', 'Mumty wall extension and boundary masonry', NULL, 'CIVIL WORKS EXTENSION-WITH METAL WORK', NULL, 'Nos.', 0.00, '', 1, '2026-08-25 17:11:10', '2026-08-25 17:11:10', NULL),
+	('d27147bc-bb7f-49c2-b1f0-48e91ca1a1b2', 'Waterproofing', 'a5b6e3d0-7e91-11f1-b721-52540021303b', 'Civil Work', 'cf4d3bfc-fdaa-4a30-934b-1654b1bcbaad', 'SQFT', 100.00, 'Waterproofing membrane (Pidilite) to terrace slab.', 1, '2026-07-23 11:40:30', '2026-07-23 13:07:52', NULL),
+	('da159274-1462-4d1f-aa26-1767e61b12f3', 'Staircase railing (MS)', NULL, 'METAL WORK', NULL, 'Nos.', 0.00, 'Providing and fixing MS staircase railing including balusters, continuous handrail, newel post fixing and end returns, aligned to stair pitch, finished with primer and enamel paint.', 1, '2026-08-25 15:45:41', '2026-08-25 15:45:41', NULL),
+	('df08d7aa-7b41-4874-ba51-42df8ee92e29', 'Brick Masonry', 'a5b6e3d0-7e91-11f1-b721-52540021303b', 'Civil Work', 'cf4d3bfc-fdaa-4a30-934b-1654b1bcbaad', 'SQFT', 286.20, 'Brick masonry in cement mortar 1:6 (1 cement: 6 coarse sand), first-class burnt clay bricks.', 1, '2026-07-23 11:35:44', '2026-07-23 11:35:44', NULL),
+	('e030c8c0-b125-4a5f-9592-c37ef9ec63b8', 'Cement Plaster', 'a5b6e3d0-7e91-11f1-b721-52540021303b', 'Civil Work', 'cf4d3bfc-fdaa-4a30-934b-1654b1bcbaad', 'SQFT', 40.57, '12mm thick cement plaster in cement mortar 1:4 (1 cement: 4 fine sand).', 1, '2026-07-23 11:36:29', '2026-07-23 11:36:29', NULL),
+	('e5f7e8c1-1dd7-472c-af7c-6c72b78839ca', 'Reinforcement Steel', '13fb3036-2ea5-4b9c-9455-b5babae9afd3', 'EXTRA MUTILINE ZONING', 'bd2e16ef-6e09-40b3-b9cc-d304d9ac4f1a', 'MT', 65000.00, 'Reinforcement steel, Grade Fe 500D.', 1, '2026-07-23 11:38:43', '2026-07-23 11:38:43', NULL),
+	('e72afd98-f165-442a-a605-6293cb56f1d2', 'Brick Masonry', 'a5b6e3d0-7e91-11f1-b721-52540021303b', 'Civil Work', 'c740a76c-746e-11f1-8bb6-52540021303b', 'Bdl', 286.20, 'Providing and laying Brick Masonry with First-class burnt clay bricks of approved quality in\ncement mortar 1:6 (1 cement : 6 coarse sand), including soaking of bricks, raking out joints,\nscaffolding, curing, and all labour, materials, tools and tackles complete in all respects as per\nCPWD Specifications and as directed by the Engineer-in-Charge.', 1, '2026-07-23 10:25:52', '2026-07-23 11:27:53', '2026-07-23 11:27:53'),
+	('e8380a7a-3947-4cbf-b07b-a1083bcdd969', 'Slider fittings', NULL, 'METAL WORK', NULL, 'Nos.', 0.00, '', 1, '2026-08-25 15:48:48', '2026-08-25 15:48:48', NULL),
+	('f78a4ba2-587f-415d-9f97-1f945c83d2ac', 'Demolition/dismantling', 'a5b6e3d0-7e91-11f1-b721-52540021303b', 'Civil Work', 'c740a643-746e-11f1-8bb6-52540021303b', 'Hr', 71.28, 'Demolition/ Dismantling of existing brick masonry, cement plaster and reinforced cement\nconcrete (RCC) work, including cutting where required, stacking of reusable materials as\ndirected, loading, carriage and disposal of unserviceable debris/malba outside the municipal\nlimits or at an approved dumping ground, complete in all respects as per CPWD\nSpecifications and as directed by the Engineer-in-Charge.', 1, '2026-07-23 10:23:48', '2026-07-23 11:27:55', '2026-07-23 11:27:55'),
+	('fafc08e4-7e91-11f1-b721-52540021303b', 'Brick Masonry Work', 'a5b6e3d0-7e91-11f1-b721-52540021303b', 'Civil Work', NULL, 'Cum', 9500.00, 'Red brick masonry including mortar', 1, '2026-07-13 13:38:07', '2026-07-21 13:35:59', '2026-07-21 13:35:59'),
+	('fec4fed8-b699-43d8-a21b-b7756845de19', 'new item ', 'a5b7302c-7e91-11f1-b721-52540021303b', 'Doors & Windows', 'c740a5d1-746e-11f1-8bb6-52540021303b', NULL, 123.00, '', 1, '2026-07-22 04:05:20', '2026-07-23 10:14:24', '2026-07-23 10:14:24'),
+	('ffa6ec78-a026-4969-ad92-ce7385011f90', 'Perimeter railing above metal shed', NULL, 'METAL WORK', NULL, 'Nos.', 0.00, '', 1, '2026-08-25 15:48:09', '2026-08-25 15:48:09', NULL);
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.manpower_entries
 CREATE TABLE IF NOT EXISTS `manpower_entries` (
@@ -1435,9 +2103,8 @@ CREATE TABLE IF NOT EXISTS `manpower_entries` (
   KEY `idx_manpower_entries_daily_site_report_id` (`daily_site_report_id`),
   KEY `idx_manpower_entries_team_id` (`team_id`),
   CONSTRAINT `fk_manpower_entries_daily_site_report` FOREIGN KEY (`daily_site_report_id`) REFERENCES `daily_site_reports` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.material_masters
 CREATE TABLE IF NOT EXISTS `material_masters` (
@@ -1467,7 +2134,6 @@ CREATE TABLE IF NOT EXISTS `material_masters` (
   CONSTRAINT `fk_material_masters_unit_id` FOREIGN KEY (`unit_id`) REFERENCES `units` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.material_procurement_items
 CREATE TABLE IF NOT EXISTS `material_procurement_items` (
@@ -1494,7 +2160,6 @@ CREATE TABLE IF NOT EXISTS `material_procurement_items` (
   CONSTRAINT `fk_material_procurement_items_procurement` FOREIGN KEY (`procurement_id`) REFERENCES `material_procurements` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.material_procurements
 CREATE TABLE IF NOT EXISTS `material_procurements` (
@@ -1514,7 +2179,6 @@ CREATE TABLE IF NOT EXISTS `material_procurements` (
   CONSTRAINT `fk_material_procurements_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.material_requirements
 CREATE TABLE IF NOT EXISTS `material_requirements` (
@@ -1541,7 +2205,6 @@ CREATE TABLE IF NOT EXISTS `material_requirements` (
   CONSTRAINT `fk_material_requirements_material_master` FOREIGN KEY (`materialMasterId`) REFERENCES `material_masters` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.material_vendors
 CREATE TABLE IF NOT EXISTS `material_vendors` (
@@ -1568,7 +2231,6 @@ CREATE TABLE IF NOT EXISTS `material_vendors` (
   CONSTRAINT `fk_material_vendors_vendor_id` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.microsoft_tokens
 CREATE TABLE IF NOT EXISTS `microsoft_tokens` (
@@ -1585,7 +2247,7 @@ CREATE TABLE IF NOT EXISTS `microsoft_tokens` (
   CONSTRAINT `microsoft_tokens_userId_fk` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.microsoft_tokens: ~1 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.milestones
 CREATE TABLE IF NOT EXISTS `milestones` (
@@ -1620,7 +2282,7 @@ CREATE TABLE IF NOT EXISTS `milestones` (
   CONSTRAINT `fk_milestones_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.milestones: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.mockups
 CREATE TABLE IF NOT EXISTS `mockups` (
@@ -1648,7 +2310,7 @@ CREATE TABLE IF NOT EXISTS `mockups` (
   KEY `mockups_project_id` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.mockups: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.notes
 CREATE TABLE IF NOT EXISTS `notes` (
@@ -1670,7 +2332,7 @@ CREATE TABLE IF NOT EXISTS `notes` (
   KEY `idx_notes_created_by` (`created_by`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.notes: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.notifications
 CREATE TABLE IF NOT EXISTS `notifications` (
@@ -1689,7 +2351,6 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.password_reset_tokens
 CREATE TABLE IF NOT EXISTS `password_reset_tokens` (
@@ -1706,7 +2367,6 @@ CREATE TABLE IF NOT EXISTS `password_reset_tokens` (
   CONSTRAINT `fk_password_reset_tokens_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.payment_schedule_milestones
 CREATE TABLE IF NOT EXISTS `payment_schedule_milestones` (
@@ -1734,7 +2394,6 @@ CREATE TABLE IF NOT EXISTS `payment_schedule_milestones` (
   CONSTRAINT `fk_payment_schedule_milestones_schedule` FOREIGN KEY (`payment_schedule_id`) REFERENCES `payment_schedules` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.payment_schedules
 CREATE TABLE IF NOT EXISTS `payment_schedules` (
@@ -1762,7 +2421,6 @@ CREATE TABLE IF NOT EXISTS `payment_schedules` (
   CONSTRAINT `fk_payment_schedules_terms_template` FOREIGN KEY (`terms_template_id`) REFERENCES `terms_templates` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.permissions
 CREATE TABLE IF NOT EXISTS `permissions` (
@@ -1777,7 +2435,504 @@ CREATE TABLE IF NOT EXISTS `permissions` (
   UNIQUE KEY `uk_permissions_resource_action` (`resource`,`action`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.permissions: ~492 rows (approximately)
+INSERT INTO `permissions` (`id`, `name`, `resource`, `action`, `description`, `created_at`) VALUES
+	('4cf46ab4-c49b-11f1-a0d7-52540021303b', 'activity-logs:create', 'activity-logs', 'create', 'Staff API capability: activity-logs:create', '2026-10-10 11:11:11'),
+	('4d0546b3-c49b-11f1-a0d7-52540021303b', 'activity-logs:read', 'activity-logs', 'read', 'Staff API capability: activity-logs:read', '2026-10-10 11:11:11'),
+	('4d155bef-c49b-11f1-a0d7-52540021303b', 'apps:create', 'apps', 'create', 'Staff API capability: apps:create', '2026-10-10 11:11:11'),
+	('4d264b12-c49b-11f1-a0d7-52540021303b', 'apps:delete', 'apps', 'delete', 'Staff API capability: apps:delete', '2026-10-10 11:11:11'),
+	('4d35154f-c49b-11f1-a0d7-52540021303b', 'apps:read', 'apps', 'read', 'Staff API capability: apps:read', '2026-10-10 11:11:11'),
+	('4d438359-c49b-11f1-a0d7-52540021303b', 'apps:update', 'apps', 'update', 'Staff API capability: apps:update', '2026-10-10 11:11:12'),
+	('4d530b5b-c49b-11f1-a0d7-52540021303b', 'architect-quality:create', 'architect-quality', 'create', 'Staff API capability: architect-quality:create', '2026-10-10 11:11:12'),
+	('4d61e954-c49b-11f1-a0d7-52540021303b', 'architect-quality:delete', 'architect-quality', 'delete', 'Staff API capability: architect-quality:delete', '2026-10-10 11:11:12'),
+	('4d7031eb-c49b-11f1-a0d7-52540021303b', 'architect-quality:read', 'architect-quality', 'read', 'Staff API capability: architect-quality:read', '2026-10-10 11:11:12'),
+	('4d7efa0e-c49b-11f1-a0d7-52540021303b', 'architect-quality:update', 'architect-quality', 'update', 'Staff API capability: architect-quality:update', '2026-10-10 11:11:12'),
+	('4d8d6867-c49b-11f1-a0d7-52540021303b', 'architect-snags:create', 'architect-snags', 'create', 'Staff API capability: architect-snags:create', '2026-10-10 11:11:12'),
+	('4d9bd089-c49b-11f1-a0d7-52540021303b', 'architect-snags:delete', 'architect-snags', 'delete', 'Staff API capability: architect-snags:delete', '2026-10-10 11:11:12'),
+	('4daa3dc0-c49b-11f1-a0d7-52540021303b', 'architect-snags:read', 'architect-snags', 'read', 'Staff API capability: architect-snags:read', '2026-10-10 11:11:12'),
+	('4db89857-c49b-11f1-a0d7-52540021303b', 'architect-snags:update', 'architect-snags', 'update', 'Staff API capability: architect-snags:update', '2026-10-10 11:11:12'),
+	('4dc7052d-c49b-11f1-a0d7-52540021303b', 'architect-visit-stages:create', 'architect-visit-stages', 'create', 'Staff API capability: architect-visit-stages:create', '2026-10-10 11:11:12'),
+	('4dd55a46-c49b-11f1-a0d7-52540021303b', 'architect-visit-stages:delete', 'architect-visit-stages', 'delete', 'Staff API capability: architect-visit-stages:delete', '2026-10-10 11:11:12'),
+	('4de3b2b1-c49b-11f1-a0d7-52540021303b', 'architect-visit-stages:read', 'architect-visit-stages', 'read', 'Staff API capability: architect-visit-stages:read', '2026-10-10 11:11:13'),
+	('4df257ca-c49b-11f1-a0d7-52540021303b', 'architect-visit-stages:update', 'architect-visit-stages', 'update', 'Staff API capability: architect-visit-stages:update', '2026-10-10 11:11:13'),
+	('4e00c40a-c49b-11f1-a0d7-52540021303b', 'auth-google:connect', 'auth-google', 'connect', 'Staff API capability: auth-google:connect', '2026-10-10 11:11:13'),
+	('4e0f4082-c49b-11f1-a0d7-52540021303b', 'auth-google:delete', 'auth-google', 'delete', 'Staff API capability: auth-google:delete', '2026-10-10 11:11:13'),
+	('4e1e10ac-c49b-11f1-a0d7-52540021303b', 'auth-google:read', 'auth-google', 'read', 'Staff API capability: auth-google:read', '2026-10-10 11:11:13'),
+	('4e2ca429-c49b-11f1-a0d7-52540021303b', 'auth-microsoft:connect', 'auth-microsoft', 'connect', 'Staff API capability: auth-microsoft:connect', '2026-10-10 11:11:13'),
+	('4e3b0d5f-c49b-11f1-a0d7-52540021303b', 'auth-microsoft:delete', 'auth-microsoft', 'delete', 'Staff API capability: auth-microsoft:delete', '2026-10-10 11:11:13'),
+	('4e4963d5-c49b-11f1-a0d7-52540021303b', 'auth-microsoft:read', 'auth-microsoft', 'read', 'Staff API capability: auth-microsoft:read', '2026-10-10 11:11:13'),
+	('4e57e65b-c49b-11f1-a0d7-52540021303b', 'auth-tokens:delete', 'auth-tokens', 'delete', 'Staff API capability: auth-tokens:delete', '2026-10-10 11:11:13'),
+	('4e665014-c49b-11f1-a0d7-52540021303b', 'auth-zoho:connect', 'auth-zoho', 'connect', 'Staff API capability: auth-zoho:connect', '2026-10-10 11:11:13'),
+	('4e751183-c49b-11f1-a0d7-52540021303b', 'auth-zoho:delete', 'auth-zoho', 'delete', 'Staff API capability: auth-zoho:delete', '2026-10-10 11:11:14'),
+	('4e8476a9-c49b-11f1-a0d7-52540021303b', 'auth-zoho:read', 'auth-zoho', 'read', 'Staff API capability: auth-zoho:read', '2026-10-10 11:11:14'),
+	('4e9315a8-c49b-11f1-a0d7-52540021303b', 'automation:create', 'automation', 'create', 'Staff API capability: automation:create', '2026-10-10 11:11:14'),
+	('4ea2489e-c49b-11f1-a0d7-52540021303b', 'automation:delete', 'automation', 'delete', 'Staff API capability: automation:delete', '2026-10-10 11:11:14'),
+	('4eb0b24c-c49b-11f1-a0d7-52540021303b', 'automation:execute', 'automation', 'execute', 'Staff API capability: automation:execute', '2026-10-10 11:11:14'),
+	('4ebf4baa-c49b-11f1-a0d7-52540021303b', 'automation:read', 'automation', 'read', 'Staff API capability: automation:read', '2026-10-10 11:11:14'),
+	('4ecefc38-c49b-11f1-a0d7-52540021303b', 'automation:update', 'automation', 'update', 'Staff API capability: automation:update', '2026-10-10 11:11:14'),
+	('4eddcde5-c49b-11f1-a0d7-52540021303b', 'boq-activity:read', 'boq-activity', 'read', 'Staff API capability: boq-activity:read', '2026-10-10 11:11:14'),
+	('4eeccf6c-c49b-11f1-a0d7-52540021303b', 'boq-catalog:read', 'boq-catalog', 'read', 'Staff API capability: boq-catalog:read', '2026-10-10 11:11:14'),
+	('4efb7700-c49b-11f1-a0d7-52540021303b', 'boq-templates:create', 'boq-templates', 'create', 'Staff API capability: boq-templates:create', '2026-10-10 11:11:14'),
+	('4f09e196-c49b-11f1-a0d7-52540021303b', 'boq-templates:delete', 'boq-templates', 'delete', 'Staff API capability: boq-templates:delete', '2026-10-10 11:11:15'),
+	('4f18902f-c49b-11f1-a0d7-52540021303b', 'boq-templates:read', 'boq-templates', 'read', 'Staff API capability: boq-templates:read', '2026-10-10 11:11:15'),
+	('4f277b07-c49b-11f1-a0d7-52540021303b', 'boq-templates:update', 'boq-templates', 'update', 'Staff API capability: boq-templates:update', '2026-10-10 11:11:15'),
+	('4fadb488-c49b-11f1-a0d7-52540021303b', 'boq:read', 'boq', 'read', 'Staff API capability: boq:read', '2026-10-10 11:11:16'),
+	('4fbc5eaf-c49b-11f1-a0d7-52540021303b', 'boq:submit', 'boq', 'submit', 'Staff API capability: boq:submit', '2026-10-10 11:11:16'),
+	('4fe94691-c49b-11f1-a0d7-52540021303b', 'budget-estimates:create', 'budget-estimates', 'create', 'Staff API capability: budget-estimates:create', '2026-10-10 11:11:16'),
+	('4ff8113e-c49b-11f1-a0d7-52540021303b', 'budget-estimates:delete', 'budget-estimates', 'delete', 'Staff API capability: budget-estimates:delete', '2026-10-10 11:11:16'),
+	('5006da71-c49b-11f1-a0d7-52540021303b', 'budget-estimates:lock', 'budget-estimates', 'lock', 'Staff API capability: budget-estimates:lock', '2026-10-10 11:11:16'),
+	('50165352-c49b-11f1-a0d7-52540021303b', 'budget-estimates:read', 'budget-estimates', 'read', 'Staff API capability: budget-estimates:read', '2026-10-10 11:11:16'),
+	('5024ee69-c49b-11f1-a0d7-52540021303b', 'budget-estimates:recalculate', 'budget-estimates', 'recalculate', 'Staff API capability: budget-estimates:recalculate', '2026-10-10 11:11:16'),
+	('5033a409-c49b-11f1-a0d7-52540021303b', 'budget-estimates:update', 'budget-estimates', 'update', 'Staff API capability: budget-estimates:update', '2026-10-10 11:11:16'),
+	('504215d3-c49b-11f1-a0d7-52540021303b', 'business-proposals:create', 'business-proposals', 'create', 'Staff API capability: business-proposals:create', '2026-10-10 11:11:17'),
+	('5050c3d3-c49b-11f1-a0d7-52540021303b', 'business-proposals:read', 'business-proposals', 'read', 'Staff API capability: business-proposals:read', '2026-10-10 11:11:17'),
+	('5086523e-c49b-11f1-a0d7-52540021303b', 'business-proposals:update', 'business-proposals', 'update', 'Staff API capability: business-proposals:update', '2026-10-10 11:11:17'),
+	('509580c5-c49b-11f1-a0d7-52540021303b', 'calendar-events:create', 'calendar-events', 'create', 'Staff API capability: calendar-events:create', '2026-10-10 11:11:17'),
+	('50a4007b-c49b-11f1-a0d7-52540021303b', 'calendar-events:delete', 'calendar-events', 'delete', 'Staff API capability: calendar-events:delete', '2026-10-10 11:11:17'),
+	('50b2e1fc-c49b-11f1-a0d7-52540021303b', 'calendar-events:read', 'calendar-events', 'read', 'Staff API capability: calendar-events:read', '2026-10-10 11:11:17'),
+	('50c1762b-c49b-11f1-a0d7-52540021303b', 'calendar-events:update', 'calendar-events', 'update', 'Staff API capability: calendar-events:update', '2026-10-10 11:11:17'),
+	('50d02aaa-c49b-11f1-a0d7-52540021303b', 'cdn:upload', 'cdn', 'upload', 'Staff API capability: cdn:upload', '2026-10-10 11:11:17'),
+	('50dfc90d-c49b-11f1-a0d7-52540021303b', 'client-portal:create', 'client-portal', 'create', 'Staff API capability: client-portal:create', '2026-10-10 11:11:18'),
+	('50ee7d9c-c49b-11f1-a0d7-52540021303b', 'client-portal:deliver', 'client-portal', 'deliver', 'Staff API capability: client-portal:deliver', '2026-10-10 11:11:18'),
+	('50fd9170-c49b-11f1-a0d7-52540021303b', 'client-portal:prepare', 'client-portal', 'prepare', 'Staff API capability: client-portal:prepare', '2026-10-10 11:11:18'),
+	('510bf933-c49b-11f1-a0d7-52540021303b', 'client-portal:read', 'client-portal', 'read', 'Staff API capability: client-portal:read', '2026-10-10 11:11:18'),
+	('511aa4bf-c49b-11f1-a0d7-52540021303b', 'client-portal:revoke', 'client-portal', 'revoke', 'Staff API capability: client-portal:revoke', '2026-10-10 11:11:18'),
+	('5129c322-c49b-11f1-a0d7-52540021303b', 'clients:create', 'clients', 'create', 'Staff API capability: clients:create', '2026-10-10 11:11:18'),
+	('51386622-c49b-11f1-a0d7-52540021303b', 'clients:delete', 'clients', 'delete', 'Staff API capability: clients:delete', '2026-10-10 11:11:18'),
+	('5146e96b-c49b-11f1-a0d7-52540021303b', 'clients:read', 'clients', 'read', 'Staff API capability: clients:read', '2026-10-10 11:11:18'),
+	('51559ffa-c49b-11f1-a0d7-52540021303b', 'clients:restore', 'clients', 'restore', 'Staff API capability: clients:restore', '2026-10-10 11:11:18'),
+	('5164b941-c49b-11f1-a0d7-52540021303b', 'clients:update', 'clients', 'update', 'Staff API capability: clients:update', '2026-10-10 11:11:18'),
+	('51734d55-c49b-11f1-a0d7-52540021303b', 'command-center:approve', 'command-center', 'approve', 'Staff API capability: command-center:approve', '2026-10-10 11:11:19'),
+	('51821c11-c49b-11f1-a0d7-52540021303b', 'command-center:complete', 'command-center', 'complete', 'Staff API capability: command-center:complete', '2026-10-10 11:11:19'),
+	('5190aea7-c49b-11f1-a0d7-52540021303b', 'command-center:read', 'command-center', 'read', 'Staff API capability: command-center:read', '2026-10-10 11:11:19'),
+	('519f49c6-c49b-11f1-a0d7-52540021303b', 'command-center:refresh', 'command-center', 'refresh', 'Staff API capability: command-center:refresh', '2026-10-10 11:11:19'),
+	('51adc839-c49b-11f1-a0d7-52540021303b', 'command-center:review', 'command-center', 'review', 'Staff API capability: command-center:review', '2026-10-10 11:11:19'),
+	('51bc7d35-c49b-11f1-a0d7-52540021303b', 'command-center:upload', 'command-center', 'upload', 'Staff API capability: command-center:upload', '2026-10-10 11:11:19'),
+	('51cbdf08-c49b-11f1-a0d7-52540021303b', 'dashboard:read', 'dashboard', 'read', 'Staff API capability: dashboard:read', '2026-10-10 11:11:19'),
+	('51dada48-c49b-11f1-a0d7-52540021303b', 'dashboards:read', 'dashboards', 'read', 'Staff API capability: dashboards:read', '2026-10-10 11:11:19'),
+	('51e93b83-c49b-11f1-a0d7-52540021303b', 'dashboards:reset', 'dashboards', 'reset', 'Staff API capability: dashboards:reset', '2026-10-10 11:11:19'),
+	('51f7a177-c49b-11f1-a0d7-52540021303b', 'dashboards:update', 'dashboards', 'update', 'Staff API capability: dashboards:update', '2026-10-10 11:11:19'),
+	('520648cc-c49b-11f1-a0d7-52540021303b', 'delivery-challans:create', 'delivery-challans', 'create', 'Staff API capability: delivery-challans:create', '2026-10-10 11:11:20'),
+	('5214b3c7-c49b-11f1-a0d7-52540021303b', 'delivery-challans:delete', 'delivery-challans', 'delete', 'Staff API capability: delivery-challans:delete', '2026-10-10 11:11:20'),
+	('522369fb-c49b-11f1-a0d7-52540021303b', 'delivery-challans:read', 'delivery-challans', 'read', 'Staff API capability: delivery-challans:read', '2026-10-10 11:11:20'),
+	('523300b5-c49b-11f1-a0d7-52540021303b', 'delivery-challans:receive', 'delivery-challans', 'receive', 'Staff API capability: delivery-challans:receive', '2026-10-10 11:11:20'),
+	('5242a558-c49b-11f1-a0d7-52540021303b', 'delivery-challans:update', 'delivery-challans', 'update', 'Staff API capability: delivery-challans:update', '2026-10-10 11:11:20'),
+	('52512ba5-c49b-11f1-a0d7-52540021303b', 'document-requirements:create', 'document-requirements', 'create', 'Staff API capability: document-requirements:create', '2026-10-10 11:11:20'),
+	('5260be8f-c49b-11f1-a0d7-52540021303b', 'document-requirements:delete', 'document-requirements', 'delete', 'Staff API capability: document-requirements:delete', '2026-10-10 11:11:20'),
+	('526f4ace-c49b-11f1-a0d7-52540021303b', 'document-requirements:read', 'document-requirements', 'read', 'Staff API capability: document-requirements:read', '2026-10-10 11:11:20'),
+	('527ea369-c49b-11f1-a0d7-52540021303b', 'document-requirements:update', 'document-requirements', 'update', 'Staff API capability: document-requirements:update', '2026-10-10 11:11:20'),
+	('528eb6ab-c49b-11f1-a0d7-52540021303b', 'document-types:create', 'document-types', 'create', 'Staff API capability: document-types:create', '2026-10-10 11:11:20'),
+	('529e49fa-c49b-11f1-a0d7-52540021303b', 'document-types:delete', 'document-types', 'delete', 'Staff API capability: document-types:delete', '2026-10-10 11:11:21'),
+	('52ace725-c49b-11f1-a0d7-52540021303b', 'document-types:read', 'document-types', 'read', 'Staff API capability: document-types:read', '2026-10-10 11:11:21'),
+	('52bc10c0-c49b-11f1-a0d7-52540021303b', 'document-types:update', 'document-types', 'update', 'Staff API capability: document-types:update', '2026-10-10 11:11:21'),
+	('52ca8d7f-c49b-11f1-a0d7-52540021303b', 'documents:create', 'documents', 'create', 'Staff API capability: documents:create', '2026-10-10 11:11:21'),
+	('52d8da53-c49b-11f1-a0d7-52540021303b', 'documents:delete', 'documents', 'delete', 'Staff API capability: documents:delete', '2026-10-10 11:11:21'),
+	('52e83f8b-c49b-11f1-a0d7-52540021303b', 'documents:deliver', 'documents', 'deliver', 'Staff API capability: documents:deliver', '2026-10-10 11:11:21'),
+	('52f6eb78-c49b-11f1-a0d7-52540021303b', 'documents:read', 'documents', 'read', 'Staff API capability: documents:read', '2026-10-10 11:11:21'),
+	('5305c669-c49b-11f1-a0d7-52540021303b', 'documents:update', 'documents', 'update', 'Staff API capability: documents:update', '2026-10-10 11:11:21'),
+	('53148b7c-c49b-11f1-a0d7-52540021303b', 'dpr-admin-documents:create', 'dpr-admin-documents', 'create', 'Staff API capability: dpr-admin-documents:create', '2026-10-10 11:11:21'),
+	('532308e1-c49b-11f1-a0d7-52540021303b', 'dpr-admin-documents:export', 'dpr-admin-documents', 'export', 'Staff API capability: dpr-admin-documents:export', '2026-10-10 11:11:21'),
+	('53316ae2-c49b-11f1-a0d7-52540021303b', 'dpr-admin-documents:read', 'dpr-admin-documents', 'read', 'Staff API capability: dpr-admin-documents:read', '2026-10-10 11:11:21'),
+	('533fcc5f-c49b-11f1-a0d7-52540021303b', 'dpr-admin-logs:create', 'dpr-admin-logs', 'create', 'Staff API capability: dpr-admin-logs:create', '2026-10-10 11:11:22'),
+	('534e4f34-c49b-11f1-a0d7-52540021303b', 'dpr-admin-logs:delete', 'dpr-admin-logs', 'delete', 'Staff API capability: dpr-admin-logs:delete', '2026-10-10 11:11:22'),
+	('535c91c2-c49b-11f1-a0d7-52540021303b', 'dpr-admin-logs:read', 'dpr-admin-logs', 'read', 'Staff API capability: dpr-admin-logs:read', '2026-10-10 11:11:22'),
+	('536b249c-c49b-11f1-a0d7-52540021303b', 'dpr-admin-logs:update', 'dpr-admin-logs', 'update', 'Staff API capability: dpr-admin-logs:update', '2026-10-10 11:11:22'),
+	('53797c42-c49b-11f1-a0d7-52540021303b', 'dpr-admin-reports:create', 'dpr-admin-reports', 'create', 'Staff API capability: dpr-admin-reports:create', '2026-10-10 11:11:22'),
+	('5387fdbe-c49b-11f1-a0d7-52540021303b', 'dpr-admin-reports:delete', 'dpr-admin-reports', 'delete', 'Staff API capability: dpr-admin-reports:delete', '2026-10-10 11:11:22'),
+	('5397c547-c49b-11f1-a0d7-52540021303b', 'dpr-admin-reports:export', 'dpr-admin-reports', 'export', 'Staff API capability: dpr-admin-reports:export', '2026-10-10 11:11:22'),
+	('53aa9247-c49b-11f1-a0d7-52540021303b', 'dpr-admin-reports:read', 'dpr-admin-reports', 'read', 'Staff API capability: dpr-admin-reports:read', '2026-10-10 11:11:22'),
+	('53bb6743-c49b-11f1-a0d7-52540021303b', 'dpr-admin-reports:update', 'dpr-admin-reports', 'update', 'Staff API capability: dpr-admin-reports:update', '2026-10-10 11:11:22'),
+	('53cc1d17-c49b-11f1-a0d7-52540021303b', 'drawings:create', 'drawings', 'create', 'Staff API capability: drawings:create', '2026-10-10 11:11:23'),
+	('53db3153-c49b-11f1-a0d7-52540021303b', 'drawings:delete', 'drawings', 'delete', 'Staff API capability: drawings:delete', '2026-10-10 11:11:23'),
+	('53e9beba-c49b-11f1-a0d7-52540021303b', 'drawings:read', 'drawings', 'read', 'Staff API capability: drawings:read', '2026-10-10 11:11:23'),
+	('53f8815a-c49b-11f1-a0d7-52540021303b', 'drawings:update', 'drawings', 'update', 'Staff API capability: drawings:update', '2026-10-10 11:11:23'),
+	('54259b2f-c49b-11f1-a0d7-52540021303b', 'gates:create', 'gates', 'create', 'Staff API capability: gates:create', '2026-10-10 11:11:23'),
+	('5476712e-c49b-11f1-a0d7-52540021303b', 'google-calendar:create', 'google-calendar', 'create', 'Staff API capability: google-calendar:create', '2026-10-10 11:11:24'),
+	('548567df-c49b-11f1-a0d7-52540021303b', 'google-calendar:delete', 'google-calendar', 'delete', 'Staff API capability: google-calendar:delete', '2026-10-10 11:11:24'),
+	('54942346-c49b-11f1-a0d7-52540021303b', 'google-calendar:read', 'google-calendar', 'read', 'Staff API capability: google-calendar:read', '2026-10-10 11:11:24'),
+	('54a2b8ad-c49b-11f1-a0d7-52540021303b', 'google-calendar:update', 'google-calendar', 'update', 'Staff API capability: google-calendar:update', '2026-10-10 11:11:24'),
+	('54b16376-c49b-11f1-a0d7-52540021303b', 'google-tasks:complete', 'google-tasks', 'complete', 'Staff API capability: google-tasks:complete', '2026-10-10 11:11:24'),
+	('54c28e0a-c49b-11f1-a0d7-52540021303b', 'google-tasks:create', 'google-tasks', 'create', 'Staff API capability: google-tasks:create', '2026-10-10 11:11:24'),
+	('54d10a15-c49b-11f1-a0d7-52540021303b', 'google-tasks:delete', 'google-tasks', 'delete', 'Staff API capability: google-tasks:delete', '2026-10-10 11:11:24'),
+	('54df63e0-c49b-11f1-a0d7-52540021303b', 'google-tasks:read', 'google-tasks', 'read', 'Staff API capability: google-tasks:read', '2026-10-10 11:11:24'),
+	('54edca99-c49b-11f1-a0d7-52540021303b', 'google-tasks:update', 'google-tasks', 'update', 'Staff API capability: google-tasks:update', '2026-10-10 11:11:24'),
+	('54fc2afd-c49b-11f1-a0d7-52540021303b', 'inventory:adjust', 'inventory', 'adjust', 'Staff API capability: inventory:adjust', '2026-10-10 11:11:24'),
+	('550b324c-c49b-11f1-a0d7-52540021303b', 'inventory:create', 'inventory', 'create', 'Staff API capability: inventory:create', '2026-10-10 11:11:25'),
+	('5519eeab-c49b-11f1-a0d7-52540021303b', 'inventory:deliver', 'inventory', 'deliver', 'Staff API capability: inventory:deliver', '2026-10-10 11:11:25'),
+	('552890af-c49b-11f1-a0d7-52540021303b', 'inventory:issue', 'inventory', 'issue', 'Staff API capability: inventory:issue', '2026-10-10 11:11:25'),
+	('553732d5-c49b-11f1-a0d7-52540021303b', 'inventory:read', 'inventory', 'read', 'Staff API capability: inventory:read', '2026-10-10 11:11:25'),
+	('55464e21-c49b-11f1-a0d7-52540021303b', 'inventory:return', 'inventory', 'return', 'Staff API capability: inventory:return', '2026-10-10 11:11:25'),
+	('5554defc-c49b-11f1-a0d7-52540021303b', 'inventory:transfer', 'inventory', 'transfer', 'Staff API capability: inventory:transfer', '2026-10-10 11:11:25'),
+	('5563ecca-c49b-11f1-a0d7-52540021303b', 'leads:create', 'leads', 'create', 'Staff API capability: leads:create', '2026-10-10 11:11:25'),
+	('5572a06f-c49b-11f1-a0d7-52540021303b', 'leads:delete', 'leads', 'delete', 'Staff API capability: leads:delete', '2026-10-10 11:11:25'),
+	('558146f9-c49b-11f1-a0d7-52540021303b', 'leads:read', 'leads', 'read', 'Staff API capability: leads:read', '2026-10-10 11:11:25'),
+	('558fb34b-c49b-11f1-a0d7-52540021303b', 'leads:sync', 'leads', 'sync', 'Staff API capability: leads:sync', '2026-10-10 11:11:25'),
+	('559e1d4f-c49b-11f1-a0d7-52540021303b', 'leads:update', 'leads', 'update', 'Staff API capability: leads:update', '2026-10-10 11:11:26'),
+	('55e8931b-c49b-11f1-a0d7-52540021303b', 'library:read', 'library', 'read', 'Staff API capability: library:read', '2026-10-10 11:11:26'),
+	('56147708-c49b-11f1-a0d7-52540021303b', 'material-procurement:create', 'material-procurement', 'create', 'Staff API capability: material-procurement:create', '2026-10-10 11:11:26'),
+	('5622de0e-c49b-11f1-a0d7-52540021303b', 'material-procurement:delete', 'material-procurement', 'delete', 'Staff API capability: material-procurement:delete', '2026-10-10 11:11:26'),
+	('56319fe4-c49b-11f1-a0d7-52540021303b', 'material-procurement:read', 'material-procurement', 'read', 'Staff API capability: material-procurement:read', '2026-10-10 11:11:27'),
+	('564059d4-c49b-11f1-a0d7-52540021303b', 'material-procurement:submit', 'material-procurement', 'submit', 'Staff API capability: material-procurement:submit', '2026-10-10 11:11:27'),
+	('564eb2ec-c49b-11f1-a0d7-52540021303b', 'material-procurement:update', 'material-procurement', 'update', 'Staff API capability: material-procurement:update', '2026-10-10 11:11:27'),
+	('565cf5fd-c49b-11f1-a0d7-52540021303b', 'materials:create', 'materials', 'create', 'Staff API capability: materials:create', '2026-10-10 11:11:27'),
+	('566b3b4f-c49b-11f1-a0d7-52540021303b', 'materials:delete', 'materials', 'delete', 'Staff API capability: materials:delete', '2026-10-10 11:11:27'),
+	('56797f6d-c49b-11f1-a0d7-52540021303b', 'materials:read', 'materials', 'read', 'Staff API capability: materials:read', '2026-10-10 11:11:27'),
+	('5687d86d-c49b-11f1-a0d7-52540021303b', 'materials:update', 'materials', 'update', 'Staff API capability: materials:update', '2026-10-10 11:11:27'),
+	('56964305-c49b-11f1-a0d7-52540021303b', 'notes:create', 'notes', 'create', 'Staff API capability: notes:create', '2026-10-10 11:11:27'),
+	('56a55a2f-c49b-11f1-a0d7-52540021303b', 'notes:delete', 'notes', 'delete', 'Staff API capability: notes:delete', '2026-10-10 11:11:27'),
+	('56b40667-c49b-11f1-a0d7-52540021303b', 'notes:read', 'notes', 'read', 'Staff API capability: notes:read', '2026-10-10 11:11:27'),
+	('56c28d25-c49b-11f1-a0d7-52540021303b', 'notes:update', 'notes', 'update', 'Staff API capability: notes:update', '2026-10-10 11:11:27'),
+	('56d11615-c49b-11f1-a0d7-52540021303b', 'notifications:delete', 'notifications', 'delete', 'Staff API capability: notifications:delete', '2026-10-10 11:11:28'),
+	('56df964d-c49b-11f1-a0d7-52540021303b', 'notifications:read', 'notifications', 'read', 'Staff API capability: notifications:read', '2026-10-10 11:11:28'),
+	('56ee50c9-c49b-11f1-a0d7-52540021303b', 'notifications:update', 'notifications', 'update', 'Staff API capability: notifications:update', '2026-10-10 11:11:28'),
+	('56fcb6aa-c49b-11f1-a0d7-52540021303b', 'onedrive:create', 'onedrive', 'create', 'Staff API capability: onedrive:create', '2026-10-10 11:11:28'),
+	('570b4dcf-c49b-11f1-a0d7-52540021303b', 'onedrive:delete', 'onedrive', 'delete', 'Staff API capability: onedrive:delete', '2026-10-10 11:11:28'),
+	('5719f0f4-c49b-11f1-a0d7-52540021303b', 'onedrive:read', 'onedrive', 'read', 'Staff API capability: onedrive:read', '2026-10-10 11:11:28'),
+	('57285b16-c49b-11f1-a0d7-52540021303b', 'onedrive:update', 'onedrive', 'update', 'Staff API capability: onedrive:update', '2026-10-10 11:11:28'),
+	('5736b56a-c49b-11f1-a0d7-52540021303b', 'onedrive:upload', 'onedrive', 'upload', 'Staff API capability: onedrive:upload', '2026-10-10 11:11:28'),
+	('57451ff9-c49b-11f1-a0d7-52540021303b', 'payment-schedules:create', 'payment-schedules', 'create', 'Staff API capability: payment-schedules:create', '2026-10-10 11:11:28'),
+	('5753660f-c49b-11f1-a0d7-52540021303b', 'payment-schedules:delete', 'payment-schedules', 'delete', 'Staff API capability: payment-schedules:delete', '2026-10-10 11:11:28'),
+	('5761aa24-c49b-11f1-a0d7-52540021303b', 'payment-schedules:read', 'payment-schedules', 'read', 'Staff API capability: payment-schedules:read', '2026-10-10 11:11:29'),
+	('5770604a-c49b-11f1-a0d7-52540021303b', 'payment-schedules:update', 'payment-schedules', 'update', 'Staff API capability: payment-schedules:update', '2026-10-10 11:11:29'),
+	('577ee35a-c49b-11f1-a0d7-52540021303b', 'permissions:create', 'permissions', 'create', 'Staff API capability: permissions:create', '2026-10-10 11:11:29'),
+	('578d51b4-c49b-11f1-a0d7-52540021303b', 'permissions:delete', 'permissions', 'delete', 'Staff API capability: permissions:delete', '2026-10-10 11:11:29'),
+	('579bb41f-c49b-11f1-a0d7-52540021303b', 'permissions:read', 'permissions', 'read', 'Staff API capability: permissions:read', '2026-10-10 11:11:29'),
+	('57aa22fd-c49b-11f1-a0d7-52540021303b', 'permissions:update', 'permissions', 'update', 'Staff API capability: permissions:update', '2026-10-10 11:11:29'),
+	('57b8cbde-c49b-11f1-a0d7-52540021303b', 'phase-definitions:read', 'phase-definitions', 'read', 'Staff API capability: phase-definitions:read', '2026-10-10 11:11:29'),
+	('57c7541b-c49b-11f1-a0d7-52540021303b', 'plan-of-actions:create', 'plan-of-actions', 'create', 'Staff API capability: plan-of-actions:create', '2026-10-10 11:11:29'),
+	('57d5bf9f-c49b-11f1-a0d7-52540021303b', 'plan-of-actions:delete', 'plan-of-actions', 'delete', 'Staff API capability: plan-of-actions:delete', '2026-10-10 11:11:29'),
+	('57e41824-c49b-11f1-a0d7-52540021303b', 'plan-of-actions:publish', 'plan-of-actions', 'publish', 'Staff API capability: plan-of-actions:publish', '2026-10-10 11:11:29'),
+	('57f2817e-c49b-11f1-a0d7-52540021303b', 'plan-of-actions:read', 'plan-of-actions', 'read', 'Staff API capability: plan-of-actions:read', '2026-10-10 11:11:29'),
+	('58010369-c49b-11f1-a0d7-52540021303b', 'plan-of-actions:update', 'plan-of-actions', 'update', 'Staff API capability: plan-of-actions:update', '2026-10-10 11:11:30'),
+	('58104408-c49b-11f1-a0d7-52540021303b', 'procurement-estimates:approve', 'procurement-estimates', 'approve', 'Staff API capability: procurement-estimates:approve', '2026-10-10 11:11:30'),
+	('581eff93-c49b-11f1-a0d7-52540021303b', 'procurement-estimates:create', 'procurement-estimates', 'create', 'Staff API capability: procurement-estimates:create', '2026-10-10 11:11:30'),
+	('582d7c54-c49b-11f1-a0d7-52540021303b', 'procurement-estimates:read', 'procurement-estimates', 'read', 'Staff API capability: procurement-estimates:read', '2026-10-10 11:11:30'),
+	('583c0cc1-c49b-11f1-a0d7-52540021303b', 'procurement-estimates:reject', 'procurement-estimates', 'reject', 'Staff API capability: procurement-estimates:reject', '2026-10-10 11:11:30'),
+	('584b6596-c49b-11f1-a0d7-52540021303b', 'procurement-quotations:accept', 'procurement-quotations', 'accept', 'Staff API capability: procurement-quotations:accept', '2026-10-10 11:11:30'),
+	('5859e46c-c49b-11f1-a0d7-52540021303b', 'procurement-quotations:create', 'procurement-quotations', 'create', 'Staff API capability: procurement-quotations:create', '2026-10-10 11:11:30'),
+	('586863e4-c49b-11f1-a0d7-52540021303b', 'procurement-quotations:read', 'procurement-quotations', 'read', 'Staff API capability: procurement-quotations:read', '2026-10-10 11:11:30'),
+	('5876d227-c49b-11f1-a0d7-52540021303b', 'procurement-quotations:reject', 'procurement-quotations', 'reject', 'Staff API capability: procurement-quotations:reject', '2026-10-10 11:11:30'),
+	('588538af-c49b-11f1-a0d7-52540021303b', 'procurement-quotations:send', 'procurement-quotations', 'send', 'Staff API capability: procurement-quotations:send', '2026-10-10 11:11:30'),
+	('58938cd5-c49b-11f1-a0d7-52540021303b', 'procurement-rate-sheets:approve', 'procurement-rate-sheets', 'approve', 'Staff API capability: procurement-rate-sheets:approve', '2026-10-10 11:11:31'),
+	('58a1e92f-c49b-11f1-a0d7-52540021303b', 'procurement-rate-sheets:create', 'procurement-rate-sheets', 'create', 'Staff API capability: procurement-rate-sheets:create', '2026-10-10 11:11:31'),
+	('58b08e74-c49b-11f1-a0d7-52540021303b', 'procurement-rate-sheets:delete', 'procurement-rate-sheets', 'delete', 'Staff API capability: procurement-rate-sheets:delete', '2026-10-10 11:11:31'),
+	('58bf2127-c49b-11f1-a0d7-52540021303b', 'procurement-rate-sheets:read', 'procurement-rate-sheets', 'read', 'Staff API capability: procurement-rate-sheets:read', '2026-10-10 11:11:31'),
+	('58cd8d8d-c49b-11f1-a0d7-52540021303b', 'procurement-rate-sheets:reject', 'procurement-rate-sheets', 'reject', 'Staff API capability: procurement-rate-sheets:reject', '2026-10-10 11:11:31'),
+	('58dbe38a-c49b-11f1-a0d7-52540021303b', 'procurement-requirements:create', 'procurement-requirements', 'create', 'Staff API capability: procurement-requirements:create', '2026-10-10 11:11:31'),
+	('58ea774b-c49b-11f1-a0d7-52540021303b', 'procurement-requirements:delete', 'procurement-requirements', 'delete', 'Staff API capability: procurement-requirements:delete', '2026-10-10 11:11:31'),
+	('58f8e16b-c49b-11f1-a0d7-52540021303b', 'procurement-requirements:read', 'procurement-requirements', 'read', 'Staff API capability: procurement-requirements:read', '2026-10-10 11:11:31'),
+	('59075fdb-c49b-11f1-a0d7-52540021303b', 'procurement-requirements:update', 'procurement-requirements', 'update', 'Staff API capability: procurement-requirements:update', '2026-10-10 11:11:31'),
+	('5915bbf9-c49b-11f1-a0d7-52540021303b', 'procurement-sample-boards:approve', 'procurement-sample-boards', 'approve', 'Staff API capability: procurement-sample-boards:approve', '2026-10-10 11:11:31'),
+	('592424b2-c49b-11f1-a0d7-52540021303b', 'procurement-sample-boards:create', 'procurement-sample-boards', 'create', 'Staff API capability: procurement-sample-boards:create', '2026-10-10 11:11:31'),
+	('5933042e-c49b-11f1-a0d7-52540021303b', 'procurement-sample-boards:delete', 'procurement-sample-boards', 'delete', 'Staff API capability: procurement-sample-boards:delete', '2026-10-10 11:11:32'),
+	('594146f4-c49b-11f1-a0d7-52540021303b', 'procurement-sample-boards:read', 'procurement-sample-boards', 'read', 'Staff API capability: procurement-sample-boards:read', '2026-10-10 11:11:32'),
+	('594fbc68-c49b-11f1-a0d7-52540021303b', 'procurement-sample-boards:reject', 'procurement-sample-boards', 'reject', 'Staff API capability: procurement-sample-boards:reject', '2026-10-10 11:11:32'),
+	('595e3be5-c49b-11f1-a0d7-52540021303b', 'project-briefs:create', 'project-briefs', 'create', 'Staff API capability: project-briefs:create', '2026-10-10 11:11:32'),
+	('596ce265-c49b-11f1-a0d7-52540021303b', 'project-briefs:delete', 'project-briefs', 'delete', 'Staff API capability: project-briefs:delete', '2026-10-10 11:11:32'),
+	('597b650b-c49b-11f1-a0d7-52540021303b', 'project-briefs:read', 'project-briefs', 'read', 'Staff API capability: project-briefs:read', '2026-10-10 11:11:32'),
+	('5989ddee-c49b-11f1-a0d7-52540021303b', 'project-briefs:update', 'project-briefs', 'update', 'Staff API capability: project-briefs:update', '2026-10-10 11:11:32'),
+	('59984a70-c49b-11f1-a0d7-52540021303b', 'project-briefs:upload', 'project-briefs', 'upload', 'Staff API capability: project-briefs:upload', '2026-10-10 11:11:32'),
+	('59a6a5a3-c49b-11f1-a0d7-52540021303b', 'project-dashboard:read', 'project-dashboard', 'read', 'Staff API capability: project-dashboard:read', '2026-10-10 11:11:32'),
+	('59b53ae4-c49b-11f1-a0d7-52540021303b', 'project-planners:create', 'project-planners', 'create', 'Staff API capability: project-planners:create', '2026-10-10 11:11:32'),
+	('59c3b65d-c49b-11f1-a0d7-52540021303b', 'project-planners:delete', 'project-planners', 'delete', 'Staff API capability: project-planners:delete', '2026-10-10 11:11:33'),
+	('59d21256-c49b-11f1-a0d7-52540021303b', 'project-planners:generate', 'project-planners', 'generate', 'Staff API capability: project-planners:generate', '2026-10-10 11:11:33'),
+	('59e0b334-c49b-11f1-a0d7-52540021303b', 'project-planners:read', 'project-planners', 'read', 'Staff API capability: project-planners:read', '2026-10-10 11:11:33'),
+	('59ef5616-c49b-11f1-a0d7-52540021303b', 'project-planners:update', 'project-planners', 'update', 'Staff API capability: project-planners:update', '2026-10-10 11:11:33'),
+	('59fdd97d-c49b-11f1-a0d7-52540021303b', 'project-shortlists:create', 'project-shortlists', 'create', 'Staff API capability: project-shortlists:create', '2026-10-10 11:11:33'),
+	('5a0c5b79-c49b-11f1-a0d7-52540021303b', 'project-shortlists:delete', 'project-shortlists', 'delete', 'Staff API capability: project-shortlists:delete', '2026-10-10 11:11:33'),
+	('5a1ab464-c49b-11f1-a0d7-52540021303b', 'project-shortlists:export', 'project-shortlists', 'export', 'Staff API capability: project-shortlists:export', '2026-10-10 11:11:33'),
+	('5a29a360-c49b-11f1-a0d7-52540021303b', 'project-shortlists:read', 'project-shortlists', 'read', 'Staff API capability: project-shortlists:read', '2026-10-10 11:11:33'),
+	('5a385bab-c49b-11f1-a0d7-52540021303b', 'project-shortlists:update', 'project-shortlists', 'update', 'Staff API capability: project-shortlists:update', '2026-10-10 11:11:33'),
+	('5a471219-c49b-11f1-a0d7-52540021303b', 'project-types:create', 'project-types', 'create', 'Staff API capability: project-types:create', '2026-10-10 11:11:33'),
+	('5a55beab-c49b-11f1-a0d7-52540021303b', 'project-types:delete', 'project-types', 'delete', 'Staff API capability: project-types:delete', '2026-10-10 11:11:33'),
+	('5a6489c0-c49b-11f1-a0d7-52540021303b', 'project-types:read', 'project-types', 'read', 'Staff API capability: project-types:read', '2026-10-10 11:11:34'),
+	('5a731f49-c49b-11f1-a0d7-52540021303b', 'project-types:update', 'project-types', 'update', 'Staff API capability: project-types:update', '2026-10-10 11:11:34'),
+	('5a81f550-c49b-11f1-a0d7-52540021303b', 'projects-phases:create', 'projects-phases', 'create', 'Staff API capability: projects-phases:create', '2026-10-10 11:11:34'),
+	('5a919ab9-c49b-11f1-a0d7-52540021303b', 'projects-phases:delete', 'projects-phases', 'delete', 'Staff API capability: projects-phases:delete', '2026-10-10 11:11:34'),
+	('5aa0a6cd-c49b-11f1-a0d7-52540021303b', 'projects-phases:read', 'projects-phases', 'read', 'Staff API capability: projects-phases:read', '2026-10-10 11:11:34'),
+	('5aaf43b4-c49b-11f1-a0d7-52540021303b', 'projects-phases:update', 'projects-phases', 'update', 'Staff API capability: projects-phases:update', '2026-10-10 11:11:34'),
+	('5abdc5d4-c49b-11f1-a0d7-52540021303b', 'projects:create', 'projects', 'create', 'Staff API capability: projects:create', '2026-10-10 11:11:34'),
+	('5acc5728-c49b-11f1-a0d7-52540021303b', 'projects:delete', 'projects', 'delete', 'Staff API capability: projects:delete', '2026-10-10 11:11:34'),
+	('5adaa343-c49b-11f1-a0d7-52540021303b', 'projects:read', 'projects', 'read', 'Staff API capability: projects:read', '2026-10-10 11:11:34'),
+	('5ae9d41e-c49b-11f1-a0d7-52540021303b', 'projects:restore', 'projects', 'restore', 'Staff API capability: projects:restore', '2026-10-10 11:11:34'),
+	('5af854bc-c49b-11f1-a0d7-52540021303b', 'projects:update', 'projects', 'update', 'Staff API capability: projects:update', '2026-10-10 11:11:35'),
+	('5b06d225-c49b-11f1-a0d7-52540021303b', 'purchase-orders:approve', 'purchase-orders', 'approve', 'Staff API capability: purchase-orders:approve', '2026-10-10 11:11:35'),
+	('5b1517c8-c49b-11f1-a0d7-52540021303b', 'purchase-orders:cancel', 'purchase-orders', 'cancel', 'Staff API capability: purchase-orders:cancel', '2026-10-10 11:11:35'),
+	('5b23819f-c49b-11f1-a0d7-52540021303b', 'purchase-orders:create', 'purchase-orders', 'create', 'Staff API capability: purchase-orders:create', '2026-10-10 11:11:35'),
+	('5b31fecd-c49b-11f1-a0d7-52540021303b', 'purchase-orders:delete', 'purchase-orders', 'delete', 'Staff API capability: purchase-orders:delete', '2026-10-10 11:11:35'),
+	('5b4095a8-c49b-11f1-a0d7-52540021303b', 'purchase-orders:read', 'purchase-orders', 'read', 'Staff API capability: purchase-orders:read', '2026-10-10 11:11:35'),
+	('5b4effc1-c49b-11f1-a0d7-52540021303b', 'purchase-orders:update', 'purchase-orders', 'update', 'Staff API capability: purchase-orders:update', '2026-10-10 11:11:35'),
+	('5b5d5298-c49b-11f1-a0d7-52540021303b', 'quality-checklists:create', 'quality-checklists', 'create', 'Staff API capability: quality-checklists:create', '2026-10-10 11:11:35'),
+	('5b6bea58-c49b-11f1-a0d7-52540021303b', 'quality-checklists:delete', 'quality-checklists', 'delete', 'Staff API capability: quality-checklists:delete', '2026-10-10 11:11:35'),
+	('5b7a4148-c49b-11f1-a0d7-52540021303b', 'quality-checklists:export', 'quality-checklists', 'export', 'Staff API capability: quality-checklists:export', '2026-10-10 11:11:35'),
+	('5b88bc3b-c49b-11f1-a0d7-52540021303b', 'quality-checklists:read', 'quality-checklists', 'read', 'Staff API capability: quality-checklists:read', '2026-10-10 11:11:35'),
+	('5b97184b-c49b-11f1-a0d7-52540021303b', 'quality-checklists:update', 'quality-checklists', 'update', 'Staff API capability: quality-checklists:update', '2026-10-10 11:11:36'),
+	('5ba5a989-c49b-11f1-a0d7-52540021303b', 'quotation-items:create', 'quotation-items', 'create', 'Staff API capability: quotation-items:create', '2026-10-10 11:11:36'),
+	('5bb426fb-c49b-11f1-a0d7-52540021303b', 'quotation-items:delete', 'quotation-items', 'delete', 'Staff API capability: quotation-items:delete', '2026-10-10 11:11:36'),
+	('5bc2b77a-c49b-11f1-a0d7-52540021303b', 'quotation-items:read', 'quotation-items', 'read', 'Staff API capability: quotation-items:read', '2026-10-10 11:11:36'),
+	('5bd12466-c49b-11f1-a0d7-52540021303b', 'quotation-items:update', 'quotation-items', 'update', 'Staff API capability: quotation-items:update', '2026-10-10 11:11:36'),
+	('5bdfa8ea-c49b-11f1-a0d7-52540021303b', 'quotations:approve', 'quotations', 'approve', 'Staff API capability: quotations:approve', '2026-10-10 11:11:36'),
+	('5bee4a75-c49b-11f1-a0d7-52540021303b', 'quotations:create', 'quotations', 'create', 'Staff API capability: quotations:create', '2026-10-10 11:11:36'),
+	('5bfcca39-c49b-11f1-a0d7-52540021303b', 'quotations:delete', 'quotations', 'delete', 'Staff API capability: quotations:delete', '2026-10-10 11:11:36'),
+	('5c0b47c4-c49b-11f1-a0d7-52540021303b', 'quotations:export', 'quotations', 'export', 'Staff API capability: quotations:export', '2026-10-10 11:11:36'),
+	('5c19f0c4-c49b-11f1-a0d7-52540021303b', 'quotations:read', 'quotations', 'read', 'Staff API capability: quotations:read', '2026-10-10 11:11:36'),
+	('5c2871ff-c49b-11f1-a0d7-52540021303b', 'quotations:restore', 'quotations', 'restore', 'Staff API capability: quotations:restore', '2026-10-10 11:11:37'),
+	('5c3726ea-c49b-11f1-a0d7-52540021303b', 'quotations:select', 'quotations', 'select', 'Staff API capability: quotations:select', '2026-10-10 11:11:37'),
+	('5c45b806-c49b-11f1-a0d7-52540021303b', 'quotations:submit', 'quotations', 'submit', 'Staff API capability: quotations:submit', '2026-10-10 11:11:37'),
+	('5c542675-c49b-11f1-a0d7-52540021303b', 'quotations:update', 'quotations', 'update', 'Staff API capability: quotations:update', '2026-10-10 11:11:37'),
+	('5c627ea1-c49b-11f1-a0d7-52540021303b', 'rbac:create', 'rbac', 'create', 'Staff API capability: rbac:create', '2026-10-10 11:11:37'),
+	('5c710828-c49b-11f1-a0d7-52540021303b', 'rbac:delete', 'rbac', 'delete', 'Staff API capability: rbac:delete', '2026-10-10 11:11:37'),
+	('5c7f98e0-c49b-11f1-a0d7-52540021303b', 'rbac:read', 'rbac', 'read', 'Staff API capability: rbac:read', '2026-10-10 11:11:37'),
+	('5c8e17a6-c49b-11f1-a0d7-52540021303b', 'rbac:update', 'rbac', 'update', 'Staff API capability: rbac:update', '2026-10-10 11:11:37'),
+	('5c9cbc63-c49b-11f1-a0d7-52540021303b', 'reports:read', 'reports', 'read', 'Staff API capability: reports:read', '2026-10-10 11:11:37'),
+	('5cab4fa8-c49b-11f1-a0d7-52540021303b', 'role-apps:assign', 'role-apps', 'assign', 'Staff API capability: role-apps:assign', '2026-10-10 11:11:37'),
+	('5cb9f2a8-c49b-11f1-a0d7-52540021303b', 'role-apps:grant', 'role-apps', 'grant', 'Staff API capability: role-apps:grant', '2026-10-10 11:11:37'),
+	('5cc89f0d-c49b-11f1-a0d7-52540021303b', 'role-apps:read', 'role-apps', 'read', 'Staff API capability: role-apps:read', '2026-10-10 11:11:38'),
+	('5cd71f7c-c49b-11f1-a0d7-52540021303b', 'role-apps:revoke', 'role-apps', 'revoke', 'Staff API capability: role-apps:revoke', '2026-10-10 11:11:38'),
+	('5ce58567-c49b-11f1-a0d7-52540021303b', 'role-apps:update', 'role-apps', 'update', 'Staff API capability: role-apps:update', '2026-10-10 11:11:38'),
+	('5cf42b2e-c49b-11f1-a0d7-52540021303b', 'role-permissions:assign', 'role-permissions', 'assign', 'Staff API capability: role-permissions:assign', '2026-10-10 11:11:38'),
+	('5d02b2de-c49b-11f1-a0d7-52540021303b', 'role-permissions:grant', 'role-permissions', 'grant', 'Staff API capability: role-permissions:grant', '2026-10-10 11:11:38'),
+	('5d113ea1-c49b-11f1-a0d7-52540021303b', 'role-permissions:read', 'role-permissions', 'read', 'Staff API capability: role-permissions:read', '2026-10-10 11:11:38'),
+	('5d1fbc43-c49b-11f1-a0d7-52540021303b', 'role-permissions:revoke', 'role-permissions', 'revoke', 'Staff API capability: role-permissions:revoke', '2026-10-10 11:11:38'),
+	('5d2e5a5f-c49b-11f1-a0d7-52540021303b', 'scope-of-work:create', 'scope-of-work', 'create', 'Staff API capability: scope-of-work:create', '2026-10-10 11:11:38'),
+	('5d3ccd94-c49b-11f1-a0d7-52540021303b', 'scope-of-work:delete', 'scope-of-work', 'delete', 'Staff API capability: scope-of-work:delete', '2026-10-10 11:11:38'),
+	('5d4b608c-c49b-11f1-a0d7-52540021303b', 'scope-of-work:read', 'scope-of-work', 'read', 'Staff API capability: scope-of-work:read', '2026-10-10 11:11:38'),
+	('5d59f16a-c49b-11f1-a0d7-52540021303b', 'scope-of-work:update', 'scope-of-work', 'update', 'Staff API capability: scope-of-work:update', '2026-10-10 11:11:39'),
+	('5d688a94-c49b-11f1-a0d7-52540021303b', 'search:read', 'search', 'read', 'Staff API capability: search:read', '2026-10-10 11:11:39'),
+	('5d772fe0-c49b-11f1-a0d7-52540021303b', 'search:reindex', 'search', 'reindex', 'Staff API capability: search:reindex', '2026-10-10 11:11:39'),
+	('5d8598bd-c49b-11f1-a0d7-52540021303b', 'sessions:read-any', 'sessions', 'read-any', 'Staff API capability: sessions:read-any', '2026-10-10 11:11:39'),
+	('5d9414f1-c49b-11f1-a0d7-52540021303b', 'sessions:revoke-any', 'sessions', 'revoke-any', 'Staff API capability: sessions:revoke-any', '2026-10-10 11:11:39'),
+	('5da28049-c49b-11f1-a0d7-52540021303b', 'settings:create', 'settings', 'create', 'Staff API capability: settings:create', '2026-10-10 11:11:39'),
+	('5db1146d-c49b-11f1-a0d7-52540021303b', 'settings:delete', 'settings', 'delete', 'Staff API capability: settings:delete', '2026-10-10 11:11:39'),
+	('5dbff710-c49b-11f1-a0d7-52540021303b', 'settings:read', 'settings', 'read', 'Staff API capability: settings:read', '2026-10-10 11:11:39'),
+	('5dce4c4b-c49b-11f1-a0d7-52540021303b', 'settings:update', 'settings', 'update', 'Staff API capability: settings:update', '2026-10-10 11:11:39'),
+	('5ddccb4e-c49b-11f1-a0d7-52540021303b', 'shortlist-entries:create', 'shortlist-entries', 'create', 'Staff API capability: shortlist-entries:create', '2026-10-10 11:11:39'),
+	('5deb217f-c49b-11f1-a0d7-52540021303b', 'shortlist-entries:delete', 'shortlist-entries', 'delete', 'Staff API capability: shortlist-entries:delete', '2026-10-10 11:11:39'),
+	('5df9846c-c49b-11f1-a0d7-52540021303b', 'shortlist-entries:read', 'shortlist-entries', 'read', 'Staff API capability: shortlist-entries:read', '2026-10-10 11:11:40'),
+	('5e082afa-c49b-11f1-a0d7-52540021303b', 'shortlist-entries:select', 'shortlist-entries', 'select', 'Staff API capability: shortlist-entries:select', '2026-10-10 11:11:40'),
+	('5e16ba11-c49b-11f1-a0d7-52540021303b', 'shortlist-entries:update', 'shortlist-entries', 'update', 'Staff API capability: shortlist-entries:update', '2026-10-10 11:11:40'),
+	('5e252683-c49b-11f1-a0d7-52540021303b', 'shortlist-packages:apply', 'shortlist-packages', 'apply', 'Staff API capability: shortlist-packages:apply', '2026-10-10 11:11:40'),
+	('5e33a709-c49b-11f1-a0d7-52540021303b', 'shortlist-packages:create', 'shortlist-packages', 'create', 'Staff API capability: shortlist-packages:create', '2026-10-10 11:11:40'),
+	('5e42fd1a-c49b-11f1-a0d7-52540021303b', 'shortlist-packages:delete', 'shortlist-packages', 'delete', 'Staff API capability: shortlist-packages:delete', '2026-10-10 11:11:40'),
+	('5e516817-c49b-11f1-a0d7-52540021303b', 'shortlist-packages:read', 'shortlist-packages', 'read', 'Staff API capability: shortlist-packages:read', '2026-10-10 11:11:40'),
+	('5e604a46-c49b-11f1-a0d7-52540021303b', 'site-ops-checklists:create', 'site-ops-checklists', 'create', 'Staff API capability: site-ops-checklists:create', '2026-10-10 11:11:40'),
+	('5e6ea27b-c49b-11f1-a0d7-52540021303b', 'site-ops-checklists:read', 'site-ops-checklists', 'read', 'Staff API capability: site-ops-checklists:read', '2026-10-10 11:11:40'),
+	('5e7d32ef-c49b-11f1-a0d7-52540021303b', 'site-ops-daily-reports:create', 'site-ops-daily-reports', 'create', 'Staff API capability: site-ops-daily-reports:create', '2026-10-10 11:11:40'),
+	('5e8b76ad-c49b-11f1-a0d7-52540021303b', 'site-ops-daily-reports:delete', 'site-ops-daily-reports', 'delete', 'Staff API capability: site-ops-daily-reports:delete', '2026-10-10 11:11:41'),
+	('5e99e19c-c49b-11f1-a0d7-52540021303b', 'site-ops-daily-reports:read', 'site-ops-daily-reports', 'read', 'Staff API capability: site-ops-daily-reports:read', '2026-10-10 11:11:41'),
+	('5ea89d33-c49b-11f1-a0d7-52540021303b', 'site-ops-daily-reports:share', 'site-ops-daily-reports', 'share', 'Staff API capability: site-ops-daily-reports:share', '2026-10-10 11:11:41'),
+	('5eb74719-c49b-11f1-a0d7-52540021303b', 'site-ops-daily-reports:update', 'site-ops-daily-reports', 'update', 'Staff API capability: site-ops-daily-reports:update', '2026-10-10 11:11:41'),
+	('5ec5c8f6-c49b-11f1-a0d7-52540021303b', 'site-ops-daily-reports:upload', 'site-ops-daily-reports', 'upload', 'Staff API capability: site-ops-daily-reports:upload', '2026-10-10 11:11:41'),
+	('5ed4415b-c49b-11f1-a0d7-52540021303b', 'site-ops-mockups:create', 'site-ops-mockups', 'create', 'Staff API capability: site-ops-mockups:create', '2026-10-10 11:11:41'),
+	('5ee2f707-c49b-11f1-a0d7-52540021303b', 'site-ops-mockups:read', 'site-ops-mockups', 'read', 'Staff API capability: site-ops-mockups:read', '2026-10-10 11:11:41'),
+	('5ef1cbaa-c49b-11f1-a0d7-52540021303b', 'site-ops-mockups:update', 'site-ops-mockups', 'update', 'Staff API capability: site-ops-mockups:update', '2026-10-10 11:11:41'),
+	('5f004673-c49b-11f1-a0d7-52540021303b', 'site-ops-qc:read', 'site-ops-qc', 'read', 'Staff API capability: site-ops-qc:read', '2026-10-10 11:11:41'),
+	('5f0eb0f3-c49b-11f1-a0d7-52540021303b', 'site-ops-qc:sign-off', 'site-ops-qc', 'sign-off', 'Staff API capability: site-ops-qc:sign-off', '2026-10-10 11:11:41'),
+	('5f1d0c50-c49b-11f1-a0d7-52540021303b', 'site-ops-rfis:create', 'site-ops-rfis', 'create', 'Staff API capability: site-ops-rfis:create', '2026-10-10 11:11:41'),
+	('5f2b7254-c49b-11f1-a0d7-52540021303b', 'site-ops-rfis:read', 'site-ops-rfis', 'read', 'Staff API capability: site-ops-rfis:read', '2026-10-10 11:11:42'),
+	('5f3a1e82-c49b-11f1-a0d7-52540021303b', 'site-ops-rfis:update', 'site-ops-rfis', 'update', 'Staff API capability: site-ops-rfis:update', '2026-10-10 11:11:42'),
+	('5f48e95f-c49b-11f1-a0d7-52540021303b', 'site-ops-snag-lists:create', 'site-ops-snag-lists', 'create', 'Staff API capability: site-ops-snag-lists:create', '2026-10-10 11:11:42'),
+	('5f577c43-c49b-11f1-a0d7-52540021303b', 'site-ops-snag-lists:export', 'site-ops-snag-lists', 'export', 'Staff API capability: site-ops-snag-lists:export', '2026-10-10 11:11:42'),
+	('5f65d1bd-c49b-11f1-a0d7-52540021303b', 'site-ops-snag-lists:read', 'site-ops-snag-lists', 'read', 'Staff API capability: site-ops-snag-lists:read', '2026-10-10 11:11:42'),
+	('5f748888-c49b-11f1-a0d7-52540021303b', 'site-ops-snag-lists:update', 'site-ops-snag-lists', 'update', 'Staff API capability: site-ops-snag-lists:update', '2026-10-10 11:11:42'),
+	('5f83631e-c49b-11f1-a0d7-52540021303b', 'site-ops-snag-lists:upload', 'site-ops-snag-lists', 'upload', 'Staff API capability: site-ops-snag-lists:upload', '2026-10-10 11:11:42'),
+	('5f91d093-c49b-11f1-a0d7-52540021303b', 'site-ops-visits:assign', 'site-ops-visits', 'assign', 'Staff API capability: site-ops-visits:assign', '2026-10-10 11:11:42'),
+	('5fa0373d-c49b-11f1-a0d7-52540021303b', 'site-ops-visits:check-in', 'site-ops-visits', 'check-in', 'Staff API capability: site-ops-visits:check-in', '2026-10-10 11:11:42'),
+	('5faf1f62-c49b-11f1-a0d7-52540021303b', 'site-ops-visits:create', 'site-ops-visits', 'create', 'Staff API capability: site-ops-visits:create', '2026-10-10 11:11:42'),
+	('5fbd866a-c49b-11f1-a0d7-52540021303b', 'site-ops-visits:read', 'site-ops-visits', 'read', 'Staff API capability: site-ops-visits:read', '2026-10-10 11:11:43'),
+	('5fcbf941-c49b-11f1-a0d7-52540021303b', 'site-ops-visits:update', 'site-ops-visits', 'update', 'Staff API capability: site-ops-visits:update', '2026-10-10 11:11:43'),
+	('5fda86e3-c49b-11f1-a0d7-52540021303b', 'site-ops:read', 'site-ops', 'read', 'Staff API capability: site-ops:read', '2026-10-10 11:11:43'),
+	('5fe8f2e8-c49b-11f1-a0d7-52540021303b', 'site-recces:create', 'site-recces', 'create', 'Staff API capability: site-recces:create', '2026-10-10 11:11:43'),
+	('5ff7f38d-c49b-11f1-a0d7-52540021303b', 'site-recces:delete', 'site-recces', 'delete', 'Staff API capability: site-recces:delete', '2026-10-10 11:11:43'),
+	('6006a4d8-c49b-11f1-a0d7-52540021303b', 'site-recces:read', 'site-recces', 'read', 'Staff API capability: site-recces:read', '2026-10-10 11:11:43'),
+	('6015674a-c49b-11f1-a0d7-52540021303b', 'site-recces:restore', 'site-recces', 'restore', 'Staff API capability: site-recces:restore', '2026-10-10 11:11:43'),
+	('6024d73f-c49b-11f1-a0d7-52540021303b', 'site-recces:update', 'site-recces', 'update', 'Staff API capability: site-recces:update', '2026-10-10 11:11:43'),
+	('6033fcd3-c49b-11f1-a0d7-52540021303b', 'site-recces:upload', 'site-recces', 'upload', 'Staff API capability: site-recces:upload', '2026-10-10 11:11:43'),
+	('6043a44d-c49b-11f1-a0d7-52540021303b', 'sync:read', 'sync', 'read', 'Staff API capability: sync:read', '2026-10-10 11:11:43'),
+	('6052c190-c49b-11f1-a0d7-52540021303b', 'sync:sync', 'sync', 'sync', 'Staff API capability: sync:sync', '2026-10-10 11:11:44'),
+	('60619298-c49b-11f1-a0d7-52540021303b', 'sync:update', 'sync', 'update', 'Staff API capability: sync:update', '2026-10-10 11:11:44'),
+	('607016f6-c49b-11f1-a0d7-52540021303b', 'system:read', 'system', 'read', 'Staff API capability: system:read', '2026-10-10 11:11:44'),
+	('6080e969-c49b-11f1-a0d7-52540021303b', 'tasks:create', 'tasks', 'create', 'Staff API capability: tasks:create', '2026-10-10 11:11:44'),
+	('608f9bdd-c49b-11f1-a0d7-52540021303b', 'tasks:delete', 'tasks', 'delete', 'Staff API capability: tasks:delete', '2026-10-10 11:11:44'),
+	('609f1a6a-c49b-11f1-a0d7-52540021303b', 'tasks:read', 'tasks', 'read', 'Staff API capability: tasks:read', '2026-10-10 11:11:44'),
+	('60ae6b68-c49b-11f1-a0d7-52540021303b', 'tasks:update', 'tasks', 'update', 'Staff API capability: tasks:update', '2026-10-10 11:11:44'),
+	('60bd0fd1-c49b-11f1-a0d7-52540021303b', 'team:create', 'team', 'create', 'Staff API capability: team:create', '2026-10-10 11:11:44'),
+	('60cdd65a-c49b-11f1-a0d7-52540021303b', 'team:delete', 'team', 'delete', 'Staff API capability: team:delete', '2026-10-10 11:11:44'),
+	('60dd1e99-c49b-11f1-a0d7-52540021303b', 'team:read', 'team', 'read', 'Staff API capability: team:read', '2026-10-10 11:11:44'),
+	('60edc2fe-c49b-11f1-a0d7-52540021303b', 'team:update', 'team', 'update', 'Staff API capability: team:update', '2026-10-10 11:11:45'),
+	('60fd957b-c49b-11f1-a0d7-52540021303b', 'terms-templates:create', 'terms-templates', 'create', 'Staff API capability: terms-templates:create', '2026-10-10 11:11:45'),
+	('610c19bb-c49b-11f1-a0d7-52540021303b', 'terms-templates:delete', 'terms-templates', 'delete', 'Staff API capability: terms-templates:delete', '2026-10-10 11:11:45'),
+	('611a9259-c49b-11f1-a0d7-52540021303b', 'terms-templates:read', 'terms-templates', 'read', 'Staff API capability: terms-templates:read', '2026-10-10 11:11:45'),
+	('61296f24-c49b-11f1-a0d7-52540021303b', 'terms-templates:update', 'terms-templates', 'update', 'Staff API capability: terms-templates:update', '2026-10-10 11:11:45'),
+	('61386d5d-c49b-11f1-a0d7-52540021303b', 'units:create', 'units', 'create', 'Staff API capability: units:create', '2026-10-10 11:11:45'),
+	('6146f62a-c49b-11f1-a0d7-52540021303b', 'units:delete', 'units', 'delete', 'Staff API capability: units:delete', '2026-10-10 11:11:45'),
+	('61583b0c-c49b-11f1-a0d7-52540021303b', 'units:read', 'units', 'read', 'Staff API capability: units:read', '2026-10-10 11:11:45'),
+	('6166b707-c49b-11f1-a0d7-52540021303b', 'units:update', 'units', 'update', 'Staff API capability: units:update', '2026-10-10 11:11:45'),
+	('6175e6e3-c49b-11f1-a0d7-52540021303b', 'user-signatures:delete', 'user-signatures', 'delete', 'Staff API capability: user-signatures:delete', '2026-10-10 11:11:45'),
+	('6185bf97-c49b-11f1-a0d7-52540021303b', 'user-signatures:read', 'user-signatures', 'read', 'Staff API capability: user-signatures:read', '2026-10-10 11:11:46'),
+	('6195539a-c49b-11f1-a0d7-52540021303b', 'user-signatures:upload', 'user-signatures', 'upload', 'Staff API capability: user-signatures:upload', '2026-10-10 11:11:46'),
+	('61a5340d-c49b-11f1-a0d7-52540021303b', 'users:create', 'users', 'create', 'Staff API capability: users:create', '2026-10-10 11:11:46'),
+	('61b632a7-c49b-11f1-a0d7-52540021303b', 'users:delete', 'users', 'delete', 'Staff API capability: users:delete', '2026-10-10 11:11:46'),
+	('61c4b500-c49b-11f1-a0d7-52540021303b', 'users:read', 'users', 'read', 'Staff API capability: users:read', '2026-10-10 11:11:46'),
+	('61d460d3-c49b-11f1-a0d7-52540021303b', 'users:update', 'users', 'update', 'Staff API capability: users:update', '2026-10-10 11:11:46'),
+	('61e3ab6f-c49b-11f1-a0d7-52540021303b', 'vendor-business-types:create', 'vendor-business-types', 'create', 'Staff API capability: vendor-business-types:create', '2026-10-10 11:11:46'),
+	('61f2d9f0-c49b-11f1-a0d7-52540021303b', 'vendor-business-types:read', 'vendor-business-types', 'read', 'Staff API capability: vendor-business-types:read', '2026-10-10 11:11:46'),
+	('62029204-c49b-11f1-a0d7-52540021303b', 'vendor-categories:read', 'vendor-categories', 'read', 'Staff API capability: vendor-categories:read', '2026-10-10 11:11:46'),
+	('6211d4b2-c49b-11f1-a0d7-52540021303b', 'vendor-rate-comparisons:create', 'vendor-rate-comparisons', 'create', 'Staff API capability: vendor-rate-comparisons:create', '2026-10-10 11:11:46'),
+	('622215c8-c49b-11f1-a0d7-52540021303b', 'vendor-rate-comparisons:read', 'vendor-rate-comparisons', 'read', 'Staff API capability: vendor-rate-comparisons:read', '2026-10-10 11:11:47'),
+	('6230f197-c49b-11f1-a0d7-52540021303b', 'vendor-rate-comparisons:update', 'vendor-rate-comparisons', 'update', 'Staff API capability: vendor-rate-comparisons:update', '2026-10-10 11:11:47'),
+	('623f9a58-c49b-11f1-a0d7-52540021303b', 'vendors-saved-searches:create', 'vendors-saved-searches', 'create', 'Staff API capability: vendors-saved-searches:create', '2026-10-10 11:11:47'),
+	('624f4296-c49b-11f1-a0d7-52540021303b', 'vendors-saved-searches:delete', 'vendors-saved-searches', 'delete', 'Staff API capability: vendors-saved-searches:delete', '2026-10-10 11:11:47'),
+	('625f3b1f-c49b-11f1-a0d7-52540021303b', 'vendors-saved-searches:read', 'vendors-saved-searches', 'read', 'Staff API capability: vendors-saved-searches:read', '2026-10-10 11:11:47'),
+	('626df8e3-c49b-11f1-a0d7-52540021303b', 'vendors:create', 'vendors', 'create', 'Staff API capability: vendors:create', '2026-10-10 11:11:47'),
+	('627f3791-c49b-11f1-a0d7-52540021303b', 'vendors:delete', 'vendors', 'delete', 'Staff API capability: vendors:delete', '2026-10-10 11:11:47'),
+	('628f9135-c49b-11f1-a0d7-52540021303b', 'vendors:read', 'vendors', 'read', 'Staff API capability: vendors:read', '2026-10-10 11:11:47'),
+	('62a2bb30-c49b-11f1-a0d7-52540021303b', 'vendors:update', 'vendors', 'update', 'Staff API capability: vendors:update', '2026-10-10 11:11:47'),
+	('62b3b9be-c49b-11f1-a0d7-52540021303b', 'work-orders:approve', 'work-orders', 'approve', 'Staff API capability: work-orders:approve', '2026-10-10 11:11:48'),
+	('62c3b50c-c49b-11f1-a0d7-52540021303b', 'work-orders:create', 'work-orders', 'create', 'Staff API capability: work-orders:create', '2026-10-10 11:11:48'),
+	('62d41259-c49b-11f1-a0d7-52540021303b', 'work-orders:delete', 'work-orders', 'delete', 'Staff API capability: work-orders:delete', '2026-10-10 11:11:48'),
+	('62e29c26-c49b-11f1-a0d7-52540021303b', 'work-orders:read', 'work-orders', 'read', 'Staff API capability: work-orders:read', '2026-10-10 11:11:48'),
+	('62f2d94c-c49b-11f1-a0d7-52540021303b', 'work-orders:reject', 'work-orders', 'reject', 'Staff API capability: work-orders:reject', '2026-10-10 11:11:48'),
+	('63050d85-c49b-11f1-a0d7-52540021303b', 'work-orders:update', 'work-orders', 'update', 'Staff API capability: work-orders:update', '2026-10-10 11:11:48'),
+	('63143898-c49b-11f1-a0d7-52540021303b', 'workflow-library:assign', 'workflow-library', 'assign', 'Staff API capability: workflow-library:assign', '2026-10-10 11:11:48'),
+	('63251050-c49b-11f1-a0d7-52540021303b', 'workflow-library:create', 'workflow-library', 'create', 'Staff API capability: workflow-library:create', '2026-10-10 11:11:48'),
+	('6333f1a1-c49b-11f1-a0d7-52540021303b', 'workflow-library:delete', 'workflow-library', 'delete', 'Staff API capability: workflow-library:delete', '2026-10-10 11:11:48'),
+	('63437742-c49b-11f1-a0d7-52540021303b', 'workflow-library:deliver', 'workflow-library', 'deliver', 'Staff API capability: workflow-library:deliver', '2026-10-10 11:11:48'),
+	('63541820-c49b-11f1-a0d7-52540021303b', 'workflow-library:read', 'workflow-library', 'read', 'Staff API capability: workflow-library:read', '2026-10-10 11:11:49'),
+	('636594c1-c49b-11f1-a0d7-52540021303b', 'workflow-library:update', 'workflow-library', 'update', 'Staff API capability: workflow-library:update', '2026-10-10 11:11:49'),
+	('6375132e-c49b-11f1-a0d7-52540021303b', 'workflow-progress:create', 'workflow-progress', 'create', 'Staff API capability: workflow-progress:create', '2026-10-10 11:11:49'),
+	('6383edce-c49b-11f1-a0d7-52540021303b', 'workflow-progress:read', 'workflow-progress', 'read', 'Staff API capability: workflow-progress:read', '2026-10-10 11:11:49'),
+	('63969997-c49b-11f1-a0d7-52540021303b', 'workflow-progress:sign-off', 'workflow-progress', 'sign-off', 'Staff API capability: workflow-progress:sign-off', '2026-10-10 11:11:49'),
+	('63a58b5f-c49b-11f1-a0d7-52540021303b', 'workflow-progress:update', 'workflow-progress', 'update', 'Staff API capability: workflow-progress:update', '2026-10-10 11:11:49'),
+	('63b451b2-c49b-11f1-a0d7-52540021303b', 'workflow-timeline:read', 'workflow-timeline', 'read', 'Staff API capability: workflow-timeline:read', '2026-10-10 11:11:49'),
+	('63c354d6-c49b-11f1-a0d7-52540021303b', 'workflow:create', 'workflow', 'create', 'Staff API capability: workflow:create', '2026-10-10 11:11:49'),
+	('63d1f675-c49b-11f1-a0d7-52540021303b', 'workflow:read', 'workflow', 'read', 'Staff API capability: workflow:read', '2026-10-10 11:11:49'),
+	('63e1b363-c49b-11f1-a0d7-52540021303b', 'workflow:update', 'workflow', 'update', 'Staff API capability: workflow:update', '2026-10-10 11:11:49'),
+	('63f17b64-c49b-11f1-a0d7-52540021303b', 'workspace:read', 'workspace', 'read', 'Staff API capability: workspace:read', '2026-10-10 11:11:50'),
+	('6400ce34-c49b-11f1-a0d7-52540021303b', 'zoho-bigin:create', 'zoho-bigin', 'create', 'Staff API capability: zoho-bigin:create', '2026-10-10 11:11:50'),
+	('640fc58a-c49b-11f1-a0d7-52540021303b', 'zoho-bigin:delete', 'zoho-bigin', 'delete', 'Staff API capability: zoho-bigin:delete', '2026-10-10 11:11:50'),
+	('641e6ece-c49b-11f1-a0d7-52540021303b', 'zoho-bigin:read', 'zoho-bigin', 'read', 'Staff API capability: zoho-bigin:read', '2026-10-10 11:11:50'),
+	('643101f1-c49b-11f1-a0d7-52540021303b', 'zoho-bigin:update', 'zoho-bigin', 'update', 'Staff API capability: zoho-bigin:update', '2026-10-10 11:11:50'),
+	('644190ca-c49b-11f1-a0d7-52540021303b', 'zoho-calendar:create', 'zoho-calendar', 'create', 'Staff API capability: zoho-calendar:create', '2026-10-10 11:11:50'),
+	('6451d9df-c49b-11f1-a0d7-52540021303b', 'zoho-calendar:delete', 'zoho-calendar', 'delete', 'Staff API capability: zoho-calendar:delete', '2026-10-10 11:11:50'),
+	('6460d23f-c49b-11f1-a0d7-52540021303b', 'zoho-calendar:read', 'zoho-calendar', 'read', 'Staff API capability: zoho-calendar:read', '2026-10-10 11:11:50'),
+	('64705df5-c49b-11f1-a0d7-52540021303b', 'zoho-calendar:update', 'zoho-calendar', 'update', 'Staff API capability: zoho-calendar:update', '2026-10-10 11:11:50'),
+	('64811c13-c49b-11f1-a0d7-52540021303b', 'zoho-cliq:read', 'zoho-cliq', 'read', 'Staff API capability: zoho-cliq:read', '2026-10-10 11:11:51'),
+	('64905415-c49b-11f1-a0d7-52540021303b', 'zoho-cliq:send', 'zoho-cliq', 'send', 'Staff API capability: zoho-cliq:send', '2026-10-10 11:11:51'),
+	('64a0a23a-c49b-11f1-a0d7-52540021303b', 'zoho-cliq:upload', 'zoho-cliq', 'upload', 'Staff API capability: zoho-cliq:upload', '2026-10-10 11:11:51'),
+	('64b16003-c49b-11f1-a0d7-52540021303b', 'zoho-projects:create', 'zoho-projects', 'create', 'Staff API capability: zoho-projects:create', '2026-10-10 11:11:51'),
+	('64c1b2ea-c49b-11f1-a0d7-52540021303b', 'zoho-projects:delete', 'zoho-projects', 'delete', 'Staff API capability: zoho-projects:delete', '2026-10-10 11:11:51'),
+	('64d14267-c49b-11f1-a0d7-52540021303b', 'zoho-projects:read', 'zoho-projects', 'read', 'Staff API capability: zoho-projects:read', '2026-10-10 11:11:51'),
+	('64e2387e-c49b-11f1-a0d7-52540021303b', 'zoho-projects:update', 'zoho-projects', 'update', 'Staff API capability: zoho-projects:update', '2026-10-10 11:11:51'),
+	('64f1d0a0-c49b-11f1-a0d7-52540021303b', 'zoho-workdrive:create', 'zoho-workdrive', 'create', 'Staff API capability: zoho-workdrive:create', '2026-10-10 11:11:51'),
+	('650179d9-c49b-11f1-a0d7-52540021303b', 'zoho-workdrive:read', 'zoho-workdrive', 'read', 'Staff API capability: zoho-workdrive:read', '2026-10-10 11:11:51'),
+	('6510e36a-c49b-11f1-a0d7-52540021303b', 'zoho-workdrive:upload', 'zoho-workdrive', 'upload', 'Staff API capability: zoho-workdrive:upload', '2026-10-10 11:11:51'),
+	('65dae9af-84d2-11f1-b721-52540021303b', 'LOGIN', 'AUTH', 'LOGIN', 'Login to the system', '2026-07-21 07:04:21'),
+	('65de61f5-84d2-11f1-b721-52540021303b', 'LOGOUT', 'AUTH', 'LOGOUT', 'Logout from the system', '2026-07-21 07:04:21'),
+	('65de653c-84d2-11f1-b721-52540021303b', 'VIEW_DASHBOARD', 'DASHBOARD', 'VIEW', 'View dashboard', '2026-07-21 07:04:21'),
+	('65de66f6-84d2-11f1-b721-52540021303b', 'CREATE_USER', 'USER', 'CREATE', 'Create users', '2026-07-21 07:04:21'),
+	('65de67af-84d2-11f1-b721-52540021303b', 'VIEW_USER', 'USER', 'VIEW', 'View users', '2026-07-21 07:04:21'),
+	('65de6865-84d2-11f1-b721-52540021303b', 'UPDATE_USER', 'USER', 'UPDATE', 'Update users', '2026-07-21 07:04:21'),
+	('65de6921-84d2-11f1-b721-52540021303b', 'DELETE_USER', 'USER', 'DELETE', 'Delete users', '2026-07-21 07:04:21'),
+	('65de69ce-84d2-11f1-b721-52540021303b', 'MANAGE_USER_STATUS', 'USER', 'STATUS', 'Activate or deactivate users', '2026-07-21 07:04:21'),
+	('65de6ac2-84d2-11f1-b721-52540021303b', 'CREATE_ROLE', 'ROLE', 'CREATE', 'Create roles', '2026-07-21 07:04:21'),
+	('65de6b6e-84d2-11f1-b721-52540021303b', 'VIEW_ROLE', 'ROLE', 'VIEW', 'View roles', '2026-07-21 07:04:21'),
+	('65de6c31-84d2-11f1-b721-52540021303b', 'UPDATE_ROLE', 'ROLE', 'UPDATE', 'Update roles', '2026-07-21 07:04:21'),
+	('65de6d00-84d2-11f1-b721-52540021303b', 'DELETE_ROLE', 'ROLE', 'DELETE', 'Delete roles', '2026-07-21 07:04:21'),
+	('65de6dc7-84d2-11f1-b721-52540021303b', 'ASSIGN_ROLE', 'ROLE', 'ASSIGN', 'Assign roles to users', '2026-07-21 07:04:21'),
+	('65de6e76-84d2-11f1-b721-52540021303b', 'CREATE_PERMISSION', 'PERMISSION', 'CREATE', 'Create permissions', '2026-07-21 07:04:21'),
+	('65de6f34-84d2-11f1-b721-52540021303b', 'VIEW_PERMISSION', 'PERMISSION', 'VIEW', 'View permissions', '2026-07-21 07:04:21'),
+	('65de6fef-84d2-11f1-b721-52540021303b', 'UPDATE_PERMISSION', 'PERMISSION', 'UPDATE', 'Update permissions', '2026-07-21 07:04:21'),
+	('65de70aa-84d2-11f1-b721-52540021303b', 'DELETE_PERMISSION', 'PERMISSION', 'DELETE', 'Delete permissions', '2026-07-21 07:04:21'),
+	('65de7179-84d2-11f1-b721-52540021303b', 'ASSIGN_PERMISSION', 'PERMISSION', 'ASSIGN', 'Assign permissions', '2026-07-21 07:04:21'),
+	('65de7231-84d2-11f1-b721-52540021303b', 'CREATE_PROJECT', 'PROJECT', 'CREATE', 'Create projects', '2026-07-21 07:04:21'),
+	('65de72e7-84d2-11f1-b721-52540021303b', 'VIEW_PROJECT', 'PROJECT', 'VIEW', 'View projects', '2026-07-21 07:04:21'),
+	('65de739d-84d2-11f1-b721-52540021303b', 'UPDATE_PROJECT', 'PROJECT', 'UPDATE', 'Update projects', '2026-07-21 07:04:21'),
+	('65de745a-84d2-11f1-b721-52540021303b', 'DELETE_PROJECT', 'PROJECT', 'DELETE', 'Delete projects', '2026-07-21 07:04:21'),
+	('65de7520-84d2-11f1-b721-52540021303b', 'ARCHIVE_PROJECT', 'PROJECT', 'ARCHIVE', 'Archive projects', '2026-07-21 07:04:21'),
+	('65de75cd-84d2-11f1-b721-52540021303b', 'RESTORE_PROJECT', 'PROJECT', 'RESTORE', 'Restore archived projects', '2026-07-21 07:04:21'),
+	('65de767f-84d2-11f1-b721-52540021303b', 'CREATE_CLIENT', 'CLIENT', 'CREATE', 'Create clients', '2026-07-21 07:04:21'),
+	('65de773a-84d2-11f1-b721-52540021303b', 'VIEW_CLIENT', 'CLIENT', 'VIEW', 'View clients', '2026-07-21 07:04:21'),
+	('65de77e1-84d2-11f1-b721-52540021303b', 'UPDATE_CLIENT', 'CLIENT', 'UPDATE', 'Update clients', '2026-07-21 07:04:21'),
+	('65de78a1-84d2-11f1-b721-52540021303b', 'DELETE_CLIENT', 'CLIENT', 'DELETE', 'Delete clients', '2026-07-21 07:04:21'),
+	('65de7953-84d2-11f1-b721-52540021303b', 'CREATE_LEAD', 'LEAD', 'CREATE', 'Create leads', '2026-07-21 07:04:21'),
+	('65de7a20-84d2-11f1-b721-52540021303b', 'VIEW_LEAD', 'LEAD', 'VIEW', 'View leads', '2026-07-21 07:04:21'),
+	('65de7ade-84d2-11f1-b721-52540021303b', 'UPDATE_LEAD', 'LEAD', 'UPDATE', 'Update leads', '2026-07-21 07:04:21'),
+	('65de7ba1-84d2-11f1-b721-52540021303b', 'DELETE_LEAD', 'LEAD', 'DELETE', 'Delete leads', '2026-07-21 07:04:21'),
+	('65de7c5b-84d2-11f1-b721-52540021303b', 'CHANGE_LEAD_STAGE', 'LEAD', 'CHANGE_STAGE', 'Move lead between stages', '2026-07-21 07:04:21'),
+	('65de7d11-84d2-11f1-b721-52540021303b', 'MARK_LEAD_LOST', 'LEAD', 'MARK_LOST', 'Mark lead as lost', '2026-07-21 07:04:21'),
+	('65de7df8-84d2-11f1-b721-52540021303b', 'ADD_LEAD_NOTE', 'LEAD', 'ADD_NOTE', 'Add lead notes', '2026-07-21 07:04:21'),
+	('65de7eac-84d2-11f1-b721-52540021303b', 'boq:create', 'boq', 'create', 'Permission to create BOQ records', '2026-07-21 07:04:21'),
+	('65de8012-84d2-11f1-b721-52540021303b', 'VIEW_BOQ', 'BOQ', 'VIEW', 'View BOQ', '2026-07-21 07:04:21'),
+	('65de80d9-84d2-11f1-b721-52540021303b', 'UPDATE_BOQ', 'BOQ', 'UPDATE', 'Update BOQ', '2026-07-21 07:04:21'),
+	('65de81ae-84d2-11f1-b721-52540021303b', 'DELETE_BOQ', 'BOQ', 'DELETE', 'Delete BOQ', '2026-07-21 07:04:21'),
+	('65de8274-84d2-11f1-b721-52540021303b', 'APPROVE_BOQ', 'BOQ', 'APPROVE', 'Approve BOQ', '2026-07-21 07:04:21'),
+	('65de8327-84d2-11f1-b721-52540021303b', 'EXPORT_BOQ', 'BOQ', 'EXPORT', 'Export BOQ', '2026-07-21 07:04:21'),
+	('65de83db-84d2-11f1-b721-52540021303b', 'CREATE_BOQ_VERSION', 'BOQ', 'VERSION', 'Create BOQ version', '2026-07-21 07:04:21'),
+	('65de84c3-84d2-11f1-b721-52540021303b', 'CREATE_BOQ_TEMPLATE', 'BOQ_TEMPLATE', 'CREATE', 'Create BOQ Template', '2026-07-21 07:04:21'),
+	('65de859e-84d2-11f1-b721-52540021303b', 'VIEW_BOQ_TEMPLATE', 'BOQ_TEMPLATE', 'VIEW', 'View BOQ Template', '2026-07-21 07:04:21'),
+	('65de867b-84d2-11f1-b721-52540021303b', 'UPDATE_BOQ_TEMPLATE', 'BOQ_TEMPLATE', 'UPDATE', 'Update BOQ Template', '2026-07-21 07:04:21'),
+	('65de875b-84d2-11f1-b721-52540021303b', 'DELETE_BOQ_TEMPLATE', 'BOQ_TEMPLATE', 'DELETE', 'Delete BOQ Template', '2026-07-21 07:04:21'),
+	('65de8824-84d2-11f1-b721-52540021303b', 'UPLOAD_DOCUMENT', 'DOCUMENT', 'CREATE', 'Upload document', '2026-07-21 07:04:21'),
+	('65de88dc-84d2-11f1-b721-52540021303b', 'VIEW_DOCUMENT', 'DOCUMENT', 'VIEW', 'View document', '2026-07-21 07:04:21'),
+	('65de89b1-84d2-11f1-b721-52540021303b', 'UPDATE_DOCUMENT', 'DOCUMENT', 'UPDATE', 'Update document', '2026-07-21 07:04:21'),
+	('65de8a87-84d2-11f1-b721-52540021303b', 'DELETE_DOCUMENT', 'DOCUMENT', 'DELETE', 'Delete document', '2026-07-21 07:04:21'),
+	('65de8b74-84d2-11f1-b721-52540021303b', 'DOWNLOAD_DOCUMENT', 'DOCUMENT', 'DOWNLOAD', 'Download document', '2026-07-21 07:04:21'),
+	('65de8c4d-84d2-11f1-b721-52540021303b', 'LOCK_DOCUMENT', 'DOCUMENT', 'LOCK', 'Lock document', '2026-07-21 07:04:21'),
+	('65de8eb6-84d2-11f1-b721-52540021303b', 'CREATE_DRAWING', 'DRAWING', 'CREATE', 'Upload drawing', '2026-07-21 07:04:21'),
+	('65de8f82-84d2-11f1-b721-52540021303b', 'VIEW_DRAWING', 'DRAWING', 'VIEW', 'View drawings', '2026-07-21 07:04:21'),
+	('65de9059-84d2-11f1-b721-52540021303b', 'UPDATE_DRAWING', 'DRAWING', 'UPDATE', 'Update drawings', '2026-07-21 07:04:21'),
+	('65de9121-84d2-11f1-b721-52540021303b', 'DELETE_DRAWING', 'DRAWING', 'DELETE', 'Delete drawings', '2026-07-21 07:04:21'),
+	('65de91fa-84d2-11f1-b721-52540021303b', 'CREATE_SITE_RECCE', 'SITE_RECCE', 'CREATE', 'Create site recce', '2026-07-21 07:04:21'),
+	('65de92d1-84d2-11f1-b721-52540021303b', 'VIEW_SITE_RECCE', 'SITE_RECCE', 'VIEW', 'View site recce', '2026-07-21 07:04:21'),
+	('65de939e-84d2-11f1-b721-52540021303b', 'UPDATE_SITE_RECCE', 'SITE_RECCE', 'UPDATE', 'Update site recce', '2026-07-21 07:04:21'),
+	('65de9485-84d2-11f1-b721-52540021303b', 'DELETE_SITE_RECCE', 'SITE_RECCE', 'DELETE', 'Delete site recce', '2026-07-21 07:04:21'),
+	('65de956a-84d2-11f1-b721-52540021303b', 'CREATE_VENDOR', 'VENDOR', 'CREATE', 'Create vendor', '2026-07-21 07:04:21'),
+	('65de9645-84d2-11f1-b721-52540021303b', 'VIEW_VENDOR', 'VENDOR', 'VIEW', 'View vendors', '2026-07-21 07:04:21'),
+	('65de976b-84d2-11f1-b721-52540021303b', 'UPDATE_VENDOR', 'VENDOR', 'UPDATE', 'Update vendors', '2026-07-21 07:04:21'),
+	('65de9845-84d2-11f1-b721-52540021303b', 'DELETE_VENDOR', 'VENDOR', 'DELETE', 'Delete vendors', '2026-07-21 07:04:21'),
+	('65de9910-84d2-11f1-b721-52540021303b', 'APPROVE_VENDOR', 'VENDOR', 'APPROVE', 'Approve vendors', '2026-07-21 07:04:21'),
+	('65de99c9-84d2-11f1-b721-52540021303b', 'CREATE_QUOTATION', 'QUOTATION', 'CREATE', 'Create quotation', '2026-07-21 07:04:21'),
+	('65de9a95-84d2-11f1-b721-52540021303b', 'VIEW_QUOTATION', 'QUOTATION', 'VIEW', 'View quotations', '2026-07-21 07:04:21'),
+	('65de9b5b-84d2-11f1-b721-52540021303b', 'UPDATE_QUOTATION', 'QUOTATION', 'UPDATE', 'Update quotations', '2026-07-21 07:04:21'),
+	('65de9c36-84d2-11f1-b721-52540021303b', 'DELETE_QUOTATION', 'QUOTATION', 'DELETE', 'Delete quotations', '2026-07-21 07:04:21'),
+	('65de9cfd-84d2-11f1-b721-52540021303b', 'APPROVE_QUOTATION', 'QUOTATION', 'APPROVE', 'Approve quotations', '2026-07-21 07:04:21'),
+	('65de9dbb-84d2-11f1-b721-52540021303b', 'COMPARE_QUOTATION', 'QUOTATION', 'COMPARE', 'Compare quotations', '2026-07-21 07:04:21'),
+	('65de9e7f-84d2-11f1-b721-52540021303b', 'CREATE_TASK', 'TASK', 'CREATE', 'Create task', '2026-07-21 07:04:21'),
+	('65de9f5e-84d2-11f1-b721-52540021303b', 'VIEW_TASK', 'TASK', 'VIEW', 'View task', '2026-07-21 07:04:21'),
+	('65dea046-84d2-11f1-b721-52540021303b', 'UPDATE_TASK', 'TASK', 'UPDATE', 'Update task', '2026-07-21 07:04:21'),
+	('65dea117-84d2-11f1-b721-52540021303b', 'DELETE_TASK', 'TASK', 'DELETE', 'Delete task', '2026-07-21 07:04:21'),
+	('65dea1e8-84d2-11f1-b721-52540021303b', 'ASSIGN_TASK', 'TASK', 'ASSIGN', 'Assign task', '2026-07-21 07:04:21'),
+	('65dea2a4-84d2-11f1-b721-52540021303b', 'CREATE_EVENT', 'CALENDAR', 'CREATE', 'Create calendar event', '2026-07-21 07:04:21'),
+	('65dea373-84d2-11f1-b721-52540021303b', 'VIEW_EVENT', 'CALENDAR', 'VIEW', 'View calendar events', '2026-07-21 07:04:21'),
+	('65dea44f-84d2-11f1-b721-52540021303b', 'UPDATE_EVENT', 'CALENDAR', 'UPDATE', 'Update calendar events', '2026-07-21 07:04:21'),
+	('65dea53c-84d2-11f1-b721-52540021303b', 'DELETE_EVENT', 'CALENDAR', 'DELETE', 'Delete calendar events', '2026-07-21 07:04:21'),
+	('65dea6a7-84d2-11f1-b721-52540021303b', 'CREATE_LIBRARY_ITEM', 'LIBRARY', 'CREATE', 'Create library item', '2026-07-21 07:04:21'),
+	('65dea7ae-84d2-11f1-b721-52540021303b', 'VIEW_LIBRARY_ITEM', 'LIBRARY', 'VIEW', 'View library', '2026-07-21 07:04:21'),
+	('65dea874-84d2-11f1-b721-52540021303b', 'UPDATE_LIBRARY_ITEM', 'LIBRARY', 'UPDATE', 'Update library', '2026-07-21 07:04:21'),
+	('65dea953-84d2-11f1-b721-52540021303b', 'DELETE_LIBRARY_ITEM', 'LIBRARY', 'DELETE', 'Delete library', '2026-07-21 07:04:21'),
+	('65deaa1f-84d2-11f1-b721-52540021303b', 'VIEW_REPORT', 'REPORT', 'VIEW', 'View reports', '2026-07-21 07:04:21'),
+	('65deaada-84d2-11f1-b721-52540021303b', 'EXPORT_REPORT', 'REPORT', 'EXPORT', 'Export reports', '2026-07-21 07:04:21'),
+	('65deab97-84d2-11f1-b721-52540021303b', 'VIEW_SETTING', 'SETTING', 'VIEW', 'View settings', '2026-07-21 07:04:21'),
+	('65deac52-84d2-11f1-b721-52540021303b', 'UPDATE_SETTING', 'SETTING', 'UPDATE', 'Update settings', '2026-07-21 07:04:21'),
+	('65dead0c-84d2-11f1-b721-52540021303b', 'VIEW_NOTIFICATION', 'NOTIFICATION', 'VIEW', 'View notifications', '2026-07-21 07:04:21'),
+	('65deadb9-84d2-11f1-b721-52540021303b', 'SEND_NOTIFICATION', 'NOTIFICATION', 'SEND', 'Send notifications', '2026-07-21 07:04:21'),
+	('65deae96-84d2-11f1-b721-52540021303b', 'VIEW_ACTIVITY_LOG', 'ACTIVITY_LOG', 'VIEW', 'View activity logs', '2026-07-21 07:04:21'),
+	('65deaf4b-84d2-11f1-b721-52540021303b', 'UPLOAD_FILE', 'FILE', 'UPLOAD', 'Upload files', '2026-07-21 07:04:21'),
+	('65deb006-84d2-11f1-b721-52540021303b', 'DELETE_FILE', 'FILE', 'DELETE', 'Delete files', '2026-07-21 07:04:21'),
+	('65deb0d1-84d2-11f1-b721-52540021303b', 'MANAGE_DASHBOARD', 'DASHBOARD', 'MANAGE', 'Customize dashboard', '2026-07-21 07:04:21'),
+	('65deb18f-84d2-11f1-b721-52540021303b', 'SYSTEM_BACKUP', 'SYSTEM', 'BACKUP', 'Create system backup', '2026-07-21 07:04:21'),
+	('65deb241-84d2-11f1-b721-52540021303b', 'SYSTEM_RESTORE', 'SYSTEM', 'RESTORE', 'Restore system backup', '2026-07-21 07:04:21'),
+	('65deb2f0-84d2-11f1-b721-52540021303b', 'SYSTEM_ADMIN', 'SYSTEM', 'ADMIN', 'Full system administration', '2026-07-21 07:04:21'),
+	('b3675e12-ae64-11f1-b327-52540021303b', 'gates:read', 'gates', 'read', NULL, '2026-09-12 04:44:55'),
+	('b3722c58-ae64-11f1-b327-52540021303b', 'gates:clear', 'gates', 'clear', NULL, '2026-09-12 04:44:55'),
+	('b37b7a9e-ae64-11f1-b327-52540021303b', 'gates:reopen', 'gates', 'reopen', NULL, '2026-09-12 04:44:55'),
+	('b386592c-ae64-11f1-b327-52540021303b', 'gates:override', 'gates', 'override', NULL, '2026-09-12 04:44:55'),
+	('b392f9c2-ae64-11f1-b327-52540021303b', 'documents:approve', 'documents', 'approve', NULL, '2026-09-12 04:44:55'),
+	('c0f57007-c604-11f1-924f-52540021303b', 'budget-guides:create', 'budget-guides', 'create', 'Staff API capability: budget-guides:create', '2026-10-12 06:18:34'),
+	('c103a0ec-c604-11f1-924f-52540021303b', 'budget-guides:delete', 'budget-guides', 'delete', 'Staff API capability: budget-guides:delete', '2026-10-12 06:18:34'),
+	('c1120aa3-c604-11f1-924f-52540021303b', 'budget-guides:read', 'budget-guides', 'read', 'Staff API capability: budget-guides:read', '2026-10-12 06:18:34'),
+	('c1203b6a-c604-11f1-924f-52540021303b', 'budget-guides:update', 'budget-guides', 'update', 'Staff API capability: budget-guides:update', '2026-10-12 06:18:34');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.plan_of_action_phases
 CREATE TABLE IF NOT EXISTS `plan_of_action_phases` (
@@ -1805,7 +2960,6 @@ CREATE TABLE IF NOT EXISTS `plan_of_action_phases` (
   CONSTRAINT `fk_plan_of_action_phases_plan` FOREIGN KEY (`plan_of_action_id`) REFERENCES `plan_of_actions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.plan_of_actions
 CREATE TABLE IF NOT EXISTS `plan_of_actions` (
@@ -1843,7 +2997,6 @@ CREATE TABLE IF NOT EXISTS `plan_of_actions` (
   CONSTRAINT `fk_plan_of_actions_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.planner_task_templates
 CREATE TABLE IF NOT EXISTS `planner_task_templates` (
@@ -1868,7 +3021,6 @@ CREATE TABLE IF NOT EXISTS `planner_task_templates` (
   CONSTRAINT `fk_planner_task_templates_phase` FOREIGN KEY (`phase_id`) REFERENCES `project_phases` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_brief_attachments
 CREATE TABLE IF NOT EXISTS `project_brief_attachments` (
@@ -1887,7 +3039,7 @@ CREATE TABLE IF NOT EXISTS `project_brief_attachments` (
   CONSTRAINT `fk_project_brief_attachments_uploaded_by` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.project_brief_attachments: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_brief_documents
 CREATE TABLE IF NOT EXISTS `project_brief_documents` (
@@ -1903,7 +3055,7 @@ CREATE TABLE IF NOT EXISTS `project_brief_documents` (
   CONSTRAINT `fk_project_brief_documents_brief` FOREIGN KEY (`project_brief_id`) REFERENCES `project_briefs` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.project_brief_documents: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_brief_occupants
 CREATE TABLE IF NOT EXISTS `project_brief_occupants` (
@@ -1920,7 +3072,6 @@ CREATE TABLE IF NOT EXISTS `project_brief_occupants` (
   CONSTRAINT `fk_project_brief_occupants_brief` FOREIGN KEY (`project_brief_id`) REFERENCES `project_briefs` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_brief_phases
 CREATE TABLE IF NOT EXISTS `project_brief_phases` (
@@ -1941,7 +3092,6 @@ CREATE TABLE IF NOT EXISTS `project_brief_phases` (
   CONSTRAINT `fk_project_brief_phases_brief` FOREIGN KEY (`project_brief_id`) REFERENCES `project_briefs` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_brief_procurement_categories
 CREATE TABLE IF NOT EXISTS `project_brief_procurement_categories` (
@@ -1955,7 +3105,6 @@ CREATE TABLE IF NOT EXISTS `project_brief_procurement_categories` (
   CONSTRAINT `fk_project_brief_procurement_categories_brief` FOREIGN KEY (`project_brief_id`) REFERENCES `project_briefs` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_brief_references
 CREATE TABLE IF NOT EXISTS `project_brief_references` (
@@ -1972,7 +3121,6 @@ CREATE TABLE IF NOT EXISTS `project_brief_references` (
   CONSTRAINT `fk_project_brief_references_brief` FOREIGN KEY (`project_brief_id`) REFERENCES `project_briefs` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_brief_services
 CREATE TABLE IF NOT EXISTS `project_brief_services` (
@@ -1985,7 +3133,6 @@ CREATE TABLE IF NOT EXISTS `project_brief_services` (
   CONSTRAINT `fk_project_brief_services_brief` FOREIGN KEY (`project_brief_id`) REFERENCES `project_briefs` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_brief_site_restrictions
 CREATE TABLE IF NOT EXISTS `project_brief_site_restrictions` (
@@ -2001,7 +3148,6 @@ CREATE TABLE IF NOT EXISTS `project_brief_site_restrictions` (
   CONSTRAINT `fk_project_brief_site_restrictions_project_brief` FOREIGN KEY (`project_brief_id`) REFERENCES `project_briefs` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_brief_space_requirements
 CREATE TABLE IF NOT EXISTS `project_brief_space_requirements` (
@@ -2020,7 +3166,6 @@ CREATE TABLE IF NOT EXISTS `project_brief_space_requirements` (
   CONSTRAINT `fk_project_brief_spaces_brief` FOREIGN KEY (`project_brief_id`) REFERENCES `project_briefs` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_brief_style_directions
 CREATE TABLE IF NOT EXISTS `project_brief_style_directions` (
@@ -2034,7 +3179,6 @@ CREATE TABLE IF NOT EXISTS `project_brief_style_directions` (
   CONSTRAINT `fk_project_brief_style_directions_brief` FOREIGN KEY (`project_brief_id`) REFERENCES `project_briefs` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_brief_work_types
 CREATE TABLE IF NOT EXISTS `project_brief_work_types` (
@@ -2047,7 +3191,6 @@ CREATE TABLE IF NOT EXISTS `project_brief_work_types` (
   CONSTRAINT `fk_project_brief_work_types_brief` FOREIGN KEY (`project_brief_id`) REFERENCES `project_briefs` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_briefs
 CREATE TABLE IF NOT EXISTS `project_briefs` (
@@ -2123,7 +3266,6 @@ CREATE TABLE IF NOT EXISTS `project_briefs` (
   CONSTRAINT `fk_project_briefs_taken_by` FOREIGN KEY (`brief_taken_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_gates
 CREATE TABLE IF NOT EXISTS `project_gates` (
@@ -2147,7 +3289,6 @@ CREATE TABLE IF NOT EXISTS `project_gates` (
   CONSTRAINT `fk_project_gates_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_locations
 CREATE TABLE IF NOT EXISTS `project_locations` (
@@ -2168,7 +3309,6 @@ CREATE TABLE IF NOT EXISTS `project_locations` (
   CONSTRAINT `fk_project_locations_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_phases
 CREATE TABLE IF NOT EXISTS `project_phases` (
@@ -2187,7 +3327,40 @@ CREATE TABLE IF NOT EXISTS `project_phases` (
   KEY `idx_project_phases_deleted_at` (`deleted_at`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.project_phases: ~32 rows (approximately)
+INSERT INTO `project_phases` (`id`, `module`, `phase_number`, `phase_code`, `title`, `description`, `sort_order`, `created_at`, `updated_at`, `deleted_at`) VALUES
+	('25d68d20-209d-46ba-b05a-a1f70e398716', 'CONSULTANCY', 15, 'P15', 'TENDER DRAWINGS', NULL, 3, '2026-09-18 10:29:12', '2026-09-18 10:29:12', NULL),
+	('2a0de81d-a43a-5fb5-96ba-94257a9bc75e', 'DOCUMENTS', 6, '06_TENDER', '06 TENDER', NULL, 6, '2026-09-12 04:44:52', '2026-09-12 04:44:52', NULL),
+	('35ccb713-885f-59f6-9a8f-5aad10fe48ed', 'DOCUMENTS', 11, 'B_MATERIAL', 'B MATERIAL', NULL, 11, '2026-09-12 04:44:52', '2026-09-12 04:44:52', NULL),
+	('3a44a34e-db2f-5793-9bbd-dde8d2365828', 'DOCUMENTS', 7, '07_WORKING', '07 WORKING', NULL, 7, '2026-09-12 04:44:52', '2026-09-12 04:44:52', NULL),
+	('3aa4d822-dca3-5e58-be3e-91f9eecaa311', 'DOCUMENTS', 2, '02_RECCE', '02 RECCE', NULL, 2, '2026-09-12 04:44:51', '2026-09-12 04:44:51', NULL),
+	('4491ecd3-a595-43af-a3da-a56b7fb38bed', 'PMC', 4, 'P4', 'FINISHING', NULL, 8, '2026-09-18 10:29:23', '2026-09-18 10:29:23', NULL),
+	('46eb9f32-06c1-5d8f-b486-0730f4d7a0cb', 'DOCUMENTS', 9, '09_HANDOVER', '09 HANDOVER', NULL, 9, '2026-09-12 04:44:52', '2026-09-12 04:44:52', NULL),
+	('510941bb-c763-42d2-9afd-bee3b56abc6c', 'PMC', 3, 'P3', 'FIT OUTS', NULL, 7, '2026-09-18 10:29:20', '2026-09-18 10:29:20', NULL),
+	('549bcfee-35bc-448f-b603-257716b88e4b', 'CONSULTANCY', 13, 'P13', 'DESIGN', NULL, 1, '2026-09-18 10:29:08', '2026-09-18 10:29:08', NULL),
+	('59156697-4db1-4ee9-8f3b-bb1c117ea8f1', 'CONSULTANCY', 12, 'P12', 'PRE-DESIGN', NULL, 0, '2026-09-18 10:29:07', '2026-09-18 10:29:07', NULL),
+	('5cec1504-2f7a-5667-832f-4a96b85e8d44', 'DOCUMENTS', 8, '08_EXECUTION', '08 EXECUTION', NULL, 8, '2026-09-12 04:44:52', '2026-09-12 04:44:52', NULL),
+	('72f0d98c-72ff-470b-9c8b-e1b68a3d5523', 'PMC', 2, 'P2', 'CIVIL WORK', NULL, 6, '2026-09-18 10:29:18', '2026-09-18 10:29:18', NULL),
+	('75b981d1-5575-4bbd-8af3-6c0b4d41d865', 'CONSULTANCY', 14, 'P14', 'MATERIAL SELECTION', NULL, 2, '2026-09-18 10:29:09', '2026-09-18 10:29:09', NULL),
+	('97a2ffe7-d687-4dba-915e-49ef89047799', 'PMC', 5, 'P5', 'SNAG & HANDOVER', NULL, 9, '2026-09-18 10:29:24', '2026-09-18 10:29:24', NULL),
+	('a0628b6a-0206-5acd-8fcc-9838fc245781', 'DOCUMENTS', 3, '03_PRE_DESIGN', '03 PRE DESIGN', NULL, 3, '2026-09-12 04:44:51', '2026-09-12 04:44:51', NULL),
+	('a274a262-4c02-4e9a-a95a-8d4142e677bc', 'CONSULTANCY', 16, 'P16', 'WORKING DRAWINGS', NULL, 4, '2026-09-18 10:29:13', '2026-09-18 10:29:13', NULL),
+	('bf4191fb-1601-53e1-b84f-ec7a21a56d6d', 'DOCUMENTS', 4, '04_PLANNING', '04 PLANNING', NULL, 4, '2026-09-12 04:44:52', '2026-09-12 04:44:52', NULL),
+	('c74e66e4-de59-43c7-b110-0124d72e4392', 'PMC', 1, 'P1', 'Site preparation', NULL, 5, '2026-09-18 10:29:16', '2026-10-03 06:01:24', NULL),
+	('cb595cbe-ba42-5fc3-af81-39e798fce957', 'DOCUMENTS', 5, '05_DESIGN', '05 DESIGN', NULL, 5, '2026-09-12 04:44:52', '2026-09-12 04:44:52', NULL),
+	('d51f2d19-97a8-11f1-9d65-52540021303b', 'CONSULTANCY', 1, 'PH-01', 'Project Initiation', 'Project kickoff, scope confirmation, stakeholder identification, and initial project setup.', 1, '2026-08-14 06:24:41', '2026-08-14 06:24:41', NULL),
+	('d51f3487-97a8-11f1-9d65-52540021303b', 'CONSULTANCY', 2, 'PH-02', 'Site Survey & Assessment', 'Detailed site inspection, measurements, existing-condition assessment, and site documentation.', 2, '2026-08-14 06:24:41', '2026-08-14 06:24:41', NULL),
+	('d51f3631-97a8-11f1-9d65-52540021303b', 'CONSULTANCY', 3, 'PH-03', 'Design & Planning', 'Preparation and review of architectural, structural, MEP, and execution plans.', 3, '2026-08-14 06:24:41', '2026-08-14 06:24:41', NULL),
+	('d51f36f4-97a8-11f1-9d65-52540021303b', 'CONSULTANCY', 4, 'PH-04', 'Approvals & Procurement', 'Obtain required approvals and initiate procurement of materials, vendors, and subcontractors.', 4, '2026-08-14 06:24:41', '2026-08-14 06:24:41', NULL),
+	('d51f37ba-97a8-11f1-9d65-52540021303b', 'CONSULTANCY', 5, 'PH-05', 'Site Mobilization', 'Prepare the site for execution including manpower, equipment, temporary facilities, and safety arrangements.', 5, '2026-08-14 06:24:41', '2026-08-14 06:24:41', NULL),
+	('d51f38cb-97a8-11f1-9d65-52540021303b', 'CONSULTANCY', 6, 'PH-06', 'Civil & Structural Works', 'Execute excavation, foundation, structural, masonry, and related civil construction works.', 6, '2026-08-14 06:24:41', '2026-08-14 06:24:41', NULL),
+	('d51f3971-97a8-11f1-9d65-52540021303b', 'CONSULTANCY', 7, 'PH-07', 'MEP Installation', 'Installation of electrical, plumbing, HVAC, fire-fighting, and other MEP systems.', 7, '2026-08-14 06:24:41', '2026-08-14 06:24:41', NULL),
+	('d51f3a07-97a8-11f1-9d65-52540021303b', 'CONSULTANCY', 8, 'PH-08', 'Finishing Works', 'Execute plastering, flooring, painting, ceilings, doors, windows, fixtures, and final finishes.', 8, '2026-08-14 06:24:41', '2026-08-14 06:24:41', NULL),
+	('d51f3aab-97a8-11f1-9d65-52540021303b', 'CONSULTANCY', 9, 'PH-09', 'Testing & Commissioning', 'Test installed systems, rectify defects, and commission electrical, plumbing, HVAC, fire, and other systems.', 9, '2026-08-14 06:24:41', '2026-08-14 06:24:41', NULL),
+	('d51f3b4e-97a8-11f1-9d65-52540021303b', 'CONSULTANCY', 10, 'PH-10', 'Snagging & Rectification', 'Identify, document, and rectify construction defects and incomplete works.', 10, '2026-08-14 06:24:41', '2026-08-14 06:24:41', NULL),
+	('d51f3be7-97a8-11f1-9d65-52540021303b', 'CONSULTANCY', 11, 'PH-11', 'Final Inspection & Handover', 'Complete final inspection, documentation, client walkthrough, and project handover.', 11, '2026-08-14 06:24:41', '2026-08-14 06:24:41', NULL),
+	('df430513-9a8b-526e-981a-a33cea8e94ff', 'DOCUMENTS', 1, '01_BRIEF', '01 BRIEF', NULL, 1, '2026-09-12 04:44:51', '2026-09-12 04:44:51', NULL),
+	('f5886765-a1ea-56b4-a176-0f187c0f7205', 'DOCUMENTS', 10, 'A_VENDOR_TRADES', 'A VENDOR TRADES', NULL, 10, '2026-09-12 04:44:52', '2026-09-12 04:44:52', NULL);
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_planner_item_locations
 CREATE TABLE IF NOT EXISTS `project_planner_item_locations` (
@@ -2213,8 +3386,6 @@ CREATE TABLE IF NOT EXISTS `project_planner_item_locations` (
   CONSTRAINT `fk_planner_item_locations_item` FOREIGN KEY (`planner_item_id`) REFERENCES `project_planner_items` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_planner_item_locations_location` FOREIGN KEY (`location_id`) REFERENCES `project_locations` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_planner_items
 CREATE TABLE IF NOT EXISTS `project_planner_items` (
@@ -2253,7 +3424,6 @@ CREATE TABLE IF NOT EXISTS `project_planner_items` (
   CONSTRAINT `fk_project_planner_items_planner` FOREIGN KEY (`planner_id`) REFERENCES `project_planners` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_planners
 CREATE TABLE IF NOT EXISTS `project_planners` (
@@ -2279,8 +3449,6 @@ CREATE TABLE IF NOT EXISTS `project_planners` (
   CONSTRAINT `fk_project_planners_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `fk_project_planners_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_procurement_items
 CREATE TABLE IF NOT EXISTS `project_procurement_items` (
@@ -2314,7 +3482,6 @@ CREATE TABLE IF NOT EXISTS `project_procurement_items` (
   CONSTRAINT `fk_project_procurement_items_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_quality_checks
 CREATE TABLE IF NOT EXISTS `project_quality_checks` (
@@ -2337,7 +3504,6 @@ CREATE TABLE IF NOT EXISTS `project_quality_checks` (
   CONSTRAINT `fk_pqc_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_scope_categories
 CREATE TABLE IF NOT EXISTS `project_scope_categories` (
@@ -2357,7 +3523,7 @@ CREATE TABLE IF NOT EXISTS `project_scope_categories` (
   CONSTRAINT `fk_project_scope_categories_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.project_scope_categories: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_shortlists
 CREATE TABLE IF NOT EXISTS `project_shortlists` (
@@ -2381,7 +3547,6 @@ CREATE TABLE IF NOT EXISTS `project_shortlists` (
   CONSTRAINT `fk_project_shortlists_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_spaces
 CREATE TABLE IF NOT EXISTS `project_spaces` (
@@ -2403,7 +3568,6 @@ CREATE TABLE IF NOT EXISTS `project_spaces` (
   CONSTRAINT `fk_project_spaces_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_types
 CREATE TABLE IF NOT EXISTS `project_types` (
@@ -2419,7 +3583,14 @@ CREATE TABLE IF NOT EXISTS `project_types` (
   KEY `idx_project_types_deleted_at` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.project_types: ~6 rows (approximately)
+INSERT INTO `project_types` (`id`, `name`, `slug`, `description`, `created_at`, `updated_at`, `deleted_at`) VALUES
+	('47c269f2-7e6b-11f1-b721-52540021303b', 'Residential Interior', 'residential-interior', 'Interior design and execution projects for residential spaces.', '2026-07-13 03:31:05', '2026-07-13 03:31:05', NULL),
+	('47c2e685-7e6b-11f1-b721-52540021303b', 'Commercial Office', 'commercial-office', 'Office workspace planning, design and development projects.', '2026-07-13 03:31:05', '2026-07-13 03:31:05', NULL),
+	('47c2e9cf-7e6b-11f1-b721-52540021303b', 'Retail Store', 'retail-store', 'Retail outlet design, branding and construction projects.', '2026-07-13 03:31:05', '2026-07-13 03:31:05', NULL),
+	('47c2eaa0-7e6b-11f1-b721-52540021303b', 'Hospitality', 'hospitality', 'Hotel, restaurant and hospitality infrastructure projects.', '2026-07-13 03:31:05', '2026-07-13 03:31:05', NULL),
+	('47c2eb50-7e6b-11f1-b721-52540021303b', 'Renovation', 'renovation', 'Renovation and remodeling of existing properties.', '2026-07-13 03:31:05', '2026-07-13 03:31:05', NULL),
+	('47c2ec08-7e6b-11f1-b721-52540021303b', 'Industrial Project', 'industrial-project', 'Industrial facilities and manufacturing related projects.', '2026-07-13 03:31:05', '2026-07-13 03:31:05', NULL);
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.project_vendor_procurements
 CREATE TABLE IF NOT EXISTS `project_vendor_procurements` (
@@ -2451,7 +3622,7 @@ CREATE TABLE IF NOT EXISTS `project_vendor_procurements` (
   CONSTRAINT `fk_project_vendor_procurements_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.project_vendor_procurements: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.projects
 CREATE TABLE IF NOT EXISTS `projects` (
@@ -2500,7 +3671,6 @@ CREATE TABLE IF NOT EXISTS `projects` (
   CONSTRAINT `projects_ibfk_3` FOREIGN KEY (`archived_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.purchase_order_items
 CREATE TABLE IF NOT EXISTS `purchase_order_items` (
@@ -2529,7 +3699,6 @@ CREATE TABLE IF NOT EXISTS `purchase_order_items` (
   CONSTRAINT `fk_purchase_order_items_purchase_order` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.purchase_orders
 CREATE TABLE IF NOT EXISTS `purchase_orders` (
@@ -2581,7 +3750,6 @@ CREATE TABLE IF NOT EXISTS `purchase_orders` (
   CONSTRAINT `fk_purchase_orders_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.qc_sign_off_item_results
 CREATE TABLE IF NOT EXISTS `qc_sign_off_item_results` (
@@ -2599,7 +3767,7 @@ CREATE TABLE IF NOT EXISTS `qc_sign_off_item_results` (
   CONSTRAINT `fk_qc_sign_off_item_results_template_item` FOREIGN KEY (`template_item_id`) REFERENCES `checklist_template_items` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.qc_sign_off_item_results: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.qc_sign_offs
 CREATE TABLE IF NOT EXISTS `qc_sign_offs` (
@@ -2624,7 +3792,7 @@ CREATE TABLE IF NOT EXISTS `qc_sign_offs` (
   KEY `qc_sign_offs_project_id` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.qc_sign_offs: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.quality_check_heads
 CREATE TABLE IF NOT EXISTS `quality_check_heads` (
@@ -2640,7 +3808,6 @@ CREATE TABLE IF NOT EXISTS `quality_check_heads` (
   UNIQUE KEY `uq_qch_sort_order` (`sort_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.quality_checklist_items
 CREATE TABLE IF NOT EXISTS `quality_checklist_items` (
@@ -2673,7 +3840,7 @@ CREATE TABLE IF NOT EXISTS `quality_checklist_items` (
   CONSTRAINT `fk_qcli_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.quality_checklist_items: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.quality_checklist_templates
 CREATE TABLE IF NOT EXISTS `quality_checklist_templates` (
@@ -2687,7 +3854,6 @@ CREATE TABLE IF NOT EXISTS `quality_checklist_templates` (
   PRIMARY KEY (`work_head`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.quality_checklists
 CREATE TABLE IF NOT EXISTS `quality_checklists` (
@@ -2716,7 +3882,6 @@ CREATE TABLE IF NOT EXISTS `quality_checklists` (
   CONSTRAINT `fk_qcl_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.quotation_comparisons
 CREATE TABLE IF NOT EXISTS `quotation_comparisons` (
@@ -2733,7 +3898,7 @@ CREATE TABLE IF NOT EXISTS `quotation_comparisons` (
   CONSTRAINT `fk_quotation_comparisons_project` FOREIGN KEY (`projectId`) REFERENCES `projects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.quotation_comparisons: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.quotation_items
 CREATE TABLE IF NOT EXISTS `quotation_items` (
@@ -2754,7 +3919,6 @@ CREATE TABLE IF NOT EXISTS `quotation_items` (
   CONSTRAINT `quotation_items_ibfk_1` FOREIGN KEY (`quotation_id`) REFERENCES `quotations` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.quotation_versions
 CREATE TABLE IF NOT EXISTS `quotation_versions` (
@@ -2774,7 +3938,6 @@ CREATE TABLE IF NOT EXISTS `quotation_versions` (
   CONSTRAINT `fk_qv_quotation` FOREIGN KEY (`quotation_id`) REFERENCES `quotations` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.quotations
 CREATE TABLE IF NOT EXISTS `quotations` (
@@ -2839,7 +4002,6 @@ CREATE TABLE IF NOT EXISTS `quotations` (
   CONSTRAINT `quotations_ibfk_8` FOREIGN KEY (`selected_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.reminder_sync_records
 CREATE TABLE IF NOT EXISTS `reminder_sync_records` (
@@ -2859,7 +4021,12 @@ CREATE TABLE IF NOT EXISTS `reminder_sync_records` (
   UNIQUE KEY `reminder_sync_records_user_kind_local_unique` (`user_id`,`kind`,`local_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.reminder_sync_records: ~4 rows (approximately)
+INSERT INTO `reminder_sync_records` (`id`, `user_id`, `kind`, `local_id`, `remote_id`, `destination`, `fingerprint`, `status`, `error`, `synced_at`, `created_at`, `updated_at`) VALUES
+	('1fef1931-b5e2-4fd9-947b-a7863310d0c5', 'd739bccb-7123-11f1-8bb6-52540021303b', 'calendar', '584e83eb-86d5-4cc8-bd70-8943188aba5c', 'd72a46815cf94d06b20588dfbfc6001f@zoho.in', '{"timezone": "Asia/Kolkata", "calendar_id": "f617e47646fb41ab8bfe58cf26ab7dec", "reminder_minutes": 30}', '8f80e6ca03658086cbceacf5af60307e427aadf178e7cb5fbf3786a142bbe7a6', 'synced', NULL, '2026-10-05 11:02:35', '2026-10-05 10:50:04', '2026-10-05 11:02:35'),
+	('719c57c7-f1bc-4922-90a9-8639af1fa4c7', '99632848-7f08-47b6-b200-ef55c0a4f8ec', 'calendar', '216ea3d2-3e40-4602-b4d9-ebda5106841d', '7a5d612a48624df780fd0ac1ebcac363@zoho.in', '{"timezone": "Asia/Kolkata", "calendar_id": "18ac1f122670492fa176731cdabeb5a6", "reminder_minutes": 30}', '147150a1e06d3037b2805d50af311fa9325e53f7a066bf03e7cb540ed34bc74b', 'synced', NULL, '2026-10-12 11:55:46', '2026-10-12 11:55:46', '2026-10-12 11:55:46'),
+	('85897f67-7039-45fe-a5eb-6bfc12511237', 'd739bccb-7123-11f1-8bb6-52540021303b', 'calendar', 'e2f2603e-3e7f-4038-95f1-9f166940daa4', 'de682ca0a7bd45dd9d43f2d3e81f9338@zoho.in', '{"timezone": "Asia/Kolkata", "calendar_id": "f617e47646fb41ab8bfe58cf26ab7dec", "reminder_minutes": 30}', '742dab7136420b915f1b3e1cbb65eb3d0e171c7ae835da9f4031aa0e41eb6ff6', 'synced', NULL, '2026-10-05 11:02:36', '2026-10-05 10:50:06', '2026-10-05 11:02:36'),
+	('ba41bddc-793c-4e37-a164-ee711eb64016', 'd739bccb-7123-11f1-8bb6-52540021303b', 'calendar', 'cae2415c-6332-4c5c-be13-66ba11c31f6e', '31445c42225545a69af29e520c14cb80@zoho.in', '{"timezone": "Asia/Kolkata", "calendar_id": "f617e47646fb41ab8bfe58cf26ab7dec", "reminder_minutes": 30}', 'dc48eb4e2b01d0823b991548a6e382cd3c67011969a01bb4be61f28d184c348b', 'synced', NULL, '2026-10-05 11:02:35', '2026-10-05 10:50:05', '2026-10-05 11:02:35');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.reminder_sync_settings
 CREATE TABLE IF NOT EXISTS `reminder_sync_settings` (
@@ -2878,7 +4045,14 @@ CREATE TABLE IF NOT EXISTS `reminder_sync_settings` (
   UNIQUE KEY `reminder_sync_settings_user_kind_unique` (`user_id`,`kind`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.reminder_sync_settings: ~4 rows (approximately)
+INSERT INTO `reminder_sync_settings` (`id`, `user_id`, `kind`, `enabled`, `config`, `last_run`, `last_error`, `lock_token`, `lock_until`, `created_at`, `updated_at`) VALUES
+	('24444457-8ae3-40dc-b6f9-4a782d310794', '99632848-7f08-47b6-b200-ef55c0a4f8ec', 'tasks', 0, '{"timezone": "Asia/Kolkata", "portal_id": "60089118579", "project_id": "470419000000079850", "assignee_id": "", "tasklist_id": "", "task_reminder_time": "09:00", "include_undated_tasks": false}', NULL, NULL, NULL, NULL, '2026-10-10 07:44:02', '2026-10-12 11:51:26'),
+	('b83b0c22-9100-425c-85f2-18d3f3b3c953', '9034b40f-08a6-4e04-a402-fe7397b29717', 'tasks', 0, '{"timezone": "Asia/Kolkata", "portal_id": "", "project_id": "", "assignee_id": "", "tasklist_id": "", "task_reminder_time": "09:00", "include_undated_tasks": true}', NULL, NULL, NULL, NULL, '2026-10-13 05:19:02', '2026-10-13 05:19:02'),
+	('bec8cd8f-bb7f-421d-815b-203277c6086c', 'd739bccb-7123-11f1-8bb6-52540021303b', 'tasks', 0, '{"timezone": "Asia/Kolkata", "portal_id": "60073600280", "project_id": "456433000000117004", "assignee_id": "", "tasklist_id": "", "task_reminder_time": "09:00", "include_undated_tasks": false}', NULL, NULL, NULL, NULL, '2026-10-08 04:50:29', '2026-10-12 05:17:02'),
+	('cbdda22f-ffd7-42a4-871c-e35a1c463f23', 'd739bccb-7123-11f1-8bb6-52540021303b', 'calendar', 0, '{"timezone": "Asia/Kolkata", "calendar_id": "f617e47646fb41ab8bfe58cf26ab7dec", "reminder_minutes": 30}', '2026-10-05 11:02:36', NULL, NULL, NULL, '2026-10-05 10:39:59', '2026-10-12 05:17:42'),
+	('d93fa185-97b3-4e11-be5f-798117dc07de', '99632848-7f08-47b6-b200-ef55c0a4f8ec', 'calendar', 1, '{"timezone": "Asia/Kolkata", "calendar_id": "18ac1f122670492fa176731cdabeb5a6", "reminder_minutes": 30}', '2026-10-13 07:55:59', NULL, NULL, NULL, '2026-10-10 07:44:08', '2026-10-13 07:55:59'),
+	('e40c4739-1db6-4ec0-8749-04fcc60fd58e', '9034b40f-08a6-4e04-a402-fe7397b29717', 'calendar', 0, '{"timezone": "Asia/Kolkata", "calendar_id": "947c66b21d2146e48a1411085aa1b6ea", "reminder_minutes": 30}', NULL, NULL, NULL, NULL, '2026-10-13 05:19:00', '2026-10-13 05:19:00');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.rfis
 CREATE TABLE IF NOT EXISTS `rfis` (
@@ -2909,7 +4083,7 @@ CREATE TABLE IF NOT EXISTS `rfis` (
   KEY `rfis_project_id` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.rfis: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.role_apps
 CREATE TABLE IF NOT EXISTS `role_apps` (
@@ -2925,7 +4099,98 @@ CREATE TABLE IF NOT EXISTS `role_apps` (
   CONSTRAINT `fk_role_apps_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.role_apps: ~64 rows (approximately)
+INSERT INTO `role_apps` (`role_id`, `app_code`, `granted_at`, `granted_by`) VALUES
+	('07114f34-84d2-11f1-b721-52540021303b', 'accounts', '2026-08-17 10:16:41', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', 'boq', '2026-08-17 10:16:41', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', 'calendar', '2026-08-17 10:16:41', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', 'crm', '2026-08-17 10:16:41', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', 'dashboard', '2026-08-17 10:16:41', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', 'documents', '2026-08-17 10:16:41', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', 'inventory', '2026-08-17 10:16:41', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', 'leads', '2026-08-17 10:16:41', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', 'projects', '2026-08-17 10:16:41', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', 'quotations', '2026-08-17 10:16:41', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', 'settings', '2026-08-17 10:16:41', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', 'tasks', '2026-08-17 10:16:41', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', 'vendors', '2026-08-17 10:16:41', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', 'accounts', '2026-10-13 05:24:33', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', 'boq', '2026-10-13 05:24:33', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', 'calendar', '2026-10-13 05:24:33', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', 'crm', '2026-10-13 05:24:33', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', 'dashboard', '2026-10-13 05:24:33', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', 'documents', '2026-10-13 05:24:33', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', 'inventory', '2026-10-13 05:24:33', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', 'leads', '2026-10-13 05:24:33', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', 'projects', '2026-10-13 05:24:33', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', 'quotations', '2026-10-13 05:24:33', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', 'settings', '2026-10-13 05:24:33', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', 'tasks', '2026-10-13 05:24:33', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', 'vendors', '2026-10-13 05:24:33', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', 'accounts', '2026-08-17 10:16:11', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', 'boq', '2026-08-17 10:16:11', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', 'calendar', '2026-08-17 10:16:11', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', 'crm', '2026-08-17 10:16:11', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', 'dashboard', '2026-08-17 10:16:11', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', 'documents', '2026-08-17 10:16:11', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', 'inventory', '2026-08-17 10:16:11', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', 'leads', '2026-08-17 10:16:11', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', 'projects', '2026-08-17 10:16:11', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', 'quotations', '2026-08-17 10:16:11', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', 'settings', '2026-08-17 10:16:11', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', 'tasks', '2026-08-17 10:16:11', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', 'vendors', '2026-08-17 10:16:11', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', 'accounts', '2026-10-13 05:11:54', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', 'boq', '2026-10-13 05:11:54', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', 'calendar', '2026-10-13 05:11:54', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', 'crm', '2026-10-13 05:11:54', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', 'dashboard', '2026-10-13 05:11:54', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', 'documents', '2026-10-13 05:11:54', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', 'inventory', '2026-10-13 05:11:54', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', 'leads', '2026-10-13 05:11:54', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', 'projects', '2026-10-13 05:11:54', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', 'quotations', '2026-10-13 05:11:54', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', 'settings', '2026-10-13 05:11:54', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', 'tasks', '2026-10-13 05:11:54', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', 'vendors', '2026-10-13 05:11:54', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', 'accounts', '2026-08-17 10:16:21', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', 'boq', '2026-08-17 10:16:21', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', 'calendar', '2026-08-17 10:16:21', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', 'crm', '2026-08-17 10:16:21', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', 'dashboard', '2026-08-17 10:16:21', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', 'documents', '2026-08-17 10:16:21', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', 'inventory', '2026-08-17 10:16:21', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', 'leads', '2026-08-17 10:16:21', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', 'quotations', '2026-08-17 10:16:21', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', 'settings', '2026-08-17 10:16:21', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', 'tasks', '2026-08-17 10:16:21', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', 'vendors', '2026-08-17 10:16:21', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'accounts', '2026-07-28 05:29:14', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'boq', '2026-07-28 05:29:14', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'calendar', '2026-07-28 05:29:14', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'crm', '2026-07-28 05:29:14', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'dashboard', '2026-07-28 05:29:14', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'documents', '2026-07-28 05:29:14', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'inventory', '2026-07-28 05:29:14', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'leads', '2026-07-28 05:29:14', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'projects', '2026-07-28 05:29:14', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'quotations', '2026-07-28 05:29:14', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'settings', '2026-07-28 05:29:14', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'tasks', '2026-07-28 05:29:14', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'vendors', '2026-07-28 05:29:14', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'accounts', '2026-10-03 07:46:56', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'boq', '2026-10-03 07:46:56', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'calendar', '2026-10-03 07:46:56', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'crm', '2026-10-03 07:46:56', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'dashboard', '2026-10-03 07:46:56', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'documents', '2026-10-03 07:46:56', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'inventory', '2026-10-03 07:46:56', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'leads', '2026-10-03 07:46:56', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'projects', '2026-10-03 07:46:56', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'quotations', '2026-10-03 07:46:56', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'settings', '2026-10-03 07:46:56', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'tasks', '2026-10-03 07:46:56', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'vendors', '2026-10-03 07:46:56', NULL);
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.role_permissions
 CREATE TABLE IF NOT EXISTS `role_permissions` (
@@ -2941,7 +4206,2873 @@ CREATE TABLE IF NOT EXISTS `role_permissions` (
   CONSTRAINT `role_permissions_ibfk_3` FOREIGN KEY (`granted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.role_permissions: ~2,785 rows (approximately)
+INSERT INTO `role_permissions` (`role_id`, `permission_id`, `granted_at`, `granted_by`) VALUES
+	('06850ec5-6208-4db6-9b27-c6eed141b80b', '65dae9af-84d2-11f1-b721-52540021303b', '2026-07-25 06:48:25', NULL),
+	('06850ec5-6208-4db6-9b27-c6eed141b80b', '65de61f5-84d2-11f1-b721-52540021303b', '2026-07-25 06:48:28', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '4d35154f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '4d7031eb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '4daa3dc0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '4de3b2b1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '4e665014-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:18:06', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '4e751183-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:18:07', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '4e8476a9-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:18:07', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '4eddcde5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '4eeccf6c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '4f18902f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '4fadb488-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '4fbc5eaf-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '50165352-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '509580c5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '50b2e1fc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '50c1762b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '50d02aaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5190aea7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '51bc7d35-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '51cbdf08-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '51dada48-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '522369fb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '52512ba5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '526f4ace-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '527ea369-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '52ace725-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '52ca8d7f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '52f6eb78-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5305c669-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '53316ae2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '535c91c2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '53aa9247-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '53cc1d17-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '53e9beba-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '53f8815a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '553732d5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '55e8931b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '56319fe4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '56797f6d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '56964305-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '56b40667-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '56c28d25-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '56df964d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '56ee50c9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5761aa24-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '57b8cbde-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '582d7c54-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '586863e4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '58bf2127-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '58f8e16b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '594146f4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '595e3be5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '597b650b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5989ddee-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '59984a70-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '59a6a5a3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '59b53ae4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '59d21256-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '59e0b334-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '59ef5616-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '59fdd97d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5a29a360-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5a385bab-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5a6489c0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5aa0a6cd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5adaa343-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5b4095a8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5b7a4148-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5b88bc3b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5bc2b77a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5c19f0c4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5c9cbc63-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5d2e5a5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5d4b608c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5d59f16a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5d688a94-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5ddccb4e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5df9846c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5e16ba11-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5e6ea27b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5e99e19c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5ee2f707-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5f004673-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5f2b7254-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5f577c43-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5f65d1bd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5fbd866a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '5fda86e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '6006a4d8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '6033fcd3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '6080e969-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '609f1a6a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '60ae6b68-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '60dd1e99-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '61583b0c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '6185bf97-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '6195539a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '61c4b500-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '61f2d9f0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '62029204-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '622215c8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '628f9135-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '62e29c26-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '63541820-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '6383edce-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '63a58b5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '63b451b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '63f17b64-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '6400ce34-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:17:30', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '640fc58a-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:17:31', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '641e6ece-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:17:31', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '643101f1-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:17:40', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '644190ca-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:17:32', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '6451d9df-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:17:33', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '6460d23f-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:17:33', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '64705df5-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:17:33', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '64811c13-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:17:18', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '64905415-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:17:19', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '64a0a23a-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:17:20', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '64b16003-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:17:34', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '64c1b2ea-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:17:34', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '64d14267-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:17:35', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '64e2387e-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:17:35', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '64f1d0a0-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:17:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '650179d9-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:17:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '6510e36a-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:17:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de7231-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de72e7-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de739d-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de745a-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de7520-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de75cd-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de7eac-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de8012-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de80d9-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de81ae-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de8274-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de8327-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de83db-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de84c3-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de859e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de867b-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de875b-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de8824-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de88dc-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de89b1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de8a87-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de8b74-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de8c4d-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de8eb6-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de8f82-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de9059-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de9121-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de91fa-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de92d1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de939e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de9485-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de9e7f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65de9f5e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65dea046-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65dea117-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65dea1e8-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65dea2a4-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65dea373-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65dea44f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', '65dea53c-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:36', NULL),
+	('070dd7b5-84d2-11f1-b721-52540021303b', 'b3675e12-ae64-11f1-b327-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '4d35154f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '4d7031eb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '4daa3dc0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '4de3b2b1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '4eddcde5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '4eeccf6c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '4f18902f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '4fadb488-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '509580c5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '50b2e1fc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '50c1762b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '50d02aaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '5190aea7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '51bc7d35-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '51cbdf08-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '51dada48-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '522369fb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '526f4ace-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '52ace725-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '52ca8d7f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '52f6eb78-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '5305c669-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '53316ae2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '535c91c2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '53aa9247-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '53cc1d17-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '53e9beba-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '53f8815a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '553732d5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '55e8931b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '56797f6d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '56964305-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '56b40667-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '56c28d25-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '56df964d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '56ee50c9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '57b8cbde-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '58f8e16b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '597b650b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '59a6a5a3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '59e0b334-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '5a29a360-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '5a6489c0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '5aa0a6cd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '5adaa343-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '5b88bc3b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '5d4b608c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '5d688a94-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '5df9846c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '5e6ea27b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '5e99e19c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '5ee2f707-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '5f004673-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '5f2b7254-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '5f65d1bd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '5fbd866a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '5fda86e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '6006a4d8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '6080e969-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '609f1a6a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '60ae6b68-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '60dd1e99-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '61583b0c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '6185bf97-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '6195539a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '61c4b500-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '61f2d9f0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '62029204-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '628f9135-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '62e29c26-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '63541820-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '6383edce-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '63b451b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '63f17b64-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de7231-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de72e7-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de739d-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de7eac-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de8012-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de80d9-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de84c3-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de859e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de867b-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de8824-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de88dc-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de89b1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de8eb6-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de8f82-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de9059-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de91fa-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de92d1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de939e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de9e7f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65de9f5e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65dea046-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65dea2a4-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65dea373-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65dea44f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:42', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', '65deae96-84d2-11f1-b721-52540021303b', '2026-07-21 08:29:53', NULL),
+	('07114f34-84d2-11f1-b721-52540021303b', 'b3675e12-ae64-11f1-b327-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '4d35154f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '4d7031eb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '4daa3dc0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '4de3b2b1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '4eddcde5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '4eeccf6c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '4f18902f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '4fadb488-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '4fbc5eaf-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '50165352-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '509580c5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '50b2e1fc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '50c1762b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '50d02aaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5190aea7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '51bc7d35-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '51cbdf08-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '51dada48-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '522369fb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '52512ba5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '526f4ace-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '527ea369-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '52ace725-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '52ca8d7f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '52f6eb78-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5305c669-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '53316ae2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '535c91c2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '53aa9247-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '53cc1d17-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '53e9beba-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '53f8815a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '553732d5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '55e8931b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '56319fe4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '56797f6d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '56964305-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '56b40667-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '56c28d25-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '56df964d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '56ee50c9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5761aa24-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '57b8cbde-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '582d7c54-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '586863e4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '58bf2127-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '58f8e16b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '594146f4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '595e3be5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '597b650b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5989ddee-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '59984a70-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '59a6a5a3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '59b53ae4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '59d21256-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '59e0b334-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '59ef5616-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '59fdd97d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5a29a360-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5a385bab-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5a6489c0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5aa0a6cd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5adaa343-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5b4095a8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5b7a4148-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5b88bc3b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5bc2b77a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5c19f0c4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5c9cbc63-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5d2e5a5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5d4b608c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5d59f16a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5d688a94-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5ddccb4e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5df9846c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5e16ba11-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5e6ea27b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5e99e19c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5ee2f707-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5f004673-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5f2b7254-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5f577c43-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5f65d1bd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5fbd866a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '5fda86e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '6006a4d8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '6033fcd3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '6080e969-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '609f1a6a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '60ae6b68-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '60dd1e99-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '61583b0c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '6185bf97-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '6195539a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '61c4b500-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '61f2d9f0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '62029204-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '622215c8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '628f9135-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '62e29c26-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '63541820-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '6383edce-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '63a58b5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '63b451b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '63f17b64-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de7231-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de72e7-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de739d-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de745a-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de7520-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de75cd-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de7eac-84d2-11f1-b721-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de80d9-84d2-11f1-b721-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de8327-84d2-11f1-b721-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de8824-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de88dc-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de89b1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de8a87-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de8b74-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de8c4d-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de8eb6-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de8f82-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de9059-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de9121-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de91fa-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de92d1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de939e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de9485-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de9e7f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65de9f5e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65dea046-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65dea117-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65dea1e8-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65dea2a4-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65dea373-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65dea44f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65dea53c-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65dea6a7-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65dea7ae-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65dea874-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', '65dea953-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:46', NULL),
+	('071151f6-84d2-11f1-b721-52540021303b', 'b3675e12-ae64-11f1-b327-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '4d35154f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '4d7031eb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '4daa3dc0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '4de3b2b1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '4e665014-c49b-11f1-a0d7-52540021303b', '2026-10-12 12:06:41', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '4e751183-c49b-11f1-a0d7-52540021303b', '2026-10-12 12:06:41', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '4e8476a9-c49b-11f1-a0d7-52540021303b', '2026-10-12 12:06:42', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '4eddcde5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '4eeccf6c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '4f18902f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '4fadb488-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '509580c5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '50b2e1fc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '50c1762b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '50d02aaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5129c322-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:12:06', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5146e96b-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:12:07', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5164b941-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:25:10', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5190aea7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '51bc7d35-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '51cbdf08-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '51dada48-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '51e93b83-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:08:40', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '51f7a177-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:08:41', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '522369fb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '526f4ace-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '52ace725-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '52ca8d7f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '52f6eb78-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5305c669-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '53316ae2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '535c91c2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '53aa9247-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '53cc1d17-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '53e9beba-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '53f8815a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '553732d5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '558146f9-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:15:31', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '55e8931b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '56797f6d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '56964305-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '56b40667-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '56c28d25-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '56df964d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '56ee50c9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '57b8cbde-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '57c7541b-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:25:50', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '57e41824-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:25:52', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '57f2817e-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:25:53', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '58010369-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:25:57', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '58f8e16b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '595e3be5-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:26:05', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '597b650b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5989ddee-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:26:07', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '59984a70-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:26:08', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '59a6a5a3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '59b53ae4-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:26:10', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '59d21256-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:26:11', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '59e0b334-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:26:15', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '59ef5616-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:26:12', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5a29a360-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5a6489c0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5a731f49-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:26:21', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5aa0a6cd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5adaa343-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5b88bc3b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5d4b608c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5d688a94-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5df9846c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5e6ea27b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5e99e19c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5ee2f707-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5f004673-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5f2b7254-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5f65d1bd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5fbd866a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '5fda86e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '6006a4d8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '6080e969-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '609f1a6a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '60ae6b68-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '60dd1e99-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '61583b0c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '6185bf97-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '6195539a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '61c4b500-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '61f2d9f0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '62029204-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '628f9135-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '62e29c26-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '63541820-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '6383edce-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '63b451b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '63f17b64-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:13', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '641e6ece-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:14:35', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '644190ca-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:14:24', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '6451d9df-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:14:25', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '6460d23f-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:14:26', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '64705df5-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:14:27', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '64811c13-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:14:08', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '64905415-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:14:09', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '64a0a23a-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:14:10', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '64b16003-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:14:29', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '64c1b2ea-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:14:30', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '64d14267-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:14:31', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '64e2387e-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:14:31', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '64f1d0a0-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:14:32', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '650179d9-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:14:33', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '6510e36a-c49b-11f1-a0d7-52540021303b', '2026-10-13 04:14:33', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65dae9af-84d2-11f1-b721-52540021303b', '2026-10-13 04:08:04', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de61f5-84d2-11f1-b721-52540021303b', '2026-10-13 04:08:05', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de653c-84d2-11f1-b721-52540021303b', '2026-10-13 04:08:39', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de7231-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de72e7-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de739d-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de767f-84d2-11f1-b721-52540021303b', '2026-10-13 04:08:29', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de773a-84d2-11f1-b721-52540021303b', '2026-10-13 04:08:28', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de7a20-84d2-11f1-b721-52540021303b', '2026-10-13 04:15:22', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de8012-84d2-11f1-b721-52540021303b', '2026-10-13 05:24:52', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de8327-84d2-11f1-b721-52540021303b', '2026-10-13 05:24:49', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de8824-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de88dc-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de89b1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de8b74-84d2-11f1-b721-52540021303b', '2026-10-13 04:08:46', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de8eb6-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de8f82-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de9059-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de91fa-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de92d1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de939e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de9e7f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65de9f5e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65dea046-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65dea2a4-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65dea373-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65dea44f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65dea6a7-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65dea7ae-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65dea874-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:51', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65deaf4b-84d2-11f1-b721-52540021303b', '2026-10-13 04:09:00', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', '65deb0d1-84d2-11f1-b721-52540021303b', '2026-10-13 04:08:38', NULL),
+	('07115348-84d2-11f1-b721-52540021303b', 'b3675e12-ae64-11f1-b327-52540021303b', '2026-10-10 11:23:13', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '4d35154f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '4d530b5b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '4d7031eb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '4d7efa0e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '4d8d6867-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '4daa3dc0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '4db89857-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '4de3b2b1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '4eddcde5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '4eeccf6c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '4f18902f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '4fadb488-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '509580c5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '50b2e1fc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '50c1762b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '50d02aaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '51821c11-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5190aea7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '51cbdf08-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '51dada48-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '522369fb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '526f4ace-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '52ace725-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '52f6eb78-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '53316ae2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '533fcc5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '535c91c2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '536b249c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '53797c42-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '53aa9247-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '53bb6743-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '53e9beba-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '553732d5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '55e8931b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '56797f6d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '56964305-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '56b40667-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '56c28d25-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '56df964d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '56ee50c9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '57b8cbde-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '58dbe38a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '58f8e16b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '59075fdb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '597b650b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '59a6a5a3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '59e0b334-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5a29a360-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5a6489c0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5aa0a6cd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5adaa343-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5b5d5298-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5b88bc3b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5b97184b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5d4b608c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5d688a94-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5df9846c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5e6ea27b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5e7d32ef-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5e99e19c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5ea89d33-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5eb74719-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5ec5c8f6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5ed4415b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5ee2f707-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5ef1cbaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5f004673-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5f1d0c50-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5f2b7254-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5f3a1e82-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5f48e95f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5f65d1bd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5f748888-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5f83631e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5f91d093-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5fa0373d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5faf1f62-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5fbd866a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5fcbf941-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5fda86e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '5fe8f2e8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '6006a4d8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '6024d73f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '6033fcd3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '6080e969-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '609f1a6a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '60ae6b68-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '60dd1e99-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '61583b0c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '6185bf97-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '6195539a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '61c4b500-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '61f2d9f0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '62029204-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '628f9135-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '62e29c26-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '63541820-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '6383edce-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '63a58b5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '63b451b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '63f17b64-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '65de7231-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:57', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '65de72e7-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:57', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '65de739d-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:57', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '65de8824-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:57', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '65de88dc-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:57', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '65de89b1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:57', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '65de8b74-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:57', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '65de91fa-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:57', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '65de92d1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:57', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '65de939e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:57', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '65de9e7f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:57', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '65de9f5e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:57', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '65dea046-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:57', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '65dea2a4-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:57', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '65dea373-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:57', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', '65dea44f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:57', NULL),
+	('071153fc-84d2-11f1-b721-52540021303b', 'b3675e12-ae64-11f1-b327-52540021303b', '2026-10-10 11:23:14', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', '65dae9af-84d2-11f1-b721-52540021303b', '2026-07-25 05:54:45', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', '65de72e7-84d2-11f1-b721-52540021303b', '2026-07-21 07:08:03', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', '65de8012-84d2-11f1-b721-52540021303b', '2026-07-21 07:08:03', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', '65de88dc-84d2-11f1-b721-52540021303b', '2026-07-21 07:08:03', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', '65de8b74-84d2-11f1-b721-52540021303b', '2026-07-21 07:08:03', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', '65de8f82-84d2-11f1-b721-52540021303b', '2026-07-21 07:08:03', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', '65dea373-84d2-11f1-b721-52540021303b', '2026-07-21 07:08:03', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', '65dead0c-84d2-11f1-b721-52540021303b', '2026-07-21 07:08:03', NULL),
+	('071154b6-84d2-11f1-b721-52540021303b', '65deae96-84d2-11f1-b721-52540021303b', '2026-07-21 07:51:08', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '4d35154f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '4d530b5b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '4d7031eb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '4d7efa0e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '4d8d6867-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '4daa3dc0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '4db89857-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '4de3b2b1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '4e665014-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:12:08', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '4e751183-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:12:08', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '4e8476a9-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:12:09', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '4eddcde5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '4eeccf6c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '4f18902f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '4fadb488-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '4fbc5eaf-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '4fe94691-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '50165352-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5033a409-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '509580c5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '50b2e1fc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '50c1762b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '50d02aaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '50dfc90d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '50ee7d9c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '50fd9170-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '510bf933-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5129c322-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:12:19', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5146e96b-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:12:23', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5164b941-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:12:25', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '51734d55-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '51821c11-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5190aea7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '51adc839-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '51bc7d35-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '51cbdf08-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '51dada48-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '51e93b83-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:12:33', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '51f7a177-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:12:33', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '522369fb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '52512ba5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '526f4ace-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '527ea369-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '52ace725-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '52ca8d7f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '52f6eb78-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5305c669-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '53316ae2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '533fcc5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '535c91c2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '536b249c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '53797c42-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '53aa9247-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '53bb6743-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '53cc1d17-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '53e9beba-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '53f8815a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '553732d5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '558146f9-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:12:53', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '558fb34b-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:12:54', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '55e8931b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '56319fe4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '56797f6d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '56964305-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '56b40667-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '56c28d25-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '56df964d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '56ee50c9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5761aa24-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '57b8cbde-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '57c7541b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '57e41824-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '57f2817e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '58010369-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '582d7c54-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '586863e4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '58bf2127-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '58dbe38a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '58f8e16b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '59075fdb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '594146f4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '595e3be5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '597b650b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5989ddee-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '59984a70-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '59a6a5a3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '59b53ae4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '59d21256-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '59e0b334-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '59ef5616-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '59fdd97d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5a29a360-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5a385bab-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5a6489c0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5aa0a6cd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5adaa343-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5af854bc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5b4095a8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5b5d5298-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5b7a4148-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5b88bc3b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5b97184b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5ba5a989-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5bc2b77a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5bd12466-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5bee4a75-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5c19f0c4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5c45b806-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5c542675-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5c9cbc63-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5d2e5a5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5d4b608c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5d59f16a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5d688a94-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5ddccb4e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5df9846c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5e16ba11-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5e6ea27b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5e7d32ef-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5e99e19c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5ea89d33-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5eb74719-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5ec5c8f6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5ed4415b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5ee2f707-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5ef1cbaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5f004673-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5f0eb0f3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5f1d0c50-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5f2b7254-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5f3a1e82-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5f48e95f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5f577c43-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5f65d1bd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5f748888-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5f83631e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5f91d093-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5fa0373d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5faf1f62-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5fbd866a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5fcbf941-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5fda86e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '5fe8f2e8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '6006a4d8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '6024d73f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '6033fcd3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '6043a44d-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:13:12', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '6052c190-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:13:13', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '60619298-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:13:13', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '6080e969-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '608f9bdd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '609f1a6a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '60ae6b68-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '60bd0fd1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '60dd1e99-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '60edc2fe-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '61583b0c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '6185bf97-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '6195539a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '61c4b500-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '61f2d9f0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '62029204-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '622215c8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '628f9135-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '62e29c26-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '63541820-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '6375132e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '6383edce-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '63969997-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '63a58b5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '63b451b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '63c354d6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '63d1f675-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '63e1b363-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '63f17b64-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '641e6ece-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:13:40', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '644190ca-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:13:42', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '6451d9df-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:13:43', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '6460d23f-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:13:43', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '64705df5-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:13:43', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '64811c13-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:13:44', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '64905415-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:13:45', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '64a0a23a-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:13:45', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '64d14267-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:13:47', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '64e2387e-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:13:48', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '64f1d0a0-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:13:52', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '650179d9-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:13:52', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '6510e36a-c49b-11f1-a0d7-52540021303b', '2026-10-13 05:13:53', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '65dae9af-84d2-11f1-b721-52540021303b', '2026-10-13 05:12:04', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '65de653c-84d2-11f1-b721-52540021303b', '2026-10-13 05:12:32', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '65de7eac-84d2-11f1-b721-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '65de80d9-84d2-11f1-b721-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '65de8274-84d2-11f1-b721-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '65de8327-84d2-11f1-b721-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '65de859e-84d2-11f1-b721-52540021303b', '2026-10-13 05:12:13', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '65de956a-84d2-11f1-b721-52540021303b', '2026-10-13 05:13:24', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '65de9645-84d2-11f1-b721-52540021303b', '2026-10-13 05:13:26', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '65de9910-84d2-11f1-b721-52540021303b', '2026-10-13 05:13:23', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '65deaf4b-84d2-11f1-b721-52540021303b', '2026-10-13 05:12:45', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', '65deb0d1-84d2-11f1-b721-52540021303b', '2026-10-13 05:12:31', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', 'b3675e12-ae64-11f1-b327-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', 'b3722c58-ae64-11f1-b327-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd2332-97b2-11f1-9d65-52540021303b', 'b37b7a9e-ae64-11f1-b327-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '4d35154f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '4d530b5b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '4d7031eb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '4d7efa0e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '4d8d6867-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '4daa3dc0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '4db89857-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '4de3b2b1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '4eddcde5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '4eeccf6c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '4f18902f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '4fadb488-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '4fbc5eaf-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '4fe94691-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '50165352-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5033a409-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '509580c5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '50b2e1fc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '50c1762b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '50d02aaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '50dfc90d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '50ee7d9c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '50fd9170-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '510bf933-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '51821c11-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5190aea7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '51adc839-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '51bc7d35-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '51cbdf08-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '51dada48-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '522369fb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '52512ba5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '526f4ace-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '527ea369-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '52ace725-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '52ca8d7f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '52f6eb78-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5305c669-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '53316ae2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '533fcc5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '535c91c2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '536b249c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '53797c42-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '53aa9247-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '53bb6743-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '53cc1d17-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '53e9beba-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '53f8815a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '553732d5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '55e8931b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '56319fe4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '56797f6d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '56964305-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '56b40667-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '56c28d25-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '56df964d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '56ee50c9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5761aa24-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '57b8cbde-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '57c7541b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '57e41824-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '57f2817e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '58010369-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '582d7c54-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '586863e4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '58bf2127-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '58dbe38a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '58f8e16b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '59075fdb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '594146f4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '595e3be5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '597b650b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5989ddee-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '59984a70-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '59a6a5a3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '59b53ae4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '59d21256-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '59e0b334-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '59ef5616-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '59fdd97d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5a29a360-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5a385bab-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5a6489c0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5aa0a6cd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5adaa343-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5af854bc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5b4095a8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5b5d5298-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5b7a4148-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5b88bc3b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5b97184b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5ba5a989-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5bc2b77a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5bd12466-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5bee4a75-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5c19f0c4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5c45b806-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5c542675-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5c9cbc63-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5d2e5a5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5d4b608c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5d59f16a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5d688a94-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5ddccb4e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5df9846c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5e16ba11-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5e6ea27b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5e7d32ef-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5e99e19c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5ea89d33-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5eb74719-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5ec5c8f6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5ed4415b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5ee2f707-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5ef1cbaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5f004673-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5f1d0c50-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5f2b7254-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5f3a1e82-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5f48e95f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5f577c43-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5f65d1bd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5f748888-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5f83631e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5f91d093-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5fa0373d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5faf1f62-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5fbd866a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5fcbf941-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5fda86e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '5fe8f2e8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '6006a4d8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '6024d73f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '6033fcd3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '6080e969-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '608f9bdd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '609f1a6a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '60ae6b68-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '60bd0fd1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '60dd1e99-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '60edc2fe-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '61583b0c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '6185bf97-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '6195539a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '61c4b500-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '61f2d9f0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '62029204-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '622215c8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '628f9135-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '62e29c26-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '63541820-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '6375132e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '6383edce-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '63a58b5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '63b451b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '63c354d6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '63d1f675-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '63e1b363-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '63f17b64-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '65de7eac-84d2-11f1-b721-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '65de80d9-84d2-11f1-b721-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', '65de8327-84d2-11f1-b721-52540021303b', '2026-10-10 11:23:14', NULL),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', 'b3675e12-ae64-11f1-b327-52540021303b', '2026-10-10 11:23:14', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4cf46ab4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4d0546b3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4d155bef-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4d264b12-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4d35154f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4d438359-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4d530b5b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4d61e954-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4d7031eb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4d7efa0e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4d8d6867-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4d9bd089-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4daa3dc0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4db89857-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4dc7052d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4dd55a46-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4de3b2b1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4df257ca-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4e00c40a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4e0f4082-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4e1e10ac-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4e2ca429-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4e3b0d5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4e4963d5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4e57e65b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4e665014-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4e751183-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4e8476a9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4e9315a8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4ea2489e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4eb0b24c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4ebf4baa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4ecefc38-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4eddcde5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4eeccf6c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4efb7700-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4f09e196-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4f18902f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4f277b07-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4fadb488-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4fbc5eaf-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4fe94691-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '4ff8113e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5006da71-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '50165352-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5024ee69-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5033a409-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '504215d3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5050c3d3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5086523e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '509580c5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '50a4007b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '50b2e1fc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '50c1762b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '50d02aaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '50dfc90d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '50ee7d9c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '50fd9170-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '510bf933-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '511aa4bf-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5129c322-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '51386622-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5146e96b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '51559ffa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5164b941-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '51734d55-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '51821c11-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5190aea7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '519f49c6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '51adc839-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '51bc7d35-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '51cbdf08-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '51dada48-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '51e93b83-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '51f7a177-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '520648cc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5214b3c7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '522369fb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '523300b5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5242a558-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '52512ba5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5260be8f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '526f4ace-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '527ea369-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '528eb6ab-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '529e49fa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '52ace725-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '52bc10c0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '52ca8d7f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '52d8da53-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '52e83f8b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '52f6eb78-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5305c669-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '53148b7c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '532308e1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '53316ae2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '533fcc5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '534e4f34-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '535c91c2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '536b249c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '53797c42-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5387fdbe-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5397c547-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '53aa9247-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '53bb6743-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '53cc1d17-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '53db3153-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '53e9beba-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '53f8815a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '54259b2f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5476712e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '548567df-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '54942346-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '54a2b8ad-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '54b16376-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '54c28e0a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '54d10a15-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '54df63e0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '54edca99-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '54fc2afd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '550b324c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5519eeab-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '552890af-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '553732d5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '55464e21-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5554defc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5563ecca-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5572a06f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '558146f9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '558fb34b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '559e1d4f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '55e8931b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '56147708-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5622de0e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '56319fe4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '564059d4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '564eb2ec-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '565cf5fd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '566b3b4f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '56797f6d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5687d86d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '56964305-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '56a55a2f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '56b40667-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '56c28d25-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '56d11615-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '56df964d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '56ee50c9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '56fcb6aa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '570b4dcf-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5719f0f4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '57285b16-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5736b56a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '57451ff9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5753660f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5761aa24-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5770604a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '577ee35a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '578d51b4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '579bb41f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '57aa22fd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '57b8cbde-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '57c7541b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '57d5bf9f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '57e41824-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '57f2817e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '58010369-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '58104408-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '581eff93-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '582d7c54-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '583c0cc1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '584b6596-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5859e46c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '586863e4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5876d227-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '588538af-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '58938cd5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '58a1e92f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '58b08e74-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '58bf2127-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '58cd8d8d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '58dbe38a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '58ea774b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '58f8e16b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '59075fdb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5915bbf9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '592424b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5933042e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '594146f4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '594fbc68-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '595e3be5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '596ce265-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '597b650b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5989ddee-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '59984a70-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '59a6a5a3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '59b53ae4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '59c3b65d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '59d21256-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '59e0b334-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '59ef5616-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '59fdd97d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5a0c5b79-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5a1ab464-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5a29a360-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5a385bab-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5a471219-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5a55beab-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5a6489c0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5a731f49-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5a81f550-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5a919ab9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5aa0a6cd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5aaf43b4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5abdc5d4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5acc5728-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5adaa343-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5ae9d41e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5af854bc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5b06d225-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5b1517c8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5b23819f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5b31fecd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5b4095a8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5b4effc1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5b5d5298-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5b6bea58-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5b7a4148-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5b88bc3b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5b97184b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5ba5a989-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5bb426fb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5bc2b77a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5bd12466-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5bdfa8ea-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5bee4a75-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5bfcca39-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5c0b47c4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5c19f0c4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5c2871ff-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5c3726ea-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5c45b806-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5c542675-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5c627ea1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5c710828-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5c7f98e0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5c8e17a6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5c9cbc63-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5cab4fa8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5cb9f2a8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5cc89f0d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5cd71f7c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5ce58567-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5cf42b2e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5d02b2de-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5d113ea1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5d1fbc43-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5d2e5a5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5d3ccd94-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5d4b608c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5d59f16a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5d688a94-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5d772fe0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5d8598bd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5d9414f1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5da28049-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5db1146d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5dbff710-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5dce4c4b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5ddccb4e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5deb217f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5df9846c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5e082afa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5e16ba11-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5e252683-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5e33a709-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5e42fd1a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5e516817-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5e604a46-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5e6ea27b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5e7d32ef-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5e8b76ad-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5e99e19c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5ea89d33-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5eb74719-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5ec5c8f6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5ed4415b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5ee2f707-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5ef1cbaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5f004673-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5f0eb0f3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5f1d0c50-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5f2b7254-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5f3a1e82-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5f48e95f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5f577c43-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5f65d1bd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5f748888-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5f83631e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5f91d093-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5fa0373d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5faf1f62-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5fbd866a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5fcbf941-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5fda86e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5fe8f2e8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '5ff7f38d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6006a4d8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6015674a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6024d73f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6033fcd3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6043a44d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6052c190-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '60619298-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '607016f6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6080e969-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '608f9bdd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '609f1a6a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '60ae6b68-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '60bd0fd1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '60cdd65a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '60dd1e99-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '60edc2fe-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '60fd957b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '610c19bb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '611a9259-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '61296f24-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '61386d5d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6146f62a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '61583b0c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6166b707-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6175e6e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6185bf97-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6195539a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '61a5340d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '61b632a7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '61c4b500-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '61d460d3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '61e3ab6f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '61f2d9f0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '62029204-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6211d4b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '622215c8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6230f197-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '623f9a58-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '624f4296-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '625f3b1f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '626df8e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '627f3791-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '628f9135-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '62a2bb30-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '62b3b9be-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '62c3b50c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '62d41259-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '62e29c26-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '62f2d94c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '63050d85-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '63143898-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '63251050-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6333f1a1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '63437742-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '63541820-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '636594c1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6375132e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6383edce-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '63969997-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '63a58b5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '63b451b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '63c354d6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '63d1f675-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '63e1b363-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '63f17b64-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6400ce34-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '640fc58a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '641e6ece-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '643101f1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '644190ca-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6451d9df-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6460d23f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '64705df5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '64811c13-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '64905415-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '64a0a23a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '64b16003-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '64c1b2ea-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '64d14267-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '64e2387e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '64f1d0a0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '650179d9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '6510e36a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65dae9af-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de61f5-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de653c-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de66f6-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de67af-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de6865-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de6921-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de69ce-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de6ac2-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de6b6e-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de6c31-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de6d00-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de6dc7-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de6e76-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de6f34-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de6fef-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de70aa-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de7179-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de7231-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de72e7-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de739d-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de745a-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de7520-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de75cd-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de767f-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de773a-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de77e1-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de78a1-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de7953-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de7a20-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de7ade-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de7ba1-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de7c5b-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de7d11-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de7df8-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de7eac-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de8012-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de80d9-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de81ae-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de8274-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de8327-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de83db-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de84c3-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de859e-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de867b-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de875b-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de8824-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de88dc-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de89b1-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de8a87-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de8b74-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de8c4d-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de8eb6-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de8f82-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de9059-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de9121-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de91fa-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de92d1-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de939e-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de9485-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de956a-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de9645-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de976b-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de9845-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de9910-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de99c9-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de9a95-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de9b5b-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de9c36-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de9cfd-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de9dbb-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de9e7f-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65de9f5e-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65dea046-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65dea117-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65dea1e8-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65dea2a4-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65dea373-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65dea44f-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65dea53c-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65dea6a7-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65dea7ae-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65dea874-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65dea953-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65deaa1f-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65deaada-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65deab97-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65deac52-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65dead0c-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65deadb9-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65deae96-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65deaf4b-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65deb006-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65deb0d1-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65deb18f-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65deb241-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', '65deb2f0-84d2-11f1-b721-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', 'b3675e12-ae64-11f1-b327-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', 'b3722c58-ae64-11f1-b327-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', 'b37b7a9e-ae64-11f1-b327-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', 'b386592c-ae64-11f1-b327-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90de7f01-7123-11f1-8bb6-52540021303b', 'b392f9c2-ae64-11f1-b327-52540021303b', '2026-10-10 11:33:17', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4cf46ab4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4d0546b3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4d155bef-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4d264b12-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4d35154f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4d438359-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4d530b5b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4d61e954-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4d7031eb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4d7efa0e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4d8d6867-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4d9bd089-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4daa3dc0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4db89857-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4dc7052d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4dd55a46-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4de3b2b1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4df257ca-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4e00c40a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4e0f4082-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4e1e10ac-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4e2ca429-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4e3b0d5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4e4963d5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4e57e65b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4e665014-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4e751183-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4e8476a9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4e9315a8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4ea2489e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4eb0b24c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4ebf4baa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4ecefc38-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4eddcde5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4eeccf6c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4efb7700-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4f09e196-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4f18902f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4f277b07-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4fadb488-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4fbc5eaf-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4fe94691-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '4ff8113e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5006da71-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '50165352-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5024ee69-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5033a409-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '504215d3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5050c3d3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5086523e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '509580c5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '50a4007b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '50b2e1fc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '50c1762b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '50d02aaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '50dfc90d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '50ee7d9c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '50fd9170-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '510bf933-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '511aa4bf-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5129c322-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '51386622-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5146e96b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '51559ffa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5164b941-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '51734d55-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '51821c11-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5190aea7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '519f49c6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '51adc839-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '51bc7d35-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '51cbdf08-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '51dada48-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '51e93b83-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '51f7a177-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '520648cc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5214b3c7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '522369fb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '523300b5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5242a558-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '52512ba5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5260be8f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '526f4ace-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '527ea369-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '528eb6ab-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '529e49fa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '52ace725-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '52bc10c0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '52ca8d7f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '52d8da53-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '52e83f8b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '52f6eb78-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5305c669-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '53148b7c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '532308e1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '53316ae2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '533fcc5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '534e4f34-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '535c91c2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '536b249c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '53797c42-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5387fdbe-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5397c547-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '53aa9247-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '53bb6743-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '53cc1d17-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '53db3153-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '53e9beba-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '53f8815a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '54259b2f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5476712e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '548567df-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '54942346-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '54a2b8ad-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '54b16376-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '54c28e0a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '54d10a15-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '54df63e0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '54edca99-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '54fc2afd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '550b324c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5519eeab-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '552890af-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '553732d5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '55464e21-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5554defc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5563ecca-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5572a06f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '558146f9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '558fb34b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '559e1d4f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '55e8931b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '56147708-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5622de0e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '56319fe4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '564059d4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '564eb2ec-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '565cf5fd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '566b3b4f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '56797f6d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5687d86d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '56964305-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '56a55a2f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '56b40667-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '56c28d25-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '56d11615-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '56df964d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '56ee50c9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '56fcb6aa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '570b4dcf-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5719f0f4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '57285b16-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5736b56a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '57451ff9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5753660f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5761aa24-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5770604a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '577ee35a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '578d51b4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '579bb41f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '57aa22fd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '57b8cbde-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '57c7541b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '57d5bf9f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '57e41824-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '57f2817e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '58010369-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '58104408-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '581eff93-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '582d7c54-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '583c0cc1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '584b6596-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5859e46c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '586863e4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5876d227-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '588538af-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '58938cd5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '58a1e92f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '58b08e74-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '58bf2127-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '58cd8d8d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '58dbe38a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '58ea774b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '58f8e16b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '59075fdb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5915bbf9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '592424b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5933042e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '594146f4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '594fbc68-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '595e3be5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '596ce265-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '597b650b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5989ddee-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '59984a70-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '59a6a5a3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '59b53ae4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '59c3b65d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '59d21256-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '59e0b334-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '59ef5616-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '59fdd97d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5a0c5b79-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5a1ab464-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5a29a360-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5a385bab-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5a471219-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5a55beab-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5a6489c0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5a731f49-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5a81f550-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5a919ab9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5aa0a6cd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5aaf43b4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5abdc5d4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5acc5728-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5adaa343-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5ae9d41e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5af854bc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5b06d225-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5b1517c8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5b23819f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5b31fecd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5b4095a8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5b4effc1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5b5d5298-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5b6bea58-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5b7a4148-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5b88bc3b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5b97184b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5ba5a989-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5bb426fb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5bc2b77a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5bd12466-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5bdfa8ea-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5bee4a75-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5bfcca39-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5c0b47c4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5c19f0c4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5c2871ff-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5c3726ea-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5c45b806-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5c542675-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5c627ea1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5c710828-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5c7f98e0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5c8e17a6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5c9cbc63-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5cab4fa8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5cb9f2a8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5cc89f0d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5cd71f7c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5ce58567-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5cf42b2e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5d02b2de-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5d113ea1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5d1fbc43-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5d2e5a5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5d3ccd94-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5d4b608c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5d59f16a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5d688a94-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5d772fe0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5d8598bd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5d9414f1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5da28049-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5db1146d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5dbff710-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5dce4c4b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5ddccb4e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5deb217f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5df9846c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5e082afa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5e16ba11-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5e252683-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5e33a709-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5e42fd1a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5e516817-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5e604a46-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5e6ea27b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5e7d32ef-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5e8b76ad-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5e99e19c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5ea89d33-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5eb74719-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5ec5c8f6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5ed4415b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5ee2f707-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5ef1cbaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5f004673-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5f0eb0f3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5f1d0c50-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5f2b7254-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5f3a1e82-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5f48e95f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5f577c43-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5f65d1bd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5f748888-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5f83631e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5f91d093-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5fa0373d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5faf1f62-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5fbd866a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5fcbf941-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5fda86e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5fe8f2e8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '5ff7f38d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6006a4d8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6015674a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6024d73f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6033fcd3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6043a44d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6052c190-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '60619298-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '607016f6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6080e969-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '608f9bdd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '609f1a6a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '60ae6b68-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '60bd0fd1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '60cdd65a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '60dd1e99-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '60edc2fe-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '60fd957b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '610c19bb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '611a9259-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '61296f24-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '61386d5d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6146f62a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '61583b0c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6166b707-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6175e6e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6185bf97-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6195539a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '61a5340d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '61b632a7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '61c4b500-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '61d460d3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '61e3ab6f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '61f2d9f0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '62029204-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6211d4b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '622215c8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6230f197-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '623f9a58-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '624f4296-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '625f3b1f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '626df8e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '627f3791-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '628f9135-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '62a2bb30-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '62b3b9be-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '62c3b50c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '62d41259-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '62e29c26-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '62f2d94c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '63050d85-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '63143898-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '63251050-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6333f1a1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '63437742-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '63541820-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '636594c1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6375132e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6383edce-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '63969997-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '63a58b5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '63b451b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '63c354d6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '63d1f675-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '63e1b363-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '63f17b64-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6400ce34-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '640fc58a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '641e6ece-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '643101f1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '644190ca-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6451d9df-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6460d23f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '64705df5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '64811c13-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '64905415-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '64a0a23a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '64b16003-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '64c1b2ea-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '64d14267-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '64e2387e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '64f1d0a0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '650179d9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '6510e36a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65dae9af-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de61f5-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de653c-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de66f6-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de67af-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de6865-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de6921-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de69ce-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de6ac2-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de6b6e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de6c31-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de6d00-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de6dc7-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de6e76-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de6f34-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de6fef-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de70aa-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de7179-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de7231-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de72e7-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de739d-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de745a-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de7520-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de75cd-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de767f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de773a-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de77e1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de78a1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de7953-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de7a20-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de7ade-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de7ba1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de7c5b-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de7d11-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de7df8-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de7eac-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de8012-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de80d9-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de81ae-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de8274-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de8327-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de83db-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de84c3-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de859e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de867b-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de875b-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de8824-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de88dc-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de89b1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de8a87-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de8b74-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de8c4d-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de8eb6-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de8f82-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de9059-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de9121-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de91fa-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de92d1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de939e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de9485-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de956a-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de9645-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de976b-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de9845-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de9910-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de99c9-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de9a95-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de9b5b-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de9c36-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de9cfd-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de9dbb-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de9e7f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65de9f5e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65dea046-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65dea117-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65dea1e8-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65dea2a4-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65dea373-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65dea44f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65dea53c-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65dea6a7-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65dea7ae-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65dea874-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65dea953-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65deaa1f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65deaada-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65deab97-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65deac52-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65dead0c-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65deadb9-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65deae96-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65deaf4b-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65deb006-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', '65deb0d1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:23', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'b3675e12-ae64-11f1-b327-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'b3722c58-ae64-11f1-b327-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'b37b7a9e-ae64-11f1-b327-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'c0f57007-c604-11f1-924f-52540021303b', '2026-10-12 06:19:45', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'c103a0ec-c604-11f1-924f-52540021303b', '2026-10-12 06:19:45', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'c1120aa3-c604-11f1-924f-52540021303b', '2026-10-12 06:19:45', NULL),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'c1203b6a-c604-11f1-924f-52540021303b', '2026-10-12 06:19:45', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4cf46ab4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4d0546b3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4d155bef-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4d264b12-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4d35154f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4d438359-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4d530b5b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4d61e954-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4d7031eb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4d7efa0e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4d8d6867-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4d9bd089-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4daa3dc0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4db89857-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4dc7052d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4dd55a46-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4de3b2b1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4df257ca-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4e00c40a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4e0f4082-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4e1e10ac-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4e2ca429-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4e3b0d5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4e4963d5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4e57e65b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4e665014-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4e751183-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4e8476a9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4e9315a8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4ea2489e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4eb0b24c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4ebf4baa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4ecefc38-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4eddcde5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4eeccf6c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4efb7700-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4f09e196-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4f18902f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4f277b07-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4fadb488-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4fbc5eaf-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4fe94691-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '4ff8113e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5006da71-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '50165352-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5024ee69-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5033a409-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '504215d3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5050c3d3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5086523e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '509580c5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '50a4007b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '50b2e1fc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '50c1762b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '50d02aaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '50dfc90d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '50ee7d9c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '50fd9170-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '510bf933-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '511aa4bf-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5129c322-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '51386622-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5146e96b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '51559ffa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5164b941-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '51734d55-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '51821c11-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5190aea7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '519f49c6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '51adc839-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '51bc7d35-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '51cbdf08-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '51dada48-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '51e93b83-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '51f7a177-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '520648cc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5214b3c7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '522369fb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '523300b5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5242a558-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '52512ba5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5260be8f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '526f4ace-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '527ea369-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '528eb6ab-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '529e49fa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '52ace725-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '52bc10c0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '52ca8d7f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '52d8da53-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '52e83f8b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '52f6eb78-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5305c669-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '53148b7c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '532308e1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '53316ae2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '533fcc5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '534e4f34-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '535c91c2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '536b249c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '53797c42-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5387fdbe-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5397c547-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '53aa9247-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '53bb6743-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '53cc1d17-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '53db3153-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '53e9beba-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '53f8815a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '54259b2f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5476712e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '548567df-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '54942346-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '54a2b8ad-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '54b16376-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '54c28e0a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '54d10a15-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '54df63e0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '54edca99-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '54fc2afd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '550b324c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5519eeab-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '552890af-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '553732d5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '55464e21-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5554defc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5563ecca-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5572a06f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '558146f9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '558fb34b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '559e1d4f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '55e8931b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '56147708-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5622de0e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '56319fe4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '564059d4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '564eb2ec-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '565cf5fd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '566b3b4f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '56797f6d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5687d86d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '56964305-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '56a55a2f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '56b40667-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '56c28d25-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '56d11615-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '56df964d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '56ee50c9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '56fcb6aa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '570b4dcf-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5719f0f4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '57285b16-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5736b56a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '57451ff9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5753660f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5761aa24-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5770604a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '577ee35a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '578d51b4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '579bb41f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '57aa22fd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '57b8cbde-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '57c7541b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '57d5bf9f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '57e41824-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '57f2817e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '58010369-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '58104408-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '581eff93-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '582d7c54-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '583c0cc1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '584b6596-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5859e46c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '586863e4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5876d227-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '588538af-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '58938cd5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '58a1e92f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '58b08e74-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '58bf2127-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '58cd8d8d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '58dbe38a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '58ea774b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '58f8e16b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '59075fdb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5915bbf9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '592424b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5933042e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '594146f4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '594fbc68-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '595e3be5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '596ce265-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '597b650b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5989ddee-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '59984a70-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '59a6a5a3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '59b53ae4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '59c3b65d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '59d21256-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '59e0b334-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '59ef5616-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '59fdd97d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5a0c5b79-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5a1ab464-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5a29a360-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5a385bab-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5a471219-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5a55beab-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5a6489c0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5a731f49-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5a81f550-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5a919ab9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5aa0a6cd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5aaf43b4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5abdc5d4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5acc5728-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5adaa343-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5ae9d41e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5af854bc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5b06d225-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5b1517c8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5b23819f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5b31fecd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5b4095a8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5b4effc1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5b5d5298-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5b6bea58-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5b7a4148-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5b88bc3b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5b97184b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5ba5a989-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5bb426fb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5bc2b77a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5bd12466-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5bdfa8ea-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5bee4a75-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5bfcca39-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5c0b47c4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5c19f0c4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5c2871ff-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5c3726ea-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5c45b806-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5c542675-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5c627ea1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5c710828-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5c7f98e0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5c8e17a6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5c9cbc63-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5cab4fa8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5cb9f2a8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5cc89f0d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5cd71f7c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5ce58567-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5cf42b2e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5d02b2de-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5d113ea1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5d1fbc43-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5d2e5a5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5d3ccd94-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5d4b608c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5d59f16a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5d688a94-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5d772fe0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5d8598bd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5d9414f1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5da28049-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5db1146d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5dbff710-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5dce4c4b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5ddccb4e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5deb217f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5df9846c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5e082afa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5e16ba11-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5e252683-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5e33a709-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5e42fd1a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5e516817-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5e604a46-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5e6ea27b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5e7d32ef-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5e8b76ad-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5e99e19c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5ea89d33-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5eb74719-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5ec5c8f6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5ed4415b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5ee2f707-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5ef1cbaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5f004673-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5f0eb0f3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5f1d0c50-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5f2b7254-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5f3a1e82-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5f48e95f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5f577c43-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5f65d1bd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5f748888-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5f83631e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5f91d093-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5fa0373d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5faf1f62-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5fbd866a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5fcbf941-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5fda86e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5fe8f2e8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '5ff7f38d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6006a4d8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6015674a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6024d73f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6033fcd3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6043a44d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6052c190-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '60619298-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '607016f6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6080e969-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '608f9bdd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '609f1a6a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '60ae6b68-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '60bd0fd1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '60cdd65a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '60dd1e99-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '60edc2fe-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '60fd957b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '610c19bb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '611a9259-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '61296f24-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '61386d5d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6146f62a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '61583b0c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6166b707-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6175e6e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6185bf97-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6195539a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '61a5340d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '61b632a7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '61c4b500-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '61d460d3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '61e3ab6f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '61f2d9f0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '62029204-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6211d4b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '622215c8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6230f197-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '623f9a58-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '624f4296-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '625f3b1f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '626df8e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '627f3791-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '628f9135-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '62a2bb30-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '62b3b9be-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '62c3b50c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '62d41259-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '62e29c26-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '62f2d94c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '63050d85-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '63143898-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '63251050-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6333f1a1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '63437742-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '63541820-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '636594c1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6375132e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6383edce-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '63969997-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '63a58b5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '63b451b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '63c354d6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '63d1f675-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '63e1b363-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '63f17b64-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6400ce34-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '640fc58a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '641e6ece-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '643101f1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '644190ca-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6451d9df-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6460d23f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '64705df5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '64811c13-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '64905415-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '64a0a23a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '64b16003-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '64c1b2ea-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '64d14267-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '64e2387e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '64f1d0a0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '650179d9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '6510e36a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:11:52', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65dae9af-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de61f5-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de653c-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de66f6-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de67af-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de6865-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de6921-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de69ce-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de6ac2-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de6b6e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de6c31-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de6d00-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de6dc7-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de6e76-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de6f34-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de6fef-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de70aa-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de7179-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de7231-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de72e7-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de739d-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de745a-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de7520-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de75cd-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de767f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de773a-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de77e1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de78a1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de7953-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de7a20-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de7ade-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de7ba1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de7c5b-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de7d11-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de7df8-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de7eac-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de8012-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de80d9-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de81ae-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de8274-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de8327-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de83db-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de84c3-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de859e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de867b-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de875b-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de8824-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de88dc-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de89b1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de8a87-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de8b74-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de8c4d-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de8eb6-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de8f82-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de9059-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de9121-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de91fa-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de92d1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de939e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de9485-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de956a-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de9645-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de976b-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de9845-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de9910-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de99c9-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de9a95-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de9b5b-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de9c36-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de9cfd-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de9dbb-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de9e7f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65de9f5e-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65dea046-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65dea117-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65dea1e8-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65dea2a4-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65dea373-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65dea44f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65dea53c-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65dea6a7-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65dea7ae-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65dea874-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65dea953-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65deaa1f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65deaada-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65deab97-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65deac52-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65dead0c-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65deadb9-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65deae96-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65deaf4b-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65deb006-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65deb0d1-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65deb18f-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65deb241-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', '65deb2f0-84d2-11f1-b721-52540021303b', '2026-07-21 07:07:18', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'b3675e12-ae64-11f1-b327-52540021303b', '2026-10-03 07:46:40', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'b3722c58-ae64-11f1-b327-52540021303b', '2026-10-03 07:46:38', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'b37b7a9e-ae64-11f1-b327-52540021303b', '2026-10-03 07:46:40', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'b386592c-ae64-11f1-b327-52540021303b', '2026-10-03 07:46:39', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'b392f9c2-ae64-11f1-b327-52540021303b', '2026-10-03 07:46:41', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'c0f57007-c604-11f1-924f-52540021303b', '2026-10-12 06:19:45', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'c103a0ec-c604-11f1-924f-52540021303b', '2026-10-12 06:19:45', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'c1120aa3-c604-11f1-924f-52540021303b', '2026-10-12 06:19:45', NULL),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'c1203b6a-c604-11f1-924f-52540021303b', '2026-10-12 06:19:45', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '4d35154f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '4d530b5b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '4d7031eb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '4d7efa0e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '4d8d6867-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '4daa3dc0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '4db89857-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '4de3b2b1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '4eddcde5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '4eeccf6c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '4f18902f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '4fadb488-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '509580c5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '50b2e1fc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '50c1762b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '50d02aaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '51821c11-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5190aea7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '51cbdf08-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '51dada48-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '522369fb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '526f4ace-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '52ace725-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '52f6eb78-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '53316ae2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '533fcc5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '535c91c2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '536b249c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '53797c42-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '53aa9247-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '53bb6743-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '53e9beba-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '553732d5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '55e8931b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '56797f6d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '56964305-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '56b40667-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '56c28d25-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '56df964d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '56ee50c9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '57b8cbde-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '58dbe38a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '58f8e16b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '59075fdb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '597b650b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '59a6a5a3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '59e0b334-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5a29a360-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5a6489c0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5aa0a6cd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5adaa343-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5b5d5298-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5b7a4148-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5b88bc3b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5b97184b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5d4b608c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5d688a94-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5df9846c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5e6ea27b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5e7d32ef-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5e99e19c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5eb74719-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5ec5c8f6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5ed4415b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5ee2f707-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5ef1cbaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5f004673-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5f1d0c50-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5f2b7254-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5f3a1e82-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5f48e95f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5f577c43-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5f65d1bd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5f748888-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5f83631e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5fa0373d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5faf1f62-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5fbd866a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5fcbf941-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5fda86e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '5fe8f2e8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '6006a4d8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '6024d73f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '6033fcd3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '6080e969-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '609f1a6a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '60ae6b68-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '60dd1e99-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '61583b0c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '6185bf97-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '6195539a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '61c4b500-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '61f2d9f0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '62029204-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '628f9135-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '62e29c26-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '63541820-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '6383edce-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '63a58b5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '63b451b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', '63f17b64-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f2571d79-a047-11f1-99c8-52540021303b', 'b3675e12-ae64-11f1-b327-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '4d35154f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '4d530b5b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '4d7031eb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '4d7efa0e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '4d8d6867-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '4daa3dc0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '4db89857-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '4de3b2b1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '4eddcde5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '4eeccf6c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '4f18902f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '4fadb488-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '4fbc5eaf-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '4fe94691-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '50165352-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5033a409-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '509580c5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '50b2e1fc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '50c1762b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '50d02aaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '50dfc90d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '50ee7d9c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '50fd9170-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '510bf933-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '51821c11-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5190aea7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '51adc839-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '51bc7d35-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '51cbdf08-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '51dada48-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '522369fb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '52512ba5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '526f4ace-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '527ea369-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '52ace725-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '52ca8d7f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '52f6eb78-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5305c669-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '53316ae2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '533fcc5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '535c91c2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '536b249c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '53797c42-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '53aa9247-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '53bb6743-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '53cc1d17-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '53e9beba-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '53f8815a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '553732d5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '55e8931b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '56319fe4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '56797f6d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '56964305-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '56b40667-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '56c28d25-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '56df964d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '56ee50c9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5761aa24-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '57b8cbde-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '57c7541b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '57e41824-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '57f2817e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '58010369-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '582d7c54-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '586863e4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '58bf2127-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '58dbe38a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '58f8e16b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '59075fdb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '594146f4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '595e3be5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '597b650b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5989ddee-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '59984a70-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '59a6a5a3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '59b53ae4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '59d21256-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '59e0b334-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '59ef5616-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '59fdd97d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5a29a360-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5a385bab-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5a6489c0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5aa0a6cd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5adaa343-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5af854bc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5b4095a8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5b5d5298-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5b7a4148-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5b88bc3b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5b97184b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5ba5a989-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5bc2b77a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5bd12466-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5bee4a75-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5c19f0c4-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5c45b806-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5c542675-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5c9cbc63-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5d2e5a5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5d4b608c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5d59f16a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5d688a94-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5ddccb4e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5df9846c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5e16ba11-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5e6ea27b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5e7d32ef-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5e99e19c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5ea89d33-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5eb74719-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5ec5c8f6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5ed4415b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5ee2f707-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5ef1cbaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5f004673-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5f1d0c50-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5f2b7254-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5f3a1e82-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5f48e95f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5f577c43-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5f65d1bd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5f748888-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5f83631e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5f91d093-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5fa0373d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5faf1f62-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5fbd866a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5fcbf941-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5fda86e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '5fe8f2e8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '6006a4d8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '6024d73f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '6033fcd3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '6080e969-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '608f9bdd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '609f1a6a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '60ae6b68-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '60bd0fd1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '60dd1e99-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '60edc2fe-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '61583b0c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '6185bf97-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '6195539a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '61c4b500-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '61f2d9f0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '62029204-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '622215c8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '628f9135-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '62e29c26-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '63541820-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '6375132e-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '6383edce-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '63a58b5f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '63b451b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '63c354d6-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '63d1f675-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '63e1b363-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '63f17b64-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '65de7eac-84d2-11f1-b721-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '65de80d9-84d2-11f1-b721-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', '65de8327-84d2-11f1-b721-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9703e5b-b411-11f1-b327-52540021303b', 'b3675e12-ae64-11f1-b327-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '4d35154f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '4d7031eb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '4daa3dc0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '4de3b2b1-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '4eddcde5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '4eeccf6c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '4f18902f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '4fadb488-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '509580c5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '50b2e1fc-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '50c1762b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '50d02aaa-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '5190aea7-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '51bc7d35-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '51cbdf08-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '51dada48-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '522369fb-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '526f4ace-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '52ace725-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '52ca8d7f-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '52f6eb78-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '5305c669-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '53316ae2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '535c91c2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '53aa9247-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '53cc1d17-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '53e9beba-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '53f8815a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '553732d5-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '55e8931b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '56797f6d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '56964305-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '56b40667-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '56c28d25-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '56df964d-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '56ee50c9-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '57b8cbde-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '58f8e16b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '597b650b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '59a6a5a3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '59e0b334-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '5a29a360-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '5a6489c0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '5aa0a6cd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '5adaa343-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '5b88bc3b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '5d4b608c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '5d688a94-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '5df9846c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '5e6ea27b-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '5e99e19c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '5ee2f707-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '5f004673-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '5f2b7254-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '5f65d1bd-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '5fbd866a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '5fda86e3-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '6006a4d8-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '6080e969-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '609f1a6a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '60ae6b68-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '60dd1e99-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '61583b0c-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '6185bf97-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '6195539a-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '61c4b500-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '61f2d9f0-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '62029204-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '628f9135-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '62e29c26-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '63541820-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '6383edce-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '63b451b2-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', '63f17b64-c49b-11f1-a0d7-52540021303b', '2026-10-10 11:23:14', NULL),
+	('f9704219-b411-11f1-b327-52540021303b', 'b3675e12-ae64-11f1-b327-52540021303b', '2026-10-10 11:23:14', NULL);
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.roles
 CREATE TABLE IF NOT EXISTS `roles` (
@@ -2955,7 +7086,23 @@ CREATE TABLE IF NOT EXISTS `roles` (
   UNIQUE KEY `uk_roles_scope_name` (`scope`,`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.roles: ~13 rows (approximately)
+INSERT INTO `roles` (`id`, `name`, `description`, `created_at`, `updated_at`, `scope`) VALUES
+	('06850ec5-6208-4db6-9b27-c6eed141b80b', 'USER', 'Default Role', '2026-07-25 06:48:20', '2026-07-27 10:27:59', 'INTERNAL'),
+	('070dd7b5-84d2-11f1-b721-52540021303b', 'SENIOR_ARCHITECT', 'Senior architect with project planning and design permissions', '2026-07-21 07:01:42', '2026-07-21 07:01:42', 'INTERNAL'),
+	('07114f34-84d2-11f1-b721-52540021303b', 'JUNIOR_ARCHITECT', 'Junior architect with limited design and project permissions', '2026-07-21 07:01:42', '2026-07-21 07:01:42', 'INTERNAL'),
+	('071151f6-84d2-11f1-b721-52540021303b', 'SENIOR_INTERIOR_DESIGNER', 'Senior interior designer with interior planning and client coordination permissions', '2026-07-21 07:01:42', '2026-07-21 07:01:42', 'INTERNAL'),
+	('07115348-84d2-11f1-b721-52540021303b', 'JUNIOR_INTERIOR_DESIGNER', 'Junior interior designer with limited interior design permissions', '2026-07-21 07:01:42', '2026-07-21 07:01:42', 'INTERNAL'),
+	('071153fc-84d2-11f1-b721-52540021303b', 'SITE_SUPERVISOR', 'Site supervisor responsible for site execution and progress monitoring', '2026-07-21 07:01:42', '2026-07-21 07:01:42', 'INTERNAL'),
+	('071154b6-84d2-11f1-b721-52540021303b', 'CLIENT', 'Client with access to assigned projects and project updates', '2026-07-21 07:01:42', '2026-07-21 07:01:42', 'INTERNAL'),
+	('89fd2332-97b2-11f1-9d65-52540021303b', 'PRINCIPAL_ARCHITECT', 'Principal architect responsible for overall architectural direction, design decisions, project oversight, and architectural approvals', '2026-08-14 07:34:10', '2026-08-14 07:34:10', 'INTERNAL'),
+	('89fd7ac2-97b2-11f1-9d65-52540021303b', 'PROJECT_LEAD', 'Project lead responsible for project coordination, execution oversight, team management, and project delivery', '2026-08-14 07:34:10', '2026-08-14 07:34:10', 'INTERNAL'),
+	('90de7f01-7123-11f1-8bb6-52540021303b', 'DEVELOPER', 'Developer role with limited system access', '2026-06-26 05:54:59', '2026-06-26 05:54:59', 'INTERNAL'),
+	('90e34b7b-7123-11f1-8bb6-52540021303b', 'ADMIN', 'Admin role with management access', '2026-06-26 05:54:59', '2026-06-26 05:54:59', 'INTERNAL'),
+	('90e34f44-7123-11f1-8bb6-52540021303b', 'SUPERADMIN', 'Super administrator with full access', '2026-06-26 05:54:59', '2026-06-26 05:54:59', 'INTERNAL'),
+	('f2571d79-a047-11f1-99c8-52540021303b', 'SITE_ENGINEER', 'Responsible for site inspections, site recce, measurements, execution monitoring, and reporting.', '2026-08-25 05:43:49', '2026-08-25 05:43:49', 'INTERNAL'),
+	('f9703e5b-b411-11f1-b327-52540021303b', 'Project Lead', NULL, '2026-09-19 10:07:51', '2026-09-19 10:07:51', 'PROJECT'),
+	('f9704219-b411-11f1-b327-52540021303b', 'ARCHITECT', NULL, '2026-09-19 10:07:51', '2026-10-01 04:19:39', 'PROJECT');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.sample_boards
 CREATE TABLE IF NOT EXISTS `sample_boards` (
@@ -2975,7 +7122,7 @@ CREATE TABLE IF NOT EXISTS `sample_boards` (
   CONSTRAINT `fk_sample_boards_material_requirement` FOREIGN KEY (`materialRequirementId`) REFERENCES `material_requirements` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.sample_boards: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.scope_categories
 CREATE TABLE IF NOT EXISTS `scope_categories` (
@@ -2994,7 +7141,19 @@ CREATE TABLE IF NOT EXISTS `scope_categories` (
   KEY `idx_scope_categories_deleted_at` (`deleted_at`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.scope_categories: ~11 rows (approximately)
+INSERT INTO `scope_categories` (`id`, `name`, `slug`, `description`, `sort_order`, `is_active`, `created_at`, `updated_at`, `deleted_at`) VALUES
+	('fb5c78dc-9f92-11f1-99c8-52540021303b', 'Site Preparation', 'site-preparation', 'Site clearing, preparation, mobilization, temporary works and related activities.', 1, 1, '2026-08-24 08:08:25', '2026-08-24 08:08:25', NULL),
+	('fb5c7dcb-9f92-11f1-99c8-52540021303b', 'Civil Works', 'civil-works', 'Excavation, foundations, concrete, masonry, structural and other civil construction works.', 2, 1, '2026-08-24 08:08:25', '2026-08-24 08:08:25', NULL),
+	('fb5c8017-9f92-11f1-99c8-52540021303b', 'Architectural Works', 'architectural-works', 'Architectural finishes, flooring, walls, ceilings, doors, windows and related works.', 3, 1, '2026-08-24 08:08:25', '2026-08-24 08:08:25', NULL),
+	('fb5c81bb-9f92-11f1-99c8-52540021303b', 'Electrical Works', 'electrical-works', 'Electrical installation, wiring, lighting, power distribution and related systems.', 4, 1, '2026-08-24 08:08:25', '2026-08-24 08:08:25', NULL),
+	('fb5c82cd-9f92-11f1-99c8-52540021303b', 'Plumbing & Sanitary', 'plumbing-sanitary', 'Water supply, drainage, sanitary fixtures, piping and associated plumbing works.', 5, 1, '2026-08-24 08:08:25', '2026-08-24 08:08:25', NULL),
+	('fb5c83a7-9f92-11f1-99c8-52540021303b', 'HVAC', 'hvac', 'Heating, ventilation, air conditioning and associated mechanical systems.', 6, 1, '2026-08-24 08:08:25', '2026-08-24 08:08:25', NULL),
+	('fb5c84aa-9f92-11f1-99c8-52540021303b', 'Fire & Safety', 'fire-safety', 'Fire protection, fire detection, emergency systems and safety installations.', 7, 1, '2026-08-24 08:08:25', '2026-08-24 08:08:25', NULL),
+	('fb5c85e9-9f92-11f1-99c8-52540021303b', 'External Works', 'external-works', 'Landscaping, paving, boundary works, external drainage and other outdoor works.', 8, 1, '2026-08-24 08:08:25', '2026-08-24 08:08:25', NULL),
+	('fb5c86bb-9f92-11f1-99c8-52540021303b', 'Furniture & Fixtures', 'furniture-fixtures', 'Fixed furniture, loose furniture, fixtures, fittings and associated installation works.', 9, 1, '2026-08-24 08:08:25', '2026-08-24 08:08:25', NULL),
+	('fb5c8766-9f92-11f1-99c8-52540021303b', 'Testing & Commissioning', 'testing-commissioning', 'Testing, inspection, commissioning, balancing and handover activities.', 10, 1, '2026-08-24 08:08:25', '2026-08-24 08:08:25', NULL),
+	('fb5c8822-9f92-11f1-99c8-52540021303b', 'Documentation & Handover', 'documentation-handover', 'As-built drawings, operation manuals, warranties, certificates and final handover documentation.', 11, 1, '2026-08-24 08:08:25', '2026-08-24 08:08:25', NULL);
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.scope_items
 CREATE TABLE IF NOT EXISTS `scope_items` (
@@ -3024,7 +7183,6 @@ CREATE TABLE IF NOT EXISTS `scope_items` (
   CONSTRAINT `fk_scope_items_scope_of_work` FOREIGN KEY (`scope_of_work_id`) REFERENCES `scope_of_work` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.scope_of_work
 CREATE TABLE IF NOT EXISTS `scope_of_work` (
@@ -3062,7 +7220,6 @@ CREATE TABLE IF NOT EXISTS `scope_of_work` (
   CONSTRAINT `fk_scope_of_work_reviewed_by` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.settings
 CREATE TABLE IF NOT EXISTS `settings` (
@@ -3077,7 +7234,10 @@ CREATE TABLE IF NOT EXISTS `settings` (
   CONSTRAINT `settings_ibfk_1` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.settings: ~0 rows (approximately)
+INSERT INTO `settings` (`id`, `key`, `value`, `updated_by`, `updated_at`) VALUES
+	('4689e689-8ce3-4326-bd73-2d8176ae1b03', 'proposal_next_steps.6725b123-5893-454d-9e7a-7d14fbaf1fc1', '{"steps": [{"id": "review-proposal", "done": false, "title": "Review this proposal", "detail": "Take a week. Mark anything unclear. We will walk it through with you."}, {"id": "confirm-scope", "done": false, "title": "Confirm the scope", "detail": "Tick the engagement and optional items. We revise the BOQ against your ticks."}, {"id": "freeze-cost", "done": false, "title": "Freeze cost at Gate 02", "detail": "BOQ priced line by line and signed. The estimate becomes a firm number."}, {"id": "sign-agreement", "done": false, "title": "Sign the Agreement", "detail": "Scope of Work, Payment Schedule, Plan of Action issued together for signature."}, {"id": "release-m1", "done": false, "title": "Release M1 and mobilise", "detail": "15% booking and mobilisation. Site team on the ground within five days."}], "checklist": [{"id": "signed-agreement", "done": false, "label": "Signed Scope of Work and Agreement"}, {"id": "booking-payment", "done": false, "label": "Booking and mobilisation payment"}, {"id": "society-permission", "done": false, "label": "Society permission for work and material lift"}, {"id": "site-access", "done": false, "label": "Access, keys and a point of contact at site"}, {"id": "water-power", "done": false, "label": "Water and power connection at the unit"}, {"id": "client-material", "done": false, "label": "Any client-supplied material schedule"}]}', NULL, '2026-10-09 04:20:37'),
+	('51d7db8d-148e-460a-9fc0-25ebeffee437', 'terms', '{"default_terms": ""}', NULL, '2026-06-30 09:30:51');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.shortlist_entries
 CREATE TABLE IF NOT EXISTS `shortlist_entries` (
@@ -3118,7 +7278,6 @@ CREATE TABLE IF NOT EXISTS `shortlist_entries` (
   CONSTRAINT `fk_shortlist_entries_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.shortlist_entries_workspace_backup
 CREATE TABLE IF NOT EXISTS `shortlist_entries_workspace_backup` (
@@ -3151,7 +7310,6 @@ CREATE TABLE IF NOT EXISTS `shortlist_entries_workspace_backup` (
   KEY `idx_shortlist_entries_updated_by` (`updated_by`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.shortlist_packages
 CREATE TABLE IF NOT EXISTS `shortlist_packages` (
@@ -3165,7 +7323,7 @@ CREATE TABLE IF NOT EXISTS `shortlist_packages` (
   KEY `idx_shortlist_packages_type` (`shortlist_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.shortlist_packages: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.site_recce_photos
 CREATE TABLE IF NOT EXISTS `site_recce_photos` (
@@ -3190,7 +7348,6 @@ CREATE TABLE IF NOT EXISTS `site_recce_photos` (
   CONSTRAINT `fk_site_recce_photos_site_recce` FOREIGN KEY (`site_recce_id`) REFERENCES `site_recces` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.site_recce_rooms
 CREATE TABLE IF NOT EXISTS `site_recce_rooms` (
@@ -3217,7 +7374,6 @@ CREATE TABLE IF NOT EXISTS `site_recce_rooms` (
   CONSTRAINT `fk_site_recce_rooms_site_recce` FOREIGN KEY (`site_recce_id`) REFERENCES `site_recces` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.site_recces
 CREATE TABLE IF NOT EXISTS `site_recces` (
@@ -3272,7 +7428,6 @@ CREATE TABLE IF NOT EXISTS `site_recces` (
   CONSTRAINT `fk_site_recces_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.site_visit_logs
 CREATE TABLE IF NOT EXISTS `site_visit_logs` (
@@ -3297,7 +7452,7 @@ CREATE TABLE IF NOT EXISTS `site_visit_logs` (
   KEY `site_visit_logs_project_id` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.site_visit_logs: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.snag_items
 CREATE TABLE IF NOT EXISTS `snag_items` (
@@ -3334,7 +7489,7 @@ CREATE TABLE IF NOT EXISTS `snag_items` (
   CONSTRAINT `fk_snag_visit` FOREIGN KEY (`visit_id`) REFERENCES `architect_site_visits` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.snag_items: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.snag_list_revisions
 CREATE TABLE IF NOT EXISTS `snag_list_revisions` (
@@ -3350,7 +7505,6 @@ CREATE TABLE IF NOT EXISTS `snag_list_revisions` (
   CONSTRAINT `fk_snag_list_revision` FOREIGN KEY (`snag_list_id`) REFERENCES `snag_lists` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.snag_lists
 CREATE TABLE IF NOT EXISTS `snag_lists` (
@@ -3373,7 +7527,6 @@ CREATE TABLE IF NOT EXISTS `snag_lists` (
   KEY `idx_snag_lists_updated` (`updated_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.step_teams
 CREATE TABLE IF NOT EXISTS `step_teams` (
@@ -3391,7 +7544,7 @@ CREATE TABLE IF NOT EXISTS `step_teams` (
   CONSTRAINT `fk_step_teams_team` FOREIGN KEY (`teamId`) REFERENCES `teams` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.step_teams: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.steps
 CREATE TABLE IF NOT EXISTS `steps` (
@@ -3415,7 +7568,7 @@ CREATE TABLE IF NOT EXISTS `steps` (
   CONSTRAINT `fk_steps_project_phase` FOREIGN KEY (`phaseId`) REFERENCES `project_phases` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.steps: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.sync_calendar_events
 CREATE TABLE IF NOT EXISTS `sync_calendar_events` (
@@ -3439,7 +7592,7 @@ CREATE TABLE IF NOT EXISTS `sync_calendar_events` (
   CONSTRAINT `fk_sync_calendar_events_local_event` FOREIGN KEY (`local_event_id`) REFERENCES `calendar_events` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.sync_calendar_events: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.sync_logs
 CREATE TABLE IF NOT EXISTS `sync_logs` (
@@ -3463,7 +7616,7 @@ CREATE TABLE IF NOT EXISTS `sync_logs` (
   KEY `idx_sync_logs_entity_type_created_at` (`entity_type`,`createdAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.sync_logs: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.sync_tasks
 CREATE TABLE IF NOT EXISTS `sync_tasks` (
@@ -3489,7 +7642,7 @@ CREATE TABLE IF NOT EXISTS `sync_tasks` (
   CONSTRAINT `fk_sync_tasks_local_task` FOREIGN KEY (`local_task_id`) REFERENCES `tasks` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.sync_tasks: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.task_definitions
 CREATE TABLE IF NOT EXISTS `task_definitions` (
@@ -3511,7 +7664,7 @@ CREATE TABLE IF NOT EXISTS `task_definitions` (
   CONSTRAINT `fk_task_definitions_phase` FOREIGN KEY (`phase_id`) REFERENCES `project_phases` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.task_definitions: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.task_executions
 CREATE TABLE IF NOT EXISTS `task_executions` (
@@ -3535,7 +7688,7 @@ CREATE TABLE IF NOT EXISTS `task_executions` (
   CONSTRAINT `fk_task_executions_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.task_executions: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.tasks
 CREATE TABLE IF NOT EXISTS `tasks` (
@@ -3554,16 +7707,19 @@ CREATE TABLE IF NOT EXISTS `tasks` (
   `workload_estimate_hours` int(11) NOT NULL DEFAULT '0',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_crucial` tinyint(1) NOT NULL DEFAULT '0',
+  `crucial_reason` text COLLATE utf8_unicode_ci,
+  `crucial_ref` int(10) unsigned NOT NULL AUTO_INCREMENT,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `tasks_crucial_ref_unique` (`crucial_ref`),
   KEY `idx_tasks_project_id` (`project_id`),
   KEY `idx_tasks_created_by` (`created_by`),
   KEY `idx_tasks_assigned_to` (`assigned_to`),
   KEY `idx_tasks_status` (`status`),
   CONSTRAINT `fk_tasks_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `fk_tasks_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.team_members
 CREATE TABLE IF NOT EXISTS `team_members` (
@@ -3593,7 +7749,6 @@ CREATE TABLE IF NOT EXISTS `team_members` (
   CONSTRAINT `fk_team_members_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.team_section_access
 CREATE TABLE IF NOT EXISTS `team_section_access` (
@@ -3620,7 +7775,67 @@ CREATE TABLE IF NOT EXISTS `team_section_access` (
   CONSTRAINT `fk_team_section_access_team` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.team_section_access: ~59 rows (approximately)
+INSERT INTO `team_section_access` (`id`, `team_id`, `section_id`, `access_level`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_approve`, `scope`, `created_by`, `created_at`, `updated_at`) VALUES
+	('aedfc39a-b0c6-11f1-b327-52540021303b', '958aa737-b0c6-11f1-b327-52540021303b', '9ab054dc-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:20', '2026-09-15 11:01:20'),
+	('aedfcaa6-b0c6-11f1-b327-52540021303b', '958aa737-b0c6-11f1-b327-52540021303b', '9ab050c2-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:20', '2026-09-15 11:01:20'),
+	('aedfce3a-b0c6-11f1-b327-52540021303b', '958aa737-b0c6-11f1-b327-52540021303b', '9ab04d1f-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:20', '2026-09-15 11:01:20'),
+	('aedfd11c-b0c6-11f1-b327-52540021303b', '958aa737-b0c6-11f1-b327-52540021303b', '9ab04088-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:20', '2026-09-15 11:01:20'),
+	('aedfd419-b0c6-11f1-b327-52540021303b', '958aa737-b0c6-11f1-b327-52540021303b', '9ab04ac2-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:20', '2026-09-15 11:01:20'),
+	('aedfd732-b0c6-11f1-b327-52540021303b', '958aa737-b0c6-11f1-b327-52540021303b', '9ab060e0-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:20', '2026-09-15 11:01:20'),
+	('aedfda0f-b0c6-11f1-b327-52540021303b', '958aa737-b0c6-11f1-b327-52540021303b', '9ab05e85-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:20', '2026-09-15 11:01:20'),
+	('aedfdcb3-b0c6-11f1-b327-52540021303b', '958aa737-b0c6-11f1-b327-52540021303b', '9ab079ae-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:20', '2026-09-15 11:01:20'),
+	('aedfdfd2-b0c6-11f1-b327-52540021303b', '958aa737-b0c6-11f1-b327-52540021303b', '9ab07707-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:20', '2026-09-15 11:01:20'),
+	('aedfe2cd-b0c6-11f1-b327-52540021303b', '958aa737-b0c6-11f1-b327-52540021303b', '9ab05d69-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:20', '2026-09-15 11:01:20'),
+	('aedfe60a-b0c6-11f1-b327-52540021303b', '958aa737-b0c6-11f1-b327-52540021303b', '9ab0751b-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:20', '2026-09-15 11:01:20'),
+	('aedfe8bb-b0c6-11f1-b327-52540021303b', '958aa737-b0c6-11f1-b327-52540021303b', '9ab07885-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:20', '2026-09-15 11:01:20'),
+	('aedfebf7-b0c6-11f1-b327-52540021303b', '958aa737-b0c6-11f1-b327-52540021303b', '9ab05fa2-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:20', '2026-09-15 11:01:20'),
+	('aedfee3e-b0c6-11f1-b327-52540021303b', '958aa737-b0c6-11f1-b327-52540021303b', '9ab053d9-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:20', '2026-09-15 11:01:20'),
+	('c0f3603d-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab04088-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f36697-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab04ac2-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f36904-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab05762-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f36c6a-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab05e85-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f36f14-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab07c2b-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f37191-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab086b9-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3735e-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab08a06-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3753c-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab08f6a-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f37703-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab04d1f-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f379f8-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab055d0-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f37bf9-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab0586a-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f37dc0-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab05fa2-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f37fc0-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab07d50-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f38189-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab087ce-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f38354-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab08b0c-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f38521-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab0905b-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f386fa-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab04e62-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f388de-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab05a1d-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f38ac9-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab05d69-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f38cb2-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab060e0-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f38e91-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab07e77-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3906e-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab08d2f-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f39250-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab0915c-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f39516-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab04f80-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f396f1-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab05b2e-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f398da-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab0751b-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f39abb-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab07ae0-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f39c86-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab0806c-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f39e60-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab09274-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3a17f-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab050c2-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3a38d-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab05c5e-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3a591-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab07707-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3a85b-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab081af-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3aa76-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab08524-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3ac6b-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab093c2-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3ae61-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab051cb-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3b0cc-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab07885-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3b2a7-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab082ec-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3b46b-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab088fa-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3b63e-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab052c6-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3b81c-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab079ae-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3bb27-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab083eb-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3bd0c-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab08e4f-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3bedd-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab053d9-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51'),
+	('c0f3c0d1-b0c6-11f1-b327-52540021303b', '958a9d30-b0c6-11f1-b327-52540021303b', '9ab054dc-b0c6-11f1-b327-52540021303b', 'FULL', 1, 1, 1, 1, 1, NULL, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:01:51', '2026-09-15 11:01:51');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.team_sections
 CREATE TABLE IF NOT EXISTS `team_sections` (
@@ -3640,7 +7855,53 @@ CREATE TABLE IF NOT EXISTS `team_sections` (
   KEY `idx_team_sections_sort_order` (`sort_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.team_sections: ~45 rows (approximately)
+INSERT INTO `team_sections` (`id`, `key`, `name`, `parent_key`, `description`, `status`, `sort_order`, `created_at`, `updated_at`) VALUES
+	('9ab04088-b0c6-11f1-b327-52540021303b', 'PROJECTS', 'Projects', NULL, 'Project management and project workspace.', 'ACTIVE', 10, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab04ac2-b0c6-11f1-b327-52540021303b', 'PROJECTS_OVERVIEW', 'Project Overview', 'PROJECTS', 'Project overview and summary.', 'ACTIVE', 10, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab04d1f-b0c6-11f1-b327-52540021303b', 'PROJECT_PLANNER', 'Project Planner', 'PROJECTS', 'Project phases, milestones and planning.', 'ACTIVE', 20, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab04e62-b0c6-11f1-b327-52540021303b', 'CLIENT_BRIEF', 'Client Brief', 'PROJECTS', 'Client requirements and briefing.', 'ACTIVE', 30, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab04f80-b0c6-11f1-b327-52540021303b', 'DESIGN_STUDIO', 'Design Studio', 'PROJECTS', 'Design and consultancy workspace.', 'ACTIVE', 40, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab050c2-b0c6-11f1-b327-52540021303b', 'PROJECT_DOCUMENTS', 'Documents', 'PROJECTS', 'Project documents and document versions.', 'ACTIVE', 50, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab051cb-b0c6-11f1-b327-52540021303b', 'BOQ', 'BOQ', 'PROJECTS', 'Bill of quantities and project quantities.', 'ACTIVE', 60, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab052c6-b0c6-11f1-b327-52540021303b', 'ESTIMATES', 'Estimates', 'PROJECTS', 'Project estimates and costing.', 'ACTIVE', 70, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab053d9-b0c6-11f1-b327-52540021303b', 'TASKS', 'Tasks', 'PROJECTS', 'Project tasks and assignments.', 'ACTIVE', 80, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab054dc-b0c6-11f1-b327-52540021303b', 'CALENDAR', 'Calendar', 'PROJECTS', 'Project calendar and events.', 'ACTIVE', 90, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab055d0-b0c6-11f1-b327-52540021303b', 'CRM', 'CRM', NULL, 'Customer relationship and business development.', 'ACTIVE', 20, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab05762-b0c6-11f1-b327-52540021303b', 'CRM_LEADS', 'Leads', 'CRM', 'Lead management.', 'ACTIVE', 10, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab0586a-b0c6-11f1-b327-52540021303b', 'CRM_SITE_RECCE', 'Site Recce', 'CRM', 'Site reconnaissance and survey information.', 'ACTIVE', 20, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab05a1d-b0c6-11f1-b327-52540021303b', 'CRM_POA', 'Plan of Action', 'CRM', 'Project plan of action.', 'ACTIVE', 30, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab05b2e-b0c6-11f1-b327-52540021303b', 'CRM_SCOPE_OF_WORK', 'Scope of Work', 'CRM', 'Scope of work management.', 'ACTIVE', 40, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab05c5e-b0c6-11f1-b327-52540021303b', 'CRM_BUSINESS_PROPOSAL', 'Business Proposal', 'CRM', 'Business proposals for clients.', 'ACTIVE', 50, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab05d69-b0c6-11f1-b327-52540021303b', 'SITE_OPERATIONS', 'Site Operations', NULL, 'Site execution and field operations.', 'ACTIVE', 30, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab05e85-b0c6-11f1-b327-52540021303b', 'SITE_DAILY_REPORTS', 'Daily Reports', 'SITE_OPERATIONS', 'Daily site reports.', 'ACTIVE', 10, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab05fa2-b0c6-11f1-b327-52540021303b', 'SITE_VISITS', 'Site Visits', 'SITE_OPERATIONS', 'Site visit assignments and records.', 'ACTIVE', 20, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab060e0-b0c6-11f1-b327-52540021303b', 'SITE_CHECKLISTS', 'Checklists', 'SITE_OPERATIONS', 'Site execution checklists.', 'ACTIVE', 30, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab0751b-b0c6-11f1-b327-52540021303b', 'SITE_QC', 'Quality Control', 'SITE_OPERATIONS', 'Quality control and inspections.', 'ACTIVE', 40, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab07707-b0c6-11f1-b327-52540021303b', 'SITE_MOCKUPS', 'Mockups', 'SITE_OPERATIONS', 'Site mockups and approvals.', 'ACTIVE', 50, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab07885-b0c6-11f1-b327-52540021303b', 'SITE_RFIS', 'RFIs', 'SITE_OPERATIONS', 'Requests for information.', 'ACTIVE', 60, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab079ae-b0c6-11f1-b327-52540021303b', 'SITE_HANDOVER', 'Handover', 'SITE_OPERATIONS', 'Project handover and signoffs.', 'ACTIVE', 70, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab07ae0-b0c6-11f1-b327-52540021303b', 'PROCUREMENT', 'Materials & Procurement', NULL, 'Material procurement and purchasing operations.', 'ACTIVE', 40, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab07c2b-b0c6-11f1-b327-52540021303b', 'MATERIAL_REQUIREMENTS', 'Material Requirements', 'PROCUREMENT', 'Material requirements and planning.', 'ACTIVE', 10, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab07d50-b0c6-11f1-b327-52540021303b', 'SAMPLE_BOARDS', 'Sample Boards', 'PROCUREMENT', 'Material sample boards.', 'ACTIVE', 20, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab07e77-b0c6-11f1-b327-52540021303b', 'RATE_SHEETS', 'Rate Sheets', 'PROCUREMENT', 'Material and vendor rate sheets.', 'ACTIVE', 30, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab0806c-b0c6-11f1-b327-52540021303b', 'QUOTATIONS', 'Quotations', 'PROCUREMENT', 'Supplier quotations.', 'ACTIVE', 40, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab081af-b0c6-11f1-b327-52540021303b', 'PURCHASE_ORDERS', 'Purchase Orders', 'PROCUREMENT', 'Purchase orders.', 'ACTIVE', 50, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab082ec-b0c6-11f1-b327-52540021303b', 'DELIVERY_CHALLANS', 'Delivery Challans', 'PROCUREMENT', 'Material delivery challans.', 'ACTIVE', 60, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab083eb-b0c6-11f1-b327-52540021303b', 'SITE_INVENTORY', 'Site Inventory', 'PROCUREMENT', 'Material inventory at project sites.', 'ACTIVE', 70, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab08524-b0c6-11f1-b327-52540021303b', 'VENDORS', 'Vendors', NULL, 'Vendor management.', 'ACTIVE', 50, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab086b9-b0c6-11f1-b327-52540021303b', 'VENDOR_CONTACTS', 'Vendor Contacts', 'VENDORS', 'Vendor contacts and representatives.', 'ACTIVE', 10, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab087ce-b0c6-11f1-b327-52540021303b', 'VENDOR_PERFORMANCE', 'Vendor Performance', 'VENDORS', 'Vendor performance and evaluation.', 'ACTIVE', 20, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab088fa-b0c6-11f1-b327-52540021303b', 'FINANCE', 'Finance & Accounts', NULL, 'Financial management.', 'ACTIVE', 60, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab08a06-b0c6-11f1-b327-52540021303b', 'BUDGET_ESTIMATE', 'Budget Estimate', 'FINANCE', 'Budget estimates.', 'ACTIVE', 10, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab08b0c-b0c6-11f1-b327-52540021303b', 'PAYMENT_SCHEDULE', 'Payment Schedule', 'FINANCE', 'Project payment schedules.', 'ACTIVE', 20, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab08d2f-b0c6-11f1-b327-52540021303b', 'LEDGER', 'Ledger', 'FINANCE', 'Financial ledger.', 'ACTIVE', 30, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab08e4f-b0c6-11f1-b327-52540021303b', 'ADMINISTRATION', 'Administration', NULL, 'System administration.', 'ACTIVE', 70, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab08f6a-b0c6-11f1-b327-52540021303b', 'ADMIN_USERS', 'Users', 'ADMINISTRATION', 'System users.', 'ACTIVE', 10, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab0905b-b0c6-11f1-b327-52540021303b', 'ADMIN_CLIENTS', 'Clients', 'ADMINISTRATION', 'Client management.', 'ACTIVE', 20, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab0915c-b0c6-11f1-b327-52540021303b', 'ADMIN_ROLES', 'Roles & Permissions', 'ADMINISTRATION', 'Roles and permissions.', 'ACTIVE', 30, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab09274-b0c6-11f1-b327-52540021303b', 'ADMIN_SIGNATURES', 'Signatures', 'ADMINISTRATION', 'Digital signatures.', 'ACTIVE', 40, '2026-09-15 11:00:47', '2026-09-15 11:00:47'),
+	('9ab093c2-b0c6-11f1-b327-52540021303b', 'ADMIN_LOGS', 'System Logs', 'ADMINISTRATION', 'Administrative and audit logs.', 'ACTIVE', 50, '2026-09-15 11:00:47', '2026-09-15 11:00:47');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.teams
 CREATE TABLE IF NOT EXISTS `teams` (
@@ -3658,7 +7919,14 @@ CREATE TABLE IF NOT EXISTS `teams` (
   CONSTRAINT `fk_teams_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.teams: ~6 rows (approximately)
+INSERT INTO `teams` (`id`, `name`, `description`, `status`, `sort_order`, `created_by`, `created_at`, `updated_at`) VALUES
+	('958a9d30-b0c6-11f1-b327-52540021303b', 'Management', 'Management, administration and overall project oversight.', 'ACTIVE', 0, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:00:38', '2026-09-15 11:00:38'),
+	('958aa45c-b0c6-11f1-b327-52540021303b', 'Design & Consultancy', 'Architecture, interior design, consultancy and client documentation.', 'ACTIVE', 0, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:00:38', '2026-09-15 11:00:38'),
+	('958aa737-b0c6-11f1-b327-52540021303b', 'Site Operations', 'Site execution, site visits, daily reports, QC and handover operations.', 'ACTIVE', 0, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:00:38', '2026-09-15 11:00:38'),
+	('958aa892-b0c6-11f1-b327-52540021303b', 'Procurement & Materials', 'Material planning, vendor management, quotations, purchase orders and deliveries.', 'ACTIVE', 0, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:00:38', '2026-09-15 11:00:38'),
+	('958aa9c5-b0c6-11f1-b327-52540021303b', 'Finance & Accounts', 'Budgets, estimates, payment schedules, ledger and financial operations.', 'ACTIVE', 0, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 11:00:38', '2026-09-15 11:00:38'),
+	('e8411729-b0c5-11f1-b327-52540021303b', 'Project Team', 'Default team for migrated project-level team members', 'ACTIVE', 0, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-09-15 10:55:47', '2026-09-15 10:55:47');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.terms_template_versions
 CREATE TABLE IF NOT EXISTS `terms_template_versions` (
@@ -3677,7 +7945,14 @@ CREATE TABLE IF NOT EXISTS `terms_template_versions` (
   CONSTRAINT `fk_terms_template_versions_template` FOREIGN KEY (`terms_template_id`) REFERENCES `terms_templates` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.terms_template_versions: ~5 rows (approximately)
+INSERT INTO `terms_template_versions` (`id`, `terms_template_id`, `version`, `content_html`, `change_note`, `created_by`, `created_at`) VALUES
+	('73cb4cfc-8520-40ef-b124-1ab296d68523', '83e538b3-9a0b-11f1-99c8-52540021303b', 2, '<h2>Terms &amp; Conditions</h2>\n\n<h3>1. Basis of this schedule</h3>\n<p>This Payment Schedule is to be read together with the Plan of Action and the signed Agreement for the project.<br />Where a percentage is stated, it is of the total contract value recorded above and is exclusive of GST, variations and client-supplied items.</p>\n\n\n<h3>2. Release before mobilisation</h3>\n<p>Each milestone falls due before the corresponding phase is mobilised at site. In line with the Plan of Action,<br />mobilisation of the next phase is subject to the corresponding milestone payment being cleared.</p>\n\n\n<h3>3. Invoicing and due date</h3>\n<p>Every milestone will be intimated in writing with a stage note and an invoice. Payment is due within three working<br />days of the invoice date. Work already in progress continues uninterrupted only against timely release.</p>\n\n\n<h3>4. Mode of payment</h3>\n<p>All payments are to be made by NEFT, RTGS or cheque in favour of the Rippotai account printed on the invoice.<br />Cash payments, and payments made directly to any worker, supervisor or vendor at site, will not be recognised<br />against this contract.</p>\n\n\n<h3>5. Taxes</h3>\n<p>All figures are exclusive of GST. GST and any other statutory levy will be charged additionally at the rate prevailing<br />on the date of invoice.</p>\n\n\n<h3>6. Mobilisation advance</h3>\n<p>The booking and mobilisation amount is non-refundable and is adjusted against the final milestone.<br />Site mobilisation begins only after it is received in full.</p>\n\n\n<h3>7. Delay in release</h3>\n<p>If a payment is delayed beyond seven days from its due date, work at site may be paused.<br />The timeline will stand extended day for day, together with three days for remobilisation,<br />and the revised handover date will be intimated in writing.</p>\n\n\n<h3>8. Interest on overdue amounts</h3>\n<p>Any amount outstanding beyond fifteen days from its due date will attract interest at 1.5% per month<br />on the overdue amount until cleared.</p>\n\n\n<h3>9. Variations in scope</h3>\n<p>Any change in layout, specification or scope after a phase has commenced is a variation.<br />Its cost and time implication will be shared in writing and, once approved, is billed at 100% in advance<br />of procurement. Variations do not form part of the percentages set out above.</p>\n\n\n<h3>10. Client-supplied items</h3>\n<p>Items procured directly by the Client are to reach site as per the agreed schedule.<br />Delay, shortfall or damage in such items is not attributable to Rippotai and does not affect<br />a milestone that has already been achieved.</p>\n\n\n<h3>11. Retention and snag closure</h3>\n<p>The final 5% is retained until the snag list has been jointly signed off, the premises deep cleaned,<br />and keys, warranty cards, appliance manuals and as-built service drawings handed over.</p>\n\n\n<h3>12. Title of materials</h3>\n<p>Ownership of material delivered at site passes to the Client only on full payment of the corresponding milestone.</p>\n\n\n<h3>13. Suspension by the Client</h3>\n<p>If works are suspended by the Client for more than thirty days, all milestones achieved till that date become<br />immediately payable, along with the cost of material already procured, fabricated or stored for the project.</p>\n\n\n<h3>14. Post-handover defects</h3>\n<p>Issues reported after handover fall under the defect liability terms of the signed Agreement<br />and not under the snagging milestone of this schedule.</p>\n\n\n<h3>15. Circumstances beyond control</h3>\n<p>Statutory construction restrictions, labour strikes, extreme weather, transport disruption and unavailability<br />of specified material are beyond our control. Timelines extend proportionately, with prior intimation;<br />milestones already achieved remain payable.</p>\n\n\n<h3>16. Jurisdiction</h3>\n<p>Any dispute will first be attempted to be settled amicably between the parties, failing which it will be<br />subject to the exclusive jurisdiction of the courts at Delhi.</p>\n<p>The Client confirms having read and accepted the milestones, percentages and terms set out in this schedule,<br />which forms an integral part of the Plan of Action and the signed Agreement for this project.</p>\n', NULL, NULL, '2026-09-29 09:49:40'),
+	('90d3ea2c-bbbe-11f1-a7ce-52540021303b', '4367e34a-b337-11f1-b327-52540021303b', 1, '<h3>1. Scope of Work</h3>\r\n<p>The contractor shall execute the work described in this Work Order strictly in accordance with the approved drawings, specifications, BOQ, scope of work and instructions issued by Rippotai Architecture.</p>\r\n\r\n<h3>2. Workmanship & Quality</h3>\r\n<p>All work shall be carried out using good quality materials and workmanship in accordance with approved specifications and applicable standards. Any defective or unacceptable work shall be rectified by the contractor at their own cost.</p>\r\n\r\n<h3>3. Site Coordination</h3>\r\n<p>The contractor shall coordinate with the project team, site supervisor, consultants and other agencies working at the project site and shall ensure that their activities do not unnecessarily interfere with other works.</p>\r\n\r\n<h3>4. Programme & Completion</h3>\r\n<p>The contractor shall complete the work within the agreed completion period. Any anticipated delay shall be immediately communicated to the project team along with the reason and proposed recovery plan.</p>\r\n\r\n<h3>5. Safety</h3>\r\n<p>The contractor shall be responsible for maintaining safe working practices at site and shall provide appropriate safety equipment to their workers. The contractor shall comply with all applicable site safety requirements.</p>\r\n\r\n<h3>6. Labour</h3>\r\n<p>The contractor shall be responsible for the deployment, supervision and conduct of their labour and workforce. All statutory requirements relating to their workers shall be complied with by the contractor.</p>\r\n\r\n<h3>7. Materials</h3>\r\n<p>Materials supplied by the contractor shall conform to the approved specifications. No substitution of specified materials shall be made without prior written approval from the authorised project representative.</p>\r\n\r\n<h3>8. Measurement</h3>\r\n<p>Measurements shall be recorded and verified jointly wherever applicable. Payment shall be based on approved quantities, agreed rates and the applicable terms of this Work Order.</p>\r\n\r\n<h3>9. Payment</h3>\r\n<p>Payments shall be released according to the approved payment stages and subject to satisfactory completion of the relevant work, measurement verification and submission of required documents.</p>\r\n\r\n<h3>10. Defects & Rectification</h3>\r\n<p>The contractor shall rectify defects, damages or incomplete work attributable to their execution within the period specified by the project team without additional cost.</p>\r\n\r\n<h3>11. Housekeeping</h3>\r\n<p>The contractor shall maintain proper housekeeping in their work area and shall remove construction debris, waste and surplus materials as directed by the project team.</p>\r\n\r\n<h3>12. Damage to Property</h3>\r\n<p>Any damage caused to the project property, finished work, fixtures, equipment or third-party property due to the contractor or their workforce shall be repaired or compensated by the contractor.</p>\r\n\r\n<h3>13. Drawings & Instructions</h3>\r\n<p>The contractor shall execute the work based on the latest approved drawings and written instructions. The contractor shall immediately report any discrepancy or ambiguity before proceeding with the affected work.</p>\r\n\r\n<h3>14. Variations</h3>\r\n<p>No additional work or variation shall be undertaken without prior approval from the authorised representative of Rippotai Architecture. Approved variations shall be documented and valued separately where applicable.</p>\r\n\r\n<h3>15. Subcontracting</h3>\r\n<p>The contractor shall not subcontract the whole or substantial part of the assigned work without prior written approval.</p>\r\n\r\n<h3>16. Compliance</h3>\r\n<p>The contractor shall comply with applicable laws, regulations, labour requirements, safety requirements and project-specific rules.</p>\r\n\r\n<h3>17. Cancellation</h3>\r\n<p>Rippotai Architecture may suspend or cancel the Work Order in case of material breach, persistent delay, poor workmanship, non-compliance or other circumstances permitted under the agreed commercial terms.</p>\r\n\r\n<h3>18. Final Handover</h3>\r\n<p>The contractor shall complete all pending works, rectifications, cleaning and documentation required for final handover before the work is considered complete.</p>\r\n\r\n<h3>19. Acceptance</h3>\r\n<p>Commencement of work against this Work Order shall constitute acceptance of the scope, rates, programme and applicable terms unless objections are raised in writing before commencement.</p>', NULL, NULL, '2026-09-29 04:30:57'),
+	('90d4fdb3-bbbe-11f1-a7ce-52540021303b', '83e538b3-9a0b-11f1-99c8-52540021303b', 1, '<h2>Terms &amp; Conditions</h2>\r\n\r\n<h3>01 Basis of this schedule</h3>\r\n<p>\r\nThis Payment Schedule is to be read together with the Plan of Action and the signed Agreement for the project.\r\nWhere a percentage is stated, it is of the total contract value recorded above and is exclusive of GST, variations and client-supplied items.\r\n</p>\r\n\r\n<h3>02 Release before mobilisation</h3>\r\n<p>\r\nEach milestone falls due before the corresponding phase is mobilised at site. In line with the Plan of Action,\r\nmobilisation of the next phase is subject to the corresponding milestone payment being cleared.\r\n</p>\r\n\r\n<h3>03 Invoicing and due date</h3>\r\n<p>\r\nEvery milestone will be intimated in writing with a stage note and an invoice. Payment is due within three working\r\ndays of the invoice date. Work already in progress continues uninterrupted only against timely release.\r\n</p>\r\n\r\n<h3>04 Mode of payment</h3>\r\n<p>\r\nAll payments are to be made by NEFT, RTGS or cheque in favour of the Rippotai account printed on the invoice.\r\nCash payments, and payments made directly to any worker, supervisor or vendor at site, will not be recognised\r\nagainst this contract.\r\n</p>\r\n\r\n<h3>05 Taxes</h3>\r\n<p>\r\nAll figures are exclusive of GST. GST and any other statutory levy will be charged additionally at the rate prevailing\r\non the date of invoice.\r\n</p>\r\n\r\n<h3>06 Mobilisation advance</h3>\r\n<p>\r\nThe booking and mobilisation amount is non-refundable and is adjusted against the final milestone.\r\nSite mobilisation begins only after it is received in full.\r\n</p>\r\n\r\n<h3>07 Delay in release</h3>\r\n<p>\r\nIf a payment is delayed beyond seven days from its due date, work at site may be paused.\r\nThe timeline will stand extended day for day, together with three days for remobilisation,\r\nand the revised handover date will be intimated in writing.\r\n</p>\r\n\r\n<h3>08 Interest on overdue amounts</h3>\r\n<p>\r\nAny amount outstanding beyond fifteen days from its due date will attract interest at 1.5% per month\r\non the overdue amount until cleared.\r\n</p>\r\n\r\n<h3>09 Variations in scope</h3>\r\n<p>\r\nAny change in layout, specification or scope after a phase has commenced is a variation.\r\nIts cost and time implication will be shared in writing and, once approved, is billed at 100% in advance\r\nof procurement. Variations do not form part of the percentages set out above.\r\n</p>\r\n\r\n<h3>10 Client-supplied items</h3>\r\n<p>\r\nItems procured directly by the Client are to reach site as per the agreed schedule.\r\nDelay, shortfall or damage in such items is not attributable to Rippotai and does not affect\r\na milestone that has already been achieved.\r\n</p>\r\n\r\n<h3>11 Retention and snag closure</h3>\r\n<p>\r\nThe final 5% is retained until the snag list has been jointly signed off, the premises deep cleaned,\r\nand keys, warranty cards, appliance manuals and as-built service drawings handed over.\r\n</p>\r\n\r\n<h3>12 Title of materials</h3>\r\n<p>\r\nOwnership of material delivered at site passes to the Client only on full payment of the corresponding milestone.\r\n</p>\r\n\r\n<h3>13 Suspension by the Client</h3>\r\n<p>\r\nIf works are suspended by the Client for more than thirty days, all milestones achieved till that date become\r\nimmediately payable, along with the cost of material already procured, fabricated or stored for the project.\r\n</p>\r\n\r\n<h3>14 Post-handover defects</h3>\r\n<p>\r\nIssues reported after handover fall under the defect liability terms of the signed Agreement\r\nand not under the snagging milestone of this schedule.\r\n</p>\r\n\r\n<h3>15 Circumstances beyond control</h3>\r\n<p>\r\nStatutory construction restrictions, labour strikes, extreme weather, transport disruption and unavailability\r\nof specified material are beyond our control. Timelines extend proportionately, with prior intimation;\r\nmilestones already achieved remain payable.\r\n</p>\r\n\r\n<h3>16 Jurisdiction</h3>\r\n<p>\r\nAny dispute will first be attempted to be settled amicably between the parties, failing which it will be\r\nsubject to the exclusive jurisdiction of the courts at Delhi.\r\n</p>\r\n\r\n<p>\r\nThe Client confirms having read and accepted the milestones, percentages and terms set out in this schedule,\r\nwhich forms an integral part of the Plan of Action and the signed Agreement for this project.\r\n</p>', NULL, NULL, '2026-09-29 04:30:57'),
+	('90d5039e-bbbe-11f1-a7ce-52540021303b', '9f8c2a10-4b3e-4c7a-9d21-6a1f0c3e5b71', 1, '<h2>Terms & Conditions</h2>\r\n<p>This Plan of Action is prepared based on the agreed project scope, execution sequence, estimated durations, and project requirements.</p>\r\n\r\n<h3>1. Execution Schedule</h3>\r\n<p>The execution schedule and phase durations mentioned in this Plan of Action are indicative and may be adjusted based on site conditions, material availability, approvals, dependencies, and other project requirements.</p>\r\n\r\n<h3>2. Phase Dependencies</h3>\r\n<p>Individual phases may run sequentially or in parallel depending on site conditions, availability of resources, material selections, approvals, and execution requirements.</p>\r\n\r\n<h3>3. Material Selection & Approvals</h3>\r\n<p>Timely selection and approval of materials, finishes, drawings, samples, and other project requirements are necessary to maintain the proposed execution schedule.</p>\r\n\r\n<h3>4. Site Conditions</h3>\r\n<p>Actual execution timelines may vary due to existing site conditions, unforeseen circumstances, access restrictions, statutory requirements, weather conditions, or other factors beyond the reasonable control of the project team.</p>\r\n\r\n<h3>5. Client Responsibilities</h3>\r\n<p>The client shall provide timely approvals, decisions, access, information, and other requirements necessary for the execution of the works.</p>\r\n\r\n<h3>6. Changes & Variations</h3>\r\n<p>Any changes to the approved scope, design, materials, specifications, or execution requirements may affect the project schedule and shall be evaluated accordingly.</p>\r\n\r\n<h3>7. Schedule Validity</h3>\r\n<p>The durations shown in the Plan of Action represent the current planned execution schedule and may be revised as the project progresses.</p>\r\n\r\n<h3>8. General</h3>\r\n<p>This Plan of Action should be read together with the applicable project documents, approved drawings, specifications, quotations, estimates, and other agreed project documentation.</p>', NULL, NULL, '2026-09-29 04:30:57'),
+	('e018d499-8716-11f1-b721-52540021303b', '7e21b4d0-1a9c-4f6b-8e3d-2c5f9a0b6d84', 1, '<ol>\r\n        <li>All quantities are approximate and subject to site verification.</li>\r\n        <li>Rates include labour, material, tools, and equipment unless otherwise specified.</li>\r\n        <li>Any variation in scope shall be treated as extra work and charged separately.</li>\r\n        <li>Taxes, duties, and statutory charges shall be applicable as per prevailing regulations.</li>\r\n        <li>Payment shall be made as per mutually agreed payment schedule.</li>\r\n        <li>The contractor shall comply with all applicable safety standards.</li>\r\n        <li>Project completion timeline is subject to timely approvals and site availability.</li>\r\n        <li>Any discrepancy in the BOQ must be reported before execution.</li>\r\n    </ol>', 'Initial version', NULL, '2026-07-24 04:19:34'),
+	('e018dd7c-8716-11f1-b721-52540021303b', 'c3a58f92-6d1e-4b7a-9f0c-3e8d1a2b4c96', 1, '<ol>\r\n        <li>This estimate is based on the information available at the time of preparation.</li>\r\n        <li>Prices are valid for 30 days from the date of issue.</li>\r\n        <li>Final pricing may vary based on actual site conditions and approved drawings.</li>\r\n        <li>Materials are subject to market availability.</li>\r\n        <li>Transportation, taxes, and statutory charges shall be extra unless specified.</li>\r\n        <li>Additional work requested after approval will be charged separately.</li>\r\n        <li>The estimate does not constitute a binding contract until accepted by both parties.</li>\r\n        <li>All disputes shall be subject to the jurisdiction of the project location.</li>\r\n    </ol>', 'Initial version', NULL, '2026-07-24 04:19:34');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.terms_templates
 CREATE TABLE IF NOT EXISTS `terms_templates` (
@@ -3703,7 +7978,13 @@ CREATE TABLE IF NOT EXISTS `terms_templates` (
   CONSTRAINT `fk_terms_template_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.terms_templates: ~3 rows (approximately)
+INSERT INTO `terms_templates` (`id`, `name`, `scope`, `content_html`, `current_version`, `is_default`, `is_active`, `created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`) VALUES
+	('4367e34a-b337-11f1-b327-52540021303b', 'Standard Work Order Terms & Conditions', 'GLOBAL', '<h3>1. Scope of Work</h3>\r\n<p>The contractor shall execute the work described in this Work Order strictly in accordance with the approved drawings, specifications, BOQ, scope of work and instructions issued by Rippotai Architecture.</p>\r\n\r\n<h3>2. Workmanship & Quality</h3>\r\n<p>All work shall be carried out using good quality materials and workmanship in accordance with approved specifications and applicable standards. Any defective or unacceptable work shall be rectified by the contractor at their own cost.</p>\r\n\r\n<h3>3. Site Coordination</h3>\r\n<p>The contractor shall coordinate with the project team, site supervisor, consultants and other agencies working at the project site and shall ensure that their activities do not unnecessarily interfere with other works.</p>\r\n\r\n<h3>4. Programme & Completion</h3>\r\n<p>The contractor shall complete the work within the agreed completion period. Any anticipated delay shall be immediately communicated to the project team along with the reason and proposed recovery plan.</p>\r\n\r\n<h3>5. Safety</h3>\r\n<p>The contractor shall be responsible for maintaining safe working practices at site and shall provide appropriate safety equipment to their workers. The contractor shall comply with all applicable site safety requirements.</p>\r\n\r\n<h3>6. Labour</h3>\r\n<p>The contractor shall be responsible for the deployment, supervision and conduct of their labour and workforce. All statutory requirements relating to their workers shall be complied with by the contractor.</p>\r\n\r\n<h3>7. Materials</h3>\r\n<p>Materials supplied by the contractor shall conform to the approved specifications. No substitution of specified materials shall be made without prior written approval from the authorised project representative.</p>\r\n\r\n<h3>8. Measurement</h3>\r\n<p>Measurements shall be recorded and verified jointly wherever applicable. Payment shall be based on approved quantities, agreed rates and the applicable terms of this Work Order.</p>\r\n\r\n<h3>9. Payment</h3>\r\n<p>Payments shall be released according to the approved payment stages and subject to satisfactory completion of the relevant work, measurement verification and submission of required documents.</p>\r\n\r\n<h3>10. Defects & Rectification</h3>\r\n<p>The contractor shall rectify defects, damages or incomplete work attributable to their execution within the period specified by the project team without additional cost.</p>\r\n\r\n<h3>11. Housekeeping</h3>\r\n<p>The contractor shall maintain proper housekeeping in their work area and shall remove construction debris, waste and surplus materials as directed by the project team.</p>\r\n\r\n<h3>12. Damage to Property</h3>\r\n<p>Any damage caused to the project property, finished work, fixtures, equipment or third-party property due to the contractor or their workforce shall be repaired or compensated by the contractor.</p>\r\n\r\n<h3>13. Drawings & Instructions</h3>\r\n<p>The contractor shall execute the work based on the latest approved drawings and written instructions. The contractor shall immediately report any discrepancy or ambiguity before proceeding with the affected work.</p>\r\n\r\n<h3>14. Variations</h3>\r\n<p>No additional work or variation shall be undertaken without prior approval from the authorised representative of Rippotai Architecture. Approved variations shall be documented and valued separately where applicable.</p>\r\n\r\n<h3>15. Subcontracting</h3>\r\n<p>The contractor shall not subcontract the whole or substantial part of the assigned work without prior written approval.</p>\r\n\r\n<h3>16. Compliance</h3>\r\n<p>The contractor shall comply with applicable laws, regulations, labour requirements, safety requirements and project-specific rules.</p>\r\n\r\n<h3>17. Cancellation</h3>\r\n<p>Rippotai Architecture may suspend or cancel the Work Order in case of material breach, persistent delay, poor workmanship, non-compliance or other circumstances permitted under the agreed commercial terms.</p>\r\n\r\n<h3>18. Final Handover</h3>\r\n<p>The contractor shall complete all pending works, rectifications, cleaning and documentation required for final handover before the work is considered complete.</p>\r\n\r\n<h3>19. Acceptance</h3>\r\n<p>Commencement of work against this Work Order shall constitute acceptance of the scope, rates, programme and applicable terms unless objections are raised in writing before commencement.</p>', 1, 1, 1, NULL, NULL, '2026-09-18 08:02:16', '2026-09-18 08:02:16', NULL),
+	('7e21b4d0-1a9c-4f6b-8e3d-2c5f9a0b6d84', 'Default BOQ Terms & Conditions', 'BOQ', '<ol>\r\n        <li>All quantities are approximate and subject to site verification.</li>\r\n        <li>Rates include labour, material, tools, and equipment unless otherwise specified.</li>\r\n        <li>Any variation in scope shall be treated as extra work and charged separately.</li>\r\n        <li>Taxes, duties, and statutory charges shall be applicable as per prevailing regulations.</li>\r\n        <li>Payment shall be made as per mutually agreed payment schedule.</li>\r\n        <li>The contractor shall comply with all applicable safety standards.</li>\r\n        <li>Project completion timeline is subject to timely approvals and site availability.</li>\r\n        <li>Any discrepancy in the BOQ must be reported before execution.</li>\r\n    </ol>', 1, 1, 1, NULL, NULL, '2026-07-24 04:19:26', '2026-08-31 12:16:40', '2026-08-31 12:16:40'),
+	('83e538b3-9a0b-11f1-99c8-52540021303b', 'Payment Schedule Terms', 'PLAN_OF_ACTION', '<h3>1. Basis of this schedule</h3>\\n<p>This Payment Schedule is to be read together with the Plan of Action and the signed Agreement for the project.<br />Where a percentage is stated, it is of the total contract value recorded above and is exclusive of GST, variations and client-supplied items.</p>\\n\\n<h3>2. Release before mobilisation</h3>\\n<p>Each milestone falls due before the corresponding phase is mobilised at site. In line with the Plan of Action,<br />mobilisation of the next phase is subject to the corresponding milestone payment being cleared.</p>\\n\\n<h3>3. Invoicing and due date</h3>\\n<p>Every milestone will be intimated in writing with a stage note and an invoice. Payment is due within three working<br />days of the invoice date. Work already in progress continues uninterrupted only against timely release.</p>\\n\\n<h3>4. Mode of payment</h3>\\n<p>All payments are to be made by NEFT, RTGS or cheque in favour of the Rippotai account printed on the invoice.<br />Cash payments, and payments made directly to any worker, supervisor or vendor at site, will not be recognised<br />against this contract.</p>\\n\\n<h3>5. Taxes</h3>\\n<p>All figures are exclusive of GST. GST and any other statutory levy will be charged additionally at the rate prevailing<br />on the date of invoice.</p>\\n\\n<h3>6. Mobilisation advance</h3>\\n<p>The booking and mobilisation amount is non-refundable and is adjusted against the final milestone.<br />Site mobilisation begins only after it is received in full.</p>\\n\\n<h3>7. Delay in release</h3>\\n<p>If a payment is delayed beyond seven days from its due date, work at site may be paused.<br />The timeline will stand extended day for day, together with three days for remobilisation,<br />and the revised handover date will be intimated in writing.</p>\\n\\n<h3>8. Interest on overdue amounts</h3>\\n<p>Any amount outstanding beyond fifteen days from its due date will attract interest at 1.5% per month<br />on the overdue amount until cleared.</p>\\n\\n<h3>9. Variations in scope</h3>\\n<p>Any change in layout, specification or scope after a phase has commenced is a variation.<br />Its cost and time implication will be shared in writing and, once approved, is billed at 100% in advance<br />of procurement. Variations do not form part of the percentages set out above.</p>\\n\\n<h3>10. Client-supplied items</h3>\\n<p>Items procured directly by the Client are to reach site as per the agreed schedule.<br />Delay, shortfall or damage in such items is not attributable to Rippotai and does not affect<br />a milestone that has already been achieved.</p>\\n\\n<h3>11. Retention and snag closure</h3>\\n<p>The final 5% is retained until the snag list has been jointly signed off, the premises deep cleaned,<br />and keys, warranty cards, appliance manuals and as-built service drawings handed over.</p>\\n\\n<h3>12. Title of materials</h3>\\n<p>Ownership of material delivered at site passes to the Client only on full payment of the corresponding milestone.</p>\\n\\n<h3>13. Suspension by the Client</h3>\\n<p>If works are suspended by the Client for more than thirty days, all milestones achieved till that date become<br />immediately payable, along with the cost of material already procured, fabricated or stored for the project.</p>\\n\\n<h3>14. Post-handover defects</h3>\\n<p>Issues reported after handover fall under the defect liability terms of the signed Agreement<br />and not under the snagging milestone of this schedule.</p>\\n\\n<h3>15. Circumstances beyond control</h3>\\n<p>Statutory construction restrictions, labour strikes, extreme weather, transport disruption and unavailability<br />of specified material are beyond our control. Timelines extend proportionately, with prior intimation;<br />milestones already achieved remain payable.</p>\\n\\n<h3>16. Jurisdiction</h3>\\n<p>Any dispute will first be attempted to be settled amicably between the parties, failing which it will be<br />subject to the exclusive jurisdiction of the courts at Delhi.</p>\\n\\n<p>The Client confirms having read and accepted the milestones, percentages and terms set out in this schedule,<br />which forms an integral part of the Plan of Action and the signed Agreement for this project.</p>', 2, 1, 1, NULL, NULL, '2026-08-17 07:16:07', '2026-09-29 09:54:05', NULL),
+	('9f8c2a10-4b3e-4c7a-9d21-6a1f0c3e5b71', 'Standard Plan of Action Terms & Conditions', 'PLAN_OF_ACTION', '<h2>Terms & Conditions</h2>\r\n<p>This Plan of Action is prepared based on the agreed project scope, execution sequence, estimated durations, and project requirements.</p>\r\n\r\n<h3>1. Execution Schedule</h3>\r\n<p>The execution schedule and phase durations mentioned in this Plan of Action are indicative and may be adjusted based on site conditions, material availability, approvals, dependencies, and other project requirements.</p>\r\n\r\n<h3>2. Phase Dependencies</h3>\r\n<p>Individual phases may run sequentially or in parallel depending on site conditions, availability of resources, material selections, approvals, and execution requirements.</p>\r\n\r\n<h3>3. Material Selection & Approvals</h3>\r\n<p>Timely selection and approval of materials, finishes, drawings, samples, and other project requirements are necessary to maintain the proposed execution schedule.</p>\r\n\r\n<h3>4. Site Conditions</h3>\r\n<p>Actual execution timelines may vary due to existing site conditions, unforeseen circumstances, access restrictions, statutory requirements, weather conditions, or other factors beyond the reasonable control of the project team.</p>\r\n\r\n<h3>5. Client Responsibilities</h3>\r\n<p>The client shall provide timely approvals, decisions, access, information, and other requirements necessary for the execution of the works.</p>\r\n\r\n<h3>6. Changes & Variations</h3>\r\n<p>Any changes to the approved scope, design, materials, specifications, or execution requirements may affect the project schedule and shall be evaluated accordingly.</p>\r\n\r\n<h3>7. Schedule Validity</h3>\r\n<p>The durations shown in the Plan of Action represent the current planned execution schedule and may be revised as the project progresses.</p>\r\n\r\n<h3>8. General</h3>\r\n<p>This Plan of Action should be read together with the applicable project documents, approved drawings, specifications, quotations, estimates, and other agreed project documentation.</p>', 1, 1, 1, NULL, NULL, '2026-08-14 07:38:22', '2026-08-14 08:06:58', NULL),
+	('c3a58f92-6d1e-4b7a-9f0c-3e8d1a2b4c96', 'Default Estimate Terms & Conditions', 'ESTIMATE', '<ol>\r\n        <li>This estimate is based on the information available at the time of preparation.</li>\r\n        <li>Prices are valid for 30 days from the date of issue.</li>\r\n        <li>Final pricing may vary based on actual site conditions and approved drawings.</li>\r\n        <li>Materials are subject to market availability.</li>\r\n        <li>Transportation, taxes, and statutory charges shall be extra unless specified.</li>\r\n        <li>Additional work requested after approval will be charged separately.</li>\r\n        <li>The estimate does not constitute a binding contract until accepted by both parties.</li>\r\n        <li>All disputes shall be subject to the jurisdiction of the project location.</li>\r\n    </ol>', 1, 1, 1, NULL, NULL, '2026-07-24 04:19:26', '2026-08-31 12:16:44', '2026-08-31 12:16:44');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.units
 CREATE TABLE IF NOT EXISTS `units` (
@@ -3718,7 +7999,28 @@ CREATE TABLE IF NOT EXISTS `units` (
   UNIQUE KEY `uk_units_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.units: ~20 rows (approximately)
+INSERT INTO `units` (`id`, `name`, `code`, `description`, `is_active`, `created_at`, `updated_at`) VALUES
+	('0bde830f-194e-4ff2-90ef-76a9b7c9435b', 'Pascal', 'ps', NULL, 1, '2026-07-20 11:44:48', '2026-07-20 11:44:48'),
+	('1a520798-e982-463d-a969-6646c24d2be0', 'Cubic Feet', 'CFT.', NULL, 1, '2026-07-23 11:34:07', '2026-07-23 11:34:07'),
+	('328f54cc-e46f-4c9f-a8ea-04a4376bd563', 'CBM', 'CBM', NULL, 1, '2026-07-23 10:49:04', '2026-07-23 10:49:04'),
+	('bb27df14-910d-4f81-a663-006a2d254c0f', 'Lumsum', 'L.S', NULL, 1, '2026-07-23 11:41:34', '2026-07-23 11:41:34'),
+	('bd2e16ef-6e09-40b3-b9cc-d304d9ac4f1a', 'MT', 'MT', NULL, 1, '2026-07-23 11:38:21', '2026-07-23 11:38:21'),
+	('c7409da9-746e-11f1-8bb6-52540021303b', 'Number', 'Nos', 'Pieces / Countable items', 1, '2026-06-30 10:30:56', '2026-06-30 10:30:56'),
+	('c740a20b-746e-11f1-8bb6-52540021303b', 'Kilogram', 'Kg', 'Weight measurement', 1, '2026-06-30 10:30:56', '2026-06-30 10:30:56'),
+	('c740a386-746e-11f1-8bb6-52540021303b', 'Gram', 'Gm', 'Small weight unit', 1, '2026-06-30 10:30:56', '2026-06-30 10:30:56'),
+	('c740a403-746e-11f1-8bb6-52540021303b', 'Meter', 'Mtr', 'Length measurement', 1, '2026-06-30 10:30:56', '2026-06-30 10:30:56'),
+	('c740a478-746e-11f1-8bb6-52540021303b', 'Square Meter', 'SqM', 'Area measurement', 1, '2026-06-30 10:30:56', '2026-06-30 10:30:56'),
+	('c740a4fb-746e-11f1-8bb6-52540021303b', 'Cubic Meter', 'CuM', 'Volume measurement', 1, '2026-06-30 10:30:56', '2026-06-30 10:30:56'),
+	('c740a56d-746e-11f1-8bb6-52540021303b', 'Liter', 'Ltr', 'Liquid volume', 1, '2026-06-30 10:30:56', '2026-06-30 10:30:56'),
+	('c740a5d1-746e-11f1-8bb6-52540021303b', 'Feet', 'Ft', 'Imperial length unit', 1, '2026-06-30 10:30:56', '2026-06-30 10:30:56'),
+	('c740a643-746e-11f1-8bb6-52540021303b', 'Hour', 'Hr', 'Time-based work unit', 1, '2026-06-30 10:30:56', '2026-06-30 10:30:56'),
+	('c740a6a9-746e-11f1-8bb6-52540021303b', 'Day', 'Day', 'Daily labour/work unit', 1, '2026-06-30 10:30:56', '2026-06-30 10:30:56'),
+	('c740a70d-746e-11f1-8bb6-52540021303b', 'Kilometer', 'Km', 'Long distance measurement', 1, '2026-06-30 10:30:56', '2026-06-30 10:30:56'),
+	('c740a76c-746e-11f1-8bb6-52540021303b', 'Bundle', 'Bdl', 'Grouped items', 1, '2026-06-30 10:30:56', '2026-06-30 10:30:56'),
+	('c740a7cc-746e-11f1-8bb6-52540021303b', 'Box', 'Box', 'Packaged items', 1, '2026-06-30 10:30:56', '2026-06-30 10:30:56'),
+	('c740a828-746e-11f1-8bb6-52540021303b', 'Bag', 'Bag', 'Material packaging unit', 1, '2026-06-30 10:30:56', '2026-06-30 10:30:56'),
+	('cf4d3bfc-fdaa-4a30-934b-1654b1bcbaad', 'Square feet', 'SQFT', NULL, 1, '2026-07-23 11:01:01', '2026-07-23 11:01:01');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.user_dashboard_layouts
 CREATE TABLE IF NOT EXISTS `user_dashboard_layouts` (
@@ -3732,7 +8034,20 @@ CREATE TABLE IF NOT EXISTS `user_dashboard_layouts` (
   CONSTRAINT `fk_dashboard_layout_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.user_dashboard_layouts: ~9 rows (approximately)
+INSERT INTO `user_dashboard_layouts` (`user_id`, `app_key`, `layout`, `hidden_keys`, `created_at`, `updated_at`) VALUES
+	('d739bccb-7123-11f1-8bb6-52540021303b', 'adminConsole', '[{"h": 2, "w": 3, "x": 0, "y": 0, "key": "adminConsole.active_projects"}, {"h": 2, "w": 3, "x": 3, "y": 0, "key": "adminConsole.open_leads"}, {"h": 2, "w": 3, "x": 6, "y": 0, "key": "adminConsole.pending_approvals"}, {"h": 2, "w": 3, "x": 9, "y": 0, "key": "adminConsole.team_members"}, {"h": 4, "w": 6, "x": 0, "y": 2, "key": "adminConsole.projects_list"}, {"h": 4, "w": 6, "x": 6, "y": 2, "key": "adminConsole.lead_pipeline"}, {"h": 3, "w": 6, "x": 0, "y": 6, "key": "adminConsole.approvals_list"}, {"h": 3, "w": 6, "x": 6, "y": 6, "key": "adminConsole.recent_activity"}, {"h": 3, "w": 6, "x": 0, "y": 9, "key": "adminConsole.workflow_snapshot"}, {"h": 3, "w": 6, "x": 6, "y": 9, "key": "adminConsole.team_list"}]', '[]', '2026-09-22 04:30:57', '2026-09-22 04:31:13'),
+	('d739bccb-7123-11f1-8bb6-52540021303b', 'boq', '[{"h": 2, "w": 3, "x": 0, "y": 0, "key": "boq.total_boqs"}, {"h": 2, "w": 3, "x": 3, "y": 0, "key": "boq.draft_boqs"}, {"h": 4, "w": 6, "x": 6, "y": 2, "key": "boq.status_donut"}, {"h": 4, "w": 6, "x": 0, "y": 2, "key": "boq.project_wise"}, {"h": 3, "w": 6, "x": 0, "y": 6, "key": "boq.recently_edited"}, {"h": 3, "w": 6, "x": 6, "y": 6, "key": "boq.attention_items"}, {"h": 3, "w": 6, "x": 0, "y": 9, "key": "boq.monthly_volume"}, {"h": 2, "w": 3, "x": 9, "y": 0, "key": "boq.value_summary"}, {"h": 3, "w": 6, "x": 6, "y": 9, "key": "boq.version_activity"}, {"h": 2, "w": 3, "x": 6, "y": 0, "key": "boq.approved_boqs"}]', '["boq.awaiting_approval", "boq.value_trend", "boq.quick_create"]', '2026-07-17 09:41:46', '2026-07-21 06:39:23'),
+	('d739bccb-7123-11f1-8bb6-52540021303b', 'crm', '[{"h": 2, "w": 3, "x": 0, "y": 0, "key": "crm.total_leads"}, {"h": 2, "w": 3, "x": 3, "y": 0, "key": "crm.active_projects"}, {"h": 2, "w": 3, "x": 6, "y": 0, "key": "crm.active_plans"}, {"h": 2, "w": 3, "x": 9, "y": 0, "key": "crm.payable_amount"}, {"h": 2, "w": 3, "x": 0, "y": 2, "key": "crm.project_briefs"}, {"h": 2, "w": 3, "x": 3, "y": 2, "key": "crm.site_recce"}, {"h": 4, "w": 3, "x": 6, "y": 2, "key": "crm.plans_of_action"}, {"h": 2, "w": 3, "x": 9, "y": 2, "key": "crm.scope_of_work"}, {"h": 4, "w": 6, "x": 0, "y": 4, "key": "crm.leads_breakdown"}, {"h": 2, "w": 3, "x": 9, "y": 4, "key": "crm.payment_schedules"}, {"h": 4, "w": 6, "x": 6, "y": 6, "key": "crm.projects_breakdown"}, {"h": 3, "w": 6, "x": 0, "y": 8, "key": "crm.upcoming_deadlines"}, {"h": 3, "w": 6, "x": 6, "y": 10, "key": "crm.recent_activity"}]', '[]', '2026-09-22 04:08:46', '2026-10-05 10:41:11'),
+	('d739bccb-7123-11f1-8bb6-52540021303b', 'design_studio', '[{"h": 2, "w": 3, "x": 0, "y": 0, "key": "design_studio.active_projects"}, {"h": 2, "w": 3, "x": 3, "y": 0, "key": "design_studio.design_tasks"}, {"h": 2, "w": 3, "x": 6, "y": 0, "key": "design_studio.pending_approvals"}, {"h": 2, "w": 3, "x": 9, "y": 0, "key": "design_studio.team_utilization"}, {"h": 4, "w": 6, "x": 0, "y": 2, "key": "design_studio.projects_list"}, {"h": 4, "w": 6, "x": 6, "y": 2, "key": "design_studio.pipeline_stages"}, {"h": 3, "w": 6, "x": 0, "y": 6, "key": "design_studio.approvals_list"}, {"h": 3, "w": 6, "x": 6, "y": 6, "key": "design_studio.recent_activity"}, {"h": 3, "w": 6, "x": 0, "y": 9, "key": "design_studio.tasks_list"}, {"h": 3, "w": 6, "x": 6, "y": 9, "key": "design_studio.upcoming_deadlines"}, {"h": 3, "w": 6, "x": 0, "y": 12, "key": "design_studio.team_workload"}]', '[]', '2026-09-22 05:27:09', '2026-09-22 05:27:28'),
+	('d739bccb-7123-11f1-8bb6-52540021303b', 'inventory', '[{"h": 2, "w": 3, "x": 0, "y": 0, "key": "inventory.total"}, {"h": 2, "w": 3, "x": 3, "y": 0, "key": "inventory.received"}, {"h": 2, "w": 3, "x": 6, "y": 0, "key": "inventory.issued"}, {"h": 2, "w": 3, "x": 9, "y": 0, "key": "inventory.low_stock"}, {"h": 4, "w": 6, "x": 0, "y": 2, "key": "inventory.movement_trend"}, {"h": 4, "w": 3, "x": 6, "y": 2, "key": "inventory.transactions_summary"}, {"h": 4, "w": 3, "x": 9, "y": 2, "key": "inventory.stock_mix"}, {"h": 4, "w": 12, "x": 0, "y": 6, "key": "inventory.site_wise"}, {"h": 3, "w": 6, "x": 0, "y": 10, "key": "inventory.category_wise"}, {"h": 3, "w": 6, "x": 6, "y": 10, "key": "inventory.low_stock_list"}, {"h": 3, "w": 6, "x": 0, "y": 13, "key": "inventory.recent_transactions"}, {"h": 3, "w": 4, "x": 6, "y": 13, "key": "inventory.performance"}, {"h": 3, "w": 6, "x": 0, "y": 16, "key": "inventory.by_category"}, {"h": 3, "w": 6, "x": 6, "y": 16, "key": "inventory.site_bar"}, {"h": 3, "w": 6, "x": 0, "y": 19, "key": "inventory.category_bar"}, {"h": 3, "w": 6, "x": 6, "y": 19, "key": "inventory.recently_added"}]', '[]', '2026-09-22 04:48:13', '2026-10-05 09:10:30'),
+	('d739bccb-7123-11f1-8bb6-52540021303b', 'leads', '[{"h": 3, "w": 12, "x": 0, "y": 0, "key": "leads.kpi_row"}, {"h": 4, "w": 6, "x": 0, "y": 3, "key": "leads.by_source"}, {"h": 3, "w": 6, "x": 6, "y": 3, "key": "leads.conversion_stage"}]', '["leads.avg_time_stage", "leads.stuck"]', '2026-07-21 06:57:18', '2026-07-22 07:23:07'),
+	('d739bccb-7123-11f1-8bb6-52540021303b', 'ledger', '[{"h": 2, "w": 3, "x": 0, "y": 0, "key": "ledger.total_contract_value"}, {"h": 2, "w": 3, "x": 3, "y": 0, "key": "ledger.total_payable"}, {"h": 2, "w": 3, "x": 6, "y": 0, "key": "ledger.total_collected"}, {"h": 2, "w": 3, "x": 9, "y": 0, "key": "ledger.outstanding"}, {"h": 4, "w": 6, "x": 0, "y": 4, "key": "ledger.payment_schedules"}, {"h": 4, "w": 6, "x": 6, "y": 4, "key": "ledger.overdue_payments"}, {"h": 3, "w": 6, "x": 0, "y": 8, "key": "ledger.upcoming_payments"}, {"h": 3, "w": 6, "x": 6, "y": 8, "key": "ledger.recent_activity"}, {"h": 2, "w": 3, "x": 0, "y": 2, "key": "ledger.active_schedules"}, {"h": 2, "w": 3, "x": 3, "y": 2, "key": "ledger.pending_milestones"}, {"h": 2, "w": 3, "x": 6, "y": 2, "key": "ledger.completed_schedules"}, {"h": 2, "w": 3, "x": 9, "y": 2, "key": "ledger.collection_rate"}, {"h": 3, "w": 6, "x": 0, "y": 11, "key": "ledger.recent_payments"}]', '[]', '2026-09-22 04:09:22', '2026-09-22 04:09:52'),
+	('d739bccb-7123-11f1-8bb6-52540021303b', 'procurement', '[{"h": 2, "w": 3, "x": 0, "y": 0, "key": "procurement.total_procurement"}, {"h": 2, "w": 3, "x": 3, "y": 0, "key": "procurement.low_stock"}, {"h": 2, "w": 3, "x": 6, "y": 0, "key": "procurement.pending_requests"}, {"h": 2, "w": 3, "x": 9, "y": 0, "key": "procurement.active_purchase_orders"}, {"h": 2, "w": 3, "x": 0, "y": 2, "key": "procurement.stock_value"}, {"h": 2, "w": 3, "x": 3, "y": 2, "key": "procurement.out_of_stock"}, {"h": 6, "w": 6, "x": 6, "y": 2, "key": "procurement.recent_movements"}, {"h": 4, "w": 6, "x": 0, "y": 4, "key": "procurement.category_wise"}, {"h": 3, "w": 6, "x": 0, "y": 8, "key": "procurement.requests_list"}, {"h": 4, "w": 6, "x": 6, "y": 8, "key": "procurement.low_stock_list"}, {"h": 5, "w": 6, "x": 0, "y": 11, "key": "procurement.purchase_orders_list"}, {"h": 4, "w": 6, "x": 6, "y": 12, "key": "procurement.recent_activity"}]', '["procurement.pending_grn", "procurement.outward_today", "procurement.inward_today"]', '2026-09-22 04:23:09', '2026-10-06 07:37:59'),
+	('d739bccb-7123-11f1-8bb6-52540021303b', 'projects', '[{"h": 2, "w": 2, "x": 0, "y": 0, "key": "projects.total"}, {"h": 2, "w": 2, "x": 2, "y": 0, "key": "projects.active"}, {"h": 2, "w": 2, "x": 4, "y": 0, "key": "projects.on_time"}, {"h": 2, "w": 2, "x": 8, "y": 0, "key": "projects.at_risk"}, {"h": 2, "w": 2, "x": 10, "y": 0, "key": "projects.delayed"}, {"h": 4, "w": 3, "x": 6, "y": 6, "key": "projects.progress_trend"}, {"h": 4, "w": 12, "x": 0, "y": 2, "key": "projects.project_wise_progress"}, {"h": 4, "w": 3, "x": 0, "y": 6, "key": "projects.upcoming_milestones"}, {"h": 4, "w": 3, "x": 9, "y": 6, "key": "projects.current_phases"}, {"h": 2, "w": 2, "x": 6, "y": 0, "key": "projects.pending_work"}, {"h": 4, "w": 3, "x": 3, "y": 6, "key": "projects.handover_readiness"}, {"h": 5, "w": 12, "x": 0, "y": 10, "key": "projects.recent_activity"}]', '["projects.variance_bar", "projects.phase_donut"]', '2026-07-19 08:16:54', '2026-09-21 10:19:31'),
+	('d739bccb-7123-11f1-8bb6-52540021303b', 'quotations', '[{"h": 2, "w": 2, "x": 0, "y": 3, "key": "quot.total"}, {"h": 2, "w": 3, "x": 6, "y": 0, "key": "quot.awaiting_approval"}, {"h": 3, "w": 2, "x": 4, "y": 0, "key": "quot.drafts"}, {"h": 2, "w": 3, "x": 9, "y": 0, "key": "quot.boq_variation"}, {"h": 2, "w": 4, "x": 2, "y": 3, "key": "quot.value_trend"}, {"h": 3, "w": 4, "x": 0, "y": 0, "key": "quot.status_donut"}, {"h": 3, "w": 6, "x": 0, "y": 5, "key": "quot.project_wise"}, {"h": 3, "w": 6, "x": 0, "y": 8, "key": "quot.recently_received"}, {"h": 4, "w": 6, "x": 6, "y": 5, "key": "quot.expiring_soon"}, {"h": 3, "w": 6, "x": 0, "y": 11, "key": "quot.selected"}, {"h": 3, "w": 6, "x": 6, "y": 2, "key": "quot.variance_bar"}, {"h": 3, "w": 6, "x": 6, "y": 12, "key": "quot.recent_comparisons"}, {"h": 3, "w": 6, "x": 6, "y": 9, "key": "quot.returned"}]', '[]', '2026-07-19 08:17:43', '2026-07-22 04:58:20'),
+	('d739bccb-7123-11f1-8bb6-52540021303b', 'siteOperations', '[{"h": 2, "w": 3, "x": 0, "y": 0, "key": "siteops.today_report"}, {"h": 2, "w": 3, "x": 3, "y": 0, "key": "siteops.open_rfis"}, {"h": 2, "w": 3, "x": 6, "y": 0, "key": "siteops.handoff_blocked"}, {"h": 2, "w": 3, "x": 9, "y": 0, "key": "siteops.today_visits"}, {"h": 4, "w": 6, "x": 0, "y": 4, "key": "siteops.recent_reports"}, {"h": 4, "w": 6, "x": 6, "y": 4, "key": "siteops.rfi_queue"}, {"h": 3, "w": 6, "x": 0, "y": 8, "key": "siteops.recent_visits"}, {"h": 3, "w": 6, "x": 6, "y": 8, "key": "siteops.recent_activity"}, {"h": 2, "w": 3, "x": 0, "y": 2, "key": "siteops.qc_pass_rate"}, {"h": 2, "w": 3, "x": 3, "y": 2, "key": "siteops.failed_qc"}, {"h": 2, "w": 3, "x": 6, "y": 2, "key": "siteops.pending_mockups"}, {"h": 2, "w": 3, "x": 9, "y": 2, "key": "siteops.total_reports"}, {"h": 3, "w": 6, "x": 0, "y": 11, "key": "siteops.mockup_approvals"}]', '[]', '2026-09-22 04:10:32', '2026-09-22 04:10:32'),
+	('d739bccb-7123-11f1-8bb6-52540021303b', 'vendors', '[{"h": 2, "w": 3, "x": 0, "y": 0, "key": "vendors.total"}, {"h": 2, "w": 3, "x": 3, "y": 0, "key": "vendors.verified"}, {"h": 2, "w": 3, "x": 6, "y": 0, "key": "vendors.available"}, {"h": 2, "w": 3, "x": 9, "y": 2, "key": "vendors.attention"}, {"h": 4, "w": 6, "x": 0, "y": 2, "key": "vendors.onboarding_trend"}, {"h": 2, "w": 3, "x": 6, "y": 2, "key": "vendors.availability_donut"}, {"h": 4, "w": 6, "x": 0, "y": 6, "key": "vendors.project_wise"}, {"h": 3, "w": 6, "x": 6, "y": 10, "key": "vendors.recently_added"}, {"h": 3, "w": 6, "x": 6, "y": 4, "key": "vendors.performance"}, {"h": 3, "w": 6, "x": 0, "y": 10, "key": "vendors.category_bar"}, {"h": 3, "w": 6, "x": 6, "y": 7, "key": "vendors.category_wise"}, {"h": 2, "w": 3, "x": 9, "y": 0, "key": "vendors.expiring_docs"}]', '[]', '2026-07-17 10:13:30', '2026-07-20 09:12:12');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.user_signatures
 CREATE TABLE IF NOT EXISTS `user_signatures` (
@@ -3754,7 +8069,9 @@ CREATE TABLE IF NOT EXISTS `user_signatures` (
   CONSTRAINT `fk_signature_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.user_signatures: ~1 rows (approximately)
+INSERT INTO `user_signatures` (`id`, `user_id`, `signature_url`, `signature_file_name`, `signature_file_type`, `signature_file_size`, `is_active`, `created_by`, `created_at`, `updated_at`) VALUES
+	('fa163cb0-ccac-4b8c-bfa6-697f5c8ec02f', 'd739bccb-7123-11f1-8bb6-52540021303b', 'https://media-buildcon.rippotaiarchitecture.com/d739bccb-7123-11f1-8bb6-52540021303b-signature-b32fc999-7b5d-4bac-997f-e970de229048.png', 'ESIGN.png', 'image/png', 6508, 1, 'd739bccb-7123-11f1-8bb6-52540021303b', '2026-07-02 07:12:18', '2026-07-02 07:12:18');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.users
 CREATE TABLE IF NOT EXISTS `users` (
@@ -3780,7 +8097,23 @@ CREATE TABLE IF NOT EXISTS `users` (
   CONSTRAINT `users_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.users: ~13 rows (approximately)
+INSERT INTO `users` (`id`, `name`, `email`, `password_hash`, `phone`, `job_title`, `avatar_url`, `role_id`, `is_active`, `last_login_at`, `created_by`, `created_at`, `updated_at`) VALUES
+	('0ffc53c1-7213-11f1-8bb6-52540021303b', 'Bhav Lamba', 'bhav.lamba@rocklime.com', '$2a$10$iXK7Q2E.Lleb1PT3dnpFTuPqGTtZUTrN.mteY3hkkM3/5RWzjIQ9m', NULL, NULL, NULL, '90e34b7b-7123-11f1-8bb6-52540021303b', 1, '2026-09-28 07:42:07', NULL, '2026-06-27 10:29:22', '2026-09-28 07:42:07'),
+	('21252981-f16a-4c36-a445-f3bf76d88b06', 'Dhairya Soni', 'dhairya.soni@rippotai.in', '$2b$10$8ZNuYcF2fYkKQSMEaeS65uLXZvf6i2EXHPX7l43.yvhS9o7K/5h1G', NULL, NULL, NULL, '07115348-84d2-11f1-b721-52540021303b', 1, '2026-10-13 05:28:57', NULL, '2026-10-12 12:00:04', '2026-10-13 05:28:57'),
+	('27d1ec8a-9748-474f-96ec-be0642297ee8', 'Priya Galhotra', 'admin@chhabramarble.com', '$2b$10$phi4NanXT0.LfGOiGMzdy.sJ4nva1R/W9kffUx9e.9IjuCsBEWDmO', NULL, NULL, NULL, '90e34b7b-7123-11f1-8bb6-52540021303b', 1, '2026-09-02 12:57:13', NULL, '2026-07-25 06:03:44', '2026-09-02 12:57:13'),
+	('32d56044-b003-11f1-b327-52540021303b', 'Amit Sharma', 'amit.sharma@rippotai.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '+91 9876543210', 'Site Engineer', NULL, 'f2571d79-a047-11f1-99c8-52540021303b', 1, NULL, NULL, '2026-09-14 06:12:00', '2026-09-14 06:12:00'),
+	('32d6394c-b003-11f1-b327-52540021303b', 'Rahul Kumar', 'rahul.kumar@rippotai.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '+91 9876543211', 'Site Engineer', NULL, 'f2571d79-a047-11f1-99c8-52540021303b', 1, NULL, NULL, '2026-09-14 06:12:00', '2026-09-14 06:12:00'),
+	('32d63dfa-b003-11f1-b327-52540021303b', 'Vikas Singh', 'vikas.singh@rippotai.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '+91 9876543212', 'Senior Site Engineer', NULL, 'f2571d79-a047-11f1-99c8-52540021303b', 1, NULL, NULL, '2026-09-14 06:12:00', '2026-09-14 06:12:00'),
+	('32d63ff2-b003-11f1-b327-52540021303b', 'Neeraj Verma', 'neeraj.verma@rippotai.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '+91 9876543213', 'Site Engineer', NULL, 'f2571d79-a047-11f1-99c8-52540021303b', 1, NULL, NULL, '2026-09-14 06:12:00', '2026-09-14 06:12:00'),
+	('32d641d0-b003-11f1-b327-52540021303b', 'Arjun Mehta', 'arjun.mehta@rippotai.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '+91 9876543214', 'Site Engineer', NULL, 'f2571d79-a047-11f1-99c8-52540021303b', 1, NULL, NULL, '2026-09-14 06:12:00', '2026-09-14 06:12:00'),
+	('9034b40f-08a6-4e04-a402-fe7397b29717', 'Sarthi', 'sarthi.jangra@rippotai.in', '$2b$10$fqmwMaEthAU72VzD4f7a9.JKGkAzbERoaevAW.lfTFDGrSDijiXQu', NULL, NULL, NULL, '070dd7b5-84d2-11f1-b721-52540021303b', 1, '2026-10-13 05:15:18', NULL, '2026-10-13 05:07:48', '2026-10-13 05:15:18'),
+	('93e0fd29-bd4f-11f1-a7ce-52540021303b', 'Ananya Kapoor', 'ananya.kapoor@rippotai.com', '$2b$10$1R2242MHsuW8QJvGgxfYQua/EUjNKFlx9xZ24pxVzIF.Y3gpbeyEC', '+91 9876543220', 'Principal Architect', NULL, '89fd2332-97b2-11f1-9d65-52540021303b', 1, '2026-10-10 11:39:33', NULL, '2026-10-01 04:21:30', '2026-10-10 11:39:33'),
+	('93e148fa-bd4f-11f1-a7ce-52540021303b', 'Rohan Malhotra', 'rohan.malhotra@rippotai.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '+91 9876543221', 'Senior Architect', NULL, '070dd7b5-84d2-11f1-b721-52540021303b', 1, NULL, NULL, '2026-10-01 04:21:30', '2026-10-01 04:21:30'),
+	('93e14b93-bd4f-11f1-a7ce-52540021303b', 'Meera Arora', 'meera.arora@rippotai.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '+91 9876543222', 'Junior Architect', NULL, '07114f34-84d2-11f1-b721-52540021303b', 1, NULL, NULL, '2026-10-01 04:21:30', '2026-10-01 04:21:30'),
+	('93e14d43-bd4f-11f1-a7ce-52540021303b', 'Karan Bhatia', 'karan.bhatia@rippotai.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '+91 9876543223', 'Architect', NULL, 'f9704219-b411-11f1-b327-52540021303b', 1, NULL, NULL, '2026-10-01 04:21:30', '2026-10-01 04:21:30'),
+	('99632848-7f08-47b6-b200-ef55c0a4f8ec', 'Nitin Deol', 'ndeol@rocklime.com', '$2b$10$OgkCfYSz.qUrOmbf7i7vduV2s3ypL1yaGHeyzJzyjwBq6X9b0rsgS', '9818564578', 'Social Media Manager', 'https://media-buildcon.rippotaiarchitecture.com/538f2f17-2d78-4ece-9177-df8773e73e11.png', '90de7f01-7123-11f1-8bb6-52540021303b', 1, '2026-10-12 11:48:46', NULL, '2026-09-21 12:45:59', '2026-10-12 11:48:46'),
+	('d739bccb-7123-11f1-8bb6-52540021303b', 'Dhruv Verma', 'dverma@rocklime.com', '$2b$10$/jveRMgFtIooiHNrgdZvD.7K4NfT5KuH1can0qxkaXuHj8DRekFRq', '8278978827', 'SOFTWARE', 'https://media-buildcon.rippotaiarchitecture.com/06d130bb-f60d-49c2-933f-3e6cb4eba278.png', '90e34f44-7123-11f1-8bb6-52540021303b', 1, '2026-10-13 05:11:35', NULL, '2026-06-26 05:56:57', '2026-10-13 05:11:35');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.vendor_business_types
 CREATE TABLE IF NOT EXISTS `vendor_business_types` (
@@ -3795,7 +8128,57 @@ CREATE TABLE IF NOT EXISTS `vendor_business_types` (
   CONSTRAINT `fk_vendor_business_category` FOREIGN KEY (`category_id`) REFERENCES `vendor_categories` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.vendor_business_types: ~48 rows (approximately)
+INSERT INTO `vendor_business_types` (`id`, `category_id`, `name`, `status`, `created_at`, `updated_at`) VALUES
+	('01deb2c1-da81-44a2-b223-37b700803dd7', 'b260aa81-7134-11f1-8bb6-52540021303b', 'cctv camera', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('038225dd-1f0b-48b9-99f7-08d47365c4e1', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Boards', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('04d54824-48e3-45b1-aa24-4f625a94fdb4', 'b260aa81-7134-11f1-8bb6-52540021303b', 'home decor items', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('08efd6d0-7aba-43d0-a16c-a8b416aadfdd', 'b260aa81-7134-11f1-8bb6-52540021303b', 'WPC Door, PVC Sheet, Modular Kitchen Indore Maica Plastiwood & Group', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('09768620-32e2-4ed5-9948-3101023ec746', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Adhesive', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('112b7e09-74b8-4c1b-bde6-e3c860faed23', 'b260aa81-7134-11f1-8bb6-52540021303b', 'SP FITTINGS', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('13d31a93-70ca-45a6-b073-32eb79ee57ca', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Rodi,Dust,Rait,Bricks & Cement', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('15a69e2e-7257-4d6f-9344-b254882c618a', 'b260aff1-7134-11f1-8bb6-52540021303b', 'PLUMBING', 1, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('15a8cb27-f2a0-42c6-b832-34fcd94468ea', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Kajaria And Other Tiles', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('29bc6b4d-40ee-4bda-b3f5-5785793e7aa7', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Elctrical supply', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('2cf55b02-8372-4c1f-ae7c-af13077ffc93', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Fusion of Light and Design', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('2d805721-eb85-45ca-b30d-cbd0dfc6605c', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Paints', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('3c26cb79-6a7d-4290-8065-5d6626d8966f', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Lights', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('40e58e78-6eb9-4fd3-a427-47b62a8d2e49', 'b260aff1-7134-11f1-8bb6-52540021303b', 'POP', 1, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('440237fb-5886-41a6-9943-075e68006357', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Mattress', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('471eb735-1648-4a95-be2e-214d5cec78af', 'b260aff1-7134-11f1-8bb6-52540021303b', 'CCTV', 1, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('491bb6d6-f210-4951-bd31-331456e0f870', 'b260aff1-7134-11f1-8bb6-52540021303b', 'ELECTRICIAN', 1, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('52ec4bd4-6a5b-43d8-bcba-ad47ad02cc1b', 'b260aff1-7134-11f1-8bb6-52540021303b', 'CIVIL', 1, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('530dab08-ff5c-49a0-a35a-f96e1a76f533', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Electrical supply', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('59c2c964-588a-41ab-a7ff-18a216f48371', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Accessories', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('5cd981a7-1d17-4898-b0fc-25139152ea50', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Marble', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('6468bf21-5335-4e9e-a319-447252b043ec', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Tape', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('66c92b56-80c5-43a0-bd8d-e1e42fd64f12', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Plumbing Material', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('6d4f49eb-138f-4ad0-ae24-0578b4025350', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Ceramic Tiles Designer Vanity Besin C.P Fitting Bathroom Fitting', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('6e3347a8-1caa-42db-96be-7b01d0216cf9', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Fire Fighting Gases', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('73862e3a-c354-496a-8761-19b952688501', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Lighting - Decor - Furniture', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('7bb1f9fb-7df9-4815-b1b2-e45c5f626646', 'b260aff1-7134-11f1-8bb6-52540021303b', 'CARPENTER', 1, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('86c4b5e2-ceb1-4d67-926c-7824c7005a6a', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Tiles', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('95073fe2-8795-46a9-a5f6-b733713e4f74', 'b260aff1-7134-11f1-8bb6-52540021303b', 'METAL', 1, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('9653d801-be17-427f-962a-7ea89c50b43c', 'b260aff1-7134-11f1-8bb6-52540021303b', 'PAINTER', 1, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('a2955f6e-401b-4606-81d2-8c38748eaa9c', 'b260aa81-7134-11f1-8bb6-52540021303b', 'CERAMIC', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('aaae0390-32be-4722-9ecd-36a1e6c31437', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Floor Drain', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('ad976bd5-024d-46a4-bbec-a7c8a8ffc0ae', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Woods.ply.FlushDoor.Board.Vineer.Margins', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('b2613f10-3e67-490c-82c0-d5a115d995f9', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Bath Faucets', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('b678e480-020d-4f96-baf6-c644f0880846', 'b260aa81-7134-11f1-8bb6-52540021303b', 'TIMBER & PLYWOOD', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('bbe1720d-a55b-4e0a-bbaf-9c4ddeddb941', 'b260aa81-7134-11f1-8bb6-52540021303b', 'WELDING MACHINE', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('c05f86d2-cefa-4637-a141-0072fab88d95', 'b260aff1-7134-11f1-8bb6-52540021303b', 'GRINDING', 1, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('c3fd87fd-782d-4af5-ba2f-5ff49074f5bc', 'b260aff1-7134-11f1-8bb6-52540021303b', 'new', 1, '2026-07-14 11:35:06', '2026-07-14 11:35:06'),
+	('d8a416a3-170a-4108-b9fb-1474bcc81827', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Laminates', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('db44a2ee-dc91-41b8-84da-630721e425c5', 'b260aa81-7134-11f1-8bb6-52540021303b', 'light', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('de09d796-44d0-4c51-9909-fd3f9d8b7b66', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Chemical manufacturer in New Delhi', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('e0561222-1f2e-43a1-b4ce-6adf40db40b5', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Steel Kitchen Sinks', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('e2847cac-4883-4846-8409-b35a97ddf50e', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Hardware', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('e3a56191-4983-4864-a908-b686a5a9e599', 'b260aa81-7134-11f1-8bb6-52540021303b', 'Tile Collections', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('eb1979d0-d106-4aba-b523-f4a89745d01c', 'b260aa81-7134-11f1-8bb6-52540021303b', 'TIMBER PLYWOOD VENEERS LAMINATES DOORS', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('eca4c5ea-0421-4b66-80cc-bf8f1af9b14f', 'b260aff1-7134-11f1-8bb6-52540021303b', 'GLASS', 1, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('f9c7cc3b-feee-412d-8caa-84af596a1dcb', 'b260aff1-7134-11f1-8bb6-52540021303b', 'MEP CONST.', 1, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('fa252b52-5015-4f97-92c2-e90240faba89', 'b260aff1-7134-11f1-8bb6-52540021303b', 'INTERIOR', 1, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('fde68222-cd7e-41ef-bb0d-b2c7eec409d6', 'b260aa81-7134-11f1-8bb6-52540021303b', 'WALL COVERINGS WALLPAPERS I WALL DECALS I WALL ARTS I EMBROIDERED WALL ARTS', 1, '2026-07-01 05:14:03', '2026-07-01 05:14:03');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.vendor_categories
 CREATE TABLE IF NOT EXISTS `vendor_categories` (
@@ -3808,7 +8191,10 @@ CREATE TABLE IF NOT EXISTS `vendor_categories` (
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.vendor_categories: ~2 rows (approximately)
+INSERT INTO `vendor_categories` (`id`, `name`, `status`, `created_at`, `updated_at`) VALUES
+	('b260aa81-7134-11f1-8bb6-52540021303b', 'Material', 1, '2026-06-26 13:27:37', '2026-06-26 13:27:37'),
+	('b260aff1-7134-11f1-8bb6-52540021303b', 'Contractor', 1, '2026-06-26 13:27:37', '2026-06-26 13:27:37');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.vendor_rate_comparisons
 CREATE TABLE IF NOT EXISTS `vendor_rate_comparisons` (
@@ -3830,7 +8216,6 @@ CREATE TABLE IF NOT EXISTS `vendor_rate_comparisons` (
   CONSTRAINT `fk_rate_comparison_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.vendors
 CREATE TABLE IF NOT EXISTS `vendors` (
@@ -3865,7 +8250,161 @@ CREATE TABLE IF NOT EXISTS `vendors` (
   CONSTRAINT `vendors_ibfk_2` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.vendors: ~151 rows (approximately)
+INSERT INTO `vendors` (`id`, `name`, `company_name`, `position`, `designation`, `vendor_category_id`, `business_type_id`, `contact_number`, `alternate_contact`, `address`, `state`, `country`, `notes`, `status`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
+	('0117b37a-2a2f-4629-9a4c-05e1154f3e8b', 'Himanshu Gupta', 'LATINO CERAMICS', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'a2955f6e-401b-4606-81d2-8c38748eaa9c', '9991669914', NULL, 'Rathdhana Road, Jagdishpur Near op jindaluniversity sonipat haryana', NULL, NULL, 'Basin', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('03b71519-ebe0-4c11-bd68-ee4b4bab4383', 'ARVIND', 'Hoarding', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '038225dd-1f0b-48b9-99f7-08d47365c4e1', '9821850463', NULL, 'paharganj', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('086642b9-b50b-4004-87cc-5cd8dec37d05', 'Jayna', 'Jayna', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'aaae0390-32be-4722-9ecd-36a1e6c31437', '1147020864', NULL, '12-SSI, Industrial Estate, G.T Karnal Road, Delhi - 110033 India', NULL, NULL, 'Kitchen Sinks | Floor Drains | Shower Channels | Faucets', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('095fd905-17ba-43dd-bacf-c966b017163a', 'BALVEER', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', '491bb6d6-f210-4951-bd31-331456e0f870', '9899265372', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('0a89e03d-ab66-4103-a1ee-88f739242377', 'Parth Arora', 'lixil', 'Business Development Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '9999012899', NULL, '10th Floor, Baani Address One, Near Double Tree by Hilton, Golf Course Road, Sector - 56, Gurugram, Haryana - 122011', NULL, NULL, 'LIXIL WATER TECHNOLOGY BUSINESS', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('0cfd5b47-1f3f-4de2-b3e9-6112463cbb88', 'Vishal Sharma', 'IBIS Smart Marble', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '5cd981a7-1d17-4898-b0fc-25139152ea50', '9999505346', NULL, 'At : ghuntu Morbi - 363642( guj.) INDIA', NULL, NULL, 'Marble - Tiles', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('0d460a26-8555-447e-93ed-93fd5d86e3e8', 'Deepanshu', NULL, NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '6e3347a8-1caa-42db-96be-7b01d0216cf9', '9968423105', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('0dc1b8de-78f9-4ffe-bd9a-d851516712e5', 'Tanuja Devrani', 'Akemi', 'Manager Technical & Specification', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'de09d796-44d0-4c51-9909-fd3f9d8b7b66', '9315348606', NULL, 'A-77, First Floor, DDA Sheds, Okhla Phase II, New Delhi, Delhi 110020', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('0ed5e69b-15c3-4702-ac34-38216a39c5fe', 'Babomar', 'Babomar', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '5cd981a7-1d17-4898-b0fc-25139152ea50', '(+90)2324837775', NULL, 'Cumhuriyet Bulvan No: 82/502 Erboy-2 Isham Konak Izmir / Turkiye', NULL, NULL, 'marbles', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('0f681dfe-9f09-4d33-ae49-ee067d2221ff', 'Deepak Vohra', 'Vohra Enterprises', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '86c4b5e2-ceb1-4d67-926c-7824c7005a6a', '9953115519', NULL, 'WZ-1/2/3, (A-27,28) Ganesh Nagar Market Main Najafgarh Road', NULL, NULL, 'Indian , Imported Tiles & Marble Chips, Gypsum & P.O.P', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('0fdf3772-efff-466e-bd4b-d2ebc934a23b', 'Rajpal', 'VURA', 'Sr. Sales Exeutive', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '09768620-32e2-4ed5-9948-3101023ec746', '7999841290', NULL, NULL, NULL, NULL, 'Tile Adhesive', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('122ac023-49a3-4151-8679-4740ae9c6eea', 'Alpaslan Ozsari', 'orhan mermer', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '5cd981a7-1d17-4898-b0fc-25139152ea50', '(+90)2723413232', NULL, 'Fatih, Afyon Cd. No:61, 03750 İscehisar/Afyonkarahisar, Türkiye', NULL, NULL, 'Marble contractor in Turkey', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('161759ae-87ef-4b80-b8bc-800b44fff935', 'AMOL', 'DK Lights', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '3c26cb79-6a7d-4290-8065-5d6626d8966f', '9910507003', NULL, 'pitumpura', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('19c47daf-3463-4d42-8e85-e80d3b6f2444', 'Anirudh Mohan', 'Ignite Polymers', 'Sr. Sale Officer', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '09768620-32e2-4ed5-9948-3101023ec746', '9599070051', NULL, '#324, Sector 9, Gurugram - | 2200 | (Hr.)', NULL, NULL, 'AAC Block Adhesive | Tile Adhesive | Stone Adhesive | PU Adhesive Epoxy Grouts | Grouts | Admixture | Waterproofing | Wallputty | Cleaners', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('228e5c70-48da-47cf-93e7-ba12eb707c9a', 'Shivank Bhatia', 'Delta Light', 'Regional Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'db44a2ee-dc91-41b8-84da-630721e425c5', '9560407177', NULL, 'B-32 Sector 85 Noida-201301, India', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('25164515-52bf-40ab-9669-ed53fe102b62', 'Manish Singh Chouhan', 'ORVI', 'Territory Sales Executive', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '86c4b5e2-ceb1-4d67-926c-7824c7005a6a', '9983800042', NULL, 'PA-012-013,, Handicraft Zone, Mahindra Sez., Jaipur, Rajasthan 302037', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('26ae4998-89d5-411f-a8dd-da2da7d7d461', 'SINGLA STEEL', 'SINGLA STEEL', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'bbe1720d-a55b-4e0a-bbaf-9c4ddeddb941', '9968135905', NULL, 'F-5 Near Ahinsa Dham Hospital Madhu Vihar Patparganj Delhi-92', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('2dd7fad8-e8ae-484c-819f-705d56daaa5c', 'hindware', 'hindware', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'a2955f6e-401b-4606-81d2-8c38748eaa9c', '8069166666', NULL, '68,Echelon Institutional Area Sector-32, Gurugram, Haryana 122001 India', NULL, NULL, 'Designer Sinks | Handmade Sinks | Granite Sinks', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('2e237074-2cd5-4753-aa56-5006c1972c5a', 'Rohit Sharma', 'PLY & DECOR', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'eb1979d0-d106-4aba-b523-f4a89745d01c', '7042331199', NULL, 'C-33-34 MAIN ROAD JAGAT PURI DELHI - 51', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('31177617-2323-4d7b-b0f6-53c517b60b53', 'Manoj Aggarwal', 'Sakarni', 'Sales Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '09768620-32e2-4ed5-9948-3101023ec746', '9312005145', NULL, 'Work - G  - 138 RIICO Industrial Area Alwar Rajasthan - 301705', NULL, NULL, 'Adhesive', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('31e35bcd-c2b4-4630-a13b-c6398e2df0f2', 'LALIT', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', '52ec4bd4-6a5b-43d8-bcba-ad47ad02cc1b', '9953524590', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('32aa9b04-ef29-438c-aed4-19bb17196f52', 'Saket Mishra', 'Bathxpertz', 'AGM - Procurement', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'a2955f6e-401b-4606-81d2-8c38748eaa9c', '9773996278', NULL, '1 & 20d Floor, F- 208/1, Old M.B.Road, Lado Sarai, New Delhi-110050', NULL, NULL, 'Bathroom', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('3365b39e-6060-4d33-a3f5-3441b309d0da', 'Mithun Thakur', 'Accurate Surveillance India Private Limited', 'Business Development Channel Sales', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '59c2c964-588a-41ab-a7ff-18a216f48371', '9311884429', NULL, '303-305, SGL Plaza, Near D.C Chowk, Sector-9, Rohini, Delhi-110085', NULL, NULL, 'More Business', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('349be45b-4868-473f-a0c9-ddc9d3968df1', 'Rajkumar', 'CARYSIL', 'Sr. Sales Exeutive', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'e0561222-1f2e-43a1-b4ce-6adf40db40b5', '9289127175', NULL, 'Plot no. 380,381, Udyog Kendra-1, Ecotech-Ill, Gr. Noida (U.P.)', NULL, NULL, 'Sink & Kitchen Faucet', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('3805968b-dd57-43b5-91a2-959ecd60f603', 'RAM PRAKASH', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', '491bb6d6-f210-4951-bd31-331456e0f870', '9871752269', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('3ba227e8-dcc8-400b-80fb-83d38ec9a90c', 'Ajay Kumar Yadav', 'MAICA GROUP', 'Marketing Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '08efd6d0-7aba-43d0-a16c-a8b416aadfdd', '9555444654', NULL, '125/9, Gali no 1, G N T Market, Samajwadi Indira Nagar, Gurunanak Timber Market, Indore, Madhya Pradesh 452002', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('3bf1d509-98db-4fd0-87c1-950bea2ce7d7', 'Anil Singh', 'Asiatique', 'Sale Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'e0561222-1f2e-43a1-b4ce-6adf40db40b5', '9315994494', NULL, 'block No. 1594, At. Post Alipore, Ta. Chikhli, Distt. Navsari, Gujarat-INDIA', NULL, NULL, 'Sink & Kitchen Faucet', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('3c03b9af-5171-4402-8112-9284dffe8b0f', 'JKTYLO', 'JKTYLO', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '09768620-32e2-4ed5-9948-3101023ec746', '05122371478-85', NULL, 'Corporate Office Prism Tower,5 Floor Ninaniya Estate, Gwal Pahari', NULL, NULL, 'Premium Adhesives & Grouts', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('3c0b4fb2-5c69-475c-9f58-6b281689b893', 'Franke', 'Franke', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'e0561222-1f2e-43a1-b4ce-6adf40db40b5', '', NULL, 'Plot No L-7 MIDC Waluj Industrial Area Aurangabad - 431136', NULL, NULL, 'Sink & Kitchen Faucet', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('3e2360e1-98e7-4f0e-b2bc-2ac16999f9c3', 'SHATRUDHAN', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', 'fa252b52-5015-4f97-92c2-e90240faba89', '9650621400', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('3fad1c0e-6751-4d15-a547-5f16de2e67ff', 'Vikash Garg', 'INTALICA INDIA', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '7988635913', '9518228568', '106, 1ST FLOOR PEARL BUSINESS PARK NETAJI SUBHASH PALACE NEW DELHI - 110034', NULL, NULL, 'BATH FITTING', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('41046107-3c97-48eb-97e4-889e3d1f55f4', 'AJAY', 'Shiv Timber', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'd8a416a3-170a-4108-b9fb-1474bcc81827', '9873956095', NULL, 'National Market', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('43ab3ab3-923f-4727-9128-046a64553a91', 'Raghav Aggarwal', 'lovely marbles & sanitations', 'Vice President', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '5cd981a7-1d17-4898-b0fc-25139152ea50', '9988661111', NULL, 'Main Nakodar Road, Jalandhar', NULL, NULL, 'marbles & sanitations', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('47108f03-1d59-4921-b9b8-d44f7f280cf6', 'Sanyam Jaim', 'House of Katachi', 'Founder & Designer', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '2cf55b02-8372-4c1f-ae7c-af13077ffc93', '9310561307', NULL, '3529 Chootani Manzil Mori Gate delhi - 110006', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('47ea2f1a-bf3f-4e2c-a5c3-967f7b7d76a3', 'Rashmi Wadhwa', 'Rational German  Design Kitchens', 'Designer', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'e0561222-1f2e-43a1-b4ce-6adf40db40b5', '9582042458', NULL, 'Plot No 344, M.G Road Sultanpur Near Sultanpur Metro Station Pillar No 28B', NULL, NULL, 'Design Kitchens', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('4858b782-53d6-43e5-adc5-a2ea7f27ff0f', 'RAMENDRA', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', '9653d801-be17-427f-962a-7ea89c50b43c', '9990736364', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('4a00fb38-ea08-476b-a2ce-faee42bbf1e7', 'Asit Trivedi', 'Mozio', 'Regional Sales Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '9717368805', NULL, 'Porwal House, 314 F.I.E Patparganj Industrial Area Delhi - 110092, India', NULL, NULL, 'Tiles | Bathware', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('4bda4353-5629-4065-93bb-0c299255cfe0', 'Justime', 'Justime', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '88647629971', NULL, NULL, NULL, NULL, 'Faucet-Shower-Mixer-Sprayer-SensorFaucet-FloorDrain', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('4c64fc63-13b6-4ce6-9b4b-e97ecb2683ff', 'Duygu Caliskanerler', 'caliskanerler', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '5cd981a7-1d17-4898-b0fc-25139152ea50', '(+90)5323281610', NULL, 'Eski Hisar Mahallesi 9503 Sokak No:1 Kat:4/11 07600 Manavgat / Antalya / Türkiye', NULL, NULL, 'marbles', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('4ccd5d32-78d6-4067-a1ea-84f2bc148694', 'Devendra Singh', 'Neelkanth Kitchen Sinks', 'Area Sales Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'e0561222-1f2e-43a1-b4ce-6adf40db40b5', '8860103591', NULL, 'Block - F-448, DSIIDC Bhorgarh Industrial Area Bawana-II New Delhi - 110040', NULL, NULL, 'Sink & Kitchen Faucet', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('4cd10faf-fa61-41cc-ae2c-bbcd0550a53a', 'VURA', 'VURA', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '09768620-32e2-4ed5-9948-3101023ec746', '7948492890', NULL, '13th Floor Elite Business Hub, Sola Ahmedabad 380060 Gujarat, India', NULL, NULL, 'manufactures adhesives, sealants, waterproofing, repairs, maintenance & building products', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('4d9c1fc5-64d9-4dd3-b6d9-03f9030cf692', 'BABLU', NULL, NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '86c4b5e2-ceb1-4d67-926c-7824c7005a6a', '9268657355', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('4ffe56bd-f5b0-4f4c-a6b0-34843381c7b7', 'Nikita Bansal', 'Yaahvi', 'Founder', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '73862e3a-c354-496a-8761-19b952688501', '9717858687', NULL, 'First floor, shop no 12A, C3G5+R7H M2K Corporate Park, Pearl Ln, opp. Cloudnine hospital, Block N, Mayfield Garden, Sector 51, Gurugram, Haryana 122018', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('5100ef41-234f-4234-8125-260eb37c61ae', 'Preveen Kumar', 'Banyo Sanitaryware', 'Sale Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '7065415890', NULL, 'Plot No.17 Kh No. 50/6 Gr Floor Vill Pooth Kalan North West Delhi - 110086', NULL, NULL, 'BATH FITTING', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('51aac12d-9fdb-4de2-9bc2-170066f5fc52', 'RAJENDER', NULL, NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '86c4b5e2-ceb1-4d67-926c-7824c7005a6a', '8826872016', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('53fd57bf-eb76-40ee-a9ee-02e0e902363e', 'Bablu Singh', 'hindware', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'a2955f6e-401b-4606-81d2-8c38748eaa9c', '9643817992', NULL, 'Kh.No 62/2/2, Main Rohtak Road Mundka, Metro Pillar No. 604, New Delhi -110041', NULL, NULL, 'Hindware Sink, Kitchen Ensemble, Sanitary Items', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('543d3c29-d4ed-40c7-ade5-52b343c56c82', 'Girish Joshi', 'Nexion', 'Senior Manager- Sales', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '86c4b5e2-ceb1-4d67-926c-7824c7005a6a', '9999503202', NULL, '702, The Courtyard, DLF Place, Saket New Delhi - 110017', NULL, NULL, 'Tiles', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('5700d42d-6a23-4aac-bf70-ea8630a1d459', 'Gurpal Singh', 'IPM Bath Fittings', 'Area Sales Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '7827025282', NULL, '459, Patparganj Industrial Area, Delhi - 110092', NULL, NULL, 'BATH FITTING', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('5873819c-730f-4897-a903-8ed0ccab0cbe', 'Rahul', 'Richies Richer Choice', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '6468bf21-5335-4e9e-a319-447252b043ec', '9971222240', NULL, 'Plot No. 8, Kh. No. 48/6/1, Ground Floor, Blk-A, Brahm shakti Hospital, North West Delhi, New Delhi- 110086', NULL, NULL, 'Edge Band Tape, Hot Melt Glue, Masking Tapes, Acrylic Sheets', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('5f4efa76-1143-4ca6-836e-6905148f4063', 'Sunil Jain', 'Grotto The Art Of Water', 'Director', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '9818668327', NULL, 'D-27, Ground & First Floor , Okhla Industrial Area okhla phase-1 new delhi-110020', NULL, NULL, 'BATH FITTING', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('5fd1c06a-85dc-4908-9c0b-b09e26732a88', 'Shubham Jain', 'Jain Security Solution', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '59c2c964-588a-41ab-a7ff-18a216f48371', '9540065300', NULL, 'G-18 Kirti Shikhar District Centre Janakpuri New Delhi - 110058', NULL, NULL, 'CCTV Camera', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('60dde0bc-9181-4333-84b6-3b504e25198c', 'RAJU', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', '9653d801-be17-427f-962a-7ea89c50b43c', '9210640020', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('6459e24b-3612-4fe8-ae28-192836dd1a0f', 'Manish Srivastava', 'Asianpaints', 'Direct Sales Representative', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '09768620-32e2-4ed5-9948-3101023ec746', '9588813661', NULL, 'B-368, Rajiv Nagar, Begumpur Delhi - 110086', NULL, NULL, 'Asian Paints Limited', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('64fa5dc9-0ca1-4094-bbd1-161922e432c4', 'BHAVYA', 'Krishna trading', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '66c92b56-80c5-43a0-bd8d-e1e42fd64f12', '9811252478', NULL, 'National Market', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('65ae80dd-98eb-46f7-b8f4-54cf72ce19e6', 'MUKESH', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', 'c05f86d2-cefa-4637-a141-0072fab88d95', '9971736785', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('65f2a91e-25a3-4b3e-b83b-0fe750806997', 'kalakaari haath', 'kalakaari haath', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'fde68222-cd7e-41ef-bb0d-b2c7eec409d6', '7400464922', NULL, 'G-18/19, Shree Luxmi Woollen Mills Estate, Shakti Mills Ln, off Doctor Elijah Moses Road, Worli, Mumbai, Maharashtra 400018', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('66d3d16c-84a3-4ead-9c40-0c359f8a624c', 'Parveen Kumar', 'Trimurti Sundarta ki pechan', 'Business Development Executive', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '09768620-32e2-4ed5-9948-3101023ec746', '8076337426', NULL, 'Unit No. 515 5th Floor, Plot No 08 Manglam Paradise Mall Sector3, Rohini New Delhi - 110085', NULL, NULL, 'Adhesive', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('69ed9a3c-c91c-4fdf-920a-42dc2de7dc30', 'Rajesh Pathak', 'Accord Glamour De Marbella', 'Area Sales Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '86c4b5e2-ceb1-4d67-926c-7824c7005a6a', '9879948831', NULL, 'S. No. 151/P3, Near Narmada Canal, Morbi - Halvad Road, At. Unchi Mandal, Morbi - 363 642, Gujarat, INDIA.', NULL, NULL, 'accord vitrified private limited', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('6a9fbe8e-f967-4d9a-8718-38a11b05225b', 'MANVI ARORA', 'POTTERYBARN', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '04d54824-48e3-45b1-aa24-4f625a94fdb4', '9873382484', NULL, 'UNIT NO. 24 UPPER GROUND FLOOR AMBIENCE MALL VASANT KUNJ NEW DELHI - 110070', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('6afb947c-55a4-4944-a51e-05766d65e336', 'Jitender Yadav', 'delta faucet company', 'General Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', NULL, '8448334100', NULL, '10th Floor, Tower-B, Emaar Digital Greens, Unit 15-17, Golf Course Ext Rd, Baharampur Naya, Sector 61, Gurugram, Ghata, Haryana 122102', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('6d5cb6a9-cff3-415c-8ce5-3483488a7552', 'Ali Ozcelik', 'Silkarstone', 'Senior sales executive', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '5cd981a7-1d17-4898-b0fc-25139152ea50', '(+90)5304974936', NULL, 'Silkar Madencilik San. ve Tic. A.S.    Silkar Plaza, Orta Mh. Topkapı Maltepe Cd.    No:6 Bayrampaşa 34030 İstanbul Turkey', NULL, NULL, 'Marble - Mosaic - Natural stone', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('6eaea3e5-015d-4c06-851c-3727f0f91374', 'Abhinav Shrivastava', 'Nexion', 'Asst.Zonal Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '86c4b5e2-ceb1-4d67-926c-7824c7005a6a', '7069077849', NULL, '702, The Courtyard, DLF Place, Saket New Delhi - 110017', NULL, NULL, 'Tiles', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('6efc32b4-f3ba-41dc-9e7a-246e0c5dcb94', 'NARESH', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', '491bb6d6-f210-4951-bd31-331456e0f870', '9210578853', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('6fde5901-8771-4d94-8b94-9ec5db065db6', 'JNK', 'JNK', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '09768620-32e2-4ed5-9948-3101023ec746', '9873232349', NULL, 'Shahbad Daulatpur, Delhi-110042', NULL, NULL, 'Adhesive', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('72e1f377-e9d0-433d-9d5f-34ced149425d', 'Dheeraj Negi', 'Aquini European Excellence', 'Sales  & Business Development', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '7302253752', NULL, '11,12,12A GF Suncity Success Tower, Sector 65 Gurugram Haryana 122102 India', NULL, NULL, 'Sanitary ware', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('7645aa65-b312-4461-879c-6f602d763831', 'Adrija Prosad Sinha Roy', 'lixil', 'Associate Manager - Sales Excellence', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '9088008874', NULL, '10th floor, Baani Address One, Near Double Tree By Hilton, Golf Course Road Sector-56, Gurugram - 122011', NULL, NULL, 'GROHE INDIA PVT. LTD. ( a LIXIL Corporation Company )', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('765dfbc1-e6f4-419c-aa50-6396ad9060ab', 'Sanjish Sardana', 'Invoke', 'Area Sales Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '86c4b5e2-ceb1-4d67-926c-7824c7005a6a', '9512037593', NULL, 'Infront of gujarat Gas Station Matel Road, P.O. Lakaddhar, Ta. Wakaner, Dist. Morbi - 363621', NULL, NULL, 'Tiles', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('76cf0832-ab44-4988-ae1e-aeccae3782b4', 'Fatih Uresin', 'uresin kardesler mermer torna atolyesi', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '5cd981a7-1d17-4898-b0fc-25139152ea50', '(+90)5546522624', NULL, 'Sirinevler Mahallesi Kucuk sanayi Sitesi Kume Evler No:24', NULL, NULL, 'marbles', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('791f0338-8b74-4b73-922a-bbe782d50a19', 'VAIBHAV\'S FATHER', 'National hardware', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'e2847cac-4883-4846-8409-b35a97ddf50e', '9899378278', NULL, '487/42, National Market, Peeragarhi Village, Paschim Vihar, New Delhi, Delhi, 110087', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('795d22df-43f6-459f-9856-5a4a9c578779', 'Praveen Kumar', 'Ignite Polymers Industries', 'Area Sale Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '09768620-32e2-4ed5-9948-3101023ec746', '9205544309', NULL, '#324, Sector 9, Gurugram - | 2200 | (Hr.)', NULL, NULL, 'Tile Adhesive', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('79c86070-0d23-4f84-a1d8-a581cfbaf217', 'ZAHEER', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', '95073fe2-8795-46a9-a5f6-b733713e4f74', '9711181082', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('7c07e751-f215-4f3f-8296-c659f184e53f', 'Grohe', 'Grohe', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '1244933000', NULL, '10th Floor , Baani, Address One, Golf Course Road Sector 56 Gurugram Haryana 122011', NULL, NULL, 'bathroom solutions and kitchen fittings', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('7ced3f58-9a83-470b-8190-18607baa2260', 'S.K Nigam', 'Vista', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'aaae0390-32be-4722-9ecd-36a1e6c31437', '8588813271', NULL, NULL, NULL, NULL, 'Floor Drainer With Border', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('7d4534c1-60a6-4a88-a930-69f949e1cf0e', 'AKRAM', 'Delhi mattress', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '440237fb-5886-41a6-9943-075e68006357', '8800338827', NULL, 'vishnu garden', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('7d4862c9-7889-4910-885c-317afb6c77d4', 'RAMJEET', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', '40e58e78-6eb9-4fd3-a427-47b62a8d2e49', '7048978167', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('7e772a56-1e32-44a7-8e75-04f1b26b58d6', 'Puneet Balwani', 'Handgrohe', 'Senior Area Sales Manager - Delhi & NCR', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '+91-20-66259500', NULL, 'nit No. 5,7th floor, Fountainhead Tower 2, Viman Nagar, Pune-411014, Maharastra, India', NULL, NULL, 'Taps for bathrooms, showers and kitchens', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('7f04b966-299a-4957-ad79-56d449b08ab9', 'Shanti Swroop Sharma', 'Sakarni', 'Sales Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '09768620-32e2-4ed5-9948-3101023ec746', '9773894068', NULL, 'D MALL 405 NETAJI SUBHASH PLACE PITAMPURA NEW DELHI - 110034', NULL, NULL, 'Adhesive', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('7f65ca04-ca53-46fb-952c-2ffc65b45112', 'MD SHAH ZAFAR', 'Franke', 'Area Sales Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'e0561222-1f2e-43a1-b4ce-6adf40db40b5', '8800901694', NULL, 'Survey No. 1086/1/2, Nagar Road, Sanaswadi, Tal. Shirur, Dist. / 412208 Pune / India', NULL, NULL, 'Home Solutions', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('7f8bba35-6519-420e-87ed-f878fc60c629', 'Ashutos Pandey', 'CP PLUS', 'Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '01deb2c1-da81-44a2-b223-37b700803dd7', '8505820075', NULL, 'Khemka Square A-11 & A-12 Sector 4, Noida 201301 (Delhi-NCR) INDIA', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('8357335c-ca41-45ba-844e-ac98612b411e', 'Ignite', 'Ignite', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '09768620-32e2-4ed5-9948-3101023ec746', '9873620002', NULL, 'Sector - 37D, Ghari Road, Gurgaon - 122001', NULL, NULL, 'Tile Adhesive | Wall Putty | Waterproofing Service | Xpert Cleaner | Stone Adhesive', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('853a569c-97f8-44e8-829e-48219f8a4f01', 'Mixum Gold', 'Mixum Gold', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '86c4b5e2-ceb1-4d67-926c-7824c7005a6a', '9667344516', NULL, 'A-96, Jagatpuri, Karkarduma Court,Road New Delhi-110051,India', NULL, NULL, 'Tiles & Home Application', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('8612601b-978d-4df8-9fc1-aab308a65fb8', 'Ramesh Kapoor', 'Canon - Nikon', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '59c2c964-588a-41ab-a7ff-18a216f48371', '9811440033', NULL, '1484-E.S. PEAREY LAL BUILDING, NEAR MOTI CINEMA, CHANDNI CHOWK, DELHI-110006', NULL, NULL, 'Master Color PhotoGraphic Store', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('8756fbb7-e957-4470-9f3e-55ef017bd395', 'ADNAN DUMAN', 'SOMAKITAS', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '5cd981a7-1d17-4898-b0fc-25139152ea50', '(+90)5332034288', NULL, 'Barbaros Mah. Halk Cad. No:11 Kat:1 Daire:1 Atasehir / Istanbul.', NULL, NULL, 'Marble & Mine Industry', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('87f21f96-992a-46ae-9c6a-c174c0ac227a', 'ALOK GUPTA', 'VAISHALI', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'b678e480-020d-4f96-baf6-c644f0880846', '9810065006', NULL, '24-A JAGAT PURI (NEAR SBI BANK) DELHI -110051', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('88d9cdd7-7c02-459b-bb9e-06b6f446d578', 'Deepanshu Goyal', 'Cravo Bathware', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '9315000381', NULL, NULL, NULL, NULL, 'BATH FITTING', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('89273171-3833-4add-bc54-6d198babbfc5', 'Akash Grover', 'Grover Paint & Home Solutions', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '09768620-32e2-4ed5-9948-3101023ec746', '9211406100', NULL, 'E-249 (opp. Main Gate Central School) Tagore Garden New Delhi-110027', NULL, NULL, 'Adhesive,CM Counter', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('8c7cbeeb-1331-4c41-b656-43a7cad22412', 'Praveen Kumar', 'Banyo Sanitaryware', 'Sale Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '7065415890', NULL, 'Plot No. 17, Kh No. 50/6 Gr. Floor, Vill. Pooth Kalan North West Delhi-110086', NULL, NULL, 'BATH FITTING', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('8f7633af-934c-481f-8180-02905a1076b5', 'Harish Sethi', 'S.S.Traders', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'e2847cac-4883-4846-8409-b35a97ddf50e', '9999270959', NULL, '12/27/1, Chandu Park Near Jagat Puri Red  Light SBI Wali Gali Delhi-110051', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('9766df7e-9d8b-4f75-ad01-f741984f642f', 'AKHILESH', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', '15a69e2e-7257-4d6f-9344-b254882c618a', '9899286312', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('983365fc-eced-4648-89aa-7e7acc060e8a', 'Ayush', 'Vura', 'Area Sales Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '09768620-32e2-4ed5-9948-3101023ec746', '9711164289', NULL, NULL, NULL, NULL, 'Time To Build Better', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('983f2959-bccd-43ee-8b4f-263b3b379119', 'Manmohan Singh', NULL, 'Sale Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '9873597709', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('9939b1c1-c10c-4eed-bc0e-c3fee1ad96e3', 'Mahender Kumar', 'JKCEMENT', 'Sr. Officer', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '09768620-32e2-4ed5-9948-3101023ec746', '9650696825', NULL, 'Kamla Tower, Kanpur - 208001', NULL, NULL, 'Adhesive', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('99897976-fb26-4ae4-937f-7cdf9fc2c2dc', 'Prabhat Gupta', 'Nixo', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '9873252999', NULL, 'Friends Colony Jhilmil Industrial Area Delhi', NULL, NULL, 'BATH FITTING', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('99e46350-670f-4f11-8f35-3a6e17e9156a', 'Kunika', 'K G GLASS COMPANY', 'Sales Officer', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '59c2c964-588a-41ab-a7ff-18a216f48371', '9266324443', NULL, 'Multani dhanda paharganj new delhi 110055', NULL, NULL, 'Glass', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('9df63f06-6ddd-4cf7-a616-00759eedea2c', 'MAYANK', 'Halonix', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '530dab08-ff5c-49a0-a35a-f96e1a76f533', '9992222287', NULL, 'National Market', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('a1361524-ca2b-4f60-b9b9-2b8f6f754603', 'lokjsd', 'Kaushik Marble House', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '6d4f49eb-138f-4ad0-ae24-0578b4025350', '9911000350', NULL, 'F-164 JAGAT PURI MAIN ROAD BEHIND F-BLOCK BUS STAND DELHI-51', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('a3b20c1c-36dc-4563-8533-06aa4463b92c', 'Shiv', 'Shiv electrical', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '29bc6b4d-40ee-4bda-b3f5-5785793e7aa7', '9811786562', NULL, '487/39, National Market, opp. Mother Dairy, Peera Garhi, New Delhi, Delhi 110087', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('a44156e2-726d-43ee-bc6a-ea2cf98d8a55', 'Dheeraj Bhardwaj', 'Oyster Life Style', 'Sr.Business Delelopment Executive', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '8826995541', NULL, 'D-73 Okhla Industrial Area Phase-1, New Delhi-110020', NULL, NULL, 'BATH FITTING', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('a4ffc9d2-1816-43df-b632-76a43680ef38', 'SAKIB', 'Om ply wood', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'd8a416a3-170a-4108-b9fb-1474bcc81827', '9818927426', NULL, 'National Market', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('a50e6822-9db5-423c-87cf-2f6381e8b8c4', 'Nirali', 'Nirali', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'e0561222-1f2e-43a1-b4ce-6adf40db40b5', '8753003008', NULL, NULL, NULL, NULL, 'manufacturers of Nirali BG Stainless Steel Kitchen Sinks', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('a743cb12-fd1d-495a-816b-6ccaf1161879', 'Global Enterprises', 'Global Enterprises', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '86c4b5e2-ceb1-4d67-926c-7824c7005a6a', '9711593632', NULL, 'P-49, Sector-3, DSIIDC, Bawana, Delhi-110039', NULL, NULL, 'Manufacturing of all types of Tile Display Units', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('a8cf37f7-81e2-4bc2-9200-50228998f306', 'Ravi Raj Singh', 'IKIGAI', 'Account Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'e3a56191-4983-4864-a908-b686a5a9e599', '9717755986', NULL, 'Sultanpur Chowk, Sultanpur Mehrauli Gurugram Raod New Delhi 110030. India', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('a8e02340-2f8d-4e34-a98b-4f6e80870ae7', 'Dalip Mukhi', 'Malbro vision beyond lmagination', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '9873366069', NULL, 'A-10 Rajouri Garden New Delhi - 110027', NULL, NULL, 'Sanitary ware', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('a98a8ceb-adb8-402b-84c5-a383edca41ae', 'Regional Manager', 'Vibrant Recreating Flooring', 'Regional Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '86c4b5e2-ceb1-4d67-926c-7824c7005a6a', '9782313182', NULL, 'A-76, 2nd Floor DDA Shed Okhla Industrual Area Phase-2 New Delhi-110020', NULL, NULL, 'Woven Vinyl Floors | Luxury Vinyl Tiles (LVT) | Wallcovering', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('abd70dc3-e21e-451f-a9b4-7593e8b9248f', 'Roshan Kumar', 'Zerob', 'Area Sales Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '59c2c964-588a-41ab-a7ff-18a216f48371', '9582821512', NULL, 'Cb-344, 3rd Floor Ring Road Naraina Vihar New Delhi - 110028', NULL, NULL, 'Pure Water Solution', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('aeed9b32-5030-449b-9d0f-24a395c58285', 'BURAK CAM', 'NATSU MAKINA', 'Technical Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '5cd981a7-1d17-4898-b0fc-25139152ea50', '(+90)2223400218', NULL, 'Uluönder, 3072. Sk. No : 3/1, 26190 Tepebaşı/Eskişehir, Türkiye', NULL, NULL, 'marbles', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('b0b248df-3203-4105-8db0-991e7b9b1dad', 'Subhash Jaswal', 'Kohler', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '9818082861', NULL, '35, Main Market, Greater Kailash - II, New Delhi - 110048 011- 79633394', NULL, NULL, 'Imported Tiles, Bathroom Fitting & Sanitaryware', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('b23e4da4-557c-4768-bc50-3339128af559', 'ANKUR GUPTA', 'Fordela Impex', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'e2847cac-4883-4846-8409-b35a97ddf50e', '9911100902', NULL, 'pitumpura', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('b3e8da34-b485-49d9-9893-a4fce0387cdd', 'Mr. Hira Lal', 'racy sanitaryware', 'Senior Sales Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '9818865749', NULL, 'Nor th Delhi West Delhi Central Delhi', NULL, NULL, 'Sanitary ware', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('b4917604-01fd-4fc7-bd18-fe24aecfac9c', 'SUSHIL', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', '7bb1f9fb-7df9-4815-b1b2-e45c5f626646', '9818202439', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('b61592e1-fcd9-42ea-9be1-5351c794545d', 'PRASHANT', 'EMMRON A NAME OF TRUST', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'aaae0390-32be-4722-9ecd-36a1e6c31437', '8178468767', NULL, NULL, NULL, NULL, 'FLOOR DRTAINS, COCKOACH TRAPS, CLEANOUT, TOWEL RINGS', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('bad793c1-b690-4b45-bd86-1cc26657e4e1', 'ARVIND', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', 'f9c7cc3b-feee-412d-8caa-84af596a1dcb', '9266021007', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('bb91e756-ec9e-4e60-93ce-6f1137478f68', 'ATG WAY GENERAL TRADING', 'Navid Akhavan', 'Managing Director', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '5cd981a7-1d17-4898-b0fc-25139152ea50', '(+971)508853967', NULL, 'P.O box: 22933, Suite 603, AL Nouf Tower Port Saeed, Deira Dubai -UAE', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('bbae19a6-e985-452d-bdae-39f5ab7a4693', 'Sukhpal Singh', 'Chilly', 'Sale Excutive', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'aaae0390-32be-4722-9ecd-36a1e6c31437', '9729079554', NULL, 'Paras Bhawan, B-10/3, Group Industrial Area, Wazirpur, Delhi 110052', NULL, NULL, 'Floor Drain Cover', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('bdbd31de-e246-4fb0-aa8e-5a548bd995cc', 'Deepak Aggarwal', 'Shri Krishna Ply & Décor', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'ad976bd5-024d-46a4-bbec-a7c8a8ffc0ae', '9311295675', NULL, '89, bhera Enclave Paschim vihar new Delhi 110087', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('be226b55-1ac7-4453-a65e-76d9b7782497', 'Jagdish Prasad', 'Shri Fire India', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '6e3347a8-1caa-42db-96be-7b01d0216cf9', '9667625740', NULL, 'C-95/29, Chandan Vihar, Nihal Vihar, Phase-Il, Nangloi, Delhi-41', NULL, NULL, 'Fire Protection Engineers & Govt. Contractor Deals in', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('bfafbb7e-8c7d-4fa2-928d-fffd4d91dca7', 'handsgrohe', 'handsgrohe', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '2066259500', NULL, 'Unit No. 5 7th Floor Fountainhead Tower2, Viman Nagar, Pune 411014 Maharashtra, India', NULL, NULL, 'bathroom solutions and kitchen fittings', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('bfdee46a-d13a-4963-8893-be4498e7f3bb', 'Fabrika', 'Davut Marble', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '5cd981a7-1d17-4898-b0fc-25139152ea50', '(+90)3266416665', NULL, 'Nesli Mah Ataturk Cad No: 113', NULL, NULL, 'marbles', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('c00b348d-47ed-4c08-a026-cc366e3f937f', 'Mahaveer Jain', NULL, NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '59c2c964-588a-41ab-a7ff-18a216f48371', '9414236074', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('c0684486-3d64-47bd-aa85-f794d64fa89c', 'Atay dogaltas sanat atolyesi', 'Atay dogaltas sanat atolyesi', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '5cd981a7-1d17-4898-b0fc-25139152ea50', '(+90)05074144002', NULL, 'Şirinevler, 03750 İscehisar/Afyonkarahisar, Türkiye', NULL, NULL, 'marbles', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('c413c016-0e6d-43a9-b301-3b72e2f7596d', 'RAKESH', 'Priya electricals', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '530dab08-ff5c-49a0-a35a-f96e1a76f533', '7838466402', NULL, 'National Market', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('c5d67c4a-1f57-430a-9c9a-d816d5c3856c', 'Harpreet Singh', 'Zoril', 'Marketing Head', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'b2613f10-3e67-490c-82c0-d5a115d995f9', '9811232761', NULL, 'F-19/12, Krishna Nagar Delhi - 110051', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('c7003f96-0da6-4012-af13-7303d73106e4', 'Abeer Husain', 'objects in space', 'Co-Founder', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', NULL, '9650947691', NULL, 'D-25, sector 59 noida - 201301 (UP)', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('c8a2a776-334f-496e-8177-04fbeb091435', 'RAJAT JINDAL', 'Onyx', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '2d805721-eb85-45ca-b30d-cbd0dfc6605c', '9205530934', NULL, 'udyog nagar', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('ca35e7dd-76e3-4fd0-9d27-bd1b43b49264', 'Zeki Kacar', 'Dragos', 'Team Member', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '5cd981a7-1d17-4898-b0fc-25139152ea50', '(+90)5458034142', NULL, 'Turkey Bagdat caddesi 552/1 34846 Cevizli Maltepe ISTANBUL', NULL, NULL, 'marbles', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('ca44ec11-a5c4-42cf-aa5f-b0b89455498c', 'Gautam', 'Yuvde Floor Drain', 'Sales Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'aaae0390-32be-4722-9ecd-36a1e6c31437', '8882020582', NULL, 'KH. No-28, Badli Village New Delhi-110042', NULL, NULL, 'Floor Drain', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('cb5e43fa-0973-4d36-9adb-6d8d8f79ed63', 'AZAJ', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', '9653d801-be17-427f-962a-7ea89c50b43c', '7388060386', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('ce5e1977-cb50-483f-bd01-71d0be1a9b0c', 'Jyoti', 'India\'s No1 Nirali Bg', 'JYOTI KITCHEN INDUSTRIES PVT. LTD.', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'e0561222-1f2e-43a1-b4ce-6adf40db40b5', '8753003004', NULL, '114, Floor-1, Plot-8, Wadala Udyog Bhavan, Sewree Wadala Road No. 26, Wadala (W.), Mumbai: 400 031.', NULL, NULL, 'stainless steel kitchen sinks.', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('d1d4300f-41f9-4456-a5e7-73fd39296094', 'ANIL MATERIAL', '', '', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '440237fb-5886-41a6-9943-075e68006357', '9875635645', '', 'ANIL MATERIAL', NULL, NULL, '', 'active', NULL, NULL, '2026-07-02 07:06:54', '2026-07-02 07:06:54'),
+	('d381f97e-030b-4f77-ab96-95d56cbb3782', 'Sunny Kumar', 'Hasmeet Plumber & Sanitary', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '9560573990', NULL, NULL, NULL, NULL, 'Sanitary ware', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('d3b95aa8-6e44-4888-908c-de06ff6a427d', 'ANIL', '', '', NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', NULL, '9654116186', '', '', NULL, NULL, '', 'active', NULL, NULL, '2026-07-02 07:04:17', '2026-07-02 07:04:17'),
+	('d6b27a5f-1cc0-4f3e-9569-ddcbf073ae16', 'Sandeep Pandey', 'Xen Bath Fittings', 'Area Sales Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '8368244558', '9824548069', 'M-38, Sector-1, DSIISC Industrial Areal, Bawana Delhi-110039', NULL, NULL, 'Faucets | Showers | Bath Sets | Essentials | PTMT | Accessories', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('d79584f2-6d7a-490a-98d0-6fd93bf7656f', 'RAJESH', 'Delhi paint', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '2d805721-eb85-45ca-b30d-cbd0dfc6605c', '9811456669', NULL, '487/39/6, National Market, Peera Garhi, Paschim Vihar, Delhi, 110087', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('d90ca943-4b84-4151-ae10-bb20bea2874f', 'Grohe', 'Grohe', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '9821224475', NULL, '10th Floor , Baani, Address One, Golf Course Road Sector 56 Gurugram Haryana 122011', NULL, NULL, 'bathroom solutions and kitchen fittings', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('dbadb6e8-da66-47fa-8e4f-767ae2f91ff5', 'PRAKASH', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', '9653d801-be17-427f-962a-7ea89c50b43c', '9810592246', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('e1c05adc-0d52-4333-8b82-b0d5c264bb24', 'Praveen Kaushik', 'Polyplastics Industries India PVT LTD', 'Assistant Officer Sales & Marketing', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '7982821315', NULL, 'B1, Vanijya Nikunj, Udyog Vihar, Phase-V, Gurugram- 122 016, Haryana', NULL, NULL, 'Head Shower', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('e3c01720-5d0b-4f20-83d0-e41f446126d9', 'NANDKISHORE', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', '7bb1f9fb-7df9-4815-b1b2-e45c5f626646', '9891489042', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('e46e61df-c74e-4752-ab11-eb16ef3dc895', 'DEVENDER', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', '471eb735-1648-4a95-be2e-214d5cec78af', '9958570489', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('e48704a7-19df-472e-a18f-8fc8f10c4e21', 'Ram Lakhan', 'Katy Sanitary Ware', 'ASM', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '9990082382', NULL, 'Street No. 11 Pooth Khurd Near Veer Dharam Kanta Delhi  - 110039', NULL, NULL, 'BATH FITTING', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('e7e072d6-aa7e-4b55-a05f-a31b561281ce', 'Tari Singh', 'gianiji antiques & furniture', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', NULL, '9811065056', NULL, 'Shop No - A-30, Amar Colony, Furniture Market, Near Khalsa School Lajpat Nagar-IV, New Delhi-110024, INDIA', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('e95013f1-f33f-4e37-972e-f2274cba46ea', 'Harish Bhatt', 'BaseX  Tiling  Solution', 'Sales Executive', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '09768620-32e2-4ed5-9948-3101023ec746', '7048958307', NULL, 'Polt No - 63/17 Gali Number 7 Mundka Industrial Area Mundka Delhi- 110041', NULL, NULL, 'manufactures tile adhesives and grouts, as well as sealants and coatings', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('e9b27e69-ad03-4e90-b07b-20c1c621e502', 'Tarun Sharma', 'Rigwell Life time Affair', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '9354131438', NULL, 'B-7A Sultanpuri, Delhi - 110086', NULL, NULL, 'Kitchen Sinks | Floor Drains | Shower Channels | Faucets', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('ea913d0c-33c8-4361-b988-5b39dbd3a004', 'ANURAG BHATI', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', 'eca4c5ea-0421-4b66-80cc-bf8f1af9b14f', '9818439694', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('ec23c63a-c014-4d62-b2b4-8f4cfc500e35', 'Javed Ansari', 'SHALIMAR', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '13d31a93-70ca-45a6-b073-32eb79ee57ca', '9312431430', NULL, 'D-308 A West Vinod Nagar Mandawali Delhi - 110092', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('efa408fb-2b75-4355-b550-f92197d7bfbd', 'Chyank Kalla', 'Accurate Surveillance India Private Limited', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '59c2c964-588a-41ab-a7ff-18a216f48371', '8882737168', NULL, '303-305, SGL Plaza, Near D.C Chowk, Sector-9, Rohini, Delhi-110085', NULL, NULL, 'CCTV Camera', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('f2cdbd72-92bf-49d6-ad98-b05e6078aab6', 'MANOJ', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', 'c05f86d2-cefa-4637-a141-0072fab88d95', '', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('f622c24a-227b-41f9-9c5e-562eed6b18f5', 'Ankit Singh', 'MYK LATICRETE', 'Sale Executive', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '15a8cb27-f2a0-42c6-b832-34fcd94468ea', '8178333829', NULL, 'Shop No. B-49, KH. No. 70/1/1, Marble Market, Mangol Pur Kalan, Delhi - 110085', NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('f70e0b95-0118-4a3e-9b0a-cd6b1a084099', 'Ashutosh Sharma', 'mozio', 'General Manager', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '9873958155', NULL, '314, F.I.E., Patparganj Industrial Area Delhi - 110092,India', NULL, NULL, 'BATH FITTING AND TILES', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('f761172c-65c5-4ac1-9a5e-5524b0e8cf45', 'Roshan Kumar Singh', 'Mosaico People PVT . LTD', 'Sale Executive', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '86c4b5e2-ceb1-4d67-926c-7824c7005a6a', '8882035237', NULL, 'At Pipli, Nr Cefone Ceramic Jetpar Pipli Road', NULL, NULL, 'Tiles', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('f8cdde42-056b-4164-995e-a4ed2c0129e2', 'Shubhi Kandpal Chouhan', 'lixil', 'Associate Manager Leader of Lixil Experience Center Mumbai', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '9920379478', NULL, '10th Floor , Baani, Address One, Golf Course Road Sector 56 Gurugram Haryana 122011', NULL, NULL, 'bathroom solutions and kitchen fittings', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('f9493c08-8b9b-4bae-8e47-965f7176284e', 'UMESH', NULL, NULL, NULL, 'b260aff1-7134-11f1-8bb6-52540021303b', '52ec4bd4-6a5b-43d8-bcba-ad47ad02cc1b', '8368445222', NULL, NULL, NULL, NULL, NULL, 'active', NULL, NULL, '2026-07-01 07:40:48', '2026-07-01 07:40:48'),
+	('f9dd7120-13a4-4c82-b6b3-fc4465a4ed09', 'Priya Rustogi', 'Lixil', 'Leader India & Subcon LWT IMEA', NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', '112b7e09-74b8-4c1b-bde6-e3c860faed23', '9910657111', NULL, '10th Floor , Baani, Address One, Golf Course Road Sector 56 Gurugram Haryana 122011', NULL, NULL, 'manufactures and sells building materials and housing products', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03'),
+	('fcab9481-0701-4391-bac5-7356628c28ad', 'EBAX', 'EBAX', NULL, NULL, 'b260aa81-7134-11f1-8bb6-52540021303b', 'e0561222-1f2e-43a1-b4ce-6adf40db40b5', '8753003008', NULL, '114, Floor-1, Plot-8, Wadala Udyog Bhavan, Sewree Wadala Road No. 26. Wadala (W.), Mumbai: 400 031', NULL, NULL, 'Exclusive Kitchen & Bathroom Accessories', 'active', NULL, NULL, '2026-07-01 05:14:03', '2026-07-01 05:14:03');
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.verification_tokens
 CREATE TABLE IF NOT EXISTS `verification_tokens` (
@@ -3882,7 +8421,7 @@ CREATE TABLE IF NOT EXISTS `verification_tokens` (
   CONSTRAINT `verification_tokens_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.verification_tokens: ~0 rows (approximately)
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.visit_assignments
 CREATE TABLE IF NOT EXISTS `visit_assignments` (
@@ -3907,31 +8446,9 @@ CREATE TABLE IF NOT EXISTS `visit_assignments` (
   KEY `idx_visit_assignments_team_id` (`team_id`),
   KEY `idx_visit_assignments_is_active` (`is_active`),
   KEY `visit_assignments_project_id` (`project_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data exporting was unselected.
 
--- Dumping structure for table spsyn8lm_rippotai_erp.visit_assignments_legacy_20261007
-CREATE TABLE IF NOT EXISTS `visit_assignments_legacy_20261007` (
-  `id` int(11) NOT NULL DEFAULT '0',
-  `project_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `visitor_type` enum('INTERNAL','EXTERNAL') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `team_id` int(11) DEFAULT NULL,
-  `external_party_name` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `frequency` enum('DAILY','WEEKLY','FIXED_SCHEDULE','AD_HOC') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `schedule_days` json DEFAULT NULL,
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `stage_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `scheduled_date` date DEFAULT NULL,
-  `stage_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `checks_purpose` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `visit_type` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `purpose` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.work_order_items
 CREATE TABLE IF NOT EXISTS `work_order_items` (
@@ -3955,7 +8472,6 @@ CREATE TABLE IF NOT EXISTS `work_order_items` (
   CONSTRAINT `fk_work_order_items_work_order` FOREIGN KEY (`work_order_id`) REFERENCES `work_orders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.work_order_payment_stages
 CREATE TABLE IF NOT EXISTS `work_order_payment_stages` (
@@ -3977,7 +8493,6 @@ CREATE TABLE IF NOT EXISTS `work_order_payment_stages` (
   CONSTRAINT `fk_work_order_payment_stages_work_order` FOREIGN KEY (`work_order_id`) REFERENCES `work_orders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.work_order_terms
 CREATE TABLE IF NOT EXISTS `work_order_terms` (
@@ -3996,8 +8511,6 @@ CREATE TABLE IF NOT EXISTS `work_order_terms` (
   CONSTRAINT `fk_work_order_terms_terms_template` FOREIGN KEY (`terms_template_id`) REFERENCES `terms_templates` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `fk_work_order_terms_work_order` FOREIGN KEY (`work_order_id`) REFERENCES `work_orders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.work_orders
 CREATE TABLE IF NOT EXISTS `work_orders` (
@@ -4055,7 +8568,6 @@ CREATE TABLE IF NOT EXISTS `work_orders` (
   CONSTRAINT `fk_work_orders_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
 
 -- Dumping structure for table spsyn8lm_rippotai_erp.zoho_tokens
 CREATE TABLE IF NOT EXISTS `zoho_tokens` (
@@ -4073,7 +8585,12 @@ CREATE TABLE IF NOT EXISTS `zoho_tokens` (
   CONSTRAINT `fk_zoho_tokens_user` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table spsyn8lm_rippotai_erp.zoho_tokens: ~2 rows (approximately)
+INSERT INTO `zoho_tokens` (`id`, `userId`, `accessToken`, `refreshToken`, `scope`, `apiDomain`, `expiresAt`, `createdAt`, `updatedAt`) VALUES
+	('004c6314-ca1f-4f66-8889-6617ebbf26af', '9034b40f-08a6-4e04-a402-fe7397b29717', '1000.25c8233804b57bbffc8a88bafce32210.b1dcc2accd1915847b5fbcee456b174c', '1000.6feee4eea7e0846f3f7542e4a682d1dd.713b972406e4d3744e5dee7b612aa9de', 'WorkDrive.files.ALL WorkDrive.team.ALL WorkDrive.teamfolders.ALL ZohoSearch.securesearch.READ ZohoCliq.Channels.CREATE ZohoCliq.Channels.READ ZohoCliq.Channels.UPDATE ZohoCliq.Channels.DELETE ZohoCliq.Chats.CREATE ZohoCliq.Chats.READ ZohoCliq.Chats.UPDATE ZohoCliq.Chats.DELETE ZohoCliq.Messages.CREATE ZohoCliq.Messages.READ ZohoCliq.Messages.UPDATE ZohoCliq.Messages.DELETE ZohoCliq.Webhooks.CREATE ZohoCliq.Users.READ ZohoCliq.Attachments.READ ZohoProjects.portals.READ ZohoProjects.projects.ALL ZohoProjects.tasks.ALL ZohoCalendar.calendar.ALL ZohoCalendar.event.ALL', 'https://www.zohoapis.in', '2026-10-13 08:16:51', '2026-10-13 05:18:48', '2026-10-13 07:16:51'),
+	('14b486f1-9c38-4c46-947b-21d67c8883dc', '21252981-f16a-4c36-a445-f3bf76d88b06', '1000.017c24b1ec5ab8223f92db6fe7aac98c.13f891048f327c5015f23097da7093b8', '1000.9761504e37c2ed6a5d39236281b1982e.87d81b8e89f0fc81ef534bc2607917aa', 'WorkDrive.files.ALL WorkDrive.team.ALL WorkDrive.teamfolders.ALL ZohoSearch.securesearch.READ ZohoCliq.Channels.CREATE ZohoCliq.Channels.READ ZohoCliq.Channels.UPDATE ZohoCliq.Channels.DELETE ZohoCliq.Chats.CREATE ZohoCliq.Chats.READ ZohoCliq.Chats.UPDATE ZohoCliq.Chats.DELETE ZohoCliq.Messages.CREATE ZohoCliq.Messages.READ ZohoCliq.Messages.UPDATE ZohoCliq.Messages.DELETE ZohoCliq.Webhooks.CREATE ZohoCliq.Users.READ ZohoCliq.Attachments.READ ZohoProjects.portals.READ ZohoProjects.projects.ALL ZohoProjects.tasks.ALL ZohoCalendar.calendar.ALL ZohoCalendar.event.ALL', 'https://www.zohoapis.in', '2026-10-13 08:27:48', '2026-10-13 05:29:46', '2026-10-13 07:27:48'),
+	('62d7a478-b935-412a-9798-470179c190e1', '99632848-7f08-47b6-b200-ef55c0a4f8ec', '1000.435577d3aa4376e5f36ad465de43f451.a1add40fa0d1395ff616979b93d043eb', '1000.0897763b743b7ea73aa2a4068a95f50c.82dabb5d37cfdcb18ba5f12b45b290e8', 'WorkDrive.files.ALL WorkDrive.team.ALL WorkDrive.teamfolders.ALL ZohoSearch.securesearch.READ ZohoCliq.Channels.CREATE ZohoCliq.Channels.READ ZohoCliq.Channels.UPDATE ZohoCliq.Channels.DELETE ZohoCliq.Chats.CREATE ZohoCliq.Chats.READ ZohoCliq.Chats.UPDATE ZohoCliq.Chats.DELETE ZohoCliq.Messages.CREATE ZohoCliq.Messages.READ ZohoCliq.Messages.UPDATE ZohoCliq.Messages.DELETE ZohoCliq.Webhooks.CREATE ZohoCliq.Users.READ ZohoCliq.Attachments.READ ZohoProjects.portals.READ ZohoProjects.projects.ALL ZohoProjects.tasks.ALL ZohoCalendar.calendar.ALL ZohoCalendar.event.ALL', 'https://www.zohoapis.in', '2026-10-13 08:30:59', '2026-10-12 11:49:59', '2026-10-13 07:30:59'),
+	('778a96aa-26b5-44d3-9e6d-c3f5d17110bb', 'd739bccb-7123-11f1-8bb6-52540021303b', '1000.be70e6bf204091d87c527d34701717ca.b30872af054491070c630a2300486a81', '1000.ca498614feab25e4378232054a818850.9485b0b891a6fbe4256908271ea894c9', 'WorkDrive.files.ALL WorkDrive.team.ALL WorkDrive.teamfolders.ALL ZohoCRM.modules.ALL ZohoCRM.settings.ALL ZohoCRM.users.ALL ZohoCRM.org.ALL ZohoCRM.notifications.ALL ZohoCRM.bulk.ALL ZohoCRM.coql.READ ZohoSearch.securesearch.READ ZohoBigin.modules.ALL ZohoBigin.settings.ALL ZohoBigin.users.ALL ZohoBigin.org.ALL ZohoBigin.notifications.ALL ZohoCliq.Channels.CREATE ZohoCliq.Channels.READ ZohoCliq.Channels.UPDATE ZohoCliq.Channels.DELETE ZohoCliq.Chats.CREATE ZohoCliq.Chats.READ ZohoCliq.Chats.UPDATE ZohoCliq.Chats.DELETE ZohoCliq.Messages.CREATE ZohoCliq.Messages.READ ZohoCliq.Messages.UPDATE ZohoCliq.Messages.DELETE ZohoCliq.Webhooks.CREATE ZohoCliq.Users.READ ZohoCliq.Attachments.READ ZohoProjects.portals.READ ZohoProjects.projects.ALL ZohoProjects.projects.READ ZohoCalendar.calendar.READ ZohoProjects.tasks.ALL ZohoCalendar.calendar.ALL ZohoCalendar.event.ALL', 'https://www.zohoapis.in', '2026-10-13 08:04:41', '2026-10-10 08:31:11', '2026-10-13 07:04:41');
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;

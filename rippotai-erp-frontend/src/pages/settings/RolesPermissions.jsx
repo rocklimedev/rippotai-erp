@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import {
   useGetRolesQuery,
+  useGetPermissionPackagesQuery,
+  useApplyPermissionPackageMutation,
   useCreateRoleMutation,
   useDeleteRoleMutation,
   useGetPermissionsQuery,
@@ -57,6 +59,11 @@ export default function RolesPermissions() {
   );
 
   const [selectedRoleId, setSelectedRoleId] = useState(null);
+  const [packageId, setPackageId] = useState('');
+  const { data: permissionPackages = [], isFetching: loadingPackages, isError: packagesError } =
+    useGetPermissionPackagesQuery(undefined, { skip: !isAdmin });
+  const [applyPackage, { isLoading: applyingPackage }] = useApplyPermissionPackageMutation();
+  const selectedPackage = permissionPackages.find((p) => p.id === packageId);
 
   useEffect(() => {
     if (isAdmin && !selectedRoleId && roles.length > 0) {
@@ -84,7 +91,6 @@ export default function RolesPermissions() {
   const [newRoleName, setNewRoleName] = useState("");
   const [newRoleOpen, setNewRoleOpen] = useState(false);
   const [newRoleError, setNewRoleError] = useState("");
-  const [busyPermId, setBusyPermId] = useState(null);
 
   // Local toggle state for the apps panel, seeded from the server and
   // re-synced whenever the selected role (or its fetched grants) change.
@@ -158,7 +164,6 @@ export default function RolesPermissions() {
 
   const handleGrantPermission = async (permissionId) => {
     if (!permissionId || !selectedRoleId) return;
-    setBusyPermId(permissionId);
     try {
       await grantPermissionToRole({
         role_id: selectedRoleId,
@@ -167,13 +172,10 @@ export default function RolesPermissions() {
       toast.success("Permission granted");
     } catch (e) {
       toast.error(e?.data?.detail || "Failed to grant permission");
-    } finally {
-      setBusyPermId(null);
     }
   };
 
   const handleRevokePermission = async (permissionId) => {
-    setBusyPermId(permissionId);
     try {
       await revokeRolePermission({
         roleId: selectedRoleId,
@@ -182,8 +184,6 @@ export default function RolesPermissions() {
       toast.success("Permission revoked");
     } catch (e) {
       toast.error(e?.data?.detail || "Failed to revoke permission");
-    } finally {
-      setBusyPermId(null);
     }
   };
 
@@ -221,7 +221,7 @@ export default function RolesPermissions() {
   }
 
   const appList = Array.isArray(allApps) ? allApps : [];
-  const permBusy = granting || revoking;
+  const permBusy = granting || revoking || applyingPackage;
 
   return (
     <Page>
@@ -338,6 +338,43 @@ export default function RolesPermissions() {
                 onClick={() => handleDeleteRole(selectedRole)}
               >
                 Delete role
+              </Button>
+            </div>
+
+            <div className="adm-section">
+              <h3 className="adm-section__title">Permission packages</h3>
+              <p className="adm-section__desc">
+                Add a reusable package to {humanize(selectedRole.name)}. Existing permissions are preserved.
+                App access is managed separately below.
+              </p>
+              <Field label="Package" htmlFor="permission-package">
+                <select id="permission-package" className="inos-input" value={packageId}
+                  disabled={loadingPackages || permBusy} onChange={(e) => setPackageId(e.target.value)}>
+                  <option value="">Choose a package</option>
+                  {permissionPackages.map((p) => <option key={p.id} value={p.id}>
+                    {humanize(p.name)} ({p.permissions.length} permissions)
+                  </option>)}
+                </select>
+              </Field>
+              {packagesError && <p role="alert">Unable to load permission packages.</p>}
+              {selectedPackage && <>
+                <p className="adm-section__desc">{selectedPackage.description}</p>
+                <details>
+                  <summary>Preview {selectedPackage.permissions.length} permissions</summary>
+                  <div className="adm-chips">{selectedPackage.permissions.map((permission) =>
+                    <span className="adm-chip" key={permission}>{permission}</span>)}</div>
+                </details>
+              </>}
+              <Button variant="primary" disabled={!selectedPackage || permBusy || loadingRolePermissions}
+                onClick={async () => {
+                  try {
+                    await applyPackage({ role_id: selectedRoleId, package_id: packageId }).unwrap();
+                    toast.success('Permission package applied');
+                  } catch (e) {
+                    toast.error(e?.data?.message || 'Failed to apply permission package');
+                  }
+                }}>
+                {applyingPackage ? 'Applying…' : 'Apply package'}
               </Button>
             </div>
 
@@ -482,7 +519,7 @@ export default function RolesPermissions() {
                               className="adm-chip"
                               aria-pressed={on}
                               title={p.description || p.name}
-                              disabled={permBusy && busyPermId === p.id}
+                              disabled={permBusy}
                               onClick={() => togglePermission(p.id)}
                             >
                               <span className="adm-chip__mark">

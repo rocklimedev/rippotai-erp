@@ -1,4 +1,13 @@
-import { IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsUUID, IsString } from 'class-validator';
+
+export class ApplyPermissionPackageDto {
+  @IsUUID()
+  role_id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  package_id: string;
+}
 
 export class CreateRolePermissionDto {
   @IsUUID()

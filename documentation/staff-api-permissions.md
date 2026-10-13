@@ -11,7 +11,7 @@ Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before
 
 Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.
 
-There are 974 routes, 948 staff routes and 405 assignable staff capabilities.
+There are 976 routes, 950 staff routes and 405 assignable staff capabilities.
 
 ## Catalogue by module
 
@@ -610,9 +610,11 @@ There are 974 routes, 948 staff routes and 405 assignable staff capabilities.
 | rbac | `POST /role-apps` | RoleAppsController.grant | `role-apps:grant` | staff |
 | rbac | `DELETE /role-apps/:role_id/:app_code` | RoleAppsController.revoke | `role-apps:revoke` | staff |
 | rbac | `PUT /role-apps/:role_id` | RoleAppsController.setForRole | `role-apps:update` | staff |
+| rbac | `POST /role-permissions/packages/apply` | RolePermissionsController.applyPackage | `role-permissions:assign` | staff |
 | rbac | `POST /role-permissions/bulk` | RolePermissionsController.bulkAssign | `role-permissions:assign` | staff |
 | rbac | `GET /role-permissions` | RolePermissionsController.findAll | `role-permissions:read` | staff |
 | rbac | `GET /role-permissions/matrix` | RolePermissionsController.getMatrix | `role-permissions:read` | staff |
+| rbac | `GET /role-permissions/packages` | RolePermissionsController.getPackages | `role-permissions:read` | staff |
 | rbac | `POST /role-permissions` | RolePermissionsController.grant | `role-permissions:grant` | staff |
 | rbac | `DELETE /role-permissions/:role_id/:permission_id` | RolePermissionsController.revoke | `role-permissions:revoke` | staff |
 | rbac | `POST /rbac` | RolesController.create | `rbac:create` | staff |

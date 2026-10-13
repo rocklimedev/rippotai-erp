@@ -14,6 +14,7 @@ import { RolePermissionsService } from './role-permissions.service';
 import {
   CreateRolePermissionDto,
   BulkAssignPermissionsDto,
+  ApplyPermissionPackageDto,
 } from './dto/role-permission.dto';
 
 @Controller('role-permissions')
@@ -21,6 +22,18 @@ export class RolePermissionsController {
   constructor(
     private readonly rolePermissionsService: RolePermissionsService,
   ) {}
+
+  @RequirePermission('role-permissions:read')
+  @Get('packages')
+  getPackages() {
+    return this.rolePermissionsService.getPackages();
+  }
+
+  @RequirePermission('role-permissions:assign')
+  @Post('packages/apply')
+  applyPackage(@Body() dto: ApplyPermissionPackageDto) {
+    return this.rolePermissionsService.applyPackage(dto.role_id, dto.package_id);
+  }
 
   @RequirePermission('role-permissions:grant')
   @Post()
