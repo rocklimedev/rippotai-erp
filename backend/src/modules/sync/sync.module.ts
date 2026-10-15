@@ -1,3 +1,4 @@
+import { ScheduledJobsModule } from '@/common/jobs/scheduled-jobs.module';
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { Task } from '../tasks/models/task.model';
@@ -17,6 +18,7 @@ import { TaskZohoSyncController } from './task-zoho-sync.controller';
 import { CalendarZohoSyncController } from './calendar-zoho-sync.controller';
 @Module({
   imports: [
+    ScheduledJobsModule,
     SequelizeModule.forFeature([
       Task,
       CalendarEvent,
@@ -26,8 +28,17 @@ import { CalendarZohoSyncController } from './calendar-zoho-sync.controller';
     ZohoModule,
     AuthModule,
   ],
-  controllers: [SyncController, TaskZohoSyncController, CalendarZohoSyncController],
-  providers: [ReminderSyncService, TaskSyncService, CalendarSyncService, LocalZohoSyncService],
+  controllers: [
+    SyncController,
+    TaskZohoSyncController,
+    CalendarZohoSyncController,
+  ],
+  providers: [
+    ReminderSyncService,
+    TaskSyncService,
+    CalendarSyncService,
+    LocalZohoSyncService,
+  ],
   exports: [TaskSyncService, CalendarSyncService],
 })
 export class SyncModule {}

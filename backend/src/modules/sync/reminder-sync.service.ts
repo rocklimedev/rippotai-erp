@@ -1,9 +1,8 @@
+import { ScheduledJobsService } from '@/common/jobs/scheduled-jobs.service';
 import {
   BadRequestException,
   ConflictException,
   Injectable,
-  Logger,
-  OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -28,10 +27,7 @@ import {
 } from './reminder-payload';
 
 @Injectable()
-export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(ReminderSyncService.name);
-  private timer?: ReturnType<typeof setInterval>;
-  private polling = false;
+export class ReminderSyncService implements OnModuleInit {
   constructor(
     @InjectModel(Task) private readonly tasks: typeof Task,
     @InjectModel(CalendarEvent) private readonly events: typeof CalendarEvent,
@@ -41,34 +37,28 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
     private readonly records: typeof ReminderSyncRecord,
     private readonly zohoTasks: ZohoTasksService,
     private readonly zohoCalendar: ZohoCalendarService,
+    private readonly jobs: ScheduledJobsService,
   ) {}
 
-  onModuleInit() {
-    this.timer = setInterval(() => void this.poll(), 60000);
-    this.timer.unref();
-  }
-  onModuleDestroy() {
-    if (this.timer) clearInterval(this.timer);
+  async onModuleInit() {
+    await this.jobs.register('zoho-reminder-poll', 60_000, () => this.poll());
   }
 
   private async poll() {
-    if (this.polling) return;
-    this.polling = true;
-    try {
-      const configs = await this.settings.findAll({ where: { enabled: true } });
-      for (const config of configs) {
-        try {
-          await this.sync(config.user_id, config.kind);
-        } catch (error) {
-          if (!(error instanceof ConflictException))
-            this.logger.warn(this.message(error));
-        }
+    const configs = await this.settings.findAll({ where: { enabled: true } });
+    const errors: string[] = [];
+    for (const config of configs) {
+      try {
+        const result = await this.sync(config.user_id, config.kind);
+        if (!result.success)
+          errors.push(
+            `${config.id}: ${result.failed} failed; ${result.uncertain} uncertain`,
+          );
+      } catch (error) {
+        errors.push(`${config.id}: ${this.message(error)}`);
       }
-    } catch (error) {
-      this.logger.warn(this.message(error));
-    } finally {
-      this.polling = false;
     }
+    if (errors.length) throw new Error(errors.join('; '));
   }
 
   private message(error: unknown) {
@@ -84,11 +74,18 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
         }
       : { created_by: userId };
   }
-  private async localRecords(userId: string, kind: ReminderKind, config: Record<string, any> = {}) {
+  private async localRecords(
+    userId: string,
+    kind: ReminderKind,
+    config: Record<string, any> = {},
+  ) {
     const where = this.scope(userId, kind);
     return kind === 'tasks'
-      ? this.tasks.findAll({ where: config.include_undated_tasks
-          ? where : { ...where, due_date: { [Op.ne]: null } } })
+      ? this.tasks.findAll({
+          where: config.include_undated_tasks
+            ? where
+            : { ...where, due_date: { [Op.ne]: null } },
+        })
       : this.events.findAll({ where });
   }
   private payload(row: any, kind: ReminderKind, config: Record<string, any>) {
@@ -104,7 +101,13 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
     return {
       enabled: row?.enabled ?? false,
       ...(row?.config ?? {}),
-      ...(kind === 'tasks' ? { include_undated_tasks: row ? Boolean(row.config?.include_undated_tasks) : true } : {}),
+      ...(kind === 'tasks'
+        ? {
+            include_undated_tasks: row
+              ? Boolean(row.config?.include_undated_tasks)
+              : true,
+          }
+        : {}),
       last_run: row?.last_run ?? null,
       last_error: row?.last_error ?? null,
     };
@@ -114,38 +117,70 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
     const data = response?.data ?? response;
     const items = Array.isArray(data) ? data : data?.[key];
     if (!Array.isArray(items))
-      throw new BadRequestException(`Could not load Zoho ${key}. Reconnect Zoho reminders and try again.`);
-    return items.filter((item) => item?.id_string || item?.id).map((item) => ({
-      id: String(item.id_string || item.id),
-      name: item.name || String(item.id_string || item.id),
-    }));
+      throw new BadRequestException(
+        `Could not load Zoho ${key}. Reconnect Zoho reminders and try again.`,
+      );
+    return items
+      .filter((item) => item?.id_string || item?.id)
+      .map((item) => ({
+        id: String(item.id_string || item.id),
+        name: item.name || String(item.id_string || item.id),
+      }));
   }
 
   async taskUsers(userId: string, portalId: string, projectId: string) {
-    const response = await this.zohoTasks.listProjectUsers(userId, portalId, projectId);
+    const response = await this.zohoTasks.listProjectUsers(
+      userId,
+      portalId,
+      projectId,
+    );
     const data = response?.data ?? response;
     const users = Array.isArray(data) ? data : data?.users;
-    if (!Array.isArray(users)) throw new BadRequestException('Could not load Zoho project users. Reconnect Zoho and try again.');
-    return users.filter(user => user.active !== false).map(user => {
-      const id = user.id_string ?? user.id;
-      if (!id || (typeof id === 'number' && !Number.isSafeInteger(id))) {
-        throw new BadRequestException('Zoho returned an invalid user ID. Reconnect and try again.');
-      }
-      return { id: String(id), name: user.name || String(id), email: user.email || '' };
-    });
+    if (!Array.isArray(users))
+      throw new BadRequestException(
+        'Could not load Zoho project users. Reconnect Zoho and try again.',
+      );
+    return users
+      .filter((user) => user.active !== false)
+      .map((user) => {
+        const id = user.id_string ?? user.id;
+        if (!id || (typeof id === 'number' && !Number.isSafeInteger(id))) {
+          throw new BadRequestException(
+            'Zoho returned an invalid user ID. Reconnect and try again.',
+          );
+        }
+        return {
+          id: String(id),
+          name: user.name || String(id),
+          email: user.email || '',
+        };
+      });
   }
 
   async taskPortals(userId: string) {
-    return this.destinationList(await this.zohoTasks.listPortals(userId), 'portals');
+    return this.destinationList(
+      await this.zohoTasks.listPortals(userId),
+      'portals',
+    );
   }
 
   async taskProjects(userId: string, portalId: string) {
     const projects: { id: string; name: string }[] = [];
     const limit = 100;
     for (let index = 1; ; index += limit) {
-      const page = this.destinationList(await this.zohoTasks.listProjects(userId, portalId, { index, range: limit }), 'projects');
-      if (page.some((item) => projects.some((project) => project.id === item.id)))
-        throw new BadRequestException('Could not load all Zoho projects. Try again later.');
+      const page = this.destinationList(
+        await this.zohoTasks.listProjects(userId, portalId, {
+          index,
+          range: limit,
+        }),
+        'projects',
+      );
+      if (
+        page.some((item) => projects.some((project) => project.id === item.id))
+      )
+        throw new BadRequestException(
+          'Could not load all Zoho projects. Try again later.',
+        );
       projects.push(...page);
       if (page.length < limit) return projects;
     }
@@ -242,6 +277,16 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
     kind: ReminderKind,
     dto: ReminderSettingsDto,
   ) {
+    return this.jobs.exclusive(`reminder:${userId}:${kind}`, () =>
+      this.saveSettingsOwned(userId, kind, dto),
+    );
+  }
+
+  private async saveSettingsOwned(
+    userId: string,
+    kind: ReminderKind,
+    dto: ReminderSettingsDto,
+  ) {
     const { enabled, ...config } = dto;
     if (enabled) this.validate(kind, config);
     const [row] = await this.settings.findOrCreate({
@@ -292,15 +337,27 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
       where: { user_id: userId, kind },
     });
     const local = await this.localRecords(userId, kind, settings);
-    const localStatus = local.map(row => {
-      const mapping = mappings.find(m => m.local_id === row.id);
+    const localStatus = local.map((row) => {
+      const mapping = mappings.find((m) => m.local_id === row.id);
       let state = mapping?.status || 'pending';
       try {
-        if (state === 'synced' && mapping?.fingerprint !== fingerprint(this.payload(row, kind, settings))) state = 'pending';
-      } catch { state = 'pending'; }
-      return { local_id: row.id, title: row.title, status: state,
-        remote_id: mapping?.remote_id || null, synced_at: mapping?.synced_at || null,
-        error: mapping?.error || null };
+        if (
+          state === 'synced' &&
+          mapping?.fingerprint !==
+            fingerprint(this.payload(row, kind, settings))
+        )
+          state = 'pending';
+      } catch {
+        state = 'pending';
+      }
+      return {
+        local_id: row.id,
+        title: row.title,
+        status: state,
+        remote_id: mapping?.remote_id || null,
+        synced_at: mapping?.synced_at || null,
+        error: mapping?.error || null,
+      };
     });
     let pending = 0;
     for (const row of local) {
@@ -336,7 +393,9 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
           local_id: m.local_id,
           message: m.error,
           status: m.status,
-          title: local.find(row => row.id === m.local_id)?.title || 'Removed or reassigned item',
+          title:
+            local.find((row) => row.id === m.local_id)?.title ||
+            'Removed or reassigned item',
         })),
       last_sync: settings.last_run,
       direction: 'local_to_zoho',
@@ -345,6 +404,16 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
   }
 
   async sync(userId: string, kind: ReminderKind, options: SyncOptionsDto = {}) {
+    return this.jobs.exclusive(`reminder:${userId}:${kind}`, () =>
+      this.syncOwned(userId, kind, options),
+    );
+  }
+
+  private async syncOwned(
+    userId: string,
+    kind: ReminderKind,
+    options: SyncOptionsDto,
+  ) {
     if (options.pull_only)
       throw new BadRequestException(
         'Local database owns reminder data. Pull sync is disabled.',
@@ -550,6 +619,17 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
   }
 
   async reconcile(
+    userId: string,
+    kind: ReminderKind,
+    localId: string,
+    remote: string,
+  ) {
+    return this.jobs.exclusive(`reminder:${userId}:${kind}`, () =>
+      this.reconcileOwned(userId, kind, localId, remote),
+    );
+  }
+
+  private async reconcileOwned(
     userId: string,
     kind: ReminderKind,
     localId: string,

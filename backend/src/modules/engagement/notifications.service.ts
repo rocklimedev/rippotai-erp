@@ -1,3 +1,4 @@
+import { Transaction } from 'sequelize';
 import { Injectable, Inject, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import Redis from 'ioredis';
@@ -44,24 +45,37 @@ export class NotificationsService {
     return notification;
   }
 
-  async createMany(dtos: CreateNotificationDto[]): Promise<void> {
+  async createMany(
+    dtos: CreateNotificationDto[],
+    transaction?: Transaction,
+  ): Promise<void> {
     if (!dtos.length) return;
 
     const created = await this.notificationModel.bulkCreate(dtos as any[], {
       returning: true,
+      transaction,
     });
 
-    const affectedUsers = new Set(created.map((n) => n.user_id));
-    if (affectedUsers.size) {
-      await this.invalidate([...affectedUsers]);
-    }
+    const publish = async () => {
+      const affectedUsers = new Set(created.map((n) => n.user_id));
+      if (affectedUsers.size) {
+        await this.invalidate([...affectedUsers]);
+      }
 
-    for (const notification of created) {
-      this.notificationsGateway.emitToUser(
-        notification.user_id,
-        notification.toJSON() as any,
+      for (const notification of created) {
+        this.notificationsGateway.emitToUser(
+          notification.user_id,
+          notification.toJSON() as any,
+        );
+      }
+    };
+    if (transaction)
+      transaction.afterCommit(() =>
+        publish().catch((error) => {
+          this.logger.warn(`Notification delivery failed: ${error.message}`);
+        }),
       );
-    }
+    else await publish();
   }
 
   async getUnreadCount(user_id: string): Promise<number> {
