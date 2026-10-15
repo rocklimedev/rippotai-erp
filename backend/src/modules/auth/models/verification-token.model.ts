@@ -40,6 +40,9 @@ export class VerificationToken extends Model<VerificationToken> {
   })
   declare token: string;
 
+  @Column({ type: DataType.STRING(255), allowNull: true })
+  declare email: string | null;
+
   @Column({
     type: DataType.ENUM(...Object.values(VerificationTokenType)),
     allowNull: false,

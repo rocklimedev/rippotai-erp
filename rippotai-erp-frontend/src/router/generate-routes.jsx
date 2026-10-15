@@ -1,7 +1,7 @@
 import { Route, Navigate } from "react-router-dom";
 import { Protected, PublicOnly, sectionRoutes } from "../lib/route.helpers";
 
-function resolveChildren(children = [], dynamicSections) {
+function resolveChildren(children = [], dynamicSections, basePath) {
   const rendered = children.map((child) => (
     <Route
       key={child.path ?? "index"}
@@ -10,6 +10,19 @@ function resolveChildren(children = [], dynamicSections) {
       element={child.element}
     />
   ));
+
+  if (
+    dynamicSections &&
+    !children.some((child) => child.path === "edit-dashboard")
+  ) {
+    rendered.push(
+      <Route
+        key="edit-dashboard"
+        path="edit-dashboard"
+        element={<Navigate to={`${basePath}?edit=1`} replace />}
+      />,
+    );
+  }
 
   if (dynamicSections) {
     const staticPaths = children.filter((c) => c.path).map((c) => c.path);
@@ -89,7 +102,7 @@ export function generateRoutes(routes) {
               </Protected>
             }
           >
-            {resolveChildren(route.children, route.dynamicSections)}
+            {resolveChildren(route.children, route.dynamicSections, route.path)}
           </Route>
         );
       }

@@ -841,7 +841,7 @@ export default function AppDashboard({ appKey }) {
         </h1>
         {!editing && (
           <div className="flex items-center gap-2 shrink-0">
-            {appKey === "siteOperations" && (
+            {["siteOperations", "build"].includes(appKey) && (
               // Site Operations widgets follow ?project= (widgets/siteops useDash)
               <div style={{ width: 240 }} data-testid="dashboard-project-filter">
                 <ProjectPicker

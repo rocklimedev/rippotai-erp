@@ -15,29 +15,7 @@ function decorators(node) {
       value: ts.isCallExpression(e) && e.arguments[0] ? e.arguments[0].text : undefined, node: d };
   });
 }
-function scan() {
-  const routes = [];
-  for (const file of files(path.join(root, 'src'))) {
-    const source = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true);
-    for (const cls of source.statements.filter(ts.isClassDeclaration)) {
-      const controller = decorators(cls).find(d => d.name === 'Controller');
-      if (!controller) continue;
-      for (const member of cls.members.filter(ts.isMethodDeclaration)) {
-        const ds = decorators(member);
-        const http = ds.find(d => ['Get','Post','Put','Patch','Delete','Head','Options','All'].includes(d.name));
-        if (!http) continue;
-        if (http.value !== undefined && typeof http.value !== 'string') throw Error('Nonliteral route');
-        routes.push({ module: file.endsWith(`${path.sep}app.controller.ts`) ? 'system' : path.relative(path.join(root, 'src'), file).replaceAll('\\', '/').split('/')[1],
-          controller: cls.name.text, handler: member.name.getText(source), method: http.name.toUpperCase(),
-          path: '/' + [controller.value, http.value].filter(Boolean).join('/').replace(/^\/+|\/+$/g, ''),
-          permission: ds.find(d => d.name === 'RequirePermission')?.value,
-          public: ds.some(d => d.name === 'Public'),
-          file: path.relative(root, file).replaceAll('\\', '/') });
-      }
-    }
-  }
-  return routes.sort((a,b) => `${a.module}/${a.controller}/${a.handler}`.localeCompare(`${b.module}/${b.controller}/${b.handler}`));
-}
+const { scan } = require('./route-inventory.cjs');
 function render(routes) {
   for (const r of routes) if (!/^[a-z][a-z0-9_-]*:[a-z][a-z0-9_-]*$/.test(r.permission || '')) throw Error(`Missing/invalid permission: ${r.controller}.${r.handler}`);
   const keys = new Set(routes.map(r => `${r.controller}.${r.handler}`));
@@ -58,7 +36,7 @@ function artefacts(routes) {
     `\nINSERT IGNORE INTO role_permissions (role_id, permission_id, granted_at, granted_by)\nSELECT r.id, p.id, NOW(), NULL FROM roles r CROSS JOIN permissions p\nWHERE r.name IN ('ADMIN', 'SUPERADMIN') AND CONCAT(p.resource, ':', p.action) IN (\n${permissions.map(p=>`  '${p}'`).join(',\n')}\n);\nCOMMIT;\n`;
   const doc = '# Staff API permissions and route map\n\nReview owner: Backend security / ERP module maintainers\nLast reviewed: 2026-10-10\n\n' +
     'Global guard order: throttling → JWT authentication → PortalAccessGuard → PermissionsGuard. Missing actor IDs, staff roles, or permission metadata fail closed. USER is denied every staff route even with grants. ADMIN/SUPERADMIN do not bypass permission checks. Permission grants are loaded from the database for each authenticated request.\n\n' +
-    'Public endpoints retain the separately audited @Public allow-list and their existing password/OAuth/client-link validation. Account exceptions are an exact controller/handler/permission allow-list in account-route-policy.ts: own profile, own sessions, client home, auth/me, logout and password change. Profile mutations check target ID before invoking the handler. Cross-user session lookup additionally requires ADMIN/SUPERADMIN and `sessions:read-any`; revocation additionally requires ADMIN/SUPERADMIN and `sessions:revoke-any`. Token deletion remains staff permission plus admin-only. Inactive accounts may only inspect auth/me or log out.\n\n' +
+    'Public endpoints retain the separately audited @Public allow-list and their existing password/OAuth/client-link validation. Account exceptions are an exact controller/handler/permission allow-list in account-route-policy.ts: own profile, own sessions, client home, auth/me, logout and password change. Profile mutations check target ID before invoking the handler. Cross-user session lookup additionally requires ADMIN/SUPERADMIN and `sessions:read-any`; revocation additionally requires ADMIN/SUPERADMIN and `sessions:revoke-any`. Token deletion remains staff permission plus admin-only. Authentication rejects disabled accounts and accounts without verification of their current email; verification never grants a session.\n\n' +
     'Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before deploying. This idempotent migration creates the catalogue and grants reviewed staff capabilities to existing ADMIN/SUPERADMIN roles; other staff roles must be assigned only the module capabilities they need via the RBAC matrix. No grants are copied to USER. Review role assignments in staging before rollout. The migration has not been applied by this task.\n\n' +
     'Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.\n\n' +
     `There are ${routes.length} routes, ${staff.length} staff routes and ${permissions.length} assignable staff capabilities.\n\n## Catalogue by module\n\n| Module | Resource:action capabilities |\n| --- | --- |\n` +

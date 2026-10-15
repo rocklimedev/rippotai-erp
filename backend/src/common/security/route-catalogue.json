@@ -52,6 +52,16 @@
   {
     "module": "auth",
     "controller": "AuthController",
+    "handler": "requestEmailVerification",
+    "method": "POST",
+    "path": "/auth/request-email-verification",
+    "permission": "auth:request-email-verification",
+    "public": true,
+    "file": "src/modules/auth/auth.controller.ts"
+  },
+  {
+    "module": "auth",
+    "controller": "AuthController",
     "handler": "resetPassword",
     "method": "POST",
     "path": "/auth/reset-password",
@@ -66,6 +76,16 @@
     "method": "POST",
     "path": "/auth/signup",
     "permission": "auth:signup",
+    "public": true,
+    "file": "src/modules/auth/auth.controller.ts"
+  },
+  {
+    "module": "auth",
+    "controller": "AuthController",
+    "handler": "verifyEmail",
+    "method": "POST",
+    "path": "/auth/verify-email",
+    "permission": "auth:verify-email",
     "public": true,
     "file": "src/modules/auth/auth.controller.ts"
   },
@@ -8185,6 +8205,16 @@
     "handler": "update",
     "method": "PATCH",
     "path": "/users/:id",
+    "permission": "users:update",
+    "public": false,
+    "file": "src/modules/users/users.controller.ts"
+  },
+  {
+    "module": "users",
+    "controller": "UsersController",
+    "handler": "updateEmailVerification",
+    "method": "PATCH",
+    "path": "/users/:id/email-verification",
     "permission": "users:update",
     "public": false,
     "file": "src/modules/users/users.controller.ts"

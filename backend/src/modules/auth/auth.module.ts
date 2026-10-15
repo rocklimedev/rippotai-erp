@@ -12,6 +12,7 @@ import { GoogleOAuthController } from './oauth/google-oauth.controller';
 import { MicrosoftOAuthController } from './oauth/microsoft-oauth.controller';
 
 import { AuthService } from './auth.service';
+import { EmailVerificationService } from './email-verification.service';
 import { AuthTokensService } from './auth-tokens.service';
 import { VerificationTokensService } from './verification-tokens.service';
 import { OAuthStateService } from './oauth/oauth-state.service';
@@ -63,6 +64,7 @@ import { MicrosoftModule } from '../microsoft/microsoft.module';
     MicrosoftOAuthController,
   ],
   providers: [
+    EmailVerificationService,
     AuthService,
     AuthTokensService,
     VerificationTokensService,

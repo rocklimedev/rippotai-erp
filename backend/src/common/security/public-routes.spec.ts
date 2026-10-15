@@ -6,6 +6,8 @@ import * as ts from 'typescript';
 const APPROVED_PUBLIC_ROUTES = [
   'POST auth/login',
   'POST auth/signup',
+  'POST auth/request-email-verification',
+  'POST auth/verify-email',
   'POST auth/forgot-password',
   'POST auth/reset-password',
   'GET auth/google/callback',

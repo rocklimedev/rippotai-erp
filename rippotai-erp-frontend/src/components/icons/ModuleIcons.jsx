@@ -14,7 +14,12 @@ function Glass({ id, back, front, glyph }) {
   const c = `inos-clip-${id}`;
   const g = `inos-sheen-${id}`;
   return (
-    <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
+    <svg
+      viewBox="0 0 80 80"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      aria-hidden="true"
+    >
       <defs>
         <filter id={f} x="-30%" y="-30%" width="160%" height="160%">
           <feGaussianBlur stdDeviation="4" />
@@ -51,12 +56,25 @@ const make = (id, parts) => {
 
 export const IconProjects = make("projects", {
   back: <path d="M24 14h14l5 5h19a5 5 0 0 1 5 5v22H24z" />,
-  front: <path d="M13 29a6 6 0 0 1 6-6h13l5 5h23a6 6 0 0 1 6 6v26a6 6 0 0 1-6 6H19a6 6 0 0 1-6-6z" />,
-  glyph: <path d="M24 53h18" stroke={W} strokeWidth="3.5" strokeLinecap="round" />,
+  front: (
+    <path d="M13 29a6 6 0 0 1 6-6h13l5 5h23a6 6 0 0 1 6 6v26a6 6 0 0 1-6 6H19a6 6 0 0 1-6-6z" />
+  ),
+  glyph: (
+    <path d="M24 53h18" stroke={W} strokeWidth="3.5" strokeLinecap="round" />
+  ),
 });
 
 export const IconDesignStudio = make("design", {
-  back: <rect x="44" y="8" width="11" height="44" rx="3" transform="rotate(35 49.5 30)" />,
+  back: (
+    <rect
+      x="44"
+      y="8"
+      width="11"
+      height="44"
+      rx="3"
+      transform="rotate(35 49.5 30)"
+    />
+  ),
   front: <rect x="12" y="24" width="46" height="44" rx="7" />,
   glyph: (
     <g stroke={W} strokeWidth="2.5" strokeLinecap="round">
@@ -72,7 +90,9 @@ export const IconCRM = make("crm", {
       <path d="M38 54c0-10 8-17 18-17s18 7 18 17v4H38z" />
     </>
   ),
-  front: <path d="M10 30a8 8 0 0 1 8-8h24a8 8 0 0 1 8 8v16a8 8 0 0 1-8 8H27l-8 7v-7h-1a8 8 0 0 1-8-8z" />,
+  front: (
+    <path d="M10 30a8 8 0 0 1 8-8h24a8 8 0 0 1 8 8v16a8 8 0 0 1-8 8H27l-8 7v-7h-1a8 8 0 0 1-8-8z" />
+  ),
   glyph: (
     <g stroke={W} strokeWidth="3" strokeLinecap="round">
       <path d="M20 34h20M20 42h12" />
@@ -81,8 +101,19 @@ export const IconCRM = make("crm", {
 });
 
 export const IconLedger = make("ledger", {
-  back: <rect x="20" y="10" width="38" height="26" rx="5" transform="rotate(-8 39 23)" />,
-  front: <path d="M12 30a7 7 0 0 1 7-7h9a6 6 0 0 0 12 0h21a7 7 0 0 1 7 7v28a7 7 0 0 1-7 7H19a7 7 0 0 1-7-7z" />,
+  back: (
+    <rect
+      x="20"
+      y="10"
+      width="38"
+      height="26"
+      rx="5"
+      transform="rotate(-8 39 23)"
+    />
+  ),
+  front: (
+    <path d="M12 30a7 7 0 0 1 7-7h9a6 6 0 0 0 12 0h21a7 7 0 0 1 7 7v28a7 7 0 0 1-7 7H19a7 7 0 0 1-7-7z" />
+  ),
   glyph: (
     <g stroke={W} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
       <path d="M33 38h14M33 44h14M39 38c5 0 5 7 0 7h-5l9 10" />
@@ -92,7 +123,9 @@ export const IconLedger = make("ledger", {
 
 export const IconSiteOperations = make("siteops", {
   back: <path d="M16 52h48l7 17H9z" />,
-  front: <path d="M40 8c11 0 19 8 19 19 0 13-15 27-19 31-4-4-19-18-19-31 0-11 8-19 19-19z" />,
+  front: (
+    <path d="M40 8c11 0 19 8 19 19 0 13-15 27-19 31-4-4-19-18-19-31 0-11 8-19 19-19z" />
+  ),
   glyph: <circle cx="40" cy="27" r="6.5" fill={W} />,
 });
 
@@ -119,7 +152,16 @@ export const IconInventory = make("inventory", {
 });
 
 export const IconTasks = make("tasks", {
-  back: <path d="M24 38l12 12 26-28" stroke={P} strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" fill="none" />,
+  back: (
+    <path
+      d="M24 38l12 12 26-28"
+      stroke={P}
+      strokeWidth="9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+  ),
   front: <circle cx="36" cy="50" r="12" />,
   glyph: null,
 });
@@ -133,12 +175,29 @@ export const IconCalendar = make("calendar", {
   ),
   front: <rect x="12" y="16" width="56" height="54" rx="10" />,
   glyph: (
-    <text x="40" y="57" textAnchor="middle" fontFamily="Plus Jakarta Sans Variable, Plus Jakarta Sans, system-ui, sans-serif" fontSize="24" fontWeight="800" fill={W}>
+    <text
+      x="40"
+      y="57"
+      textAnchor="middle"
+      fontFamily="Plus Jakarta Sans Variable, Plus Jakarta Sans, system-ui, sans-serif"
+      fontSize="24"
+      fontWeight="800"
+      fill={W}
+    >
       31
     </text>
   ),
 });
-
+export const IconDesign = make("design-app", {
+  back: <path d="M50 10l20 20-22 22-20-20z" />,
+  front: <rect x="12" y="30" width="48" height="40" rx="8" />,
+  glyph: (
+    <g stroke={W} strokeWidth="3" strokeLinecap="round">
+      <path d="M22 56l20-20" />
+      <circle cx="22" cy="56" r="2.5" fill={W} stroke="none" />
+    </g>
+  ),
+});
 export const IconCommandCenter = make("command", {
   back: <circle cx="50" cy="40" r="22" />,
   front: <circle cx="30" cy="40" r="22" />,
@@ -204,6 +263,43 @@ export const IconSettings = make("settings", {
   glyph: null,
 });
 
+export const IconBuild = make("build", {
+  back: (
+    <>
+      {/* Rear building structure */}
+      <path d="M44 12h20v52H44z" />
+      <path d="M49 19h5v7h-5zM57 19h5v7h-5zM49 31h5v7h-5zM57 31h5v7h-5z" />
+    </>
+  ),
+  front: (
+    <>
+      {/* Main construction building */}
+      <path d="M12 66V32l28-18 28 18v34H12z" />
+      <path
+        d="M7 34l33-22 33 22"
+        stroke={W}
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      <path d="M31 66V47a9 9 0 0 1 18 0v19" />
+    </>
+  ),
+  glyph: (
+    <g
+      stroke={W}
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    >
+      <path d="M22 39h7M22 47h7" />
+      <path d="M53 44h7M53 52h7" />
+    </g>
+  ),
+});
+
 /* ---------------------------------------------------------------- extra keys still referenced */
 
 export const IconBoq = make("boq", {
@@ -217,8 +313,19 @@ export const IconBoq = make("boq", {
 });
 
 export const IconQuotations = make("quotes", {
-  back: <rect x="36" y="14" width="30" height="36" rx="6" transform="rotate(22 51 32)" />,
-  front: <path d="M16 30l14-14h14a6 6 0 0 1 6 6v40a6 6 0 0 1-6 6H22a6 6 0 0 1-6-6z" />,
+  back: (
+    <rect
+      x="36"
+      y="14"
+      width="30"
+      height="36"
+      rx="6"
+      transform="rotate(22 51 32)"
+    />
+  ),
+  front: (
+    <path d="M16 30l14-14h14a6 6 0 0 1 6 6v40a6 6 0 0 1-6 6H22a6 6 0 0 1-6-6z" />
+  ),
   glyph: (
     <g stroke={W} strokeWidth="3" strokeLinecap="round">
       <circle cx="29" cy="28" r="2.5" fill={W} />
@@ -263,14 +370,29 @@ export const IconLeads = make("leads", {
       <path d="M46 44c0-8 5-14 12-14s12 6 12 14z" />
     </>
   ),
-  front: <path d="M10 26a7 7 0 0 1 7-7h28a7 7 0 0 1 7 7v18a7 7 0 0 1-7 7H32l-6 7-6-7h-3a7 7 0 0 1-7-7z" />,
+  front: (
+    <path d="M10 26a7 7 0 0 1 7-7h28a7 7 0 0 1 7 7v18a7 7 0 0 1-7 7H32l-6 7-6-7h-3a7 7 0 0 1-7-7z" />
+  ),
   glyph: <path d="M24 30c-4-4-10 1-5 6l5 5 5-5c5-5-1-10-5-6z" fill={W} />,
 });
 
 export const IconDocuments = make("documents", {
-  back: <rect x="26" y="10" width="36" height="44" rx="6" transform="rotate(8 44 32)" />,
-  front: <path d="M10 32a6 6 0 0 1 6-6h14l5 5h29a6 6 0 0 1 6 6v25a6 6 0 0 1-6 6H16a6 6 0 0 1-6-6z" />,
-  glyph: <path d="M22 54h20" stroke={W} strokeWidth="3.5" strokeLinecap="round" />,
+  back: (
+    <rect
+      x="26"
+      y="10"
+      width="36"
+      height="44"
+      rx="6"
+      transform="rotate(8 44 32)"
+    />
+  ),
+  front: (
+    <path d="M10 32a6 6 0 0 1 6-6h14l5 5h29a6 6 0 0 1 6 6v25a6 6 0 0 1-6 6H16a6 6 0 0 1-6-6z" />
+  ),
+  glyph: (
+    <path d="M22 54h20" stroke={W} strokeWidth="3.5" strokeLinecap="round" />
+  ),
 });
 
 export const IconNotes = make("notes", {
@@ -288,6 +410,18 @@ export const IconNotes = make("notes", {
 export const MODULE_ICONS = {
   dashboard: IconDashboard,
 
+  // Design app (Design Studio + CRM + Ledger documents)
+  design: IconDesign,
+  designStudio: IconDesignStudio,
+  design_studio: IconDesignStudio,
+
+  // Build app (Inventory + Procurement + Site Operations + BOQ library)
+  build: IconBuild,
+  inventory: IconInventory,
+  procurement: IconMaterials,
+  materials: IconMaterials,
+  siteOperations: IconSiteOperations,
+
   boq: IconBoq,
   projects: IconProjects,
   quotations: IconQuotations,
@@ -301,16 +435,8 @@ export const MODULE_ICONS = {
   automation: IconAutomation,
   documents: IconDocuments,
 
-  // Both spellings are used across the app (APP_META vs DASHBOARD_CONFIG)
-  designStudio: IconDesignStudio,
-  design_studio: IconDesignStudio,
-
-  procurement: IconMaterials,
-  materials: IconMaterials,
-  siteOperations: IconSiteOperations,
   tasks: IconTasks,
   notes: IconNotes,
-  inventory: IconInventory,
   calendar: IconCalendar,
   settings: IconSettings,
   adminConsole: IconAdminConsole,

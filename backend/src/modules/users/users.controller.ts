@@ -13,10 +13,14 @@ import {
   BadRequestException,
   UnauthorizedException,
   UseGuards,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 import { UsersService } from './users.service';
+import { ManualEmailVerificationService } from './manual-email-verification.service';
+import { UpdateEmailVerificationDto } from './dto/email-verification.dto';
 import { CreateUserDto, UpdateUserDto, UpdateProfileDto } from './dto/user.dto';
 
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
@@ -25,7 +29,21 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly emailVerification: ManualEmailVerificationService,
+  ) {}
+
+  @RequirePermission('users:update')
+  @Patch(':id/email-verification')
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  updateEmailVerification(
+    @Param('id') id: string,
+    @Body() dto: UpdateEmailVerificationDto,
+    @CurrentUser() actor: any,
+  ) {
+    return this.emailVerification.update(id, dto.verified, actor);
+  }
 
   // =========================================================
   // CREATE USER (Admin)

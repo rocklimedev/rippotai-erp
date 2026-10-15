@@ -2,6 +2,12 @@ import { baseApi } from "../../store/baseApi";
 
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    requestEmailVerification: builder.mutation({
+      query: (body) => ({ url: "/auth/request-email-verification", method: "POST", body }),
+    }),
+    verifyEmail: builder.mutation({
+      query: (body) => ({ url: "/auth/verify-email", method: "POST", body }),
+    }),
     // =========================
     // AUTH CONTROLLER
     // =========================
@@ -96,6 +102,8 @@ export const authApi = baseApi.injectEndpoints({
 });
 
 export const {
+  useRequestEmailVerificationMutation,
+  useVerifyEmailMutation,
   useLoginMutation,
   useSignupMutation,
   useLogoutMutation,

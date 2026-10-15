@@ -68,15 +68,26 @@ export class MailService {
     name: string,
     verifyUrl: string,
   ): Promise<void> {
+    const safeName = name.replace(
+      /[&<>"']/g,
+      (character) =>
+        ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;',
+        })[character]!,
+    );
     const html = `
       <div style="font-family: Arial,sans-serif;max-width:480px;margin:auto">
 
         <h2>Verify your email</h2>
 
-        <p>Hi ${name},</p>
+        <p>Hi ${safeName},</p>
 
         <p>
-          Please confirm your email address to activate your
+          Please confirm your email address before signing in to your
           INOS RIPPOTAI account.
         </p>
 
