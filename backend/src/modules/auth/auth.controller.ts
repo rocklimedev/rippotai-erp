@@ -22,6 +22,11 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { SignupDto } from './dto/signup.dto';
+import { EmailVerificationService } from './email-verification.service';
+import {
+  RequestEmailVerificationDto,
+  VerifyEmailDto,
+} from './dto/email-verification.dto';
 class LoginDto {
   @IsEmail()
   email: string;
@@ -35,6 +40,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly forgotPasswordService: ForgotPasswordService,
+    private readonly emailVerification: EmailVerificationService,
   ) {}
 
   @RequirePermission('auth:login')
@@ -51,6 +57,24 @@ export class AuthController {
   @Post('signup')
   async signup(@Body() dto: SignupDto) {
     return this.authService.signup(dto);
+  }
+
+  @RequirePermission('auth:request-email-verification')
+  @Public()
+  @AuthThrottle()
+  @Post('request-email-verification')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  requestEmailVerification(@Body() dto: RequestEmailVerificationDto) {
+    return this.emailVerification.request(dto.email);
+  }
+
+  @RequirePermission('auth:verify-email')
+  @Public()
+  @AuthThrottle()
+  @Post('verify-email')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.emailVerification.verify(dto.token);
   }
   @RequirePermission('account:read')
   @Get('me')

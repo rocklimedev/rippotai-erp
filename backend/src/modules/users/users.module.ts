@@ -6,6 +6,9 @@ import { SequelizeModule } from '@nestjs/sequelize';
 // ============================================================
 
 import { User } from './models/user.model';
+import { AuthToken } from '../auth/models/auth-token.model';
+import { ActivityLog } from '../engagement/models/activity-log.model';
+import { ManualEmailVerificationService } from './manual-email-verification.service';
 import { UserSignature } from './models/user-signature.model';
 
 // ============================================================
@@ -61,6 +64,8 @@ import { RolesModule } from '../rbac/rbac.module';
     SequelizeModule.forFeature([
       // Users
       User,
+      AuthToken,
+      ActivityLog,
       UserSignature,
 
       // Teams
@@ -97,6 +102,7 @@ import { RolesModule } from '../rbac/rbac.module';
   // ============================================================
 
   providers: [
+    ManualEmailVerificationService,
     UsersService,
     UserSignaturesService,
 

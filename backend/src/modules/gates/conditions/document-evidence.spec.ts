@@ -65,7 +65,7 @@ describe('gate evidence', () => {
   it('blocks a phase with no configured catalogue', async () => {
     const evaluator = new DocumentTypeAllApprovedEvaluator(
       {} as any,
-      {} as any,
+      { findAll: jest.fn().mockResolvedValue([]) } as any,
       {} as any,
       {} as any,
       { findAll: async () => [] } as any,

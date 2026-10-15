@@ -15,10 +15,12 @@ const BADGE_MAP = {
 
 // One line under each tile so new team members know where things live.
 const APP_BLURB = {
+  design: "Drawings, CRM, budgets & payments",
+  build: "Inventory, procurement & site operations",
   projects: "Workspaces & planner",
   design_studio: "Drawings & revisions",
   crm: "Leads to contract",
-  ledger: "BOQs, budgets, payments",
+  ledger: "Bills of quantities",
   siteOperations: "Reports, QC, RFIs",
   procurement: "Vendors to delivery",
   inventory: "Site stock",
@@ -61,10 +63,25 @@ export default function Dashboard() {
 
   return (
     <div className="inos-launcher" data-testid="landing-page">
-      <header className="inos-launcher__bar" data-testid="landing-header" style={{ borderBottom: 0 }}>
-        <button onClick={() => navigate("/dashboard")} data-testid="rippotai-logo" className="flex items-center gap-3">
-          <img src="/rippotai_logo.png" alt="Rippotai" className="h-9 w-auto object-contain" />
-          <span className="hidden sm:inline text-[15px] font-bold tracking-tight" style={{ color: "var(--text)" }}>
+      <header
+        className="inos-launcher__bar"
+        data-testid="landing-header"
+        style={{ borderBottom: 0 }}
+      >
+        <button
+          onClick={() => navigate("/dashboard")}
+          data-testid="rippotai-logo"
+          className="flex items-center gap-3"
+        >
+          <img
+            src="/rippotai_logo.png"
+            alt="Rippotai"
+            className="h-9 w-auto object-contain"
+          />
+          <span
+            className="hidden sm:inline text-[15px] font-bold tracking-tight"
+            style={{ color: "var(--text)" }}
+          >
             INOS
           </span>
         </button>
@@ -86,7 +103,11 @@ export default function Dashboard() {
           <p>Pick up where you left off.</p>
         </div>
 
-        <nav data-testid="app-grid" className="inos-launcher__grid" aria-label="Apps">
+        <nav
+          data-testid="app-grid"
+          className="inos-launcher__grid"
+          aria-label="Apps"
+        >
           {LANDING_ORDER.map((key) => {
             const Icon = MODULE_ICONS[key];
             const meta = APP_META[key];
@@ -105,15 +126,23 @@ export default function Dashboard() {
                     <Icon />
                   </div>
                   {badge > 0 && (
-                    <span data-testid={`app-badge-${key}`} className="inos-app__badge">
+                    <span
+                      data-testid={`app-badge-${key}`}
+                      className="inos-app__badge"
+                    >
                       {badge}
                     </span>
                   )}
                 </span>
-                <span data-testid={`app-label-${key}`} className="inos-app__name">
+                <span
+                  data-testid={`app-label-${key}`}
+                  className="inos-app__name"
+                >
                   {meta.name}
                 </span>
-                {APP_BLURB[key] && <span className="inos-app__desc">{APP_BLURB[key]}</span>}
+                {APP_BLURB[key] && (
+                  <span className="inos-app__desc">{APP_BLURB[key]}</span>
+                )}
               </button>
             );
           })}

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
-import { APP_META } from "@/config/appNav";
+import { APP_META, navigationPath } from "@/config/appNav";
 import {
   Popover,
   PopoverContent,
@@ -11,6 +11,8 @@ import {
 // Apps whose index route is the customisable AppDashboard. Others use a
 // hand-built dashboard with no edit mode, so "Edit Dashboard" is hidden there.
 const CUSTOMISABLE_DASHBOARDS = new Set([
+  "design",
+  "build",
   "crm",
   "ledger",
   "procurement",
@@ -34,7 +36,7 @@ export default function MenuDropdown({ app, label, items: allItems }) {
     if (slug === "edit-dashboard") {
       nav(`${base}?edit=1`);
     } else if (slug && slug.startsWith("/")) {
-      nav(slug); // absolute cross-app link (e.g. Projects)
+      nav(navigationPath(app, slug));
     } else {
       nav(`${base}/${slug}`);
     }
@@ -57,10 +59,16 @@ export default function MenuDropdown({ app, label, items: allItems }) {
           {label} <ChevronDown size={14} />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" sideOffset={6} className="w-[248px] inos-menu">
+      <PopoverContent
+        align="start"
+        sideOffset={6}
+        className="w-[248px] inos-menu"
+      >
         <div className="inos-menu__label">{label}</div>
         {items.map((it) => {
-          const path = it.slug?.startsWith("/") ? it.slug : `${base}/${it.slug}`;
+          const path = it.slug?.startsWith("/")
+            ? it.slug
+            : `${base}/${it.slug}`;
           const active = currentPath === path;
           return (
             <button

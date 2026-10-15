@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import * as bcrypt from 'bcrypt';
@@ -15,6 +16,7 @@ import { PasswordResetToken } from './models/password-reset-token.model';
 import { AuthTokenType } from '@/common/enums';
 import { RolePermission } from '../rbac/models/role_permission.model';
 import { Permission } from '../rbac/models/permission.model';
+import { hasVerifiedEmail } from './verified-email';
 
 @Injectable()
 export class AuthService {
@@ -32,7 +34,7 @@ export class AuthService {
 
   async login(email: string, password: string) {
     const user = await this.userModel.scope('withPassword').findOne({
-      where: { email },
+      where: { email: email.trim().toLowerCase() },
       attributes: [
         'id',
         'name',
@@ -43,6 +45,9 @@ export class AuthService {
         'phone',
         'job_title',
         'avatar_url',
+        'is_active',
+        'email_verified_at',
+        'email_verified_address',
       ],
       include: [
         {
@@ -61,6 +66,16 @@ export class AuthService {
 
     if (!valid) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (user.is_active !== true) {
+      throw new UnauthorizedException('Account is disabled.');
+    }
+    if (!hasVerifiedEmail(user)) {
+      throw new ForbiddenException({
+        code: 'EMAIL_VERIFICATION_REQUIRED',
+        message: 'Verify your email before signing in.',
+      });
     }
 
     const rawToken = randomUUID();
@@ -127,6 +142,16 @@ export class AuthService {
       throw new UnauthorizedException('Token expired');
     }
 
+    if (
+      !authToken.user ||
+      authToken.user.is_active !== true ||
+      !hasVerifiedEmail(authToken.user)
+    ) {
+      throw new UnauthorizedException(
+        'Active account with verified email required.',
+      );
+    }
+
     await this.authTokensService.touchLastUsed(authToken.id);
 
     const grants = authToken.user?.role_id
@@ -174,86 +199,10 @@ export class AuthService {
   /**
    * Signup
    */
-  async signup(data: {
-    name: string;
-    email: string;
-    password: string;
-    phone?: string;
-    job_title?: string;
-    avatar_url?: string;
-  }) {
-    const existingUser = await this.userModel.findOne({
-      where: {
-        email: data.email,
-      },
-    });
-
-    if (existingUser) {
-      throw new BadRequestException('Email already exists.');
-    }
-
-    // Optional: Assign default USER role
-    const defaultRole = await Role.findOne({
-      where: {
-        name: 'USER',
-      },
-    });
-
-    const passwordHash = await bcrypt.hash(data.password, 10);
-
-    const user = await this.userModel.create({
-      name: data.name,
-      email: data.email,
-      password_hash: passwordHash,
-      phone: data.phone ?? null,
-      job_title: data.job_title ?? null,
-      avatar_url: data.avatar_url ?? null,
-      role_id: defaultRole?.id ?? null,
-      is_active: true,
-      last_login_at: new Date(),
-    });
-
-    const rawToken = randomUUID();
-
-    const tokenHash = createHash('sha256').update(rawToken).digest('hex');
-
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-    await this.authTokensService.create({
-      user_id: user.id,
-      token_hash: tokenHash,
-      type: AuthTokenType.REFRESH,
-      expires_at: expiresAt,
-    });
-
-    const token = jwt.sign(
-      {
-        sub: user.id,
-        email: user.email,
-        role: defaultRole?.name,
-        role_id: defaultRole?.id,
-        type: 'access',
-      },
-      process.env.JWT_SECRET!,
-      {
-        expiresIn: '7d',
-        jwtid: rawToken,
-      },
+  async signup(_data: unknown): Promise<never> {
+    throw new ForbiddenException(
+      'Public signup is disabled. Contact your administrator for an account.',
     );
-
-    return {
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: defaultRole?.name,
-        role_id: defaultRole?.id,
-        phone: user.phone,
-        job_title: user.job_title,
-        avatar_url: user.avatar_url,
-      },
-    };
   }
   async logout(token: string) {
     try {

@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, UniqueConstraintError } from 'sequelize';
@@ -41,18 +42,21 @@ export class UsersService {
   // CREATE USER
   // =========================
   async create(dto: CreateUserDto, actor?: any): Promise<User> {
+    if (!actor?.id || !['ADMIN', 'SUPERADMIN'].includes(actor.roleName)) {
+      throw new ForbiddenException('Only administrators can provision accounts.');
+    }
     const password_hash = await bcrypt.hash(dto.password, SALT_ROUNDS);
 
     try {
       const user = await this.userModel.create({
         name: dto.name,
-        email: dto.email,
+        email: dto.email.trim().toLowerCase(),
         password_hash,
         phone: dto.phone ?? null,
         job_title: dto.job_title ?? null,
         role_id: dto.role_id ?? null,
         is_active: dto.is_active ?? true,
-        created_by: dto.created_by ?? null,
+        created_by: actor.id,
       } as any);
 
       const createdUser = await this.findOne(user.id);

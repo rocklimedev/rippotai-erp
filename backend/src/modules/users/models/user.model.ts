@@ -18,6 +18,8 @@ export interface UserAttributes {
   id: string;
   name: string;
   email: string;
+  email_verified_at: Date | null;
+  email_verified_address: string | null;
   password_hash: string;
   phone: string | null;
   job_title: string | null;
@@ -38,6 +40,8 @@ export interface UserCreationAttributes extends Optional<
   | 'is_active'
   | 'last_login_at'
   | 'created_by'
+  | 'email_verified_at'
+  | 'email_verified_address'
 > {}
 
 /** Columns that must never leave the API. */
@@ -46,7 +50,9 @@ export const USER_SECRET_FIELDS = ['password_hash'] as const;
 // password_hash is excluded everywhere by default (also when User is included
 // from another model). Auth code that needs it uses User.scope('withPassword').
 @DefaultScope(() => ({ attributes: { exclude: [...USER_SECRET_FIELDS] } }))
-@Scopes(() => ({ withPassword: { attributes: { include: ['password_hash'] } } }))
+@Scopes(() => ({
+  withPassword: { attributes: { include: ['password_hash'] } },
+}))
 @Table({
   tableName: 'users',
   timestamps: true,
@@ -73,6 +79,13 @@ export class User extends Model<UserAttributes, UserCreationAttributes> {
     unique: true,
   })
   declare email: string;
+
+  @Column({ type: DataType.DATE, allowNull: true, defaultValue: null })
+  declare email_verified_at: Date | null;
+
+  // Bind verification to the address actually proved, including after edits.
+  @Column({ type: DataType.STRING(255), allowNull: true, defaultValue: null })
+  declare email_verified_address: string | null;
 
   @Column({
     type: DataType.STRING(255),

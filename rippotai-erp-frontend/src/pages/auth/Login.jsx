@@ -22,7 +22,7 @@ export default function Login() {
       toast.success(`Welcome, ${user.name.split(" ")[0]}`);
       navigate("/dashboard");
     } catch (err) {
-      toast.error(err?.response?.data?.detail || "Sign in failed");
+      toast.error(err?.data?.message || err?.response?.data?.detail || "Sign in failed");
     } finally {
       setLoading(false);
     }
@@ -102,9 +102,12 @@ export default function Login() {
           className="text-center mt-5 text-[13.5px]"
           style={{ color: MUTED }}
         >
-          Don't have an account?{" "}
-          <Link to="/signup" className="font-semibold" style={{ color: GREEN }}>
-            Create Account
+          Accounts are provisioned by your administrator.{" "}
+          <Link to="/verify-email" className="font-semibold" style={{ color: GREEN }}>
+            Verify your email
+          </Link>
+          <Link to="/forgot-password" className="block mt-3 font-semibold" style={{ color: GREEN }}>
+            Forgot password?
           </Link>
         </div>
       </div>

@@ -1445,6 +1445,84 @@ export const DASHBOARD_CONFIG: Record<string, AppDashboardConfig> = {
   // shape — no other backend changes are required.
 };
 
+// Reuse existing components and feeds, with layouts saved under the grouped app.
+function groupedDashboard(
+  sources: string[],
+  keys: string[],
+  requiredKeys: string[],
+): AppDashboardConfig {
+  const widgets = sources.flatMap((app) => DASHBOARD_CONFIG[app].widgets);
+  const required = new Set(requiredKeys);
+  let x = 0;
+  let y = 0;
+  let rowHeight = 0;
+  const defaultLayout = keys.map((key) => {
+    const widget = widgets.find((item) => item.key === key);
+    if (!widget) throw new Error(`Unknown grouped dashboard widget: ${key}`);
+    const small = widget.defaultSize === 'small';
+    const w = small ? 3 : widget.defaultSize === 'full' ? 12 : 6;
+    const h = small ? 2 : 4;
+    if (x + w > 12) {
+      x = 0;
+      y += rowHeight;
+      rowHeight = 0;
+    }
+    const item = { key, x, y, w, h };
+    x += w;
+    rowHeight = Math.max(rowHeight, h);
+    return item;
+  });
+  return {
+    widgets: widgets.map((widget) => ({
+      ...widget,
+      locked_required: required.has(widget.key),
+    })),
+    defaultLayout,
+    requiredKeys,
+  };
+}
+
+DASHBOARD_CONFIG.design = groupedDashboard(
+  ['design_studio', 'crm', 'ledger'],
+  [
+    'design_studio.active_projects',
+    'design_studio.pending_approvals',
+    'crm.total_leads',
+    'ledger.outstanding',
+    'design_studio.projects_list',
+    'crm.leads_breakdown',
+    'design_studio.approvals_list',
+    'ledger.upcoming_payments',
+    'design_studio.upcoming_deadlines',
+    'ledger.overdue_payments',
+  ],
+  ['design_studio.active_projects'],
+);
+
+DASHBOARD_CONFIG.build = groupedDashboard(
+  [
+    'inventory',
+    'procurement',
+    'siteOperations',
+    'boq',
+    'quotations',
+    'vendors',
+  ],
+  [
+    'inventory.total',
+    'inventory.low_stock',
+    'procurement.active_purchase_orders',
+    'boq.total_boqs',
+    'inventory.low_stock_list',
+    'procurement.purchase_orders_list',
+    'siteops.recent_reports',
+    'siteops.recent_visits',
+    'inventory.recent_transactions',
+    'boq.project_wise',
+  ],
+  ['inventory.total'],
+);
+
 export function getAppConfig(appKey: string): AppDashboardConfig | null {
   return DASHBOARD_CONFIG[appKey] ?? null;
 }

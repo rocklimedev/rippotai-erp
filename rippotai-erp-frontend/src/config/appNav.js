@@ -3,6 +3,12 @@
 // treated as an absolute path.
 
 export const APP_META = {
+  // Internal module keys still identify saved dashboards and permissions.
+  design_studio: { name: "Drawings", base: "/design-studio" },
+  crm: { name: "CRM", base: "/crm" },
+  inventory: { name: "Inventory", base: "/inventory" },
+  procurement: { name: "Procurement", base: "/procurement" },
+  siteOperations: { name: "Site Operations", base: "/site-operations" },
   dashboard: {
     name: "Dashboard",
     base: "/dashboard",
@@ -15,48 +21,33 @@ export const APP_META = {
     searchPh: "Search projects, clients, milestones",
   },
 
-  design_studio: {
-    name: "Design Studio",
-    base: "/design-studio",
-    searchPh: "Search drawings, projects, revisions",
+  design: {
+    name: "Design",
+    base: "/design",
+    searchPh: "Search drawings, CRM, budgets, payments",
   },
 
-  crm: {
-    name: "CRM",
-    base: "/crm",
-    searchPh: "Search CRM",
+  build: {
+    name: "Build",
+    base: "/build",
+    searchPh: "Search inventory, procurement, site operations, BOQ",
   },
+
   ledger: {
     name: "Ledger",
     base: "/ledger",
     searchPh: "Search Ledger",
-  },
-  siteOperations: {
-    name: "Site Operations",
-    base: "/site-operations",
-    searchPh: "Search reports, visits, QC, mockups, RFIs",
   },
   adminConsole: {
     name: "Admin Console",
     base: "/console",
     searchPh: "Search users, roles, permissions, settings",
   },
-  procurement: {
-    name: "Procurement",
-    base: "/procurement",
-    searchPh: "Search materials, requirements, orders",
-  },
-  inventory: {
-    name: "Inventory",
-    base: "/inventory",
-    searchPh: "Search inventory",
-  },
   tasks: {
     name: "Tasks",
     base: "/tasks",
     searchPh: "Search tasks",
   },
-
   calendar: {
     name: "Calendar",
     base: "/calendar",
@@ -79,18 +70,13 @@ export const APP_META = {
   },
 };
 
-// Landing tile order: 7 apps (Clients + Notes removed in Phase A)
+// Landing tile order
 // NOTE: "settings" is intentionally excluded — it's not a landing-page app,
 // just a registered entry so TopHeader/AppSwitcher config lookups work.
 export const LANDING_ORDER = [
   "projects",
-  "design_studio",
-
-  "crm",
-  "ledger",
-  "siteOperations",
-  "procurement",
-  "inventory",
+  "design",
+  "build",
   "tasks",
   "calendar",
   "commandCenter",
@@ -125,73 +111,122 @@ export const APP_MENUS = {
     },
   ],
 
-  design_studio: [
+  // ------------------------------------------------------------
+  // DESIGN: Design Studio + CRM + Ledger documents
+  // ------------------------------------------------------------
+  design: [
     {
       label: "Drawings",
-      slug: "all",
+      items: [
+        I("Drawings", "/design-studio/all"),
+        I("Upload", "/design-studio/upload"),
+      ],
     },
     {
-      label: "Upload",
-      slug: "upload",
+      label: "Pipeline",
+      items: [I("Leads", "/crm/pipeline"), I("Sources", "/crm/leads/sources")],
     },
 
+    {
+      label: "CRM",
+      items: [
+        I("Client Brief", "/crm/brief/all"),
+        I("Site Recce", "/crm/recce/all"),
+        I("Scope of Work", "/crm/scope-of-work/all"),
+        I("Plan of Action", "/crm/plan-of-action/all"),
+        // I("Scope Of Approval", "/crm/scope-of-approval/all"),
+        // I("Pitch Deck", "/crm/pitch-deck/all"),
+        I("Business Proposals", "/crm/business-proposal/all"),
+      ],
+    },
+    {
+      label: "Budgets & Payments",
+      items: [
+        I("Payment Schedules", "/ledger/payment-schedule/all"),
+        I("Budget Estimates", "/ledger/budget-estimates/all"),
+        I("Budget Guides", "/ledger/budget-guides/all"),
+      ],
+    },
     {
       label: "Management",
       items: [
         I("Projects", "/projects"),
-        I("Activity", "activity"),
-        I("Edit Dashboard", "edit-dashboard"),
-        I("Roles & Permissions", "roles"),
+        I("Clients", "/clients"),
+        I("Activity", "/design-studio/activity"),
+        I("Edit Dashboard", "/design/edit-dashboard"),
+        I("Roles & Permissions", "/design-studio/roles"),
       ],
     },
   ],
-  automation: [
+
+  // ------------------------------------------------------------
+  // BUILD: Inventory + Procurement + Site Operations + BOQ library
+  // ------------------------------------------------------------
+  build: [
     {
-      label: "Automation",
+      label: "BOQ Library",
       items: [
-        I("Overview", "/automation"),
-        I("Rules", "rules"),
-        I("Create Rule", "rules/new"),
+        I("BOQ", "boq/all"),
+        I("Rate and Item Library", "/ledger/boq/rate-and-item-library"),
+        I("BOQ Templates", "/ledger/boq/templates"),
+      ],
+    },
+    {
+      label: "Site Inventory",
+      items: [
+        I("Site Inventory", "/inventory/site-inventory/all"),
+        I("Inventory Transactions", "/inventory/site-inventory/transactions"),
+        I("Record Transaction", "/inventory/site-inventory/transactions/new"),
       ],
     },
 
     {
-      label: "Monitoring",
+      label: "Materials",
       items: [
-        I("Run Log", "runs"),
-        I("Escalations", "escalations"),
-        I("Audit Trail", "audit"),
+        I("Estimates", "/procurement/estimates/all"),
+        I("Delivery Challans", "/procurement/delivery-challans"),
+        I("Purchase Orders", "/procurement/purchase-orders"),
+        I("Work Order", "/procurement/work-order/all"),
+        I("Requirements", "/procurement/requirements"),
+        I("Vendors", "/procurement/vendors/directory"),
+        I("Procurement Sheet", "/procurement/material-procurement/list"),
+        I("Rate Comparison", "/procurement/vendors/rate-comparison"),
+        I("Rate Sheets", "/procurement/rate-sheets"),
+      ],
+    },
+    {
+      label: "Procurement",
+      items: [],
+    },
+
+    {
+      label: "Site Operations",
+      items: [
+        I("Daily Reports", "/site-operations/daily-reports"),
+        I("Admin DPR", "/site-operations/admin-dpr"),
+        I("Visit Assignments", "/site-operations/visit-assignments"),
+        I("Snag Lists", "/site-operations/snag-lists"),
+        I("Checklists", "/site-operations/checklists"),
+      ],
+    },
+    {
+      label: "Management",
+      items: [
+        I("Projects", "/projects"),
+        I("Activity", "/procurement/activity"),
+        I("Edit Dashboard", "/build/edit-dashboard"),
       ],
     },
   ],
-  crm: [
-    {
-      label: "Pipeline",
-      slug: "pipeline",
-    },
-    {
-      label: "Sources",
-      slug: "leads/sources",
-    },
-    {
-      label: "Documents",
-      items: [
-        I("Client Brief", "brief/all"),
-        I("Site Recce", "recce/all"),
-        I("Scope of Work", "scope-of-work/all"),
-        I("Plan of Action", "plan-of-action/all"),
 
-        // I("Scope Of Approval", "scope-of-approval/all"),
-        // I("Pitch Deck", "pitch-deck/all"),
-        I("Business Proposals", "business-proposal/all"),
-      ],
-    },
-
+  // ------------------------------------------------------------
+  // LEDGER: BOQ + settings remain
+  // ------------------------------------------------------------
+  ledger: [
     {
       label: "Settings",
       items: [
         I("Projects", "/projects"),
-        I("Clients", "/clients"),
         I("Edit Dashboard", "edit-dashboard"),
         I("Roles and Permissions", "roles"),
         I("Activity", "activity"),
@@ -212,7 +247,6 @@ export const APP_MENUS = {
         I("Estimate Signature", "estimate-signature"),
       ],
     },
-
     {
       label: "Administration",
       items: [
@@ -234,121 +268,6 @@ export const APP_MENUS = {
     },
   ],
 
-  procurement: [
-    // ------------------------------------------------------------
-    // Materials
-    // ------------------------------------------------------------
-    {
-      label: "Materials",
-      items: [
-        I("Requirements", "requirements"),
-        I("Vendors", "vendors/directory"),
-        I("Procurement Sheet", "material-procurement/list"),
-        I("Rate Comparison", "vendors/rate-comparison"),
-        I("Rate Sheets", "rate-sheets"),
-      ],
-    },
-
-    // ------------------------------------------------------------
-    // Procurement
-    // ------------------------------------------------------------
-    {
-      label: "Procurement",
-      items: [
-        I("Estimates", "estimates/all"),
-        I("Delivery Challans", "delivery-challans"),
-        I("Purchase Orders", "purchase-orders"),
-        I("Work Order", "work-order/all"),
-      ],
-    },
-
-    // ------------------------------------------------------------
-    // Management
-    // ------------------------------------------------------------
-    {
-      label: "Management",
-      items: [
-        I("Projects", "/projects"),
-        I("Activity", "activity"),
-        I("Edit Dashboard", "edit-dashboard"),
-      ],
-    },
-  ],
-  inventory: [
-    {
-      label: "Documents",
-      items: [
-        I("Site Inventory", "site-inventory/all"),
-        I("Inventory Transactions", "site-inventory/transactions"),
-        I("Record Transaction", "site-inventory/transactions/new"),
-      ],
-    },
-    {
-      label: "Settings",
-      items: [
-        I("Edit Dashboard", "edit-dashboard"),
-        I("Roles and Permissions", "roles"),
-        I("Activity", "activity"),
-      ],
-    },
-  ],
-  siteOperations: [
-    {
-      label: "Site Operations",
-      items: [
-        I("Daily Reports", "daily-reports"),
-        I("Admin DPR", "admin-dpr"),
-        I("Visit Assignments", "visit-assignments"),
-      ],
-    },
-
-    {
-      label: "Quality & Coordination",
-      items: [I("Snag Lists", "snag-lists"), I("Checklists", "checklists")],
-    },
-
-    {
-      label: "Administration",
-      items: [
-        I("Activity", "activity"),
-        I("Projects", "/projects"),
-        I("Edit Dashboard", "edit-dashboard"),
-        I("Roles & Permissions", "roles"),
-      ],
-    },
-  ],
-  ledger: [
-    {
-      label: "BOQ",
-      slug: "boq/all",
-    },
-
-    {
-      label: "Management",
-      items: [
-        I("Rate and Item Library", "boq/rate-and-item-library"),
-        I("BOQ Templates", "boq/templates"),
-      ],
-    },
-    {
-      label: "Documents",
-      items: [
-        I("Payment Schedules", "payment-schedule/all"),
-
-        I("Budget Estimates", "budget-estimates/all"),
-        I("Budget Guides", "budget-guides/all"),
-      ],
-    },
-    {
-      label: "Settings",
-      items: [
-        I("Projects", "/projects"),
-        I("Edit Dashboard", "edit-dashboard"),
-        I("Roles and Permissions", "roles"),
-        I("Activity", "activity"),
-      ],
-    },
-  ],
   tasks: [
     {
       label: "Tasks",
@@ -373,6 +292,7 @@ export const APP_MENUS = {
       ],
     },
   ],
+
   calendar: [
     {
       label: "Calendar",
@@ -387,12 +307,33 @@ export const APP_MENUS = {
       ],
     },
   ],
+
+  automation: [
+    {
+      label: "Automation",
+      items: [
+        I("Overview", "/automation"),
+        I("Rules", "rules"),
+        I("Create Rule", "rules/new"),
+      ],
+    },
+    {
+      label: "Monitoring",
+      items: [
+        I("Run Log", "runs"),
+        I("Escalations", "escalations"),
+        I("Audit Trail", "audit"),
+      ],
+    },
+  ],
+
   commandCenter: [
     {
       label: "File Manager",
       slug: "file-manager",
     },
   ],
+
   settings: [
     {
       label: "Account",
@@ -404,6 +345,43 @@ export const APP_MENUS = {
     },
   ],
 };
+
+export function navigationAppFor(app, pathname = "") {
+  if (["design_studio", "crm"].includes(app)) return "design";
+  if (["inventory", "procurement", "siteOperations"].includes(app))
+    return "build";
+  if (app === "ledger") {
+    if (
+      /^\/ledger\/(forms\/(payment-schedule|budget-estimate)|payment-schedule|budget-estimates?|budget-guides|aggrements)(\/|$)/.test(
+        pathname,
+      )
+    )
+      return "design";
+    return "build";
+  }
+  return app;
+}
+
+export function navigationPath(app, slug = "") {
+  const path = slug.startsWith("/") ? slug : `${APP_META[app].base}/${slug}`;
+  return path.replace(/\/edit-dashboard$/, "?edit=1");
+}
+
+// Keep shared activity/permission pages registered under their original module.
+for (const app of [
+  "design_studio",
+  "crm",
+  "inventory",
+  "procurement",
+  "siteOperations",
+]) {
+  APP_MENUS[app] = [
+    {
+      label: "Settings",
+      items: [I("Activity", "activity"), I("Roles and Permissions", "roles")],
+    },
+  ];
+}
 
 export function allSlugsFor(app) {
   const menus = APP_MENUS[app] || [];

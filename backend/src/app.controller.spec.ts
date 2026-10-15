@@ -15,8 +15,13 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('returns API service status', () => {
+      expect(appController.getHello()).toEqual({
+        success: true,
+        message: 'Rippotai ERP API is running',
+        service: 'rippotai-erp-api',
+        timestamp: expect.any(String),
+      });
     });
   });
 });

@@ -6,6 +6,8 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "routes:check": "node scripts/route-inventory.cjs --output artifacts/route-inventory.json",
+    "routes:test": "node --test scripts/route-inventory.test.cjs",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
@@ -98,10 +100,20 @@
       "ts"
     ],
     "rootDir": "src",
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1"
+    },
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.ts$": "ts-jest",
+      "^.+\\.js$": [
+        "ts-jest",
+        { "tsconfig": { "allowJs": true, "module": "CommonJS" } }
+      ]
     },
+    "transformIgnorePatterns": [
+      "node_modules/(?!@nestjs/jwt/)"
+    ],
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],

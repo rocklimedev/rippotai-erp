@@ -1,4 +1,5 @@
 import AppLayout from "@/layouts/AppLayout";
+import { Navigate } from "react-router-dom";
 import PaymentSchedulePage from "../../pages/payment-schedule/paymentSchedulePage";
 import AppDashboard from "@/components/dashboard/AppDashboard";
 import PaymentScheduleList from "@/pages/payment-schedule/PaymentScheduleList";
@@ -49,7 +50,7 @@ export const ledgerRoutes = [
 
       {
         index: true,
-        element: <AppDashboard appKey="ledger" />,
+        element: <Navigate to="/build" replace />,
       },
       {
         path: "/ledger/all",

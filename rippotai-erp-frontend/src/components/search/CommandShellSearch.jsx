@@ -31,7 +31,10 @@ import { useGlobalSearchQuery } from "@/api/meta/search.api";
 
 function resolvePath(base, slug) {
   if (!slug) return base;
-  return slug.startsWith("/") ? slug : `${base}/${slug}`;
+  return (slug.startsWith("/") ? slug : `${base}/${slug}`).replace(
+    /\/edit-dashboard$/,
+    "?edit=1",
+  );
 }
 
 // ============================================================

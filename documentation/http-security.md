@@ -14,7 +14,7 @@ Public client access is allow-listed per handler, rather than on the entire cont
 
 | Method | Path |
 | --- | --- |
-| POST | `auth/login`, `auth/signup`, `auth/forgot-password`, `auth/reset-password` |
+| POST | `auth/login`, `auth/signup` (always rejects), `auth/forgot-password`, `auth/reset-password`, `auth/request-email-verification`, `auth/verify-email` |
 | GET | `auth/google/callback`, `auth/microsoft/callback`, `auth/zoho/callback` |
 | GET | `health/live`, `health/ready` |
 | GET | `public/client/:token`, `public/client/:token/boq/:boqId` |

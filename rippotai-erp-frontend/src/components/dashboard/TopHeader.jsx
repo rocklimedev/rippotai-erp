@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { MODULE_ICONS } from "@/components/icons/ModuleIcons";
-import { APP_META, APP_MENUS } from "@/config/appNav";
+import { APP_META, APP_MENUS, navigationPath } from "@/config/appNav";
 import CommandShellSearch from "../search/CommandShellSearch";
 import AppSwitcher from "./AppSwitcher";
 import MenuDropdown from "./MenuDropdown";
@@ -25,7 +25,7 @@ export default function TopHeader({ app }) {
   const { open, cliqConnected, toggleChat } = useCliqChat();
 
   const navigateTo = (slug) => {
-    nav(slug.startsWith("/") ? slug : `${meta.base}/${slug}`);
+    nav(navigationPath(app, slug));
     setMobileMenuOpen(false);
   };
 
@@ -46,23 +46,34 @@ export default function TopHeader({ app }) {
         <AppSwitcher currentApp={app} />
 
         {/* APP NAME */}
-        <button onClick={() => nav(meta.base)} className="inos-topbar__app" title={`${meta.name} home`}>
+        <button
+          onClick={() => nav(meta.base)}
+          className="inos-topbar__app"
+          title={`${meta.name} home`}
+        >
           <span className="inos-topbar__app-icon">
             <Icon />
           </span>
-          <span className="inos-topbar__app-name hidden md:inline">{meta.name}</span>
+          <span className="inos-topbar__app-name hidden md:inline">
+            {meta.name}
+          </span>
         </button>
 
         {/* DESKTOP NAVIGATION */}
         <nav className="hidden lg:flex items-center gap-0.5 flex-shrink min-w-0 overflow-hidden">
           {menus.map((g) =>
             g.items ? (
-              <MenuDropdown key={g.label} app={app} label={g.label} items={g.items} />
+              <MenuDropdown
+                key={g.label}
+                app={app}
+                label={g.label}
+                items={g.items}
+              />
             ) : (
               <button
                 key={g.label}
                 onClick={() => navigateTo(g.slug)}
-                className={`inos-nav-btn ${location.pathname === `${meta.base}/${g.slug}` ? "is-active" : ""}`}
+                className={`inos-nav-btn ${location.pathname === navigationPath(app, g.slug) ? "is-active" : ""}`}
               >
                 {g.label}
               </button>
@@ -83,12 +94,18 @@ export default function TopHeader({ app }) {
           aria-pressed={open}
           title={cliqConnected ? "Cliq" : "Cliq (not connected)"}
           className="inos-topbar__icon-btn"
-          style={open ? { color: "var(--brand)", background: "var(--brand-50)" } : undefined}
+          style={
+            open
+              ? { color: "var(--brand)", background: "var(--brand-50)" }
+              : undefined
+          }
         >
           <CliqIcon size={18} />
           <span
             className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full ring-2 ring-white"
-            style={{ background: cliqConnected ? "var(--ok-dot)" : "var(--bad-dot)" }}
+            style={{
+              background: cliqConnected ? "var(--ok-dot)" : "var(--bad-dot)",
+            }}
           />
         </button>
 

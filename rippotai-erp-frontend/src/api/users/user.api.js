@@ -2,6 +2,10 @@ import { baseApi } from "../../store/baseApi";
 
 export const usersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    updateEmailVerification: builder.mutation({
+      query: ({ id, verified }) => ({ url: `/users/${id}/email-verification`, method: "PATCH", body: { verified } }),
+      invalidatesTags: ["Users"],
+    }),
     // =========================================================
     // USERS
     // =========================================================
@@ -134,6 +138,7 @@ export const usersApi = baseApi.injectEndpoints({
 // =========================================================
 
 export const {
+  useUpdateEmailVerificationMutation,
   useCreateUserMutation,
   useGetUsersQuery,
   useGetUsersByRoleNameQuery,

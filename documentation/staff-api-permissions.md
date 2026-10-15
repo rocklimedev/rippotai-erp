@@ -5,13 +5,13 @@ Last reviewed: 2026-10-10
 
 Global guard order: throttling → JWT authentication → PortalAccessGuard → PermissionsGuard. Missing actor IDs, staff roles, or permission metadata fail closed. USER is denied every staff route even with grants. ADMIN/SUPERADMIN do not bypass permission checks. Permission grants are loaded from the database for each authenticated request.
 
-Public endpoints retain the separately audited @Public allow-list and their existing password/OAuth/client-link validation. Account exceptions are an exact controller/handler/permission allow-list in account-route-policy.ts: own profile, own sessions, client home, auth/me, logout and password change. Profile mutations check target ID before invoking the handler. Cross-user session lookup additionally requires ADMIN/SUPERADMIN and `sessions:read-any`; revocation additionally requires ADMIN/SUPERADMIN and `sessions:revoke-any`. Token deletion remains staff permission plus admin-only. Inactive accounts may only inspect auth/me or log out.
+Public endpoints retain the separately audited @Public allow-list and their existing password/OAuth/client-link validation. Account exceptions are an exact controller/handler/permission allow-list in account-route-policy.ts: own profile, own sessions, client home, auth/me, logout and password change. Profile mutations check target ID before invoking the handler. Cross-user session lookup additionally requires ADMIN/SUPERADMIN and `sessions:read-any`; revocation additionally requires ADMIN/SUPERADMIN and `sessions:revoke-any`. Token deletion remains staff permission plus admin-only. Authentication rejects disabled accounts and accounts without verification of their current email; verification never grants a session.
 
 Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before deploying. This idempotent migration creates the catalogue and grants reviewed staff capabilities to existing ADMIN/SUPERADMIN roles; other staff roles must be assigned only the module capabilities they need via the RBAC matrix. No grants are copied to USER. Review role assignments in staging before rollout. The migration has not been applied by this task.
 
 Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.
 
-There are 976 routes, 950 staff routes and 405 assignable staff capabilities.
+There are 979 routes, 951 staff routes and 405 assignable staff capabilities.
 
 ## Catalogue by module
 
@@ -66,8 +66,10 @@ There are 976 routes, 950 staff routes and 405 assignable staff capabilities.
 | auth | `POST /auth/login` | AuthController.login | `auth:login` | public |
 | auth | `POST /auth/logout` | AuthController.logout | `account:logout` | account (scoped) |
 | auth | `GET /auth/me` | AuthController.me | `account:read` | account (scoped) |
+| auth | `POST /auth/request-email-verification` | AuthController.requestEmailVerification | `auth:request-email-verification` | public |
 | auth | `POST /auth/reset-password` | AuthController.resetPassword | `auth:reset-password` | public |
 | auth | `POST /auth/signup` | AuthController.signup | `auth:signup` | public |
+| auth | `POST /auth/verify-email` | AuthController.verifyEmail | `auth:verify-email` | public |
 | auth | `GET /auth/tokens/user/:userId` | AuthTokensController.findAllForUser | `sessions:read-own` | account (scoped) |
 | auth | `DELETE /auth/tokens/:id` | AuthTokensController.remove | `auth-tokens:delete` | staff |
 | auth | `PATCH /auth/tokens/:id/revoke` | AuthTokensController.revoke | `sessions:revoke-own` | account (scoped) |
@@ -880,6 +882,7 @@ There are 976 routes, 950 staff routes and 405 assignable staff capabilities.
 | users | `GET /users/by-role/:roleName` | UsersController.findUsersByRoleName | `users:read` | staff |
 | users | `DELETE /users/:id` | UsersController.remove | `users:delete` | staff |
 | users | `PATCH /users/:id` | UsersController.update | `users:update` | staff |
+| users | `PATCH /users/:id/email-verification` | UsersController.updateEmailVerification | `users:update` | staff |
 | users | `PATCH /users/:id/profile` | UsersController.updateProfile | `profile:update-own` | account (scoped) |
 | users | `PATCH /users/:id/avatar` | UsersController.uploadAvatar | `profile:update-own` | account (scoped) |
 | users | `DELETE /user-signatures/:userId` | UserSignatureController.deleteSignature | `user-signatures:delete` | staff |
