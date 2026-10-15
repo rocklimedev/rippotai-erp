@@ -23,7 +23,13 @@ export function authTracker(req: any) {
     typeof req.headers?.authorization === 'string'
       ? req.headers.authorization
       : '';
-  const identity = email || reset || session || 'unidentified';
+  const route = String(req.route?.path || '');
+  // Ignore extra body fields: an attacker must not rotate a fake email to
+  // evade the reset/verification token's abuse budget before DTO validation.
+  const tokenRoute = /\/(reset-password|verify-email)$/.test(route);
+  const identity = tokenRoute
+    ? reset || 'unidentified'
+    : email || session || 'unidentified';
   return createHmac('sha256', trackerSecret)
     .update(`${req.ip ?? 'unknown'}:${identity}`)
     .digest('hex');

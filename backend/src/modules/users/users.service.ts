@@ -8,6 +8,7 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, UniqueConstraintError } from 'sequelize';
 import * as bcrypt from 'bcryptjs';
+import { assertNewPassword } from '@/common/security/password-policy';
 
 import { User } from './models/user.model';
 import { CreateUserDto, UpdateUserDto, UpdateProfileDto } from './dto/user.dto';
@@ -45,6 +46,7 @@ export class UsersService {
     if (!actor?.id || !['ADMIN', 'SUPERADMIN'].includes(actor.roleName)) {
       throw new ForbiddenException('Only administrators can provision accounts.');
     }
+    await assertNewPassword(dto.password);
     const password_hash = await bcrypt.hash(dto.password, SALT_ROUNDS);
 
     try {
@@ -142,6 +144,7 @@ export class UsersService {
     };
 
     if (dto.password) {
+      await assertNewPassword(dto.password);
       payload.password_hash = await bcrypt.hash(dto.password, SALT_ROUNDS);
     }
 

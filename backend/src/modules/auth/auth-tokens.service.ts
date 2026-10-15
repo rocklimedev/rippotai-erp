@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
+import { Op, Transaction } from 'sequelize';
 
 import { AuthToken } from './models/auth-token.model';
 import { CreateAuthTokenDto } from './dto/auth-token.dto';
@@ -38,11 +38,21 @@ export class AuthTokensService {
     return actor.roleName === 'ADMIN' || actor.roleName === 'SUPERADMIN';
   }
 
-  private assertSessionOwner(userId: string, actor: CurrentUserPayload, permission: string) {
+  private assertSessionOwner(
+    userId: string,
+    actor: CurrentUserPayload,
+    permission: string,
+  ) {
     const admin = this.isAdmin(actor);
     if (actor.id === userId) return;
-    if (!admin || !Array.isArray(actor.permissions) || !actor.permissions.includes(permission)) {
-      throw new ForbiddenException('Cross-user sessions require an administrator and explicit permission');
+    if (
+      !admin ||
+      !Array.isArray(actor.permissions) ||
+      !actor.permissions.includes(permission)
+    ) {
+      throw new ForbiddenException(
+        'Cross-user sessions require an administrator and explicit permission',
+      );
     }
   }
 
@@ -134,7 +144,10 @@ export class AuthTokensService {
     return token;
   }
 
-  async revokeAllForUser(user_id: string): Promise<void> {
+  async revokeAllForUser(
+    user_id: string,
+    transaction?: Transaction,
+  ): Promise<void> {
     await this.authTokenModel.update(
       { revoked_at: new Date() },
       {
@@ -142,6 +155,7 @@ export class AuthTokensService {
           user_id,
           revoked_at: { [Op.is]: null },
         },
+        transaction,
       },
     );
   }

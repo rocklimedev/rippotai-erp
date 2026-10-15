@@ -1,3 +1,4 @@
+import { OAuthTokenCryptoService } from './oauth/oauth-token-crypto.service';
 // google/services/google-auth.service.ts
 import {
   Injectable,
@@ -21,6 +22,7 @@ export class GoogleAuthService implements OAuthProviderService {
   constructor(
     @InjectModel(GoogleToken) private readonly tokenModel: typeof GoogleToken,
     private readonly config: ConfigService,
+    private readonly tokenCrypto: OAuthTokenCryptoService,
   ) {}
 
   buildAuthorizationUrl(
@@ -46,13 +48,27 @@ export class GoogleAuthService implements OAuthProviderService {
       redirect_uri: this.config.get('GOOGLE_REDIRECT_URI')!,
     });
 
+    const encryptedAccess = await this.tokenCrypto.encrypt(
+      data.access_token,
+      'google',
+      userId,
+      'accessToken',
+    );
+    const encryptedRefresh = data.refresh_token
+      ? await this.tokenCrypto.encrypt(
+          data.refresh_token,
+          'google',
+          userId,
+          'refreshToken',
+        )
+      : undefined;
     const expiresAt = new Date(Date.now() + data.expires_in * 1000);
     await this.tokenModel.upsert({
       userId,
-      accessToken: data.access_token,
+      accessToken: encryptedAccess,
       // Google only returns refresh_token on first consent (or with prompt=consent).
       // Preserve the existing one on reconnect instead of overwriting with undefined.
-      ...(data.refresh_token ? { refreshToken: data.refresh_token } : {}),
+      ...(data.refresh_token ? { refreshToken: encryptedRefresh } : {}),
       scope: data.scope,
       expiresAt,
     } as any);
@@ -66,7 +82,13 @@ export class GoogleAuthService implements OAuthProviderService {
     if (!token) throw new UnauthorizedException('Google account not connected');
 
     const isExpiringSoon = token.expiresAt.getTime() - Date.now() < 60_000; // 1 min buffer
-    if (!isExpiringSoon) return token.accessToken;
+    if (!isExpiringSoon)
+      return this.tokenCrypto.decrypt(
+        token.accessToken,
+        'google',
+        userId,
+        'accessToken',
+      );
 
     if (!token.refreshToken) {
       throw new UnauthorizedException(
@@ -75,12 +97,35 @@ export class GoogleAuthService implements OAuthProviderService {
     }
 
     const data = await this.exchange({
-      refresh_token: token.refreshToken,
+      refresh_token: await this.tokenCrypto.decrypt(
+        token.refreshToken,
+        'google',
+        userId,
+        'refreshToken',
+      ),
       grant_type: 'refresh_token',
     });
 
+    const encryptedAccess = await this.tokenCrypto.encrypt(
+      data.access_token,
+      'google',
+      userId,
+      'accessToken',
+    );
+    const encryptedRefresh = data.refresh_token
+      ? await this.tokenCrypto.encrypt(
+          data.refresh_token,
+          'google',
+          userId,
+          'refreshToken',
+        )
+      : undefined;
     const expiresAt = new Date(Date.now() + data.expires_in * 1000);
-    await token.update({ accessToken: data.access_token, expiresAt });
+    await token.update({
+      accessToken: encryptedAccess,
+      ...(encryptedRefresh ? { refreshToken: encryptedRefresh } : {}),
+      expiresAt,
+    });
     return data.access_token;
   }
 
@@ -103,9 +148,7 @@ export class GoogleAuthService implements OAuthProviderService {
       }),
     });
     if (!res.ok) {
-      throw new InternalServerErrorException(
-        `Google token request failed: ${await res.text()}`,
-      );
+      throw new InternalServerErrorException('Google token request failed');
     }
     return res.json() as Promise<{
       access_token: string;

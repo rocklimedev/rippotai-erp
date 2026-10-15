@@ -166,7 +166,7 @@ export const APP_MENUS = {
     {
       label: "BOQ Library",
       items: [
-        I("BOQ", "boq/all"),
+        I("BOQ", "/ledger/boq/all"),
         I("Rate and Item Library", "/ledger/boq/rate-and-item-library"),
         I("BOQ Templates", "/ledger/boq/templates"),
       ],

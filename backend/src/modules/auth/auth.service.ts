@@ -17,6 +17,7 @@ import { AuthTokenType } from '@/common/enums';
 import { RolePermission } from '../rbac/models/role_permission.model';
 import { Permission } from '../rbac/models/permission.model';
 import { hasVerifiedEmail } from './verified-email';
+import { assertNewPassword } from '@/common/security/password-policy';
 
 @Injectable()
 export class AuthService {
@@ -251,6 +252,7 @@ export class AuthService {
       );
     }
 
+    await assertNewPassword(newPassword);
     const passwordHash = await bcrypt.hash(newPassword, 10);
 
     await user.update({
@@ -296,7 +298,7 @@ export class AuthService {
       throw new BadRequestException('This reset link has already been used.');
     }
 
-    if (new Date(resetToken.expires_at) < new Date()) {
+    if (new Date(resetToken.expires_at).getTime() <= Date.now()) {
       throw new BadRequestException('Reset link has expired.');
     }
 
@@ -306,31 +308,42 @@ export class AuthService {
       throw new BadRequestException('User not found.');
     }
 
+    await assertNewPassword(password);
     const passwordHash = await bcrypt.hash(password, 10);
 
-    await user.update({
-      password_hash: passwordHash,
-    });
-
-    /**
-     * Mark every password reset token as used.
-     */
-    await this.passwordResetModel.update(
-      {
-        used_at: new Date(),
-      },
-      {
-        where: {
-          user_id: user.id,
-          used_at: null,
+    await this.userModel.sequelize!.transaction(async (transaction) => {
+      // Serialize resets for an account, then recheck the token after screening
+      // and hashing. Two simultaneous uses must not both change the password.
+      const lockedUser = await this.userModel.findByPk(user.id, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      const lockedToken = await this.passwordResetModel.findOne({
+        where: { token_hash: tokenHash },
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (
+        !lockedUser ||
+        !lockedToken ||
+        lockedToken.user_id !== user.id ||
+        lockedToken.used_at ||
+        new Date(lockedToken.expires_at).getTime() <= Date.now()
+      ) {
+        throw new BadRequestException(
+          'Reset link is invalid, expired, or already used.',
+        );
+      }
+      await lockedUser.update({ password_hash: passwordHash }, { transaction });
+      await this.passwordResetModel.update(
+        { used_at: new Date() },
+        {
+          where: { user_id: user.id, used_at: null },
+          transaction,
         },
-      },
-    );
-
-    /**
-     * Revoke all login sessions.
-     */
-    await this.authTokensService.revokeAllForUser(user.id);
+      );
+      await this.authTokensService.revokeAllForUser(user.id, transaction);
+    });
 
     return {
       message: 'Password reset successfully.',

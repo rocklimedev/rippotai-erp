@@ -7676,7 +7676,7 @@
     "method": "GET",
     "path": "/health/ready",
     "permission": "system:read",
-    "public": true,
+    "public": false,
     "file": "src/app.controller.ts"
   },
   {
