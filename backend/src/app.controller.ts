@@ -1,9 +1,11 @@
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import { Public } from '@/common/decorator/public.decorator';
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { SystemAdminGuard } from './common/guards/system-admin.guard';
 import { AppService } from './app.service';
 
 @Controller()
+@UseGuards(SystemAdminGuard)
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
@@ -44,7 +46,6 @@ export class AppController {
    * Indicates whether the API is ready to receive traffic.
    */
   @RequirePermission('system:read')
-  @Public()
   @Get('health/ready')
   getReadiness() {
     return this.appService.getReadiness();

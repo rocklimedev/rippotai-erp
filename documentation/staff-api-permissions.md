@@ -11,7 +11,7 @@ Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before
 
 Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.
 
-There are 979 routes, 951 staff routes and 405 assignable staff capabilities.
+There are 979 routes, 952 staff routes and 405 assignable staff capabilities.
 
 ## Catalogue by module
 
@@ -828,7 +828,7 @@ There are 979 routes, 951 staff routes and 405 assignable staff capabilities.
 | system | `GET /` | AppController.getHello | `system:read` | staff |
 | system | `GET /health/live` | AppController.getLiveness | `system:read` | public |
 | system | `GET /system/modules` | AppController.getModules | `system:read` | staff |
-| system | `GET /health/ready` | AppController.getReadiness | `system:read` | public |
+| system | `GET /health/ready` | AppController.getReadiness | `system:read` | staff |
 | system | `GET /system/info` | AppController.getSystemInfo | `system:read` | staff |
 | system | `GET /system/summary` | AppController.getSystemSummary | `system:read` | staff |
 | tasks | `POST /tasks` | TasksController.create | `tasks:create` | staff |

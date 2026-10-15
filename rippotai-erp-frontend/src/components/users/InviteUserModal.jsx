@@ -10,6 +10,7 @@ import {
 import { useGetRolesQuery } from "../../api/users/rbac.api";
 import { Field, TextInput, SelectInput, ChoiceGroup, Button } from "@/components/inos";
 import { AdminModal, ModalActions, humanize } from "@/pages/settings/_admin-ui";
+import { newPasswordError } from "@/lib/password-policy";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -71,8 +72,8 @@ export default function InviteUserModal({ onClose, user }) {
     if (!form.email.trim()) next.email = "Email is required — it's their sign-in.";
     else if (!EMAIL_RE.test(form.email.trim())) next.email = "That doesn't look like an email address.";
     if (!form.role_id) next.role_id = "Pick a role.";
-    if (!isEdit && !form.password.trim()) next.password = "Set a temporary password.";
-    else if (form.password.trim() && form.password.trim().length < 8) next.password = "Use at least 8 characters.";
+    if (!isEdit && !form.password) next.password = "Set a temporary password.";
+    else if (form.password && newPasswordError(form.password)) next.password = newPasswordError(form.password);
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -91,8 +92,8 @@ export default function InviteUserModal({ onClose, user }) {
       role_id: form.role_id,
     };
 
-    if (form.password.trim()) {
-      payload.password = form.password.trim();
+    if (form.password) {
+      payload.password = form.password;
     }
 
     try {
@@ -207,7 +208,7 @@ export default function InviteUserModal({ onClose, user }) {
           full
           htmlFor="iu-pass"
           error={errors.password}
-          hint={isEdit ? "Leave blank to keep their current password." : "At least 8 characters. Share it privately — they can change it later."}
+          hint={isEdit ? "Leave blank to keep their current password. New passwords need at least 12 characters." : "At least 12 characters. Known breached passwords are rejected."}
         >
           <div style={{ display: "flex", gap: 8 }}>
             <TextInput
@@ -216,7 +217,7 @@ export default function InviteUserModal({ onClose, user }) {
               autoComplete="new-password"
               value={form.password}
               invalid={!!errors.password}
-              placeholder={isEdit ? "••••••••" : "Min. 8 characters"}
+              placeholder={isEdit ? "••••••••" : "Min. 12 characters"}
               onChange={(e) => handleChange("password", e.target.value)}
             />
             <Button

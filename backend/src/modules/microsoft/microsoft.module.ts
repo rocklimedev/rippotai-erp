@@ -1,3 +1,4 @@
+import { OAuthTokenCryptoService } from '../auth/oauth/oauth-token-crypto.service';
 // microsoft/microsoft.module.ts
 
 import { Module } from '@nestjs/common';
@@ -39,6 +40,7 @@ import { MicrosoftOneDriveController } from './microsoft-onedrive.controller';
   controllers: [MicrosoftOAuthController, MicrosoftOneDriveController],
 
   providers: [
+    OAuthTokenCryptoService,
     MicrosoftAuthService,
     MicrosoftOneDriveService,
     OAuthStateService,

@@ -1,3 +1,4 @@
+import { OAuthTokenCryptoService } from '../auth/oauth/oauth-token-crypto.service';
 // google/google.module.ts
 
 import { Module } from '@nestjs/common';
@@ -19,7 +20,12 @@ import { GoogleTasksController } from './google-tasks.controller';
 
   controllers: [GoogleCalendarController, GoogleTasksController],
 
-  providers: [GoogleAuthService, GoogleCalendarService, GoogleTasksService],
+  providers: [
+    OAuthTokenCryptoService,
+    GoogleAuthService,
+    GoogleCalendarService,
+    GoogleTasksService,
+  ],
 
   exports: [GoogleAuthService, GoogleCalendarService, GoogleTasksService],
 })

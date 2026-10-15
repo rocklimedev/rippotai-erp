@@ -8,7 +8,7 @@ Helmet runs before application middleware and controllers, including local CDN f
 
 HttpSecurityModule registers SecurityThrottlerGuard, JwtAuthGuard, PortalAccessGuard and PermissionsGuard globally, in that order. Every controller route is authenticated by default, and staff routes require an active staff role and the exact declared permission. Missing permission metadata fails closed. The reviewed public and scoped account exceptions, module catalogue and every route mapping are documented in [staff-api-permissions.md](staff-api-permissions.md). CDN and signature routes require staff permissions and a session JWT in addition to their existing CDN secret checks.
 
-The explicit JWT exceptions are login, signup, forgot-password, reset-password, OAuth callbacks (which validate signed OAuth state), token-based public client routes (which validate their client link), and health/live and health/ready probes. Other health/system information and token administration endpoints require JWTs. Public routes remain rate limited. Only use @Public() for a deliberate unauthenticated or independently authenticated endpoint.
+The explicit JWT exceptions are login, the disabled signup endpoint, email verification, forgot-password, reset-password, OAuth callbacks (which validate signed OAuth state), token-based public client routes (which validate their client link), and the health/live probe. All root, health/readiness, and system diagnostics require an active authenticated ADMIN or SUPERADMIN with `system:read`. Public routes remain rate limited. Only use @Public() for a deliberate unauthenticated or independently authenticated endpoint.
 
 Public client access is allow-listed per handler, rather than on the entire controller, so a future handler requires authentication unless explicitly annotated. The approved `/api/v1` exceptions are:
 
@@ -16,7 +16,7 @@ Public client access is allow-listed per handler, rather than on the entire cont
 | --- | --- |
 | POST | `auth/login`, `auth/signup` (always rejects), `auth/forgot-password`, `auth/reset-password`, `auth/request-email-verification`, `auth/verify-email` |
 | GET | `auth/google/callback`, `auth/microsoft/callback`, `auth/zoho/callback` |
-| GET | `health/live`, `health/ready` |
+| GET | `health/live` |
 | GET | `public/client/:token`, `public/client/:token/boq/:boqId` |
 | POST | `public/client/:token/boq/:boqId/approve` |
 | GET | `public/client/:token/quotations/compare/:cid` |

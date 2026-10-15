@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { newPasswordError } from "@/lib/password-policy";
 import { useResetPasswordMutation } from "../../api/auth/auth.api"; // Adjust path if needed
 
 const GREEN = "#1F453B";
@@ -33,8 +34,8 @@ export default function ResetPassword() {
       return;
     }
 
-    if (newPassword.length < 8) {
-      toast.error("Password must be at least 8 characters.");
+    if (newPasswordError(newPassword)) {
+      toast.error(newPasswordError(newPassword));
       return;
     }
 
@@ -145,7 +146,7 @@ export default function ResetPassword() {
                   />
 
                   <p className="text-[11.5px] mt-1" style={{ color: MUTED }}>
-                    Password must be at least 8 characters long.
+                    Use at least 12 characters. Known breached passwords are rejected.
                   </p>
                 </div>
 

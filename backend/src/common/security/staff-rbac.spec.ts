@@ -47,7 +47,7 @@ it('keeps all route annotations, module catalogue, migration and documentation i
   for (const [file, content] of artefacts(routes))
     expect(readFileSync(file, 'utf8')).toBe(content);
   expect(routes.length).toBeGreaterThan(900);
-  expect(routes.filter((r) => r.public)).toHaveLength(19);
+  expect(routes.filter((r) => r.public)).toHaveLength(18);
   for (const [key, permission] of Object.entries(ACCOUNT_ROUTES)) {
     expect(
       routes.some(

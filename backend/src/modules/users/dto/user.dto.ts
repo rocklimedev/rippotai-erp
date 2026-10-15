@@ -7,6 +7,7 @@ import {
   MinLength,
   MaxLength,
 } from 'class-validator';
+import { PASSWORD_MIN_LENGTH } from '@/common/security/password-policy';
 
 export class CreateUserDto {
   @IsString()
@@ -18,7 +19,7 @@ export class CreateUserDto {
   email: string;
 
   @IsString()
-  @MinLength(8)
+  @MinLength(PASSWORD_MIN_LENGTH)
   password: string;
 
   @IsOptional()
@@ -86,7 +87,7 @@ export class UpdateUserDto {
 
   @IsOptional()
   @IsString()
-  @MinLength(8)
+  @MinLength(PASSWORD_MIN_LENGTH)
   password?: string;
 
   @IsOptional()

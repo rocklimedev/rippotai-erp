@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Field, TextInput, Button } from "@/components/inos";
 import { AdminModal, ModalActions } from "@/pages/settings/_admin-ui";
 import { useChangePasswordMutation } from "../../api/auth/auth.api"; // adjust path to match your project
+import { newPasswordError } from "@/lib/password-policy";
 
 const initialPasswords = {
   currentPassword: "",
@@ -44,6 +45,7 @@ export default function ChangePasswordModal({ open, onOpenChange }) {
     const next = {};
     if (!currentPassword) next.currentPassword = "Enter your current password.";
     if (!newPassword) next.newPassword = "Choose a new password.";
+    else if (newPasswordError(newPassword)) next.newPassword = newPasswordError(newPassword);
     if (!confirmPassword) next.confirmPassword = "Type the new password again.";
     else if (newPassword && newPassword !== confirmPassword) next.confirmPassword = "Passwords do not match.";
     if (Object.keys(next).length) {
@@ -117,7 +119,7 @@ export default function ChangePasswordModal({ open, onOpenChange }) {
         required
         htmlFor="newPassword"
         error={fieldErrors.newPassword}
-        hint="At least 8 characters with an uppercase letter, a lowercase letter, a number and a symbol."
+        hint="At least 12 characters. Known breached passwords are rejected."
       >
         <TextInput
           id="newPassword"

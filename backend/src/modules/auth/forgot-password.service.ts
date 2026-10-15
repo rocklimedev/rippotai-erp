@@ -80,13 +80,16 @@ export class ForgotPasswordService {
 
     const resetUrl = `${frontendUrl}/reset-password?token=${rawToken}`;
 
-    await this.mailService.sendPasswordResetEmail(
-      user.email,
-      user.name,
-      resetUrl,
-    );
-
-    this.logger.log(`Password reset email sent to ${user.email}`);
+    try {
+      await this.mailService.sendPasswordResetEmail(
+        user.email,
+        user.name,
+        resetUrl,
+      );
+    } catch {
+      // Do not let a delivery error disclose that this address has an account.
+      this.logger.warn('Password reset email delivery failed');
+    }
 
     return {
       message:

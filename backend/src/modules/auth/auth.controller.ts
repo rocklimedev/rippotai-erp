@@ -115,6 +115,7 @@ export class AuthController {
   }
 
   @RequirePermission('account:change-password')
+  @AuthThrottle()
   @Patch('change-password')
   @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))

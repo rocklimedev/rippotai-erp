@@ -1,3 +1,4 @@
+import { OAuthTokenCryptoService } from './oauth/oauth-token-crypto.service';
 // microsoft/services/microsoft-auth.service.ts
 
 import {
@@ -47,6 +48,7 @@ export class MicrosoftAuthService implements OAuthProviderService {
     private readonly tokenModel: typeof MicrosoftToken,
 
     private readonly config: ConfigService,
+    private readonly tokenCrypto: OAuthTokenCryptoService,
   ) {
     this.tenantId = this.config.get<string>('MICROSOFT_TENANT_ID') || 'common';
 
@@ -120,6 +122,20 @@ export class MicrosoftAuthService implements OAuthProviderService {
       );
     }
 
+    const encryptedAccess = await this.tokenCrypto.encrypt(
+      data.access_token,
+      'microsoft',
+      userId,
+      'accessToken',
+    );
+    const encryptedRefresh = data.refresh_token
+      ? await this.tokenCrypto.encrypt(
+          data.refresh_token,
+          'microsoft',
+          userId,
+          'refreshToken',
+        )
+      : undefined;
     const expiresAt = new Date(Date.now() + data.expires_in * 1000);
 
     const existingToken = await this.tokenModel.findOne({
@@ -128,9 +144,9 @@ export class MicrosoftAuthService implements OAuthProviderService {
 
     if (existingToken) {
       await existingToken.update({
-        accessToken: data.access_token,
+        accessToken: encryptedAccess,
 
-        refreshToken: data.refresh_token ?? existingToken.refreshToken,
+        refreshToken: encryptedRefresh ?? existingToken.refreshToken,
 
         scope: data.scope,
 
@@ -143,9 +159,9 @@ export class MicrosoftAuthService implements OAuthProviderService {
     return this.tokenModel.create({
       userId,
 
-      accessToken: data.access_token,
+      accessToken: encryptedAccess,
 
-      refreshToken: data.refresh_token ?? null,
+      refreshToken: encryptedRefresh ?? null,
 
       scope: data.scope,
 
@@ -171,7 +187,12 @@ export class MicrosoftAuthService implements OAuthProviderService {
     const expiresSoon = token.expiresAt.getTime() - Date.now() < 60_000;
 
     if (!expiresSoon) {
-      return token.accessToken;
+      return this.tokenCrypto.decrypt(
+        token.accessToken,
+        'microsoft',
+        userId,
+        'accessToken',
+      );
     }
 
     if (!token.refreshToken) {
@@ -181,7 +202,12 @@ export class MicrosoftAuthService implements OAuthProviderService {
     }
 
     const data = await this.exchange({
-      refresh_token: token.refreshToken,
+      refresh_token: await this.tokenCrypto.decrypt(
+        token.refreshToken,
+        'microsoft',
+        userId,
+        'refreshToken',
+      ),
 
       grant_type: 'refresh_token',
     });
@@ -192,12 +218,26 @@ export class MicrosoftAuthService implements OAuthProviderService {
       );
     }
 
+    const encryptedAccess = await this.tokenCrypto.encrypt(
+      data.access_token,
+      'microsoft',
+      userId,
+      'accessToken',
+    );
+    const encryptedRefresh = data.refresh_token
+      ? await this.tokenCrypto.encrypt(
+          data.refresh_token,
+          'microsoft',
+          userId,
+          'refreshToken',
+        )
+      : undefined;
     const expiresAt = new Date(Date.now() + data.expires_in * 1000);
 
     await token.update({
-      accessToken: data.access_token,
+      accessToken: encryptedAccess,
 
-      refreshToken: data.refresh_token ?? token.refreshToken,
+      refreshToken: encryptedRefresh ?? token.refreshToken,
 
       scope: data.scope || token.scope,
 
@@ -254,7 +294,7 @@ export class MicrosoftAuthService implements OAuthProviderService {
     const text = await response.text();
 
     if (!response.ok) {
-      throw new BadRequestException(`Microsoft token request failed: ${text}`);
+      throw new BadRequestException('Microsoft token request failed');
     }
 
     try {

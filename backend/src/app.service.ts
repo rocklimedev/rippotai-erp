@@ -79,8 +79,6 @@ export class AppService {
   getLiveness() {
     return {
       status: 'alive',
-      service: 'rippotai-erp-api',
-      timestamp: new Date().toISOString(),
     };
   }
 

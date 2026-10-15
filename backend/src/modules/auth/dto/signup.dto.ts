@@ -1,4 +1,5 @@
 import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import { PASSWORD_MIN_LENGTH } from '@/common/security/password-policy';
 
 export class SignupDto {
   @IsString()
@@ -8,7 +9,7 @@ export class SignupDto {
   email: string;
 
   @IsString()
-  @MinLength(6)
+  @MinLength(PASSWORD_MIN_LENGTH)
   password: string;
 
   @IsOptional()
