@@ -1,3 +1,4 @@
+import { AsyncExport } from '../exports/async-export.decorator';
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
@@ -149,6 +150,7 @@ export class QuotationsController {
   // =========================
   // SINGLE QUOTATION ROUTES
   // =========================
+  @AsyncExport('quotation-excel')
   @RequirePermission('quotations:export')
   @Get(':id/export/excel')
   async exportExcel(@Param('id') id: string, @Res() res: Response) {

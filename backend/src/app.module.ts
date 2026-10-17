@@ -72,6 +72,7 @@ import { ProjectPlannerModule } from './modules/projects/project-planner.module'
 import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { SyncModule } from './modules/sync/sync.module';
 import { HttpSecurityModule } from './common/security/http-security.module';
+import { ExportJobsModule } from './modules/exports/export-jobs.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { HttpSecurityModule } from './common/security/http-security.module';
       load: [databaseConfig],
     }),
     HttpSecurityModule,
+    ExportJobsModule,
 
     // ============================================================
     // Database

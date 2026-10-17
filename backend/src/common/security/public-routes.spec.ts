@@ -4,6 +4,7 @@ import * as ts from 'typescript';
 
 // Review this list whenever a new independently authenticated endpoint is added.
 const APPROVED_PUBLIC_ROUTES = [
+  'GET cdn/private/:key',
   'POST auth/login',
   'POST auth/signup',
   'POST auth/request-email-verification',

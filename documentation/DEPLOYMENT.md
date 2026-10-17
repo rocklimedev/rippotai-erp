@@ -35,9 +35,19 @@ No deploy workflow was found for `vendor-quote/` in `.github/workflows/` — the
 
 ## CORS
 
-The backend explicitly allowlists these origins (`main.ts`):
+HTTP and Socket.IO share the approved origins in `backend/src/common/security/cors.config.ts`:
 
-- `http://localhost:5173`, `:3000`, `:3001` (local dev)
-- `https://vendors-quote.rippotaiarchitecture.com` (production frontend)
+- `http://localhost:5173`, `http://localhost:3000`, `http://localhost:3001`
+- `https://vendors-quote.rippotaiarchitecture.com`
+- `https://rippotai-erp-qga2.vercel.app`
+- `https://inos.rippotaiarchitecture.com`
 
-Add any new frontend deployment origin here before it can call the API from the browser.
+Add new frontend deployment origins to this list and restart the backend. Both transports enable credentials and use this list in development and production, including the Redis Socket.IO adapter. Gateway options cannot override the Redis adapter's origin policy.
+
+The local public `/cdn` static-file fallback separately permits `Access-Control-Allow-Origin: *` so image exports can draw uploaded photos. CORS governs browser HTTP access, including Socket.IO polling; notification connections still require a valid token.
+
+
+See [Confidential file access and migration](confidential-files.md) for private-storage settings, expiring access, and the required inventory and cache-purge procedure.
+
+
+Heavy PDF/Excel generation requires a separately supervised export worker. See [Export workers](export-workers.md) for the Redis queue, 202 protocol, concurrency/resource limits and rollout instructions.

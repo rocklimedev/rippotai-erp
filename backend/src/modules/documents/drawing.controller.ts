@@ -113,6 +113,7 @@ export class DrawingsController {
       'Content-Disposition',
       `attachment; filename="${revision.filename ?? revision.storageFilename}"`,
     );
+    res.setHeader('Cache-Control', 'private, no-store, max-age=0');
     res.setHeader('Content-Type', revision.mime ?? 'application/octet-stream');
     res.send(buffer);
   }

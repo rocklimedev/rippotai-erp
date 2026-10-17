@@ -71,7 +71,7 @@ export class DailySiteReportController {
     if (!/^image\//.test(file.mimetype)) {
       throw new BadRequestException('Only image files can be attached');
     }
-    const res = await this.cdn.uploadFile(file);
+    const res = await this.cdn.uploadFile(file, 'reports');
     return { ...res, originalName: file.originalname };
   }
 

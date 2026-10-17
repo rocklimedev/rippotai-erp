@@ -1,3 +1,4 @@
+import { AsyncExport } from '../exports/async-export.decorator';
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
@@ -53,6 +54,7 @@ export class TasksController {
     res.send(await this.crucialExport.template());
   }
 
+  @AsyncExport('crucial-work')
   @RequirePermission('tasks:read')
   @Get('crucial-work/export')
   async exportCrucialWork(@Query() query: CrucialWorkExportDto, @Res() res: Response) {

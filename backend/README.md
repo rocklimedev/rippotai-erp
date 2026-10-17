@@ -27,3 +27,9 @@ existing passwords remain valid for login. See [password policy and recovery](..
 for screening availability, recovery controls, and deployment requirements.
 
 See [dashboard read models](../documentation/dashboard-read-models.md) for projection coverage, freshness, invalidation, fallback and the evaluation of durable projections. See [HTTP security](../documentation/http-security.md) for authentication and public route behavior. SQL migrations are in `migrations`; module code is in `src/modules`.
+
+
+See [Confidential file access and migration](../documentation/confidential-files.md) for private-storage settings, expiring access, and the required inventory and cache-purge procedure.
+
+
+Run `npm run start:export-worker` alongside the API for document generation. See [Export workers](../documentation/export-workers.md) for configuration and job status/result endpoints.

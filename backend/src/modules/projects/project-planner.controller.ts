@@ -1,3 +1,4 @@
+import { AsyncExport } from '../exports/async-export.decorator';
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 // src/modules/project-planner/controllers/project-planner.controller.ts
 
@@ -38,6 +39,7 @@ import {
 export class ProjectPlannerController {
   constructor(private readonly projectPlannerService: ProjectPlannerService) {}
 
+  @AsyncExport('planner-excel')
   @RequirePermission('project-planners:read')
   @Get('projects/:projectId/planners/workbook.xlsx')
   async downloadWorkbook(

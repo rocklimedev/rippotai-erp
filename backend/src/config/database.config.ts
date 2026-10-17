@@ -18,7 +18,7 @@ export default registerAs(
       underscored: true,
     },
     pool: {
-      max: 5,
+      max: process.env.EXPORT_JOB_CHILD === '1' ? 1 : 5,
       min: 0,
       acquire: 30000,
       idle: 3000, // release connections well before the host's 10s wait_timeout

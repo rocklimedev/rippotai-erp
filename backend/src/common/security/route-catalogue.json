@@ -1382,6 +1382,16 @@
   {
     "module": "cdn",
     "controller": "CdnController",
+    "handler": "privateFile",
+    "method": "GET",
+    "path": "/cdn/private/:key",
+    "permission": "file-link:read",
+    "public": true,
+    "file": "src/modules/cdn/cdn.controller.ts"
+  },
+  {
+    "module": "cdn",
+    "controller": "CdnController",
     "handler": "upload",
     "method": "POST",
     "path": "/cdn/upload",
@@ -2228,6 +2238,36 @@
     "permission": "notifications:read",
     "public": false,
     "file": "src/modules/engagement/notifications.controller.ts"
+  },
+  {
+    "module": "exports",
+    "controller": "ExportJobsController",
+    "handler": "result",
+    "method": "GET",
+    "path": "/export-jobs/:id/result",
+    "permission": "exports:read-own",
+    "public": false,
+    "file": "src/modules/exports/export-jobs.controller.ts"
+  },
+  {
+    "module": "exports",
+    "controller": "ExportJobsController",
+    "handler": "retry",
+    "method": "POST",
+    "path": "/export-jobs/:id/retry",
+    "permission": "exports:retry-own",
+    "public": false,
+    "file": "src/modules/exports/export-jobs.controller.ts"
+  },
+  {
+    "module": "exports",
+    "controller": "ExportJobsController",
+    "handler": "status",
+    "method": "GET",
+    "path": "/export-jobs/:id",
+    "permission": "exports:read-own",
+    "public": false,
+    "file": "src/modules/exports/export-jobs.controller.ts"
   },
   {
     "module": "gates",

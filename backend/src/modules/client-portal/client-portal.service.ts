@@ -7,11 +7,11 @@ import {
 import { Sequelize } from 'sequelize-typescript';
 import { QueryTypes } from 'sequelize';
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'crypto';
-import * as fs from 'fs';
 import * as path from 'path';
 import archiver from 'archiver';
 import { NotificationsService } from '../engagement/notifications.service';
 import { CdnService } from '../cdn/cdn.service';
+import { signFileReference, privateFileKey } from '../cdn/file-access';
 import { NotificationType } from '@/common/enums';
 
 export const PURPOSES = ['project_view', 'boq_approval', 'quotation_selection', 'handover_acceptance'] as const;
@@ -440,8 +440,12 @@ export class ClientPortalService {
 
   async publicHandover(token: string) {
     const l = await this.resolve(token);
+    if (l.purpose !== 'handover_acceptance') throw fail(403, 'This link cannot access the handover.');
     const [p] = await this.select('SELECT id, name FROM projects WHERE id = ?', [l.project_id]);
     const status = await this.handoverStatus(l.project_id);
+    if (status.package?.url && privateFileKey(status.package.url)) {
+      status.package.url = signFileReference(status.package.url, Math.floor(new Date(l.expires_at).getTime() / 1000));
+    }
     return { link: this.linkPublic(l), project: p, checklist: status.checklist, package: status.package, accepted: status.accepted };
   }
 
@@ -568,10 +572,15 @@ export class ClientPortalService {
   }
 
   async preparePackage(projectId: string, user: any) {
+    const operationId = user?.exportOperationId as string | undefined;
+    if (operationId) {
+      const [existing] = await this.select('SELECT id, filename, url, size FROM handover_packages WHERE id = ? AND project_id = ?', [operationId, projectId]);
+      if (existing) return existing;
+    }
     const status = await this.handoverStatus(projectId);
     if (!status.ready) throw new BadRequestException('Complete the required checklist items before preparing the package.');
     const docs = await this.select(
-      `SELECT d.title, d.filename, d.url, d.category, d.version, d.created_at FROM documents d
+      `SELECT d.title, d.filename, d.storage_filename, d.url, d.category, d.version, d.created_at FROM documents d
          LEFT JOIN document_types t ON t.id = d.document_type_id
         WHERE d.project_id = ? AND (d.visibility IN ('client','external','public') OR d.category IN ('Handover Documents','Approvals') OR t.phase_code = '09_HANDOVER')
         ORDER BY d.category, d.title`,
@@ -582,14 +591,6 @@ export class ClientPortalService {
         WHERE project_id = ? AND status IN ('Approved','For Construction') ORDER BY discipline, drawing_number`,
       [projectId],
     );
-
-    const cdnDir = process.env.CDN_UPLOAD_PATH || '/tmp/inos-cdn';
-    const localFile = (url: string) => {
-      const m = String(url || '').match(/\/cdn\/([^/?#]+)$/);
-      if (!m) return null;
-      const f = path.join(cdnDir, m[1]);
-      return fs.existsSync(f) ? f : null;
-    };
 
     const chunks: Buffer[] = [];
     const zip = archiver('zip', { zlib: { level: 9 } });
@@ -602,10 +603,10 @@ export class ClientPortalService {
     const included: string[] = [];
     const linked: any[] = [];
     for (const d of docs) {
-      const f = localFile(d.url);
+      const storageKey = d.storage_filename || (d.url ? privateFileKey(d.url) : null);
       const name = `documents/${(d.category || 'Other').replace(/[^\w\- ]+/g, '')}/${d.filename || path.basename(d.url || 'file')}`;
-      if (f) {
-        zip.file(f, { name });
+      if (storageKey) {
+        zip.append(await this.cdn.downloadFile(storageKey), { name });
         included.push(name);
       } else linked.push(d);
     }
@@ -630,13 +631,13 @@ export class ClientPortalService {
     const buffer = Buffer.concat(chunks);
     const slug = String(status.project.name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     const filename = `${slug}-handover-${new Date().toISOString().slice(0, 10)}.zip`;
-    const up = await this.cdn.uploadBuffer(buffer, filename);
+    const up = await this.cdn.uploadBuffer(buffer, filename, 'handover');
     const id = randomUUID();
     await this.exec(
       `INSERT INTO handover_packages (id, project_id, filename, url, size, manifest_json, prepared_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-      [id, projectId, filename, up.url, buffer.length, JSON.stringify({ included, linked: linked.length, drawings: drawings.length }), user?.id || null],
+      [operationId || id, projectId, filename, up.url, buffer.length, JSON.stringify({ included, linked: linked.length, drawings: drawings.length }), user?.id || null],
     );
-    return { id, filename, url: up.url, size: buffer.length, files: included.length, referenced: linked.length, drawings: drawings.length };
+    return { id: operationId || id, filename, url: up.url, size: buffer.length, files: included.length, referenced: linked.length, drawings: drawings.length };
   }
 
   async deliver(projectId: string, body: any, user: any, origin?: string) {

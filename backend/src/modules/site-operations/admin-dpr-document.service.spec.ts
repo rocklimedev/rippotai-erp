@@ -35,7 +35,7 @@ describe('saved Admin DPR documents', () => {
         };
         return stored;
       }),
-      findByPk: jest.fn(async (_id, options) => {
+      findByPk: jest.fn(async (_id, options = {}) => {
         if (!stored) return null;
         if (Array.isArray(options.attributes))
           return Object.fromEntries(
@@ -55,6 +55,15 @@ describe('saved Admin DPR documents', () => {
       log,
     };
   }
+  it('reuses a committed operation after a worker retry without rendering or saving twice', async () => {
+    const { service, model, exporter } = setup();
+    const build = jest.spyOn(exporter, 'buildWorkbook');
+    const first = await service.create({}, { id: 'owner' }, 'operation-id');
+    const retry = await service.create({}, { id: 'owner' }, 'operation-id');
+    expect(retry.id).toBe(first.id);
+    expect(model.create).toHaveBeenCalledTimes(1);
+    expect(build).toHaveBeenCalledTimes(1);
+  });
   it('retains both complete sections and the exact Excel after source entries and project names change', async () => {
     const { service, report, log, model } = setup();
     const document = await service.create(

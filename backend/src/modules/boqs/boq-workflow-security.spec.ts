@@ -9,6 +9,7 @@ import { BoqService } from './boq.service';
 import { BoqExportService } from './boq-export.service';
 import { BoqDashboardService } from './boq-dashboard.service';
 import { BoqStatus } from '../../common/enums/boq-enums';
+import { ExportJobsService } from '../exports/export-jobs.service';
 
 jest.mock('./boq-export.service', () => ({ BoqExportService: class {} }));
 
@@ -37,6 +38,7 @@ describe('BOQ workflow authorization', () => {
     const module = await Test.createTestingModule({
       controllers: [BoqController],
       providers: [
+        { provide: ExportJobsService, useValue: { enqueue: jest.fn() } },
         { provide: BoqService, useValue: service },
         { provide: BoqExportService, useValue: {} },
         { provide: BoqDashboardService, useValue: {} },

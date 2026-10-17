@@ -1,8 +1,10 @@
+import { exportAwareFetch } from '../lib/export-fetch';
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { API_URL } from "../lib/config";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: API_URL,
+  fetchFn: exportAwareFetch,
   credentials: "include", // IMPORTANT for cookie-based auth
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("bc_token"); // aligned with AuthContext

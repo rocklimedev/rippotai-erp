@@ -1,3 +1,4 @@
+import { AsyncExport } from '../exports/async-export.decorator';
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Body,
@@ -20,9 +21,10 @@ import { AdminDprDocumentService } from './admin-dpr-document.service';
 @Controller('dpr/admin-documents')
 export class AdminDprDocumentController {
   constructor(private readonly service: AdminDprDocumentService) {}
+  @AsyncExport('admin-dpr-save')
   @RequirePermission('dpr-admin-documents:create')
   @Post() create(@Body() query: QueryAdminDailyReportDto, @Req() req: any) {
-    return this.service.create(query, req.user);
+    return this.service.create(query, req.user, req.exportOperationId);
   }
   @RequirePermission('dpr-admin-documents:read')
   @Get() list(@Query() query: QueryAdminDailyReportDto) {

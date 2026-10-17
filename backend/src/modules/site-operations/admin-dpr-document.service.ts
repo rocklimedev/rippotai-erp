@@ -16,7 +16,9 @@ export class AdminDprDocumentService {
   async create(
     query: QueryAdminDailyReportDto,
     user?: { id?: string; name?: string },
+    operationId?: string,
   ) {
+    if (operationId && await this.model.findByPk(operationId)) return this.findOne(operationId);
     const { reports, logs } = await this.exporter.capture(query);
     const excel_data = Buffer.from(
       await this.exporter.buildWorkbook(reports, logs),
@@ -39,6 +41,7 @@ export class AdminDprDocumentService {
       query.date || query.to_date || dates[dates.length - 1] || null;
     const title = `Admin DPR · ${project_names.join(', ') || (query.project_id ? 'Selected project' : 'All projects')} · ${from_date || 'All dates'}${to_date && to_date !== from_date ? ` to ${to_date}` : ''}`;
     const row = await this.model.create({
+      ...(operationId ? { id: operationId } : {}),
       title: title.slice(0, 255),
       project_id: query.project_id || null,
       project_ids,

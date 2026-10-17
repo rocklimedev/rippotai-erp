@@ -1,3 +1,4 @@
+import { AsyncExport } from '../exports/async-export.decorator';
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import { Public } from '@/common/decorator/public.decorator';
 import {
@@ -63,6 +64,7 @@ export class ClientPortalController {
     return this.svc.handoverStatus(id);
   }
 
+  @AsyncExport('handover-prepare')
   @RequirePermission('client-portal:prepare')
   @Post('projects/:id/handover/prepare-package')
   prepare(@Param('id') id: string, @CurrentUser() user: any) {

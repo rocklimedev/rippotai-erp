@@ -1,3 +1,4 @@
+import { resolveExportResponse } from './export-fetch';
 import axios from "axios";
 import { API_BASE_URL } from "./config";
 
@@ -16,7 +17,20 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (response) => {
+  async (response) => {
+    if (response.status === 202) {
+      const initial = new Response(response.data instanceof Blob ? response.data : JSON.stringify(response.data), { status: 202 });
+      const descriptor = await initial.clone().json().catch(() => null);
+      if (descriptor?.jobId) {
+        const result = await resolveExportResponse(initial, {
+          headers: response.config.headers?.toJSON?.() || response.config.headers,
+          signal: response.config.signal,
+        });
+        response.data = response.config.responseType === "blob" ? await result.blob() : await result.json();
+        response.headers = Object.fromEntries(result.headers);
+        response.status = result.status;
+      }
+    }
     try {
       const method = (response.config?.method || "get").toLowerCase();
       if (method !== "get") {

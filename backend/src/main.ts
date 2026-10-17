@@ -5,12 +5,18 @@ import { ValidationPipe } from '@nestjs/common';
 import * as express from 'express';
 import * as fs from 'fs';
 import { AppModule } from './app.module';
+import { getCorsOptions } from './common/security/cors.config';
 import { RedisIoAdapter } from './redis-io.adapter';
+import { FileLinksInterceptor } from './modules/cdn/file-links.interceptor';
+import { validateFileConfiguration } from './modules/cdn/file-access';
 import { StripSecretsInterceptor } from './common/interceptors/strip-secrets.interceptor';
 import { configureHttpSecurity } from './common/security/http-security';
+import { CdnService } from './modules/cdn/cdn.service';
+import { localPrivateCdn } from './modules/cdn/local-private-cdn';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  validateFileConfiguration();
   configureHttpSecurity(app);
   // Saved comparison snapshots include BOQ lines and vendor rates.
   app.useBodyParser('json', { limit: '3mb' });
@@ -29,7 +35,7 @@ async function bootstrap() {
   }
 
   // Never serialise password hashes / tokens, whatever a query included.
-  app.useGlobalInterceptors(new StripSecretsInterceptor());
+  app.useGlobalInterceptors(new StripSecretsInterceptor(), new FileLinksInterceptor());
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -39,31 +45,9 @@ async function bootstrap() {
     }),
   );
 
-  // Local CDN fallback (no SFTP host configured): serve uploaded files from disk.
-  if (!process.env.CDN_HOST) {
-    const cdnDir = process.env.CDN_UPLOAD_PATH || '/tmp/inos-cdn';
-    fs.mkdirSync(cdnDir, { recursive: true });
-    // CORS on static files so PDF export (html2canvas useCORS) can draw uploaded photos.
-    app.use(
-      '/cdn',
-      express.static(cdnDir, {
-        setHeaders: (res) => res.setHeader('Access-Control-Allow-Origin', '*'),
-      }),
-    );
-  }
-
-  app.setGlobalPrefix('api/v1');
-
   app.enableCors({
-    origin: [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'https://vendors-quote.rippotaiarchitecture.com',
-      'https://rippotai-erp-qga2.vercel.app',
-      'https://inos.rippotaiarchitecture.com',
-    ],
-    credentials: true,
+    exposedHeaders: ['Content-Disposition'],
+    ...getCorsOptions(),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Content-Type',
@@ -78,6 +62,21 @@ async function bootstrap() {
     ],
   });
 
+  // Local CDN fallback (no SFTP host configured): serve uploaded files from disk.
+  if (!process.env.CDN_HOST) {
+    const cdnDir = process.env.CDN_UPLOAD_PATH || '/tmp/inos-cdn';
+    fs.mkdirSync(cdnDir, { recursive: true });
+    app.use('/cdn', localPrivateCdn(app.get(CdnService)));
+    // CORS on static files so PDF export (html2canvas useCORS) can draw uploaded photos.
+    app.use(
+      '/cdn',
+      express.static(cdnDir, {
+        setHeaders: (res) => res.setHeader('Access-Control-Allow-Origin', '*'),
+      }),
+    );
+  }
+
+  app.setGlobalPrefix('api/v1');
   const port = Number(process.env.PORT) || 5000;
 
   await app.listen(port);

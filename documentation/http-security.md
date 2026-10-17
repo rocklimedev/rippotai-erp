@@ -4,7 +4,7 @@ HTTP security
 Review owner: ERP backend maintainers (HTTP security)
 Last reviewed: 2026-10-10
 
-Helmet runs before application middleware and controllers, including local CDN files. Its cross-origin resource policy permits the separately hosted frontend to embed uploaded images. Existing CORS origins and credentials remain configured in main.ts.
+Helmet runs before application middleware and controllers, including local CDN files. Its cross-origin resource policy permits the separately hosted frontend to embed uploaded images. HTTP and Socket.IO origins and credentials are configured in `backend/src/common/security/cors.config.ts`; HTTP methods and headers remain configured in `main.ts`.
 
 HttpSecurityModule registers SecurityThrottlerGuard, JwtAuthGuard, PortalAccessGuard and PermissionsGuard globally, in that order. Every controller route is authenticated by default, and staff routes require an active staff role and the exact declared permission. Missing permission metadata fails closed. The reviewed public and scoped account exceptions, module catalogue and every route mapping are documented in [staff-api-permissions.md](staff-api-permissions.md). CDN and signature routes require staff permissions and a session JWT in addition to their existing CDN secret checks.
 

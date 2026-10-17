@@ -357,7 +357,7 @@ export class SiteRecceService {
     // Upload to CDN
     // --------------------------------------------------------
 
-    const upload = await this.cdnService.uploadFile(file);
+    const upload = await this.cdnService.uploadFile(file, 'recce');
 
     // --------------------------------------------------------
     // Create DB record
@@ -401,7 +401,7 @@ export class SiteRecceService {
       throw new BadRequestException('Image file is required');
     }
 
-    return this.cdnService.uploadFile(file);
+    return this.cdnService.uploadFile(file, 'recce');
   }
 
   // ============================================================
@@ -838,7 +838,7 @@ export class SiteRecceService {
     // Upload new layout
     // --------------------------------------------------------
 
-    const upload = await this.cdnService.uploadFile(file);
+    const upload = await this.cdnService.uploadFile(file, 'recce');
 
     // --------------------------------------------------------
     // Delete previous layout
@@ -890,7 +890,7 @@ export class SiteRecceService {
     // Upload new image
     // --------------------------------------------------------
 
-    const upload = await this.cdnService.uploadFile(file);
+    const upload = await this.cdnService.uploadFile(file, 'recce');
 
     // --------------------------------------------------------
     // Delete old CDN file

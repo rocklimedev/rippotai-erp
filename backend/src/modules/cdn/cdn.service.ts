@@ -1,18 +1,21 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import SftpClient from 'ssh2-sftp-client';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-
-/**
- * Local-disk fallback: when no SFTP host is configured (local/dev setups),
- * files are written to CDN_UPLOAD_PATH and served by main.ts at /cdn.
- */
-const isLocalCdn = () => !process.env.CDN_HOST;
-const localDir = () => process.env.CDN_UPLOAD_PATH || '/tmp/inos-cdn';
-const localBaseUrl = () =>
-  process.env.CDN_BASE_URL ||
-  `http://localhost:${process.env.PORT || 5000}/cdn`;
+import {
+  FileScope,
+  fileScope,
+  privateRoot,
+  validateStorageKey,
+  cdnBaseUrl,
+  privateFileUrl,
+} from './file-access';
 
 export interface CdnUploadResult {
   filename: string;
@@ -23,140 +26,127 @@ export interface CdnUploadResult {
 export class CdnService {
   private readonly logger = new Logger(CdnService.name);
 
+  private publicRoot() {
+    return process.env.CDN_UPLOAD_PATH || '/tmp/inos-cdn';
+  }
+
   private async connect(): Promise<SftpClient> {
     const sftp = new SftpClient();
-
     await sftp.connect({
       host: process.env.CDN_HOST!,
       port: Number(process.env.CDN_PORT ?? 22),
       username: process.env.CDN_USERNAME!,
       password: process.env.CDN_PASSWORD!,
     });
-
     return sftp;
   }
 
-  private async localPut(
+  private async put(
     buffer: Buffer,
-    originalname: string,
-  ): Promise<CdnUploadResult> {
-    const ext = path.extname(originalname || '') || '';
-    const filename = `${uuidv4()}${ext}`;
-    await fs.mkdir(localDir(), { recursive: true });
-    await fs.writeFile(path.join(localDir(), filename), buffer);
-    return { filename, url: `${localBaseUrl()}/${filename}` };
-  }
-
-  async uploadFile(file: Express.Multer.File): Promise<CdnUploadResult> {
-    if (isLocalCdn()) return this.localPut(file.buffer, file.originalname);
-    const sftp = await this.connect();
-
-    try {
-      const ext = path.extname(file.originalname);
-
-      const filename = `${uuidv4()}${ext}`;
-
-      const remotePath = `${process.env.CDN_UPLOAD_PATH}/${filename}`;
-
-      await sftp.put(file.buffer, remotePath);
-
-      const url = `${process.env.CDN_BASE_URL}/${filename}`;
-
-      return {
-        filename,
-        url,
-      };
-    } finally {
-      await sftp.end().catch(() => {});
-    }
-  }
-
-  /**
-   * Upload raw buffer
-   * Used for generated PDFs and base64 uploads
-   */
-  async uploadBuffer(
-    buffer: Buffer,
-    originalname: string,
-  ): Promise<CdnUploadResult> {
-    if (isLocalCdn()) return this.localPut(buffer, originalname);
-    const sftp = await this.connect();
-
-    try {
-      const ext = path.extname(originalname) || '';
-
-      const filename = `${uuidv4()}${ext}`;
-
-      const remotePath = `${process.env.CDN_UPLOAD_PATH}/${filename}`;
-
-      await sftp.put(buffer, remotePath);
-
-      const url = `${process.env.CDN_BASE_URL}/${filename}`;
-
-      return {
-        filename,
-        url,
-      };
-    } finally {
-      await sftp.end().catch(() => {});
-    }
-  }
-
-  /**
-   * Download file from CDN storage
-   */
-  async downloadFile(storageFilename: string): Promise<Buffer> {
-    if (isLocalCdn()) {
-      return fs.readFile(path.join(localDir(), path.basename(storageFilename)));
-    }
-    const sftp = await this.connect();
-
-    try {
-      const remotePath = `${process.env.CDN_UPLOAD_PATH}/${storageFilename}`;
-
-      const data = await sftp.get(remotePath);
-
-      if (Buffer.isBuffer(data)) {
-        return data;
-      }
-
-      if (typeof data === 'string') {
-        return Buffer.from(data);
-      }
-
-      if (data instanceof Uint8Array) {
-        return Buffer.from(data);
-      }
-
-      throw new Error(
-        `Unsupported CDN response type for file: ${storageFilename}`,
+    filename: string,
+    root: string,
+    confidential: boolean,
+  ) {
+    if (process.env.CDN_HOST && !path.posix.isAbsolute(root)) {
+      throw new ServiceUnavailableException(
+        'CDN_UPLOAD_PATH must be the absolute directory on the CDN server',
       );
-    } finally {
-      await sftp.end().catch(() => {});
     }
-  }
-
-  /**
-   * Delete file from CDN storage
-   */
-  async deleteFile(storageFilename: string): Promise<void> {
-    if (isLocalCdn()) {
-      await fs
-        .unlink(path.join(localDir(), path.basename(storageFilename)))
-        .catch(() => undefined);
+    if (
+      process.env.CDN_HOST &&
+      confidential &&
+      process.env.CDN_PRIVATE_PROXY_ENABLED !== 'true'
+    ) {
+      throw new ServiceUnavailableException(
+        'Configure the CDN signed-file proxy before enabling private uploads (CDN_PRIVATE_PROXY_ENABLED=true)',
+      );
+    }
+    if (!process.env.CDN_HOST) {
+      await fs.mkdir(root, { recursive: true, mode: 0o700 });
+      await fs.writeFile(path.join(root, filename), buffer, {
+        mode: confidential ? 0o600 : 0o644,
+      });
       return;
     }
     const sftp = await this.connect();
-
     try {
-      const remotePath = `${process.env.CDN_UPLOAD_PATH}/${storageFilename}`;
+      await sftp.mkdir(root, true);
+      await sftp.put(buffer, `${root}/${filename}`);
+      if (confidential) await sftp.chmod(`${root}/${filename}`, '600');
+    } finally {
+      await sftp.end().catch(() => {});
+    }
+  }
 
-      await sftp.delete(remotePath);
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Unknown CDN delete error';
+  async uploadPublicFile(file: Express.Multer.File): Promise<CdnUploadResult> {
+    const extensions = {
+      'image/png': '.png',
+      'image/jpeg': '.jpg',
+      'image/gif': '.gif',
+      'image/webp': '.webp',
+    };
+    const ext = extensions[file.mimetype];
+    if (!ext)
+      throw new BadRequestException('Public CDN accepts profile images only');
+    const filename = `${randomUUID()}${ext}`;
+    await this.put(file.buffer, filename, this.publicRoot(), false);
+    const base = cdnBaseUrl();
+    return { filename, url: `${base}/${filename}` };
+  }
 
-      this.logger.warn(`Could not delete ${storageFilename}: ${message}`);
+  async uploadFile(
+    file: Express.Multer.File,
+    scope: FileScope = 'documents',
+  ): Promise<CdnUploadResult> {
+    return this.uploadBuffer(file.buffer, file.originalname, scope);
+  }
+
+  async uploadBuffer(
+    buffer: Buffer,
+    originalname: string,
+    scope: FileScope = 'documents',
+  ): Promise<CdnUploadResult> {
+    const ext = path.extname(originalname);
+    const safeExt = /^\.[a-zA-Z0-9]{1,16}$/.test(ext) ? ext : '';
+    const filename = `private-${scope}-${randomUUID()}${safeExt}`;
+    await this.put(buffer, filename, privateRoot(), true);
+    return { filename, url: privateFileUrl(filename) };
+  }
+
+  async downloadFile(storageFilename: string): Promise<Buffer> {
+    validateStorageKey(storageFilename);
+    const root = fileScope(storageFilename) ? privateRoot() : this.publicRoot();
+    if (!process.env.CDN_HOST)
+      return fs.readFile(path.join(root, storageFilename));
+    const sftp = await this.connect();
+    try {
+      const data = await sftp.get(`${root}/${storageFilename}`);
+      if (Buffer.isBuffer(data)) return data;
+      if (typeof data === 'string' || data instanceof Uint8Array)
+        return Buffer.from(data);
+      throw new Error('Unsupported file response type');
+    } finally {
+      await sftp.end().catch(() => {});
+    }
+  }
+
+  async deleteFile(storageFilename: string): Promise<void> {
+    validateStorageKey(storageFilename);
+    const root = fileScope(storageFilename) ? privateRoot() : this.publicRoot();
+    if (!process.env.CDN_HOST) {
+      await fs
+        .unlink(path.join(root, storageFilename))
+        .catch((error: NodeJS.ErrnoException) => {
+          if (error.code !== 'ENOENT') throw error;
+        });
+      return;
+    }
+    const sftp = await this.connect();
+    try {
+      await sftp.delete(`${root}/${storageFilename}`);
+    } catch (error) {
+      this.logger.warn(`Could not delete ${storageFilename}: ${String(error)}`);
+      throw error;
     } finally {
       await sftp.end().catch(() => {});
     }

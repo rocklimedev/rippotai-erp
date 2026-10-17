@@ -11,7 +11,7 @@ Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before
 
 Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.
 
-There are 979 routes, 952 staff routes and 405 assignable staff capabilities.
+There are 983 routes, 952 staff routes and 405 assignable staff capabilities.
 
 ## Catalogue by module
 
@@ -199,6 +199,7 @@ There are 979 routes, 952 staff routes and 405 assignable staff capabilities.
 | calendar | `GET /calendar/events/upcoming` | CalendarController.getUpcomingEvents | `calendar-events:read` | staff |
 | calendar | `DELETE /calendar/events/:id` | CalendarController.remove | `calendar-events:delete` | staff |
 | calendar | `PATCH /calendar/events/:id` | CalendarController.update | `calendar-events:update` | staff |
+| cdn | `GET /cdn/private/:key` | CdnController.privateFile | `file-link:read` | public |
 | cdn | `POST /cdn/upload` | CdnController.upload | `cdn:upload` | staff |
 | client-portal | `POST /client-links` | ClientPortalController.create | `client-portal:create` | staff |
 | client-portal | `POST /projects/:id/handover/deliver` | ClientPortalController.deliver | `client-portal:deliver` | staff |
@@ -284,6 +285,9 @@ There are 979 routes, 952 staff routes and 405 assignable staff capabilities.
 | engagement | `PATCH /notifications/:id/read` | NotificationsController.markAsRead | `notifications:update` | staff |
 | engagement | `DELETE /notifications/:id` | NotificationsController.remove | `notifications:delete` | staff |
 | engagement | `GET /notifications/user/:userId/unread-count` | NotificationsController.unreadCount | `notifications:read` | staff |
+| exports | `GET /export-jobs/:id/result` | ExportJobsController.result | `exports:read-own` | account (scoped) |
+| exports | `POST /export-jobs/:id/retry` | ExportJobsController.retry | `exports:retry-own` | account (scoped) |
+| exports | `GET /export-jobs/:id` | ExportJobsController.status | `exports:read-own` | account (scoped) |
 | gates | `GET /projects/:projectId/gates/:gateCode` | GatesController.check | `gates:read` | staff |
 | gates | `POST /projects/:projectId/gates/:gateCode/clear` | GatesController.clear | `gates:clear` | staff |
 | gates | `GET /projects/:projectId/gates` | GatesController.list | `gates:read` | staff |

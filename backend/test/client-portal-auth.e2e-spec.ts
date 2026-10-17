@@ -11,6 +11,7 @@ import {
   PublicClientController,
 } from '../src/modules/client-portal/client-portal.controller';
 import { ClientPortalService } from '../src/modules/client-portal/client-portal.service';
+import { ExportJobsService } from '../src/modules/exports/export-jobs.service';
 
 jest.mock('archiver', () => jest.fn());
 jest.mock('../src/modules/cdn/cdn.service', () => ({ CdnService: class {} }));
@@ -86,7 +87,7 @@ describe('Global default-deny auth with public client links', () => {
         HttpSecurityModule,
       ],
       controllers: [ClientPortalController, PublicClientController],
-      providers: [{ provide: ClientPortalService, useValue: service }],
+      providers: [{ provide: ClientPortalService, useValue: service }, { provide: ExportJobsService, useValue: { enqueue: jest.fn() } }],
     }).compile();
     app = module.createNestApplication({ logger: false });
     await app.init();
@@ -183,5 +184,38 @@ describe('Global default-deny auth with public client links', () => {
       .send({ signatory_name: 'Client', approved: true })
       .expect(403);
     expect(service.exec).not.toHaveBeenCalled();
+  });
+
+  it('rejects handover downloads through a link for another purpose', async () => {
+    await request(app.getHttpServer())
+      .get(`/public/client/${wrongPurpose}/handover`)
+      .expect(403);
+  });
+
+  it('caps a handover package capability at the validated client-link expiry', async () => {
+    const previousSecret = process.env.FILE_ACCESS_SECRET;
+    process.env.FILE_ACCESS_SECRET = 'client-handover-file-signing-secret-32-bytes';
+    const handoverToken = 'handover-client-link-with-enough-entropy';
+    const expiresAt = new Date(Date.now() + 30_000);
+    links.set(hash(handoverToken), { ...link, purpose: 'handover_acceptance', expires_at: expiresAt });
+    const status = jest.spyOn(service, 'handoverStatus').mockResolvedValue({
+      checklist: [],
+      package: { url: 'private-file://private-handover-12345678-1234-1234-1234-123456789abc.zip' },
+      accepted: null,
+    });
+    try {
+      const response = await request(app.getHttpServer())
+        .get(`/public/client/${handoverToken}/handover`)
+        .expect(200);
+      const url = new URL(response.body.package.url);
+      expect(Number(url.searchParams.get('expires'))).toBe(Math.floor(expiresAt.getTime() / 1000));
+      expect(url.searchParams.get('signature')).toMatch(/^[a-f0-9]{64}$/);
+      expect(status).toHaveBeenCalledWith('project-a');
+    } finally {
+      status.mockRestore();
+      links.delete(hash(handoverToken));
+      if (previousSecret === undefined) delete process.env.FILE_ACCESS_SECRET;
+      else process.env.FILE_ACCESS_SECRET = previousSecret;
+    }
   });
 });

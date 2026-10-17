@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { ServerOptions } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import Redis from 'ioredis';
+import { getCorsOptions } from './common/security/cors.config';
 
 export class RedisIoAdapter extends IoAdapter {
   private adapterConstructor: ReturnType<typeof createAdapter>;
@@ -51,18 +52,8 @@ export class RedisIoAdapter extends IoAdapter {
 
   createIOServer(port: number, options?: ServerOptions) {
     const server = super.createIOServer(port, {
-      cors: {
-        origin: [
-          'http://localhost:5173',
-          'http://localhost:3000',
-          'http://localhost:3001',
-          'https://vendors-quote.rippotaiarchitecture.com',
-          'https://rippotai-erp-qga2.vercel.app',
-          'https://inos.rippotaiarchitecture.com',
-        ],
-        credentials: true,
-      },
       ...options,
+      cors: getCorsOptions(),
     });
 
     if (this.adapterConstructor) {

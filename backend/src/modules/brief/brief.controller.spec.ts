@@ -17,6 +17,6 @@ describe('Brief reference image uploads', () => {
   it('uploads supported images with a canonical image extension', async () => {
     const buffer = Buffer.from('image');
     await expect(controller.uploadReferenceImage({ mimetype: 'image/jpeg', originalname: 'client.html', buffer } as Express.Multer.File)).resolves.toEqual({ url: 'https://cdn.test/image.jpg' });
-    expect(uploadFile).toHaveBeenCalledWith(expect.objectContaining({ originalname: 'reference.jpg', buffer }));
+    expect(uploadFile).toHaveBeenCalledWith(expect.objectContaining({ originalname: 'reference.jpg', buffer }), 'briefs');
   });
 });

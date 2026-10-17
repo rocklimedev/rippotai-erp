@@ -1,3 +1,4 @@
+import { AsyncExport } from '../exports/async-export.decorator';
 import {
   Body,
   Controller,
@@ -371,6 +372,7 @@ export class BoqController {
   }
 
   // ==================== EXPORT ====================
+  @AsyncExport('boq-excel')
   @RequirePermission('boq:export')
   @Get(':id/export/excel')
   async exportExcel(@Param('id') id: string, @Res() res: Response) {
@@ -388,6 +390,7 @@ export class BoqController {
    * downloads and the copy attached on approval are produced client-side with the shared
    * print kit (components/commerce-documents/BoqDocument). Kept for API compatibility only.
    */
+  @AsyncExport('boq-pdf')
   @RequirePermission('boq:export')
   @Post(':id/export/pdf')
   async exportPdf(
@@ -406,6 +409,7 @@ export class BoqController {
     res.send(buffer);
   }
 
+  @AsyncExport('boq-thumbnail')
   @RequirePermission('boq:export')
   @Post(':id/export/pdf-thumbnail')
   async exportPdfThumbnail(

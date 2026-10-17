@@ -1,3 +1,4 @@
+import { AsyncExport } from '../exports/async-export.decorator';
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import { AdminDprDocumentService } from './admin-dpr-document.service';
 import type { Response } from 'express';
@@ -49,6 +50,7 @@ export class AdminDailyReportController {
     return this.service.daySummary(date);
   }
 
+  @AsyncExport('admin-dpr-export')
   @RequirePermission('dpr-admin-reports:export')
   @Get('export')
   async export(
@@ -56,7 +58,7 @@ export class AdminDailyReportController {
     @Req() req: any,
     @Res() res: Response,
   ) {
-    const saved = await this.documents.create(query, req.user);
+    const saved = await this.documents.create(query, req.user, req.exportOperationId);
     const row = await this.documents.download(saved.id);
     res.setHeader(
       'Content-Type',

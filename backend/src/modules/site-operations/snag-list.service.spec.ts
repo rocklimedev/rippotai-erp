@@ -27,7 +27,11 @@ describe('Snag List documents', () => {
   };
   function setup() {
     let row: any;
-    const revisions: any = { create: jest.fn(async (v) => v) };
+    const savedRevisions = new Map<string, unknown>();
+    const revisions: any = {
+      create: jest.fn(async (v) => { if (v.id) savedRevisions.set(v.id, v); return v; }),
+      findByPk: jest.fn(async id => savedRevisions.get(id) || null),
+    };
     const model: any = {
       sequelize: { transaction: jest.fn((cb) => cb(transaction)) },
       create: jest.fn(async (values) => {
@@ -45,7 +49,7 @@ describe('Snag List documents', () => {
         };
         return row;
       }),
-      findByPk: jest.fn(async (_id, options) => {
+      findByPk: jest.fn(async (_id, options = {}) => {
         if (!row) return null;
         if (options.transaction) return row;
         const { excel_data, ...metadata } = row;
@@ -116,6 +120,17 @@ describe('Snag List documents', () => {
       service.update('doc', { ...dto, revision: 1 }),
     ).rejects.toThrow('has changed');
     expect(revisions.create).toHaveBeenCalledTimes(2);
+  });
+  it('recovers committed creates and revisions without duplicating generation or history', async () => {
+    const { service, model, revisions, exporter } = setup();
+    const first = await service.create(dto, 'owner', 'create-operation');
+    await service.create(dto, 'owner', 'create-operation');
+    await service.update(first.id, { ...dto, revision: 1 }, 'owner', 'update-operation');
+    const retry = await service.update(first.id, { ...dto, revision: 1 }, 'owner', 'update-operation');
+    expect(retry.revision).toBe(2);
+    expect(model.create).toHaveBeenCalledTimes(1);
+    expect(revisions.create).toHaveBeenCalledTimes(2);
+    expect(exporter.build).toHaveBeenCalledTimes(2);
   });
   it('rejects unknown projects and blank rows without writing partial records', async () => {
     const { service, projects, model } = setup();

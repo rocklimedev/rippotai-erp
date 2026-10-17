@@ -12,6 +12,10 @@ export const ACCOUNT_ROUTES: Readonly<Record<string, string>> = Object.freeze({
   'UsersController.updateProfile': 'profile:update-own',
   'UsersController.uploadAvatar': 'profile:update-own',
   'ClientPortalController.home': 'client-home:read-own',
+  // The job service additionally enforces ownership and the original grant.
+  'ExportJobsController.status': 'exports:read-own',
+  'ExportJobsController.result': 'exports:read-own',
+  'ExportJobsController.retry': 'exports:retry-own',
 });
 
 export function accountCapability(

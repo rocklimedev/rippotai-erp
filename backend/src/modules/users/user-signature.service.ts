@@ -1,48 +1,22 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { UserSignature } from './models/user-signature.model';
-import Client from 'ssh2-sftp-client';
-import { v4 as uuidv4 } from 'uuid';
-import * as path from 'path';
+import { CdnService } from '../cdn/cdn.service';
 
 @Injectable()
 export class UserSignaturesService {
-  private readonly sftp = new Client();
-
   constructor(
     @InjectModel(UserSignature)
     private readonly userSignatureModel: typeof UserSignature,
+    private readonly cdnService: CdnService,
   ) {}
 
   async uploadToCDN(
     file: Express.Multer.File,
-    userId: string,
+    _userId: string,
   ): Promise<string> {
-    const fileExt = path.extname(file.originalname);
-    const fileName = `${userId}-signature-${uuidv4()}${fileExt}`;
-    const remotePath = `${process.env.CDN_UPLOAD_PATH}/${fileName}`;
-
-    try {
-      await this.sftp.connect({
-        host: process.env.CDN_HOST,
-        port: Number(process.env.CDN_PORT ?? 22),
-        username: process.env.CDN_USERNAME,
-        password: process.env.CDN_PASSWORD,
-      });
-
-      await this.sftp.put(file.buffer, remotePath);
-
-      return `${process.env.CDN_BASE_URL}/${fileName}`;
-    } catch (error) {
-      console.error('CDN Upload Error:', error);
-      throw new BadRequestException('Failed to upload signature to CDN');
-    } finally {
-      await this.sftp.end();
-    }
+    const upload = await this.cdnService.uploadFile(file, 'signatures');
+    return upload.url;
   }
 
   async createOrUpdate(

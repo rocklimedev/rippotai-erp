@@ -8,13 +8,12 @@ import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { AuthService } from '@/modules/auth/auth.service';
+import { getCorsOptions } from '../security/cors.config';
 import { NotificationPayload } from '../interfaces/notification-payload.interfaces';
 
 @WebSocketGateway({
   namespace: '/notifications',
-  cors: {
-    origin: '*',
-  },
+  cors: getCorsOptions(),
 })
 export class NotificationsGateway
   implements OnGatewayConnection, OnGatewayDisconnect

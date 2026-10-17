@@ -121,7 +121,7 @@ export class DrawingsService {
 
     const revisionLabel =
       dto.revision ?? this.computeNextRevisionLabel(drawing);
-    const { filename, url } = await this.cdnService.uploadFile(file);
+    const { filename, url } = await this.cdnService.uploadFile(file, 'drawings');
 
     let revision: DrawingRevision;
 

@@ -24,6 +24,11 @@ No `.env.example` exists in the repo — these are reconstructed from source and
 | `DB_PASS` | `config/database.config.ts` | **required, no default** |
 | `JWT_SECRET` | `auth/auth.service.ts` | **required** — signs/verifies all JWTs |
 | `CDN_INTERNAL_SECRET` | `common/guards/cdn.guard.ts` | shared secret checked against the `X-CDN-Secret` header on CDN-guarded routes |
+| `FILE_ACCESS_SECRET` | `modules/cdn/file-access.ts` | required random signing secret, at least 32 bytes |
+| `CDN_BASE_URL` | `modules/cdn/file-access.ts` | absolute public/CDN file base, e.g. `https://media-buildcon.rippotaiarchitecture.com` |
+| `CDN_UPLOAD_PATH` | `modules/cdn/cdn.service.ts` | original absolute directory on the remote CDN server, not a local Windows path or URL |
+| `CDN_PRIVATE_PROXY_ENABLED` | `modules/cdn/cdn.service.ts` | set `true` only after the CDN protects `private-*` URLs with signature verification |
+| `PRIVATE_FILE_PATH` | `modules/cdn/file-access.ts` | local fallback only; not used for remote SFTP uploads |
 | `PORT` | `main.ts` | defaults to `5000` |
 | `NODE_ENV` | `main.ts`, `database.config.ts` | `development` enables Sequelize query logging |
 
@@ -69,7 +74,7 @@ npm run preview   # preview a production build locally
 npm run lint       # oxlint
 ```
 
-The backend's CORS config (`main.ts`) explicitly allows `http://localhost:5173`, `:3000`, and `:3001`, plus the production frontend origin — if you run the dev server on a different port, add it there.
+The shared HTTP and Socket.IO CORS config (`backend/src/common/security/cors.config.ts`) allows local ports 5173, 3000, and 3001 plus the deployment origins listed in [DEPLOYMENT.md](DEPLOYMENT.md#cors). Add any new frontend origin to that shared list and restart the backend.
 
 ## Running both together
 

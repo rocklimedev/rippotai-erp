@@ -39,7 +39,7 @@ export class ProjectBriefsController {
       throw new BadRequestException('Upload a JPG, PNG, WebP or GIF image.');
     }
     const extensions: Record<string, string> = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' };
-    return this.cdnService.uploadFile({ ...file, originalname: `reference${extensions[file.mimetype]}` });
+    return this.cdnService.uploadFile({ ...file, originalname: `reference${extensions[file.mimetype]}` }, 'briefs');
   }
 
   // =========================================================

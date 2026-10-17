@@ -189,6 +189,7 @@ export class DocumentsController {
   @RequirePermission('documents:read')
   @Get(':id/download')
   async download(@Param('id', ParseUUIDPipe) id: string, @Res() res: Response) {
+    res.setHeader('Cache-Control', 'private, no-store, max-age=0');
     const document = await this.documentsService.findOne(id);
 
     if (!document.storageFilename) {

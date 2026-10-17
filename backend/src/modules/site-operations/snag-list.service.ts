@@ -57,10 +57,12 @@ export class SnagListService {
     row: SnagList,
     userId: string | undefined,
     transaction: any,
+    operationId?: string,
   ) {
     const { excel_data, ...document } = row.toJSON();
     await this.revisions.create(
       {
+        ...(operationId ? { id: operationId } : {}),
         snag_list_id: row.id,
         revision: row.revision,
         document,
@@ -70,11 +72,12 @@ export class SnagListService {
       { transaction },
     );
   }
-  async create(dto: CreateSnagListDto, userId?: string) {
+  async create(dto: CreateSnagListDto, userId?: string, operationId?: string) {
+    if (operationId && await this.model.findByPk(operationId)) return this.findOne(operationId);
     const values = await this.values(dto, 1);
     const id = await this.model.sequelize!.transaction(async (transaction) => {
       const row = await this.model.create(
-        { ...values, created_by: userId || null } as any,
+        { ...values, ...(operationId ? { id: operationId } : {}), created_by: userId || null } as any,
         { transaction },
       );
       await this.archive(row, userId, transaction);
@@ -82,7 +85,8 @@ export class SnagListService {
     });
     return this.findOne(id);
   }
-  async update(id: string, dto: UpdateSnagListDto, userId?: string) {
+  async update(id: string, dto: UpdateSnagListDto, userId?: string, operationId?: string) {
+    if (operationId && await this.revisions.findByPk(operationId)) return this.findOne(id);
     const values = await this.values(dto, dto.revision + 1);
     await this.model.sequelize!.transaction(async (transaction) => {
       const row = await this.model.findByPk(id, {
@@ -90,6 +94,7 @@ export class SnagListService {
         lock: transaction.LOCK.UPDATE,
       });
       if (!row) throw new NotFoundException('Snag list not found');
+      if (operationId && await this.revisions.findByPk(operationId, { transaction })) return;
       if (row.revision !== dto.revision)
         throw new ConflictException(
           'This snag list has changed. Reload before saving your edits.',
@@ -101,7 +106,7 @@ export class SnagListService {
       await row.update({ ...values, updated_by: userId || null } as any, {
         transaction,
       });
-      await this.archive(row, userId, transaction);
+      await this.archive(row, userId, transaction, operationId);
     });
     return this.findOne(id);
   }

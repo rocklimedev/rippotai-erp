@@ -1,3 +1,4 @@
+import { AsyncExport } from '../exports/async-export.decorator';
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
 import {
   Controller,
@@ -103,6 +104,7 @@ export class ProjectShortlistController {
    * GET /project-shortlists/:id/export
    * Download single shortlist as Excel
    */
+  @AsyncExport('shortlist-excel')
   @RequirePermission('project-shortlists:export')
   @Get(':id/export')
   async exportOne(
@@ -116,6 +118,7 @@ export class ProjectShortlistController {
    * GET /project-shortlists/export-both/:projectId
    * Download both VENDOR + MATERIAL sheets for a project
    */
+  @AsyncExport('shortlist-both')
   @RequirePermission('project-shortlists:export')
   @Get('export-both/:projectId')
   async exportBoth(

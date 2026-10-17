@@ -1,0 +1,30 @@
+# CDN: media-buildcon.rippotaiarchitecture.com
+# Put this upstream in nginx's http context; use your actual API hostname.
+upstream rippotai_private_file_api {
+    server erp-api.rippotaiarchitecture.com:443;
+}
+
+# Put BOTH locations before generic regex/static/PHP locations in the existing
+# CDN server block. Keep its existing root, public asset locations and TLS cert.
+# Do not let any other hostname/alias serve private-* files as ordinary static files.
+location ~ ^/(private-(?:documents|drawings|signatures|handover|recce|briefs|reports|snags)-[0-9a-f-]{36}(?:\.[a-zA-Z0-9]{1,16})?)$ {
+    proxy_pass https://rippotai_private_file_api/api/v1/cdn/private/$1$is_args$args;
+    proxy_ssl_server_name on;
+    proxy_ssl_name erp-api.rippotaiarchitecture.com;
+    proxy_ssl_verify on;
+    proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+    proxy_set_header Host erp-api.rippotaiarchitecture.com;
+    proxy_cache off;
+    proxy_cache_bypass 1;
+    proxy_no_cache 1;
+    add_header Cache-Control "private, no-store, max-age=0" always;
+}
+
+# Malformed/unknown confidential names must not fall through to static serving.
+location ~ ^/private- {
+    return 403;
+}
+
+# Verify unsigned and expired CDN URLs return 403, a current signed URL returns
+# 200, and public avatars still return 200. THEN enable private uploads with
+# CDN_PRIVATE_PROXY_ENABLED=true in the API/worker environment.

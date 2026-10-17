@@ -239,7 +239,7 @@ export class UsersService {
     if (!user) throw new NotFoundException(`User ${id} not found`);
 
     const previousAvatarUrl = user.avatar_url;
-    const { url } = await this.cdnService.uploadFile(file);
+    const { url } = await this.cdnService.uploadPublicFile(file);
 
     await user.update({ avatar_url: url });
 
