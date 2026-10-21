@@ -165,7 +165,7 @@ export class ScopeOfWorkService {
   async updateCategory(id: string, dto: UpdateScopeCategoryDto) {
     const category = await this.findCategoryById(id);
 
-    await category.update(dto as any);
+    await category.update(dto);
 
     return category;
   }
@@ -214,7 +214,7 @@ export class ScopeOfWorkService {
   async updateProjectSpace(id: string, dto: UpdateProjectSpaceDto) {
     const space = await this.getProjectSpaceById(id);
 
-    await space.update(dto as any);
+    await space.update(dto);
 
     return space;
   }
@@ -835,7 +835,7 @@ export class ScopeOfWorkService {
       throw new NotFoundException('Scope of work not found');
     }
 
-    await scope.update(dto as any);
+    await scope.update(dto);
 
     return this.getScopeOfWorkById(id);
   }

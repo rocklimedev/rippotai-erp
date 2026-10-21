@@ -39,17 +39,28 @@ export const TRIGGERS: TriggerDef[] = [
     label: 'Payment milestone overdue',
     entity: 'PAYMENT',
     phase: 'Finance',
-    description: 'A client payment milestone is past its due date and not fully paid.',
+    description:
+      'A client payment milestone is past its due date and not fully paid.',
     eventHook: true,
     mainParam: 'graceDays',
     params: [
       { key: 'graceDays', label: 'Grace period', default: 0, unit: 'days' },
-      { key: 'cooldownHours', label: 'Repeat at most every', default: 72, unit: 'hours' },
+      {
+        key: 'cooldownHours',
+        label: 'Repeat at most every',
+        default: 72,
+        unit: 'hours',
+      },
     ],
     fields: [
       { key: 'daysOverdue', label: 'Days overdue', type: 'number' },
       { key: 'outstanding', label: 'Outstanding amount (₹)', type: 'number' },
-      { key: 'status', label: 'Milestone status', type: 'enum', options: ['DUE', 'INVOICED', 'PARTIALLY_PAID', 'OVERDUE'] },
+      {
+        key: 'status',
+        label: 'Milestone status',
+        type: 'enum',
+        options: ['DUE', 'INVOICED', 'PARTIALLY_PAID', 'OVERDUE'],
+      },
       { key: 'projectName', label: 'Project', type: 'text' },
     ],
     sql: (f) => `
@@ -76,17 +87,28 @@ export const TRIGGERS: TriggerDef[] = [
     label: 'Project phase stalled',
     entity: 'PROJECT',
     phase: 'Projects',
-    description: 'An active project has not moved phase or cleared a gate for a while.',
+    description:
+      'An active project has not moved phase or cleared a gate for a while.',
     mainParam: 'days',
     filterFirst: true,
     params: [
       { key: 'days', label: 'No movement for', default: 21, unit: 'days' },
-      { key: 'cooldownHours', label: 'Repeat at most every', default: 168, unit: 'hours' },
+      {
+        key: 'cooldownHours',
+        label: 'Repeat at most every',
+        default: 168,
+        unit: 'hours',
+      },
     ],
     fields: [
       { key: 'daysInPhase', label: 'Days since last movement', type: 'number' },
       { key: 'currentPhase', label: 'Current phase', type: 'text' },
-      { key: 'priority', label: 'Project priority', type: 'enum', options: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] },
+      {
+        key: 'priority',
+        label: 'Project priority',
+        type: 'enum',
+        options: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
+      },
       { key: 'progress', label: 'Progress %', type: 'number' },
     ],
     sql: (f) => `
@@ -108,15 +130,31 @@ export const TRIGGERS: TriggerDef[] = [
     label: 'QC inspection failed',
     entity: 'QC',
     phase: 'Site operations',
-    description: 'A site QC sign-off came back FAIL or REWORK and has not been re-passed.',
+    description:
+      'A site QC sign-off came back FAIL or REWORK and has not been re-passed.',
     eventHook: true,
     mainParam: 'lookbackDays',
     params: [
-      { key: 'lookbackDays', label: 'Look at inspections from the last', default: 30, unit: 'days' },
-      { key: 'cooldownHours', label: 'Repeat at most every', default: 720, unit: 'hours' },
+      {
+        key: 'lookbackDays',
+        label: 'Look at inspections from the last',
+        default: 30,
+        unit: 'days',
+      },
+      {
+        key: 'cooldownHours',
+        label: 'Repeat at most every',
+        default: 720,
+        unit: 'hours',
+      },
     ],
     fields: [
-      { key: 'result', label: 'Result', type: 'enum', options: ['FAIL', 'REWORK'] },
+      {
+        key: 'result',
+        label: 'Result',
+        type: 'enum',
+        options: ['FAIL', 'REWORK'],
+      },
       { key: 'attemptNumber', label: 'Attempt number', type: 'number' },
       { key: 'stepName', label: 'Stage', type: 'text' },
       { key: 'projectName', label: 'Project', type: 'text' },
@@ -147,12 +185,27 @@ export const TRIGGERS: TriggerDef[] = [
     mainParam: 'graceDays',
     params: [
       { key: 'graceDays', label: 'Grace period', default: 1, unit: 'days' },
-      { key: 'cooldownHours', label: 'Repeat at most every', default: 72, unit: 'hours' },
+      {
+        key: 'cooldownHours',
+        label: 'Repeat at most every',
+        default: 72,
+        unit: 'hours',
+      },
     ],
     fields: [
       { key: 'daysOverdue', label: 'Days overdue', type: 'number' },
-      { key: 'priority', label: 'Priority', type: 'enum', options: ['low', 'medium', 'high', 'critical'] },
-      { key: 'status', label: 'Status', type: 'enum', options: ['todo', 'in_progress', 'review', 'blocked'] },
+      {
+        key: 'priority',
+        label: 'Priority',
+        type: 'enum',
+        options: ['low', 'medium', 'high', 'critical'],
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'enum',
+        options: ['todo', 'in_progress', 'review', 'blocked'],
+      },
     ],
     sql: (f) => `
       SELECT t.id AS entity_id, t.project_id, t.title AS entity_label, t.title, t.priority, t.status,
@@ -176,11 +229,21 @@ export const TRIGGERS: TriggerDef[] = [
     filterFirst: true,
     params: [
       { key: 'hours', label: 'Response SLA', default: 24, unit: 'hours' },
-      { key: 'cooldownHours', label: 'Repeat at most every', default: 24, unit: 'hours' },
+      {
+        key: 'cooldownHours',
+        label: 'Repeat at most every',
+        default: 24,
+        unit: 'hours',
+      },
     ],
     fields: [
       { key: 'ageHours', label: 'Age in hours', type: 'number' },
-      { key: 'priority', label: 'Priority', type: 'enum', options: ['LOW', 'NORMAL', 'HIGH', 'URGENT'] },
+      {
+        key: 'priority',
+        label: 'Priority',
+        type: 'enum',
+        options: ['LOW', 'NORMAL', 'HIGH', 'URGENT'],
+      },
     ],
     sql: (f) => `
       SELECT * FROM (
@@ -197,10 +260,27 @@ export const TRIGGERS: TriggerDef[] = [
 export const triggerByType = (t: string) => TRIGGERS.find((x) => x.type === t);
 
 /** Recipients an action can target → how users are resolved. */
-export const RECIPIENTS: { key: string; label: string; jobTitle?: string[]; role?: string }[] = [
-  { key: 'project_manager', label: 'Project manager', jobTitle: ['%Project Manager%'] },
-  { key: 'site_engineer', label: 'Site engineer', jobTitle: ['%Site Engineer%', '%Site Supervisor%'] },
-  { key: 'designer', label: 'Design team', jobTitle: ['%Designer%', '%Architect%'] },
+export const RECIPIENTS: {
+  key: string;
+  label: string;
+  jobTitle?: string[];
+  role?: string;
+}[] = [
+  {
+    key: 'project_manager',
+    label: 'Project manager',
+    jobTitle: ['%Project Manager%'],
+  },
+  {
+    key: 'site_engineer',
+    label: 'Site engineer',
+    jobTitle: ['%Site Engineer%', '%Site Supervisor%'],
+  },
+  {
+    key: 'designer',
+    label: 'Design team',
+    jobTitle: ['%Designer%', '%Architect%'],
+  },
   { key: 'procurement', label: 'Procurement', jobTitle: ['%Procurement%'] },
   { key: 'accounts', label: 'Accounts', jobTitle: ['%Accounts%'] },
   { key: 'admins', label: 'Admins', role: 'ADMIN' },
@@ -213,4 +293,11 @@ export const ACTION_TYPES = [
   { value: 'ESCALATE', label: 'Open escalation' },
 ];
 
-export const OPERATORS = ['equals', 'not_equals', 'greater_than', 'less_than', 'contains', 'in'];
+export const OPERATORS = [
+  'equals',
+  'not_equals',
+  'greater_than',
+  'less_than',
+  'contains',
+  'in',
+];

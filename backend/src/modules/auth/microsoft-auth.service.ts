@@ -166,7 +166,7 @@ export class MicrosoftAuthService implements OAuthProviderService {
       scope: data.scope,
 
       expiresAt,
-    } as any);
+    });
   }
 
   /**

@@ -127,7 +127,7 @@ describe('Password write and reset security', () => {
     fetchMock.mockResolvedValue({
       status: 200,
       text: async () => `${suffix}:2`,
-    } as Response);
+    });
     await expect(auth.resetPassword(raw, password)).rejects.toThrow(
       'data breach',
     );

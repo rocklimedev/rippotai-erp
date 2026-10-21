@@ -186,7 +186,10 @@ export class ExportJobsService implements OnModuleDestroy {
         state === 'failed' &&
         job.data.retryGeneration < 3 &&
         !(
-          typeof job.progress === 'object' && job.progress !== null && 'retryable' in job.progress && job.progress.retryable === false
+          typeof job.progress === 'object' &&
+          job.progress !== null &&
+          'retryable' in job.progress &&
+          job.progress.retryable === false
         ),
       resultUrl: state === 'completed' ? `/export-jobs/${id}/result` : null,
     };
@@ -203,7 +206,10 @@ export class ExportJobsService implements OnModuleDestroy {
     if (
       (await job.getState()) !== 'failed' ||
       job.data.retryGeneration >= 3 ||
-      (typeof job.progress === 'object' && job.progress !== null && 'retryable' in job.progress && job.progress.retryable === false)
+      (typeof job.progress === 'object' &&
+        job.progress !== null &&
+        'retryable' in job.progress &&
+        job.progress.retryable === false)
     )
       throw new ConflictException(
         'Only retryable failed exports can be retried, up to three times',

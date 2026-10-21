@@ -36,10 +36,7 @@ export class NotificationsService {
 
     await this.invalidate([dto.user_id]);
 
-    this.notificationsGateway.emitToUser(
-      dto.user_id,
-      notification.toJSON() as any,
-    );
+    this.notificationsGateway.emitToUser(dto.user_id, notification.toJSON());
 
     return notification;
   }
@@ -59,7 +56,7 @@ export class NotificationsService {
     for (const notification of created) {
       this.notificationsGateway.emitToUser(
         notification.user_id,
-        notification.toJSON() as any,
+        notification.toJSON(),
       );
     }
   }

@@ -22,7 +22,10 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 export class ProjectOverviewController {
   constructor(@InjectConnection() private readonly sequelize: Sequelize) {}
 
-  private q<T extends object = Record<string, any>>(sql: string, projectId: string) {
+  private q<T extends object = Record<string, any>>(
+    sql: string,
+    projectId: string,
+  ) {
     return this.sequelize.query<T>(sql, {
       replacements: { projectId },
       type: QueryTypes.SELECT,
@@ -33,7 +36,10 @@ export class ProjectOverviewController {
   @RequirePermission('projects:read')
   @Get(':id/financial')
   async financial(@Param('id', ParseUUIDPipe) projectId: string) {
-    const [boq] = await this.q<{ approved: string | null; latest: string | null }>(
+    const [boq] = await this.q<{
+      approved: string | null;
+      latest: string | null;
+    }>(
       `SELECT
          (SELECT total_value FROM boqs WHERE project_id = :projectId AND deleted_at IS NULL AND status = 'approved' ORDER BY updated_at DESC LIMIT 1) AS approved,
          (SELECT total_value FROM boqs WHERE project_id = :projectId AND deleted_at IS NULL AND status <> 'archived' ORDER BY updated_at DESC LIMIT 1) AS latest`,

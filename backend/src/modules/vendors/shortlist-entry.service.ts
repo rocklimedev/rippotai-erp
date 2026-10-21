@@ -36,65 +36,132 @@ export class ShortlistEntryService {
   ) {}
 
   private assertCoordinates(trade: unknown, workingType: unknown): void {
-    if (!Object.values(Trade).includes(trade as Trade) ||
-        !Object.values(WorkingType).includes(workingType as WorkingType)) {
-      throw new BadRequestException('A valid trade and working_type are required');
+    if (
+      !Object.values(Trade).includes(trade as Trade) ||
+      !Object.values(WorkingType).includes(workingType as WorkingType)
+    ) {
+      throw new BadRequestException(
+        'A valid trade and working_type are required',
+      );
     }
   }
 
-  async saveWorkspaceRow(shortlistId: string, dto: UpdateShortlistEntryDto & {
-    trade: Trade; working_type: WorkingType; entry_id?: string;
-  }, userId?: string): Promise<string> {
+  async saveWorkspaceRow(
+    shortlistId: string,
+    dto: UpdateShortlistEntryDto & {
+      trade: Trade;
+      working_type: WorkingType;
+      entry_id?: string;
+    },
+    userId?: string,
+  ): Promise<string> {
     this.assertCoordinates(dto.trade, dto.working_type);
-    return this.sequelize.transaction(async transaction => {
+    return this.sequelize.transaction(async (transaction) => {
       // Serializing on the parent prevents duplicate first edits and competing selections.
       const parent = await this.shortlistModel.findByPk(shortlistId, {
-        transaction, lock: transaction.LOCK.UPDATE,
+        transaction,
+        lock: transaction.LOCK.UPDATE,
       });
       if (!parent) throw new NotFoundException('Shortlist not found');
-      if (parent.is_locked) throw new BadRequestException('Shortlist is locked');
+      if (parent.is_locked)
+        throw new BadRequestException('Shortlist is locked');
       this.validateEntryForShortlist(parent, dto);
       const { entry_id, ...patch } = dto;
-      let existing = await this.entryModel.findOne({ where: {
-        project_shortlist_id: shortlistId, trade: dto.trade, working_type: dto.working_type,
-      }, transaction, order: [['updated_at', 'DESC'], ['id', 'ASC']] });
+      let existing = await this.entryModel.findOne({
+        where: {
+          project_shortlist_id: shortlistId,
+          trade: dto.trade,
+          working_type: dto.working_type,
+        },
+        transaction,
+        order: [
+          ['updated_at', 'DESC'],
+          ['id', 'ASC'],
+        ],
+      });
       if (entry_id) {
-        const identified = await this.entryModel.findByPk(entry_id, { transaction });
+        const identified = await this.entryModel.findByPk(entry_id, {
+          transaction,
+        });
         if (!identified || identified.project_shortlist_id !== shortlistId)
-          throw new BadRequestException('Entry does not belong to this shortlist');
+          throw new BadRequestException(
+            'Entry does not belong to this shortlist',
+          );
         if (existing && existing.id !== identified.id) {
-          const emptySkeleton = !existing.vendor_id && !existing.material_id &&
-            !existing.name_of_vendor?.trim() && existing.estimate_value == null &&
-            existing.quotation_value == null && !existing.notes && !existing.quotation_id &&
-            !existing.is_selected && existing.status === ShortlistEntryStatus.DRAFT;
-          if (!emptySkeleton) throw new BadRequestException('This workspace row already has saved data. Choose an empty row.');
+          const emptySkeleton =
+            !existing.vendor_id &&
+            !existing.material_id &&
+            !existing.name_of_vendor?.trim() &&
+            existing.estimate_value == null &&
+            existing.quotation_value == null &&
+            !existing.notes &&
+            !existing.quotation_id &&
+            !existing.is_selected &&
+            existing.status === ShortlistEntryStatus.DRAFT;
+          if (!emptySkeleton)
+            throw new BadRequestException(
+              'This workspace row already has saved data. Choose an empty row.',
+            );
           await existing.destroy({ transaction });
         }
         existing = identified;
       }
       const values: any = { ...patch, updated_by: userId ?? null };
-      if ((patch.is_selected === true && patch.status !== undefined && patch.status !== ShortlistEntryStatus.SELECTED) ||
-          (patch.is_selected === false && patch.status === ShortlistEntryStatus.SELECTED))
+      if (
+        (patch.is_selected === true &&
+          patch.status !== undefined &&
+          patch.status !== ShortlistEntryStatus.SELECTED) ||
+        (patch.is_selected === false &&
+          patch.status === ShortlistEntryStatus.SELECTED)
+      )
         throw new BadRequestException('Selection flag and status conflict');
-      if (patch.is_selected === true || patch.status === ShortlistEntryStatus.SELECTED) {
+      if (
+        patch.is_selected === true ||
+        patch.status === ShortlistEntryStatus.SELECTED
+      ) {
         values.is_selected = true;
         values.status = ShortlistEntryStatus.SELECTED;
-        await this.entryModel.update({ is_selected: false, status: ShortlistEntryStatus.SHORTLISTED }, {
-          where: { project_shortlist_id: shortlistId, trade: dto.trade,
-            [Op.or]: [{ is_selected: true }, { status: ShortlistEntryStatus.SELECTED }] }, transaction,
-        });
+        await this.entryModel.update(
+          { is_selected: false, status: ShortlistEntryStatus.SHORTLISTED },
+          {
+            where: {
+              project_shortlist_id: shortlistId,
+              trade: dto.trade,
+              [Op.or]: [
+                { is_selected: true },
+                { status: ShortlistEntryStatus.SELECTED },
+              ],
+            },
+            transaction,
+          },
+        );
       } else if (patch.status !== undefined) values.is_selected = false;
-      else if (patch.is_selected === false && existing?.status === ShortlistEntryStatus.SELECTED)
+      else if (
+        patch.is_selected === false &&
+        existing?.status === ShortlistEntryStatus.SELECTED
+      )
         values.status = ShortlistEntryStatus.SHORTLISTED;
       const saved = existing
         ? await existing.update(values, { transaction })
-        : await this.entryModel.create({ ...values, project_shortlist_id: shortlistId, created_by: userId ?? null }, { transaction });
+        : await this.entryModel.create(
+            {
+              ...values,
+              project_shortlist_id: shortlistId,
+              created_by: userId ?? null,
+            },
+            { transaction },
+          );
       await saved.reload({ transaction });
       // MySQL in non-strict mode can silently coerce incompatible ENUMs to ''.
       // Roll back rather than reporting a successful, invisible save.
-      if (saved.trade !== dto.trade || saved.working_type !== dto.working_type ||
-          (values.status !== undefined && saved.status !== values.status))
-        throw new BadRequestException('Shortlist database schema is outdated. Apply 20261007_shortlist_workspace.sql before saving.');
+      if (
+        saved.trade !== dto.trade ||
+        saved.working_type !== dto.working_type ||
+        (values.status !== undefined && saved.status !== values.status)
+      )
+        throw new BadRequestException(
+          'Shortlist database schema is outdated. Apply 20261007_shortlist_workspace.sql before saving.',
+        );
       return saved.id;
     });
   }
@@ -194,40 +261,83 @@ export class ShortlistEntryService {
       requestKeys.add(key);
     }
 
-    await this.sequelize.transaction(async transaction => {
-      const parent = await this.shortlistModel.findByPk(dto.project_shortlist_id, {
-        transaction, lock: transaction.LOCK.UPDATE,
-      });
+    await this.sequelize.transaction(async (transaction) => {
+      const parent = await this.shortlistModel.findByPk(
+        dto.project_shortlist_id,
+        {
+          transaction,
+          lock: transaction.LOCK.UPDATE,
+        },
+      );
       if (!parent) throw new NotFoundException('Shortlist not found');
-      if (parent.is_locked) throw new BadRequestException('Shortlist is locked');
+      if (parent.is_locked)
+        throw new BadRequestException('Shortlist is locked');
       const selectedTrades = new Set<string>();
       for (const patch of dto.entries) {
         this.validateEntryForShortlist(parent, patch);
-        if ((patch.is_selected === true && patch.status !== undefined && patch.status !== ShortlistEntryStatus.SELECTED) ||
-            (patch.is_selected === false && patch.status === ShortlistEntryStatus.SELECTED)) {
+        if (
+          (patch.is_selected === true &&
+            patch.status !== undefined &&
+            patch.status !== ShortlistEntryStatus.SELECTED) ||
+          (patch.is_selected === false &&
+            patch.status === ShortlistEntryStatus.SELECTED)
+        ) {
           throw new BadRequestException('Selection flag and status conflict');
         }
-        const selected = patch.is_selected === true || patch.status === ShortlistEntryStatus.SELECTED;
-        if (selected && selectedTrades.has(patch.trade)) throw new BadRequestException('Only one entry per trade can be selected');
+        const selected =
+          patch.is_selected === true ||
+          patch.status === ShortlistEntryStatus.SELECTED;
+        if (selected && selectedTrades.has(patch.trade))
+          throw new BadRequestException(
+            'Only one entry per trade can be selected',
+          );
         if (selected) selectedTrades.add(patch.trade);
-        const existing = await this.entryModel.findOne({ where: {
-          project_shortlist_id: parent.id, trade: patch.trade, working_type: patch.working_type,
-        }, transaction });
-        const values = { ...patch, updated_by: userId ?? null };
-        if (selected) { values.is_selected = true; values.status = ShortlistEntryStatus.SELECTED; }
-        else if (patch.status !== undefined) values.is_selected = false;
-        else if (patch.is_selected === false && existing?.status === ShortlistEntryStatus.SELECTED) values.status = ShortlistEntryStatus.SHORTLISTED;
-        if (selected) await this.entryModel.update({ is_selected: false, status: ShortlistEntryStatus.SHORTLISTED }, {
-          where: { project_shortlist_id: parent.id, trade: patch.trade, status: ShortlistEntryStatus.SELECTED }, transaction,
+        const existing = await this.entryModel.findOne({
+          where: {
+            project_shortlist_id: parent.id,
+            trade: patch.trade,
+            working_type: patch.working_type,
+          },
+          transaction,
         });
+        const values = { ...patch, updated_by: userId ?? null };
+        if (selected) {
+          values.is_selected = true;
+          values.status = ShortlistEntryStatus.SELECTED;
+        } else if (patch.status !== undefined) values.is_selected = false;
+        else if (
+          patch.is_selected === false &&
+          existing?.status === ShortlistEntryStatus.SELECTED
+        )
+          values.status = ShortlistEntryStatus.SHORTLISTED;
+        if (selected)
+          await this.entryModel.update(
+            { is_selected: false, status: ShortlistEntryStatus.SHORTLISTED },
+            {
+              where: {
+                project_shortlist_id: parent.id,
+                trade: patch.trade,
+                status: ShortlistEntryStatus.SELECTED,
+              },
+              transaction,
+            },
+          );
         if (existing) await existing.update(values, { transaction });
-        else await this.entryModel.create({ ...values, project_shortlist_id: parent.id, created_by: userId ?? null }, { transaction });
+        else
+          await this.entryModel.create(
+            {
+              ...values,
+              project_shortlist_id: parent.id,
+              created_by: userId ?? null,
+            },
+            { transaction },
+          );
       }
     });
 
     return this.findAll({
       project_shortlist_id: dto.project_shortlist_id,
-    } as QueryShortlistEntryDto);
+    });
   }
 
   // ============================================================
@@ -324,7 +434,10 @@ export class ShortlistEntryService {
       entry.project_shortlist_id,
     );
 
-    this.assertCoordinates(dto.trade ?? entry.trade, dto.working_type ?? entry.working_type);
+    this.assertCoordinates(
+      dto.trade ?? entry.trade,
+      dto.working_type ?? entry.working_type,
+    );
 
     this.validateEntryForShortlist(shortlist, dto);
 
@@ -366,22 +479,36 @@ export class ShortlistEntryService {
       updated_by: userId ?? entry.updated_by,
     };
 
-    if (dto.is_selected === true || dto.status === ShortlistEntryStatus.SELECTED) {
+    if (
+      dto.is_selected === true ||
+      dto.status === ShortlistEntryStatus.SELECTED
+    ) {
       updatePayload.is_selected = true;
       updatePayload.status = ShortlistEntryStatus.SELECTED;
     }
 
-    if (dto.status !== undefined && dto.status !== ShortlistEntryStatus.SELECTED) {
+    if (
+      dto.status !== undefined &&
+      dto.status !== ShortlistEntryStatus.SELECTED
+    ) {
       updatePayload.is_selected = false;
     }
 
-    if ((dto.is_selected === true && dto.status !== undefined && dto.status !== ShortlistEntryStatus.SELECTED) ||
-        (dto.is_selected === false && dto.status === ShortlistEntryStatus.SELECTED)) {
+    if (
+      (dto.is_selected === true &&
+        dto.status !== undefined &&
+        dto.status !== ShortlistEntryStatus.SELECTED) ||
+      (dto.is_selected === false &&
+        dto.status === ShortlistEntryStatus.SELECTED)
+    ) {
       throw new BadRequestException('Selection flag and status conflict');
     }
 
     if (dto.is_selected === false) {
-      if (entry.status === ShortlistEntryStatus.SELECTED && dto.status === undefined) {
+      if (
+        entry.status === ShortlistEntryStatus.SELECTED &&
+        dto.status === undefined
+      ) {
         updatePayload.status = ShortlistEntryStatus.SHORTLISTED;
       }
     }

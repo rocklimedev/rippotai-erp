@@ -18,13 +18,19 @@ import { DprWorkStatus } from '@/common/enums/dpr.enums';
 
 export class CreateAdminDailyLogDto {
   /** Defaults to today on the server if omitted */
-  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) log_date?: string;
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  @IsDateString({ strict: true })
+  log_date?: string;
   @IsString() @IsNotEmpty() @MaxLength(150) work_type: string;
   @IsOptional() @IsUUID() project_id?: string;
   @IsString() @IsNotEmpty() details: string;
   @IsOptional() @IsEnum(DprWorkStatus) status?: DprWorkStatus;
   @IsOptional() @IsString() @MaxLength(255) pending_with?: string;
-  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) due_date?: string;
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  @IsDateString({ strict: true })
+  due_date?: string;
   @IsOptional() @IsString() remarks?: string;
 }
 
@@ -40,8 +46,14 @@ export class QueryAdminDailyLogDto {
   @IsOptional() @IsEnum(DprWorkStatus) status?: DprWorkStatus;
   @IsOptional() @IsString() work_type?: string;
   @IsOptional() @IsString() pending_with?: string;
-  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) from_date?: string;
-  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) to_date?: string;
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  @IsDateString({ strict: true })
+  from_date?: string;
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  @IsDateString({ strict: true })
+  to_date?: string;
   /** Not completed and due_date < today */
   @IsOptional()
   @Transform(({ value }) => value === true || value === 'true')

@@ -18,10 +18,20 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
 import { Note } from './note.model';
 
-const FIELDS = ['title', 'body', 'project_id', 'client_id', 'category', 'tone', 'pinned', 'is_shared'];
+const FIELDS = [
+  'title',
+  'body',
+  'project_id',
+  'client_id',
+  'category',
+  'tone',
+  'pinned',
+  'is_shared',
+];
 const pick = (b: any) => {
   const out: any = {};
-  for (const k of FIELDS) if (b?.[k] !== undefined) out[k] = b[k] === '' ? null : b[k];
+  for (const k of FIELDS)
+    if (b?.[k] !== undefined) out[k] = b[k] === '' ? null : b[k];
   return out;
 };
 
@@ -47,8 +57,23 @@ export class NotesController {
     if (project_id) where.project_id = project_id;
     if (client_id) where.client_id = client_id;
     if (category) where.category = category;
-    if (q) where[Op.and] = [{ [Op.or]: [{ title: { [Op.like]: `%${q}%` } }, { body: { [Op.like]: `%${q}%` } }] }];
-    return this.notes.findAll({ where, order: [['pinned', 'DESC'], ['updated_at', 'DESC']], limit: 500 });
+    if (q)
+      where[Op.and] = [
+        {
+          [Op.or]: [
+            { title: { [Op.like]: `%${q}%` } },
+            { body: { [Op.like]: `%${q}%` } },
+          ],
+        },
+      ];
+    return this.notes.findAll({
+      where,
+      order: [
+        ['pinned', 'DESC'],
+        ['updated_at', 'DESC'],
+      ],
+      limit: 500,
+    });
   }
 
   @RequirePermission('notes:read')
@@ -63,7 +88,8 @@ export class NotesController {
   @Post()
   async create(@Body() body: any, @CurrentUser() user: any) {
     const data = pick(body);
-    if (!data.title || !String(data.title).trim()) throw new BadRequestException('Title is required');
+    if (!data.title || !String(data.title).trim())
+      throw new BadRequestException('Title is required');
     return this.notes.create({ ...data, created_by: user?.id ?? null });
   }
 
@@ -72,7 +98,8 @@ export class NotesController {
   async update(@Param('id') id: string, @Body() body: any) {
     const n = await this.one(id);
     const data = pick(body);
-    if (data.title !== undefined && !String(data.title).trim()) throw new BadRequestException('Title is required');
+    if (data.title !== undefined && !String(data.title).trim())
+      throw new BadRequestException('Title is required');
     await n.update(data);
     return n;
   }

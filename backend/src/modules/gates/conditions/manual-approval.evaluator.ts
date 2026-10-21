@@ -50,7 +50,7 @@ export class ManualApprovalEvaluator implements ConditionEvaluator {
       optional: condition.optional,
       passed,
       detail: passed
-        ? `Manually confirmed by a team member on ${latest!.createdAt.toISOString().slice(0, 10)}.`
+        ? `Manually confirmed by a team member on ${latest.createdAt.toISOString().slice(0, 10)}.`
         : 'Awaiting manual confirmation — no automated signal exists for this condition.',
     };
   }

@@ -70,8 +70,14 @@ export function calendarPayload(event: any, config: Record<string, any>) {
 export function taskPayload(task: any, config: Record<string, any>) {
   return {
     title: task.title,
-    description: [task.description || '', task.is_crucial
-      ? `Crucial Work${task.crucial_ref ? ` · Ref ${task.crucial_ref}` : ''}\nWhy it’s crucial: ${task.crucial_reason || 'Not specified'}` : ''].filter(Boolean).join('\n\n'),
+    description: [
+      task.description || '',
+      task.is_crucial
+        ? `Crucial Work${task.crucial_ref ? ` · Ref ${task.crucial_ref}` : ''}\nWhy it’s crucial: ${task.crucial_reason || 'Not specified'}`
+        : '',
+    ]
+      .filter(Boolean)
+      .join('\n\n'),
     priority: task.priority,
     status: task.status === 'review' ? 'in_progress' : task.status,
     due_date: task.due_date ? new Date(task.due_date).toISOString() : undefined,

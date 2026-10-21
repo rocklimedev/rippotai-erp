@@ -52,7 +52,7 @@ export class RfiService {
     if (!team)
       throw new NotFoundException(`Team ${dto.routedToTeamId} not found`);
 
-    await rfi.update({ routedToTeamId: dto.routedToTeamId } as any);
+    await rfi.update({ routedToTeamId: dto.routedToTeamId });
     return rfi;
   }
 
@@ -67,7 +67,7 @@ export class RfiService {
       respondedBy: dto.respondedBy,
       respondedAt: new Date(),
       status: RfiStatus.ANSWERED,
-    } as any);
+    });
     return rfi;
   }
 
@@ -78,7 +78,7 @@ export class RfiService {
         'RFI must be ANSWERED before it can be closed',
       );
     }
-    await rfi.update({ status: RfiStatus.CLOSED, closedAt: new Date() } as any);
+    await rfi.update({ status: RfiStatus.CLOSED, closedAt: new Date() });
     return rfi;
   }
 
@@ -95,7 +95,10 @@ export class RfiService {
   }
 
   /** All RFIs, optionally for one project (UUID) and/or status, with team + project name. */
-  async list({ projectId, status }: { projectId?: string; status?: RfiStatus } = {}): Promise<any[]> {
+  async list({
+    projectId,
+    status,
+  }: { projectId?: string; status?: RfiStatus } = {}): Promise<any[]> {
     const where: any = {};
     if (projectId) where.projectId = projectId;
     if (status) where.status = status;
@@ -108,12 +111,22 @@ export class RfiService {
     const plain = rows.map((r) => r.get({ plain: true }) as any);
     const ids = [...new Set(plain.map((r) => String(r.routedToTeamId)))];
     const teams = ids.length
-      ? await this.teamModel.findAll({ where: { id: ids }, attributes: ['id', 'name'] })
+      ? await this.teamModel.findAll({
+          where: { id: ids },
+          attributes: ['id', 'name'],
+        })
       : [];
-    const byId = new Map(teams.map((t) => [String(t.get('id')), t.get({ plain: true })]));
+    const byId = new Map(
+      teams.map((t) => [String(t.get('id')), t.get({ plain: true })]),
+    );
     return plain.map((r) => {
       const team = byId.get(String(r.routedToTeamId)) ?? null;
-      return { ...r, team, routedToTeam: team, routedToTeamName: (team as any)?.name ?? null };
+      return {
+        ...r,
+        team,
+        routedToTeam: team,
+        routedToTeamName: (team as any)?.name ?? null,
+      };
     });
   }
 

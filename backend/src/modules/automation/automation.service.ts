@@ -1,9 +1,22 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
 import { QueryTypes } from 'sequelize';
 import { randomUUID } from 'crypto';
-import { AutomationEngineService, parseRule } from './automation-engine.service';
-import { ACTION_TYPES, OPERATORS, RECIPIENTS, TRIGGERS, triggerByType } from './automation.triggers';
+import {
+  AutomationEngineService,
+  parseRule,
+} from './automation-engine.service';
+import {
+  ACTION_TYPES,
+  OPERATORS,
+  RECIPIENTS,
+  TRIGGERS,
+  triggerByType,
+} from './automation.triggers';
 
 const STATUSES = ['ACTIVE', 'DRAFT', 'DISABLED'];
 
@@ -48,17 +61,34 @@ export class AutomationService {
   ) {}
 
   private select<T = any>(sql: string, r: any[] = []): Promise<T[]> {
-    return this.sequelize.query(sql, { replacements: r, type: QueryTypes.SELECT }) as Promise<T[]>;
+    return this.sequelize.query(sql, {
+      replacements: r,
+      type: QueryTypes.SELECT,
+    }) as Promise<T[]>;
   }
   private exec(sql: string, r: any[] = []) {
     return this.sequelize.query(sql, { replacements: r });
   }
 
-  async audit(user: any, action: string, ruleId: string | null, target: string, description: string) {
+  async audit(
+    user: any,
+    action: string,
+    ruleId: string | null,
+    target: string,
+    description: string,
+  ) {
     await this.exec(
       `INSERT INTO automation_audit_logs (id, user_id, user_name, action, rule_id, target, description, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-      [randomUUID(), user?.id || null, user?.name || 'System', action, ruleId, target, description],
+      [
+        randomUUID(),
+        user?.id || null,
+        user?.name || 'System',
+        action,
+        ruleId,
+        target,
+        description,
+      ],
     );
   }
 
@@ -93,7 +123,9 @@ export class AutomationService {
       updatedBy: r.updated_by_name || null,
       runs: Number(stats?.runs || 0),
       failed: Number(stats?.failed || 0),
-      successRate: stats?.runs ? Math.round((1000 * (stats.runs - stats.failed)) / stats.runs) / 10 : null,
+      successRate: stats?.runs
+        ? Math.round((1000 * (stats.runs - stats.failed)) / stats.runs) / 10
+        : null,
     };
   }
 
@@ -126,24 +158,35 @@ export class AutomationService {
 
   private validate(dto: any, partial = false) {
     if (!partial || dto.name !== undefined) {
-      if (!String(dto.name || '').trim()) throw new BadRequestException('Name is required');
+      if (!String(dto.name || '').trim())
+        throw new BadRequestException('Name is required');
     }
     if (!partial || dto.triggerType !== undefined) {
-      if (!triggerByType(dto.triggerType)) throw new BadRequestException('Unknown trigger');
+      if (!triggerByType(dto.triggerType))
+        throw new BadRequestException('Unknown trigger');
     }
-    if (dto.status !== undefined && !STATUSES.includes(dto.status)) throw new BadRequestException('Invalid status');
+    if (dto.status !== undefined && !STATUSES.includes(dto.status))
+      throw new BadRequestException('Invalid status');
     if (dto.actions !== undefined) {
-      if (!Array.isArray(dto.actions)) throw new BadRequestException('actions must be an array');
+      if (!Array.isArray(dto.actions))
+        throw new BadRequestException('actions must be an array');
       for (const a of dto.actions) {
-        if (!ACTION_TYPES.some((t) => t.value === a.type)) throw new BadRequestException(`Unknown action ${a.type}`);
-        if (!RECIPIENTS.some((r) => r.key === a.recipient)) throw new BadRequestException(`Unknown recipient ${a.recipient}`);
+        if (!ACTION_TYPES.some((t) => t.value === a.type))
+          throw new BadRequestException(`Unknown action ${a.type}`);
+        if (!RECIPIENTS.some((r) => r.key === a.recipient))
+          throw new BadRequestException(`Unknown recipient ${a.recipient}`);
       }
-      if (dto.status === 'ACTIVE' && !dto.actions.length) throw new BadRequestException('An active rule needs at least one action');
+      if (dto.status === 'ACTIVE' && !dto.actions.length)
+        throw new BadRequestException(
+          'An active rule needs at least one action',
+        );
     }
     if (dto.conditions !== undefined) {
-      if (!Array.isArray(dto.conditions)) throw new BadRequestException('conditions must be an array');
+      if (!Array.isArray(dto.conditions))
+        throw new BadRequestException('conditions must be an array');
       for (const c of dto.conditions)
-        if (!c.field || !OPERATORS.includes(c.operator)) throw new BadRequestException('Invalid condition');
+        if (!c.field || !OPERATORS.includes(c.operator))
+          throw new BadRequestException('Invalid condition');
     }
   }
 
@@ -161,7 +204,10 @@ export class AutomationService {
     this.validate(dto);
     const id = randomUUID();
     let code = this.codeFrom(dto.code || dto.name);
-    const [dup] = await this.select('SELECT id FROM automation_rules WHERE code = ?', [code]);
+    const [dup] = await this.select(
+      'SELECT id FROM automation_rules WHERE code = ?',
+      [code],
+    );
     if (dup) code = `${code.slice(0, 50)}_${id.slice(0, 6).toUpperCase()}`;
     await this.exec(
       `INSERT INTO automation_rules (id, code, name, description, phase, trigger_type, trigger_json, conditions_json, actions_json, project_types, status, created_by, updated_by, created_at, updated_at)
@@ -182,13 +228,26 @@ export class AutomationService {
         user?.id || null,
       ],
     );
-    await this.audit(user, 'CREATED_RULE', id, code, `Created rule “${dto.name.trim()}” (${dto.status || 'DRAFT'}).`);
+    await this.audit(
+      user,
+      'CREATED_RULE',
+      id,
+      code,
+      `Created rule “${dto.name.trim()}” (${dto.status || 'DRAFT'}).`,
+    );
     return this.getRule(id);
   }
 
   async updateRule(id: string, dto: any, user: any) {
     const before = await this.getRule(id);
-    this.validate({ ...dto, status: dto.status ?? before.status, actions: dto.actions ?? before.actions }, true);
+    this.validate(
+      {
+        ...dto,
+        status: dto.status ?? before.status,
+        actions: dto.actions ?? before.actions,
+      },
+      true,
+    );
     const sets: string[] = [];
     const vals: any[] = [];
     const set = (col: string, v: any) => {
@@ -196,18 +255,28 @@ export class AutomationService {
       vals.push(v);
     };
     if (dto.name !== undefined) set('name', String(dto.name).trim());
-    if (dto.description !== undefined) set('description', dto.description || null);
+    if (dto.description !== undefined)
+      set('description', dto.description || null);
     if (dto.phase !== undefined) set('phase', dto.phase || null);
     if (dto.triggerType !== undefined) set('trigger_type', dto.triggerType);
-    if (dto.params !== undefined) set('trigger_json', JSON.stringify({ params: dto.params || {} }));
-    if (dto.conditions !== undefined) set('conditions_json', JSON.stringify(dto.conditions));
-    if (dto.actions !== undefined) set('actions_json', JSON.stringify(dto.actions));
-    if (dto.projectTypes !== undefined) set('project_types', JSON.stringify(dto.projectTypes));
+    if (dto.params !== undefined)
+      set('trigger_json', JSON.stringify({ params: dto.params || {} }));
+    if (dto.conditions !== undefined)
+      set('conditions_json', JSON.stringify(dto.conditions));
+    if (dto.actions !== undefined)
+      set('actions_json', JSON.stringify(dto.actions));
+    if (dto.projectTypes !== undefined)
+      set('project_types', JSON.stringify(dto.projectTypes));
     if (dto.status !== undefined) set('status', dto.status);
     set('updated_by', user?.id || null);
-    await this.exec(`UPDATE automation_rules SET ${sets.join(', ')}, updated_at = NOW() WHERE id = ?`, [...vals, id]);
+    await this.exec(
+      `UPDATE automation_rules SET ${sets.join(', ')}, updated_at = NOW() WHERE id = ?`,
+      [...vals, id],
+    );
 
-    const changed = Object.keys(dto).filter((k) => JSON.stringify(dto[k]) !== JSON.stringify((before as any)[k]));
+    const changed = Object.keys(dto).filter(
+      (k) => JSON.stringify(dto[k]) !== JSON.stringify((before as any)[k]),
+    );
     const action =
       dto.status && dto.status !== before.status && changed.length === 1
         ? dto.status === 'ACTIVE'
@@ -221,14 +290,20 @@ export class AutomationService {
       action,
       id,
       before.code,
-      action === 'UPDATED_RULE' ? `Changed ${changed.join(', ') || 'nothing'}.` : `${action === 'ENABLED_RULE' ? 'Enabled' : 'Disabled'} rule.`,
+      action === 'UPDATED_RULE'
+        ? `Changed ${changed.join(', ') || 'nothing'}.`
+        : `${action === 'ENABLED_RULE' ? 'Enabled' : 'Disabled'} rule.`,
     );
     return this.getRule(id);
   }
 
   async toggleRule(id: string, user: any) {
     const r = await this.getRule(id);
-    return this.updateRule(id, { status: r.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE' }, user);
+    return this.updateRule(
+      id,
+      { status: r.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE' },
+      user,
+    );
   }
 
   async duplicateRule(id: string, user: any) {
@@ -252,14 +327,30 @@ export class AutomationService {
   async deleteRule(id: string, user: any) {
     const r = await this.getRule(id);
     await this.exec('DELETE FROM automation_rules WHERE id = ?', [id]);
-    await this.audit(user, 'DELETED_RULE', null, r.code, `Deleted rule “${r.name}”.`);
+    await this.audit(
+      user,
+      'DELETED_RULE',
+      null,
+      r.code,
+      `Deleted rule “${r.name}”.`,
+    );
     return { ok: true };
   }
 
   async runRule(id: string, user: any, dryRun = false) {
-    const res = await this.engine.runRule(id, { source: dryRun ? 'test' : 'manual', userId: user?.id, dryRun });
+    const res = await this.engine.runRule(id, {
+      source: dryRun ? 'test' : 'manual',
+      userId: user?.id,
+      dryRun,
+    });
     if (!dryRun)
-      await this.audit(user, 'RAN_RULE', id, res.rule.name, `Run now: ${res.matched} matched, ${res.executed} executed, ${res.cooldown} already handled.`);
+      await this.audit(
+        user,
+        'RAN_RULE',
+        id,
+        res.rule.name,
+        `Run now: ${res.matched} matched, ${res.executed} executed, ${res.cooldown} already handled.`,
+      );
     return res;
   }
 
@@ -283,14 +374,28 @@ export class AutomationService {
   }
 
   async runAll(user: any) {
-    const res = await this.engine.runAll({ source: 'manual', userId: user?.id });
-    await this.audit(user, 'RAN_ALL', null, 'All active rules', `Run now: ${(res as any).executed ?? 0} executions across ${(res as any).rules ?? 0} rules.`);
+    const res = await this.engine.runAll({
+      source: 'manual',
+      userId: user?.id,
+    });
+    await this.audit(
+      user,
+      'RAN_ALL',
+      null,
+      'All active rules',
+      `Run now: ${(res as any).executed ?? 0} executions across ${(res as any).rules ?? 0} rules.`,
+    );
     return res;
   }
 
   // ------------------------------------------------------------------ runs
 
-  async listRuns(q: { status?: string; ruleId?: string; search?: string; limit?: string }) {
+  async listRuns(q: {
+    status?: string;
+    ruleId?: string;
+    search?: string;
+    limit?: string;
+  }) {
     const where: string[] = ['1=1'];
     const r: any[] = [];
     if (q.status && q.status !== 'ALL') {
@@ -302,7 +407,9 @@ export class AutomationService {
       r.push(q.ruleId);
     }
     if (q.search) {
-      where.push('(x.rule_name LIKE ? OR x.entity_label LIKE ? OR p.name LIKE ?)');
+      where.push(
+        '(x.rule_name LIKE ? OR x.entity_label LIKE ? OR p.name LIKE ?)',
+      );
       r.push(`%${q.search}%`, `%${q.search}%`, `%${q.search}%`);
     }
     const limit = Math.min(Number(q.limit) || 200, 500);
@@ -366,11 +473,19 @@ export class AutomationService {
     }));
   }
 
-  async updateEscalation(id: string, dto: { status?: string; notes?: string }, user: any) {
-    const [e] = await this.select('SELECT * FROM automation_escalations WHERE id = ?', [id]);
+  async updateEscalation(
+    id: string,
+    dto: { status?: string; notes?: string },
+    user: any,
+  ) {
+    const [e] = await this.select(
+      'SELECT * FROM automation_escalations WHERE id = ?',
+      [id],
+    );
     if (!e) throw new NotFoundException('Escalation not found');
     const status = dto.status || e.status;
-    if (!['OPEN', 'ACKNOWLEDGED', 'RESOLVED'].includes(status)) throw new BadRequestException('Invalid status');
+    if (!['OPEN', 'ACKNOWLEDGED', 'RESOLVED'].includes(status))
+      throw new BadRequestException('Invalid status');
     await this.exec(
       `UPDATE automation_escalations SET status = ?, resolution_notes = COALESCE(?, resolution_notes),
               acknowledged_at = IF(? = 'ACKNOWLEDGED' AND acknowledged_at IS NULL, NOW(), acknowledged_at),
@@ -378,7 +493,13 @@ export class AutomationService {
         WHERE id = ?`,
       [status, dto.notes ?? null, status, status, status, user?.id || null, id],
     );
-    await this.audit(user, status === 'RESOLVED' ? 'RESOLVED_ESCALATION' : 'UPDATED_ESCALATION', e.rule_id, e.title, `Escalation marked ${status.toLowerCase()}${dto.notes ? `: ${dto.notes}` : ''}.`);
+    await this.audit(
+      user,
+      status === 'RESOLVED' ? 'RESOLVED_ESCALATION' : 'UPDATED_ESCALATION',
+      e.rule_id,
+      e.title,
+      `Escalation marked ${status.toLowerCase()}${dto.notes ? `: ${dto.notes}` : ''}.`,
+    );
     return (await this.listEscalations()).find((x) => x.id === id);
   }
 
@@ -400,15 +521,27 @@ export class AutomationService {
   }
 
   async overview() {
-    const [[rules], [today], [month], [esc], recent, rulesList] = await Promise.all([
-      this.select(`SELECT SUM(status='ACTIVE') active, SUM(status='DRAFT') draft, SUM(status='DISABLED') disabled, COUNT(*) total FROM automation_rules`),
-      this.select(`SELECT COUNT(*) runs, SUM(status='FAILED') failed FROM automation_runs WHERE started_at >= CURDATE()`),
-      this.select(`SELECT COUNT(*) runs, SUM(status='FAILED') failed FROM automation_runs WHERE started_at >= NOW() - INTERVAL 30 DAY`),
-      this.select(`SELECT SUM(status<>'RESOLVED') open, SUM(status<>'RESOLVED' AND priority='CRITICAL') critical FROM automation_escalations`),
-      this.listRuns({ limit: '8' }),
-      this.listRules(),
-    ]);
-    const phases = new Map<string, { phase: string; rules: number; active: number; runs: number }>();
+    const [[rules], [today], [month], [esc], recent, rulesList] =
+      await Promise.all([
+        this.select(
+          `SELECT SUM(status='ACTIVE') active, SUM(status='DRAFT') draft, SUM(status='DISABLED') disabled, COUNT(*) total FROM automation_rules`,
+        ),
+        this.select(
+          `SELECT COUNT(*) runs, SUM(status='FAILED') failed FROM automation_runs WHERE started_at >= CURDATE()`,
+        ),
+        this.select(
+          `SELECT COUNT(*) runs, SUM(status='FAILED') failed FROM automation_runs WHERE started_at >= NOW() - INTERVAL 30 DAY`,
+        ),
+        this.select(
+          `SELECT SUM(status<>'RESOLVED') open, SUM(status<>'RESOLVED' AND priority='CRITICAL') critical FROM automation_escalations`,
+        ),
+        this.listRuns({ limit: '8' }),
+        this.listRules(),
+      ]);
+    const phases = new Map<
+      string,
+      { phase: string; rules: number; active: number; runs: number }
+    >();
     for (const r of rulesList) {
       const k = r.phase || 'Other';
       const p = phases.get(k) || { phase: k, rules: 0, active: 0, runs: 0 };
@@ -428,7 +561,9 @@ export class AutomationService {
         failedToday: Number(today?.failed || 0),
         runs30d: mRuns,
         failed30d: mFailed,
-        successRate: mRuns ? Math.round((1000 * (mRuns - mFailed)) / mRuns) / 10 : null,
+        successRate: mRuns
+          ? Math.round((1000 * (mRuns - mFailed)) / mRuns) / 10
+          : null,
         openEscalations: Number(esc?.open || 0),
         criticalEscalations: Number(esc?.critical || 0),
       },

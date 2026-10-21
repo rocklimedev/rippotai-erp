@@ -7,7 +7,7 @@ upstream rippotai_private_file_api {
 # Put BOTH locations before generic regex/static/PHP locations in the existing
 # CDN server block. Keep its existing root, public asset locations and TLS cert.
 # Do not let any other hostname/alias serve private-* files as ordinary static files.
-location ~ ^/(private-(?:documents|drawings|signatures|handover|recce|briefs|reports|snags)-[0-9a-f-]{36}(?:\.[a-zA-Z0-9]{1,16})?)$ {
+location ~ ^/(private-(?:documents|drawings|signatures|handover|recce|briefs|reports|snags)-(?:nas-)?[0-9a-f-]{36}(?:\.[a-zA-Z0-9]{1,16})?)$ {
     proxy_pass https://rippotai_private_file_api/api/v1/cdn/private/$1$is_args$args;
     proxy_ssl_server_name on;
     proxy_ssl_name erp-api.rippotaiarchitecture.com;

@@ -1,5 +1,7 @@
 import React from "react";
 import ReminderSyncPanel from "../workspace/ReminderSyncPanel";
+import NasConnector from "./NasConnector";
+import { useNasStatusQuery } from "@/api/meta/cdn.api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   CheckCircle2,
@@ -246,6 +248,7 @@ export default function IntegrationSettings() {
   const google = useGoogleStatusQuery();
   const microsoft = useMicrosoftStatusQuery();
   const zoho = useZohoStatusQuery();
+  const nas = useNasStatusQuery(undefined, { refetchOnMountOrArgChange: true });
 
   /* ------------------------------------------------------------------ */
   /* Authorization                                                       */
@@ -399,7 +402,7 @@ export default function IntegrationSettings() {
 
   const connectedCount = providers.filter(
     (provider) => !!provider.status.data?.connected,
-  ).length;
+  ).length + (nas.data?.connected && !nas.isError ? 1 : 0);
 
   /* ------------------------------------------------------------------ */
   /* Render                                                              */
@@ -420,7 +423,7 @@ export default function IntegrationSettings() {
         </div>
 
         <p className="shrink-0 pl-4 text-[13px] text-[#9AA6A3]">
-          {connectedCount} of {providers.length} connected
+          {connectedCount} of {providers.length + 1} connected
         </p>
       </div>
 
@@ -434,6 +437,7 @@ export default function IntegrationSettings() {
         </DialogContent>
       </Dialog>
       <div className="space-y-4">
+        <NasConnector status={nas} />
         {providers.map(
           ({
             key,

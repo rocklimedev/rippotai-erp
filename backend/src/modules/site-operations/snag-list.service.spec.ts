@@ -29,8 +29,11 @@ describe('Snag List documents', () => {
     let row: any;
     const savedRevisions = new Map<string, unknown>();
     const revisions: any = {
-      create: jest.fn(async (v) => { if (v.id) savedRevisions.set(v.id, v); return v; }),
-      findByPk: jest.fn(async id => savedRevisions.get(id) || null),
+      create: jest.fn(async (v) => {
+        if (v.id) savedRevisions.set(v.id, v);
+        return v;
+      }),
+      findByPk: jest.fn(async (id) => savedRevisions.get(id) || null),
     };
     const model: any = {
       sequelize: { transaction: jest.fn((cb) => cb(transaction)) },
@@ -125,8 +128,18 @@ describe('Snag List documents', () => {
     const { service, model, revisions, exporter } = setup();
     const first = await service.create(dto, 'owner', 'create-operation');
     await service.create(dto, 'owner', 'create-operation');
-    await service.update(first.id, { ...dto, revision: 1 }, 'owner', 'update-operation');
-    const retry = await service.update(first.id, { ...dto, revision: 1 }, 'owner', 'update-operation');
+    await service.update(
+      first.id,
+      { ...dto, revision: 1 },
+      'owner',
+      'update-operation',
+    );
+    const retry = await service.update(
+      first.id,
+      { ...dto, revision: 1 },
+      'owner',
+      'update-operation',
+    );
     expect(retry.revision).toBe(2);
     expect(model.create).toHaveBeenCalledTimes(1);
     expect(revisions.create).toHaveBeenCalledTimes(2);

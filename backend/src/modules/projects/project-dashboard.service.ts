@@ -189,8 +189,8 @@ export class ProjectDashboardService {
 
     return result.reduce(
       (acc: Record<string, number>, row: any) => {
-        const phase = (row as any).current_phase || 'Unknown';
-        acc[phase] = Number((row as any).count);
+        const phase = row.current_phase || 'Unknown';
+        acc[phase] = Number(row.count);
         return acc;
       },
       {} as Record<string, number>,

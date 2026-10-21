@@ -145,7 +145,7 @@ export class WorkDriveService {
   async deleteFile(ownerKey: string, resourceId: string) {
     return this.zohoHttpService.request(
       ownerKey,
-      'DELETE' as any,
+      'DELETE',
       '/workdrive/api/v1/files',
       {
         baseURL: WORKDRIVE_BASE_URL,

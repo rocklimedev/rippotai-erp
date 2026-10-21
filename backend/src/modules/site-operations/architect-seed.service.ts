@@ -64,7 +64,7 @@ export class ArchitectSeedService implements OnModuleInit {
     } catch (e) {
       this.logger.error(
         'Seeding failed (are the tables created / migrations run?)',
-        e as any,
+        e,
       );
     }
   }

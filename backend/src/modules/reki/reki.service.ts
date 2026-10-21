@@ -185,7 +185,10 @@ export class SiteRecceService {
           room_name: roomDto.room_name,
 
           room_type: roomDto.room_type ?? null,
-          room_type_other: roomDto.room_type === 'OTHER' ? roomDto.room_type_other ?? null : null,
+          room_type_other:
+            roomDto.room_type === 'OTHER'
+              ? (roomDto.room_type_other ?? null)
+              : null,
 
           room_number: roomDto.room_number ?? null,
 
@@ -370,25 +373,32 @@ export class SiteRecceService {
         transaction,
         lock: transaction.LOCK.UPDATE,
       });
-      if (!lockedRoom) throw new NotFoundException('Room not found for this Site Recce');
-      const lastShot = await SiteReccePhoto.max('shot_number', { where: { room_id: roomId }, transaction });
-      return SiteReccePhoto.create({
-      site_recce_id: siteRecceId,
+      if (!lockedRoom)
+        throw new NotFoundException('Room not found for this Site Recce');
+      const lastShot = await SiteReccePhoto.max('shot_number', {
+        where: { room_id: roomId },
+        transaction,
+      });
+      return SiteReccePhoto.create(
+        {
+          site_recce_id: siteRecceId,
 
-      room_id: roomId,
+          room_id: roomId,
 
-      shot_number: Number(lastShot || 0) + 1,
+          shot_number: Number(lastShot || 0) + 1,
 
-      photo_url: upload.url,
+          photo_url: upload.url,
 
-      photo_file_name: upload.filename,
+          photo_file_name: upload.filename,
 
-      layout_image_url: null,
+          layout_image_url: null,
 
-      layout_file_name: null,
+          layout_file_name: null,
 
-      notes: data?.notes ?? null,
-      } as any, { transaction });
+          notes: data?.notes ?? null,
+        } as any,
+        { transaction },
+      );
     });
   }
 
@@ -855,7 +865,7 @@ export class SiteRecceService {
     await photo.update({
       layout_image_url: upload.url,
       layout_file_name: upload.filename,
-    } as any);
+    });
 
     return photo;
   }
@@ -907,7 +917,7 @@ export class SiteRecceService {
     await photo.update({
       photo_url: upload.url,
       photo_file_name: upload.filename,
-    } as any);
+    });
 
     return photo;
   }

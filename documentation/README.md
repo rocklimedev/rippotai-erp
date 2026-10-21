@@ -26,6 +26,7 @@ rippotai-erp/
 | Understand the overall system | [ARCHITECTURE.md](./ARCHITECTURE.md) |
 | Run the project locally | [SETUP.md](./SETUP.md) |
 | Ship/deploy it | [DEPLOYMENT.md](./DEPLOYMENT.md) |
+| Set up Synology NAS and CDN staging | [NAS setup guide](./NAS-SETUP.md) |
 | Work on a specific backend feature | [API README](../backend/README.md) and module documents below |
 | Work on the frontend | [ERP frontend README](../rippotai-erp-frontend/README.md) |
 | Understand Command Center and portfolio aggregation | [Dashboard read models](./dashboard-read-models.md) |

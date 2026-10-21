@@ -18,10 +18,10 @@ export class SiteOpsDashboardService {
     replacements: any = {},
   ): Promise<T[]> {
     try {
-      return (await this.sequelize.query(sql, {
+      return await this.sequelize.query(sql, {
         type: QueryTypes.SELECT,
         replacements,
-      })) as T[];
+      });
     } catch (e) {
       this.logger.warn(`dashboard query failed: ${(e as Error).message}`);
       return [];
@@ -62,9 +62,18 @@ export class SiteOpsDashboardService {
       reportedProjectsToday,
       handoffBlocked,
     ] = await Promise.all([
-      this.one(`SELECT COUNT(*) n FROM daily_site_reports r WHERE r.report_date = :today ${pWhere}`, rep),
-      this.one(`SELECT COUNT(*) n FROM daily_site_reports r WHERE r.report_date = :today AND r.is_shared = 1 ${pWhere}`, rep),
-      this.one(`SELECT COUNT(*) n FROM daily_site_reports r WHERE r.report_date >= :from ${pWhere}`, rep),
+      this.one(
+        `SELECT COUNT(*) n FROM daily_site_reports r WHERE r.report_date = :today ${pWhere}`,
+        rep,
+      ),
+      this.one(
+        `SELECT COUNT(*) n FROM daily_site_reports r WHERE r.report_date = :today AND r.is_shared = 1 ${pWhere}`,
+        rep,
+      ),
+      this.one(
+        `SELECT COUNT(*) n FROM daily_site_reports r WHERE r.report_date >= :from ${pWhere}`,
+        rep,
+      ),
       this.one(
         `SELECT COUNT(*) n FROM daily_site_reports r WHERE r.report_date >= :from
            AND (r.needs_attention = 1 OR COALESCE(JSON_LENGTH(r.issue_items),0) > 0) ${pWhere}`,
@@ -76,15 +85,38 @@ export class SiteOpsDashboardService {
           WHERE r.report_date = :today ${pWhere}`,
         rep,
       ),
-      this.one(`SELECT COUNT(*) n FROM rfis WHERE status = 'OPEN' ${pAnd}`, rep),
-      this.one(`SELECT COUNT(*) n FROM mockups WHERE status IN ('PROPOSED','UNDER_REVIEW') ${pAnd}`, rep),
-      this.one(`SELECT COUNT(*) n FROM qc_sign_offs WHERE result = 'PASS' ${pAnd}`, rep),
-      this.one(`SELECT COUNT(*) n FROM qc_sign_offs WHERE result IN ('FAIL','REWORK') ${pAnd}`, rep),
-      this.one(`SELECT COUNT(*) n FROM site_visit_logs WHERE scheduled_date = :today ${pAnd}`, rep),
+      this.one(
+        `SELECT COUNT(*) n FROM rfis WHERE status = 'OPEN' ${pAnd}`,
+        rep,
+      ),
+      this.one(
+        `SELECT COUNT(*) n FROM mockups WHERE status IN ('PROPOSED','UNDER_REVIEW') ${pAnd}`,
+        rep,
+      ),
+      this.one(
+        `SELECT COUNT(*) n FROM qc_sign_offs WHERE result = 'PASS' ${pAnd}`,
+        rep,
+      ),
+      this.one(
+        `SELECT COUNT(*) n FROM qc_sign_offs WHERE result IN ('FAIL','REWORK') ${pAnd}`,
+        rep,
+      ),
+      this.one(
+        `SELECT COUNT(*) n FROM site_visit_logs WHERE scheduled_date = :today ${pAnd}`,
+        rep,
+      ),
       projectId
-        ? this.one(`SELECT COUNT(*) n FROM projects WHERE deleted_at IS NULL AND id = :projectId`, rep)
-        : this.one(`SELECT COUNT(*) n FROM projects WHERE deleted_at IS NULL AND status = 'active'`),
-      this.one(`SELECT COUNT(DISTINCT project_id) n FROM daily_site_reports WHERE report_date = :today ${pAnd}`, rep),
+        ? this.one(
+            `SELECT COUNT(*) n FROM projects WHERE deleted_at IS NULL AND id = :projectId`,
+            rep,
+          )
+        : this.one(
+            `SELECT COUNT(*) n FROM projects WHERE deleted_at IS NULL AND status = 'active'`,
+          ),
+      this.one(
+        `SELECT COUNT(DISTINCT project_id) n FROM daily_site_reports WHERE report_date = :today ${pAnd}`,
+        rep,
+      ),
       // open QC failures: the latest attempt for a project/step/trade is still FAIL or REWORK
       this.one(
         `SELECT COUNT(*) n FROM qc_sign_offs q
@@ -154,12 +186,17 @@ export class SiteOpsDashboardService {
         type: 'mockup',
         ref_id: m.id,
         title: m.name,
-        description: [m.finish_type || 'Mockup', m.project_name].filter(Boolean).join(' · '),
+        description: [m.finish_type || 'Mockup', m.project_name]
+          .filter(Boolean)
+          .join(' · '),
         date: m.proposed_at,
         status: m.status,
       })),
     ]
-      .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())
+      .sort(
+        (a, b) =>
+          new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime(),
+      )
       .slice(0, 8);
 
     const qcTotal = passedQc + failedQc;

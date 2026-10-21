@@ -68,7 +68,10 @@ export class QcSignOffService {
 
     // Automation hook: failed / rework inspections trigger QC_FAILED rules.
     if (String(dto.result) !== 'PASS') {
-      automationBus.emitEvent('QC_FAILED', { entityId: signOff.id, projectId: dto.projectId });
+      automationBus.emitEvent('QC_FAILED', {
+        entityId: signOff.id,
+        projectId: dto.projectId,
+      });
     }
 
     return this.getSignOffOrThrow(signOff.id);
@@ -95,10 +98,18 @@ export class QcSignOffService {
     const plain = rows.map((r) => r.get({ plain: true }) as any);
     const ids = [...new Set(plain.map((r) => String(r.tradeTeamId)))];
     const teams = ids.length
-      ? await this.teamModel.findAll({ where: { id: ids }, attributes: ['id', 'name'] })
+      ? await this.teamModel.findAll({
+          where: { id: ids },
+          attributes: ['id', 'name'],
+        })
       : [];
-    const byId = new Map(teams.map((t) => [String(t.get('id')), t.get({ plain: true })]));
-    return plain.map((r) => ({ ...r, tradeTeam: byId.get(String(r.tradeTeamId)) ?? null }));
+    const byId = new Map(
+      teams.map((t) => [String(t.get('id')), t.get({ plain: true })]),
+    );
+    return plain.map((r) => ({
+      ...r,
+      tradeTeam: byId.get(String(r.tradeTeamId)) ?? null,
+    }));
   }
 
   /** Full QC history for a project, most recent first. */
@@ -107,7 +118,9 @@ export class QcSignOffService {
   }
 
   /** QC history across projects (or one project), optional date range / result filter. */
-  async history(q: { projectId?: string; from?: string; to?: string; status?: string } = {}): Promise<any[]> {
+  async history(
+    q: { projectId?: string; from?: string; to?: string; status?: string } = {},
+  ): Promise<any[]> {
     const where: any = {};
     if (q.projectId) where.projectId = q.projectId;
     if (q.status) where.result = String(q.status).toUpperCase();

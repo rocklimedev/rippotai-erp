@@ -71,7 +71,7 @@ export class GoogleAuthService implements OAuthProviderService {
       ...(data.refresh_token ? { refreshToken: encryptedRefresh } : {}),
       scope: data.scope,
       expiresAt,
-    } as any);
+    });
 
     return (await this.tokenModel.findOne({ where: { userId } }))!;
   }

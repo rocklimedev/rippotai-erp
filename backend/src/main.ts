@@ -35,7 +35,10 @@ async function bootstrap() {
   }
 
   // Never serialise password hashes / tokens, whatever a query included.
-  app.useGlobalInterceptors(new StripSecretsInterceptor(), new FileLinksInterceptor());
+  app.useGlobalInterceptors(
+    new StripSecretsInterceptor(),
+    new FileLinksInterceptor(),
+  );
 
   app.useGlobalPipes(
     new ValidationPipe({

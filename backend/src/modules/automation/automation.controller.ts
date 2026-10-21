@@ -1,5 +1,15 @@
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import { CurrentUser } from '@/common/decorator/current-user.decorator';
 import { AutomationService } from './automation.service';
@@ -78,7 +88,11 @@ export class AutomationController {
   /** Run now (body { dryRun: true } = test: evaluate without side effects). */
   @RequirePermission('automation:execute')
   @Post('rules/:id/run')
-  run(@Param('id') id: string, @Body() body: { dryRun?: boolean }, @CurrentUser() user: any) {
+  run(
+    @Param('id') id: string,
+    @Body() body: { dryRun?: boolean },
+    @CurrentUser() user: any,
+  ) {
     return this.svc.runRule(id, user, !!body?.dryRun);
   }
 
@@ -102,7 +116,11 @@ export class AutomationController {
 
   @RequirePermission('automation:update')
   @Patch('escalations/:id')
-  updateEscalation(@Param('id') id: string, @Body() dto: any, @CurrentUser() user: any) {
+  updateEscalation(
+    @Param('id') id: string,
+    @Body() dto: any,
+    @CurrentUser() user: any,
+  ) {
     return this.svc.updateEscalation(id, dto, user);
   }
 

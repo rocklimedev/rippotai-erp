@@ -7,7 +7,14 @@ export class CreateDocumentVersionDto {
   version?: string;
 
   @IsOptional()
-  @IsIn(['draft', 'submitted', 'under_review', 'approved', 'rejected', 'archived'])
+  @IsIn([
+    'draft',
+    'submitted',
+    'under_review',
+    'approved',
+    'rejected',
+    'archived',
+  ])
   status?: string;
 
   @IsOptional()

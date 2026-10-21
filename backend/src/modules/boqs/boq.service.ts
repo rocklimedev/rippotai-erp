@@ -133,7 +133,9 @@ export class BoqService {
       attributes: {
         include: [
           [
-            literal('(SELECT COUNT(*) FROM boq_categories bc WHERE bc.boq_id = `Boq`.`id`)'),
+            literal(
+              '(SELECT COUNT(*) FROM boq_categories bc WHERE bc.boq_id = `Boq`.`id`)',
+            ),
             'category_count',
           ],
           [
@@ -347,12 +349,32 @@ export class BoqService {
       }
 
       if (!dto.source_template_id && this.sharedProjectData) {
-        const context = await this.sharedProjectData.prefill(dto.project_id, 'boq', t);
+        const context = await this.sharedProjectData.prefill(
+          dto.project_id,
+          'boq',
+          t,
+        );
         const groups = boqCategoriesFromPrefill(context.documents);
         for (const [categoryIndex, group] of groups.entries()) {
-          const category = await this.categoryModel.create({ boq_id: boq.id, name: group.name, sort_order: categoryIndex } as BoqCategory, { transaction: t });
+          const category = await this.categoryModel.create(
+            {
+              boq_id: boq.id,
+              name: group.name,
+              sort_order: categoryIndex,
+            } as BoqCategory,
+            { transaction: t },
+          );
           for (const [itemIndex, item] of group.items.entries()) {
-            await this.itemModel.create({ ...item, boq_category_id: category.id, library_item_id: null, hidden: false, sort_order: itemIndex } as any, { transaction: t });
+            await this.itemModel.create(
+              {
+                ...item,
+                boq_category_id: category.id,
+                library_item_id: null,
+                hidden: false,
+                sort_order: itemIndex,
+              },
+              { transaction: t },
+            );
           }
         }
       }
@@ -1008,11 +1030,22 @@ export class BoqService {
       if (dto.include_items !== false) sourceItems = templateCat.items ?? [];
     }
 
-    if (!name?.trim()) throw new BadRequestException('Category name is required');
-    const reusable = await this.library.categoryItems(name.trim(), dto.library_category_id);
+    if (!name?.trim())
+      throw new BadRequestException('Category name is required');
+    const reusable = await this.library.categoryItems(
+      name.trim(),
+      dto.library_category_id,
+    );
     name = reusable.category.name;
-    const known = new Set(sourceItems.map((item) => item.name.trim().toLowerCase()));
-    const libraryItems = dto.include_items === false ? [] : reusable.items.filter((item) => !known.has(item.name.trim().toLowerCase()));
+    const known = new Set(
+      sourceItems.map((item) => item.name.trim().toLowerCase()),
+    );
+    const libraryItems =
+      dto.include_items === false
+        ? []
+        : reusable.items.filter(
+            (item) => !known.has(item.name.trim().toLowerCase()),
+          );
 
     const category = await this.sequelize.transaction(async (t) => {
       const cat = await this.categoryModel.create(
@@ -1043,13 +1076,25 @@ export class BoqService {
       }
 
       for (const [idx, item] of libraryItems.entries()) {
-        await this.itemModel.create({ boq_category_id: cat.id, library_item_id: item.id,
-          name: item.name, unit_id: item.unit_id, unit: item.unit, quantity: 1,
-          rate: Number(item.default_rate), amount: Number(item.default_rate), calc_type: 'M',
-          notes: item.notes, sort_order: sourceItems.length + idx,
-        } as BoqItem, { transaction: t });
+        await this.itemModel.create(
+          {
+            boq_category_id: cat.id,
+            library_item_id: item.id,
+            name: item.name,
+            unit_id: item.unit_id,
+            unit: item.unit,
+            quantity: 1,
+            rate: Number(item.default_rate),
+            amount: Number(item.default_rate),
+            calc_type: 'M',
+            notes: item.notes,
+            sort_order: sourceItems.length + idx,
+          } as BoqItem,
+          { transaction: t },
+        );
       }
-      if (sourceItems.length || libraryItems.length) await this.recomputeTotal(boqId, t);
+      if (sourceItems.length || libraryItems.length)
+        await this.recomputeTotal(boqId, t);
       return cat;
     });
 
@@ -1105,27 +1150,33 @@ export class BoqService {
     const rate = dto.rate ?? 0;
     const calcType = dto.calc_type ?? 'M';
 
-    if (!dto.name?.trim()) throw new BadRequestException('Item name is required');
-    const lastOrder = await this.itemModel.max('sort_order', { where: { boq_category_id: category.id } });
+    if (!dto.name?.trim())
+      throw new BadRequestException('Item name is required');
+    const lastOrder = await this.itemModel.max('sort_order', {
+      where: { boq_category_id: category.id },
+    });
     const item = await this.sequelize.transaction(async (transaction) => {
-    const row = await this.itemModel.create({
-      boq_category_id: category.id,
-      library_item_id: dto.library_item_id ?? null,
-      name: dto.name ?? '',
-      unit_id: dto.unit_id ?? null,
-      unit: dto.unit ?? null,
-      quantity,
-      rate,
-      amount: calcType === 'L' ? (dto.amount ?? 0) : quantity * rate,
-      calc_type: calcType,
-      location: dto.location ?? null,
-      detail: dto.detail ?? null,
-      notes: dto.notes ?? null,
-      sort_order: dto.sort_order ?? (Number(lastOrder ?? -1) + 1),
-    } as BoqItem, { transaction });
-    await this.library.saveBoqItem(row, category.name, transaction);
-    await this.recomputeTotal(boqId, transaction);
-    return row;
+      const row = await this.itemModel.create(
+        {
+          boq_category_id: category.id,
+          library_item_id: dto.library_item_id ?? null,
+          name: dto.name ?? '',
+          unit_id: dto.unit_id ?? null,
+          unit: dto.unit ?? null,
+          quantity,
+          rate,
+          amount: calcType === 'L' ? (dto.amount ?? 0) : quantity * rate,
+          calc_type: calcType,
+          location: dto.location ?? null,
+          detail: dto.detail ?? null,
+          notes: dto.notes ?? null,
+          sort_order: dto.sort_order ?? Number(lastOrder ?? -1) + 1,
+        } as BoqItem,
+        { transaction },
+      );
+      await this.library.saveBoqItem(row, category.name, transaction);
+      await this.recomputeTotal(boqId, transaction);
+      return row;
     });
 
     await this.activity.log({
@@ -1167,20 +1218,32 @@ export class BoqService {
       dto.boq_category_id !== undefined &&
       dto.boq_category_id !== item.boq_category_id;
 
-    if (dto.name !== undefined && !dto.name.trim()) throw new BadRequestException('Item name is required');
+    if (dto.name !== undefined && !dto.name.trim())
+      throw new BadRequestException('Item name is required');
     await this.sequelize.transaction(async (transaction) => {
-    await item.update({
-      ...dto,
-      quantity,
-      rate,
-      calc_type: calcType,
-      amount: calcType === 'L' ? (dto.amount ?? item.amount) : quantity * rate,
-    }, { transaction });
-    if (['name', 'unit', 'unit_id', 'rate', 'notes', 'boq_category_id'].some((field) => field in dto)) {
-      const category = await this.getCategoryOrThrow(boqId, item.boq_category_id);
-      await this.library.saveBoqItem(item, category.name, transaction);
-    }
-    await this.recomputeTotal(boqId, transaction);
+      await item.update(
+        {
+          ...dto,
+          quantity,
+          rate,
+          calc_type: calcType,
+          amount:
+            calcType === 'L' ? (dto.amount ?? item.amount) : quantity * rate,
+        },
+        { transaction },
+      );
+      if (
+        ['name', 'unit', 'unit_id', 'rate', 'notes', 'boq_category_id'].some(
+          (field) => field in dto,
+        )
+      ) {
+        const category = await this.getCategoryOrThrow(
+          boqId,
+          item.boq_category_id,
+        );
+        await this.library.saveBoqItem(item, category.name, transaction);
+      }
+      await this.recomputeTotal(boqId, transaction);
     });
 
     if (onlyTogglingVisibility) {

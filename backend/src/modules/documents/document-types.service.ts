@@ -140,11 +140,11 @@ export class DocumentTypesService {
           ...dto,
           phaseCode: projectPhase.phase_code,
           phaseName: projectPhase.title,
-        } as any);
+        });
       } else {
         await documentType.update({
           ...dto,
-        } as any);
+        });
       }
 
       return await this.findOne(id);

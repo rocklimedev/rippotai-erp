@@ -1,4 +1,9 @@
-import { IsBooleanString, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsBooleanString,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class UploadFileDto {
   @IsString()

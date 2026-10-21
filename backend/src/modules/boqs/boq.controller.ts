@@ -117,7 +117,11 @@ export class BoqController {
     @Query('status') status?: string,
     @Query('q') q?: string,
   ) {
-    return this.boqService.findAll(projectId, status || undefined, q || undefined);
+    return this.boqService.findAll(
+      projectId,
+      status || undefined,
+      q || undefined,
+    );
   }
 
   // ==================== VERSION & WORKFLOW ROUTES (more specific first) ====================

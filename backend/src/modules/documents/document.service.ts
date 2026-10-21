@@ -128,7 +128,10 @@ export class DocumentsService {
       if (dto.documentTypeId && !documentType) {
         throw new NotFoundException('Document type not found');
       }
-      status = documentType && !documentType.requiresApproval ? 'approved' : 'submitted';
+      status =
+        documentType && !documentType.requiresApproval
+          ? 'approved'
+          : 'submitted';
     }
 
     if (file) {
@@ -233,7 +236,7 @@ export class DocumentsService {
       isLocked: false,
       lockedBy: null,
       lockedAt: null,
-    } as any);
+    });
   }
 
   // ============================================================

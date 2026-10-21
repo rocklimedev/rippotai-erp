@@ -58,7 +58,14 @@ export class CreateDrawingDto {
   issuePurpose?: string;
 
   @IsOptional()
-  @IsIn(['Draft', 'For Review', 'Approved', 'For Construction', 'Rejected', 'Superseded'])
+  @IsIn([
+    'Draft',
+    'For Review',
+    'Approved',
+    'For Construction',
+    'Rejected',
+    'Superseded',
+  ])
   status?: string;
 
   @IsOptional()

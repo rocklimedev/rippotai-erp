@@ -35,12 +35,10 @@ describe('shortlist packages', () => {
   let service: ShortlistPackageService;
   beforeEach(() => {
     packages = {
-      findByPk: jest
-        .fn()
-        .mockResolvedValue({
-          shortlist_type: ShortlistType.VENDOR,
-          entries: [assignment],
-        }),
+      findByPk: jest.fn().mockResolvedValue({
+        shortlist_type: ShortlistType.VENDOR,
+        entries: [assignment],
+      }),
       create: jest.fn(),
     };
     service = new ShortlistPackageService(packages, {

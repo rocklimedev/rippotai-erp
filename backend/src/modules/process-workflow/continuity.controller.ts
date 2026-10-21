@@ -1,5 +1,12 @@
 import { RequirePermission } from '@/common/decorator/require-permission.decorator';
-import { Controller, Get, Post, Body, Param, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ContinuityService } from './continuity.service';
 import { CreateContinuityRoleDto } from './dto/tracking.dto';
 

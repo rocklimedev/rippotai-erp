@@ -19,15 +19,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     const isHttp = exception instanceof HttpException;
     const status = isHttp
-      ? (exception as HttpException).getStatus()
+      ? exception.getStatus()
       : HttpStatus.INTERNAL_SERVER_ERROR;
-    const body = isHttp ? (exception as HttpException).getResponse() : null;
+    const body = isHttp ? exception.getResponse() : null;
 
     const message =
       body && typeof body === 'object' && 'message' in (body as any)
         ? (body as any).message
         : isHttp
-          ? (exception as HttpException).message
+          ? exception.message
           : 'Internal server error';
 
     if (!isHttp) {

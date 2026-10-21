@@ -32,7 +32,10 @@ export class RolePermissionsController {
   @RequirePermission('role-permissions:assign')
   @Post('packages/apply')
   applyPackage(@Body() dto: ApplyPermissionPackageDto) {
-    return this.rolePermissionsService.applyPackage(dto.role_id, dto.package_id);
+    return this.rolePermissionsService.applyPackage(
+      dto.role_id,
+      dto.package_id,
+    );
   }
 
   @RequirePermission('role-permissions:grant')

@@ -52,7 +52,8 @@ export class DeliveryChallanController {
   }
   // ============================================================ // DELETE // ============================================================
   @RequirePermission('delivery-challans:delete')
-  @Delete(':id') remove(@Param('id') id: string) {
+  @Delete(':id')
+  remove(@Param('id') id: string) {
     return this.deliveryChallanService.remove(id);
   }
   @RequirePermission('delivery-challans:read')

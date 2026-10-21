@@ -44,7 +44,7 @@ export class DocumentRegisterService {
       fileUrl: dto.fileUrl ?? record.fileUrl,
       submittedBy: dto.submittedBy ?? record.submittedBy,
       version: dto.version ?? record.version,
-    } as any);
+    });
 
     return record;
   }

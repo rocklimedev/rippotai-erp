@@ -203,7 +203,12 @@ export class ProjectShortlistService {
       where,
 
       include: [
-        { model: Project, as: 'project', attributes: ['id', 'name', 'slug'], required: false },
+        {
+          model: Project,
+          as: 'project',
+          attributes: ['id', 'name', 'slug'],
+          required: false,
+        },
         {
           model: ShortlistEntry,
           as: 'entries',
@@ -406,10 +411,19 @@ export class ProjectShortlistService {
           );
           const entry = candidates.sort((a, b) => {
             const assigned = (item: ShortlistEntry) =>
-              Number(Boolean(item.vendor_id || item.material_id || item.name_of_vendor?.trim()));
-            return assigned(b) - assigned(a) ||
-              new Date(b.updated_at ?? 0).getTime() - new Date(a.updated_at ?? 0).getTime() ||
-              String(a.id).localeCompare(String(b.id));
+              Number(
+                Boolean(
+                  item.vendor_id ||
+                  item.material_id ||
+                  item.name_of_vendor?.trim(),
+                ),
+              );
+            return (
+              assigned(b) - assigned(a) ||
+              new Date(b.updated_at ?? 0).getTime() -
+                new Date(a.updated_at ?? 0).getTime() ||
+              String(a.id).localeCompare(String(b.id))
+            );
           })[0];
 
           return {
@@ -465,8 +479,11 @@ export class ProjectShortlistService {
       is_locked: shortlist.is_locked,
 
       grid,
-      unplaced_entries: entries.filter(entry =>
-        !trades.includes(entry.trade) || !workingTypes.includes(entry.working_type)),
+      unplaced_entries: entries.filter(
+        (entry) =>
+          !trades.includes(entry.trade) ||
+          !workingTypes.includes(entry.working_type),
+      ),
     };
   }
 }

@@ -8,21 +8,27 @@ import {
 } from 'class-validator';
 
 export class CreateMaterialRateSheetDto {
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   materialRequirementId: string;
 
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   vendorName: string;
 
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   unit: string;
 
-  @IsNumber() @Min(0)
+  @IsNumber()
+  @Min(0)
   unitRate: number;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   currency?: string;
 
-  @IsOptional() @IsDateString()
+  @IsOptional()
+  @IsDateString()
   validTill?: string;
 }

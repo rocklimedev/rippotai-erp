@@ -2,12 +2,15 @@ import {
   BadRequestException,
   Injectable,
   Logger,
+  Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import SftpClient from 'ssh2-sftp-client';
 import { randomUUID } from 'crypto';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import { NasService } from './nas.service';
+import { NasStagingService } from './nas-staging.service';
 import {
   FileScope,
   fileScope,
@@ -24,6 +27,11 @@ export interface CdnUploadResult {
 
 @Injectable()
 export class CdnService {
+  constructor(
+    @Optional() private readonly nas: NasService = new NasService(),
+    @Optional()
+    private readonly staging: NasStagingService = new NasStagingService(),
+  ) {}
   private readonly logger = new Logger(CdnService.name);
 
   private publicRoot() {
@@ -108,13 +116,39 @@ export class CdnService {
   ): Promise<CdnUploadResult> {
     const ext = path.extname(originalname);
     const safeExt = /^\.[a-zA-Z0-9]{1,16}$/.test(ext) ? ext : '';
-    const filename = `private-${scope}-${randomUUID()}${safeExt}`;
-    await this.put(buffer, filename, privateRoot(), true);
+    const useNas = this.nas.shouldStore(buffer.length);
+    if (
+      useNas &&
+      process.env.CDN_HOST &&
+      process.env.CDN_PRIVATE_PROXY_ENABLED !== 'true'
+    ) {
+      throw new ServiceUnavailableException(
+        'Configure the CDN signed-file proxy before enabling NAS uploads',
+      );
+    }
+    const filename = `private-${scope}-${useNas ? 'nas-' : ''}${randomUUID()}${safeExt}`;
+    if (useNas) {
+      if (this.staging.alwaysStage())
+        await this.staging.stage(filename, buffer);
+      else {
+        try {
+          await this.nas.put(filename, buffer);
+        } catch (error) {
+          if (!this.staging.enabled()) throw error;
+          await this.staging.stage(filename, buffer);
+          this.logger.warn('NAS upload staged on CDN for later transfer');
+        }
+      }
+    } else await this.put(buffer, filename, privateRoot(), true);
     return { filename, url: privateFileUrl(filename) };
   }
 
   async downloadFile(storageFilename: string): Promise<Buffer> {
     validateStorageKey(storageFilename);
+    if (fileScope(storageFilename) && storageFilename.includes('-nas-')) {
+      const staged = await this.staging.read(storageFilename);
+      return staged ?? this.nas.get(storageFilename);
+    }
     const root = fileScope(storageFilename) ? privateRoot() : this.publicRoot();
     if (!process.env.CDN_HOST)
       return fs.readFile(path.join(root, storageFilename));
@@ -132,6 +166,11 @@ export class CdnService {
 
   async deleteFile(storageFilename: string): Promise<void> {
     validateStorageKey(storageFilename);
+    if (fileScope(storageFilename) && storageFilename.includes('-nas-')) {
+      if (this.staging.configured())
+        return this.staging.requestDelete(storageFilename);
+      return this.nas.delete(storageFilename);
+    }
     const root = fileScope(storageFilename) ? privateRoot() : this.publicRoot();
     if (!process.env.CDN_HOST) {
       await fs

@@ -5,24 +5,42 @@ import { ZohoAuthService } from '../auth/zoho-auth.service';
 describe('Zoho reminder API contracts', () => {
   it('loads active users from the selected project in the connected account region', async () => {
     const http: any = { get: jest.fn(async () => ({ users: [] })) };
-    const auth: any = { getApiDomain: jest.fn(async () => 'https://www.zohoapis.in') };
+    const auth: any = {
+      getApiDomain: jest.fn(async () => 'https://www.zohoapis.in'),
+    };
     const tasks = new ZohoTasksService(http, auth);
     await tasks.listProjectUsers('user', 'portal', 'project');
-    expect(http.get).toHaveBeenCalledWith('user', '/restapi/portal/portal/projects/project/users/', {
-      baseURL: 'https://projectsapi.zoho.in', params: { user_type: 'active' },
-    });
+    expect(http.get).toHaveBeenCalledWith(
+      'user',
+      '/restapi/portal/portal/projects/project/users/',
+      {
+        baseURL: 'https://projectsapi.zoho.in',
+        params: { user_type: 'active' },
+      },
+    );
   });
 
   it('clears stale dates and reminders on updates without sending update-only flags on creation', async () => {
     const http: any = { post: jest.fn(async () => ({})) };
-    const auth: any = { getApiDomain: jest.fn(async () => 'https://www.zohoapis.in') };
+    const auth: any = {
+      getApiDomain: jest.fn(async () => 'https://www.zohoapis.in'),
+    };
     const tasks = new ZohoTasksService(http, auth);
-    const payload = { title: 'Undated task', clear_date: true, clear_reminders: true };
-    await tasks.updateTask('user', 'portal', 'project', 'task', payload as any);
-    expect(http.post.mock.calls[0][2].params).toMatchObject({ clear_date: true, reminder_string: '{"reminder":[]}' });
-    await tasks.createTask('user', 'portal', 'project', payload as any);
+    const payload = {
+      title: 'Undated task',
+      clear_date: true,
+      clear_reminders: true,
+    };
+    await tasks.updateTask('user', 'portal', 'project', 'task', payload);
+    expect(http.post.mock.calls[0][2].params).toMatchObject({
+      clear_date: true,
+      reminder_string: '{"reminder":[]}',
+    });
+    await tasks.createTask('user', 'portal', 'project', payload);
     expect(http.post.mock.calls[1][2].params).not.toHaveProperty('clear_date');
-    expect(http.post.mock.calls[1][2].params).not.toHaveProperty('reminder_string');
+    expect(http.post.mock.calls[1][2].params).not.toHaveProperty(
+      'reminder_string',
+    );
   });
   it('uses the account region and fresh etag for calendar updates', async () => {
     const http: any = {

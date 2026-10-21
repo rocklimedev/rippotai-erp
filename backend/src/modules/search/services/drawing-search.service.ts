@@ -23,7 +23,9 @@ export class DrawingSearchService {
   private toDocument(d: any): SearchableDocument {
     const number = d.drawingNumber ?? d.drawing_number ?? '';
     const title = d.title ?? number ?? 'Untitled Drawing';
-    const subtitle = [d.discipline, d.status, number].filter(Boolean).join(' · ');
+    const subtitle = [d.discipline, d.status, number]
+      .filter(Boolean)
+      .join(' · ');
 
     return {
       entity_type: 'drawing',

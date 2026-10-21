@@ -68,9 +68,14 @@ export class ZohoTasksService {
     this.validateUserId(userId);
     this.validatePortalId(portalId);
     this.validateProjectId(projectId);
-    return this.zohoHttpService.get(userId,
+    return this.zohoHttpService.get(
+      userId,
       `${this.baseUrl}/${encodeURIComponent(portalId)}/projects/${encodeURIComponent(projectId)}/users/`,
-      { baseURL: await this.getProjectsBaseUrl(userId), params: { user_type: 'active' } });
+      {
+        baseURL: await this.getProjectsBaseUrl(userId),
+        params: { user_type: 'active' },
+      },
+    );
   }
 
   async createProject(

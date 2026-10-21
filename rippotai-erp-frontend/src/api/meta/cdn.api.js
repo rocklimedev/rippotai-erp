@@ -2,6 +2,10 @@ import { baseApi } from "../../store/baseApi";
 
 export const cdnApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    nasStatus: builder.query({
+      query: () => "/nas/status",
+      keepUnusedDataFor: 0,
+    }),
     uploadFileToCdn: builder.mutation({
       query: (file) => {
         const formData = new FormData();
@@ -19,4 +23,4 @@ export const cdnApi = baseApi.injectEndpoints({
   overrideExisting: false,
 });
 
-export const { useUploadFileToCdnMutation } = cdnApi;
+export const { useUploadFileToCdnMutation, useNasStatusQuery } = cdnApi;

@@ -20,25 +20,26 @@ import { SaveVendorRateComparisonDto } from '../dto/vendor-rate-comparison.dto';
 export class VendorRateComparisonController {
   constructor(private readonly service: VendorRateComparisonService) {}
   @RequirePermission('vendor-rate-comparisons:read')
-  @Get() list(
+  @Get()
+  list(
     @Query('project_id', new ParseUUIDPipe({ optional: true }))
     projectId?: string,
   ) {
     return this.service.list(projectId);
   }
   @RequirePermission('vendor-rate-comparisons:read')
-  @Get(':id') get(@Param('id', ParseUUIDPipe) id: string) {
+  @Get(':id')
+  get(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.get(id);
   }
   @RequirePermission('vendor-rate-comparisons:create')
-  @Post() create(
-    @Body() dto: SaveVendorRateComparisonDto,
-    @CurrentUser() user: any,
-  ) {
+  @Post()
+  create(@Body() dto: SaveVendorRateComparisonDto, @CurrentUser() user: any) {
     return this.service.create(dto, user.id);
   }
   @RequirePermission('vendor-rate-comparisons:update')
-  @Put(':id') update(
+  @Put(':id')
+  update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: SaveVendorRateComparisonDto,
   ) {

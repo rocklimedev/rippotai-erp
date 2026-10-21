@@ -18,7 +18,8 @@ export class AdminDprDocumentService {
     user?: { id?: string; name?: string },
     operationId?: string,
   ) {
-    if (operationId && await this.model.findByPk(operationId)) return this.findOne(operationId);
+    if (operationId && (await this.model.findByPk(operationId)))
+      return this.findOne(operationId);
     const { reports, logs } = await this.exporter.capture(query);
     const excel_data = Buffer.from(
       await this.exporter.buildWorkbook(reports, logs),

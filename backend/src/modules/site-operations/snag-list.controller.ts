@@ -36,11 +36,13 @@ export class SnagListController {
   ) {}
   @AsyncExport('snag-create')
   @RequirePermission('site-ops-snag-lists:create')
-  @Post() create(@Body() dto: CreateSnagListDto, @Req() req: any) {
+  @Post()
+  create(@Body() dto: CreateSnagListDto, @Req() req: any) {
     return this.service.create(dto, req.user?.id, req.exportOperationId);
   }
   @RequirePermission('site-ops-snag-lists:read')
-  @Get() list(@Query() query: QuerySnagListDto) {
+  @Get()
+  list(@Query() query: QuerySnagListDto) {
     return this.service.list(query);
   }
   @RequirePermission('site-ops-snag-lists:upload')
@@ -57,10 +59,8 @@ export class SnagListController {
     return this.cdn.uploadFile(file, 'snags');
   }
   @RequirePermission('site-ops-snag-lists:export')
-  @Get(':id/export') async download(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Res() res: Response,
-  ) {
+  @Get(':id/export')
+  async download(@Param('id', ParseUUIDPipe) id: string, @Res() res: Response) {
     const row = await this.service.download(id);
     res.setHeader(
       'Content-Type',
@@ -73,12 +73,14 @@ export class SnagListController {
     res.send(row.excel_data);
   }
   @RequirePermission('site-ops-snag-lists:read')
-  @Get(':id') findOne(@Param('id', ParseUUIDPipe) id: string) {
+  @Get(':id')
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.findOne(id);
   }
   @AsyncExport('snag-update')
   @RequirePermission('site-ops-snag-lists:update')
-  @Patch(':id') update(
+  @Patch(':id')
+  update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateSnagListDto,
     @Req() req: any,

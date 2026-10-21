@@ -55,8 +55,7 @@ export class MicrosoftOneDriveService {
     } catch (e) {
       throw new PreconditionFailedException({
         code: 'ONEDRIVE_NOT_CONNECTED',
-        message:
-          (e as Error)?.message || 'Microsoft account is not connected',
+        message: (e as Error)?.message || 'Microsoft account is not connected',
       });
     }
   }

@@ -94,13 +94,13 @@ export class AdminDailyReportService {
 
   async update(id: string, dto: UpdateAdminDailyReportDto, userId?: string) {
     const row = await this.findOne(id);
-    await row.update({ ...dto, updated_by: userId ?? null } as any);
+    await row.update({ ...dto, updated_by: userId ?? null });
     return this.findOne(id);
   }
 
   async remove(id: string, userId?: string) {
     const row = await this.findOne(id);
-    await row.update({ deleted_by: userId ?? null } as any);
+    await row.update({ deleted_by: userId ?? null });
     await row.destroy();
     return { message: 'Daily report deleted' };
   }

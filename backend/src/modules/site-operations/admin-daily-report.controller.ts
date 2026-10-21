@@ -58,7 +58,11 @@ export class AdminDailyReportController {
     @Req() req: any,
     @Res() res: Response,
   ) {
-    const saved = await this.documents.create(query, req.user, req.exportOperationId);
+    const saved = await this.documents.create(
+      query,
+      req.user,
+      req.exportOperationId,
+    );
     const row = await this.documents.download(saved.id);
     res.setHeader(
       'Content-Type',

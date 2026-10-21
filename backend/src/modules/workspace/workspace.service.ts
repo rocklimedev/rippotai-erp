@@ -4,13 +4,44 @@ import { QueryTypes, Sequelize } from 'sequelize';
 
 /** app key (frontend appNav) -> activity_logs.entity_type values (case-insensitive) */
 export const APP_ENTITY_TYPES: Record<string, string[]> = {
-  projects: ['project', 'project_gate', 'gate_condition', 'milestone', 'document', 'project_member'],
+  projects: [
+    'project',
+    'project_gate',
+    'gate_condition',
+    'milestone',
+    'document',
+    'project_member',
+  ],
   design_studio: ['drawing'],
-  crm: ['lead', 'client', 'site_recce', 'brief', 'project_brief', 'plan_of_action', 'scope_of_work'],
+  crm: [
+    'lead',
+    'client',
+    'site_recce',
+    'brief',
+    'project_brief',
+    'plan_of_action',
+    'scope_of_work',
+  ],
   ledger: ['boq', 'budget_estimate', 'payment_schedule', 'invoice', 'payment'],
-  procurement: ['quotation', 'vendor', 'work_order', 'delivery_challan', 'purchase_order', 'material', 'material_requirement'],
+  procurement: [
+    'quotation',
+    'vendor',
+    'work_order',
+    'delivery_challan',
+    'purchase_order',
+    'material',
+    'material_requirement',
+  ],
   inventory: ['inventory', 'inventory_transaction', 'stock'],
-  siteOperations: ['daily_report', 'daily_site_report', 'site_visit', 'qc', 'qc_sign_off', 'rfi', 'mockup'],
+  siteOperations: [
+    'daily_report',
+    'daily_site_report',
+    'site_visit',
+    'qc',
+    'qc_sign_off',
+    'rfi',
+    'mockup',
+  ],
   tasks: ['task'],
   calendar: ['calendar_event'],
   adminConsole: ['user', 'role', 'settings', 'permission'],
@@ -46,7 +77,9 @@ export class WorkspaceService {
   }
 
   async clientOverview(id: string) {
-    const [client] = await this.q(`SELECT * FROM clients WHERE id = :id`, { id });
+    const [client] = await this.q(`SELECT * FROM clients WHERE id = :id`, {
+      id,
+    });
     if (!client) throw new NotFoundException('Client not found');
     const projects = await this.q(
       `SELECT id, name, site_location, status, priority, current_phase, progress_pct,
@@ -56,7 +89,15 @@ export class WorkspaceService {
     );
     const ids = projects.map((p: any) => p.id);
     if (!ids.length) {
-      return { client, projects, documents: [], payment_schedules: [], milestones: [], quotations: [], notes: await this.notesFor(id, ids) };
+      return {
+        client,
+        projects,
+        documents: [],
+        payment_schedules: [],
+        milestones: [],
+        quotations: [],
+        notes: await this.notesFor(id, ids),
+      };
     }
     const documents = await this.q(
       `SELECT d.id, d.project_id, d.title, d.category, d.doc_type, d.doc_no, d.status, d.mime, d.url,
@@ -90,7 +131,15 @@ export class WorkspaceService {
        WHERE q.project_id IN (:ids) AND q.deleted_at IS NULL ORDER BY q.created_at DESC LIMIT 50`,
       { ids },
     );
-    return { client, projects, documents, payment_schedules, milestones, quotations, notes: await this.notesFor(id, ids) };
+    return {
+      client,
+      projects,
+      documents,
+      payment_schedules,
+      milestones,
+      quotations,
+      notes: await this.notesFor(id, ids),
+    };
   }
 
   private async notesFor(clientId: string, projectIds: string[]) {
@@ -108,10 +157,23 @@ export class WorkspaceService {
 
   /* ------------------------------------------------------------ calendar */
 
-  async calendarFeed({ from, to, mine, user }: { from?: string; to?: string; mine?: boolean; user?: any }) {
+  async calendarFeed({
+    from,
+    to,
+    mine,
+    user,
+  }: {
+    from?: string;
+    to?: string;
+    mine?: boolean;
+    user?: any;
+  }) {
     const now = new Date();
     const start = toDate(from, new Date(now.getFullYear(), now.getMonth(), 1));
-    const end = toDate(to, new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59));
+    const end = toDate(
+      to,
+      new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59),
+    );
     const r = { start, end, uid: user?.id ?? '', email: user?.email ?? '' };
     const items: any[] = [];
 
@@ -125,8 +187,17 @@ export class WorkspaceService {
       r,
     );
     for (const e of events)
-      items.push({ ...e, key: `event:${e.id}`, source: 'event', kind: e.type, date: e.starts_at, end: e.ends_at, editable: true,
-        attendees: typeof e.attendees === 'string' ? safeJson(e.attendees) : e.attendees });
+      items.push({
+        ...e,
+        key: `event:${e.id}`,
+        source: 'event',
+        kind: e.type,
+        date: e.starts_at,
+        end: e.ends_at,
+        editable: true,
+        attendees:
+          typeof e.attendees === 'string' ? safeJson(e.attendees) : e.attendees,
+      });
 
     const tasks = await this.q(
       `SELECT t.id, t.title, t.status, t.priority, t.due_date, t.project_id, p.name AS project_name,
@@ -137,8 +208,20 @@ export class WorkspaceService {
       r,
     );
     for (const t of tasks)
-      items.push({ key: `task:${t.id}`, id: t.id, source: 'task', kind: 'task', title: t.title, date: t.due_date, all_day: true,
-        status: t.status, priority: t.priority, project_id: t.project_id, project_name: t.project_name, assignee_name: t.assignee_name });
+      items.push({
+        key: `task:${t.id}`,
+        id: t.id,
+        source: 'task',
+        kind: 'task',
+        title: t.title,
+        date: t.due_date,
+        all_day: true,
+        status: t.status,
+        priority: t.priority,
+        project_id: t.project_id,
+        project_name: t.project_name,
+        assignee_name: t.assignee_name,
+      });
 
     if (!mine) {
       const ms = await this.q(
@@ -148,8 +231,18 @@ export class WorkspaceService {
         r,
       );
       for (const m of ms)
-        items.push({ key: `milestone:${m.id}`, id: m.id, source: 'milestone', kind: 'milestone_due', title: m.title, date: m.due_date,
-          all_day: true, status: m.status, project_id: m.project_id, project_name: m.project_name });
+        items.push({
+          key: `milestone:${m.id}`,
+          id: m.id,
+          source: 'milestone',
+          kind: 'milestone_due',
+          title: m.title,
+          date: m.due_date,
+          all_day: true,
+          status: m.status,
+          project_id: m.project_id,
+          project_name: m.project_name,
+        });
 
       const pay = await this.q(
         `SELECT m.id, m.title, m.due_date, m.status, m.amount, s.project_id, p.name AS project_name
@@ -159,8 +252,19 @@ export class WorkspaceService {
         r,
       );
       for (const m of pay)
-        items.push({ key: `payment:${m.id}`, id: m.id, source: 'payment', kind: 'payment_due', title: `Payment: ${m.title}`, date: m.due_date,
-          all_day: true, status: m.status, amount: m.amount, project_id: m.project_id, project_name: m.project_name });
+        items.push({
+          key: `payment:${m.id}`,
+          id: m.id,
+          source: 'payment',
+          kind: 'payment_due',
+          title: `Payment: ${m.title}`,
+          date: m.due_date,
+          all_day: true,
+          status: m.status,
+          amount: m.amount,
+          project_id: m.project_id,
+          project_name: m.project_name,
+        });
 
       const qts = await this.q(
         `SELECT q.id, q.quotation_number, q.expiry_date, q.status, q.project_id, p.name AS project_name
@@ -169,8 +273,18 @@ export class WorkspaceService {
         r,
       );
       for (const x of qts)
-        items.push({ key: `quotation:${x.id}`, id: x.id, source: 'quotation', kind: 'quotation_deadline', title: `Quotation ${x.quotation_number} expires`,
-          date: x.expiry_date, all_day: true, status: x.status, project_id: x.project_id, project_name: x.project_name });
+        items.push({
+          key: `quotation:${x.id}`,
+          id: x.id,
+          source: 'quotation',
+          kind: 'quotation_deadline',
+          title: `Quotation ${x.quotation_number} expires`,
+          date: x.expiry_date,
+          all_day: true,
+          status: x.status,
+          project_id: x.project_id,
+          project_name: x.project_name,
+        });
 
       try {
         const visits = await this.q(
@@ -180,24 +294,46 @@ export class WorkspaceService {
           r,
         );
         for (const v of visits)
-          items.push({ key: `visit:${v.id}`, id: v.id, source: 'site_visit', kind: 'site_visit',
-            title: `Site visit — ${v.visitor_name}`, date: v.scheduled_date, all_day: true, status: v.status,
-            description: v.purpose, visitor_type: v.visitor_type, project_id: v.project_id, project_name: v.project_name });
+          items.push({
+            key: `visit:${v.id}`,
+            id: v.id,
+            source: 'site_visit',
+            kind: 'site_visit',
+            title: `Site visit — ${v.visitor_name}`,
+            date: v.scheduled_date,
+            all_day: true,
+            status: v.status,
+            description: v.purpose,
+            visitor_type: v.visitor_type,
+            project_id: v.project_id,
+            project_name: v.project_name,
+          });
       } catch {
         /* site ops tables optional */
       }
     }
 
-    items.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    items.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
     return { from: start, to: end, items };
   }
 
   /* ------------------------------------------------------------ site visits (list views) */
 
-  async visitAssignments({ projectId, status }: { projectId?: string; status?: string }) {
+  async visitAssignments({
+    projectId,
+    status,
+  }: {
+    projectId?: string;
+    status?: string;
+  }) {
     const where: string[] = ['1=1'];
     const r: any = {};
-    if (projectId) { where.push('va.project_id = :pid'); r.pid = String(projectId); }
+    if (projectId) {
+      where.push('va.project_id = :pid');
+      r.pid = String(projectId);
+    }
     if (status === 'active') where.push('va.is_active = 1');
     if (status === 'inactive') where.push('va.is_active = 0');
     const rows = await this.q(
@@ -219,10 +355,22 @@ export class WorkspaceService {
   async visitLog(q: any) {
     const where: string[] = ['1=1'];
     const r: any = {};
-    if (q.projectId) { where.push('l.project_id = :pid'); r.pid = String(q.projectId); }
-    if (q.status) { where.push('l.status = :st'); r.st = String(q.status).toUpperCase(); }
-    if (q.from) { where.push('l.scheduled_date >= :from'); r.from = q.from; }
-    if (q.to) { where.push('l.scheduled_date <= :to'); r.to = q.to; }
+    if (q.projectId) {
+      where.push('l.project_id = :pid');
+      r.pid = String(q.projectId);
+    }
+    if (q.status) {
+      where.push('l.status = :st');
+      r.st = String(q.status).toUpperCase();
+    }
+    if (q.from) {
+      where.push('l.scheduled_date >= :from');
+      r.from = q.from;
+    }
+    if (q.to) {
+      where.push('l.scheduled_date <= :to');
+      r.to = q.to;
+    }
     return this.q(
       `SELECT l.id, l.project_id AS projectId, p.name AS projectName, l.visit_assignment_id AS visitAssignmentId,
               l.visitor_type AS visitorType, l.visitor_name AS visitorName, l.scheduled_date AS scheduledDate,
@@ -286,14 +434,40 @@ export class WorkspaceService {
       where.push(`LOWER(a.entity_type) IN (:types)`);
       r.types = APP_ENTITY_TYPES[app];
     }
-    if (q.entity_type) { where.push('LOWER(a.entity_type) = LOWER(:et)'); r.et = q.entity_type; }
-    if (q.entity_id) { where.push('a.entity_id = :eid'); r.eid = q.entity_id; }
-    if (q.action) { where.push('a.action = :action'); r.action = q.action; }
-    if (q.verb) { where.push('a.action LIKE :verb'); r.verb = `%${q.verb}`; }
-    if (q.user_id) { where.push('a.user_id = :uid'); r.uid = q.user_id; }
-    if (q.q) { where.push('(a.entity_label LIKE :q OR a.user_email LIKE :q OR a.action LIKE :q)'); r.q = `%${q.q}%`; }
-    if (q.from) { where.push('a.created_at >= :from'); r.from = toDate(q.from); }
-    if (q.to) { where.push('a.created_at <= :to'); r.to = toDate(q.to); }
+    if (q.entity_type) {
+      where.push('LOWER(a.entity_type) = LOWER(:et)');
+      r.et = q.entity_type;
+    }
+    if (q.entity_id) {
+      where.push('a.entity_id = :eid');
+      r.eid = q.entity_id;
+    }
+    if (q.action) {
+      where.push('a.action = :action');
+      r.action = q.action;
+    }
+    if (q.verb) {
+      where.push('a.action LIKE :verb');
+      r.verb = `%${q.verb}`;
+    }
+    if (q.user_id) {
+      where.push('a.user_id = :uid');
+      r.uid = q.user_id;
+    }
+    if (q.q) {
+      where.push(
+        '(a.entity_label LIKE :q OR a.user_email LIKE :q OR a.action LIKE :q)',
+      );
+      r.q = `%${q.q}%`;
+    }
+    if (q.from) {
+      where.push('a.created_at >= :from');
+      r.from = toDate(q.from);
+    }
+    if (q.to) {
+      where.push('a.created_at <= :to');
+      r.to = toDate(q.to);
+    }
     const limit = Math.min(Number(q.limit) || 50, 200);
     const offset = Math.max(Number(q.offset) || 0, 0);
     const w = where.join(' AND ');
@@ -304,7 +478,10 @@ export class WorkspaceService {
        WHERE ${w} ORDER BY a.created_at DESC LIMIT ${limit} OFFSET ${offset}`,
       r,
     );
-    const [{ total }] = await this.q<{ total: number }>(`SELECT COUNT(*) AS total FROM activity_logs a WHERE ${w}`, r);
+    const [{ total }] = await this.q<{ total: number }>(
+      `SELECT COUNT(*) AS total FROM activity_logs a WHERE ${w}`,
+      r,
+    );
     const types = await this.q(
       `SELECT LOWER(entity_type) AS entity_type, COUNT(*) AS n FROM activity_logs a WHERE ${w} AND entity_type IS NOT NULL GROUP BY LOWER(entity_type) ORDER BY n DESC`,
       r,
@@ -314,7 +491,11 @@ export class WorkspaceService {
       limit,
       offset,
       entity_types: types,
-      rows: rows.map((x: any) => ({ ...x, changes: typeof x.changes === 'string' ? safeJson(x.changes) : x.changes })),
+      rows: rows.map((x: any) => ({
+        ...x,
+        changes:
+          typeof x.changes === 'string' ? safeJson(x.changes) : x.changes,
+      })),
     };
   }
 }

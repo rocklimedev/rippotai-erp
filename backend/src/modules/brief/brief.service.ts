@@ -494,36 +494,87 @@ export class ProjectBriefsService {
   // STATUS
   // =========================================================
 
-  async updateStatus(id: string, status: ProjectBriefStatus, userId: string, permissions: string[] = []) {
+  async updateStatus(
+    id: string,
+    status: ProjectBriefStatus,
+    userId: string,
+    permissions: string[] = [],
+  ) {
     await this.sequelize.transaction(async (transaction) => {
-      const brief = await this.projectBriefModel.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE });
+      const brief = await this.projectBriefModel.findByPk(id, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
       if (!brief) throw new NotFoundException('Project brief not found');
       const transitions: Record<ProjectBriefStatus, ProjectBriefStatus[]> = {
-        DRAFT: [ProjectBriefStatus.READY_FOR_DESIGN, ProjectBriefStatus.ARCHIVED],
-        READY_FOR_DESIGN: [ProjectBriefStatus.DRAFT, ProjectBriefStatus.SIGNED_OFF, ProjectBriefStatus.ARCHIVED],
+        DRAFT: [
+          ProjectBriefStatus.READY_FOR_DESIGN,
+          ProjectBriefStatus.ARCHIVED,
+        ],
+        READY_FOR_DESIGN: [
+          ProjectBriefStatus.DRAFT,
+          ProjectBriefStatus.SIGNED_OFF,
+          ProjectBriefStatus.ARCHIVED,
+        ],
         SIGNED_OFF: [ProjectBriefStatus.ARCHIVED],
         ARCHIVED: [],
       };
-      if (status === ProjectBriefStatus.SIGNED_OFF || brief.status === ProjectBriefStatus.SIGNED_OFF) {
-        if (!permissions.includes('documents:approve')) throw new ForbiddenException('Document approval permission is required');
+      if (
+        status === ProjectBriefStatus.SIGNED_OFF ||
+        brief.status === ProjectBriefStatus.SIGNED_OFF
+      ) {
+        if (!permissions.includes('documents:approve'))
+          throw new ForbiddenException(
+            'Document approval permission is required',
+          );
       }
       if (brief.status === status) return;
-      if (!transitions[brief.status]?.includes(status)) throw new BadRequestException('Invalid client brief status transition');
-      const latest = await this.projectBriefModel.findOne({ where: { projectId: brief.projectId }, order: [['version', 'DESC']], transaction });
-      if (status !== ProjectBriefStatus.ARCHIVED && latest?.id !== brief.id) throw new BadRequestException('Only the latest brief version can progress');
-      if (status === ProjectBriefStatus.SIGNED_OFF && !userId) throw new ForbiddenException('An authenticated approver is required');
-      await brief.update({ status, ...(status === ProjectBriefStatus.SIGNED_OFF ? { confirmedByUserId: userId, confirmedDate: new Date() } : {}) } as any, { transaction });
+      if (!transitions[brief.status]?.includes(status))
+        throw new BadRequestException('Invalid client brief status transition');
+      const latest = await this.projectBriefModel.findOne({
+        where: { projectId: brief.projectId },
+        order: [['version', 'DESC']],
+        transaction,
+      });
+      if (status !== ProjectBriefStatus.ARCHIVED && latest?.id !== brief.id)
+        throw new BadRequestException(
+          'Only the latest brief version can progress',
+        );
+      if (status === ProjectBriefStatus.SIGNED_OFF && !userId)
+        throw new ForbiddenException('An authenticated approver is required');
+      await brief.update(
+        {
+          status,
+          ...(status === ProjectBriefStatus.SIGNED_OFF
+            ? { confirmedByUserId: userId, confirmedDate: new Date() }
+            : {}),
+        } as any,
+        { transaction },
+      );
     });
     return this.findOne(id);
   }
 
   private assertEditable(brief: ProjectBrief) {
-    if (brief.status !== ProjectBriefStatus.DRAFT) throw new BadRequestException('Return the brief to Draft before editing, or create a new version of a signed-off brief');
+    if (brief.status !== ProjectBriefStatus.DRAFT)
+      throw new BadRequestException(
+        'Return the brief to Draft before editing, or create a new version of a signed-off brief',
+      );
   }
 
-  private validateEditablePayload(dto: UpdateProjectBriefDto, creating = false) {
-    if (dto.confirmedByUserId !== undefined || dto.confirmedDate !== undefined || (dto.status != null && (creating ? dto.status !== ProjectBriefStatus.DRAFT : true))) {
-      throw new BadRequestException('Use the status workflow to change approval; new briefs must be drafts');
+  private validateEditablePayload(
+    dto: UpdateProjectBriefDto,
+    creating = false,
+  ) {
+    if (
+      dto.confirmedByUserId !== undefined ||
+      dto.confirmedDate !== undefined ||
+      (dto.status != null &&
+        (creating ? dto.status !== ProjectBriefStatus.DRAFT : true))
+    ) {
+      throw new BadRequestException(
+        'Use the status workflow to change approval; new briefs must be drafts',
+      );
     }
   }
 

@@ -13,7 +13,8 @@ const parse = (v: any) => {
     return {};
   }
 };
-const n = (v: any) => (v === null || v === undefined || v === '' ? 0 : Number(v));
+const n = (v: any) =>
+  v === null || v === undefined || v === '' ? 0 : Number(v);
 
 /** Excel export of a vendor quotation (procurement → estimates → detail). */
 @Injectable()
@@ -43,7 +44,13 @@ export class QuotationExportService {
     wb.created = new Date();
     const ws = wb.addWorksheet('Quotation', {
       views: [{ state: 'frozen', ySplit: 8 }],
-      pageSetup: { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+      pageSetup: {
+        paperSize: 9,
+        orientation: 'portrait',
+        fitToPage: true,
+        fitToWidth: 1,
+        fitToHeight: 0,
+      },
     });
     ws.columns = [
       { key: 'sno', width: 7 },
@@ -65,7 +72,10 @@ export class QuotationExportService {
       ['Vendor', vendor.company_name || vendor.name || ''],
       ['Project', project.name || ''],
       ['Site', project.site_location || ''],
-      ['Date / valid till', [data.quotationDate, data.expiryDate].filter(Boolean).join(' → ')],
+      [
+        'Date / valid till',
+        [data.quotationDate, data.expiryDate].filter(Boolean).join(' → '),
+      ],
       ['Status', String(data.status || '').replace(/_/g, ' ')],
     ];
     meta.forEach(([k, v], i) => {
@@ -77,7 +87,15 @@ export class QuotationExportService {
     });
 
     const head = ws.getRow(8);
-    head.values = ['S.No', 'Particular', 'Unit', 'Qty', 'Rate (₹)', 'Amount (₹)', 'Remarks'];
+    head.values = [
+      'S.No',
+      'Particular',
+      'Unit',
+      'Qty',
+      'Rate (₹)',
+      'Amount (₹)',
+      'Remarks',
+    ];
     head.eachCell((c) => {
       c.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: green } };
@@ -96,17 +114,25 @@ export class QuotationExportService {
         null,
         it.remarks || '',
       ];
-      r.getCell(6).value = { formula: `D${first + i}*E${first + i}`, result: n(it.amount) } as any;
+      r.getCell(6).value = {
+        formula: `D${first + i}*E${first + i}`,
+        result: n(it.amount),
+      };
       r.getCell(2).alignment = { wrapText: true, vertical: 'top' };
     });
     const last = first + Math.max(items.length, 1) - 1;
     ['D', 'E', 'F'].forEach((col) => {
-      for (let r = first; r <= last; r++) ws.getCell(`${col}${r}`).numFmt = col === 'D' ? '#,##0.###' : '#,##,##0.00';
+      for (let r = first; r <= last; r++)
+        ws.getCell(`${col}${r}`).numFmt =
+          col === 'D' ? '#,##0.###' : '#,##,##0.00';
     });
 
     let row = last + 2;
     const totals: [string, any, boolean?][] = [
-      ['Subtotal', { formula: `SUM(F${first}:F${last})`, result: n(data.subtotal) }],
+      [
+        'Subtotal',
+        { formula: `SUM(F${first}:F${last})`, result: n(data.subtotal) },
+      ],
       ['Additional charges', n(data.additionalCharges)],
       ['Discount', -n(data.discount)],
       [`GST @ ${n(data.taxPercent)}%`, n(data.taxAmount)],
@@ -122,7 +148,11 @@ export class QuotationExportService {
       r.getCell(6).numFmt = '#,##,##0.00';
       if (grand) {
         r.font = { bold: true, color: { argb: green } };
-        r.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: sage } };
+        r.getCell(6).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: sage },
+        };
       }
     });
 
@@ -144,7 +174,10 @@ export class QuotationExportService {
     }
 
     const buffer = Buffer.from(await wb.xlsx.writeBuffer());
-    const safe = String(data.quotationNumber || id).replace(/[^A-Za-z0-9_-]+/g, '-');
+    const safe = String(data.quotationNumber || id).replace(
+      /[^A-Za-z0-9_-]+/g,
+      '-',
+    );
     return { buffer, filename: `Quotation_${safe}.xlsx` };
   }
 }

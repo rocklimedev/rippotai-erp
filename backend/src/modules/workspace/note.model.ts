@@ -34,7 +34,11 @@ export class Note extends Model {
   @Column({ type: DataType.CHAR(36), allowNull: true })
   declare client_id: string | null;
 
-  @Column({ type: DataType.STRING(40), allowNull: false, defaultValue: 'general' })
+  @Column({
+    type: DataType.STRING(40),
+    allowNull: false,
+    defaultValue: 'general',
+  })
   declare category: string;
 
   @Column({ type: DataType.STRING(20), allowNull: false, defaultValue: 'mute' })

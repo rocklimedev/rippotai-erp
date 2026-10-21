@@ -1,4 +1,9 @@
-import { IsString, IsNotEmpty, IsDateString, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsDateString,
+  IsOptional,
+} from 'class-validator';
 
 /**
  * Quotations may only be generated from an estimate that is already
@@ -6,15 +11,18 @@ import { IsString, IsNotEmpty, IsDateString, IsOptional } from 'class-validator'
  * identical to the trades estimate → approval → quotation rule.
  */
 export class CreateMaterialQuotationDto {
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   estimateId: string;
 
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   quotationNumber: string;
 
   @IsDateString()
   quotationDate: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   terms?: string;
 }

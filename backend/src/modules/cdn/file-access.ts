@@ -80,9 +80,10 @@ export function privateFileKey(reference: string): string | undefined {
 }
 
 export function fileScope(key: string): FileScope | undefined {
-  const match = /^private-([a-z]+)-[0-9a-f-]{36}(?:\.[a-zA-Z0-9]{1,16})?$/.exec(
-    key,
-  );
+  const match =
+    /^private-([a-z]+)-(?:nas-)?[0-9a-f-]{36}(?:\.[a-zA-Z0-9]{1,16})?$/.exec(
+      key,
+    );
   return match && Object.prototype.hasOwnProperty.call(FILE_SCOPES, match[1])
     ? (match[1] as FileScope)
     : undefined;

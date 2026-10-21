@@ -20,7 +20,10 @@ export class WorkDriveController {
   @RequirePermission('zoho-workdrive:upload')
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  async upload(@UploadedFile() file: Express.Multer.File, @Body() dto: UploadFileDto) {
+  async upload(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: UploadFileDto,
+  ) {
     return this.workDriveService.uploadFile(
       dto.ownerKey,
       dto.parentId,
@@ -32,7 +35,10 @@ export class WorkDriveController {
 
   @RequirePermission('zoho-workdrive:read')
   @Get('folders/:folderId/files')
-  async listFiles(@Param('folderId') folderId: string, @Query('ownerKey') ownerKey: string) {
+  async listFiles(
+    @Param('folderId') folderId: string,
+    @Query('ownerKey') ownerKey: string,
+  ) {
     return this.workDriveService.listFiles(ownerKey, folderId);
   }
 

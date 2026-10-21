@@ -1,4 +1,11 @@
-import { IsIn, IsISO8601, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import {
+  IsIn,
+  IsISO8601,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateDrawingRevisionDto {
   @IsOptional()
@@ -16,7 +23,14 @@ export class CreateDrawingRevisionDto {
   issuePurpose?: string;
 
   @IsOptional()
-  @IsIn(['Draft', 'For Review', 'Approved', 'For Construction', 'Rejected', 'Superseded'])
+  @IsIn([
+    'Draft',
+    'For Review',
+    'Approved',
+    'For Construction',
+    'Rejected',
+    'Superseded',
+  ])
   status?: string;
 
   @IsOptional()

@@ -1,4 +1,14 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/decorator/current-user.decorator';
 import { RequirePermission } from '../../common/decorator/require-permission.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth-guard';
@@ -11,19 +21,28 @@ import { ReconcileReminderDto } from './dto/reconcile-reminder.dto';
 @Controller('calendar/zoho-sync')
 @UseGuards(JwtAuthGuard)
 export class CalendarZohoSyncController {
-  constructor(private readonly local: LocalZohoSyncService, private readonly reminders: ReminderSyncService) {}
+  constructor(
+    private readonly local: LocalZohoSyncService,
+    private readonly reminders: ReminderSyncService,
+  ) {}
 
   @RequirePermission('calendar-events:read')
   @Get('status')
-  status(@CurrentUser() user: any) { return this.local.status(user.id, 'calendar'); }
+  status(@CurrentUser() user: any) {
+    return this.local.status(user.id, 'calendar');
+  }
 
   @RequirePermission('calendar-events:update')
   @Get('authorize')
-  authorize(@CurrentUser() user: any) { return this.local.authorize(user.id, 'calendar'); }
+  authorize(@CurrentUser() user: any) {
+    return this.local.authorize(user.id, 'calendar');
+  }
 
   @RequirePermission('calendar-events:read')
   @Get('destinations')
-  destinations(@CurrentUser() user: any) { return this.reminders.calendarDestinations(user.id); }
+  destinations(@CurrentUser() user: any) {
+    return this.reminders.calendarDestinations(user.id);
+  }
 
   @RequirePermission('calendar-events:update')
   @Put('settings')
@@ -41,7 +60,16 @@ export class CalendarZohoSyncController {
   @RequirePermission('calendar-events:update')
   @Post('reconcile/:localId')
   @HttpCode(200)
-  reconcile(@CurrentUser() user: any, @Param('localId', ParseUUIDPipe) localId: string, @Body() dto: ReconcileReminderDto) {
-    return this.reminders.reconcile(user.id, 'calendar', localId, dto.remote_id);
+  reconcile(
+    @CurrentUser() user: any,
+    @Param('localId', ParseUUIDPipe) localId: string,
+    @Body() dto: ReconcileReminderDto,
+  ) {
+    return this.reminders.reconcile(
+      user.id,
+      'calendar',
+      localId,
+      dto.remote_id,
+    );
   }
 }

@@ -112,7 +112,7 @@ export class AdminDailyLogService {
 
   async remove(id: string, userId?: string) {
     const row = await this.findOne(id);
-    await row.update({ deleted_by: userId ?? null } as any);
+    await row.update({ deleted_by: userId ?? null });
     await row.destroy();
     return { message: 'Admin log entry deleted' };
   }

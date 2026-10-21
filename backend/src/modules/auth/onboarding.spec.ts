@@ -12,7 +12,10 @@ import { UsersService } from '../users/users.service';
 
 jest.mock('@/common/mail/mail.service', () => ({ MailService: class {} }));
 jest.mock('@/modules/cdn/cdn.service', () => ({ CdnService: class {} }));
-jest.mock('@/common/security/password-policy', () => ({ PASSWORD_MIN_LENGTH: 12, assertNewPassword: jest.fn().mockResolvedValue(undefined) }));
+jest.mock('@/common/security/password-policy', () => ({
+  PASSWORD_MIN_LENGTH: 12,
+  assertNewPassword: jest.fn().mockResolvedValue(undefined),
+}));
 
 describe('Closed signup and verified email onboarding', () => {
   let app: any;
