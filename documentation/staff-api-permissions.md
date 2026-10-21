@@ -11,7 +11,7 @@ Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before
 
 Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.
 
-There are 983 routes, 952 staff routes and 405 assignable staff capabilities.
+There are 984 routes, 953 staff routes and 405 assignable staff capabilities.
 
 ## Catalogue by module
 
@@ -25,7 +25,7 @@ There are 983 routes, 952 staff routes and 405 assignable staff capabilities.
 | budget-guide | `budget-guides:create`, `budget-guides:delete`, `budget-guides:read`, `budget-guides:update` |
 | business-proposals | `business-proposals:create`, `business-proposals:read`, `business-proposals:update` |
 | calendar | `calendar-events:create`, `calendar-events:delete`, `calendar-events:read`, `calendar-events:update` |
-| cdn | `cdn:upload` |
+| cdn | `cdn:upload`, `settings:read` |
 | client-portal | `client-portal:create`, `client-portal:deliver`, `client-portal:prepare`, `client-portal:read`, `client-portal:revoke` |
 | clients | `clients:create`, `clients:delete`, `clients:read`, `clients:restore`, `clients:update` |
 | dashboard | `dashboards:read`, `dashboards:reset`, `dashboards:update` |
@@ -201,6 +201,7 @@ There are 983 routes, 952 staff routes and 405 assignable staff capabilities.
 | calendar | `PATCH /calendar/events/:id` | CalendarController.update | `calendar-events:update` | staff |
 | cdn | `GET /cdn/private/:key` | CdnController.privateFile | `file-link:read` | public |
 | cdn | `POST /cdn/upload` | CdnController.upload | `cdn:upload` | staff |
+| cdn | `GET /nas/status` | NasController.status | `settings:read` | staff |
 | client-portal | `POST /client-links` | ClientPortalController.create | `client-portal:create` | staff |
 | client-portal | `POST /projects/:id/handover/deliver` | ClientPortalController.deliver | `client-portal:deliver` | staff |
 | client-portal | `GET /projects/:id/handover-package-status` | ClientPortalController.handoverStatus | `client-portal:read` | staff |
