@@ -20,8 +20,10 @@ const SCOPES = new Set([
 const hash = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const ident = (value) => '`' + value.replaceAll('`', '``') + '`';
 const keyPattern = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
-const protectedScope = filename => {
-  const match = /^private-([a-z]+)-[0-9a-f-]{36}(?:\.[a-zA-Z0-9]{1,16})?$/.exec(filename);
+const protectedScope = (filename) => {
+  const match = /^private-([a-z]+)-[0-9a-f-]{36}(?:\.[a-zA-Z0-9]{1,16})?$/.exec(
+    filename,
+  );
   return match && SCOPES.has(match[1]) ? match[1] : undefined;
 };
 
@@ -254,7 +256,9 @@ async function main() {
     );
     // Remote private copies now remain in the original CDN directory. A
     // resumed migration must recognize copies it already wrote there.
-    if (remote) for (const entry of Object.values(journal.files)) expectedNames.add(entry.filename);
+    if (remote)
+      for (const entry of Object.values(journal.files))
+        expectedNames.add(entry.filename);
     if (
       currentNames.size !== expectedNames.size ||
       [...currentNames].some((name) => !expectedNames.has(name))
@@ -268,7 +272,9 @@ async function main() {
         mode: 0o600,
       });
     const replacements = new Map();
-    for (const file of report.files.filter((f) => f.decision === 'private' && !protectedScope(f.filename))) {
+    for (const file of report.files.filter(
+      (f) => f.decision === 'private' && !protectedScope(f.filename),
+    )) {
       let entry = journal.files[file.filename];
       if (!entry) {
         const uploaded = await storage.uploadBuffer(
@@ -342,7 +348,9 @@ async function main() {
       await db.rollback();
       throw error;
     }
-    for (const file of report.files.filter((f) => f.decision === 'private' && !protectedScope(f.filename))) {
+    for (const file of report.files.filter(
+      (f) => f.decision === 'private' && !protectedScope(f.filename),
+    )) {
       const entry = journal.files[file.filename];
       if (!entry.removed) {
         await storage.deleteFile(file.filename);
