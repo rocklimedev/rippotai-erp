@@ -1400,6 +1400,16 @@
     "file": "src/modules/cdn/cdn.controller.ts"
   },
   {
+    "module": "cdn",
+    "controller": "NasController",
+    "handler": "status",
+    "method": "GET",
+    "path": "/nas/status",
+    "permission": "settings:read",
+    "public": false,
+    "file": "src/modules/cdn/nas.controller.ts"
+  },
+  {
     "module": "client-portal",
     "controller": "ClientPortalController",
     "handler": "create",
