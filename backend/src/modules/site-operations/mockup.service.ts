@@ -46,7 +46,7 @@ export class MockupService {
       reviewedAt: new Date(),
       reviewNotes: dto.reviewNotes ?? null,
       clearedForRollout: dto.status === MockupStatus.APPROVED,
-    } as any);
+    });
     return mockup;
   }
 
@@ -66,7 +66,10 @@ export class MockupService {
   }
 
   /** All mock-ups, optionally for one project (UUID) and/or status, with project name. */
-  async list({ projectId, status }: { projectId?: string; status?: MockupStatus } = {}): Promise<Mockup[]> {
+  async list({
+    projectId,
+    status,
+  }: { projectId?: string; status?: MockupStatus } = {}): Promise<Mockup[]> {
     const where: any = {};
     if (projectId) where.projectId = projectId;
     if (status) where.status = status;

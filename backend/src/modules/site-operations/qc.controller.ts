@@ -73,7 +73,12 @@ export class QcSignOffController {
     @Query('to') to?: string,
     @Query('status') status?: string,
   ) {
-    return this.qcService.history({ projectId: projectId || undefined, from, to, status });
+    return this.qcService.history({
+      projectId: projectId || undefined,
+      from,
+      to,
+      status,
+    });
   }
 
   /** GET /site-ops/qc/handoff-status?projectId=<uuid> — latest result per project/step/trade. */

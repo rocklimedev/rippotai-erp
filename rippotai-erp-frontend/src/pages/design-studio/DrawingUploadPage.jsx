@@ -412,8 +412,8 @@ export default function DrawingUploadPage() {
         subtitle="Drop in PDFs, CAD files or images, tag them once, and they land in the project's drawing register with revision history."
         actions={
           <>
-            <Button variant="ghost" icon={Plug} onClick={() => nav("/design-studio/integrations")}>
-              Integration diagnostics
+            <Button variant="ghost" icon={Plug} onClick={() => nav("/settings/connectors")}>
+              Connectors
             </Button>
             <Button variant="secondary" icon={FolderOpen} onClick={() => nav(projectId ? `/design-studio/all?project=${projectId}` : "/design-studio/all")}>
               Drawing register

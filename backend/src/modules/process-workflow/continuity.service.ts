@@ -34,13 +34,13 @@ export class ContinuityService {
 
   async markOpened(id: number): Promise<ContinuityRole> {
     const role = await this.getOrThrow(id);
-    await role.update({ actualOpenedAt: new Date() } as any);
+    await role.update({ actualOpenedAt: new Date() });
     return role;
   }
 
   async markClosed(id: number): Promise<ContinuityRole> {
     const role = await this.getOrThrow(id);
-    await role.update({ actualClosedAt: new Date() } as any);
+    await role.update({ actualClosedAt: new Date() });
     return role;
   }
 

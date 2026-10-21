@@ -31,7 +31,10 @@ export class RfiController {
     @Query('projectId') projectId?: string,
     @Query('status') status?: RfiStatus,
   ) {
-    return this.rfiService.list({ projectId: projectId || undefined, status: status || undefined });
+    return this.rfiService.list({
+      projectId: projectId || undefined,
+      status: status || undefined,
+    });
   }
 
   @RequirePermission('site-ops-rfis:update')

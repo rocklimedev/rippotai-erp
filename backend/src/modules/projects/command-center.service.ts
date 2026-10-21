@@ -1,4 +1,7 @@
-import { belongsToDocumentPhase, documentPhaseWhere } from '../documents/document-phase';
+import {
+  belongsToDocumentPhase,
+  documentPhaseWhere,
+} from '../documents/document-phase';
 import {
   BadRequestException,
   ForbiddenException,
@@ -381,7 +384,7 @@ export class CommandCenterService {
    */
   async openSiteQcFailures(projectId?: string): Promise<SiteQcFailure[]> {
     try {
-      return (await this.projectModel.sequelize!.query(
+      return await this.projectModel.sequelize!.query(
         `SELECT q.id, q.project_id, q.result, q.attempt_number, q.checked_at, q.notes,
                 s.name AS step_name, t.name AS team_name
            FROM qc_sign_offs q
@@ -393,7 +396,7 @@ export class CommandCenterService {
                                        AND q2.trade_team_id = q.trade_team_id)
           ORDER BY q.checked_at DESC`,
         { type: QueryTypes.SELECT, replacements: { projectId } },
-      )) as SiteQcFailure[];
+      );
     } catch (e) {
       this.logger.warn(`site QC rollup failed: ${(e as Error).message}`);
       return [];
@@ -424,7 +427,6 @@ export class CommandCenterService {
 
     const currentPhase =
       phases.find((ph) => ph.phase_code === project.current_phase) ?? phases[0];
-
 
     const [docTypes, taskDefs, gates, requirements, documents, taskExecs] =
       await Promise.all([

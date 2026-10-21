@@ -166,7 +166,9 @@ export class ProjectDocumentPhaseService {
     const documentTypesByPhase = new Map<string, any[]>();
 
     for (const documentType of documentTypes) {
-      const projectPhaseId = phases.find((phase) => belongsToDocumentPhase(documentType, phase))?.id;
+      const projectPhaseId = phases.find((phase) =>
+        belongsToDocumentPhase(documentType, phase),
+      )?.id;
 
       if (!projectPhaseId) {
         continue;
@@ -564,7 +566,9 @@ export class ProjectDocumentPhaseService {
     const documentTypesByPhase = new Map<string, DocumentType[]>();
 
     for (const documentType of documentTypes) {
-      const projectPhaseId = phases.find((phase) => belongsToDocumentPhase(documentType, phase))?.id;
+      const projectPhaseId = phases.find((phase) =>
+        belongsToDocumentPhase(documentType, phase),
+      )?.id;
 
       if (!projectPhaseId) {
         continue;

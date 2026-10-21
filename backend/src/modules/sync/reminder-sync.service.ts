@@ -84,11 +84,18 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
         }
       : { created_by: userId };
   }
-  private async localRecords(userId: string, kind: ReminderKind, config: Record<string, any> = {}) {
+  private async localRecords(
+    userId: string,
+    kind: ReminderKind,
+    config: Record<string, any> = {},
+  ) {
     const where = this.scope(userId, kind);
     return kind === 'tasks'
-      ? this.tasks.findAll({ where: config.include_undated_tasks
-          ? where : { ...where, due_date: { [Op.ne]: null } } })
+      ? this.tasks.findAll({
+          where: config.include_undated_tasks
+            ? where
+            : { ...where, due_date: { [Op.ne]: null } },
+        })
       : this.events.findAll({ where });
   }
   private payload(row: any, kind: ReminderKind, config: Record<string, any>) {
@@ -104,7 +111,13 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
     return {
       enabled: row?.enabled ?? false,
       ...(row?.config ?? {}),
-      ...(kind === 'tasks' ? { include_undated_tasks: row ? Boolean(row.config?.include_undated_tasks) : true } : {}),
+      ...(kind === 'tasks'
+        ? {
+            include_undated_tasks: row
+              ? Boolean(row.config?.include_undated_tasks)
+              : true,
+          }
+        : {}),
       last_run: row?.last_run ?? null,
       last_error: row?.last_error ?? null,
     };
@@ -114,38 +127,70 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
     const data = response?.data ?? response;
     const items = Array.isArray(data) ? data : data?.[key];
     if (!Array.isArray(items))
-      throw new BadRequestException(`Could not load Zoho ${key}. Reconnect Zoho reminders and try again.`);
-    return items.filter((item) => item?.id_string || item?.id).map((item) => ({
-      id: String(item.id_string || item.id),
-      name: item.name || String(item.id_string || item.id),
-    }));
+      throw new BadRequestException(
+        `Could not load Zoho ${key}. Reconnect Zoho reminders and try again.`,
+      );
+    return items
+      .filter((item) => item?.id_string || item?.id)
+      .map((item) => ({
+        id: String(item.id_string || item.id),
+        name: item.name || String(item.id_string || item.id),
+      }));
   }
 
   async taskUsers(userId: string, portalId: string, projectId: string) {
-    const response = await this.zohoTasks.listProjectUsers(userId, portalId, projectId);
+    const response = await this.zohoTasks.listProjectUsers(
+      userId,
+      portalId,
+      projectId,
+    );
     const data = response?.data ?? response;
     const users = Array.isArray(data) ? data : data?.users;
-    if (!Array.isArray(users)) throw new BadRequestException('Could not load Zoho project users. Reconnect Zoho and try again.');
-    return users.filter(user => user.active !== false).map(user => {
-      const id = user.id_string ?? user.id;
-      if (!id || (typeof id === 'number' && !Number.isSafeInteger(id))) {
-        throw new BadRequestException('Zoho returned an invalid user ID. Reconnect and try again.');
-      }
-      return { id: String(id), name: user.name || String(id), email: user.email || '' };
-    });
+    if (!Array.isArray(users))
+      throw new BadRequestException(
+        'Could not load Zoho project users. Reconnect Zoho and try again.',
+      );
+    return users
+      .filter((user) => user.active !== false)
+      .map((user) => {
+        const id = user.id_string ?? user.id;
+        if (!id || (typeof id === 'number' && !Number.isSafeInteger(id))) {
+          throw new BadRequestException(
+            'Zoho returned an invalid user ID. Reconnect and try again.',
+          );
+        }
+        return {
+          id: String(id),
+          name: user.name || String(id),
+          email: user.email || '',
+        };
+      });
   }
 
   async taskPortals(userId: string) {
-    return this.destinationList(await this.zohoTasks.listPortals(userId), 'portals');
+    return this.destinationList(
+      await this.zohoTasks.listPortals(userId),
+      'portals',
+    );
   }
 
   async taskProjects(userId: string, portalId: string) {
     const projects: { id: string; name: string }[] = [];
     const limit = 100;
     for (let index = 1; ; index += limit) {
-      const page = this.destinationList(await this.zohoTasks.listProjects(userId, portalId, { index, range: limit }), 'projects');
-      if (page.some((item) => projects.some((project) => project.id === item.id)))
-        throw new BadRequestException('Could not load all Zoho projects. Try again later.');
+      const page = this.destinationList(
+        await this.zohoTasks.listProjects(userId, portalId, {
+          index,
+          range: limit,
+        }),
+        'projects',
+      );
+      if (
+        page.some((item) => projects.some((project) => project.id === item.id))
+      )
+        throw new BadRequestException(
+          'Could not load all Zoho projects. Try again later.',
+        );
       projects.push(...page);
       if (page.length < limit) return projects;
     }
@@ -292,15 +337,27 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
       where: { user_id: userId, kind },
     });
     const local = await this.localRecords(userId, kind, settings);
-    const localStatus = local.map(row => {
-      const mapping = mappings.find(m => m.local_id === row.id);
+    const localStatus = local.map((row) => {
+      const mapping = mappings.find((m) => m.local_id === row.id);
       let state = mapping?.status || 'pending';
       try {
-        if (state === 'synced' && mapping?.fingerprint !== fingerprint(this.payload(row, kind, settings))) state = 'pending';
-      } catch { state = 'pending'; }
-      return { local_id: row.id, title: row.title, status: state,
-        remote_id: mapping?.remote_id || null, synced_at: mapping?.synced_at || null,
-        error: mapping?.error || null };
+        if (
+          state === 'synced' &&
+          mapping?.fingerprint !==
+            fingerprint(this.payload(row, kind, settings))
+        )
+          state = 'pending';
+      } catch {
+        state = 'pending';
+      }
+      return {
+        local_id: row.id,
+        title: row.title,
+        status: state,
+        remote_id: mapping?.remote_id || null,
+        synced_at: mapping?.synced_at || null,
+        error: mapping?.error || null,
+      };
     });
     let pending = 0;
     for (const row of local) {
@@ -336,7 +393,9 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
           local_id: m.local_id,
           message: m.error,
           status: m.status,
-          title: local.find(row => row.id === m.local_id)?.title || 'Removed or reassigned item',
+          title:
+            local.find((row) => row.id === m.local_id)?.title ||
+            'Removed or reassigned item',
         })),
       last_sync: settings.last_run,
       direction: 'local_to_zoho',
@@ -445,7 +504,7 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
                     userId,
                     mapping.destination.portal_id,
                     mapping.destination.project_id,
-                    payload as any,
+                    payload,
                   )
                 : await this.zohoCalendar.createEvent(
                     userId,
@@ -464,7 +523,7 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
           });
         } catch (error) {
           // A definitive 4xx means creation was rejected; transport/5xx outcomes are ambiguous.
-          const statusCode = (error as any)?.getStatus?.();
+          const statusCode = error?.getStatus?.();
           if (!creating && mapping?.remote_id && statusCode === 404) {
             // Confirmed absence can be recreated on the next run without duplicating a remote reminder.
             await mapping.update({ remote_id: null, fingerprint: null });
@@ -545,7 +604,7 @@ export class ReminderSyncService implements OnModuleInit, OnModuleDestroy {
           record.remote_id!,
         );
     } catch (error) {
-      if ((error as any)?.getStatus?.() !== 404) throw error;
+      if (error?.getStatus?.() !== 404) throw error;
     }
   }
 

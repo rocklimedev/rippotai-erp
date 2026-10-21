@@ -524,8 +524,14 @@ export class BudgetEstimateService {
 
       // Child collections are replaced wholesale when sent (edit form posts the full set).
       if (Array.isArray(categories)) {
-        await this.itemModel.destroy({ where: { estimate_id: id }, transaction });
-        await this.categoryModel.destroy({ where: { estimate_id: id }, transaction });
+        await this.itemModel.destroy({
+          where: { estimate_id: id },
+          transaction,
+        });
+        await this.categoryModel.destroy({
+          where: { estimate_id: id },
+          transaction,
+        });
 
         for (const [ci, categoryDto] of categories.entries()) {
           const category = await this.categoryModel.create(
@@ -534,7 +540,7 @@ export class BudgetEstimateService {
               library_category_id: categoryDto.library_category_id || null,
               name: categoryDto.name,
               sort_order: categoryDto.sort_order ?? ci,
-            } as any,
+            },
             { transaction },
           );
 
@@ -545,7 +551,10 @@ export class BudgetEstimateService {
       }
 
       if (Array.isArray(miscellaneous)) {
-        await this.miscellaneousModel.destroy({ where: { estimate_id: id }, transaction });
+        await this.miscellaneousModel.destroy({
+          where: { estimate_id: id },
+          transaction,
+        });
 
         if (miscellaneous.length) {
           await this.miscellaneousModel.bulkCreate(

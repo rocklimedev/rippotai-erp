@@ -23,11 +23,13 @@ export class AdminDprDocumentController {
   constructor(private readonly service: AdminDprDocumentService) {}
   @AsyncExport('admin-dpr-save')
   @RequirePermission('dpr-admin-documents:create')
-  @Post() create(@Body() query: QueryAdminDailyReportDto, @Req() req: any) {
+  @Post()
+  create(@Body() query: QueryAdminDailyReportDto, @Req() req: any) {
     return this.service.create(query, req.user, req.exportOperationId);
   }
   @RequirePermission('dpr-admin-documents:read')
-  @Get() list(@Query() query: QueryAdminDailyReportDto) {
+  @Get()
+  list(@Query() query: QueryAdminDailyReportDto) {
     return this.service.list(query);
   }
   @RequirePermission('dpr-admin-documents:export')
@@ -45,7 +47,8 @@ export class AdminDprDocumentController {
     res.send(row.excel_data);
   }
   @RequirePermission('dpr-admin-documents:read')
-  @Get(':id') findOne(@Param('id', ParseUUIDPipe) id: string) {
+  @Get(':id')
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.findOne(id);
   }
 }

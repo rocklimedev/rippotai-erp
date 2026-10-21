@@ -19,7 +19,10 @@ import type { LeadFilters } from './leads.service';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
 import type { RequestWithUser } from '@/common/interfaces/request-with-user-interfaces';
 
-const actorOf = (req: RequestWithUser) => ({ id: req.user.id, name: req.user.name });
+const actorOf = (req: RequestWithUser) => ({
+  id: req.user.id,
+  name: req.user.name,
+});
 
 /**
  * CRM pipeline (deals). Runs on INOS's own `leads` table; Zoho Bigin is an

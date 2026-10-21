@@ -62,20 +62,40 @@ describe('unified project planner', () => {
   });
   it('inherits brief dates and recce rooms when initializing an empty location list', async () => {
     const planner = record({ id: 'planner', type: 'PROJECT' });
-    const locationModel = { findAll: jest.fn().mockResolvedValue([]), create: jest.fn().mockResolvedValue({ id: 'floor' }) };
+    const locationModel = {
+      findAll: jest.fn().mockResolvedValue([]),
+      create: jest.fn().mockResolvedValue({ id: 'floor' }),
+    };
     const instance = service({
       plannerModel: { findAll: jest.fn().mockResolvedValue([planner]) },
       locationModel,
-      sharedProjectData: { prefill: jest.fn().mockResolvedValue({ documents: {
-        'client-brief': { desiredStartDate: '2026-10-10', targetCompletionDate: '2026-12-10' },
-        'site-recce': { unit_floor_no: '1', rooms: [{ room_name: 'Kitchen' }, { room_name: 'kitchen' }] },
-      } }) },
+      sharedProjectData: {
+        prefill: jest.fn().mockResolvedValue({
+          documents: {
+            'client-brief': {
+              desiredStartDate: '2026-10-10',
+              targetCompletionDate: '2026-12-10',
+            },
+            'site-recce': {
+              unit_floor_no: '1',
+              rooms: [{ room_name: 'Kitchen' }, { room_name: 'kitchen' }],
+            },
+          },
+        }),
+      },
     });
     await instance.initializeProjectPlanners('project');
     expect(planner.planned_start_date).toBe('2026-10-10');
     expect(planner.planned_end_date).toBe('2026-12-10');
     expect(locationModel.create).toHaveBeenCalledTimes(2);
-    expect(locationModel.create).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'Kitchen', type: 'ROOM', parent_id: 'floor' }), { transaction });
+    expect(locationModel.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        name: 'Kitchen',
+        type: 'ROOM',
+        parent_id: 'floor',
+      }),
+      { transaction },
+    );
   });
 
   it('syncs an edited template row without duplicating it or resetting progress', async () => {
@@ -94,16 +114,14 @@ describe('unified project planner', () => {
     const instance = service({
       plannerModel: { findByPk: jest.fn().mockResolvedValue(planner) },
       plannerTaskTemplateModel: {
-        findAll: jest
-          .fn()
-          .mockResolvedValue([
-            {
-              id: 'template',
-              phase_id: 'phase',
-              work_name: 'Original layout',
-              applies_to_locations: true,
-            },
-          ]),
+        findAll: jest.fn().mockResolvedValue([
+          {
+            id: 'template',
+            phase_id: 'phase',
+            work_name: 'Original layout',
+            applies_to_locations: true,
+          },
+        ]),
       },
       plannerItemModel: {
         findAll: jest.fn().mockResolvedValue([edited]),
@@ -146,20 +164,18 @@ describe('unified project planner', () => {
       purchase_date: i === 0 ? '2026-09-03' : null,
     }));
     const instance = service();
-    instance.getProjectPlannerOverview = jest
-      .fn()
-      .mockResolvedValue({
-        project: { name: 'Residence' },
-        planners: [{ items, procurement_items: procurement }],
-        locations: [
-          {
-            id: 'floor',
-            name: 'Stilt',
-            type: 'FLOOR',
-            children: [{ id: 'room', name: 'Kitchen' }],
-          },
-        ],
-      });
+    instance.getProjectPlannerOverview = jest.fn().mockResolvedValue({
+      project: { name: 'Residence' },
+      planners: [{ items, procurement_items: procurement }],
+      locations: [
+        {
+          id: 'floor',
+          name: 'Stilt',
+          type: 'FLOOR',
+          children: [{ id: 'room', name: 'Kitchen' }],
+        },
+      ],
+    });
     const data = await instance.exportProjectWorkbook('project');
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(data);

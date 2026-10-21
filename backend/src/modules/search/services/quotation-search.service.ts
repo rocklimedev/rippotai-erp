@@ -19,10 +19,7 @@ export class QuotationSearchService {
   private toDocument(q: any): SearchableDocument {
     const projectName = q.project?.name ?? '';
     const vendorName =
-      q.vendor?.name ??
-      (q.vendorSnapshot as any)?.name ??
-      (q.vendor_snapshot as any)?.name ??
-      '';
+      q.vendor?.name ?? q.vendorSnapshot?.name ?? q.vendor_snapshot?.name ?? '';
     const itemsText = (q.items ?? [])
       .map((i: any) => i.description ?? i.name ?? '')
       .filter(Boolean)
@@ -78,7 +75,11 @@ export class QuotationSearchService {
         { association: 'items', required: false },
       ],
     });
-    if (!quotation || (quotation as any).deletedAt || (quotation as any).deleted_at) {
+    if (
+      !quotation ||
+      (quotation as any).deletedAt ||
+      (quotation as any).deleted_at
+    ) {
       await this.searchService.deleteDocument(this.INDEX, id);
       return;
     }

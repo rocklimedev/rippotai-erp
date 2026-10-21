@@ -60,8 +60,7 @@ export class BriefSearchService {
   }
 
   private toDocument(brief: any): SearchableDocument {
-    const data =
-      typeof brief.toJSON === 'function' ? brief.toJSON() : (brief as any);
+    const data = typeof brief.toJSON === 'function' ? brief.toJSON() : brief;
     const project = brief.project;
     const projectName = project?.name ?? '';
 

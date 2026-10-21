@@ -1064,7 +1064,7 @@ export class InventoryService {
   async getInventorySummary(projectId: string, siteLocation?: string) {
     const stock = await this.getProjectStock(projectId, siteLocation);
 
-    let totalMaterials = stock.length;
+    const totalMaterials = stock.length;
 
     let materialsWithStock = 0;
 

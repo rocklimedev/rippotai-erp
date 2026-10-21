@@ -3,10 +3,9 @@ import AppDashboard from "@/components/dashboard/AppDashboard";
 import { DrawingUpload } from "@/pages/documents/DocumentsRoutes";
 import DrawingUploadPage from "@/pages/design-studio/DrawingUploadPage";
 import DrawingsRegister from "@/pages/design-studio/DrawingsRegister";
-import DrawingIntegrations from "@/pages/design-studio/DrawingIntegrations";
+import { Navigate } from "react-router-dom";
 
 import DrawingsView from "@/pages/documents/DrawingsView";
-import DesignStudioDashboard from "../../pages/dashboard/DesignStudioDashboard";
 export const designStudioRoutes = [
   {
     type: "layout",
@@ -48,9 +47,9 @@ export const designStudioRoutes = [
         element: <DrawingUploadPage />,
       },
       {
-        // WorkDrive test panel moved off the upload page
+        // Preserve saved links after consolidating integrations into Connectors.
         path: "integrations",
-        element: <DrawingIntegrations />,
+        element: <Navigate to="/settings/connectors" replace />,
       },
       // =========================================================
       // DRAWING DETAIL / EDIT

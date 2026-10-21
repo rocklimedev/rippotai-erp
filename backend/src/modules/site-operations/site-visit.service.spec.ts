@@ -33,14 +33,12 @@ describe('visit event allocations', () => {
       findByPk: jest.fn(),
     };
     const stages: any = {
-      findByPk: jest
-        .fn()
-        .mockResolvedValue({
-          id: 'stage',
-          visit_no: 6,
-          is_active: true,
-          stage: 'Tampered name',
-        }),
+      findByPk: jest.fn().mockResolvedValue({
+        id: 'stage',
+        visit_no: 6,
+        is_active: true,
+        stage: 'Tampered name',
+      }),
     };
     const project: any = {
       findByPk: jest.fn().mockResolvedValue({ id: 'project' }),

@@ -13,7 +13,7 @@ describe('New password policy', () => {
   });
   afterEach(() => fetchMock.mockRestore());
   const reply = (body: string, status = 200) =>
-    fetchMock.mockResolvedValue({ status, text: async () => body } as Response);
+    fetchMock.mockResolvedValue({ status, text: async () => body });
 
   it.each(['short', '12345678901', '界'.repeat(25)])(
     'rejects length or bcrypt byte-limit violations without a network call',
@@ -51,7 +51,7 @@ describe('New password policy', () => {
   ])(
     'defers new passwords on a malformed or unavailable screening result',
     async (body, status) => {
-      reply(body as string, status as number);
+      reply(body, status);
       await expect(assertNewPassword(password)).rejects.toThrow(
         'safety check is unavailable',
       );

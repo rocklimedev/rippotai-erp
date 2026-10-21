@@ -129,7 +129,7 @@ export class EquipmentLineDto {
 }
 
 export class IssueLineDto {
-  @IsIn(ISSUE_TYPES as unknown as string[])
+  @IsIn(ISSUE_TYPES)
   type: string;
 
   @IsString()
@@ -137,7 +137,7 @@ export class IssueLineDto {
   description: string;
 
   @IsOptional()
-  @IsIn(ISSUE_IMPACTS as unknown as string[])
+  @IsIn(ISSUE_IMPACTS)
   impact?: string;
 
   @IsOptional()
@@ -168,7 +168,7 @@ export class CreateDailySiteReportDto {
   reportDate: string;
 
   @IsOptional()
-  @IsIn(REPORT_STATUSES as unknown as string[])
+  @IsIn(REPORT_STATUSES)
   status?: string;
 
   @IsOptional()
@@ -180,7 +180,7 @@ export class CreateDailySiteReportDto {
   weatherNotes?: string;
 
   @IsOptional()
-  @IsIn(SITE_CONDITIONS as unknown as string[])
+  @IsIn(SITE_CONDITIONS)
   siteCondition?: string;
 
   @IsOptional()

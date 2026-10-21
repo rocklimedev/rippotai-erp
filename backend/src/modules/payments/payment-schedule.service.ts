@@ -41,7 +41,7 @@ export class PaymentSchedulesService {
       await this.paymentScheduleModel.sequelize!.transaction();
 
     try {
-      let resolvedTermsTemplateId = termsTemplateId ?? null;
+      const resolvedTermsTemplateId = termsTemplateId ?? null;
       let resolvedTermsVersion = termsVersion ?? null;
 
       // ============================================================

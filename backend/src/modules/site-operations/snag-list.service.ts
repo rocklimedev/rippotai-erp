@@ -73,11 +73,16 @@ export class SnagListService {
     );
   }
   async create(dto: CreateSnagListDto, userId?: string, operationId?: string) {
-    if (operationId && await this.model.findByPk(operationId)) return this.findOne(operationId);
+    if (operationId && (await this.model.findByPk(operationId)))
+      return this.findOne(operationId);
     const values = await this.values(dto, 1);
     const id = await this.model.sequelize!.transaction(async (transaction) => {
       const row = await this.model.create(
-        { ...values, ...(operationId ? { id: operationId } : {}), created_by: userId || null } as any,
+        {
+          ...values,
+          ...(operationId ? { id: operationId } : {}),
+          created_by: userId || null,
+        } as any,
         { transaction },
       );
       await this.archive(row, userId, transaction);
@@ -85,8 +90,14 @@ export class SnagListService {
     });
     return this.findOne(id);
   }
-  async update(id: string, dto: UpdateSnagListDto, userId?: string, operationId?: string) {
-    if (operationId && await this.revisions.findByPk(operationId)) return this.findOne(id);
+  async update(
+    id: string,
+    dto: UpdateSnagListDto,
+    userId?: string,
+    operationId?: string,
+  ) {
+    if (operationId && (await this.revisions.findByPk(operationId)))
+      return this.findOne(id);
     const values = await this.values(dto, dto.revision + 1);
     await this.model.sequelize!.transaction(async (transaction) => {
       const row = await this.model.findByPk(id, {
@@ -94,7 +105,11 @@ export class SnagListService {
         lock: transaction.LOCK.UPDATE,
       });
       if (!row) throw new NotFoundException('Snag list not found');
-      if (operationId && await this.revisions.findByPk(operationId, { transaction })) return;
+      if (
+        operationId &&
+        (await this.revisions.findByPk(operationId, { transaction }))
+      )
+        return;
       if (row.revision !== dto.revision)
         throw new ConflictException(
           'This snag list has changed. Reload before saving your edits.',

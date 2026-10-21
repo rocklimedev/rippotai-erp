@@ -6,7 +6,8 @@ import {
 } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
 import { QueryTypes } from 'sequelize';
-import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'crypto';
+import { createHash, randomBytes, randomUUID } from 'crypto';
+import { ClientLinkCrypto } from './client-link-crypto';
 import * as path from 'path';
 import archiver from 'archiver';
 import { NotificationsService } from '../engagement/notifications.service';
@@ -14,30 +15,15 @@ import { CdnService } from '../cdn/cdn.service';
 import { signFileReference, privateFileKey } from '../cdn/file-access';
 import { NotificationType } from '@/common/enums';
 
-export const PURPOSES = ['project_view', 'boq_approval', 'quotation_selection', 'handover_acceptance'] as const;
+export const PURPOSES = [
+  'project_view',
+  'boq_approval',
+  'quotation_selection',
+  'handover_acceptance',
+] as const;
 type Purpose = (typeof PURPOSES)[number];
 
 const sha = (s: string) => createHash('sha256').update(s).digest('hex');
-const key = () => createHash('sha256').update(`client-links:${process.env.JWT_SECRET || 'inos'}`).digest();
-
-function encrypt(token: string) {
-  const iv = randomBytes(12);
-  const c = createCipheriv('aes-256-gcm', key(), iv);
-  const enc = Buffer.concat([c.update(token, 'utf8'), c.final()]);
-  return [iv, c.getAuthTag(), enc].map((b) => b.toString('base64url')).join('.');
-}
-function decrypt(v: string | null): string | null {
-  if (!v) return null;
-  try {
-    const [iv, tag, enc] = v.split('.').map((s) => Buffer.from(s, 'base64url'));
-    const d = createDecipheriv('aes-256-gcm', key(), iv);
-    d.setAuthTag(tag);
-    return Buffer.concat([d.update(enc), d.final()]).toString('utf8');
-  } catch {
-    return null;
-  }
-}
-
 const j = (v: any, f: any) => {
   if (v === null || v === undefined || v === '') return f;
   if (typeof v === 'object') return v;
@@ -49,7 +35,8 @@ const j = (v: any, f: any) => {
 };
 
 /** Errors the client portal shows (it reads `detail`). */
-const fail = (status: number, detail: string) => new HttpException({ statusCode: status, message: detail, detail }, status);
+const fail = (status: number, detail: string) =>
+  new HttpException({ statusCode: status, message: detail, detail }, status);
 
 const titleCase = (s: string) =>
   String(s || '')
@@ -58,6 +45,7 @@ const titleCase = (s: string) =>
 
 @Injectable()
 export class ClientPortalService {
+  private readonly tokenCrypto = new ClientLinkCrypto();
   constructor(
     private readonly sequelize: Sequelize,
     private readonly notifications: NotificationsService,
@@ -65,7 +53,10 @@ export class ClientPortalService {
   ) {}
 
   private select<T = any>(sql: string, r: any[] = []): Promise<T[]> {
-    return this.sequelize.query(sql, { replacements: r, type: QueryTypes.SELECT }) as Promise<T[]>;
+    return this.sequelize.query(sql, {
+      replacements: r,
+      type: QueryTypes.SELECT,
+    }) as Promise<T[]>;
   }
   private exec(sql: string, r: any[] = []) {
     return this.sequelize.query(sql, { replacements: r });
@@ -79,9 +70,13 @@ export class ClientPortalService {
   }
 
   private linkOut(l: any, origin?: string) {
-    const token = decrypt(l.token_enc);
+    const token = this.tokenCrypto.decrypt(l.token_enc);
     const now = Date.now();
-    const state = l.revoked_at ? 'revoked' : new Date(l.expires_at).getTime() < now ? 'expired' : 'active';
+    const state = l.revoked_at
+      ? 'revoked'
+      : new Date(l.expires_at).getTime() < now
+        ? 'expired'
+        : 'active';
     return {
       id: l.id,
       project_id: l.project_id,
@@ -98,8 +93,13 @@ export class ClientPortalService {
       created_at: l.created_at,
       created_by_name: l.created_by_name,
       state,
+      redisplay_status:
+        state !== 'active' ? 'inactive' : token ? 'available' : 'unavailable',
       token: state === 'active' ? token : undefined,
-      url: state === 'active' && token ? `${this.frontendBase(origin)}/client/${token}` : null,
+      url:
+        state === 'active' && token
+          ? `${this.frontendBase(origin)}/client/${token}`
+          : null,
     };
   }
 
@@ -107,9 +107,14 @@ export class ClientPortalService {
 
   async createLink(dto: any, user: any, origin?: string) {
     const projectId = dto.project_id;
-    const [project] = await this.select('SELECT id, name FROM projects WHERE id = ? AND deleted_at IS NULL', [projectId]);
+    const [project] = await this.select(
+      'SELECT id, name FROM projects WHERE id = ? AND deleted_at IS NULL',
+      [projectId],
+    );
     if (!project) throw new NotFoundException('Project not found');
-    const purpose: Purpose = PURPOSES.includes(dto.purpose) ? dto.purpose : 'project_view';
+    const purpose: Purpose = PURPOSES.includes(dto.purpose)
+      ? dto.purpose
+      : 'project_view';
     let targetId: string | null = dto.target_id || null;
 
     // Pick a sensible target when none was chosen.
@@ -119,7 +124,10 @@ export class ClientPortalService {
           ORDER BY FIELD(status, 'awaiting_approval', 'draft', 'in_progress', 'returned', 'approved', 'final'), updated_at DESC LIMIT 1`,
         [projectId],
       );
-      if (!b) throw new BadRequestException('This project has no BOQ to approve yet.');
+      if (!b)
+        throw new BadRequestException(
+          'This project has no BOQ to approve yet.',
+        );
       targetId = b.id;
     }
     if (!targetId && purpose === 'quotation_selection') {
@@ -127,7 +135,10 @@ export class ClientPortalService {
         'SELECT id FROM quotation_comparisons WHERE projectId = ? ORDER BY updatedAt DESC LIMIT 1',
         [projectId],
       );
-      if (!c) throw new BadRequestException('Save a quotation comparison for this project first.');
+      if (!c)
+        throw new BadRequestException(
+          'Save a quotation comparison for this project first.',
+        );
       targetId = c.id;
     }
 
@@ -142,7 +153,7 @@ export class ClientPortalService {
         id,
         sha(token),
         token.slice(0, 6),
-        encrypt(token),
+        this.tokenCrypto.encrypt(token),
         projectId,
         purpose,
         targetId,
@@ -172,12 +183,14 @@ export class ClientPortalService {
   }
 
   async revokeLink(id: string, user: any) {
-    const [l] = await this.select('SELECT id FROM client_links WHERE id = ?', [id]);
-    if (!l) throw new NotFoundException('Link not found');
-    await this.exec('UPDATE client_links SET revoked_at = NOW(), revoked_by = ? WHERE id = ? AND revoked_at IS NULL', [
-      user?.id || null,
+    const [l] = await this.select('SELECT id FROM client_links WHERE id = ?', [
       id,
     ]);
+    if (!l) throw new NotFoundException('Link not found');
+    await this.exec(
+      'UPDATE client_links SET revoked_at = NOW(), revoked_by = ? WHERE id = ? AND revoked_at IS NULL',
+      [user?.id || null, id],
+    );
     return { id, state: 'revoked' };
   }
 
@@ -188,7 +201,11 @@ export class ClientPortalService {
         WHERE r.project_id = ? ORDER BY r.created_at DESC`,
       [projectId],
     );
-    return rows.map((r) => ({ ...r, data: j(r.data_json, {}), data_json: undefined }));
+    return rows.map((r) => ({
+      ...r,
+      data: j(r.data_json, {}),
+      data_json: undefined,
+    }));
   }
 
   // ================================================================= signed-in client home
@@ -214,8 +231,13 @@ export class ClientPortalService {
     );
     return {
       user: { id: user?.id, name: user?.name, email: user?.email },
-      projects: projects.map((p) => ({ ...p, phase: this.phaseLabel(p.phase) })),
-      magic_links: links.map((l) => this.linkOut(l, origin)).filter((l) => l.token),
+      projects: projects.map((p) => ({
+        ...p,
+        phase: this.phaseLabel(p.phase),
+      })),
+      magic_links: links
+        .map((l) => this.linkOut(l, origin))
+        .filter((l) => l.token),
     };
   }
 
@@ -229,10 +251,21 @@ export class ClientPortalService {
       [sha(token)],
     );
     if (!l) throw fail(404, 'This link is not valid.');
-    if (l.revoked_at) throw fail(410, 'This link has been withdrawn. Please ask the Rippotai team for a new one.');
-    if (new Date(l.expires_at).getTime() < Date.now()) throw fail(410, 'This link has expired. Please ask the Rippotai team for a new one.');
+    if (l.revoked_at)
+      throw fail(
+        410,
+        'This link has been withdrawn. Please ask the Rippotai team for a new one.',
+      );
+    if (new Date(l.expires_at).getTime() < Date.now())
+      throw fail(
+        410,
+        'This link has expired. Please ask the Rippotai team for a new one.',
+      );
     if (opts.touch)
-      await this.exec('UPDATE client_links SET open_count = open_count + 1, last_opened_at = NOW() WHERE id = ?', [l.id]);
+      await this.exec(
+        'UPDATE client_links SET open_count = open_count + 1, last_opened_at = NOW() WHERE id = ?',
+        [l.id],
+      );
     return { ...l, options: j(l.options_json, {}) };
   }
 
@@ -250,7 +283,14 @@ export class ClientPortalService {
     return rows.map((r, i) => ({
       phase_code: r.phase_code,
       name: titleCase(String(r.title).replace(/^\d+\s*/, '')),
-      status: idx < 0 ? 'pending' : i < idx ? 'completed' : i === idx ? 'in_progress' : 'pending',
+      status:
+        idx < 0
+          ? 'pending'
+          : i < idx
+            ? 'completed'
+            : i === idx
+              ? 'in_progress'
+              : 'pending',
     }));
   }
 
@@ -295,7 +335,8 @@ export class ClientPortalService {
 
   async publicBoq(token: string, boqId: string) {
     const l = await this.resolve(token);
-    if (l.target_id && l.target_id !== boqId && l.purpose === 'boq_approval') throw fail(403, 'This link is for a different BOQ.');
+    if (l.target_id && l.target_id !== boqId && l.purpose === 'boq_approval')
+      throw fail(403, 'This link is for a different BOQ.');
     const [b] = await this.select(
       `SELECT b.*, p.name project_name FROM boqs b JOIN projects p ON p.id = b.project_id
         WHERE b.id = ? AND b.project_id = ? AND b.deleted_at IS NULL`,
@@ -321,7 +362,9 @@ export class ClientPortalService {
       project_name: b.project_name,
       version: b.version,
       status: String(b.status).replace(/_/g, ' '),
-      total_amount: Number(b.total_value || 0) || items.reduce((s, i) => s + Number(i.amount || 0), 0),
+      total_amount:
+        Number(b.total_value || 0) ||
+        items.reduce((s, i) => s + Number(i.amount || 0), 0),
       items: items.map((i) => ({
         ...i,
         quantity: Number(i.quantity),
@@ -332,7 +375,13 @@ export class ClientPortalService {
     };
   }
 
-  private async notifyStaff(projectId: string, title: string, message: string, entityType: string, entityId: string) {
+  private async notifyStaff(
+    projectId: string,
+    title: string,
+    message: string,
+    entityType: string,
+    entityId: string,
+  ) {
     const users = await this.select<{ id: string }>(
       `SELECT DISTINCT u.id FROM users u LEFT JOIN roles r ON r.id = u.role_id
         WHERE u.is_active = 1 AND (r.name = 'ADMIN' OR u.job_title LIKE '%Project Manager%'
@@ -348,11 +397,17 @@ export class ClientPortalService {
         message,
         entity_type: entityType,
         entity_id: entityId,
-      })) as any,
+      })),
     );
   }
 
-  private async respond(l: any, kind: string, targetId: string | null, body: any, data: any = {}) {
+  private async respond(
+    l: any,
+    kind: string,
+    targetId: string | null,
+    body: any,
+    data: any = {},
+  ) {
     const id = randomUUID();
     await this.exec(
       `INSERT INTO client_link_responses (id, link_id, project_id, kind, target_id, signatory_name, signatory_email, comments, data_json, signature_png, created_at)
@@ -363,11 +418,15 @@ export class ClientPortalService {
         l.project_id,
         kind,
         targetId,
-        String(body.signatory_name || l.client_name || '').slice(0, 255) || null,
+        String(body.signatory_name || l.client_name || '').slice(0, 255) ||
+          null,
         body.signatory_email || l.client_email || null,
         body.comments || null,
         JSON.stringify(data),
-        typeof body.signature_png === 'string' && body.signature_png.length < 600_000 ? body.signature_png : null,
+        typeof body.signature_png === 'string' &&
+        body.signature_png.length < 600_000
+          ? body.signature_png
+          : null,
       ],
     );
     return id;
@@ -375,20 +434,37 @@ export class ClientPortalService {
 
   async publicBoqDecision(token: string, boqId: string, body: any) {
     const l = await this.resolve(token);
-    if (l.purpose !== 'boq_approval') throw fail(403, 'This link cannot be used to approve a BOQ.');
+    if (l.purpose !== 'boq_approval')
+      throw fail(403, 'This link cannot be used to approve a BOQ.');
     const boq = await this.publicBoq(token, boqId);
-    if (!String(body.signatory_name || '').trim()) throw fail(400, 'Signatory name is required.');
+    if (!String(body.signatory_name || '').trim())
+      throw fail(400, 'Signatory name is required.');
     const approved = !!body.approved && !body.request_changes;
-    if (!approved && !String(body.comments || '').trim()) throw fail(400, 'Please say what needs to change.');
-    const id = await this.respond(l, approved ? 'boq_approved' : 'boq_changes_requested', boqId, body, { total: boq.total_amount });
+    if (!approved && !String(body.comments || '').trim())
+      throw fail(400, 'Please say what needs to change.');
+    const id = await this.respond(
+      l,
+      approved ? 'boq_approved' : 'boq_changes_requested',
+      boqId,
+      body,
+      { total: boq.total_amount },
+    );
     if (approved) {
-      await this.exec(`UPDATE boqs SET status = 'approved', approved_at = NOW(), updated_at = NOW() WHERE id = ?`, [boqId]);
+      await this.exec(
+        `UPDATE boqs SET status = 'approved', approved_at = NOW(), updated_at = NOW() WHERE id = ?`,
+        [boqId],
+      );
     } else {
-      await this.exec(`UPDATE boqs SET status = 'returned', updated_at = NOW() WHERE id = ?`, [boqId]);
+      await this.exec(
+        `UPDATE boqs SET status = 'returned', updated_at = NOW() WHERE id = ?`,
+        [boqId],
+      );
     }
     await this.notifyStaff(
       l.project_id,
-      approved ? `Client approved BOQ ${boq.boq_number || ''}`.trim() : `Client requested BOQ changes`,
+      approved
+        ? `Client approved BOQ ${boq.boq_number || ''}`.trim()
+        : `Client requested BOQ changes`,
       `${l.project_name}: ${body.signatory_name}${body.comments ? ` — “${body.comments}”` : ''}`,
       'boq',
       boqId,
@@ -398,7 +474,10 @@ export class ClientPortalService {
 
   async publicCompare(token: string, cid: string) {
     const l = await this.resolve(token);
-    const [c] = await this.select('SELECT * FROM quotation_comparisons WHERE id = ? AND projectId = ?', [cid, l.project_id]);
+    const [c] = await this.select(
+      'SELECT * FROM quotation_comparisons WHERE id = ? AND projectId = ?',
+      [cid, l.project_id],
+    );
     if (!c) throw fail(404, 'Comparison not found.');
     const ids: string[] = j(c.quotationIds, []);
     const quotes = ids.length
@@ -410,13 +489,22 @@ export class ClientPortalService {
         )
       : [];
     const showNames = l.options?.show_vendor_names !== false;
-    const [p] = await this.select('SELECT name FROM projects WHERE id = ?', [l.project_id]);
+    const [p] = await this.select('SELECT name FROM projects WHERE id = ?', [
+      l.project_id,
+    ]);
     return {
       link: this.linkPublic(l),
-      comparison: { id: c.id, name: c.name, work_category: c.workCategory, project_name: p?.name },
+      comparison: {
+        id: c.id,
+        name: c.name,
+        work_category: c.workCategory,
+        project_name: p?.name,
+      },
       quotations: quotes.map((q, i) => ({
         id: q.id,
-        vendor_name: showNames ? q.company_name || q.vendor_name : `Vendor ${String.fromCharCode(65 + i)}`,
+        vendor_name: showNames
+          ? q.company_name || q.vendor_name
+          : `Vendor ${String.fromCharCode(65 + i)}`,
         final_total: Number(q.totalAmount || 0),
         selected: !!q.isSelected,
         validity_days: q.validityDays,
@@ -426,55 +514,103 @@ export class ClientPortalService {
 
   async publicSelectQuote(token: string, body: any) {
     const l = await this.resolve(token);
-    if (l.purpose !== 'quotation_selection') throw fail(403, 'This link cannot be used to select a vendor.');
+    if (l.purpose !== 'quotation_selection')
+      throw fail(403, 'This link cannot be used to select a vendor.');
     const data = await this.publicCompare(token, l.target_id);
-    if (!data.quotations.some((q) => q.id === body.quotation_id)) throw fail(400, 'Choose one of the quotations shown.');
-    if (!String(body.signatory_name || '').trim()) throw fail(400, 'Signatory name is required.');
-    const id = await this.respond(l, 'quotation_selected', body.quotation_id, body);
-    await this.exec('UPDATE quotations SET is_selected = 0 WHERE id IN (?)', [data.quotations.map((q) => q.id)]);
-    await this.exec('UPDATE quotations SET is_selected = 1, selected_at = NOW() WHERE id = ?', [body.quotation_id]);
+    if (!data.quotations.some((q) => q.id === body.quotation_id))
+      throw fail(400, 'Choose one of the quotations shown.');
+    if (!String(body.signatory_name || '').trim())
+      throw fail(400, 'Signatory name is required.');
+    const id = await this.respond(
+      l,
+      'quotation_selected',
+      body.quotation_id,
+      body,
+    );
+    await this.exec('UPDATE quotations SET is_selected = 0 WHERE id IN (?)', [
+      data.quotations.map((q) => q.id),
+    ]);
+    await this.exec(
+      'UPDATE quotations SET is_selected = 1, selected_at = NOW() WHERE id = ?',
+      [body.quotation_id],
+    );
     const q = data.quotations.find((x) => x.id === body.quotation_id);
-    await this.notifyStaff(l.project_id, 'Client selected a vendor', `${l.project_name}: ${q?.vendor_name} chosen by ${body.signatory_name}`, 'quotation', body.quotation_id);
+    await this.notifyStaff(
+      l.project_id,
+      'Client selected a vendor',
+      `${l.project_name}: ${q?.vendor_name} chosen by ${body.signatory_name}`,
+      'quotation',
+      body.quotation_id,
+    );
     return { id };
   }
 
   async publicHandover(token: string) {
     const l = await this.resolve(token);
-    if (l.purpose !== 'handover_acceptance') throw fail(403, 'This link cannot access the handover.');
-    const [p] = await this.select('SELECT id, name FROM projects WHERE id = ?', [l.project_id]);
+    if (l.purpose !== 'handover_acceptance')
+      throw fail(403, 'This link cannot access the handover.');
+    const [p] = await this.select(
+      'SELECT id, name FROM projects WHERE id = ?',
+      [l.project_id],
+    );
     const status = await this.handoverStatus(l.project_id);
     if (status.package?.url && privateFileKey(status.package.url)) {
-      status.package.url = signFileReference(status.package.url, Math.floor(new Date(l.expires_at).getTime() / 1000));
+      status.package.url = signFileReference(
+        status.package.url,
+        Math.floor(new Date(l.expires_at).getTime() / 1000),
+      );
     }
-    return { link: this.linkPublic(l), project: p, checklist: status.checklist, package: status.package, accepted: status.accepted };
+    return {
+      link: this.linkPublic(l),
+      project: p,
+      checklist: status.checklist,
+      package: status.package,
+      accepted: status.accepted,
+    };
   }
 
   async publicHandoverAccept(token: string, body: any) {
     const l = await this.resolve(token);
-    if (l.purpose !== 'handover_acceptance') throw fail(403, 'This link cannot be used to accept the handover.');
-    if (!String(body.signatory_name || '').trim()) throw fail(400, 'Signatory name is required.');
+    if (l.purpose !== 'handover_acceptance')
+      throw fail(403, 'This link cannot be used to accept the handover.');
+    if (!String(body.signatory_name || '').trim())
+      throw fail(400, 'Signatory name is required.');
     const id = await this.respond(l, 'handover_accepted', l.project_id, body);
-    await this.notifyStaff(l.project_id, 'Client accepted the handover', `${l.project_name}: signed by ${body.signatory_name}`, 'project', l.project_id);
+    await this.notifyStaff(
+      l.project_id,
+      'Client accepted the handover',
+      `${l.project_name}: signed by ${body.signatory_name}`,
+      'project',
+      l.project_id,
+    );
     return { id };
   }
 
   async publicSnag(token: string, body: any) {
     const l = await this.resolve(token);
-    if (!String(body.title || '').trim()) throw fail(400, 'Please give the concern a title.');
+    if (!String(body.title || '').trim())
+      throw fail(400, 'Please give the concern a title.');
     const taskId = randomUUID();
     const [pm] = await this.select(
       `SELECT u.id FROM users u WHERE u.is_active = 1 AND u.job_title LIKE '%Project Manager%'
         ORDER BY u.id IN (SELECT user_id FROM team_members WHERE owner_type='PROJECT' AND owner_id = ?) DESC LIMIT 1`,
       [l.project_id],
     );
-    const [creator] = await this.select(`SELECT created_by FROM client_links WHERE id = ?`, [l.id]);
+    const [creator] = await this.select(
+      `SELECT created_by FROM client_links WHERE id = ?`,
+      [l.id],
+    );
     await this.exec(
       `INSERT INTO tasks (id, title, description, project_id, created_by, assigned_to, priority, status, start_date, due_date, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, 'high', 'todo', NOW(), NOW() + INTERVAL 3 DAY, NOW(), NOW())`,
       [
         taskId,
         `Client snag: ${String(body.title).slice(0, 230)}`,
-        [body.location && `Location: ${body.location}`, body.description, `Reported by ${body.signatory_name || l.client_name || 'client'} via client link.`]
+        [
+          body.location && `Location: ${body.location}`,
+          body.description,
+          `Reported by ${body.signatory_name || l.client_name || 'client'} via client link.`,
+        ]
           .filter(Boolean)
           .join('\n'),
         l.project_id,
@@ -482,19 +618,36 @@ export class ClientPortalService {
         pm?.id || null,
       ],
     );
-    const id = await this.respond(l, 'snag_reported', taskId, body, { title: body.title, location: body.location, description: body.description, task_id: taskId });
-    await this.notifyStaff(l.project_id, 'Client reported a snag', `${l.project_name}: ${body.title}`, 'task', taskId);
+    const id = await this.respond(l, 'snag_reported', taskId, body, {
+      title: body.title,
+      location: body.location,
+      description: body.description,
+      task_id: taskId,
+    });
+    await this.notifyStaff(
+      l.project_id,
+      'Client reported a snag',
+      `${l.project_name}: ${body.title}`,
+      'task',
+      taskId,
+    );
     return { id, task_id: taskId };
   }
 
   // ================================================================= handover
 
   async handoverStatus(projectId: string) {
-    const [p] = await this.select('SELECT id, name, current_phase FROM projects WHERE id = ? AND deleted_at IS NULL', [projectId]);
+    const [p] = await this.select(
+      'SELECT id, name, current_phase FROM projects WHERE id = ? AND deleted_at IS NULL',
+      [projectId],
+    );
     if (!p) throw new NotFoundException('Project not found');
-    const one = async (sql: string, r: any[] = [projectId]) => Number(Object.values((await this.select(sql, r))[0] || { n: 0 })[0] || 0);
+    const one = async (sql: string, r: any[] = [projectId]) =>
+      Number(Object.values((await this.select(sql, r))[0] || { n: 0 })[0] || 0);
 
-    const drawings = await one(`SELECT COUNT(*) FROM drawings WHERE project_id = ? AND status IN ('Approved','For Construction')`);
+    const drawings = await one(
+      `SELECT COUNT(*) FROM drawings WHERE project_id = ? AND status IN ('Approved','For Construction')`,
+    );
     const handoverDocs = await one(
       `SELECT COUNT(*) FROM documents d LEFT JOIN document_types t ON t.id = d.document_type_id
         WHERE d.project_id = ? AND (d.category = 'Handover Documents' OR t.phase_code = '09_HANDOVER')`,
@@ -507,7 +660,9 @@ export class ClientPortalService {
           AND NOT EXISTS (SELECT 1 FROM qc_sign_offs q2 WHERE q2.project_id = q.project_id AND q2.step_id = q.step_id
                           AND q2.trade_team_id <=> q.trade_team_id AND q2.result = 'PASS' AND q2.attempt_number > q.attempt_number)`,
     );
-    const rfisOpen = await one(`SELECT COUNT(*) FROM rfis WHERE project_id = ? AND status = 'OPEN'`);
+    const rfisOpen = await one(
+      `SELECT COUNT(*) FROM rfis WHERE project_id = ? AND status = 'OPEN'`,
+    );
     const snagsOpen = await one(
       `SELECT COUNT(*) FROM tasks WHERE project_id = ? AND title LIKE 'Client snag:%' AND status <> 'completed'`,
     );
@@ -518,22 +673,68 @@ export class ClientPortalService {
         WHERE s.project_id = ?`,
       [projectId],
     );
-    const boqApproved = await one(`SELECT COUNT(*) FROM boqs WHERE project_id = ? AND status = 'approved' AND deleted_at IS NULL`);
+    const boqApproved = await one(
+      `SELECT COUNT(*) FROM boqs WHERE project_id = ? AND status = 'approved' AND deleted_at IS NULL`,
+    );
 
     const payTotal = Number(pay?.total || 0);
     const checklist = [
-      { key: 'drawings', name: 'Approved / for-construction drawings issued', done: drawings > 0, detail: `${drawings} drawings`, required: true },
-      { key: 'handover_docs', name: 'Handover documents uploaded', done: handoverDocs > 0, detail: `${handoverDocs} documents`, required: true },
-      { key: 'certificates', name: 'Completion certificates & warranties', done: certificates > 0, detail: `${certificates} files`, required: false },
-      { key: 'boq', name: 'BOQ approved by client', done: boqApproved > 0, detail: boqApproved ? 'Approved' : 'No approved BOQ', required: true },
-      { key: 'qc', name: 'No unresolved QC failures', done: qcOpen === 0, detail: qcOpen ? `${qcOpen} open` : 'All clear', required: true },
-      { key: 'rfis', name: 'All site RFIs answered', done: rfisOpen === 0, detail: rfisOpen ? `${rfisOpen} open` : 'All clear', required: true },
-      { key: 'snags', name: 'Client snags closed', done: snagsOpen === 0, detail: snagsOpen ? `${snagsOpen} open` : 'None open', required: true },
+      {
+        key: 'drawings',
+        name: 'Approved / for-construction drawings issued',
+        done: drawings > 0,
+        detail: `${drawings} drawings`,
+        required: true,
+      },
+      {
+        key: 'handover_docs',
+        name: 'Handover documents uploaded',
+        done: handoverDocs > 0,
+        detail: `${handoverDocs} documents`,
+        required: true,
+      },
+      {
+        key: 'certificates',
+        name: 'Completion certificates & warranties',
+        done: certificates > 0,
+        detail: `${certificates} files`,
+        required: false,
+      },
+      {
+        key: 'boq',
+        name: 'BOQ approved by client',
+        done: boqApproved > 0,
+        detail: boqApproved ? 'Approved' : 'No approved BOQ',
+        required: true,
+      },
+      {
+        key: 'qc',
+        name: 'No unresolved QC failures',
+        done: qcOpen === 0,
+        detail: qcOpen ? `${qcOpen} open` : 'All clear',
+        required: true,
+      },
+      {
+        key: 'rfis',
+        name: 'All site RFIs answered',
+        done: rfisOpen === 0,
+        detail: rfisOpen ? `${rfisOpen} open` : 'All clear',
+        required: true,
+      },
+      {
+        key: 'snags',
+        name: 'Client snags closed',
+        done: snagsOpen === 0,
+        detail: snagsOpen ? `${snagsOpen} open` : 'None open',
+        required: true,
+      },
       {
         key: 'payments',
         name: 'Payments cleared up to the handover milestone',
         done: payTotal > 0 && Number(pay?.open_before_final || 0) === 0,
-        detail: payTotal ? `${Number(pay?.paid || 0)} of ${payTotal} milestones paid` : 'No payment schedule',
+        detail: payTotal
+          ? `${Number(pay?.paid || 0)} of ${payTotal} milestones paid`
+          : 'No payment schedule',
         required: true,
       },
     ];
@@ -548,9 +749,13 @@ export class ClientPortalService {
       `SELECT signatory_name, created_at FROM client_link_responses WHERE project_id = ? AND kind = 'handover_accepted' ORDER BY created_at DESC LIMIT 1`,
       [projectId],
     );
-    const token = pkg ? decrypt(pkg.token_enc) : null;
+    const token = pkg ? this.tokenCrypto.decrypt(pkg.token_enc) : null;
     return {
-      project: { id: p.id, name: p.name, phase: this.phaseLabel(p.current_phase) },
+      project: {
+        id: p.id,
+        name: p.name,
+        phase: this.phaseLabel(p.current_phase),
+      },
       checklist,
       required: req.length,
       available,
@@ -564,7 +769,10 @@ export class ClientPortalService {
             url: pkg.url,
             created_at: pkg.created_at,
             delivered_at: pkg.delivered_at,
-            client_url: token && !pkg.revoked_at && new Date(pkg.expires_at) > new Date() ? `${this.frontendBase()}/client/${token}` : null,
+            client_url:
+              token && !pkg.revoked_at && new Date(pkg.expires_at) > new Date()
+                ? `${this.frontendBase()}/client/${token}`
+                : null,
           }
         : null,
       accepted: accepted || null,
@@ -574,11 +782,17 @@ export class ClientPortalService {
   async preparePackage(projectId: string, user: any) {
     const operationId = user?.exportOperationId as string | undefined;
     if (operationId) {
-      const [existing] = await this.select('SELECT id, filename, url, size FROM handover_packages WHERE id = ? AND project_id = ?', [operationId, projectId]);
+      const [existing] = await this.select(
+        'SELECT id, filename, url, size FROM handover_packages WHERE id = ? AND project_id = ?',
+        [operationId, projectId],
+      );
       if (existing) return existing;
     }
     const status = await this.handoverStatus(projectId);
-    if (!status.ready) throw new BadRequestException('Complete the required checklist items before preparing the package.');
+    if (!status.ready)
+      throw new BadRequestException(
+        'Complete the required checklist items before preparing the package.',
+      );
     const docs = await this.select(
       `SELECT d.title, d.filename, d.storage_filename, d.url, d.category, d.version, d.created_at FROM documents d
          LEFT JOIN document_types t ON t.id = d.document_type_id
@@ -603,7 +817,8 @@ export class ClientPortalService {
     const included: string[] = [];
     const linked: any[] = [];
     for (const d of docs) {
-      const storageKey = d.storage_filename || (d.url ? privateFileKey(d.url) : null);
+      const storageKey =
+        d.storage_filename || (d.url ? privateFileKey(d.url) : null);
       const name = `documents/${(d.category || 'Other').replace(/[^\w\- ]+/g, '')}/${d.filename || path.basename(d.url || 'file')}`;
       if (storageKey) {
         zip.append(await this.cdn.downloadFile(storageKey), { name });
@@ -611,16 +826,37 @@ export class ClientPortalService {
       } else linked.push(d);
     }
     const csv = (rows: any[], cols: string[]) =>
-      [cols.join(','), ...rows.map((r) => cols.map((c) => `"${String(r[c] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
-    zip.append(csv(drawings, ['drawing_number', 'title', 'discipline', 'status', 'sheet_size', 'scale']), { name: 'drawing-register.csv' });
-    zip.append(csv(docs, ['category', 'title', 'filename', 'version', 'url']), { name: 'document-index.csv' });
+      [
+        cols.join(','),
+        ...rows.map((r) =>
+          cols
+            .map((c) => `"${String(r[c] ?? '').replace(/"/g, '""')}"`)
+            .join(','),
+        ),
+      ].join('\n');
+    zip.append(
+      csv(drawings, [
+        'drawing_number',
+        'title',
+        'discipline',
+        'status',
+        'sheet_size',
+        'scale',
+      ]),
+      { name: 'drawing-register.csv' },
+    );
+    zip.append(csv(docs, ['category', 'title', 'filename', 'version', 'url']), {
+      name: 'document-index.csv',
+    });
     zip.append(
       [
         `Handover package — ${status.project.name}`,
         `Prepared ${new Date().toISOString().slice(0, 10)} by ${user?.name || 'Rippotai'} · Rippotai Architecture`,
         '',
         'Checklist',
-        ...status.checklist.map((c) => `  [${c.done ? 'x' : ' '}] ${c.name} — ${c.detail}`),
+        ...status.checklist.map(
+          (c) => `  [${c.done ? 'x' : ' '}] ${c.name} — ${c.detail}`,
+        ),
         '',
         `${included.length} files included, ${linked.length} referenced in document-index.csv, ${drawings.length} drawings in drawing-register.csv.`,
       ].join('\n'),
@@ -629,20 +865,47 @@ export class ClientPortalService {
     await zip.finalize();
     await finished;
     const buffer = Buffer.concat(chunks);
-    const slug = String(status.project.name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const slug = String(status.project.name)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
     const filename = `${slug}-handover-${new Date().toISOString().slice(0, 10)}.zip`;
     const up = await this.cdn.uploadBuffer(buffer, filename, 'handover');
     const id = randomUUID();
     await this.exec(
       `INSERT INTO handover_packages (id, project_id, filename, url, size, manifest_json, prepared_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-      [operationId || id, projectId, filename, up.url, buffer.length, JSON.stringify({ included, linked: linked.length, drawings: drawings.length }), user?.id || null],
+      [
+        operationId || id,
+        projectId,
+        filename,
+        up.url,
+        buffer.length,
+        JSON.stringify({
+          included,
+          linked: linked.length,
+          drawings: drawings.length,
+        }),
+        user?.id || null,
+      ],
     );
-    return { id: operationId || id, filename, url: up.url, size: buffer.length, files: included.length, referenced: linked.length, drawings: drawings.length };
+    return {
+      id: operationId || id,
+      filename,
+      url: up.url,
+      size: buffer.length,
+      files: included.length,
+      referenced: linked.length,
+      drawings: drawings.length,
+    };
   }
 
   async deliver(projectId: string, body: any, user: any, origin?: string) {
-    const [pkg] = await this.select('SELECT * FROM handover_packages WHERE project_id = ? ORDER BY created_at DESC LIMIT 1', [projectId]);
-    if (!pkg) throw new BadRequestException('Prepare the handover package first.');
+    const [pkg] = await this.select(
+      'SELECT * FROM handover_packages WHERE project_id = ? ORDER BY created_at DESC LIMIT 1',
+      [projectId],
+    );
+    if (!pkg)
+      throw new BadRequestException('Prepare the handover package first.');
     const [client] = await this.select(
       `SELECT c.name, c.contact_person, c.email FROM projects p LEFT JOIN clients c ON c.id = p.client_id WHERE p.id = ?`,
       [projectId],
@@ -651,14 +914,21 @@ export class ClientPortalService {
       {
         project_id: projectId,
         purpose: 'handover_acceptance',
-        client_name: body?.client_name || client?.contact_person || client?.name,
+        client_name:
+          body?.client_name || client?.contact_person || client?.name,
         client_email: body?.client_email || client?.email,
         expires_days: body?.expires_days || 30,
       },
       user,
       origin,
     );
-    await this.exec('UPDATE handover_packages SET link_id = ?, delivered_at = NOW() WHERE id = ?', [link.id, pkg.id]);
-    return { ...link, package: { id: pkg.id, filename: pkg.filename, url: pkg.url } };
+    await this.exec(
+      'UPDATE handover_packages SET link_id = ?, delivered_at = NOW() WHERE id = ?',
+      [link.id, pkg.id],
+    );
+    return {
+      ...link,
+      package: { id: pkg.id, filename: pkg.filename, url: pkg.url },
+    };
   }
 }

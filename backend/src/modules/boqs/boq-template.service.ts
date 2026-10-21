@@ -1,8 +1,13 @@
 // boq-template.service.ts
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
-import { literal } from 'sequelize';
+import { literal, Transaction } from 'sequelize';
 import { BoqTemplate } from './models/boq-template.model';
 import { BoqTemplateCategory } from './models/boq-template-category.model';
 import { BoqTemplateItem } from './models/boq-template-item.model';
@@ -13,7 +18,33 @@ import {
 } from './dto/create-boq-template.dto';
 import { BoqActivityService } from './boq-activity.service';
 import { BoqActivityAction } from '@/common/enums/boq-enums';
-import { Transaction } from 'sequelize';
+
+/** Fields a client may set on a template item. Anything else (e.g. boq_category_id, id) is ignored. */
+const ITEM_EDITABLE_FIELDS = [
+  'library_item_id',
+  'name',
+  'unit_id',
+  'unit',
+  'quantity',
+  'rate',
+  'notes',
+] as const;
+
+type ItemEditableField = (typeof ITEM_EDITABLE_FIELDS)[number];
+
+function pickItemFields(
+  body: Partial<BoqTemplateItem>,
+): Partial<Pick<BoqTemplateItem, ItemEditableField>> {
+  const out: Partial<Pick<BoqTemplateItem, ItemEditableField>> = {};
+  for (const key of ITEM_EDITABLE_FIELDS) {
+    if (body[key] !== undefined) {
+      // Object.assign avoids TypeScript's "union key is never" error on out[key] = ...
+      Object.assign(out, { [key]: body[key] });
+    }
+  }
+  return out;
+}
+
 @Injectable()
 export class BoqTemplateService {
   private readonly logger = new Logger(BoqTemplateService.name);
@@ -34,36 +65,35 @@ export class BoqTemplateService {
   ) {}
 
   async findAll() {
-    /* unchanged — see previous message */
     const templates = await this.templateModel.findAll({
       attributes: {
         include: [
           [
             literal(`(
-        SELECT COUNT(*)
-        FROM boq_template_categories btc
-        WHERE btc.template_id = BoqTemplate.id
-      )`),
+              SELECT COUNT(*)
+              FROM boq_template_categories btc
+              WHERE btc.template_id = BoqTemplate.id
+            )`),
             'category_count',
           ],
           [
             literal(`(
-        SELECT COUNT(*)
-        FROM boq_template_items bti
-        INNER JOIN boq_template_categories btc
-          ON btc.id = bti.boq_category_id
-        WHERE btc.template_id = BoqTemplate.id
-      )`),
+              SELECT COUNT(*)
+              FROM boq_template_items bti
+              INNER JOIN boq_template_categories btc
+                ON btc.id = bti.boq_category_id
+              WHERE btc.template_id = BoqTemplate.id
+            )`),
             'item_count',
           ],
           [
             literal(`(
-        SELECT COALESCE(SUM(bti.quantity * bti.rate), 0)
-        FROM boq_template_items bti
-        INNER JOIN boq_template_categories btc
-          ON btc.id = bti.boq_category_id
-        WHERE btc.template_id = BoqTemplate.id
-      )`),
+              SELECT COALESCE(SUM(bti.quantity * bti.rate), 0)
+              FROM boq_template_items bti
+              INNER JOIN boq_template_categories btc
+                ON btc.id = bti.boq_category_id
+              WHERE btc.template_id = BoqTemplate.id
+            )`),
             'total_value',
           ],
         ],
@@ -84,7 +114,7 @@ export class BoqTemplateService {
     }));
   }
 
-  /** Editor view — categories + items, ordered, with a computed subtotal per category. */
+  /** Editor view: categories and items, ordered, with a computed subtotal per category. */
   async findOne(id: string, transaction?: Transaction) {
     const template = await this.templateModel.findByPk(id, {
       transaction,
@@ -126,10 +156,10 @@ export class BoqTemplateService {
 
     return plain;
   }
+
   async create(dto: CreateTemplateDto, actorId?: string) {
     try {
       return await this.sequelize.transaction(async (t) => {
-        // Create template
         const template = await this.templateModel.create(
           {
             name: dto.name,
@@ -140,12 +170,6 @@ export class BoqTemplateService {
           { transaction: t },
         );
 
-        this.logger.log(`Created Template ID: ${template.id}`);
-        this.logger.log(
-          `Created Template: ${JSON.stringify(template.toJSON(), null, 2)}`,
-        );
-
-        // Create categories & items
         for (const [ci, category] of (dto.categories ?? []).entries()) {
           const cat = await this.categoryModel.create(
             {
@@ -156,10 +180,8 @@ export class BoqTemplateService {
             { transaction: t },
           );
 
-          this.logger.log(`Created Category: ${cat.id}`);
-
           for (const [ii, item] of (category.items ?? []).entries()) {
-            const createdItem = await this.itemModel.create(
+            await this.itemModel.create(
               {
                 boq_category_id: cat.id,
                 library_item_id: item.library_item_id ?? null,
@@ -173,60 +195,34 @@ export class BoqTemplateService {
               } as BoqTemplateItem,
               { transaction: t },
             );
-
-            this.logger.log(`Created Item: ${createdItem.id}`);
           }
         }
 
-        // Verify record exists inside transaction
-        const existsInTransaction = await this.templateModel.findByPk(
-          template.id,
-          {
-            transaction: t,
-          },
-        );
-
-        this.logger.log(
-          `Template exists inside transaction: ${existsInTransaction ? 'YES' : 'NO'}`,
-        );
-
-        // Log activity
         await this.activity.log({
           user_id: actorId,
           action: BoqActivityAction.CREATED,
           target: `Template · ${template.name}`,
         });
 
-        this.logger.log('Activity logged successfully');
+        this.logger.log(`Created BOQ template ${template.id}`);
 
-        // Fetch full template using SAME transaction
         return await this.findOne(template.id, t);
       });
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        this.logger.error('Failed to create BOQ template', error.stack);
-        this.logger.error(error.message);
-      } else {
-        this.logger.error(
-          'Failed to create BOQ template',
-          JSON.stringify(error),
-        );
-      }
-
-      this.logger.error('Request DTO:');
-      this.logger.error(JSON.stringify(dto, null, 2));
-      this.logger.error(`Actor ID: ${actorId}`);
-
+      this.logger.error(
+        `Failed to create BOQ template (actor ${actorId ?? 'unknown'})`,
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
 
-  /** Top-level fields only (name, tier, description). Categories/items use the granular methods below. */
+  /** Top-level fields only (name, tier, description). Categories and items use the methods below. */
   async update(id: string, dto: UpdateTemplateDto, actorId?: string) {
     const template = await this.templateModel.findByPk(id);
     if (!template) throw new NotFoundException('BOQ template not found');
 
-    await template.update({ ...dto, updated_by: actorId ?? null } as any);
+    await template.update({ ...dto, updated_by: actorId ?? null });
 
     await this.activity.log({
       user_id: actorId,
@@ -257,14 +253,17 @@ export class BoqTemplateService {
 
   async addCategory(templateId: string, name: string) {
     await this.assertTemplateExists(templateId);
-    const maxOrder = (await this.categoryModel.max('sort_order', {
-      where: { template_id: templateId },
-    })) as number | null;
+
+    const maxOrder = Number(
+      (await this.categoryModel.max('sort_order', {
+        where: { template_id: templateId },
+      })) ?? -1,
+    );
 
     await this.categoryModel.create({
       template_id: templateId,
       name,
-      sort_order: (maxOrder ?? -1) + 1,
+      sort_order: maxOrder + 1,
     } as BoqTemplateCategory);
 
     return this.findOne(templateId);
@@ -288,14 +287,21 @@ export class BoqTemplateService {
     categoryId: string,
     body: Partial<BoqTemplateItem>,
   ) {
+    if (!body.name) {
+      throw new BadRequestException('Item name is required');
+    }
+
     const cat = await this.categoryModel.findOne({
       where: { id: categoryId, template_id: templateId },
     });
     if (!cat) throw new NotFoundException('Template category not found');
 
-    const maxOrder = (await this.itemModel.max('sort_order', {
-      where: { boq_category_id: categoryId },
-    })) as number | null;
+    const maxOrder = Number(
+      (await this.itemModel.max('sort_order', {
+        where: { boq_category_id: categoryId },
+      })) ?? -1,
+    );
+
     await this.itemModel.create({
       boq_category_id: categoryId,
       library_item_id: body.library_item_id ?? null,
@@ -305,7 +311,7 @@ export class BoqTemplateService {
       quantity: body.quantity ?? 0,
       rate: body.rate ?? 0,
       notes: body.notes ?? null,
-      sort_order: (maxOrder ?? -1) + 1,
+      sort_order: maxOrder + 1,
     } as BoqTemplateItem);
 
     return this.findOne(templateId);
@@ -323,7 +329,7 @@ export class BoqTemplateService {
     });
     if (!item) throw new NotFoundException('Template item not found');
 
-    await item.update(body as any);
+    await item.update(pickItemFields(body));
     return this.findOne(templateId);
   }
 
@@ -343,20 +349,24 @@ export class BoqTemplateService {
     categoryId: string,
     orderedIds: string[],
   ) {
+    const cat = await this.categoryModel.findOne({
+      where: { id: categoryId, template_id: templateId },
+      attributes: ['id'],
+    });
+    if (!cat) throw new NotFoundException('Template category not found');
+
     await this.sequelize.transaction(async (t) => {
       for (const [idx, itemId] of orderedIds.entries()) {
         await this.itemModel.update(
           { sort_order: idx },
           {
-            where: {
-              id: itemId,
-              boq_category_id: categoryId,
-            },
+            where: { id: itemId, boq_category_id: categoryId },
             transaction: t,
           },
         );
       }
     });
+
     return this.findOne(templateId);
   }
 

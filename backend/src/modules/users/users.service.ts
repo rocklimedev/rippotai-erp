@@ -44,7 +44,9 @@ export class UsersService {
   // =========================
   async create(dto: CreateUserDto, actor?: any): Promise<User> {
     if (!actor?.id || !['ADMIN', 'SUPERADMIN'].includes(actor.roleName)) {
-      throw new ForbiddenException('Only administrators can provision accounts.');
+      throw new ForbiddenException(
+        'Only administrators can provision accounts.',
+      );
     }
     await assertNewPassword(dto.password);
     const password_hash = await bcrypt.hash(dto.password, SALT_ROUNDS);
@@ -59,7 +61,7 @@ export class UsersService {
         role_id: dto.role_id ?? null,
         is_active: dto.is_active ?? true,
         created_by: actor.id,
-      } as any);
+      });
 
       const createdUser = await this.findOne(user.id);
 

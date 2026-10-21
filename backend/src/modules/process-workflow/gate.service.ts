@@ -66,7 +66,7 @@ export class GateService {
       actualCompletionDate: gateLog.achievedAt,
       signedOffBy: dto.approverName,
       signedOffAt: gateLog.achievedAt,
-    } as any);
+    });
 
     return gateLog;
   }

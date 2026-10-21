@@ -17,7 +17,11 @@ import {
 import type { Request, Response } from 'express';
 import { CrucialWorkService } from './crucial-work.service';
 import { CrucialWorkExportService } from './crucial-work-export.service';
-import { CrucialWorkQueryDto, CrucialWorkExportDto, SaveCrucialCheckDto } from './dto/crucial-work.dto';
+import {
+  CrucialWorkQueryDto,
+  CrucialWorkExportDto,
+  SaveCrucialCheckDto,
+} from './dto/crucial-work.dto';
 
 import { TasksService } from './task.service';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -36,9 +40,11 @@ interface AuthRequest extends Request {
 @UseGuards(JwtAuthGuard)
 @Controller('tasks')
 export class TasksController {
-  constructor(private readonly tasksService: TasksService,
+  constructor(
+    private readonly tasksService: TasksService,
     private readonly crucialWork: CrucialWorkService,
-    private readonly crucialExport: CrucialWorkExportService) {}
+    private readonly crucialExport: CrucialWorkExportService,
+  ) {}
 
   @RequirePermission('tasks:read')
   @Get('crucial-work')
@@ -49,28 +55,49 @@ export class TasksController {
   @RequirePermission('tasks:read')
   @Get('crucial-work/template')
   async crucialTemplate(@Res() res: Response) {
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    res.setHeader('Content-Disposition', 'attachment; filename="crucial-work-template.docx"');
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="crucial-work-template.docx"',
+    );
     res.send(await this.crucialExport.template());
   }
 
   @AsyncExport('crucial-work')
   @RequirePermission('tasks:read')
   @Get('crucial-work/export')
-  async exportCrucialWork(@Query() query: CrucialWorkExportDto, @Res() res: Response) {
+  async exportCrucialWork(
+    @Query() query: CrucialWorkExportDto,
+    @Res() res: Response,
+  ) {
     const register = await this.crucialWork.register(query);
-    const buffer = query.format === 'docx'
-      ? await this.crucialExport.word(register, query)
-      : await this.crucialExport.pdf(register, query);
-    res.setHeader('Content-Type', query.format === 'docx'
-      ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="crucial-work-${query.cycle_date}.${query.format}"`);
+    const buffer =
+      query.format === 'docx'
+        ? await this.crucialExport.word(register, query)
+        : await this.crucialExport.pdf(register, query);
+    res.setHeader(
+      'Content-Type',
+      query.format === 'docx'
+        ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        : 'application/pdf',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="crucial-work-${query.cycle_date}.${query.format}"`,
+    );
     res.send(buffer);
   }
 
   @RequirePermission('tasks:update')
   @Post(':id/crucial-check')
-  saveCrucialCheck(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SaveCrucialCheckDto, @Req() req: AuthRequest) {
+  saveCrucialCheck(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SaveCrucialCheckDto,
+    @Req() req: AuthRequest,
+  ) {
     return this.crucialWork.saveCheck(id, dto, req.user.id);
   }
 

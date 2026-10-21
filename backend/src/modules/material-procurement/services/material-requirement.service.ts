@@ -90,7 +90,7 @@ export class MaterialRequirementService {
 
   async update(id: string, dto: UpdateMaterialRequirementDto) {
     const requirement = await this.findOne(id);
-    await requirement.update(dto as any);
+    await requirement.update(dto);
     return this.findOne(id);
   }
 

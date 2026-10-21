@@ -28,14 +28,18 @@ function relTime(d: any): string {
   const diff = Date.now() - t;
   const abs = Math.abs(diff);
   const m = Math.round(abs / 60000);
-  const fmt = (v: number, u: string) => (diff >= 0 ? `${v}${u} ago` : `in ${v}${u}`);
+  const fmt = (v: number, u: string) =>
+    diff >= 0 ? `${v}${u} ago` : `in ${v}${u}`;
   if (m < 1) return 'just now';
   if (m < 60) return fmt(m, 'm');
   const h = Math.round(m / 60);
   if (h < 24) return fmt(h, 'h');
   const dd = Math.round(h / 24);
   if (dd < 30) return fmt(dd, 'd');
-  return new Date(t).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+  return new Date(t).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+  });
 }
 
 /** Day-granular label for due dates: Today / Tomorrow / in 5d / 3d overdue. */
@@ -80,10 +84,10 @@ export class DashboardDataService {
 
   private async q(sql: string, replacements: Row = {}): Promise<Row[]> {
     try {
-      return (await this.db.query(sql, {
+      return await this.db.query(sql, {
         type: QueryTypes.SELECT,
         replacements,
-      })) as Row[];
+      });
     } catch (e: any) {
       this.logger.warn(`dashboard query failed: ${e?.message?.slice(0, 160)}`);
       return [];
@@ -212,7 +216,9 @@ export class DashboardDataService {
         stage_key: stage,
         stage: p.current_phase || stageLabel[stage],
         progress: p.progress_pct != null ? Math.round(n(p.progress_pct)) : null,
-        priority: p.priority ? humanize(String(p.priority).toLowerCase()) : null,
+        priority: p.priority
+          ? humanize(String(p.priority).toLowerCase())
+          : null,
         due_date: isoDate(p.expected_completion_date),
         updated_at: p.updated_at,
       };
@@ -235,7 +241,8 @@ export class DashboardDataService {
         this.one(`SELECT COUNT(*) total, SUM(status='published') active,
                     SUM(status='archived') completed, SUM(status='draft') drafts
                   FROM plan_of_actions WHERE deleted_at IS NULL`),
-        this.one(`SELECT COUNT(*) total, SUM(LOWER(status) LIKE 'draft%') drafts,
+        this
+          .one(`SELECT COUNT(*) total, SUM(LOWER(status) LIKE 'draft%') drafts,
                     SUM(LOWER(status) LIKE '%review%' OR LOWER(status) LIKE 'submitted%') review,
                     SUM(LOWER(status) IN ('accepted','approved','signed','signed_off')) approved
                   FROM scope_of_work WHERE deleted_at IS NULL`),
@@ -263,7 +270,19 @@ export class DashboardDataService {
               FROM leads l WHERE l.follow_up >= CURDATE() AND l.stage <> 'lost'
           ) x ORDER BY date ASC LIMIT 8`),
         this.activity(
-          ['lead', 'leads', 'project', 'projects', 'client', 'clients', 'brief', 'project_brief', 'site_recce', 'scope_of_work', 'plan_of_action'],
+          [
+            'lead',
+            'leads',
+            'project',
+            'projects',
+            'client',
+            'clients',
+            'brief',
+            'project_brief',
+            'site_recce',
+            'scope_of_work',
+            'plan_of_action',
+          ],
           8,
         ),
       ]);
@@ -317,7 +336,8 @@ export class DashboardDataService {
   private async ledger() {
     const [sum, msum, schedules, upcoming, overdue, recent, activity] =
       await Promise.all([
-        this.one(`SELECT SUM(total_contract_value) tcv, SUM(total_payable) payable,
+        this
+          .one(`SELECT SUM(total_contract_value) tcv, SUM(total_payable) payable,
                     SUM(status='ACTIVE') active, SUM(status='COMPLETED') completed
                   FROM payment_schedules WHERE deleted_at IS NULL AND status <> 'CANCELLED'`),
         this.one(`SELECT SUM(COALESCE(m.paid_amount,0)) paid,
@@ -325,30 +345,37 @@ export class DashboardDataService {
                     SUM(m.status NOT IN ('PAID','WAIVED') AND (m.status='OVERDUE' OR m.due_date < CURDATE())) overdue
                   FROM payment_schedule_milestones m
                   JOIN payment_schedules s ON s.id = m.payment_schedule_id AND s.deleted_at IS NULL AND s.status <> 'CANCELLED'`),
-        this.q(`SELECT s.id, s.title, s.status, s.total_contract_value, s.total_payable, p.name project_name,
+        this
+          .q(`SELECT s.id, s.title, s.status, s.total_contract_value, s.total_payable, p.name project_name,
                   (SELECT SUM(COALESCE(paid_amount,0)) FROM payment_schedule_milestones WHERE payment_schedule_id = s.id) paid
                 FROM payment_schedules s LEFT JOIN projects p ON p.id = s.project_id
                 WHERE s.deleted_at IS NULL ORDER BY s.updated_at DESC LIMIT 8`),
-        this.q(`SELECT m.id, m.title milestone, m.due_date, GREATEST(m.amount - COALESCE(m.paid_amount,0),0) amount, p.name project_name
+        this
+          .q(`SELECT m.id, m.title milestone, m.due_date, GREATEST(m.amount - COALESCE(m.paid_amount,0),0) amount, p.name project_name
                 FROM payment_schedule_milestones m
                 JOIN payment_schedules s ON s.id = m.payment_schedule_id AND s.deleted_at IS NULL AND s.status <> 'CANCELLED'
                 LEFT JOIN projects p ON p.id = s.project_id
                 WHERE m.status NOT IN ('PAID','WAIVED','OVERDUE') AND m.due_date >= CURDATE()
                 ORDER BY m.due_date ASC LIMIT 8`),
-        this.q(`SELECT m.id, m.title milestone, m.due_date, GREATEST(m.amount - COALESCE(m.paid_amount,0),0) amount,
+        this
+          .q(`SELECT m.id, m.title milestone, m.due_date, GREATEST(m.amount - COALESCE(m.paid_amount,0),0) amount,
                   p.name project_name, DATEDIFF(CURDATE(), m.due_date) days_overdue
                 FROM payment_schedule_milestones m
                 JOIN payment_schedules s ON s.id = m.payment_schedule_id AND s.deleted_at IS NULL AND s.status <> 'CANCELLED'
                 LEFT JOIN projects p ON p.id = s.project_id
                 WHERE m.status NOT IN ('PAID','WAIVED') AND (m.status='OVERDUE' OR m.due_date < CURDATE())
                 ORDER BY m.due_date ASC LIMIT 8`),
-        this.q(`SELECT m.id, m.title milestone, COALESCE(m.paid_amount, m.amount) amount, m.paid_at date, p.name project_name
+        this
+          .q(`SELECT m.id, m.title milestone, COALESCE(m.paid_amount, m.amount) amount, m.paid_at date, p.name project_name
                 FROM payment_schedule_milestones m
                 JOIN payment_schedules s ON s.id = m.payment_schedule_id AND s.deleted_at IS NULL
                 LEFT JOIN projects p ON p.id = s.project_id
                 WHERE m.paid_at IS NOT NULL OR m.status IN ('PAID','PARTIALLY_PAID')
                 ORDER BY COALESCE(m.paid_at, m.updated_at) DESC LIMIT 8`),
-        this.activity(['payment_schedule', 'payment', 'invoice', 'budget_estimate'], 8),
+        this.activity(
+          ['payment_schedule', 'payment', 'invoice', 'budget_estimate'],
+          8,
+        ),
       ]);
 
     const payable = n(sum.payable);
@@ -410,32 +437,51 @@ export class DashboardDataService {
       GROUP BY mm.id, mm.name, mm.category`;
     const [counts, stock, po, req, today, requests, pos, moves, activity] =
       await Promise.all([
-        this.one(`SELECT COUNT(*) total FROM material_masters WHERE is_active = 1 OR is_active IS NULL`),
+        this.one(
+          `SELECT COUNT(*) total FROM material_masters WHERE is_active = 1 OR is_active IS NULL`,
+        ),
         this.q(stockSql),
-        this.one(`SELECT SUM(status IN ('APPROVED','SENT','PARTIALLY_RECEIVED')) active,
+        this
+          .one(`SELECT SUM(status IN ('APPROVED','SENT','PARTIALLY_RECEIVED')) active,
                     SUM(status IN ('SENT','PARTIALLY_RECEIVED')) pending_grn,
                     SUM(status = 'PENDING_APPROVAL') pending_approval
                   FROM purchase_orders`),
-        this.one(`SELECT SUM(status IN ('DRAFT','READY')) pending, SUM(status='IN_PROGRESS') approved
+        this
+          .one(`SELECT SUM(status IN ('DRAFT','READY')) pending, SUM(status='IN_PROGRESS') approved
                   FROM material_requirements`),
-        this.one(`SELECT SUM(direction='IN') inward, SUM(direction='OUT') outward
+        this
+          .one(`SELECT SUM(direction='IN') inward, SUM(direction='OUT') outward
                   FROM inventory_transactions WHERE transaction_date = CURDATE()`),
-        this.q(`SELECT r.id, r.itemName item_name, r.status, r.requirementDate date, r.category, p.name project_name
+        this
+          .q(`SELECT r.id, r.itemName item_name, r.status, r.requirementDate date, r.category, p.name project_name
                 FROM material_requirements r LEFT JOIN projects p ON p.id = r.projectId
                 WHERE r.status IN ('DRAFT','READY','IN_PROGRESS')
                 ORDER BY r.updatedAt DESC LIMIT 8`),
-        this.q(`SELECT po.id, po.po_number, po.total_amount amount, po.status, po.target_delivery_date,
+        this
+          .q(`SELECT po.id, po.po_number, po.total_amount amount, po.status, po.target_delivery_date,
                   COALESCE(v.company_name, v.name, po.agency_name) vendor, p.name project_name
                 FROM purchase_orders po LEFT JOIN vendors v ON v.id = po.vendor_id
                 LEFT JOIN projects p ON p.id = po.project_id
                 WHERE po.status NOT IN ('CANCELLED','CLOSED')
                 ORDER BY po.updated_at DESC LIMIT 8`),
-        this.q(`SELECT t.id, t.direction, t.quantity, t.unit, t.storage_location, t.transaction_date, t.created_at,
+        this
+          .q(`SELECT t.id, t.direction, t.quantity, t.unit, t.storage_location, t.transaction_date, t.created_at,
                   mm.name material, p.name project_name
                 FROM inventory_transactions t LEFT JOIN material_masters mm ON mm.id = t.material_id
                 LEFT JOIN projects p ON p.id = t.project_id
                 ORDER BY t.created_at DESC LIMIT 8`),
-        this.activity(['material', 'material_requirement', 'purchase_order', 'delivery_challan', 'inventory', 'quotation', 'vendor'], 8),
+        this.activity(
+          [
+            'material',
+            'material_requirement',
+            'purchase_order',
+            'delivery_challan',
+            'inventory',
+            'quotation',
+            'vendor',
+          ],
+          8,
+        ),
       ]);
 
     let stockValue = 0;
@@ -464,7 +510,14 @@ export class DashboardDataService {
         });
       }
       const key = s.category || 'Uncategorised';
-      const c = catMap.get(key) || { id: key, name: key, items: 0, stock: 0, value: 0, low_stock: 0 };
+      const c = catMap.get(key) || {
+        id: key,
+        name: key,
+        items: 0,
+        stock: 0,
+        value: 0,
+        low_stock: 0,
+      };
       c.items += 1;
       c.stock += Math.max(0, net);
       c.value += Math.max(0, net) * n(s.rate);
@@ -490,7 +543,11 @@ export class DashboardDataService {
       },
       categories: [...catMap.values()]
         .sort((a, b) => b.value - a.value || b.items - a.items)
-        .map((c) => ({ ...c, stock: Math.round(c.stock), value: Math.round(c.value) })),
+        .map((c) => ({
+          ...c,
+          stock: Math.round(c.stock),
+          value: Math.round(c.value),
+        })),
       low_stock_items: lowItems.slice(0, 8),
       requests: requests.map((r) => ({
         id: r.item_name || r.id,
@@ -525,18 +582,32 @@ export class DashboardDataService {
   private async siteOps() {
     const [rep, rfi, mock, qc, visits, reports, visitRows, rfis, mockups] =
       await Promise.all([
-        this.one(`SELECT COUNT(*) total, SUM(report_date = CURDATE()) today, SUM(report_date = CURDATE() AND is_shared = 1) today_shared
+        this
+          .one(`SELECT COUNT(*) total, SUM(report_date = CURDATE()) today, SUM(report_date = CURDATE() AND is_shared = 1) today_shared
                   FROM daily_site_reports`),
         this.one(`SELECT SUM(status='OPEN') open FROM rfis`),
-        this.one(`SELECT SUM(status IN ('PROPOSED','UNDER_REVIEW')) pending FROM mockups`),
-        this.one(`SELECT SUM(result='PASS') pass, SUM(result IN ('FAIL','REWORK')) fail, COUNT(*) total FROM qc_sign_offs`),
-        this.one(`SELECT COUNT(*) today FROM site_visit_logs WHERE scheduled_date = CURDATE() AND status <> 'CANCELLED'`),
-        this.q(`SELECT id, report_date, work_completed, is_shared, created_at FROM daily_site_reports ORDER BY report_date DESC, id DESC LIMIT 6`),
-        this.q(`SELECT id, visitor_name, visitor_type, scheduled_date, purpose, status FROM site_visit_logs ORDER BY scheduled_date DESC, id DESC LIMIT 6`),
-        this.q(`SELECT r.id, r.rfi_number, r.subject, r.status, r.priority, r.raised_at, t.name routed_to_team_name
+        this.one(
+          `SELECT SUM(status IN ('PROPOSED','UNDER_REVIEW')) pending FROM mockups`,
+        ),
+        this.one(
+          `SELECT SUM(result='PASS') pass, SUM(result IN ('FAIL','REWORK')) fail, COUNT(*) total FROM qc_sign_offs`,
+        ),
+        this.one(
+          `SELECT COUNT(*) today FROM site_visit_logs WHERE scheduled_date = CURDATE() AND status <> 'CANCELLED'`,
+        ),
+        this.q(
+          `SELECT id, report_date, work_completed, is_shared, created_at FROM daily_site_reports ORDER BY report_date DESC, id DESC LIMIT 6`,
+        ),
+        this.q(
+          `SELECT id, visitor_name, visitor_type, scheduled_date, purpose, status FROM site_visit_logs ORDER BY scheduled_date DESC, id DESC LIMIT 6`,
+        ),
+        this
+          .q(`SELECT r.id, r.rfi_number, r.subject, r.status, r.priority, r.raised_at, t.name routed_to_team_name
                 FROM rfis r LEFT JOIN teams t ON t.id = CAST(r.routed_to_team_id AS CHAR)
                 ORDER BY (r.status='OPEN') DESC, r.raised_at DESC LIMIT 8`),
-        this.q(`SELECT id, name, finish_type, status, proposed_at FROM mockups ORDER BY (status IN ('PROPOSED','UNDER_REVIEW')) DESC, updated_at DESC LIMIT 8`),
+        this.q(
+          `SELECT id, name, finish_type, status, proposed_at FROM mockups ORDER BY (status IN ('PROPOSED','UNDER_REVIEW')) DESC, updated_at DESC LIMIT 8`,
+        ),
       ]);
     const qcTotal = n(qc.total);
     const activity = [
@@ -550,7 +621,8 @@ export class DashboardDataService {
       ...rfis.map((r) => ({
         id: `rfi-${r.id}`,
         type: 'rfi',
-        title: `RFI-${String(r.rfi_number).padStart(3, '0')} ${r.subject || ''}`.trim(),
+        title:
+          `RFI-${String(r.rfi_number).padStart(3, '0')} ${r.subject || ''}`.trim(),
         description: humanize(String(r.status || '').toLowerCase()),
         date: r.raised_at,
       })),
@@ -591,7 +663,11 @@ export class DashboardDataService {
         scheduled_date: isoDate(v.scheduled_date),
         status: humanize(String(v.status || '').toLowerCase()),
       })),
-      rfis: rfis.map((r) => ({ ...r, status: r.status, priority: humanize(String(r.priority || '').toLowerCase()) })),
+      rfis: rfis.map((r) => ({
+        ...r,
+        status: r.status,
+        priority: humanize(String(r.priority || '').toLowerCase()),
+      })),
       mockups: mockups.map((m) => ({ ...m, status: m.status })),
       activity,
     };
@@ -600,20 +676,23 @@ export class DashboardDataService {
   /* ------------------------------------------------------------ Design Studio */
 
   private async designStudio() {
-    const [projects, tasks, approvals, team, upcoming, activity] = await Promise.all([
-      this.projectStages(),
-      this.q(`SELECT t.id, t.title, t.priority, t.status, t.due_date, p.name project_name, u.name assignee
+    const [projects, tasks, approvals, team, upcoming, activity] =
+      await Promise.all([
+        this.projectStages(),
+        this
+          .q(`SELECT t.id, t.title, t.priority, t.status, t.due_date, p.name project_name, u.name assignee
               FROM tasks t LEFT JOIN projects p ON p.id = t.project_id LEFT JOIN users u ON u.id = t.created_by
               WHERE t.status <> 'completed' ORDER BY (t.due_date IS NULL), t.due_date ASC LIMIT 20`),
-      this.q(`SELECT d.id, d.title, d.drawing_number, d.status, d.updated_at, p.name project_name, u.name submitted_by, d.discipline
+        this
+          .q(`SELECT d.id, d.title, d.drawing_number, d.status, d.updated_at, p.name project_name, u.name submitted_by, d.discipline
               FROM drawings d LEFT JOIN projects p ON p.id = d.project_id LEFT JOIN users u ON u.id = d.drawn_by
               WHERE LOWER(COALESCE(d.status,'')) IN ('submitted','for_approval','pending_approval','under_review','review','in_review')
               ORDER BY d.updated_at DESC LIMIT 20`),
-      this.q(`SELECT u.id, u.name, u.job_title role,
+        this.q(`SELECT u.id, u.name, u.job_title role,
                 (SELECT COUNT(*) FROM milestones m WHERE m.assignee_id = u.id AND m.deleted_at IS NULL AND m.status IN ('PENDING','IN_PROGRESS')) active_tasks,
                 (SELECT COUNT(*) FROM milestones m WHERE m.assignee_id = u.id AND m.deleted_at IS NULL AND m.status = 'COMPLETED') completed
               FROM users u WHERE u.is_active = 1 ORDER BY u.name LIMIT 50`),
-      this.q(`SELECT * FROM (
+        this.q(`SELECT * FROM (
                 SELECT m.id, m.title, m.due_date date, 'Milestone' type, p.name project_name
                   FROM milestones m JOIN projects p ON p.id = m.project_id
                  WHERE m.deleted_at IS NULL AND m.status IN ('PENDING','IN_PROGRESS') AND m.due_date >= CURDATE()
@@ -621,8 +700,20 @@ export class DashboardDataService {
                 SELECT e.id, e.title, e.starts_at, e.type, NULL FROM calendar_events e
                  WHERE e.starts_at >= CURDATE() AND e.type IN ('presentation','client_meeting','milestone_due','handover')
               ) x ORDER BY date ASC LIMIT 8`),
-      this.activity(['drawing', 'drawings', 'project', 'projects', 'brief', 'project_brief', 'task', 'tasks'], 8),
-    ]);
+        this.activity(
+          [
+            'drawing',
+            'drawings',
+            'project',
+            'projects',
+            'brief',
+            'project_brief',
+            'task',
+            'tasks',
+          ],
+          8,
+        ),
+      ]);
     const active = projects.filter((p) => p.raw_status === 'active');
     const teamRows = team.map((m) => {
       const a = n(m.active_tasks);
@@ -637,15 +728,23 @@ export class DashboardDataService {
       };
     });
     const busy = teamRows.filter((m) => m.active_tasks > 0).length;
-    const stats = { concept: 0, design_development: 0, working_drawings: 0, completed: 0 } as Record<string, number>;
-    for (const p of projects) stats[p.stage_key] = (stats[p.stage_key] || 0) + 1;
+    const stats = {
+      concept: 0,
+      design_development: 0,
+      working_drawings: 0,
+      completed: 0,
+    } as Record<string, number>;
+    for (const p of projects)
+      stats[p.stage_key] = (stats[p.stage_key] || 0) + 1;
 
     return {
       overview: {
         active_projects: active.length,
         design_tasks: tasks.length,
         pending_approvals: approvals.length,
-        team_utilization: teamRows.length ? Math.round((busy / teamRows.length) * 100) : 0,
+        team_utilization: teamRows.length
+          ? Math.round((busy / teamRows.length) * 100)
+          : 0,
       },
       project_stats: stats,
       projects: (active.length ? active : projects).slice(0, 8),
@@ -670,7 +769,9 @@ export class DashboardDataService {
         type: humanize(u.type),
         priority: relDay(u.date),
       })),
-      team: teamRows.sort((a, b) => b.active_tasks - a.active_tasks).slice(0, 8),
+      team: teamRows
+        .sort((a, b) => b.active_tasks - a.active_tasks)
+        .slice(0, 8),
       activity: activity.map((a) => ({
         id: a.id,
         user: a.user,
@@ -685,19 +786,27 @@ export class DashboardDataService {
   /* ------------------------------------------------------------ Admin */
 
   private async admin() {
-    const [projects, leads, pipeline, users, team, activity, approvalsRaw, snapshot] =
-      await Promise.all([
-        this.projectStages(),
-        this.leadStats(),
-        this.q(`SELECT stage, COUNT(*) c FROM leads GROUP BY stage`),
-        this.one(`SELECT SUM(is_active = 1) active FROM users`),
-        this.q(`SELECT u.id, u.name, COALESCE(u.job_title, r.name) role,
+    const [
+      projects,
+      leads,
+      pipeline,
+      users,
+      team,
+      activity,
+      approvalsRaw,
+      snapshot,
+    ] = await Promise.all([
+      this.projectStages(),
+      this.leadStats(),
+      this.q(`SELECT stage, COUNT(*) c FROM leads GROUP BY stage`),
+      this.one(`SELECT SUM(is_active = 1) active FROM users`),
+      this.q(`SELECT u.id, u.name, COALESCE(u.job_title, r.name) role,
                   (SELECT COUNT(*) FROM projects p WHERE p.created_by = u.id AND p.deleted_at IS NULL) projects,
                   (SELECT COUNT(*) FROM tasks t WHERE t.created_by = u.id AND t.status <> 'completed') tasks
                 FROM users u LEFT JOIN roles r ON r.id = u.role_id
                 WHERE u.is_active = 1 ORDER BY u.last_login_at DESC LIMIT 8`),
-        this.activity(null, 8),
-        this.q(`
+      this.activity(null, 8),
+      this.q(`
           SELECT * FROM (
             SELECT q.id, CONCAT('Quotation ', COALESCE(q.quotation_number,'')) title, p.name description, 'High' priority, q.created_at at
               FROM quotations q LEFT JOIN projects p ON p.id = q.project_id WHERE q.status = 'submitted'
@@ -712,30 +821,42 @@ export class DashboardDataService {
               FROM project_briefs b LEFT JOIN projects p ON p.id = b.project_id
              WHERE b.deleted_at IS NULL AND b.status = 'READY_FOR_DESIGN'
           ) x ORDER BY at DESC LIMIT 20`),
-        this.one(`SELECT
+      this.one(`SELECT
             (SELECT COUNT(*) FROM project_briefs WHERE deleted_at IS NULL AND status='SIGNED_OFF') briefs,
             (SELECT COUNT(*) FROM project_gates WHERE status IN ('CLEARED','OVERRIDDEN','PASSED','COMPLETED')) gates,
             (SELECT COUNT(*) FROM purchase_orders WHERE status IN ('APPROVED','SENT','PARTIALLY_RECEIVED','RECEIVED','CLOSED')) pos,
             (SELECT COUNT(*) FROM drawings) drawings`),
-      ]);
+    ]);
 
     const pipeMap = Object.fromEntries(pipeline.map((p) => [p.stage, n(p.c)]));
     const totalLeads = pipeline.reduce((s, p) => s + n(p.c), 0);
-    const pipe = ['capture', 'qual', 'disc', 'prop', 'nego', 'contract', 'handoff']
-      .map((k) => ({
-        label: LEAD_STAGE_LABEL[k],
-        value: pipeMap[k] || 0,
-        percentage: totalLeads ? Math.round(((pipeMap[k] || 0) / totalLeads) * 100) : 0,
-      }));
+    const pipe = [
+      'capture',
+      'qual',
+      'disc',
+      'prop',
+      'nego',
+      'contract',
+      'handoff',
+    ].map((k) => ({
+      label: LEAD_STAGE_LABEL[k],
+      value: pipeMap[k] || 0,
+      percentage: totalLeads
+        ? Math.round(((pipeMap[k] || 0) / totalLeads) * 100)
+        : 0,
+    }));
 
     return {
       stats: {
-        active_projects: projects.filter((p) => p.raw_status === 'active').length,
+        active_projects: projects.filter((p) => p.raw_status === 'active')
+          .length,
         open_leads: leads.active,
         pending_approvals: approvalsRaw.length,
         team_members: n(users.active),
       },
-      projects: projects.slice(0, 8).map((p) => ({ ...p, updated_at: relTime(p.updated_at) })),
+      projects: projects
+        .slice(0, 8)
+        .map((p) => ({ ...p, updated_at: relTime(p.updated_at) })),
       approvals: approvalsRaw.slice(0, 8).map((a) => ({
         id: a.id,
         title: a.title,
@@ -750,7 +871,11 @@ export class DashboardDataService {
         time: a.time,
         type: a.type,
       })),
-      team: team.map((t) => ({ ...t, projects: n(t.projects), tasks: n(t.tasks) })),
+      team: team.map((t) => ({
+        ...t,
+        projects: n(t.projects),
+        tasks: n(t.tasks),
+      })),
       workflow_snapshot: [
         { title: 'Briefs signed off', value: n(snapshot.briefs) },
         { title: 'Gates cleared', value: n(snapshot.gates) },

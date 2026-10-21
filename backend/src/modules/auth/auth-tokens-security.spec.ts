@@ -134,7 +134,11 @@ describe('Session token administration', () => {
   it.each(['ADMIN', 'SUPERADMIN'])(
     'allows %s to manage another user sessions',
     async (roleName) => {
-      const actor = { id: 'admin', roleName, permissions: ['sessions:read-any', 'sessions:revoke-any'] };
+      const actor = {
+        id: 'admin',
+        roleName,
+        permissions: ['sessions:read-any', 'sessions:revoke-any'],
+      };
       await call('get', 'user/owner', actor).expect(200);
       await call('patch', 'session/revoke', actor).expect(200);
       await call('patch', 'user/owner/revoke-all', actor).expect(200);

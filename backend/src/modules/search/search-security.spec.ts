@@ -260,7 +260,9 @@ describe('Search authentication and project visibility', () => {
     projects.findAll.mockResolvedValueOnce([]);
     const response = await call('get', '?q=visible', user).expect(200);
     expect(response.body.results).toEqual([]);
-    projects.findAll.mockRejectedValueOnce(new Error('Scope database unavailable'));
+    projects.findAll.mockRejectedValueOnce(
+      new Error('Scope database unavailable'),
+    );
     es.search.mockClear();
     await call('get', '/suggest?q=visible', user).expect(500);
     expect(es.search).not.toHaveBeenCalled();

@@ -31,7 +31,10 @@ export class MockupController {
     @Query('projectId') projectId?: string,
     @Query('status') status?: MockupStatus,
   ) {
-    return this.mockupService.list({ projectId: projectId || undefined, status: status || undefined });
+    return this.mockupService.list({
+      projectId: projectId || undefined,
+      status: status || undefined,
+    });
   }
 
   @RequirePermission('site-ops-mockups:update')

@@ -11,11 +11,11 @@ export class SearchService {
   /**
    * Create an index with the proper mapping if it does not already exist.
    */
-  async ensureIndex(index: SearchIndexName | string): Promise<void> {
+  async ensureIndex(index: SearchIndexName): Promise<void> {
     const exists = await this.es.indices.exists({ index });
     if (exists) return;
 
-    const body = INDEX_MAPPINGS[index as SearchIndexName];
+    const body = INDEX_MAPPINGS[index];
     if (!body) {
       this.logger.warn(
         `No mapping defined for index "${index}" – creating with dynamic mapping`,
@@ -104,9 +104,7 @@ export class SearchService {
       const failed = response.items.filter(
         (item: any) => item.index?.error || item.delete?.error,
       );
-      this.logger.warn(
-        `Bulk operation completed with ${failed.length} errors`,
-      );
+      this.logger.warn(`Bulk operation completed with ${failed.length} errors`);
     }
 
     return response;

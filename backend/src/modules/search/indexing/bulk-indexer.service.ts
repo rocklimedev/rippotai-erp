@@ -23,7 +23,10 @@ export class BulkIndexerService {
    * Index a batch of documents using the Elasticsearch Bulk API.
    * Automatically ensures the target indices exist.
    */
-  async indexBatch(items: BulkIndexItem[], batchSize = 200): Promise<{
+  async indexBatch(
+    items: BulkIndexItem[],
+    batchSize = 200,
+  ): Promise<{
     total: number;
     indexed: number;
     failed: number;
@@ -82,7 +85,10 @@ export class BulkIndexerService {
   /**
    * Delete a batch of documents.
    */
-  async deleteBatch(items: BulkDeleteItem[], batchSize = 200): Promise<{
+  async deleteBatch(
+    items: BulkDeleteItem[],
+    batchSize = 200,
+  ): Promise<{
     total: number;
     deleted: number;
     failed: number;

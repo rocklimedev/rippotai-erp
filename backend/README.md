@@ -11,7 +11,7 @@ only `{ "status": "alive" }`. Root, `/health`, `/health/ready`, `/system/info`,
 with `system:read`. Update any anonymous readiness monitors to use liveness or
 authenticated diagnostics as appropriate.
 
-Install dependencies with `npm ci`. Configure `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `JWT_SECRET`, `REDIS_HOST` and `REDIS_PORT` in your local environment. Database configuration currently names `spsyn8lm_rippotai_erp`; schema synchronization is disabled, so provision the schema and apply relevant SQL migrations before running.
+Install dependencies with `npm ci`. Configure `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `JWT_SECRET`, `REDIS_HOST` and `REDIS_PORT` in your local environment. Also set required `CLIENT_LINK_KEY_ID` and `CLIENT_LINK_ENCRYPTION_SECRET`; follow the [client-link transition and rotation guide](../documentation/client-link-encryption.md) before upgrading an existing deployment. Database configuration currently names `spsyn8lm_rippotai_erp`; schema synchronization is disabled, so provision the schema and apply relevant SQL migrations before running.
 
 - Development: `npm run start:dev`
 - Build: `npm run build`

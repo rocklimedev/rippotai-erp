@@ -1,18 +1,23 @@
 import { IsString, IsOptional, IsArray, IsNotEmpty } from 'class-validator';
 
 export class CreateSampleBoardDto {
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   materialRequirementId: string;
 
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   title: string;
 
-  @IsOptional() @IsArray()
+  @IsOptional()
+  @IsArray()
   imageUrls?: string[];
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   vendorName?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   notes?: string;
 }

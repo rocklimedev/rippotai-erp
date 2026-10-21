@@ -11,38 +11,49 @@ import {
 import { Type } from 'class-transformer';
 
 export class CreatePurchaseOrderItemDto {
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   materialRequirementId?: string;
 
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   description: string;
 
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   unit: string;
 
-  @IsNumber() @Min(0.001)
+  @IsNumber()
+  @Min(0.001)
   orderedQuantity: number;
 
-  @IsNumber() @Min(0)
+  @IsNumber()
+  @Min(0)
   unitRate: number;
 }
 
 export class CreatePurchaseOrderDto {
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   quotationId: string;
 
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   poNumber: string;
 
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   vendorName: string;
 
   @IsDateString()
   orderDate: string;
 
-  @IsOptional() @IsDateString()
+  @IsOptional()
+  @IsDateString()
   expectedDeliveryDate?: string;
 
-  @IsArray() @ValidateNested({ each: true }) @Type(() => CreatePurchaseOrderItemDto)
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreatePurchaseOrderItemDto)
   items: CreatePurchaseOrderItemDto[];
 }

@@ -76,7 +76,8 @@ export class VendorSavedSearchesController {
   @Post()
   async create(
     @CurrentUser() user: { id: string },
-    @Body() body: { name?: string; filters?: Record<string, unknown>; scope?: string },
+    @Body()
+    body: { name?: string; filters?: Record<string, unknown>; scope?: string },
   ) {
     const list = await this.load(user.id);
     const item: SavedSearch = {

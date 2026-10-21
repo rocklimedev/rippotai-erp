@@ -108,9 +108,7 @@ export class SiteRecceSearchService {
       }));
     const result = await this.bulkIndexer.indexBatch(items);
     await this.searchService.refresh(this.INDEX);
-    this.logger.log(
-      `Reindexed site recces: ${result.indexed}/${result.total}`,
-    );
+    this.logger.log(`Reindexed site recces: ${result.indexed}/${result.total}`);
     return result;
   }
 

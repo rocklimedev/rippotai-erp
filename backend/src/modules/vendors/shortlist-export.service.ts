@@ -199,10 +199,10 @@ export class ShortlistExportService {
 
       res.send(Buffer.from(buffer));
 
-      return buffer as ExcelJS.Buffer;
+      return buffer;
     }
 
-    return buffer as ExcelJS.Buffer;
+    return buffer;
   }
 
   // ============================================================
@@ -245,9 +245,9 @@ export class ShortlistExportService {
 
       res.send(Buffer.from(buffer));
 
-      return buffer as ExcelJS.Buffer;
+      return buffer;
     }
 
-    return buffer as ExcelJS.Buffer;
+    return buffer;
   }
 }

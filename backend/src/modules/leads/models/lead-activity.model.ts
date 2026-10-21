@@ -37,7 +37,11 @@ export class LeadActivity extends Model<LeadActivity> {
   declare lead: Lead;
 
   // created | stage | note | update | task | won | lost | zoho
-  @Column({ type: DataType.STRING(32), allowNull: false, defaultValue: 'update' })
+  @Column({
+    type: DataType.STRING(32),
+    allowNull: false,
+    defaultValue: 'update',
+  })
   declare kind: string;
 
   @Column({ type: DataType.STRING, allowNull: true })

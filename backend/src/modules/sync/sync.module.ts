@@ -26,8 +26,17 @@ import { CalendarZohoSyncController } from './calendar-zoho-sync.controller';
     ZohoModule,
     AuthModule,
   ],
-  controllers: [SyncController, TaskZohoSyncController, CalendarZohoSyncController],
-  providers: [ReminderSyncService, TaskSyncService, CalendarSyncService, LocalZohoSyncService],
+  controllers: [
+    SyncController,
+    TaskZohoSyncController,
+    CalendarZohoSyncController,
+  ],
+  providers: [
+    ReminderSyncService,
+    TaskSyncService,
+    CalendarSyncService,
+    LocalZohoSyncService,
+  ],
   exports: [TaskSyncService, CalendarSyncService],
 })
 export class SyncModule {}

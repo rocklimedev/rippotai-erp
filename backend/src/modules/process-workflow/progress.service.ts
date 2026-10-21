@@ -75,7 +75,7 @@ export class ProgressService {
       patch.blockedReason = null;
     }
 
-    await progress.update(patch as any);
+    await progress.update(patch);
     return progress;
   }
 
@@ -99,7 +99,7 @@ export class ProgressService {
     await progress.update({
       signedOffBy: dto.signedOffBy,
       signedOffAt: new Date(),
-    } as any);
+    });
     return progress;
   }
 

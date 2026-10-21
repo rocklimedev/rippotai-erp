@@ -171,8 +171,11 @@ export class DailySiteReportService {
   ): Promise<DailySiteReport> {
     const report = await this.getReportOrThrow(id);
     // Model fields are plain class properties, so read values through get() (dataValues).
-    const cur = report.get({ plain: true }) as DailySiteReport;
-    if (dto.reportDate && dto.reportDate !== String(cur.reportDate).slice(0, 10)) {
+    const cur = report.get({ plain: true });
+    if (
+      dto.reportDate &&
+      dto.reportDate !== String(cur.reportDate).slice(0, 10)
+    ) {
       await this.assertDateFree(cur.projectId, dto.reportDate, id);
     }
 
@@ -195,7 +198,7 @@ export class DailySiteReportService {
       isShared: true,
       shareWithClient: true,
       sharedAt: new Date(),
-    } as any);
+    });
     return this.getReportOrThrow(id);
   }
 

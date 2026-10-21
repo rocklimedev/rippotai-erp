@@ -16,7 +16,12 @@ import { Optional } from 'sequelize';
 import { Project } from '@/modules/projects/models/projects.model';
 import { User } from '@/modules/users/models/user.model';
 
-export type TaskStatusValue = 'todo' | 'in_progress' | 'review' | 'blocked' | 'completed';
+export type TaskStatusValue =
+  | 'todo'
+  | 'in_progress'
+  | 'review'
+  | 'blocked'
+  | 'completed';
 
 export interface TaskAttributes {
   id: string;
@@ -123,7 +128,13 @@ export class Task extends Model<TaskAttributes, TaskCreationAttributes> {
   declare priority: 'low' | 'medium' | 'high' | 'critical';
 
   @Column({
-    type: DataType.ENUM('todo', 'in_progress', 'review', 'blocked', 'completed'),
+    type: DataType.ENUM(
+      'todo',
+      'in_progress',
+      'review',
+      'blocked',
+      'completed',
+    ),
     allowNull: false,
     defaultValue: 'todo',
   })

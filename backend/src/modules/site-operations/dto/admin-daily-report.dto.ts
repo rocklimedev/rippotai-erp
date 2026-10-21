@@ -16,7 +16,9 @@ import {
 import { DprWorkStatus } from '@/common/enums/dpr.enums';
 
 export class CreateAdminDailyReportDto {
-  @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) report_date: string;
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  @IsDateString({ strict: true })
+  report_date: string;
   @IsUUID() project_id: string;
   @IsOptional() @IsEnum(DprWorkStatus) work_status?: DprWorkStatus;
   @IsOptional() @IsString() work_details?: string;
@@ -39,9 +41,18 @@ export class QueryAdminDailyReportDto {
     20;
   @IsOptional() @IsUUID() project_id?: string;
   @IsOptional() @IsEnum(DprWorkStatus) work_status?: DprWorkStatus;
-  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) date?: string;
-  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) from_date?: string;
-  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) to_date?: string;
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  @IsDateString({ strict: true })
+  date?: string;
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  @IsDateString({ strict: true })
+  from_date?: string;
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  @IsDateString({ strict: true })
+  to_date?: string;
   /** Only rows that have an issue/blocker filled in */
   @IsOptional()
   @Transform(({ value }) => value === true || value === 'true')

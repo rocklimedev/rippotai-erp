@@ -45,7 +45,7 @@ export class LibraryService {
 
   async updatePhase(id: number, dto: UpdatePhaseDto): Promise<Phase> {
     const phase = await this.getPhaseOrThrow(id);
-    await phase.update(dto as any);
+    await phase.update(dto);
     return phase;
   }
 
@@ -93,7 +93,7 @@ export class LibraryService {
 
   async updateStep(id: number, dto: UpdateStepDto): Promise<Step> {
     const step = await this.getStepOrThrow(id);
-    await step.update(dto as any);
+    await step.update(dto);
     return step;
   }
 

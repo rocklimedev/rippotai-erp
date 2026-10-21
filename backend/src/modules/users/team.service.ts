@@ -305,7 +305,7 @@ export class TeamService {
       throw new NotFoundException('Team member not found');
     }
 
-    return member.update(dto as any);
+    return member.update(dto);
   }
 
   async remove(id: string) {
@@ -560,7 +560,7 @@ export class TeamService {
           sort_order: dto.sort_order ?? 0,
 
           created_by: actingUserId ?? null,
-        } as any,
+        },
 
         {
           transaction,
@@ -830,7 +830,7 @@ export class TeamService {
       await this.ensureParentSectionExists(dto.parent_key);
     }
 
-    return section.update(dto as any);
+    return section.update(dto);
   }
 
   async deleteSection(sectionId: string) {
@@ -940,7 +940,7 @@ export class TeamService {
     });
 
     if (!created) {
-      await access.update(payload as any);
+      await access.update(payload);
     }
 
     return access;
@@ -1389,7 +1389,7 @@ export class TeamService {
   // ============================================================
 
   private normalizeAccessPayload(dto: SetTeamSectionAccessDto | any) {
-    let accessLevel = dto.access_level ?? TeamAccessLevel.NONE;
+    const accessLevel = dto.access_level ?? TeamAccessLevel.NONE;
 
     let canView = Boolean(dto.can_view);
 

@@ -633,7 +633,7 @@ export class LeadsService implements OnModuleInit {
     const deals = await this.listDeals(f);
 
     const columns = PIPELINE_STAGES.map((s) => ({
-      id: s.id as string,
+      id: s.id,
       label: s.label,
       closed: !!s.closed,
       leads: [] as Deal[],
@@ -911,17 +911,14 @@ export class LeadsService implements OnModuleInit {
       address: nc.address || undefined,
     };
     try {
-      const created = await this.clientsService.create(
-        payload as any,
-        actor as any,
-      );
+      const created = await this.clientsService.create(payload, actor as any);
       return created.id;
     } catch {
       const slug = `${name}-${Date.now().toString(36)}`
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-');
       const created = await this.clientsService.create(
-        { ...payload, slug } as any,
+        { ...payload, slug },
         actor as any,
       );
       return created.id;

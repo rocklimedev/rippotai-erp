@@ -32,7 +32,12 @@ export class WorkspaceController {
     @Query('to') to?: string,
     @Query('mine') mine?: string,
   ) {
-    return this.svc.calendarFeed({ from, to, mine: mine === '1' || mine === 'true', user });
+    return this.svc.calendarFeed({
+      from,
+      to,
+      mine: mine === '1' || mine === 'true',
+      user,
+    });
   }
 
   /** GET /activity-logs/feed?app&entity_type&action&user_id&q&from&to&limit&offset */
@@ -45,7 +50,10 @@ export class WorkspaceController {
   /** GET /site-ops/visits/assignments?projectId&status=active|inactive — all visit assignments (list page) */
   @RequirePermission('workspace:read')
   @Get('site-ops/visits/assignments')
-  visitAssignments(@Query('projectId') projectId?: string, @Query('status') status?: string) {
+  visitAssignments(
+    @Query('projectId') projectId?: string,
+    @Query('status') status?: string,
+  ) {
     return this.svc.visitAssignments({ projectId, status });
   }
 

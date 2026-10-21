@@ -24,14 +24,12 @@ describe('gate transition rules', () => {
       {} as any,
     );
     jest.spyOn(service, 'ensureInitialized').mockResolvedValue();
-    jest
-      .spyOn(service, 'checkReadiness')
-      .mockResolvedValue({
-        status: GateStatus.PENDING,
-        unlockedByPreviousGate: true,
-        conditions: [],
-        ...readiness,
-      } as any);
+    jest.spyOn(service, 'checkReadiness').mockResolvedValue({
+      status: GateStatus.PENDING,
+      unlockedByPreviousGate: true,
+      conditions: [],
+      ...readiness,
+    } as any);
     return service;
   }
   const user = {

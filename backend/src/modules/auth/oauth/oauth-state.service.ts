@@ -17,7 +17,9 @@ export class OAuthStateService {
   private getSecret(): string {
     const secret = this.configService.get<string>('OAUTH_STATE_SECRET');
     if (!secret?.trim()) {
-      throw new InternalServerErrorException('OAUTH_STATE_SECRET is not configured');
+      throw new InternalServerErrorException(
+        'OAUTH_STATE_SECRET is not configured',
+      );
     }
     return secret;
   }
