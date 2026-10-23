@@ -42,14 +42,11 @@ export class CreateUserDto {
   @IsBoolean()
   is_active?: boolean;
 
-  @IsOptional()
-  @IsUUID()
-  created_by?: string;
 }
 
 // Fields a user is allowed to change from the "Profile Settings" screen.
-// Deliberately excludes role_id, is_active, created_by, password -
-// those are admin-only concerns and go through separate endpoints.
+// Role, account status and password changes use separate admin endpoints.
+// Creator attribution is always supplied by the authenticated actor.
 export class UpdateProfileDto {
   @IsOptional()
   @IsString()
@@ -108,7 +105,4 @@ export class UpdateUserDto {
   @IsBoolean()
   is_active?: boolean;
 
-  @IsOptional()
-  @IsUUID()
-  created_by?: string;
 }

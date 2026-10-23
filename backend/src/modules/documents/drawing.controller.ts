@@ -12,19 +12,15 @@ import {
   Res,
   UploadedFile,
   UseInterceptors,
+  UseGuards,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { memoryStorage } from 'multer';
+import { DiskUploadInterceptor, UploadRateGuard } from '../cdn/upload-security';
+
 import type { Response } from 'express';
 import { DrawingsService } from './drawing.service';
 import { CreateDrawingDto } from './dto/create-drawing.dto';
 import { UpdateDrawingDto } from './dto/update-drawing.dto';
 import { CreateDrawingRevisionDto } from './dto/create-drawing-revision.dto';
-
-const FILE_UPLOAD_OPTIONS = {
-  storage: memoryStorage(),
-  limits: { fileSize: 500 * 1024 * 1024 },
-};
 
 @Controller('drawings')
 export class DrawingsController {
@@ -76,7 +72,8 @@ export class DrawingsController {
 
   @RequirePermission('drawings:create')
   @Post(':id/revisions')
-  @UseInterceptors(FileInterceptor('file', FILE_UPLOAD_OPTIONS))
+  @UseGuards(UploadRateGuard)
+  @UseInterceptors(DiskUploadInterceptor)
   addRevision(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreateDrawingRevisionDto,
@@ -105,17 +102,13 @@ export class DrawingsController {
       return res.status(404).send({ message: 'Revision file not found' });
     }
 
-    const buffer = await this.drawingsService.downloadFile(
-      revision.storageFilename,
-    );
-
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${revision.filename ?? revision.storageFilename}"`,
+      `attachment; filename="${(revision.filename ?? revision.storageFilename).replace(/["\r\n\\]/g, '_')}"`,
     );
     res.setHeader('Cache-Control', 'private, no-store, max-age=0');
     res.setHeader('Content-Type', revision.mime ?? 'application/octet-stream');
-    res.send(buffer);
+    await this.drawingsService.streamFile(revision.storageFilename, res);
   }
 
   @RequirePermission('drawings:delete')

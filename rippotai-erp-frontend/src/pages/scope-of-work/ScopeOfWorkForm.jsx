@@ -126,7 +126,7 @@ export function ScopeOfWorkForm() {
   // ============================================================
 
   const draftKey = `${SAVE_KEY}.${scopeOfWorkId || projectId || "new"}`;
-  const [values, setValues] = useAutoSave(draftKey, {
+  const [values, setValues, draftStorage] = useAutoSave(draftKey, {
     Overview: {
       scope_summary: "",
       specific_exclusions: "",
@@ -1204,7 +1204,7 @@ export function ScopeOfWorkForm() {
       // Clear autosave
       // --------------------------------------------------------
 
-      localStorage.removeItem(draftKey);
+      draftStorage.removeItem(draftKey);
 
       // --------------------------------------------------------
       // Navigate to document
@@ -1294,7 +1294,7 @@ export function ScopeOfWorkForm() {
       }}
       onSaveDraft={() => {
         try {
-          localStorage.setItem(draftKey, JSON.stringify(values));
+          draftStorage.setItem(draftKey, JSON.stringify(values));
           toast.success("Draft saved on this device.");
         } catch {
           toast.error("Could not save the draft.");

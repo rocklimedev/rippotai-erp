@@ -1,3 +1,4 @@
+import { getSessionToken } from '../../lib/session';
 // Shared helpers for Design Studio drawing pages (upload, register, detail).
 import { API_URL } from "@/lib/config";
 
@@ -157,7 +158,7 @@ export function uploadRevision({ drawingId, file, data = {}, onProgress }) {
     xhr.withCredentials = true;
     let token;
     try {
-      token = localStorage.getItem("bc_token");
+      token = getSessionToken();
     } catch {
       token = null;
     }

@@ -9,6 +9,9 @@ import { User } from './models/user.model';
 import { AuthToken } from '../auth/models/auth-token.model';
 import { ActivityLog } from '../engagement/models/activity-log.model';
 import { ManualEmailVerificationService } from './manual-email-verification.service';
+import { EmailVerificationService } from '../auth/email-verification.service';
+import { VerificationToken } from '../auth/models/verification-token.model';
+import { MailService } from '@/common/mail/mail.service';
 import { UserSignature } from './models/user-signature.model';
 
 // ============================================================
@@ -54,9 +57,11 @@ import { CdnModule } from '../cdn/cdn.module';
 import { NotificationsModule } from '../engagement/notifications.module';
 import { ActivityLogsModule } from '../engagement/activity-logs.module';
 import { RolesModule } from '../rbac/rbac.module';
+import { RolePermissionsCacheModule } from '../rbac/role-permissions-cache';
 
 @Module({
   imports: [
+    RolePermissionsCacheModule,
     // ==========================================================
     // SEQUELIZE MODELS
     // ==========================================================
@@ -65,6 +70,7 @@ import { RolesModule } from '../rbac/rbac.module';
       // Users
       User,
       AuthToken,
+      VerificationToken,
       ActivityLog,
       UserSignature,
 
@@ -102,6 +108,8 @@ import { RolesModule } from '../rbac/rbac.module';
   // ============================================================
 
   providers: [
+    EmailVerificationService,
+    MailService,
     ManualEmailVerificationService,
     UsersService,
     UserSignaturesService,

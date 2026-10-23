@@ -90,7 +90,7 @@ export function MaterialRequirementForm() {
     () => searchParams.get("projectId") || searchParams.get("project") || "",
   );
 
-  const [values, setValues] = useAutoSave(SAVE_KEY, {
+  const [values, setValues, draftStorage] = useAutoSave(SAVE_KEY, {
     designerId: "",
     requirements: [createEmptyRequirement()],
   });
@@ -343,7 +343,7 @@ export function MaterialRequirementForm() {
         } created successfully.`,
       );
 
-      localStorage.removeItem(SAVE_KEY);
+      draftStorage.removeItem(SAVE_KEY);
 
       navigate("/procurement/requirements");
     } catch (error) {

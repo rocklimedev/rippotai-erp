@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './http-client';
 import { resolveExportResponse } from './export-fetch';
 import axios from "axios";
 import { API_BASE_URL } from "./config";
@@ -6,14 +7,9 @@ export const API = API_BASE_URL;
 
 const api = axios.create({
   baseURL: API,
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("bc_token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+  adapter: 'fetch',
+  env: { fetch: authenticatedFetch },
+  withCredentials: false,
 });
 
 api.interceptors.response.use(
@@ -48,16 +44,6 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (error?.response?.status === 401) {
-      const path = window.location.pathname;
-
-      if (path !== "/login" && path !== "/register") {
-        localStorage.removeItem("bc_token");
-        localStorage.removeItem("bc_user");
-        window.location.href = "/login";
-      }
-    }
-
     if (error?.response?.status === 402) {
       try {
         window.dispatchEvent(

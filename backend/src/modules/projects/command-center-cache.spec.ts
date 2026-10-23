@@ -74,7 +74,7 @@ describe('Command Center accumulated data cache', () => {
   it('serves older data immediately while one background refresh runs', async () => {
     jest.spyOn(Date, 'now').mockReturnValueOnce(1000);
     await service.getOrLoad('portfolio', async () => ['old']);
-    const now = jest.spyOn(Date, 'now').mockReturnValue(20000);
+    const now = jest.spyOn(Date, 'now').mockReturnValue(70000);
     let finish!: (value: string[]) => void;
     const loader = jest.fn(
       () =>
@@ -134,6 +134,16 @@ describe('Command Center accumulated data cache', () => {
     await jest.advanceTimersByTimeAsync(151);
     expect(await request).toEqual(['db']);
     expect(loader).toHaveBeenCalledTimes(1);
+  });
+  it('reuses a bounded local cache during a Redis outage instead of rebuilding on every poll', async () => {
+    redis.status = 'reconnecting';
+    const loader = jest.fn(async () => ['db']);
+    await service.getOrLoad('portfolio', loader);
+    await service.getOrLoad('portfolio', loader);
+    expect(loader).toHaveBeenCalledTimes(1);
+    await service.invalidate();
+    await service.getOrLoad('portfolio', loader);
+    expect(loader).toHaveBeenCalledTimes(2);
   });
   it('invalidates transaction writes only after commit, and ignores unrelated models', async () => {
     const relevant = {

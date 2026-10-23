@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsUUID, MinLength } from 'class-validator';
+import { IsEmail, IsString, MinLength } from 'class-validator';
 import { PASSWORD_MIN_LENGTH } from '@/common/security/password-policy';
 
 export class CreateUserDto {
@@ -14,6 +14,4 @@ export class CreateUserDto {
   @IsString()
   role: string;
 
-  @IsUUID()
-  createdBy: string;
 }

@@ -16,6 +16,15 @@ import { Role } from '@/modules/rbac/models/role.model';
 import { CdnService } from '@/modules/cdn/cdn.service';
 import { ActivityLogForUserService } from '../engagement/services/activity-log-user.service';
 import { NotificationForUserService } from '../engagement/services/notification-user.service';
+import { EmailVerificationService } from '../auth/email-verification.service';
+import { AuthToken } from '../auth/models/auth-token.model';
+import { ActivityLog } from '../engagement/models/activity-log.model';
+import { ActivityAction } from '@/common/enums';
+import { RolePermissionsCache } from '../rbac/role-permissions-cache';
+import {
+  requireActor,
+  assertProtectedRole,
+} from '@/common/security/privilege-policy';
 
 const SALT_ROUNDS = 10;
 const PUBLIC_ATTRIBUTES = { exclude: ['password_hash'] };
@@ -37,6 +46,10 @@ export class UsersService {
     private readonly cdnService: CdnService,
     private readonly activityLogForUserService: ActivityLogForUserService,
     private readonly notificationForUserService: NotificationForUserService,
+    private readonly emailVerification?: EmailVerificationService,
+    @InjectModel(AuthToken) private readonly sessions?: typeof AuthToken,
+    @InjectModel(ActivityLog) private readonly activity?: typeof ActivityLog,
+    private readonly permissionCache: RolePermissionsCache = new RolePermissionsCache(),
   ) {}
 
   // =========================
@@ -47,6 +60,12 @@ export class UsersService {
       throw new ForbiddenException(
         'Only administrators can provision accounts.',
       );
+    }
+    requireActor(actor, 'users:create');
+    if (dto.role_id) {
+      const role = await this.roleModel.findByPk(dto.role_id);
+      if (!role) throw new NotFoundException('Role not found');
+      assertProtectedRole(actor, role.name);
     }
     await assertNewPassword(dto.password);
     const password_hash = await bcrypt.hash(dto.password, SALT_ROUNDS);
@@ -68,12 +87,12 @@ export class UsersService {
       // === Activity Log & Notification ===
       await this.activityLogForUserService.logUserCreated(
         createdUser,
-        dto.created_by,
+        actor.id,
         actor,
       );
       await this.notificationForUserService.notifyUserCreated(
         createdUser,
-        dto.created_by,
+        actor.id,
       );
 
       return createdUser;
@@ -133,12 +152,22 @@ export class UsersService {
   // UPDATE USER (Admin)
   // =========================
   async update(id: string, dto: UpdateUserDto, actor?: any): Promise<User> {
-    const user = await this.userModel.findByPk(id);
+    requireActor(actor, 'users:update');
+    const user = await this.userModel.findByPk(id, { include: ['role'] });
     if (!user) throw new NotFoundException(`User ${id} not found`);
+    assertProtectedRole(actor, user.role?.name);
+    if (dto.role_id !== undefined && dto.role_id !== user.role_id) {
+      if (user.id === actor.id)
+        throw new ForbiddenException('Cannot change your own role');
+      if (dto.role_id) {
+        const role = await this.roleModel.findByPk(dto.role_id);
+        if (!role) throw new NotFoundException('Role not found');
+        assertProtectedRole(actor, role.name);
+      }
+    }
 
     const payload: Record<string, any> = {
       name: dto.name,
-      email: dto.email,
       phone: dto.phone,
       job_title: dto.job_title,
       is_active: dto.is_active,
@@ -151,16 +180,91 @@ export class UsersService {
     }
 
     try {
-      await user.update(payload);
+      if (dto.email && dto.email.trim().toLowerCase() !== user.email) {
+        await this.emailVerification!.requestChange(id, dto.email);
+      }
+      const roleChange = await this.userModel.sequelize!.transaction(
+        async (transaction) => {
+          // Recheck under a row lock so concurrent promotion cannot bypass policy.
+          const locked = await this.userModel.findByPk(id, {
+            transaction,
+            lock: transaction.LOCK.UPDATE,
+          });
+          if (!locked) throw new NotFoundException('User not found');
+          const role = locked.role_id
+            ? await this.roleModel.findByPk(locked.role_id, { transaction })
+            : null;
+          assertProtectedRole(actor, role?.name);
+          if (
+            dto.role_id !== undefined &&
+            dto.role_id !== locked.role_id &&
+            locked.id === actor.id
+          ) {
+            throw new ForbiddenException('Cannot change your own role');
+          }
+          if (dto.role_id !== undefined && dto.role_id) {
+            const assignedRole = await this.roleModel.findByPk(dto.role_id, {
+              transaction,
+            });
+            if (!assignedRole) throw new NotFoundException('Role not found');
+            assertProtectedRole(actor, assignedRole.name);
+          }
+          const snapshot = () => ({
+            name: locked.name,
+            phone: locked.phone,
+            job_title: locked.job_title,
+            role_id: locked.role_id,
+            is_active: locked.is_active,
+          });
+          const before = snapshot();
+          const securityChanged =
+            !!dto.password ||
+            (dto.role_id !== undefined && dto.role_id !== locked.role_id) ||
+            (dto.is_active !== undefined && dto.is_active !== locked.is_active);
+          await locked.update(payload, { transaction });
+          if (securityChanged)
+            await this.sessions!.update(
+              { revoked_at: new Date() },
+              {
+                where: { user_id: id, revoked_at: null },
+                transaction,
+              },
+            );
+          await this.activity!.create(
+            {
+              user_id: actor.id,
+              user_email: actor.email,
+              user_role: actor.roleName,
+              action: ActivityAction.USER_UPDATED,
+              entity_type: 'User',
+              entity_id: id,
+              entity_label: locked.name,
+              changes: {
+                before,
+                after: snapshot(),
+                ...(dto.email
+                  ? { requested_email: dto.email.trim().toLowerCase() }
+                  : {}),
+                password_changed: !!dto.password,
+                sessions_revoked: securityChanged,
+              },
+            } as any,
+            { transaction },
+          );
+          return before.role_id !== locked.role_id
+            ? { previous: before.role_id, current: locked.role_id }
+            : null;
+        },
+      );
+      if (roleChange) {
+        if (roleChange.previous)
+          this.permissionCache.invalidate(roleChange.previous);
+        if (roleChange.current)
+          this.permissionCache.invalidate(roleChange.current);
+      }
       const updatedUser = await this.findOne(id);
 
       // === Activity Log & Notification ===
-      await this.activityLogForUserService.logUserUpdated(
-        updatedUser,
-        actor?.id,
-        actor,
-      );
-
       await this.notificationForUserService.notifyUserUpdated(
         updatedUser,
         actor?.id,
@@ -185,13 +289,17 @@ export class UsersService {
     dto: UpdateProfileDto,
     actorId: string,
   ): Promise<User> {
+    if (!actorId || actorId !== id)
+      throw new ForbiddenException('Can only update your own profile');
     const user = await this.userModel.findByPk(id);
     if (!user) throw new NotFoundException(`User ${id} not found`);
 
     try {
+      if (dto.email && dto.email.trim().toLowerCase() !== user.email) {
+        await this.emailVerification!.requestChange(id, dto.email);
+      }
       await user.update({
         name: dto.name,
-        email: dto.email,
         phone: dto.phone,
         job_title: dto.job_title,
       });
@@ -227,6 +335,8 @@ export class UsersService {
     file: Express.Multer.File,
     actorId: string,
   ): Promise<User> {
+    if (!actorId || actorId !== id)
+      throw new ForbiddenException('Can only update your own avatar');
     if (!file) throw new BadRequestException('No file uploaded');
     if (!ALLOWED_AVATAR_MIME.includes(file.mimetype)) {
       throw new BadRequestException(
@@ -269,25 +379,7 @@ export class UsersService {
   // DEACTIVATE USER
   // =========================
   async deactivate(id: string, actor?: any): Promise<User> {
-    const user = await this.userModel.findByPk(id);
-    if (!user) throw new NotFoundException(`User ${id} not found`);
-
-    await user.update({ is_active: false });
-
-    const deactivatedUser = await this.findOne(id);
-
-    // === Activity Log & Notification ===
-    await this.activityLogForUserService.logUserDeactivated(
-      deactivatedUser,
-      actor?.id,
-      actor,
-    );
-    await this.notificationForUserService.notifyUserDeactivated(
-      deactivatedUser,
-      actor?.id,
-    );
-
-    return deactivatedUser;
+    return this.update(id, { is_active: false }, actor);
   }
   // =========================
   // FIND USERS BY ROLE NAME
@@ -337,8 +429,10 @@ export class UsersService {
   // DELETE USER
   // =========================
   async remove(id: string, actor?: any): Promise<void> {
-    const user = await this.userModel.findByPk(id);
+    requireActor(actor, 'users:delete');
+    const user = await this.userModel.findByPk(id, { include: ['role'] });
     if (!user) throw new NotFoundException(`User ${id} not found`);
+    assertProtectedRole(actor, user.role?.name);
 
     const userName = user.name;
     const email = user.email;

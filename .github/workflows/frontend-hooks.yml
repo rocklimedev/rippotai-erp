@@ -1,0 +1,29 @@
+name: Frontend hook order
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rules-of-hooks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rippotai-erp-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: rippotai-erp-frontend/package-lock.json
+      - run: npm ci
+      - name: Test browser session and CSP policy
+        run: npm run test:session
+      - name: Enforce React hook order
+        run: npm run lint:hooks

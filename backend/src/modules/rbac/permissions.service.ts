@@ -7,12 +7,14 @@ import { InjectModel } from '@nestjs/sequelize';
 import { UniqueConstraintError } from 'sequelize';
 import { Permission } from './models/permission.model';
 import { CreatePermissionDto, UpdatePermissionDto } from './dto/permission.dto';
+import { RolePermissionsCache } from './role-permissions-cache';
 
 @Injectable()
 export class PermissionsService {
   constructor(
     @InjectModel(Permission)
     private readonly permissionModel: typeof Permission,
+    private readonly permissionCache: RolePermissionsCache = new RolePermissionsCache(),
   ) {}
 
   async create(dto: CreatePermissionDto): Promise<Permission> {
@@ -49,6 +51,7 @@ export class PermissionsService {
     const permission = await this.findOne(id);
     try {
       await permission.update({ ...dto });
+      this.permissionCache.clear();
       return permission;
     } catch (err) {
       if (err instanceof UniqueConstraintError) {
@@ -63,5 +66,6 @@ export class PermissionsService {
   async remove(id: string): Promise<void> {
     const permission = await this.findOne(id);
     await permission.destroy();
+    this.permissionCache.clear();
   }
 }

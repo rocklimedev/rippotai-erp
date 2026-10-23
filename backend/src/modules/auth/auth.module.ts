@@ -28,9 +28,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ZohoModule } from '@/modules/zoho/zoho.module';
 import { GoogleModule } from '../google/google.module';
 import { MicrosoftModule } from '../microsoft/microsoft.module';
+import { RolePermissionsCacheModule } from '../rbac/role-permissions-cache';
+import { DistributedSecurityModule } from '@/common/security/distributed-security.module';
 
 @Module({
   imports: [
+    DistributedSecurityModule,
+    RolePermissionsCacheModule,
     SequelizeModule.forFeature([
       RolePermission,
       Permission,

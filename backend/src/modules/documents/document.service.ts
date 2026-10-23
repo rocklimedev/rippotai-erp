@@ -415,6 +415,13 @@ export class DocumentsService {
     return this.cdnService.downloadFile(storageFilename);
   }
 
+  async streamFile(
+    storageFilename: string,
+    destination: import('stream').Writable,
+  ) {
+    return this.cdnService.streamFile(storageFilename, destination);
+  }
+
   // ============================================================
   // HELPERS
   // ============================================================

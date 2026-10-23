@@ -18,7 +18,8 @@ export function localPrivateCdn(storage: CdnService): RequestHandler {
         req.query.expires as string,
         req.query.signature as string,
       );
-      res.type(key).send(await storage.downloadFile(key));
+      res.type(key);
+      await storage.streamFile(key, res);
     } catch (error) {
       if (error instanceof HttpException)
         return void res

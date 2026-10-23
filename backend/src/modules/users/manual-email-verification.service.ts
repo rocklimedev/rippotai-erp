@@ -9,6 +9,7 @@ import { User } from './models/user.model';
 import { AuthToken } from '../auth/models/auth-token.model';
 import { ActivityLog } from '../engagement/models/activity-log.model';
 import { ActivityAction } from '@/common/enums';
+import { assertProtectedRole } from '@/common/security/privilege-policy';
 
 @Injectable()
 export class ManualEmailVerificationService {
@@ -32,10 +33,12 @@ export class ManualEmailVerificationService {
     }
     return this.sequelize.transaction(async (transaction) => {
       const user = await this.users.findByPk(id, {
+        include: ['role'],
         transaction,
         lock: transaction.LOCK.UPDATE,
       });
       if (!user) throw new NotFoundException('User not found');
+      assertProtectedRole(actor, user.role?.name);
       const previous = {
         email_verified_at: user.email_verified_at,
         email_verified_address: user.email_verified_address,

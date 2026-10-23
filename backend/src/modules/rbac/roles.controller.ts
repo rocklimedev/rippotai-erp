@@ -11,6 +11,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { RolesService } from './roles.service';
+import { CurrentUser } from '@/common/decorator/current-user.decorator';
 import { CreateRoleDto, UpdateRoleDto } from './dto/role.dto';
 
 @Controller('rbac')
@@ -19,8 +20,8 @@ export class RolesController {
 
   @RequirePermission('rbac:create')
   @Post()
-  create(@Body() dto: CreateRoleDto) {
-    return this.rolesService.create(dto);
+  create(@Body() dto: CreateRoleDto, @CurrentUser() actor: any) {
+    return this.rolesService.create(dto, actor);
   }
 
   @RequirePermission('rbac:read')
@@ -37,15 +38,19 @@ export class RolesController {
 
   @RequirePermission('rbac:update')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateRoleDto) {
-    return this.rolesService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateRoleDto,
+    @CurrentUser() actor: any,
+  ) {
+    return this.rolesService.update(id, dto, actor);
   }
 
   @RequirePermission('rbac:delete')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string) {
-    return this.rolesService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() actor: any) {
+    return this.rolesService.remove(id, actor);
   }
   // roles.controller.ts — add this method
   @RequirePermission('rbac:read')

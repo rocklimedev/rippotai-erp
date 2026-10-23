@@ -1,3 +1,5 @@
+process.env.AUTH_TRACKER_SECRET = 'test-only-shared-tracker-secret';
+jest.mock('../src/common/security/redis-throttler.storage', () => ({ RedisThrottlerStorage: jest.requireActual('@nestjs/throttler').ThrottlerStorageService }));
 import { Module, Controller, Get, Post, Body } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';

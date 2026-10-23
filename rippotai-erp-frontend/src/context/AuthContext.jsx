@@ -13,17 +13,21 @@ import {
 } from "../api/auth/auth.api";
 import { useUpdateUserMutation } from "../api/users/user.api";
 
+import { useDispatch } from "react-redux";
+import { baseApi } from "../store/baseApi";
+import {
+  getSessionToken,
+  persistSession as saveSession,
+  persistIdentity,
+  clearStoredSession,
+} from "../lib/session";
+import { clearLocalDrafts } from "../lib/draft-storage";
+
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    try {
-      const raw = localStorage.getItem("bc_user");
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [user, setUser] = useState(null);
+  const dispatch = useDispatch();
 
   const [ready, setReady] = useState(false);
 
@@ -34,44 +38,77 @@ export function AuthProvider({ children }) {
   const [updateUserMutation] = useUpdateUserMutation();
 
   const persistSession = (token, userData) => {
-    localStorage.setItem("bc_token", token);
-    localStorage.setItem("bc_user", JSON.stringify(userData));
-    setUser(userData);
+    clearLocalDrafts();
+    saveSession(token, userData);
   };
 
-  const clearSession = () => {
-    localStorage.removeItem("bc_token");
-    localStorage.removeItem("bc_user");
+  const clearSession = useCallback(() => {
+    clearStoredSession();
+    dispatch(baseApi.util.resetApiState());
     setUser(null);
-  };
+  }, [dispatch]);
 
   const refresh = useCallback(async () => {
-    const token = localStorage.getItem("bc_token");
+    const token = getSessionToken();
 
     if (!token) {
+      clearSession();
       setReady(true);
       return;
     }
 
     try {
       const response = await triggerMe().unwrap();
+      if (getSessionToken() !== token) return;
 
       // Backend returns either { user } or user directly
       const userData = response.user ?? response;
 
-      localStorage.setItem("bc_user", JSON.stringify(userData));
+      persistIdentity(userData);
       setUser(userData);
     } catch (err) {
+      if (getSessionToken() !== token) return;
       console.error(err);
       clearSession();
     } finally {
       setReady(true);
     }
-  }, [triggerMe]);
+  }, [triggerMe, clearSession]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    const ended = () => {
+      setUser(null);
+      dispatch(baseApi.util.resetApiState());
+    };
+    window.addEventListener("bc:session-ended", ended);
+    return () => window.removeEventListener("bc:session-ended", ended);
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const activity = () => {
+      if (getSessionToken())
+        sessionStorage.setItem("bc_activity", String(Date.now()));
+    };
+    const events = ["pointerdown", "keydown", "touchstart", "scroll"];
+    events.forEach((event) =>
+      window.addEventListener(event, activity, { passive: true }),
+    );
+    const timer = setInterval(() => getSessionToken(), 15_000);
+    const visible = () => {
+      if (!document.hidden) getSessionToken();
+    };
+    document.addEventListener("visibilitychange", visible);
+    return () => {
+      events.forEach((event) => window.removeEventListener(event, activity));
+      document.removeEventListener("visibilitychange", visible);
+      clearInterval(timer);
+    };
+  }, [user?.id]);
 
   /**
    * Login
@@ -83,6 +120,7 @@ export function AuthProvider({ children }) {
     }).unwrap();
 
     persistSession(token, userData);
+    await refresh();
 
     return userData;
   };
@@ -94,6 +132,7 @@ export function AuthProvider({ children }) {
     const { token, user: userData } = await signupMutation(payload).unwrap();
 
     persistSession(token, userData);
+    await refresh();
 
     return userData;
   };
@@ -107,12 +146,12 @@ export function AuthProvider({ children }) {
    * Logout
    */
   const logout = async () => {
+    const request = logoutMutation(getSessionToken());
+    clearSession();
     try {
-      await logoutMutation().unwrap();
+      await request.unwrap();
     } catch (err) {
       console.error(err);
-    } finally {
-      clearSession();
     }
   };
 
@@ -137,7 +176,7 @@ export function AuthProvider({ children }) {
         ...updatedUser,
       };
 
-      localStorage.setItem("bc_user", JSON.stringify(mergedUser));
+      persistIdentity(mergedUser);
 
       setUser(mergedUser);
 

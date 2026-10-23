@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import request from 'supertest';
 import { createHash } from 'crypto';
+import { decode } from 'jsonwebtoken';
 import * as bcrypt from 'bcrypt';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -34,7 +35,7 @@ describe('Closed signup and verified email onboarding', () => {
     scope: jest.fn(),
     create: jest.fn(),
   };
-  const tokens = { create: jest.fn(), findOne: jest.fn() };
+  const tokens = { create: jest.fn(), findOne: jest.fn(), update: jest.fn() };
   const sessions = {
     create: jest.fn(),
     findByHash: jest.fn(),
@@ -56,12 +57,13 @@ describe('Closed signup and verified email onboarding', () => {
   const priorSecret = process.env.JWT_SECRET;
 
   beforeAll(async () => {
+    Object.assign(users, { sequelize: database });
     process.env.JWT_SECRET = 'onboarding-test-secret';
     auth = new AuthService(
-      { findAll: jest.fn() } as any,
       users as any,
       {} as any,
       sessions as any,
+      { assertAllowed: jest.fn(), recordFailure: jest.fn(), recordSuccess: jest.fn() } as any,
     );
     verification = new EmailVerificationService(
       users as any,
@@ -103,7 +105,14 @@ describe('Closed signup and verified email onboarding', () => {
       email_verified_address: null,
       role: { name: 'STAFF' },
       role_id: null,
-      update: jest.fn(async (patch) => Object.assign(user, patch)),
+      update: jest.fn(async (patch) =>
+        Object.assign(
+          user,
+          Object.fromEntries(
+            Object.entries(patch).filter(([, value]) => value !== undefined),
+          ),
+        ),
+      ),
     };
     users.scope.mockReturnValue(users);
     users.findOne.mockImplementation(async () => user);
@@ -122,10 +131,14 @@ describe('Closed signup and verified email onboarding', () => {
           (token) => token.token === where.token && token.type === where.type,
         ) || null,
     );
+    tokens.update.mockImplementation(async (patch) => {
+      for (const token of issued) Object.assign(token, patch);
+    });
     sessions.findByHash.mockImplementation(async () => ({
       id: 'session',
       user,
       expires_at: new Date(Date.now() + 60_000),
+      last_used_at: new Date(),
       revoked_at: null,
     }));
     mail.sendVerificationEmail.mockResolvedValue(undefined);
@@ -178,7 +191,7 @@ describe('Closed signup and verified email onboarding', () => {
           email: 'a@example.com',
           password,
           created_by: 'admin',
-        },
+        } as any,
         { id: 'attacker', roleName: 'STAFF' },
       ),
     ).rejects.toThrow('Only administrators');
@@ -187,12 +200,15 @@ describe('Closed signup and verified email onboarding', () => {
 
   it('allows an administrator to provision an unverified account without issuing a session', async () => {
     users.create.mockResolvedValue(user);
+    const activity = { logUserCreated: jest.fn() };
+    const notifications = { notifyUserCreated: jest.fn() };
+    const actor = { id: 'real-admin', roleName: 'ADMIN', permissions: ['users:create'] };
     const service = new UsersService(
       users as any,
       {} as any,
       {} as any,
-      { logUserCreated: jest.fn() } as any,
-      { notifyUserCreated: jest.fn() } as any,
+      activity as any,
+      notifications as any,
     );
     await service.create(
       {
@@ -202,7 +218,12 @@ describe('Closed signup and verified email onboarding', () => {
         created_by: 'spoofed',
         email_verified_at: new Date(),
       } as any,
-      { id: 'real-admin', roleName: 'ADMIN' },
+      actor,
+    );
+    expect(activity.logUserCreated).toHaveBeenCalledWith(user, actor.id, actor);
+    expect(notifications.notifyUserCreated).toHaveBeenCalledWith(
+      user,
+      actor.id,
     );
     expect(users.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -217,6 +238,106 @@ describe('Closed signup and verified email onboarding', () => {
       'email_verified_address',
     );
     expect(sessions.create).not.toHaveBeenCalled();
+  });
+
+  it('issues a twenty-minute token and rejects server-side idle expiry', async () => {
+    user.email_verified_at = new Date();
+    user.email_verified_address = user.email;
+    const result = await auth.login(user.email, password);
+    const payload = decode(result.token) as any;
+    expect(payload.exp - payload.iat).toBe(1200);
+    const created = sessions.create.mock.calls[0][0];
+    expect(
+      created.expires_at.getTime() - created.last_used_at.getTime(),
+    ).toBeLessThanOrEqual(1200_000);
+    sessions.findByHash.mockResolvedValueOnce({
+      id: 'idle-session',
+      user,
+      expires_at: new Date(Date.now() + 60_000),
+      last_used_at: new Date(Date.now() - 600_000),
+      revoked_at: null,
+    });
+    await expect(auth.getCurrentUserFromPayload(payload)).rejects.toThrow(
+      'Session expired',
+    );
+    expect(sessions.touchLastUsed).not.toHaveBeenCalled();
+    const current = await auth.getCurrentUserFromPayload({
+      ...payload,
+      permissions: ['users:create'],
+      role: 'ADMIN',
+    });
+    expect(current.permissions).toEqual([]);
+    expect(current.roleName).toBe('STAFF');
+  });
+
+  it.each(['profile', 'admin'])(
+    'keeps the verified email active during a %s email change',
+    async (mode) => {
+      user.email_verified_at = new Date();
+      user.email_verified_address = user.email;
+      users.findOne.mockImplementation(async ({ where }) =>
+        where.email === user.email ? user : null,
+      );
+      const service = new UsersService(
+        users as any,
+        {} as any,
+        {} as any,
+        { logUserUpdated: jest.fn(), logUserProfileUpdated: jest.fn() } as any,
+        {
+          notifyUserUpdated: jest.fn(),
+          notifyUserProfileUpdated: jest.fn(),
+        } as any,
+        verification,
+        sessions as any,
+        { create: jest.fn() } as any,
+      );
+      const dto = { email: ' NEW@EXAMPLE.COM ' };
+      if (mode === 'profile')
+        await service.updateProfile(user.id, dto, user.id);
+      else
+        await service.update(user.id, dto, { id: user.id, roleName: 'ADMIN', permissions: ['users:update'] });
+      expect(user.email).toBe('staff@example.com');
+      expect(user.pending_email).toBe('new@example.com');
+      expect(user.email_verified_address).toBe(user.email);
+      await expect(auth.login(user.email, password)).resolves.toHaveProperty(
+        'token',
+      );
+      await expect(
+        auth.getCurrentUserFromPayload({
+          jti: 'session',
+          iat: Math.floor(Date.now() / 1000),
+          exp: Math.floor(Date.now() / 1000) + 1200,
+        }),
+      ).resolves.toHaveProperty('id', user.id);
+      expect(mail.sendVerificationEmail).toHaveBeenLastCalledWith(
+        'new@example.com',
+        user.name,
+        expect.any(String),
+      );
+      const url = new URL(mail.sendVerificationEmail.mock.calls.at(-1)![2]);
+      const secret = new URLSearchParams(url.hash.slice(1)).get('token')!;
+      await verification.verify(secret);
+      expect(user.email).toBe('new@example.com');
+      expect(user.email_verified_address).toBe(user.email);
+      expect(user.pending_email).toBeNull();
+      await expect(verification.verify(secret)).rejects.toThrow(
+        'invalid or expired',
+      );
+    },
+  );
+
+  it('rejects superseded email-change links', async () => {
+    user.email_verified_at = new Date();
+    user.email_verified_address = user.email;
+    users.findOne.mockResolvedValue(null);
+    await verification.requestChange(user.id, 'first@example.com');
+    const url = new URL(mail.sendVerificationEmail.mock.calls.at(-1)![2]);
+    const secret = new URLSearchParams(url.hash.slice(1)).get('token')!;
+    await verification.requestChange(user.id, 'second@example.com');
+    await expect(verification.verify(secret)).rejects.toThrow(
+      'invalid or expired',
+    );
+    expect(user.email).toBe('staff@example.com');
   });
 
   it('blocks login, delivers a hashed email token, verifies once, then permits a normal login', async () => {
@@ -356,16 +477,30 @@ describe('Closed signup and verified email onboarding', () => {
 
   it('rejects existing sessions for unverified, disabled, or changed-email users', async () => {
     await expect(
-      auth.getCurrentUserFromPayload({ jti: 'old-session' }),
+      auth.getCurrentUserFromPayload({
+        jti: 'old-session',
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 1200,
+      }),
     ).rejects.toThrow('verified email required');
     user.email_verified_at = new Date();
     user.email_verified_address = user.email;
     expect(
-      (await auth.getCurrentUserFromPayload({ jti: 'old-session' })).id,
+      (
+        await auth.getCurrentUserFromPayload({
+          jti: 'old-session',
+          iat: Math.floor(Date.now() / 1000),
+          exp: Math.floor(Date.now() / 1000) + 1200,
+        })
+      ).id,
     ).toBe(user.id);
     user.email = 'changed@example.com';
     await expect(
-      auth.getCurrentUserFromPayload({ jti: 'old-session' }),
+      auth.getCurrentUserFromPayload({
+        jti: 'old-session',
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 1200,
+      }),
     ).rejects.toThrow('verified email required');
     await expect(auth.login(user.email, password)).rejects.toThrow(
       'Verify your email',
@@ -373,7 +508,11 @@ describe('Closed signup and verified email onboarding', () => {
     user.email = user.email_verified_address;
     user.is_active = false;
     await expect(
-      auth.getCurrentUserFromPayload({ jti: 'old-session' }),
+      auth.getCurrentUserFromPayload({
+        jti: 'old-session',
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 1200,
+      }),
     ).rejects.toThrow('verified email required');
   });
 });

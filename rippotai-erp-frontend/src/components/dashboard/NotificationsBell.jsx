@@ -8,6 +8,7 @@ import { useNotificationPreferences } from "@/hooks/use-notification-preferences
 import { useNavigate } from "react-router-dom";
 import { Bell, Trash2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { usePollingInterval } from '@/hooks/use-polling-interval';
 
 import {
   DropdownMenu,
@@ -29,6 +30,7 @@ import {
 export default function NotificationsBell() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const pollingInterval = usePollingInterval(60_000);
 
   const [preferences] = useNotificationPreferences(user?.id);
   const {
@@ -40,7 +42,7 @@ export default function NotificationsBell() {
     { userId: user?.id },
     {
       skip: !user?.id,
-      pollingInterval: 15000,
+      pollingInterval,
       skipPollingIfUnfocused: true,
       refetchOnFocus: true,
       refetchOnReconnect: true,

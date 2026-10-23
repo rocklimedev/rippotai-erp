@@ -7,7 +7,6 @@ import {
   Post,
   Req,
   Res,
-  StreamableFile,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { RequirePermission } from '../../common/decorator/require-permission.decorator';
@@ -32,7 +31,7 @@ export class ExportJobsController {
   async result(
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req: any,
-    @Res({ passthrough: true }) res: Response,
+    @Res() res: Response,
   ) {
     const job = await this.jobs.owned(id, req.user);
     if ((await job.getState()) !== 'completed')
@@ -41,11 +40,11 @@ export class ExportJobsController {
     if (!result)
       throw new ConflictException('Export result is not yet available');
     res.setHeader('Cache-Control', 'private, no-store');
-    if (result.type === 'json') return result.value;
+    if (result.type === 'json') return res.json(result.value);
     const filename = result.filename.replace(/[^\w. -]/g, '_');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Type', result.mime);
-    return new StreamableFile(await this.storage.downloadFile(result.key));
+    await this.storage.streamFile(result.key, res);
   }
 
   @RequirePermission('exports:retry-own')

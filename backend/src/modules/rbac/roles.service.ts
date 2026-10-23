@@ -9,6 +9,11 @@ import { Sequelize } from 'sequelize-typescript';
 import { Role } from './models/role.model';
 import { RoleApp } from './models/role-app.model';
 import { CreateRoleDto, UpdateRoleDto } from './dto/role.dto';
+import { RolePermissionsCache } from './role-permissions-cache';
+import {
+  requireActor,
+  assertProtectedRole,
+} from '@/common/security/privilege-policy';
 
 @Injectable()
 export class RolesService {
@@ -20,9 +25,12 @@ export class RolesService {
     private readonly roleAppModel: typeof RoleApp,
 
     private readonly sequelize: Sequelize,
+    private readonly permissionCache: RolePermissionsCache = new RolePermissionsCache(),
   ) {}
 
-  async create(dto: CreateRoleDto): Promise<Role> {
+  async create(dto: CreateRoleDto, actor?: any): Promise<Role> {
+    requireActor(actor, 'rbac:create');
+    assertProtectedRole(actor, dto.name);
     const { app_codes, ...roleFields } = dto;
 
     try {
@@ -76,12 +84,15 @@ export class RolesService {
     return role;
   }
 
-  async update(id: string, dto: UpdateRoleDto): Promise<Role> {
+  async update(id: string, dto: UpdateRoleDto, actor?: any): Promise<Role> {
+    requireActor(actor, 'rbac:update');
     const role = await this.findOne(id);
+    assertProtectedRole(actor, role.name);
+    assertProtectedRole(actor, dto.name);
     const { app_codes, ...roleFields } = dto;
 
     try {
-      return await this.sequelize.transaction(async (t) => {
+      const updated = await this.sequelize.transaction(async (t) => {
         if (Object.keys(roleFields).length) {
           await role.update({ ...roleFields }, { transaction: t });
         }
@@ -103,6 +114,8 @@ export class RolesService {
 
         return role;
       });
+      this.permissionCache.invalidate(id);
+      return updated;
     } catch (err) {
       if (err instanceof UniqueConstraintError) {
         throw new ConflictException(`Role "${dto.name}" already exists`);
@@ -111,8 +124,11 @@ export class RolesService {
     }
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, actor?: any): Promise<void> {
+    requireActor(actor, 'rbac:delete');
     const role = await this.findOne(id);
+    assertProtectedRole(actor, role.name);
     await role.destroy(); // FK CASCADE on role_apps/role_permissions handles cleanup
+    this.permissionCache.invalidate(id);
   }
 }

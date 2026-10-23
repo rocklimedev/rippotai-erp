@@ -18,6 +18,7 @@ export interface UserAttributes {
   id: string;
   name: string;
   email: string;
+  pending_email: string | null;
   email_verified_at: Date | null;
   email_verified_address: string | null;
   password_hash: string;
@@ -42,6 +43,7 @@ export interface UserCreationAttributes extends Optional<
   | 'created_by'
   | 'email_verified_at'
   | 'email_verified_address'
+  | 'pending_email'
 > {}
 
 /** Columns that must never leave the API. */
@@ -79,6 +81,9 @@ export class User extends Model<UserAttributes, UserCreationAttributes> {
     unique: true,
   })
   declare email: string;
+
+  @Column({ type: DataType.STRING(255), allowNull: true, defaultValue: null })
+  declare pending_email: string | null;
 
   @Column({ type: DataType.DATE, allowNull: true, defaultValue: null })
   declare email_verified_at: Date | null;

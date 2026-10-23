@@ -3,18 +3,20 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { contentSecurityPolicy } from './security/csp.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default defineConfig({
   plugins: [
+    contentSecurityPolicy(),
     react(),
 
     VitePWA({
       registerType: "autoUpdate",
 
-      injectRegister: "auto",
+      injectRegister: "script",
 
       includeAssets: [
         "favicon.svg",

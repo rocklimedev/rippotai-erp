@@ -11,8 +11,10 @@ import { T, EMPTY } from "./theme";
 import { chatPreview, personChat, targetFor } from "./helpers";
 import { ListScreen } from "./components/ListScreen";
 import { ConversationScreen } from "./components/ConversationScreen";
+import { usePollingInterval } from '@/hooks/use-polling-interval';
 
 export function CliqMiniWidget({ onClose, currentCliqUserId }) {
+  const pollingInterval = usePollingInterval(15_000);
   const [activeChat, setActiveChat] = useState(null);
   const [section, setSection] = useState("chats");
   const [expanded, setExpanded] = useState(false);
@@ -26,7 +28,8 @@ export function CliqMiniWidget({ onClose, currentCliqUserId }) {
 
   const chatsQuery = useGetCliqChatsQuery(undefined, {
     skip: !connected,
-    pollingInterval: 15000,
+    pollingInterval,
+    skipPollingIfUnfocused: true,
   });
   const channelsQuery = useGetCliqChannelsQuery(undefined, {
     skip: !connected || section !== "channels",

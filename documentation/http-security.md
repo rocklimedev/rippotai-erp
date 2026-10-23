@@ -26,9 +26,11 @@ Public client access is allow-listed per handler, rather than on the entire cont
 
 The guard only bypasses session authentication when the metadata is exactly `true`. `Public` does not bypass client-link or OAuth state validation in the endpoint service. Staff client-link management, signed-in client home, handover preparation/delivery and other administrative routes remain authenticated. Invalid client links return 404, expired/revoked links return 410, and incorrect BOQ target/purpose returns 403. These token-only flows work without a session JWT.
 
-The default rate limit is 120 requests per client IP per controller handler per 60 seconds. Login, signup, forgot-password and reset-password use `AuthThrottle`: 10 requests per IP plus normalized account/reset-token tracker per handler per 60 seconds. Session administration uses 120 per IP plus session tracker per handler. These defaults retain the previous numeric limits, but separate callers behind a shared IP. A second auth IP budget caps each auth handler at 120 requests per IP per 60 seconds, even when an attacker rotates accounts or reset tokens. Tracker keys are keyed hashes; no raw credentials are stored as rate keys.
+The default rate limit is 120 requests per client IP per controller handler per 60 seconds. Login, signup, forgot-password and reset-password use `AuthThrottle`: 10 requests per IP plus normalized account/reset-token tracker per handler per 60 seconds. Session administration uses 120 per IP plus session tracker per handler. A shared auth-entry IP budget caps the combined entry endpoints at 20 requests per IP per 60 seconds, even when an attacker rotates accounts, reset tokens, or routes. Tracker keys use a deployment-wide HMAC secret; no raw credentials are stored as rate keys.
 
-Exceeding either budget returns HTTP 429 with standard Retry-After, including named budgets. Rejected authentication attempts and successful requests both count. Login and reset limits are transient source/identity budgets, not persistent account lockouts; another account on the same IP can continue below the overall IP ceiling, and requests are allowed again when the block expires. Public client-link flows use the ordinary default limit.
+Exceeding a budget returns HTTP 429 with standard Retry-After, including named budgets. Rejected authentication attempts and successful requests both count. All counters use atomic Redis scripts and server time, shared across replicas and restarts. Login additionally tracks failures by normalized account across IPs. Five failures trigger a 30-second cooldown; subsequent failures after cooldown double it, capped at 15 minutes. Counters expire after 15 minutes without failures, and a successful login clears prior failures. Known and unknown accounts follow the same policy. Accounts are never disabled in SQL. Public client-link flows use the ordinary default limit.
+
+Redis is required for admission: an outage returns 503, with bounded connection and command waits, rather than silently multiplying limits through a memory fallback. The dedicated security client does not queue commands while disconnected. Configure all replicas with the same Redis database and `AUTH_TRACKER_SECRET` (or the existing shared `JWT_SECRET` fallback); rotating that secret resets tracker identities. See `backend/docs/distributed-rate-limiting.md` for integration-test commands.
 
 Configuration:
 
@@ -36,7 +38,8 @@ Configuration:
 - RATE_LIMIT_TTL_MS: positive integer in milliseconds; defaults to 60000.
 - AUTH_RATE_LIMIT_MAX: positive integer; defaults to 10 per entry-point tracker.
 - TOKEN_RATE_LIMIT_MAX: positive integer; defaults to 120 per session tracker.
-- AUTH_IP_RATE_LIMIT_MAX: positive integer; defaults to 120 per IP per auth handler.
+- AUTH_IP_RATE_LIMIT_MAX: positive integer; defaults to 20 per IP across auth-entry handlers.
+- AUTH_TRACKER_SECRET: deployment-wide secret for private tracker keys; defaults to JWT_SECRET. Must match across replicas.
 - AUTH_RATE_LIMIT_TTL_MS: positive integer in milliseconds; defaults to 60000 for both auth budgets.
 - SECURITY_METRICS_WINDOW_MS: traffic summary/alert window; defaults to 60000.
 - SECURITY_ALERT_FAILURES: security failures per handler/window before a burst alert; defaults to 10.

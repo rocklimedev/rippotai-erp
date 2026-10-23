@@ -151,7 +151,7 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
   // Separate draft key for edits so they never overwrite the "new" draft
   const draftKey = `${SAVE_KEY}.${isEdit ? scheduleId : projectId || 'new'}`;
 
-  const [values, setValues] = useAutoSave(draftKey, EMPTY_VALUES);
+  const [values, setValues, draftStorage] = useAutoSave(draftKey, EMPTY_VALUES);
   useSharedProjectData(projectId, 'payment', values, setValues, !isEdit);
 
   // ============================================================
@@ -795,7 +795,7 @@ export function PaymentScheduleForm({ scheduleId: scheduleIdProp }) {
           ? "Payment Schedule updated successfully."
           : "Payment Schedule created successfully.",
       );
-      localStorage.removeItem(draftKey);
+      draftStorage.removeItem(draftKey);
       navigate(`/payment-schedules/${result?.id ?? scheduleId}`);
     } catch (error) {
       console.error("Payment Schedule save failed:", error);

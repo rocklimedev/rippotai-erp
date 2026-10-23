@@ -240,7 +240,9 @@ export default function ProfileSettings() {
 
       updateUser?.(normalizedUser);
 
-      toast.success("Profile updated successfully");
+      toast.success(updated.pending_email
+        ? `Verification sent to ${updated.pending_email}. Your current email stays active until confirmed.`
+        : "Profile updated successfully");
     } catch (err) {
       toast.error(
         err?.data?.message || err?.message || "Failed to update profile",

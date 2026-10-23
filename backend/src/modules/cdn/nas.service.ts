@@ -3,6 +3,9 @@ import SftpClient from 'ssh2-sftp-client';
 import * as path from 'path';
 import { createHash, randomUUID } from 'crypto';
 import { validateStorageKey } from './file-access';
+import { createReadStream } from 'fs';
+import { pipeline } from 'stream/promises';
+import type { Writable } from 'stream';
 
 @Injectable()
 export class NasService {
@@ -64,7 +67,7 @@ export class NasService {
     }
   }
 
-  async put(key: string, buffer: Buffer) {
+  async put(key: string, buffer: Buffer | string) {
     validateStorageKey(key);
     await this.withClient(async (client, root) => {
       // The shared folder must be provisioned by an administrator first.
@@ -72,13 +75,22 @@ export class NasService {
       try {
         await client.put(buffer, temporary);
         await client.chmod(temporary, '600');
-        const copy = await client.get(temporary);
-        if (
-          !Buffer.isBuffer(copy) ||
-          createHash('sha256').update(copy).digest('hex') !==
-            createHash('sha256').update(buffer).digest('hex')
-        ) {
-          throw new Error('NAS copy verification failed');
+        if (typeof buffer === 'string') {
+          const sourceHash = createHash('sha256');
+          await pipeline(createReadStream(buffer), sourceHash);
+          const remoteHash = createHash('sha256');
+          await pipeline(client.createReadStream(temporary), remoteHash);
+          if (sourceHash.digest('hex') !== remoteHash.digest('hex'))
+            throw new Error('NAS copy verification failed');
+        } else {
+          const copy = await client.get(temporary);
+          if (
+            !Buffer.isBuffer(copy) ||
+            createHash('sha256').update(copy).digest('hex') !==
+              createHash('sha256').update(buffer).digest('hex')
+          ) {
+            throw new Error('NAS copy verification failed');
+          }
         }
         // Replace atomically on retry; never serve a partially transferred final key.
         await client.posixRename(temporary, `${root}/${key}`);
@@ -94,6 +106,14 @@ export class NasService {
       const data = await client.get(`${root}/${key}`);
       if (!Buffer.isBuffer(data)) throw new Error('Unsupported NAS response');
       return data;
+    });
+  }
+
+  async streamTo(key: string, destination: Writable): Promise<void> {
+    validateStorageKey(key);
+    await this.withClient(async (client, root) => {
+      await client.stat(`${root}/${key}`);
+      await pipeline(client.createReadStream(`${root}/${key}`), destination);
     });
   }
 

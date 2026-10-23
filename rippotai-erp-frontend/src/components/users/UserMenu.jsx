@@ -201,7 +201,7 @@ export default function UserMenu() {
           }}
         >
           <LogOut size={15} className="mr-2" />
-          Sign out
+          Sign out &amp; clear local drafts
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

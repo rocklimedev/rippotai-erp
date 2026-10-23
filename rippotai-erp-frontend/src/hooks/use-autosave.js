@@ -1,17 +1,22 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { createDraftStorage } from "../lib/draft-storage";
 
 /**
  * Local-only draft persistence — debounced write to localStorage so the
  * user doesn't lose in-progress section values on refresh. Shared by
  * BriefForm and SiteRekiForm.
  */
-export function useAutoSave(key, initial) {
+export function useAutoSave(draftKey, initial) {
+  const { user } = useAuth();
+  const storage = useMemo(() => createDraftStorage(user?.id), [user?.id]);
+  const key = `${user?.id ?? "signed-out"}:${draftKey}`;
   const [snapshot, setSnapshot] = useState(() => ({
     key,
-    value: readStoredDraft(key, initial),
+    value: readStoredDraft(draftKey, initial, storage),
   }));
   if (snapshot.key !== key) {
-    setSnapshot({ key, value: readStoredDraft(key, initial) });
+    setSnapshot({ key, value: readStoredDraft(draftKey, initial, storage) });
   }
   const state = snapshot.value;
   const setState = useCallback(
@@ -31,15 +36,15 @@ export function useAutoSave(key, initial) {
     if (snapshot.key !== key) return;
     const t = setTimeout(() => {
       try {
-        localStorage.setItem(key, JSON.stringify(state));
+        storage.setItem(draftKey, JSON.stringify(state));
       } catch {
         /* Draft remains in memory when storage is full. */
       }
     }, 500);
     return () => clearTimeout(t);
-  }, [state, key, snapshot.key]);
+  }, [state, key, snapshot.key, storage, draftKey]);
 
-  return [state, setState];
+  return [state, setState, storage];
 }
 
 export function readStoredDraft(key, initial, storage = localStorage) {

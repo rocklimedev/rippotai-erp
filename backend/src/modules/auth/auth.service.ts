@@ -14,16 +14,20 @@ import { Role } from '@/modules/rbac/models/role.model';
 import { AuthTokensService } from './auth-tokens.service';
 import { PasswordResetToken } from './models/password-reset-token.model';
 import { AuthTokenType } from '@/common/enums';
-import { RolePermission } from '../rbac/models/role_permission.model';
-import { Permission } from '../rbac/models/permission.model';
+import { RolePermissionsCache } from '../rbac/role-permissions-cache';
 import { hasVerifiedEmail } from './verified-email';
 import { assertNewPassword } from '@/common/security/password-policy';
+import { ACCESS_TOKEN_SECONDS, assertSessionLifetime } from './session-policy';
+import { LoginProtectionService } from '@/common/security/login-protection.service';
+
+// Precomputed at cost 10, matching account password creation. Unknown emails
+// must still perform bcrypt work before returning the same credentials error.
+const DUMMY_PASSWORD_HASH =
+  '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectModel(RolePermission)
-    private readonly rolePermissions: typeof RolePermission,
     @InjectModel(User)
     private readonly userModel: typeof User,
 
@@ -31,9 +35,12 @@ export class AuthService {
     private readonly passwordResetModel: typeof PasswordResetToken,
 
     private readonly authTokensService: AuthTokensService,
+    private readonly loginProtection: LoginProtectionService,
+    private readonly permissionCache: RolePermissionsCache = new RolePermissionsCache(),
   ) {}
 
   async login(email: string, password: string) {
+    await this.loginProtection.assertAllowed(email);
     const user = await this.userModel.scope('withPassword').findOne({
       where: { email: email.trim().toLowerCase() },
       attributes: [
@@ -59,13 +66,13 @@ export class AuthService {
       ],
     });
 
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
+    const valid = await bcrypt.compare(
+      password,
+      user?.password_hash ?? DUMMY_PASSWORD_HASH,
+    );
 
-    const valid = await bcrypt.compare(password, user.password_hash);
-
-    if (!valid) {
+    if (!user || !valid) {
+      await this.loginProtection.recordFailure(email);
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -80,16 +87,18 @@ export class AuthService {
     }
 
     const rawToken = randomUUID();
+    await this.loginProtection.recordSuccess(email);
 
     const tokenHash = createHash('sha256').update(rawToken).digest('hex');
 
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + ACCESS_TOKEN_SECONDS * 1000);
 
     await this.authTokensService.create({
       user_id: user.id,
       token_hash: tokenHash,
       type: AuthTokenType.REFRESH,
       expires_at: expiresAt,
+      last_used_at: new Date(),
     });
 
     await user.update({
@@ -106,7 +115,7 @@ export class AuthService {
       },
       process.env.JWT_SECRET!,
       {
-        expiresIn: '7d',
+        expiresIn: ACCESS_TOKEN_SECONDS,
         jwtid: rawToken,
       },
     );
@@ -129,7 +138,10 @@ export class AuthService {
   async getCurrentUserFromPayload(payload: any) {
     const tokenHash = createHash('sha256').update(payload.jti).digest('hex');
 
-    const authToken = await this.authTokensService.findByHash(tokenHash);
+    const { authToken, permissions } = await this.sessionWithPermissions(
+      tokenHash,
+      payload.role_id,
+    );
 
     if (!authToken) {
       throw new UnauthorizedException('Token not found in database');
@@ -138,6 +150,8 @@ export class AuthService {
     if (authToken.revoked_at) {
       throw new UnauthorizedException('Token has been revoked');
     }
+
+    assertSessionLifetime(payload, authToken);
 
     if (new Date(authToken.expires_at) < new Date()) {
       throw new UnauthorizedException('Token expired');
@@ -153,14 +167,10 @@ export class AuthService {
       );
     }
 
-    await this.authTokensService.touchLastUsed(authToken.id);
-
-    const grants = authToken.user?.role_id
-      ? await this.rolePermissions.findAll({
-          where: { role_id: authToken.user.role_id },
-          include: [{ model: Permission }],
-        })
-      : [];
+    await this.authTokensService.touchLastUsed(
+      authToken.id,
+      authToken.last_used_at,
+    );
 
     return {
       id: authToken.user?.id,
@@ -171,15 +181,44 @@ export class AuthService {
       roleId: authToken.user?.role_id ?? null,
       roleName: authToken.user?.role?.name ?? null,
       is_active: authToken.user?.is_active,
-      permissions: grants
-        .filter((grant) => grant.permission)
-        .map(
-          (grant) => `${grant.permission.resource}:${grant.permission.action}`,
-        ),
+      permissions,
       phone: authToken.user?.phone,
       job_title: authToken.user?.job_title,
       avatar_url: authToken.user?.avatar_url,
     };
+  }
+
+  private async sessionWithPermissions(hash: string, roleHint?: string) {
+    // JWT role_id is only a query-planning hint. The joined database role is authoritative.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const generation = this.permissionCache.generation;
+      const cached = this.permissionCache.get(roleHint);
+      const authToken = await this.authTokensService.findByHash(
+        hash,
+        cached === undefined,
+      );
+      if (!authToken) return { authToken, permissions: [] };
+      if (generation !== this.permissionCache.generation) continue;
+      const roleId = authToken.user?.role_id;
+      if (cached !== undefined && roleId !== roleHint) {
+        roleHint = roleId ?? undefined;
+        continue;
+      }
+      const permissions =
+        cached ??
+        (authToken.user?.role?.rolePermissions ?? [])
+          .filter((grant) => grant.permission)
+          .map(
+            (grant) =>
+              `${grant.permission.resource}:${grant.permission.action}`,
+          );
+      if (roleId && cached === undefined)
+        this.permissionCache.set(roleId, permissions, generation);
+      return { authToken, permissions };
+    }
+    throw new UnauthorizedException(
+      'Permissions changed during authentication. Retry the request.',
+    );
   }
 
   async getCurrentUser(token: string) {

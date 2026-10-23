@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import { API_URL } from './config';
 import { awaitExportResponse } from './export-jobs';
+import { authenticatedFetch } from './http-client';
 
 export async function resolveExportResponse(response, { headers, signal } = {}) {
   if (response.status !== 202) return response;
@@ -8,6 +9,7 @@ export async function resolveExportResponse(response, { headers, signal } = {}) 
   if (!descriptor?.jobId) return response;
   const toastId = `export-${descriptor.jobId}`;
   const options = {
+    fetchImpl: authenticatedFetch,
     apiBase: API_URL, headers, signal,
     onStatus: job => toast.loading(
       job.state === 'delayed' ? `Export retry scheduled (attempt ${job.attemptsMade})` :
@@ -24,7 +26,7 @@ export async function resolveExportResponse(response, { headers, signal } = {}) 
       id: toastId, duration: 15000,
       ...(error.retryAvailable ? { action: { label: 'Retry', onClick: async () => {
         try {
-          const retried = await fetch(`${API_URL}/export-jobs/${error.jobId}/retry`, { method: 'POST', headers, credentials: 'include' });
+          const retried = await authenticatedFetch(`${API_URL}/export-jobs/${error.jobId}/retry`, { method: 'POST', headers });
           if (!retried.ok) throw new Error('Could not retry the export');
           const result = await resolveExportResponse(retried, { headers });
           if (result.headers.get('content-disposition')) {
@@ -44,5 +46,5 @@ export async function resolveExportResponse(response, { headers, signal } = {}) 
 
 export async function exportAwareFetch(input, init) {
   const request = new Request(input, init);
-  return resolveExportResponse(await fetch(request), { headers: request.headers, signal: request.signal });
+  return resolveExportResponse(await authenticatedFetch(request), { headers: request.headers, signal: request.signal });
 }

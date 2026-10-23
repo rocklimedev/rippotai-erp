@@ -18,7 +18,7 @@ export class ActivityLogForUserService {
     await this.activityLogModel.create({
       user_id: actorId || null,
       user_email: actor?.email || 'system',
-      user_role: actor?.role?.name || 'system',
+      user_role: actor?.roleName || actor?.role?.name || 'system',
       action: ActivityAction.USER_CREATED,
       entity_type: 'User',
       entity_id: user.id,

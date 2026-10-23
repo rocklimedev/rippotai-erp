@@ -1,3 +1,4 @@
+process.env.AUTH_TRACKER_SECRET = 'test-only-shared-tracker-secret';
 import { Logger } from '@nestjs/common';
 import { EventEmitter } from 'events';
 import { HttpSecurityTelemetryService } from './http-security-telemetry.service';
