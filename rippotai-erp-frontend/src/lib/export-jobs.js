@@ -12,12 +12,12 @@ export async function awaitExportResponse(initial, options) {
   const started = Date.now();
   while (Date.now() - started < maxWaitMs) {
     if (signal?.aborted) throw new DOMException('Export wait cancelled; the job continues in the background', 'AbortError');
-    const response = await fetchImpl(url(submitted.statusUrl), { headers, credentials: 'include', signal, cache: 'no-store' });
+    const response = await fetchImpl(url(submitted.statusUrl), { headers, credentials: 'omit', signal, cache: 'no-store' });
     const job = await response.json();
     if (!response.ok) throw new Error(job.message || 'Could not retrieve export status');
     onStatus(job);
     if (job.state === 'completed') {
-      const result = await fetchImpl(url(job.resultUrl), { headers, credentials: 'include', signal, cache: 'no-store' });
+      const result = await fetchImpl(url(job.resultUrl), { headers, credentials: 'omit', signal, cache: 'no-store' });
       if (!result.ok) throw new Error('Could not download the completed export');
       return result;
     }

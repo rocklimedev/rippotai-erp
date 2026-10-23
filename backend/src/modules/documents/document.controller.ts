@@ -12,9 +12,10 @@ import {
   Res,
   UploadedFile,
   UseInterceptors,
+  UseGuards,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { memoryStorage } from 'multer';
+import { DiskUploadInterceptor, UploadRateGuard } from '../cdn/upload-security';
+
 import type { Response } from 'express';
 
 import { DocumentsService } from './document.service';
@@ -24,13 +25,6 @@ import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { CreateDocumentVersionDto } from './dto/create-document-version.dto';
 import { CreateDocumentAttachmentDto } from './dto/create-document-attachment.dto';
-
-const FILE_UPLOAD_OPTIONS = {
-  storage: memoryStorage(),
-  limits: {
-    fileSize: 500 * 1024 * 1024,
-  },
-};
 
 @Controller('documents')
 export class DocumentsController {
@@ -108,7 +102,8 @@ export class DocumentsController {
    */
   @RequirePermission('documents:create')
   @Post()
-  @UseInterceptors(FileInterceptor('file', FILE_UPLOAD_OPTIONS))
+  @UseGuards(UploadRateGuard)
+  @UseInterceptors(DiskUploadInterceptor)
   create(
     @Body() dto: CreateDocumentDto,
     @UploadedFile() file?: Express.Multer.File,
@@ -175,7 +170,8 @@ export class DocumentsController {
    */
   @RequirePermission('documents:update')
   @Post(':id/file')
-  @UseInterceptors(FileInterceptor('file', FILE_UPLOAD_OPTIONS))
+  @UseGuards(UploadRateGuard)
+  @UseInterceptors(DiskUploadInterceptor)
   replaceFile(
     @Param('id', ParseUUIDPipe) id: string,
     @UploadedFile() file: Express.Multer.File,
@@ -198,11 +194,13 @@ export class DocumentsController {
       });
     }
 
-    let buffer: Buffer;
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${(document.filename ?? document.storageFilename).replace(/["\r\n\\]/g, '_')}"`,
+    );
+    res.setHeader('Content-Type', document.mime ?? 'application/octet-stream');
     try {
-      buffer = await this.documentsService.downloadFile(
-        document.storageFilename,
-      );
+      await this.documentsService.streamFile(document.storageFilename, res);
     } catch (e) {
       // Missing file in storage (e.g. seeded record without an upload)
       // is a 404, not a server error.
@@ -214,15 +212,6 @@ export class DocumentsController {
       }
       throw e;
     }
-
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${document.filename ?? document.storageFilename}"`,
-    );
-
-    res.setHeader('Content-Type', document.mime ?? 'application/octet-stream');
-
-    res.send(buffer);
   }
 
   // ============================================================
@@ -263,7 +252,8 @@ export class DocumentsController {
 
   @RequirePermission('documents:create')
   @Post(':id/versions')
-  @UseInterceptors(FileInterceptor('file', FILE_UPLOAD_OPTIONS))
+  @UseGuards(UploadRateGuard)
+  @UseInterceptors(DiskUploadInterceptor)
   addVersion(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreateDocumentVersionDto,
@@ -293,7 +283,8 @@ export class DocumentsController {
 
   @RequirePermission('documents:create')
   @Post(':id/attachments')
-  @UseInterceptors(FileInterceptor('file', FILE_UPLOAD_OPTIONS))
+  @UseGuards(UploadRateGuard)
+  @UseInterceptors(DiskUploadInterceptor)
   addAttachment(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreateDocumentAttachmentDto,

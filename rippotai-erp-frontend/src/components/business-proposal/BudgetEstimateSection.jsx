@@ -169,13 +169,12 @@ function normalizeBudgetEstimate(data) {
 export default function BudgetEstimateSection({ data, onChange }) {
   const normalizedData = useMemo(() => normalizeBudgetEstimate(data), [data]);
 
-  if (!normalizedData) return null;
-
   /* ============================================================
      LOCAL TOTALS
   ============================================================ */
 
   const calculatedSubtotal = useMemo(() => {
+    if (!normalizedData) return 0;
     return normalizedData.categories.reduce((categoryTotal, category) => {
       return (
         categoryTotal +
@@ -191,7 +190,9 @@ export default function BudgetEstimateSection({ data, onChange }) {
         }, 0)
       );
     }, 0);
-  }, [normalizedData.categories]);
+  }, [normalizedData]);
+
+  if (!normalizedData) return null;
 
   const subtotal =
     normalizedData.subtotal > 0 ? normalizedData.subtotal : calculatedSubtotal;

@@ -15,15 +15,19 @@ import { RoleApp } from './models/role-app.model';
 import { RoleAppsController } from './role-apps.controller';
 import { RoleAppsService } from './role-apps.service';
 import { App } from './models/app.model';
+import { ActivityLog } from '../engagement/models/activity-log.model';
+import { RolePermissionsCacheModule } from './role-permissions-cache';
 
 @Module({
   imports: [
+    RolePermissionsCacheModule,
     SequelizeModule.forFeature([
       Role,
       Permission,
       RolePermission,
       RoleApp,
       App,
+      ActivityLog,
     ]),
   ],
   controllers: [

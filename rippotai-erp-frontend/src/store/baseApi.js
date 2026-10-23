@@ -1,17 +1,14 @@
+import { getSessionToken, clearStoredSession } from '../lib/session';
 import { exportAwareFetch } from '../lib/export-fetch';
+import { withSessionExpiry } from '../lib/authenticated-fetch';
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { API_URL } from "../lib/config";
 
-const baseQuery = fetchBaseQuery({
+const rawBaseQuery = fetchBaseQuery({
   baseUrl: API_URL,
   fetchFn: exportAwareFetch,
-  credentials: "include", // IMPORTANT for cookie-based auth
+  credentials: "omit",
   prepareHeaders: (headers) => {
-    const token = localStorage.getItem("bc_token"); // aligned with AuthContext
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-
     const cdnToken = import.meta.env.VITE_CDN_TOKEN;
     if (cdnToken) {
       headers.set("x-cdn-secret", cdnToken);
@@ -19,6 +16,11 @@ const baseQuery = fetchBaseQuery({
 
     return headers;
   },
+});
+
+export const baseQueryWithReauth = withSessionExpiry(rawBaseQuery, {
+  getToken: getSessionToken,
+  clearSession: clearStoredSession,
 });
 
 // -------------------------------
@@ -29,7 +31,7 @@ const baseQuery = fetchBaseQuery({
 // This keeps one shared reducer/cache/middleware instead of one per feature.
 export const baseApi = createApi({
   reducerPath: "baseApi",
-  baseQuery,
+  baseQuery: baseQueryWithReauth,
   tagTypes: [
     "AdminDpr",
     "SnagLists",

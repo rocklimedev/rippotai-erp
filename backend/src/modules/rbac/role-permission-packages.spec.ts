@@ -20,6 +20,11 @@ describe('permission packages', () => {
   let roles: any;
   let permissions: any;
   let service: RolePermissionsService;
+  const actor = {
+    id: 'operator',
+    roleName: 'STAFF',
+    permissions: ['role-permissions:assign', ...packages[0].permissions],
+  };
 
   beforeEach(() => {
     grants = { bulkCreate: jest.fn().mockResolvedValue([]) };
@@ -32,19 +37,25 @@ describe('permission packages', () => {
         }),
       ),
     };
-    service = new RolePermissionsService(grants, roles, permissions, {
-      transaction: (fn: any) => fn(transaction),
-    } as any);
+    service = new RolePermissionsService(
+      grants,
+      roles,
+      permissions,
+      {
+        transaction: (fn: any) => fn(transaction),
+      } as any,
+      { create: jest.fn() } as any,
+    );
   });
 
   it('applies a package to an arbitrary role with additive, duplicate-safe grants', async () => {
-    await service.applyPackage('any-role', packages[0].id);
+    await service.applyPackage('any-role', packages[0].id, actor);
     expect(grants.bulkCreate).toHaveBeenCalledWith(
       expect.arrayContaining([
         {
           role_id: 'any-role',
           permission_id: 'permission-0',
-          granted_by: null,
+          granted_by: actor.id,
         },
       ]),
       { transaction, ignoreDuplicates: true },
@@ -57,18 +68,18 @@ describe('permission packages', () => {
   it('rejects an incomplete catalogue before writing grants', async () => {
     permissions.findAll.mockResolvedValue([]);
     await expect(
-      service.applyPackage('any-role', packages[0].id),
+      service.applyPackage('any-role', packages[0].id, actor),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(grants.bulkCreate).not.toHaveBeenCalled();
   });
 
   it('rejects unknown packages and missing roles', async () => {
     await expect(
-      service.applyPackage('any-role', 'unknown'),
+      service.applyPackage('any-role', 'unknown', actor),
     ).rejects.toBeInstanceOf(NotFoundException);
     roles.findByPk.mockResolvedValue(null);
     await expect(
-      service.applyPackage('unknown-role', packages[0].id),
+      service.applyPackage('unknown-role', packages[0].id, actor),
     ).rejects.toBeInstanceOf(NotFoundException);
     expect(grants.bulkCreate).not.toHaveBeenCalled();
   });

@@ -51,7 +51,7 @@
     "ioredis": "^5.11.1",
     "jsonwebtoken": "^9.0.3",
     "jszip": "^3.10.2",
-    "multer": "^2.2.0",
+    "multer": "^2.4.0",
     "mysql2": "^3.22.5",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -67,6 +67,9 @@
     "tsconfig-paths": "^4.2.0",
     "uuid": "^14.0.1",
     "xlsx": "^0.18.5"
+  },
+  "overrides": {
+    "multer": "$multer"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

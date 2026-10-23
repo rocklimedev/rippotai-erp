@@ -38,10 +38,10 @@ describe('Password write and reset security', () => {
     create: jest.fn(),
   };
   const auth = new AuthService(
-    {} as any,
     users,
     resets as any,
     sessions as any,
+    { assertAllowed: jest.fn(), recordFailure: jest.fn(), recordSuccess: jest.fn() } as any,
   );
   const adminUsers = new UsersService(
     users,
@@ -50,7 +50,7 @@ describe('Password write and reset security', () => {
     {} as any,
     {} as any,
   );
-  const admin = { id: 'admin', roleName: 'ADMIN' };
+  const admin = { id: 'admin', roleName: 'ADMIN', permissions: ['users:create', 'users:update'] };
   beforeAll(() => {
     process.env.JWT_SECRET = 'password-policy-test-secret';
   });

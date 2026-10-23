@@ -261,7 +261,7 @@ export function BudgetEstimateForm() {
   } = useGetBudgetEstimateQuery(editId, { skip: !isEdit });
 
   const draftKey = `${SAVE_KEY}.${isEdit ? editId : searchParams.get('projectId') || searchParams.get('project_id') || 'new'}`;
-  const [values, setValues] = useAutoSave(
+  const [values, setValues, draftStorage] = useAutoSave(
     draftKey,
     {
       project_id: searchParams.get('projectId') || searchParams.get('project_id') || '',
@@ -546,7 +546,7 @@ export function BudgetEstimateForm() {
           body: payload,
         }).unwrap();
         toast.success(`Budget estimate ${data?.estimate_number || ""} updated`);
-        localStorage.removeItem(`${SAVE_KEY}.${editId}`);
+        draftStorage.removeItem(`${SAVE_KEY}.${editId}`);
         navigate(`/ledger/budget-estimate/${editId}`);
         return;
       }
@@ -559,7 +559,7 @@ export function BudgetEstimateForm() {
         } created successfully`,
       );
 
-      localStorage.removeItem(draftKey);
+      draftStorage.removeItem(draftKey);
 
       if (data?.id) {
         navigate(`/ledger/budget-estimate/${data.id}`);

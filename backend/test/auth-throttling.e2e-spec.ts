@@ -1,3 +1,8 @@
+process.env.AUTH_TRACKER_SECRET = 'test-only-shared-tracker-secret';
+jest.mock('../src/common/security/redis-throttler.storage', () => ({
+  RedisThrottlerStorage:
+    jest.requireActual('@nestjs/throttler').ThrottlerStorageService,
+}));
 import { Test } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
 import { UnauthorizedException } from '@nestjs/common';
@@ -10,6 +15,8 @@ import { configureHttpSecurity } from '../src/common/security/http-security';
 import { AuthController } from '../src/modules/auth/auth.controller';
 import { AuthService } from '../src/modules/auth/auth.service';
 import { ForgotPasswordService } from '../src/modules/auth/forgot-password.service';
+import { EmailVerificationService } from '../src/modules/auth/email-verification.service';
+import { RedisThrottlerStorage } from '../src/common/security/redis-throttler.storage';
 import { AuthTokensController } from '../src/modules/auth/auth-tokens.controller';
 import { AuthTokensService } from '../src/modules/auth/auth-tokens.service';
 
@@ -20,7 +27,7 @@ jest.mock('../src/modules/auth/forgot-password.service', () => ({
   ForgotPasswordService: class {},
 }));
 
-describe('Auth throttling without persistent account lockout', () => {
+describe('Shared auth entry budgets', () => {
   let app: any;
   const envKeys = [
     'AUTH_RATE_LIMIT_MAX',
@@ -42,7 +49,7 @@ describe('Auth throttling without persistent account lockout', () => {
     logout: jest.fn().mockResolvedValue(undefined),
     changePassword: jest.fn().mockResolvedValue({ success: true }),
     resetPassword: jest.fn(async (value) => {
-      if (value === 'invalid-reset-secret')
+      if (value === 'a'.repeat(64))
         throw new UnauthorizedException('Invalid reset token');
       return { success: true };
     }),
@@ -82,6 +89,7 @@ describe('Auth throttling without persistent account lockout', () => {
       providers: [
         { provide: AuthService, useValue: auth },
         { provide: ForgotPasswordService, useValue: forgot },
+        { provide: EmailVerificationService, useValue: {} },
         { provide: AuthTokensService, useValue: sessions },
       ],
     }).compile();
@@ -96,6 +104,13 @@ describe('Auth throttling without persistent account lockout', () => {
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;
     }
+  });
+
+  beforeEach(() => {
+    const storage = app.get(RedisThrottlerStorage) as any;
+    storage.storage.clear();
+    storage.hitExpirations.clear();
+    jest.clearAllMocks();
   });
 
   it('throttles repeated login failures while permitting another account on the same IP', async () => {
@@ -163,7 +178,7 @@ describe('Auth throttling without persistent account lockout', () => {
       .expect(403);
   });
 
-  it('protects forgot/reset routes with separate budgets', async () => {
+  it('shares the IP ceiling across forgot/reset routes while keeping identity budgets separate', async () => {
     for (let i = 0; i < 3; i++)
       await request(app.getHttpServer())
         .post('/auth/forgot-password')
@@ -173,19 +188,20 @@ describe('Auth throttling without persistent account lockout', () => {
       .post('/auth/forgot-password')
       .send({ email: 'reset@example.test' })
       .expect(429);
-    for (let i = 0; i < 3; i++)
+    // The rejected fourth forgot-password request also consumes the IP budget.
+    for (let i = 0; i < 2; i++)
       await request(app.getHttpServer())
         .post('/auth/reset-password')
-        .send({ token: 'invalid-reset-secret', password: 'new-password' })
+        .send({ token: 'a'.repeat(64), password: 'new-password' })
         .expect(401);
     await request(app.getHttpServer())
       .post('/auth/reset-password')
-      .send({ token: 'invalid-reset-secret', password: 'new-password' })
+      .send({ token: 'a'.repeat(64), password: 'new-password' })
       .expect(429);
     await request(app.getHttpServer())
       .post('/auth/reset-password')
-      .send({ token: 'valid-reset-secret', password: 'new-password' })
-      .expect(201);
+      .send({ token: 'b'.repeat(64), password: 'new-password' })
+      .expect(429);
   });
 
   it('caps signup traffic when attackers rotate account names and includes standard Retry-After', async () => {

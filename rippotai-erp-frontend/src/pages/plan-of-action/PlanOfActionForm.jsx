@@ -329,7 +329,7 @@ export function PlanOfActionForm() {
   ============================================================ */
 
   const draftKey = `${SAVE_KEY}.${isEditMode ? id : projectId || "new"}`;
-  const [values, setValues] = useAutoSave(draftKey, {
+  const [values, setValues, draftStorage] = useAutoSave(draftKey, {
     Overview: {
       title: "Plan of Action",
       execution_description: "",
@@ -1679,7 +1679,7 @@ Any variation in scope shall be treated as extra work.`,
          CLEAR AUTOSAVE
       ====================================================== */
 
-      localStorage.removeItem(draftKey);
+      draftStorage.removeItem(draftKey);
 
       /* ======================================================
          REDIRECT
@@ -1792,7 +1792,7 @@ Any variation in scope shall be treated as extra work.`,
 
   const handleSaveDraft = () => {
     try {
-      localStorage.setItem(draftKey, JSON.stringify(values));
+      draftStorage.setItem(draftKey, JSON.stringify(values));
       toast.success("Draft saved on this device.");
     } catch {
       toast.error("Could not save the draft.");

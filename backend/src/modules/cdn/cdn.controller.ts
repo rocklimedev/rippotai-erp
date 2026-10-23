@@ -10,8 +10,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { memoryStorage } from 'multer';
+import { DiskUploadInterceptor, UploadRateGuard } from './upload-security';
 import { CdnGuard } from '@/common/guards/cdn.guard';
 import { CdnService } from './cdn.service';
 import { Public } from '@/common/decorator/public.decorator';
@@ -37,9 +36,9 @@ export class CdnController {
     res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
     verifyFileAccess(key, expires, signature);
     try {
-      const buffer = await this.cdnService.downloadFile(key);
       res.setHeader('Content-Disposition', `inline; filename="${key}"`);
-      res.type(key).send(buffer);
+      res.type(key);
+      await this.cdnService.streamFile(key, res);
     } catch (error) {
       if (
         (error as NodeJS.ErrnoException).code === 'ENOENT' ||
@@ -53,15 +52,8 @@ export class CdnController {
 
   @RequirePermission('cdn:upload')
   @Post('upload')
-  @UseGuards(CdnGuard)
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: memoryStorage(),
-      limits: {
-        fileSize: 500 * 1024 * 1024,
-      },
-    }),
-  )
+  @UseGuards(CdnGuard, UploadRateGuard)
+  @UseInterceptors(DiskUploadInterceptor)
   async upload(@UploadedFile() file: Express.Multer.File) {
     return this.cdnService.uploadFile(file);
   }

@@ -10,6 +10,7 @@ import { ModuleRef } from '@nestjs/core';
 import { AuthService } from '@/modules/auth/auth.service';
 import { getCorsOptions } from '../security/cors.config';
 import { NotificationPayload } from '../interfaces/notification-payload.interfaces';
+import { decode } from 'jsonwebtoken';
 
 @WebSocketGateway({
   namespace: '/notifications',
@@ -31,6 +32,13 @@ export class NotificationsGateway
       const auth = this.moduleRef.get(AuthService, { strict: false });
       const user = await auth.getCurrentUser(token);
       if (!user?.id) throw new Error('Invalid user');
+      const payload = decode(token) as { exp?: number } | null;
+      const remaining = Number(payload?.exp) * 1000 - Date.now();
+      if (!Number.isFinite(remaining) || remaining <= 0)
+        throw new Error('Expired token');
+      const timeout = setTimeout(() => client.disconnect(true), remaining);
+      timeout.unref();
+      client.once('disconnect', () => clearTimeout(timeout));
       await client.join(this.roomName(user.id));
     } catch {
       this.logger.warn(

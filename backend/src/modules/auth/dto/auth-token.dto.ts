@@ -32,4 +32,9 @@ export class CreateAuthTokenDto {
   @Type(() => Date)
   @IsDate()
   expires_at: Date;
+
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  last_used_at?: Date;
 }

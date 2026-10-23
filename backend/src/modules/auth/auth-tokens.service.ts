@@ -12,6 +12,11 @@ import { CreateAuthTokenDto } from './dto/auth-token.dto';
 import { User } from '@/modules/users/models/user.model';
 import { Role } from '@/modules/rbac/models/role.model';
 import type { CurrentUserPayload } from '@/common/interfaces/current-user-payload.interface';
+import { RolePermission } from '../rbac/models/role_permission.model';
+import { Permission } from '../rbac/models/permission.model';
+
+export const SESSION_TOUCH_INTERVAL_MS = 60_000;
+const MAX_RECENT_TOUCHES = 10_000;
 
 const SESSION_ATTRIBUTES = [
   'id',
@@ -27,6 +32,10 @@ const SESSION_ATTRIBUTES = [
 
 @Injectable()
 export class AuthTokensService {
+  private readonly touches = new Map<
+    string,
+    { at: number; work: Promise<void> }
+  >();
   constructor(
     @InjectModel(AuthToken)
     private readonly authTokenModel: typeof AuthToken,
@@ -113,25 +122,101 @@ export class AuthTokensService {
   /**
    * Find token by SHA256 hash - This is the critical method for auth
    */
-  async findByHash(hash: string): Promise<AuthToken | null> {
+  async findByHash(
+    hash: string,
+    includePermissions = false,
+  ): Promise<AuthToken | null> {
     const result = await this.authTokenModel.findOne({
       where: { token_hash: hash },
       include: [
         {
           model: User,
           as: 'user',
-          include: [{ model: Role, as: 'role', attributes: ['id', 'name'] }],
+          // Keep authentication independent of unrelated profile columns.
+          attributes: [
+            'id',
+            'name',
+            'email',
+            'role_id',
+            'is_active',
+            'email_verified_at',
+            'email_verified_address',
+            'phone',
+            'job_title',
+            'avatar_url',
+          ],
+          include: [
+            {
+              model: Role,
+              as: 'role',
+              attributes: ['id', 'name'],
+              ...(includePermissions
+                ? {
+                    include: [
+                      {
+                        model: RolePermission,
+                        as: 'rolePermissions',
+                        attributes: ['role_id', 'permission_id'],
+                        required: false,
+                        include: [
+                          {
+                            model: Permission,
+                            attributes: ['id', 'resource', 'action'],
+                            required: false,
+                          },
+                        ],
+                      },
+                    ],
+                  }
+                : {}),
+            },
+          ],
         },
       ],
     });
 
     return result;
   }
-  async touchLastUsed(id: string): Promise<void> {
-    await this.authTokenModel.update(
-      { last_used_at: new Date() },
-      { where: { id } },
-    );
+  async touchLastUsed(id: string, lastUsedAt?: Date | null): Promise<void> {
+    const now = Date.now();
+    if (
+      lastUsedAt &&
+      now - new Date(lastUsedAt).getTime() < SESSION_TOUCH_INTERVAL_MS
+    )
+      return;
+    const recent = this.touches.get(id);
+    if (recent && now - recent.at < SESSION_TOUCH_INTERVAL_MS)
+      return recent.work;
+    // Deferring the query by a microtask lets parallel requests share the promise.
+    const work = Promise.resolve().then(async () => {
+      await this.authTokenModel.update(
+        { last_used_at: new Date(now) },
+        {
+          where: {
+            id,
+            revoked_at: { [Op.is]: null },
+            [Op.or]: [
+              {
+                last_used_at: {
+                  [Op.lte]: new Date(now - SESSION_TOUCH_INTERVAL_MS),
+                },
+              },
+              { last_used_at: { [Op.is]: null } },
+            ],
+          },
+        },
+      );
+    });
+    const entry = { at: now, work };
+    if (this.touches.size >= MAX_RECENT_TOUCHES)
+      this.touches.delete(this.touches.keys().next().value!);
+    this.touches.set(id, entry);
+    try {
+      await work;
+    } catch (error) {
+      if (this.touches.get(id) === entry) this.touches.delete(id);
+      throw error;
+    }
   }
 
   async revoke(id: string): Promise<AuthToken> {

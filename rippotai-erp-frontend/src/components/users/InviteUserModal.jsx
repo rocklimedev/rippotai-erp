@@ -98,12 +98,14 @@ export default function InviteUserModal({ onClose, user }) {
 
     try {
       if (isEdit) {
-        await updateUser({
+        const updated = await updateUser({
           id: user.id,
           ...payload,
         }).unwrap();
 
-        toast.success("User updated successfully.");
+        toast.success(updated.pending_email
+          ? `Verification sent to ${updated.pending_email}. The current email stays active until confirmed.`
+          : "User updated successfully.");
       } else {
         await createUser(payload).unwrap();
 

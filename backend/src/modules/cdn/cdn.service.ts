@@ -9,6 +9,9 @@ import SftpClient from 'ssh2-sftp-client';
 import { randomUUID } from 'crypto';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import { pipeline } from 'stream/promises';
+import type { Writable } from 'stream';
+import { MAX_UPLOAD_BYTES, validateUploadType } from './upload-security';
 import { NasService } from './nas.service';
 import { NasStagingService } from './nas-staging.service';
 import {
@@ -50,7 +53,7 @@ export class CdnService {
   }
 
   private async put(
-    buffer: Buffer,
+    buffer: Buffer | string,
     filename: string,
     root: string,
     confidential: boolean,
@@ -71,9 +74,10 @@ export class CdnService {
     }
     if (!process.env.CDN_HOST) {
       await fs.mkdir(root, { recursive: true, mode: 0o700 });
-      await fs.writeFile(path.join(root, filename), buffer, {
-        mode: confidential ? 0o600 : 0o644,
-      });
+      const destination = path.join(root, filename);
+      if (typeof buffer === 'string') await fs.copyFile(buffer, destination);
+      else await fs.writeFile(destination, buffer);
+      await fs.chmod(destination, confidential ? 0o600 : 0o644);
       return;
     }
     const sftp = await this.connect();
@@ -106,7 +110,67 @@ export class CdnService {
     file: Express.Multer.File,
     scope: FileScope = 'documents',
   ): Promise<CdnUploadResult> {
+    if (!file) throw new BadRequestException('File is required');
+    validateUploadType(file);
+    if (file.size > MAX_UPLOAD_BYTES || file.buffer?.length > MAX_UPLOAD_BYTES)
+      throw new BadRequestException('Files must be 25 MB or smaller');
+    if (file.path) {
+      const useNas = this.nas.shouldStore(file.size);
+      if (
+        useNas &&
+        process.env.CDN_HOST &&
+        process.env.CDN_PRIVATE_PROXY_ENABLED !== 'true'
+      ) {
+        throw new ServiceUnavailableException(
+          'Configure the CDN signed-file proxy before enabling NAS uploads',
+        );
+      }
+      const ext = path.extname(file.originalname).toLowerCase();
+      const filename = `private-${scope}-${useNas ? 'nas-' : ''}${randomUUID()}${ext}`;
+      if (useNas) {
+        if (this.staging.alwaysStage())
+          await this.staging.stage(filename, file.path);
+        else {
+          try {
+            await this.nas.put(filename, file.path);
+          } catch (error) {
+            if (!this.staging.enabled()) throw error;
+            await this.staging.stage(filename, file.path);
+          }
+        }
+      } else await this.put(file.path, filename, privateRoot(), true);
+      return { filename, url: privateFileUrl(filename) };
+    }
     return this.uploadBuffer(file.buffer, file.originalname, scope);
+  }
+
+  async streamFile(
+    storageFilename: string,
+    destination: Writable,
+  ): Promise<void> {
+    validateStorageKey(storageFilename);
+    if (fileScope(storageFilename) && storageFilename.includes('-nas-')) {
+      if (await this.staging.streamTo(storageFilename, destination)) return;
+      await this.nas.streamTo(storageFilename, destination);
+      return;
+    }
+    const root = fileScope(storageFilename) ? privateRoot() : this.publicRoot();
+    if (!process.env.CDN_HOST) {
+      // Open first so missing files can still produce a normal 404 response.
+      const file = await fs.open(path.join(root, storageFilename), 'r');
+      await pipeline(file.createReadStream(), destination);
+      return;
+    }
+    const sftp = await this.connect();
+    try {
+      await sftp.stat(`${root}/${storageFilename}`);
+      await pipeline(
+        sftp.createReadStream(`${root}/${storageFilename}`),
+        destination,
+      );
+    } finally {
+      await sftp.end().catch(() => undefined);
+    }
   }
 
   async uploadBuffer(

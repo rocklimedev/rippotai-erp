@@ -1,9 +1,20 @@
 import { applyDecorators, SetMetadata } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { createHmac, randomBytes } from 'crypto';
+import { createHmac } from 'crypto';
 
 export const AUTH_THROTTLE_KEY = 'authThrottle';
-const trackerSecret = randomBytes(32);
+export const AUTH_THROTTLE_KIND = 'authThrottleKind';
+
+export function trackerHash(scope: string, identity: string) {
+  const secret = process.env.AUTH_TRACKER_SECRET || process.env.JWT_SECRET;
+  if (!secret)
+    throw new Error(
+      'AUTH_TRACKER_SECRET or JWT_SECRET is required for shared rate tracking',
+    );
+  return createHmac('sha256', secret)
+    .update(JSON.stringify([scope, identity]))
+    .digest('hex');
+}
 
 export function configuredPositiveInteger(key: string, fallback: number) {
   const value = Number(process.env[key] ?? fallback);
@@ -30,14 +41,16 @@ export function authTracker(req: any) {
   const identity = tokenRoute
     ? reset || 'unidentified'
     : email || session || 'unidentified';
-  return createHmac('sha256', trackerSecret)
-    .update(`${req.ip ?? 'unknown'}:${identity}`)
-    .digest('hex');
+  return trackerHash(
+    'auth-request',
+    JSON.stringify([req.ip ?? 'unknown', identity]),
+  );
 }
 
 export function AuthThrottle(kind: 'entry' | 'token' = 'entry') {
   return applyDecorators(
     SetMetadata(AUTH_THROTTLE_KEY, true),
+    SetMetadata(AUTH_THROTTLE_KIND, kind),
     Throttle({
       default: {
         limit: () =>

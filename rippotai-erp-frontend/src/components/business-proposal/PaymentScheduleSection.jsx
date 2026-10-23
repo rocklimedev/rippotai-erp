@@ -158,10 +158,11 @@ function normalizeKeyTerms(keyTerms) {
 ============================================================ */
 
 export default function PaymentScheduleSection({ data, onChange }) {
-  if (!data) return null;
-
-  const milestones = normalizeMilestones(data.milestones);
-  const keyTerms = normalizeKeyTerms(data.keyTerms);
+  const milestones = useMemo(
+    () => data ? normalizeMilestones(data.milestones) : [],
+    [data],
+  );
+  const keyTerms = normalizeKeyTerms(data?.keyTerms);
 
   const normalizedData = {
     ...data,
@@ -181,6 +182,8 @@ export default function PaymentScheduleSection({ data, onChange }) {
       ),
     [milestones],
   );
+
+  if (!data) return null;
 
   const isComplete = Math.abs(totalShare - 100) < 0.01;
 

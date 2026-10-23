@@ -1,12 +1,12 @@
-import { baseApi } from "../../store/baseApi";
+import { baseApi } from '../../store/baseApi';
 
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     requestEmailVerification: builder.mutation({
-      query: (body) => ({ url: "/auth/request-email-verification", method: "POST", body }),
+      query: (body) => ({ url: '/auth/request-email-verification', method: 'POST', body }),
     }),
     verifyEmail: builder.mutation({
-      query: (body) => ({ url: "/auth/verify-email", method: "POST", body }),
+      query: (body) => ({ url: '/auth/verify-email', method: 'POST', body }),
     }),
     // =========================
     // AUTH CONTROLLER
@@ -14,68 +14,68 @@ export const authApi = baseApi.injectEndpoints({
 
     login: builder.mutation({
       query: (body) => ({
-        url: "/auth/login",
-        method: "POST",
+        url: '/auth/login',
+        method: 'POST',
         body,
       }),
-      invalidatesTags: ["AuthUser"],
+      invalidatesTags: ['AuthUser'],
     }),
     signup: builder.mutation({
       query: (body) => ({
-        url: "/auth/signup",
-        method: "POST",
+        url: '/auth/signup',
+        method: 'POST',
         body,
       }),
-      invalidatesTags: ["AuthUser"],
+      invalidatesTags: ['AuthUser'],
     }),
     logout: builder.mutation({
-      query: () => ({
-        url: "/auth/logout",
-        method: "POST",
+      query: (token) => ({
+        url: '/auth/logout',
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       }),
-      invalidatesTags: ["AuthUser"],
+      invalidatesTags: ['AuthUser'],
     }),
 
     me: builder.query({
-      query: () => "/auth/me",
-      providesTags: ["AuthUser"],
+      query: () => '/auth/me',
+      providesTags: ['AuthUser'],
     }),
 
     // =========================
     // AUTH TOKENS CONTROLLER
     // =========================
 
-
     getAuthTokensByUser: builder.query({
       query: (userId) => `/auth/tokens/user/${userId}`,
-      providesTags: ["AuthTokens"],
+      providesTags: ['AuthTokens'],
     }),
 
     revokeAuthToken: builder.mutation({
       query: (id) => ({
         url: `/auth/tokens/${id}/revoke`,
-        method: "PATCH",
+        method: 'PATCH',
       }),
-      invalidatesTags: ["AuthTokens"],
+      invalidatesTags: ['AuthTokens'],
     }),
     forgotPassword: builder.mutation({
       query: (body) => ({
-        url: "/auth/forgot-password",
-        method: "POST",
+        url: '/auth/forgot-password',
+        method: 'POST',
         body,
       }),
     }),
     revokeAllAuthTokensForUser: builder.mutation({
       query: (userId) => ({
         url: `/auth/tokens/user/${userId}/revoke-all`,
-        method: "PATCH",
+        method: 'PATCH',
       }),
-      invalidatesTags: ["AuthTokens"],
+      invalidatesTags: ['AuthTokens'],
     }),
     resetPassword: builder.mutation({
       query: (body) => ({
-        url: "/auth/reset-password",
-        method: "POST",
+        url: '/auth/reset-password',
+        method: 'POST',
         body,
       }),
     }),
@@ -83,20 +83,19 @@ export const authApi = baseApi.injectEndpoints({
     // Distinct from resetPassword, which is the token-based forgot-password flow.
     changePassword: builder.mutation({
       query: (body) => ({
-        url: "/auth/change-password",
-        method: "PATCH",
+        url: '/auth/change-password',
+        method: 'PATCH',
         body,
       }),
-      invalidatesTags: ["AuthTokens"],
+      invalidatesTags: ['AuthTokens'],
     }),
     deleteAuthToken: builder.mutation({
       query: (id) => ({
         url: `/auth/tokens/${id}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
-      invalidatesTags: ["AuthTokens"],
+      invalidatesTags: ['AuthTokens'],
     }),
-
   }),
   overrideExisting: false,
 });

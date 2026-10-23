@@ -12,7 +12,7 @@ import { randomUUID, createHash } from 'crypto';
 import { REDIS_CLIENT } from '@/common/redis/redis.module';
 import { NATIVE_EVIDENCE } from '../gates/conditions/native-evidence.service';
 
-const FRESH_MS = 15000;
+const FRESH_MS = 60000;
 const TTL_SECONDS = 120;
 const REDIS_TIMEOUT_MS = 150;
 const TABLES = new Set([
@@ -43,6 +43,7 @@ export class CommandCenterCacheService
 {
   private readonly logger = new Logger(CommandCenterCacheService.name);
   private readonly inFlight = new Map<string, Promise<any>>();
+  private readonly fallback = new Map<string, string>();
   private epoch = 0;
   private readonly hooked: any[] = [];
   private readonly transactions = new WeakSet<object>();
@@ -121,6 +122,7 @@ export class CommandCenterCacheService
 
   async invalidate() {
     this.epoch++;
+    this.fallback.clear();
     await this.redisOperation(() =>
       this.redis.set(this.versionKey, randomUUID()),
     );
@@ -147,9 +149,10 @@ export class CommandCenterCacheService
     const canCache = version !== undefined;
     const cacheKey = `${this.prefix}:${version ?? '0'}:${createHash('sha256').update(name).digest('hex')}`;
     const flightKey = `${cacheKey}:${this.epoch}`;
-    const raw = canCache
+    const remote = canCache
       ? await this.redisOperation(() => this.redis.get(cacheKey))
       : undefined;
+    const raw = remote ?? this.fallback.get(cacheKey);
     if (raw) {
       try {
         const entry = this.decode(raw);
@@ -193,18 +196,19 @@ export class CommandCenterCacheService
     const epoch = this.epoch;
     const build = (async () => {
       const value = await loader();
+      const encoded = this.encode({ builtAt: Date.now(), value });
+      if (this.epoch === epoch) {
+        if (this.fallback.size >= 100)
+          this.fallback.delete(this.fallback.keys().next().value);
+        this.fallback.set(cacheKey, encoded);
+      }
       if (canCache && this.epoch === epoch) {
         const currentVersion = await this.redisOperation(() =>
           this.redis.get(this.versionKey),
         );
         if (currentVersion === version && this.epoch === epoch)
           await this.redisOperation(() =>
-            this.redis.set(
-              cacheKey,
-              this.encode({ builtAt: Date.now(), value }),
-              'EX',
-              TTL_SECONDS,
-            ),
+            this.redis.set(cacheKey, encoded, 'EX', TTL_SECONDS),
           );
       }
       return value;

@@ -47,14 +47,15 @@ row locks. Concurrent reuse of the same token cannot change the password twice.
 
 Login, disabled signup, forgot-password, reset-password, and change-password use
 authentication-entry throttling. `AUTH_RATE_LIMIT_MAX` defaults to 10 per 60-second
-identity/IP window and `AUTH_IP_RATE_LIMIT_MAX` defaults to 120 per route/IP window.
-The identity is a process-keyed HMAC, never the raw email/token. Reset attempts
+identity/IP window and `AUTH_IP_RATE_LIMIT_MAX` defaults to 20 across auth-entry routes per IP.
+The identity is a shared-secret HMAC, never the raw email/token. Reset attempts
 are keyed by the reset token; an injected email cannot change that identity.
 The IP budget also bounds attempts that rotate tokens. A 429 includes Retry-After.
 
-The current throttler storage is in-process: replicas and restarts do not share
-counters. Production gateway/shared-store enforcement and tuning remain separate
-deployment decisions; these tests do not claim a distributed rate limit.
+Redis stores the rate counters atomically across replicas and restarts. Login
+failures also have a temporary per-account cooldown after five failures, starting
+at 30 seconds and doubling to a 15-minute cap. Unknown accounts follow the same
+policy. Redis outages reject admission with 503 rather than disabling protection.
 
 `npm test` covers length and UTF-8 byte boundaries, breached/padded results,
 screening outages, legacy password login, enforcement on every password write,

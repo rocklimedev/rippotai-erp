@@ -196,6 +196,13 @@ export class DrawingsService {
     return this.cdnService.downloadFile(storageFilename);
   }
 
+  async streamFile(
+    storageFilename: string,
+    destination: import('stream').Writable,
+  ) {
+    return this.cdnService.streamFile(storageFilename, destination);
+  }
+
   // ---- Helpers ----
 
   private computeNextRevisionLabel(drawing: Drawing): string {

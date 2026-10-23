@@ -11,6 +11,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { RolePermissionsService } from './role-permissions.service';
+import { CurrentUser } from '@/common/decorator/current-user.decorator';
 import {
   CreateRolePermissionDto,
   BulkAssignPermissionsDto,
@@ -31,17 +32,21 @@ export class RolePermissionsController {
 
   @RequirePermission('role-permissions:assign')
   @Post('packages/apply')
-  applyPackage(@Body() dto: ApplyPermissionPackageDto) {
+  applyPackage(
+    @Body() dto: ApplyPermissionPackageDto,
+    @CurrentUser() actor: any,
+  ) {
     return this.rolePermissionsService.applyPackage(
       dto.role_id,
       dto.package_id,
+      actor,
     );
   }
 
   @RequirePermission('role-permissions:grant')
   @Post()
-  grant(@Body() dto: CreateRolePermissionDto) {
-    return this.rolePermissionsService.grant(dto);
+  grant(@Body() dto: CreateRolePermissionDto, @CurrentUser() actor: any) {
+    return this.rolePermissionsService.grant(dto, actor);
   }
   @RequirePermission('role-permissions:read')
   @Get('matrix')
@@ -50,8 +55,8 @@ export class RolePermissionsController {
   }
   @RequirePermission('role-permissions:assign')
   @Post('bulk')
-  bulkAssign(@Body() dto: BulkAssignPermissionsDto) {
-    return this.rolePermissionsService.bulkAssign(dto);
+  bulkAssign(@Body() dto: BulkAssignPermissionsDto, @CurrentUser() actor: any) {
+    return this.rolePermissionsService.bulkAssign(dto, actor);
   }
 
   @RequirePermission('role-permissions:read')
@@ -68,7 +73,8 @@ export class RolePermissionsController {
   revoke(
     @Param('role_id') role_id: string,
     @Param('permission_id') permission_id: string,
+    @CurrentUser() actor: any,
   ) {
-    return this.rolePermissionsService.revoke(role_id, permission_id);
+    return this.rolePermissionsService.revoke(role_id, permission_id, actor);
   }
 }

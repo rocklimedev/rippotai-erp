@@ -5,14 +5,18 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   Patch,
   Post,
   Req,
+  Res,
   UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { IsEmail, IsString } from 'class-validator';
+import type { Response } from 'express';
+import { LoginLockoutException } from '@/common/security/login-protection.service';
 
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth-guard';
@@ -47,9 +51,19 @@ export class AuthController {
   @Public()
   @AuthThrottle()
   @Post('login')
+  @Header('Cache-Control', 'no-store')
   @UsePipes(new ValidationPipe({ whitelist: true }))
-  async login(@Body() dto: LoginDto) {
-    return this.authService.login(dto.email, dto.password);
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) response?: Response,
+  ) {
+    try {
+      return await this.authService.login(dto.email, dto.password);
+    } catch (error) {
+      if (error instanceof LoginLockoutException)
+        response?.setHeader('Retry-After', error.retryAfter);
+      throw error;
+    }
   }
   @RequirePermission('auth:signup')
   @Public()
@@ -78,6 +92,7 @@ export class AuthController {
   }
   @RequirePermission('account:read')
   @Get('me')
+  @Header('Cache-Control', 'no-store')
   @UseGuards(JwtAuthGuard)
   async me(@Req() req: RequestWithUser) {
     return { user: req.user };

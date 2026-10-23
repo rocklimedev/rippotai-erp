@@ -8,6 +8,8 @@ import SftpClient from 'ssh2-sftp-client';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { pipeline } from 'stream/promises';
+import type { Writable } from 'stream';
 import { fileScope, validateStorageKey } from './file-access';
 
 const missingFile = (error: unknown) => {
@@ -17,7 +19,8 @@ const missingFile = (error: unknown) => {
 
 interface StagingStore {
   read(name: string): Promise<Buffer | undefined>;
-  write(name: string, data: Buffer): Promise<void>;
+  write(name: string, data: Buffer | string): Promise<void>;
+  stream(name: string, destination: Writable): Promise<boolean>;
   remove(name: string): Promise<void>;
   list(): Promise<{ name: string; modifiedAt: number }[]>;
   lock(key: string): Promise<() => Promise<void>>;
@@ -81,6 +84,17 @@ export class NasStagingService {
           mode: 0o700,
         });
       return operation({
+        stream: async (name, destination) => {
+          let file: fs.FileHandle;
+          try {
+            file = await fs.open(path.join(root, name), 'r');
+          } catch (error) {
+            if (missingFile(error)) return false;
+            throw error;
+          }
+          await pipeline(file.createReadStream(), destination);
+          return true;
+        },
         read: async (name) => {
           try {
             return await fs.readFile(path.join(root, name));
@@ -92,7 +106,9 @@ export class NasStagingService {
         write: async (name, data) => {
           const temporary = path.join(root, `.upload-${randomUUID()}`);
           try {
-            await fs.writeFile(temporary, data, { mode: 0o600 });
+            if (typeof data === 'string') await fs.copyFile(data, temporary);
+            else await fs.writeFile(temporary, data, { mode: 0o600 });
+            await fs.chmod(temporary, 0o600);
             await fs.rename(temporary, path.join(root, name));
           } finally {
             await fs.unlink(temporary).catch(() => undefined);
@@ -163,6 +179,19 @@ export class NasStagingService {
         await client.chmod(root, '700');
       }
       return await operation({
+        stream: async (name, destination) => {
+          try {
+            await client.stat(`${root}/${name}`);
+          } catch (error) {
+            if (missingFile(error)) return false;
+            throw error;
+          }
+          await pipeline(
+            client.createReadStream(`${root}/${name}`),
+            destination,
+          );
+          return true;
+        },
         read: async (name) => {
           try {
             const data = await client.get(`${root}/${name}`);
@@ -228,7 +257,7 @@ export class NasStagingService {
       throw new Error('Invalid NAS staging key');
   }
 
-  async stage(key: string, data: Buffer) {
+  async stage(key: string, data: Buffer | string) {
     this.validate(key);
     if (!this.enabled())
       throw new ServiceUnavailableException('NAS staging is disabled');
@@ -244,6 +273,16 @@ export class NasStagingService {
       if (await store.read(`.delete-${key}`))
         throw new NotFoundException('File has been deleted');
       return store.read(key);
+    }, false);
+  }
+
+  async streamTo(key: string, destination: Writable): Promise<boolean> {
+    this.validate(key);
+    if (!this.configured()) return false;
+    return this.withStore(async (store) => {
+      if (await store.read(`.delete-${key}`))
+        throw new NotFoundException('File has been deleted');
+      return store.stream(key, destination);
     }, false);
   }
 

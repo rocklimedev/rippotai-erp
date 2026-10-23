@@ -7,6 +7,7 @@ import { generateRoutes } from "@/router/generate-routes";
 import masterRoutes from "@/router";
 
 import { CliqChatProvider } from "./components/cliq/context";
+import { SessionNavigation } from './components/auth/SessionNavigation';
 
 /** Inner shell so we can read auth and pass currentCliqUserId */
 function AppShell() {
@@ -17,6 +18,7 @@ function AppShell() {
   return (
     <CliqChatProvider currentCliqUserId={currentCliqUserId}>
       <BrowserRouter>
+        <SessionNavigation />
         <Toaster position="top-right" richColors closeButton />
         <UpgradeModalHost />
         <Routes>

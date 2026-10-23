@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "lint:hooks": "eslint --config eslint.hooks.config.js src --max-warnings 0",
+    "test:session": "node --test src/lib/session.test.js src/lib/authenticated-fetch.test.js security/csp.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

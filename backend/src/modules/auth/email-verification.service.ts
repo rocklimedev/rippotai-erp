@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectConnection, InjectModel } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
@@ -52,6 +56,59 @@ export class EmailVerificationService {
     return RESPONSE;
   }
 
+  async requestChange(userId: string, email: string) {
+    const normalized = email.trim().toLowerCase();
+    await this.sequelize.transaction(async (transaction) => {
+      const user = await this.users.findByPk(userId, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!user || user.is_active !== true) {
+        throw new BadRequestException('Active account required.');
+      }
+      if (normalized === user.email) return;
+      const existing = await this.users.findOne({
+        where: { email: normalized },
+        transaction,
+      });
+      if (existing) throw new ConflictException('Email is already registered');
+      const raw = randomBytes(32).toString('hex');
+      await user.update({ pending_email: normalized }, { transaction });
+      // Replacing a request invalidates every earlier link, even if an address
+      // is requested again later.
+      await this.tokens.update(
+        { used_at: new Date() },
+        {
+          where: {
+            user_id: user.id,
+            type: VerificationTokenType.EMAIL_VERIFICATION,
+            used_at: null,
+          },
+          transaction,
+        },
+      );
+      await this.tokens.create(
+        {
+          user_id: user.id,
+          email: normalized,
+          token: hash(raw),
+          type: VerificationTokenType.EMAIL_VERIFICATION,
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          used_at: null,
+        } as any,
+        { transaction },
+      );
+      const frontend = this.config
+        .getOrThrow<string>('FRONTEND_URL')
+        .replace(/\/$/, '');
+      await this.mail.sendVerificationEmail(
+        normalized,
+        user.name,
+        `${frontend}/verify-email#token=${raw}`,
+      );
+    });
+  }
+
   async verify(raw: string) {
     await this.sequelize.transaction(async (transaction) => {
       const token = await this.tokens.findOne({
@@ -75,12 +132,13 @@ export class EmailVerificationService {
         transaction,
         lock: transaction.LOCK.UPDATE,
       });
+      const isEmailChange =
+        !!user?.pending_email && token.email === user.pending_email;
       if (
         !user ||
         user.is_active !== true ||
         !token.email ||
-        token.email !== user.email ||
-        hasVerifiedEmail(user)
+        (!isEmailChange && (token.email !== user.email || hasVerifiedEmail(user)))
       ) {
         throw new BadRequestException(
           'Verification link is invalid or expired.',
@@ -88,7 +146,11 @@ export class EmailVerificationService {
       }
       const now = new Date();
       await user.update(
-        { email_verified_at: now, email_verified_address: token.email },
+        {
+          ...(isEmailChange ? { email: token.email, pending_email: null } : {}),
+          email_verified_at: now,
+          email_verified_address: token.email,
+        },
         { transaction },
       );
       await token.update({ used_at: now }, { transaction });

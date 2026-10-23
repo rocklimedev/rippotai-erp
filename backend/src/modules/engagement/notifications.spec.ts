@@ -4,6 +4,7 @@ import { NotificationEventsService } from './notification-events.service';
 import { NotificationsGateway } from '@/common/gateway/notification.gateway';
 import { NotificationType } from '@/common/enums';
 import { NotificationBroadcastService } from './notification-broadcast.service';
+import { sign } from 'jsonwebtoken';
 
 describe('In-app notifications', () => {
   it('broadcasts linked records only to active users other than the actor', async () => {
@@ -197,8 +198,14 @@ describe('In-app notifications', () => {
       get: () => ({ getCurrentUser }),
     } as any);
     const socket = {
-      handshake: { auth: { token: 'valid', userId: 'victim' } },
+      handshake: {
+        auth: {
+          token: sign({}, 'test-secret', { expiresIn: 1200 }),
+          userId: 'victim',
+        },
+      },
       join: jest.fn(),
+      once: jest.fn(),
       disconnect: jest.fn(),
     };
     await gateway.handleConnection(socket as any);
@@ -214,5 +221,30 @@ describe('In-app notifications', () => {
     getCurrentUser.mockRejectedValueOnce(new Error('revoked'));
     await gateway.handleConnection(socket as any);
     expect(socket.disconnect).toHaveBeenCalledWith(true);
+  });
+
+  it('disconnects notification sockets at access-token expiry', async () => {
+    jest.useFakeTimers();
+    try {
+      const gateway = new NotificationsGateway({
+        get: () => ({
+          getCurrentUser: jest.fn().mockResolvedValue({ id: 'user' }),
+        }),
+      } as any);
+      const socket = {
+        handshake: {
+          auth: { token: sign({}, 'test-secret', { expiresIn: 30 }) },
+        },
+        join: jest.fn(),
+        once: jest.fn(),
+        disconnect: jest.fn(),
+      };
+      await gateway.handleConnection(socket as any);
+      expect(socket.disconnect).not.toHaveBeenCalled();
+      jest.advanceTimersByTime(30_000);
+      expect(socket.disconnect).toHaveBeenCalledWith(true);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

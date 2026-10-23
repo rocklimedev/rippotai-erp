@@ -6,7 +6,7 @@ import { baseApi } from "../../store/baseApi";
 
 const getOwnerKey = () => {
   try {
-    const raw = localStorage.getItem("bc_user");
+    const raw = sessionStorage.getItem("bc_user");
 
     if (!raw) {
       return null;

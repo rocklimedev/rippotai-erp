@@ -9,6 +9,7 @@ import {
 } from './file-access';
 import { resolveFileLinks } from './file-links.interceptor';
 import { localPrivateCdn } from './local-private-cdn';
+import { Readable, Writable } from 'stream';
 
 const mockSftp = {
   connect: jest.fn().mockResolvedValue(undefined),
@@ -18,6 +19,8 @@ const mockSftp = {
   end: jest.fn().mockResolvedValue(undefined),
   get: jest.fn().mockResolvedValue(Buffer.from('private')),
   delete: jest.fn().mockResolvedValue(undefined),
+  stat: jest.fn().mockResolvedValue({ size: 7 }),
+  createReadStream: jest.fn(() => Readable.from([Buffer.from('private')])),
 };
 jest.mock('ssh2-sftp-client', () => ({
   __esModule: true,
@@ -73,6 +76,34 @@ describe('Absolute CDN URLs and original remote directory', () => {
     expect(mockSftp.delete).toHaveBeenCalledWith(
       `/home/account/public_html/media/${key}`,
     );
+  });
+
+  it('streams remote downloads and closes SFTP after completion or disconnect', async () => {
+    const storage = new CdnService();
+    const chunks: Buffer[] = [];
+    await storage.streamFile(
+      key,
+      new Writable({
+        write(chunk, _encoding, callback) {
+          chunks.push(chunk);
+          callback();
+        },
+      }),
+    );
+    expect(Buffer.concat(chunks).toString()).toBe('private');
+    expect(mockSftp.get).not.toHaveBeenCalled();
+    expect(mockSftp.end).toHaveBeenCalledTimes(1);
+    await expect(
+      storage.streamFile(
+        key,
+        new Writable({
+          write(_chunk, _encoding, callback) {
+            callback(new Error('Client disconnected'));
+          },
+        }),
+      ),
+    ).rejects.toThrow('Client disconnected');
+    expect(mockSftp.end).toHaveBeenCalledTimes(2);
   });
 
   it('keeps public asset URLs on the CDN without requiring the private proxy', async () => {
@@ -148,7 +179,7 @@ describe('Absolute CDN URLs and original remote directory', () => {
 
   it('checks local CDN signatures before serving bytes', async () => {
     const storage = {
-      downloadFile: jest.fn().mockResolvedValue(Buffer.from('private')),
+      streamFile: jest.fn().mockResolvedValue(undefined),
     } as unknown as CdnService;
     const response: any = {
       setHeader: jest.fn(),
@@ -161,14 +192,14 @@ describe('Absolute CDN URLs and original remote directory', () => {
     const next = jest.fn();
     await handler({ path: '/' + key, query: {} } as any, response, next);
     expect(response.status).toHaveBeenCalledWith(403);
-    expect(storage.downloadFile).not.toHaveBeenCalled();
+    expect(storage.streamFile).not.toHaveBeenCalled();
     const url = new URL(signFileReference(reference));
     await handler(
       { path: '/' + key, query: Object.fromEntries(url.searchParams) } as any,
       response,
       next,
     );
-    expect(response.send).toHaveBeenCalledWith(Buffer.from('private'));
+    expect(storage.streamFile).toHaveBeenCalledWith(key, response);
     expect(next).not.toHaveBeenCalled();
   });
 });

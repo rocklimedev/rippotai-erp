@@ -541,7 +541,7 @@ export function SiteRekiForm() {
   // ==========================================================
 
   const draftKey = `${SAVE_KEY}.${isEditMode ? siteRecceId : projectId || 'new'}`;
-  const [values, setValues] = useAutoSave(draftKey, {
+  const [values, setValues, draftStorage] = useAutoSave(draftKey, {
     status: "draft",
 
     project_id: "",
@@ -627,7 +627,7 @@ export function SiteRekiForm() {
 
   const handleSaveDraft = () => {
     try {
-      localStorage.setItem(draftKey, JSON.stringify(values));
+      draftStorage.setItem(draftKey, JSON.stringify(values));
       toast.success("Draft saved on this device.");
     } catch {
       toast.error("Could not save the draft.");
@@ -1450,7 +1450,7 @@ export function SiteRekiForm() {
 
         toast.success("Site Recce updated successfully.");
 
-        localStorage.removeItem(draftKey);
+        draftStorage.removeItem(draftKey);
 
         navigate(`/site-recce/${siteRecceId}`);
 
@@ -1465,7 +1465,7 @@ export function SiteRekiForm() {
 
       toast.success("Site Recce created successfully.");
 
-      localStorage.removeItem(draftKey);
+      draftStorage.removeItem(draftKey);
 
       navigate(`/site-recce/${recce.id}`);
     } catch (error) {

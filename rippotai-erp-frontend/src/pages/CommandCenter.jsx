@@ -3,6 +3,7 @@ import "./CommandCenter.css";
 import { downloadDocument } from "../hooks/shared";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { usePollingInterval, canBackgroundPoll } from '@/hooks/use-polling-interval';
 import GateChecklist from "@/components/command-center/GateChecklist";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -686,7 +687,7 @@ function ProjectExecutionBoard({
 
 function ActionRequired({ onOpen }) {
   const { data, isLoading, isError, error, refetch } =
-    useGetCommandCenterActionsQuery();
+    useGetCommandCenterActionsQuery(undefined, { refetchOnMountOrArgChange: 60 });
   const actions = data || [];
 
   // The service doesn't tag each item with a "kind" yet, so route
@@ -735,7 +736,7 @@ function ActionRequired({ onOpen }) {
 
 function DocumentControl({ onOpen, onUploadDoc }) {
   const { data, isLoading, isError, error, refetch } =
-    useGetCommandCenterDocumentsQuery();
+    useGetCommandCenterDocumentsQuery(undefined, { refetchOnMountOrArgChange: 60 });
   const docStats = data?.stats || { required: 0, uploaded: 0, missing: 0 };
   const missingDocs = data?.missingDocs || [];
 
@@ -831,7 +832,7 @@ function DocumentControl({ onOpen, onUploadDoc }) {
 
 function TaskQCPanel({ onOpen }) {
   const { data, isLoading, isError, error, refetch } =
-    useGetCommandCenterTasksQuery();
+    useGetCommandCenterTasksQuery(undefined, { refetchOnMountOrArgChange: 60 });
   const openTasks = data || [];
 
   return (
@@ -880,7 +881,7 @@ function TaskQCPanel({ onOpen }) {
 
 function CommercialPanel({ onOpen }) {
   const { data, isLoading, isError, error, refetch } =
-    useGetCommandCenterCommercialQuery();
+    useGetCommandCenterCommercialQuery(undefined, { refetchOnMountOrArgChange: 60 });
 
   return (
     <Card
@@ -1022,7 +1023,7 @@ function SiteExecution({ rows, isLoading, isError, error, refetch, onOpen }) {
 
 function TeamWorkload({ onOpen }) {
   const { data, isLoading, isError, error, refetch } =
-    useGetCommandCenterTeamWorkloadQuery();
+    useGetCommandCenterTeamWorkloadQuery(undefined, { refetchOnMountOrArgChange: 60 });
   const roleLoad = data || [];
   const maxCount = Math.max(1, ...roleLoad.map((r) => r.count));
   const loadTone = (count) => (count >= 3 ? "bad" : count > 0 ? "warn" : "ok");
@@ -1069,7 +1070,7 @@ function TeamWorkload({ onOpen }) {
 
 function ActivityTimeline() {
   const { data, isLoading, isError, error, refetch } =
-    useGetCommandCenterActivityQuery({ limit: 20 });
+    useGetCommandCenterActivityQuery({ limit: 20 }, { refetchOnMountOrArgChange: 60 });
   const activities = (data || []).map(mapActivityLog);
 
   const iconFor = (type) => {
@@ -1300,6 +1301,7 @@ export default function CommandCenter() {
   const [toast, setToast] = useState("");
   const [uploadTarget, setUploadTarget] = useState(null);
   const [activeTab, setActiveTab] = useState("portfolio");
+  const pollingInterval = usePollingInterval(60_000, live);
 
   const flashToast = (msg) => {
     setToast(msg);
@@ -1317,7 +1319,6 @@ export default function CommandCenter() {
       value: 0,
     },
     isFetching: kpiLoading,
-    refetch: refetchKpis,
     fulfilledTimeStamp: updatedAt,
   } = useGetCommandCenterKpisQuery();
 
@@ -1327,28 +1328,32 @@ export default function CommandCenter() {
     isLoading: portfolioLoading,
     isError: portfolioError,
     error: portfolioErrorObj,
-    refetch: refetchPortfolio,
   } = useGetCommandCenterPortfolioQuery({
     health: healthFilter === "all" ? undefined : healthFilter,
     search: debouncedSearch || undefined,
-  });
+  }, { skip: activeTab !== 'portfolio', refetchOnMountOrArgChange: 60 });
 
   // ---- Portfolio, unfiltered (Site Execution + tab badges) ----
-  const { data: allRows = [], refetch: refetchAllRows } =
-    useGetCommandCenterPortfolioQuery({});
+  const { data: allRows = [] } =
+    useGetCommandCenterPortfolioQuery({}, { skip: activeTab !== 'execution', refetchOnMountOrArgChange: 60 });
 
   // ---- Other tabs, each backed by its own endpoint ----
-  const { data: actionsData } = useGetCommandCenterActionsQuery();
-  const { data: documentsData } = useGetCommandCenterDocumentsQuery();
-  const { data: tasksData } = useGetCommandCenterTasksQuery();
-
   useEffect(() => {
-    if (!live) return;
+    if (!pollingInterval) return;
+    const tagsByTab = {
+      portfolio: ['CommandCenterPortfolio', 'CommandCenterProjectPhases', 'CommandCenterGates'],
+      execution: ['CommandCenterPortfolio'], actions: ['CommandCenterActions'],
+      documents: ['CommandCenterDocuments'], qc: ['CommandCenterTasks'],
+      commercial: ['CommandCenterCommercial'], team: ['CommandCenterTeamWorkload'],
+      activity: ['CommandCenterActivity'],
+    };
     const timer = setInterval(() => {
-      if (!document.hidden) dispatch(commandCenterApi.util.invalidateTags(REFRESH_TAGS));
-    }, 30000);
+      if (canBackgroundPoll()) dispatch(commandCenterApi.util.invalidateTags([
+        'CommandCenterKpis', ...(tagsByTab[activeTab] ?? []),
+      ]));
+    }, pollingInterval);
     return () => clearInterval(timer);
-  }, [live, dispatch]);
+  }, [pollingInterval, activeTab, dispatch]);
 
   const handleRescan = async () => {
     if (refreshState.isLoading) return;
@@ -1358,10 +1363,7 @@ export default function CommandCenter() {
       flashToast('Could not refresh records. Try again shortly.');
       return;
     }
-    refetchKpis();
-    refetchPortfolio();
-    refetchAllRows();
-    dispatch(commandCenterApi.util.invalidateTags(REFRESH_TAGS.filter(tag => !["CommandCenterKpis", "CommandCenterPortfolio"].includes(tag))));
+    dispatch(commandCenterApi.util.invalidateTags(REFRESH_TAGS));
     flashToast("Refreshing records…");
   };
 
@@ -1372,12 +1374,10 @@ export default function CommandCenter() {
 
   const tabCounts = useMemo(
     () => ({
-      portfolio: allRows.length,
-      actions: actionsData?.length ?? 0,
-      documents: documentsData?.stats?.missing ?? 0,
-      qc: tasksData?.length ?? 0,
+      portfolio: kpi.live,
+      documents: kpi.docsMissing,
     }),
-    [allRows, actionsData, documentsData, tasksData],
+    [kpi.live, kpi.docsMissing],
   );
 
   const updatedLabel = updatedAt
@@ -1398,7 +1398,7 @@ export default function CommandCenter() {
               type="button"
               className={cn("cc-live", live && "is-live")}
               aria-pressed={live}
-              title={live ? "Auto-refreshing every 30 seconds. Click to pause." : "Auto-refresh paused. Click to resume."}
+              title={live ? "Refreshes every minute while active. Click to pause." : "Auto-refresh paused. Click to resume."}
               onClick={() => setLive((value) => !value)}
             >
               <span className="cc-live__dot" aria-hidden />

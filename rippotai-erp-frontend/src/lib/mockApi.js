@@ -1,3 +1,4 @@
+import { getSessionToken } from './session';
 // src/lib/mockApi.js
 // -----------------------------------------------------------------------------
 // Stand-in for real endpoints. Every function returns a Promise and resolves
@@ -334,7 +335,7 @@ const nextStepsKey = (projectId) =>
   `proposal_next_steps.${projectId || "unassigned"}`;
 async function settingsRequest(key, init = {}) {
   const { API_URL } = await import("./config");
-  const token = localStorage.getItem("bc_token");
+  const token = getSessionToken();
   const res = await fetch(`${API_URL}/settings/${encodeURIComponent(key)}`, {
     ...init,
     headers: {
