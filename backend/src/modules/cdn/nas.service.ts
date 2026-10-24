@@ -135,7 +135,12 @@ export class NasService {
   async status() {
     const checkedAt = new Date().toISOString();
     if (!this.enabled())
-      return { connected: false, status: 'disabled', checkedAt };
+      return {
+        connected: false,
+        status: 'disabled',
+        checkedAt,
+        reason: 'NAS_ENABLED must be true in the running backend environment. Restart the backend after changing it.',
+      };
     try {
       this.config();
     } catch {

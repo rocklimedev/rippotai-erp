@@ -1,6 +1,7 @@
 import { HardDrive, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import NasTestPanel from './NasTestPanel';
 
 export default function NasConnector({ status }) {
   const { data, isFetching, isError, error, refetch } = status;
@@ -35,14 +36,19 @@ export default function NasConnector({ status }) {
       <Separator className="bg-[#EEF2F0]" />
       <div className="space-y-2 px-6 py-3.5 text-[13px] text-[#6B7B7C]">
         <p>Connection and storage settings are managed by your server administrator.</p>
+        {!isError && !isFetching && data?.status === "disabled" && <p role="alert">{data.reason || "Set NAS_ENABLED=true in the backend environment and restart the backend. SFTP credentials alone do not enable NAS storage."}</p>}
         {!isError && !isFetching && data?.staging && <>
           <p>CDN staging: {data.staging.status.replaceAll("_", " ")}. Pending: {data.staging.pendingUploads ?? "Unknown"} uploads; {data.staging.pendingDeletes ?? "Unknown"} deletions.</p>
+          {data.staging.status === "not_configured" && <p>Set NAS_CDN_STAGING_PATH to a private staging directory outside the public CDN directory, then restart the backend.</p>}
+          {!data.staging.enabled && <p>Enable NAS_STAGING_ENABLED=true to queue files for transfer.</p>}
           <p>Transfers: {data.transfers?.enabled ? data.transfers.running ? "Running" : "Enabled" : "Disabled"}.
             {data.transfers?.lastResult === "retry_pending" && " Waiting for a retry."}</p>
+          {!data.transfers?.enabled && <p>Background transfers require NAS_STAGING_ENABLED=true and NAS_TRANSFER_WORKER_ENABLED=true on the worker backend. Restart it after changing these settings.</p>}
         </>}
         {isError && <p role="alert">{error?.status === 403 ? "You need permission to view integration settings." : "Could not check NAS status. Try again shortly."}</p>}
         {!isError && data?.checkedAt && <p className="text-[12px] text-[#9AA6A3]">Last checked: {new Date(data.checkedAt).toLocaleString()}</p>}
       </div>
+      <NasTestPanel connected={connected} onComplete={refetch} />
     </section>
   );
 }

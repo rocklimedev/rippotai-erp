@@ -74,7 +74,6 @@ import {
   useDeleteProjectMutation,
 } from "../../api/projects/project.api";
 
-import { useGetProjectDocumentPhaseTreeQuery } from "../../api/documents/document.api";
 
 /* ============================================================
    CONSTANTS
@@ -198,7 +197,7 @@ const getProjectInfo = (project, phaseTree) => {
     { uploaded: 0, total: 0 },
   );
 
-  const phaseName = progress.current?.name || getFallbackPhaseName(project) || (progress.total && progress.done === progress.total ? "All phases complete" : "Not started");
+  const phaseName = progress.current?.name || getFallbackPhaseName(project) || (progress.total && progress.done === progress.total ? "All phases complete" : phaseTree?.pending ? "Loading progress…" : phaseTree?.unavailable ? "Progress unavailable" : "Not started");
 
   return {
     phases,
@@ -452,6 +451,7 @@ export default function ProjectsDashboard() {
   const [view, setViewState] = useState(readView);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [progressReady, setProgressReady] = useState(false);
 
   const setView = (v) => {
     setViewState(v);
@@ -464,7 +464,7 @@ export default function ProjectsDashboard() {
 
   /* -------------------------------------------------- Queries */
 
-  const { data: summary, isFetching: summaryLoading, isError: summaryError } = useGetProjectsSummaryQuery();
+  const { data: summary, isError: summaryError } = useGetProjectsSummaryQuery();
 
   const {
     data: projectsResponse,
@@ -473,16 +473,48 @@ export default function ProjectsDashboard() {
     refetch,
   } = useGetProjectsQuery({});
 
-  const { data: docPhaseTree, isFetching: phaseTreeLoading, isError: phaseTreeError } =
-    useGetProjectDocumentPhaseTreeQuery();
-  const { data: portfolio } = useGetCommandCenterPortfolioQuery({});
-  // phase source for every card/row: Command Center rollup by project id, document tree as fallback
+  // Let the list paint first; postpone optional progress until interaction stops.
+  // Cleanup also prevents a pending load after navigating away or opening documents.
+  useEffect(() => {
+    if (progressReady || !projectsResponse || projectsLoading || tab !== "all") return;
+    let timer;
+    let idle;
+    const cancel = () => {
+      window.clearTimeout(timer);
+      if (idle !== undefined) window.cancelIdleCallback?.(idle);
+    };
+    const schedule = () => {
+      cancel();
+      timer = window.setTimeout(() => {
+        if (document.hidden) return;
+        if (window.requestIdleCallback) {
+          idle = window.requestIdleCallback(() => setProgressReady(true));
+        } else {
+          setProgressReady(true);
+        }
+      }, 1500);
+    };
+    const events = ["pointerdown", "keydown", "wheel", "visibilitychange"];
+    events.forEach((event) => window.addEventListener(event, schedule, { passive: true }));
+    schedule();
+    return () => {
+      cancel();
+      events.forEach((event) => window.removeEventListener(event, schedule));
+    };
+  }, [progressReady, projectsResponse, projectsLoading, tab]);
+
+  const { data: portfolio, isError: portfolioError } = useGetCommandCenterPortfolioQuery({}, {
+    skip: !progressReady || projectsLoading || tab !== "all" || !projectsResponse,
+  });
+  // Documents are fetched by ProjectDocumentsBoard for its selected project only.
   const phaseTree = useMemo(
     () => ({
-      projects: Array.isArray(docPhaseTree) ? docPhaseTree : docPhaseTree?.projects || [],
+      projects: [],
+      pending: !portfolio && !portfolioError,
+      unavailable: !portfolio && portfolioError,
       ccById: new Map((Array.isArray(portfolio) ? portfolio : []).map((r) => [String(r.id), r])),
     }),
-    [docPhaseTree, portfolio],
+    [portfolio, portfolioError],
   );
 
   const projects = useMemo(() => {
@@ -502,9 +534,6 @@ export default function ProjectsDashboard() {
     if (summaryError || projectsError) toast.error("Projects could not be loaded.");
   }, [summaryError, projectsError]);
 
-  useEffect(() => {
-    if (phaseTreeError) toast.error("Project timeline phases could not be loaded.");
-  }, [phaseTreeError]);
 
   /* -------------------------------------------------- Filter */
 
@@ -565,7 +594,7 @@ export default function ProjectsDashboard() {
   };
 
   const actions = { onArchive: handleArchive, onRestore: handleRestore, onDelete: handleDelete };
-  const loading = summaryLoading || projectsLoading;
+  const loading = projectsLoading;
 
   /* -------------------------------------------------- Summary */
 
@@ -584,7 +613,7 @@ export default function ProjectsDashboard() {
     { key: "archived", label: "Archived", value: archived, meta: "Out of view", icon: <ArchiveRestore />, tone: "lilac" },
   ];
 
-  const showSkeleton = loading || (view !== "table" && phaseTreeLoading && !phaseTree);
+  const showSkeleton = loading && !projects.length;
 
   /* -------------------------------------------------- Render */
 
