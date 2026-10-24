@@ -225,6 +225,27 @@ unavailable, also check its path, account access and private-proxy configuration
 
 ## 10. Test normal upload, delayed transfer and deletion
 
+### Frontend direct NAS test panel
+
+Open **Settings > Connectors > Synology NAS > Test NAS uploads**. The connection
+must show Connected. Running tests requires `settings:update` permission.
+
+- Select Document or Drawing and choose an allowed, nonempty file up to 25 MiB.
+  **Upload directly to NAS** bypasses the normal size threshold and CDN staging.
+- To test an existing CDN document or drawing, paste its current signed download
+  link and select **Copy CDN file to NAS**. Unsigned links, expired links, external
+  URLs and files already on NAS are rejected. Reopen the source file to obtain a
+  fresh signed link (valid for five minutes).
+- Success means the NAS upload passed SHA256 read-back verification. Use
+  **Open test file** to check the actual download through the private-file gateway.
+
+Each test creates a separate NAS file. The source CDN file and ERP database record
+are unchanged; this is a copy test, not a production record migration. Test files
+remain until the NAS administrator removes the filename shown in the result.
+The existing rate limit and file type restrictions apply. Credentials stay on the
+backend. These tests still require the SFTP host, path and verified host fingerprint;
+an SMB share path alone cannot connect this SFTP integration.
+
 Use disposable files and records for these tests.
 
 1. Upload a small private file. Confirm it opens through the ERP and stays on CDN.

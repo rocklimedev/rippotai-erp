@@ -80,6 +80,37 @@ describe('Shared portfolio read model', () => {
     expect(service.projectModel.findAll).toHaveBeenCalledTimes(2);
   });
 
+  it('finishes one project before starting the next portfolio rollup', async () => {
+    const { service } = setup();
+    service.projectModel.findAll.mockResolvedValue([{ id: 'a' }, { id: 'b' }]);
+    let finishFirst!: () => void;
+    const first = new Promise<void>((resolve) => {
+      finishFirst = resolve;
+    });
+    let startedFirst!: () => void;
+    const started = new Promise<void>((resolve) => {
+      startedFirst = resolve;
+    });
+    service.buildProjectRow.mockImplementation(
+      async (project: { id: string }) => {
+        if (project.id === 'a') {
+          startedFirst();
+          await first;
+        }
+        return { id: project.id, phases: [] };
+      },
+    );
+    const pending = service.getPortfolio({});
+    await started;
+    expect(service.buildProjectRow).toHaveBeenCalledTimes(1);
+    finishFirst();
+    expect((await pending).map((row: { id: string }) => row.id)).toEqual([
+      'a',
+      'b',
+    ]);
+    expect(service.buildProjectRow).toHaveBeenCalledTimes(2);
+  });
+
   it('keeps parameterized dashboard aggregates separate and reuses identical requests', async () => {
     const { cache } = setup();
     const query = jest.fn().mockResolvedValue([]);

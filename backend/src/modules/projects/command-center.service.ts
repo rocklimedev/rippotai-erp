@@ -221,9 +221,11 @@ export class CommandCenterService {
     });
 
     const siteQc = await this.openSiteQcFailures();
-    const rows = await Promise.all(
-      projects.map((project) => this.buildProjectRow(project, siteQc)),
-    );
+    // Do not enqueue every project's SQL at once in the shared connection pool.
+    const rows: ProjectRow[] = [];
+    for (const project of projects) {
+      rows.push(await this.buildProjectRow(project, siteQc));
+    }
 
     const values = projects.map((project) => ({
       id: project.id,
@@ -428,47 +430,43 @@ export class CommandCenterService {
     const currentPhase =
       phases.find((ph) => ph.phase_code === project.current_phase) ?? phases[0];
 
-    const [docTypes, taskDefs, gates, requirements, documents, taskExecs] =
-      await Promise.all([
-        this.docTypeModel.findAll({
-          where: {
-            ...documentPhaseWhere(phases),
-            isActive: true,
-          },
-        }),
+    // Keep rollup reads sequential so interactive requests can use the pool.
+    const docTypes = await this.docTypeModel.findAll({
+      where: {
+        ...documentPhaseWhere(phases),
+        isActive: true,
+      },
+    });
 
-        this.taskDefModel.findAll({
-          where: { module: moduleScope },
-        }),
+    const taskDefs = await this.taskDefModel.findAll({
+      where: { module: moduleScope },
+    });
 
-        this.gateModel.findAll({
-          where: { projectId: project.id },
-          include: [{ model: GateDefinition }],
-        }),
+    const gates = await this.gateModel.findAll({
+      where: { projectId: project.id },
+      include: [{ model: GateDefinition }],
+    });
 
-        this.docReqModel.findAll({
-          where: { projectId: project.id },
-        }),
+    const requirements = await this.docReqModel.findAll({
+      where: { projectId: project.id },
+    });
 
-        this.docModel.findAll({
-          where: { projectId: project.id },
-        }),
+    const documents = await this.docModel.findAll({
+      where: { projectId: project.id },
+    });
 
-        this.taskExecModel.findAll({
-          where: { project_id: project.id },
-        }),
-      ]);
+    const taskExecs = await this.taskExecModel.findAll({
+      where: { project_id: project.id },
+    });
 
     const reqByTypeId = new Map(requirements.map((r) => [r.documentTypeId, r]));
-    await Promise.all(
-      docTypes.map(async (dt) => {
-        const requirement = reqByTypeId.get(dt.id);
-        reqByTypeId.set(dt.id, {
-          ...(requirement?.get({ plain: true }) ?? {}),
-          isCompleted: await this.evidence.satisfied(project.id, dt),
-        } as DocumentRequirement);
-      }),
-    );
+    for (const dt of docTypes) {
+      const requirement = reqByTypeId.get(dt.id);
+      reqByTypeId.set(dt.id, {
+        ...(requirement?.get({ plain: true }) ?? {}),
+        isCompleted: await this.evidence.satisfied(project.id, dt),
+      } as DocumentRequirement);
+    }
 
     const taskExecByDefId = new Map(
       taskExecs.map((t) => [t.task_definition_id, t]),
