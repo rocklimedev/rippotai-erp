@@ -39,11 +39,13 @@ export function getSessionToken(storage = sessionStorage, now = Date.now()) {
     const expiry = payload.exp * 1000;
     const issued = payload.iat * 1000;
     const activity = Number(storage.getItem("bc_activity"));
+    // iat is issued by the API's clock, not the browser's. A newly issued
+    // token can appear to be in the future on a device whose clock is behind.
+    // The API validates authenticity and session validity on /auth/me.
     if (
       !Number.isFinite(expiry) ||
       !Number.isFinite(issued) ||
       expiry <= now ||
-      issued > now ||
       expiry <= issued ||
       expiry - issued > ACCESS_LIFETIME_MS ||
       !activity ||
