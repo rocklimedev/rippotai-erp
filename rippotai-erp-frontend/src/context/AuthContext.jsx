@@ -48,28 +48,37 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, [dispatch]);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async ({ throwOnError = false } = {}) => {
     const token = getSessionToken();
 
     if (!token) {
       clearSession();
       setReady(true);
+      if (throwOnError) throw new Error("Your session could not be established. Please sign in again.");
       return;
     }
 
     try {
       const response = await triggerMe().unwrap();
-      if (getSessionToken() !== token) return;
+      if (getSessionToken() !== token) {
+        if (throwOnError) throw new Error("Your session expired while signing in. Please try again.");
+        return;
+      }
 
       // Backend returns either { user } or user directly
       const userData = response.user ?? response;
 
       persistIdentity(userData);
       setUser(userData);
+      return userData;
     } catch (err) {
-      if (getSessionToken() !== token) return;
+      if (getSessionToken() !== token) {
+        if (throwOnError) throw err;
+        return;
+      }
       console.error(err);
       clearSession();
+      if (throwOnError) throw err;
     } finally {
       setReady(true);
     }
@@ -120,9 +129,7 @@ export function AuthProvider({ children }) {
     }).unwrap();
 
     persistSession(token, userData);
-    await refresh();
-
-    return userData;
+    return refresh({ throwOnError: true });
   };
 
   /**
@@ -132,9 +139,7 @@ export function AuthProvider({ children }) {
     const { token, user: userData } = await signupMutation(payload).unwrap();
 
     persistSession(token, userData);
-    await refresh();
-
-    return userData;
+    return refresh({ throwOnError: true });
   };
 
   /**
