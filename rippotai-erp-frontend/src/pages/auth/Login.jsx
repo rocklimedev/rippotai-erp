@@ -19,10 +19,10 @@ export default function Login() {
     setLoading(true);
     try {
       const user = await login(email, password);
-      toast.success(`Welcome, ${user.name.split(" ")[0]}`);
-      navigate("/dashboard");
+      toast.success(`Welcome, ${user.name?.split(" ")[0] || "back"}`);
+      navigate("/dashboard", { replace: true });
     } catch (err) {
-      toast.error(err?.data?.message || err?.response?.data?.detail || "Sign in failed");
+      toast.error(err?.data?.message || err?.response?.data?.detail || err?.message || "Sign in failed");
     } finally {
       setLoading(false);
     }
