@@ -40,6 +40,15 @@ test("stores only an ID and keeps credentials out of localStorage", () => {
   });
   assert.equal(getSessionToken(), jwt);
 });
+
+test("accepts a fresh API token when the browser clock is behind", () => {
+  const browserNow = Date.now();
+  const iat = Math.floor(browserNow / 1000) + 120;
+  const jwt = `header.${btoa(JSON.stringify({ iat, exp: iat + 1200 }))}.signature`;
+  persistSession(jwt, { id: "staff" });
+  assert.equal(getSessionToken(sessionStorage, browserNow), jwt);
+  assert.equal(sessionStorage.getItem("bc_token"), jwt);
+});
 test("expires idle and hard-expired sessions and clears their drafts", () => {
   persistSession(token(), { id: "staff" });
   localStorage.setItem("bc.draft.staff.form", "client data");
