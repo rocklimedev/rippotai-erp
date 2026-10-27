@@ -204,8 +204,15 @@ export class QualityChecklistService {
    * Delete checklist (soft delete)
    */
   async deleteChecklist(id: string): Promise<void> {
-    const checklist = await this.getChecklistById(id);
-    await checklist.destroy();
+    await this.database.transaction(async (transaction) => {
+      const checklist = await this.checklistModel.findByPk(id, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!checklist) throw new NotFoundException('Checklist not found');
+      await this.checklistItemModel.destroy({ where: { checklist_id: id }, transaction });
+      await checklist.destroy({ transaction });
+    });
   }
 
   /**

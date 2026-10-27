@@ -223,7 +223,10 @@ export class MaterialProcurementService {
       throw new NotFoundException(`Material procurement ${id} not found`);
     }
 
-    await procurement.destroy();
+    await this.sequelize.transaction(async (transaction) => {
+      await this.itemModel.destroy({ where: { procurementId: id }, transaction });
+      await procurement.destroy({ transaction });
+    });
 
     return {
       success: true,

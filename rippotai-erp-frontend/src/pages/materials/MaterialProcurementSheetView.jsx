@@ -1,4 +1,5 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
+import DeleteMaterialProcurement from "@/components/materials/DeleteMaterialProcurement";
 import {
   ArrowLeft,
   Calculator,
@@ -306,6 +307,7 @@ export default function MaterialProcurementSheetView() {
         </Button>
 
         <div className="flex flex-wrap gap-2">
+          <DeleteMaterialProcurement procurement={procurement} onDeleted={() => navigate("/procurement/material-procurement/list")} />
           {/* Download Excel – always available */}
           <Button variant="outline" onClick={handleDownloadExcel}>
             <Download className="mr-2 h-4 w-4" />

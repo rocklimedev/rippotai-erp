@@ -248,9 +248,10 @@ export const commandCenterApi = baseApi
           body,
         }),
         invalidatesTags: [
+          "DocumentRequirement",
+          "DocumentDashboard",
           "Document",
           "ProjectDocumentPhase",
-          "DocumentRequirement",
           "CommandCenterKpis",
           "CommandCenterPortfolio",
           "CommandCenterProjectPhases",

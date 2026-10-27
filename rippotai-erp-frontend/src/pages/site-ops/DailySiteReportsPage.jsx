@@ -1,5 +1,6 @@
 // Daily site reports — list. Filters: project (or all), date range, issues / drafts.
 import React, { useMemo, useState, useEffect } from "react";
+import DeleteDailyReport from "./daily-reports/DeleteDailyReport";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Plus, FileText, Users, AlertTriangle, Share2, CalendarCheck, Camera, ChevronRight } from "lucide-react";
 import {
@@ -197,7 +198,7 @@ export default function DailySiteReportsPage() {
                     <th>Issues</th>
                     <th className="num">Photos</th>
                     <th>Status</th>
-                    <th className="actions" aria-label="Open" />
+                    <th className="actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -216,7 +217,7 @@ export default function DailySiteReportsPage() {
                       <td><IssuesCell r={r} /></td>
                       <td className="num">{(r.photos || []).length}</td>
                       <td><StatusCell r={r} /></td>
-                      <td className="actions"><ChevronRight size={16} color="var(--text-3)" /></td>
+                      <td className="actions"><DeleteDailyReport report={r} /><ChevronRight size={16} color="var(--text-3)" /></td>
                     </tr>
                   ))}
                 </tbody>
@@ -225,7 +226,8 @@ export default function DailySiteReportsPage() {
 
             <div className="dsr-cards">
               {visible.map((r) => (
-                <button type="button" key={r.id} className="dsr-card" onClick={() => open(r)}>
+                <div key={r.id} className="dsr-card">
+                <button type="button" className="w-full text-left" onClick={() => open(r)}>
                   <div className="dsr-card__top">
                     <div>
                       <div className="dsr-card__date">{weekday(r.reportDate)}, {fmtDate(r.reportDate)}</div>
@@ -240,6 +242,8 @@ export default function DailySiteReportsPage() {
                     <IssuesCell r={r} />
                   </div>
                 </button>
+                <DeleteDailyReport report={r} />
+                </div>
               ))}
             </div>
             {reports.length > shown && (

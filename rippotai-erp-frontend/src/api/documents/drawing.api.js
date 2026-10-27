@@ -1,7 +1,12 @@
 import { baseApi } from "../../store/baseApi";
+import { documentUploadTags } from "./document.api";
 
 export const drawingApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    approveDrawing: builder.mutation({
+      query: (id) => ({ url: `/drawings/${id}/approve`, method: "POST" }),
+      invalidatesTags: (result, error) => error ? [] : ["Drawing", "DrawingRevision", ...documentUploadTags],
+    }),
     // =========================================================
     // Get all drawings (optionally filtered by projectId,
     // discipline, status, phaseCode)
@@ -66,6 +71,7 @@ export const drawingApi = baseApi.injectEndpoints({
         body: data,
       }),
       invalidatesTags: (result, error, { id }) => [
+        ...documentUploadTags,
         { type: "Drawing", id },
         { type: "Drawing", id: "LIST" },
       ],
@@ -113,6 +119,7 @@ export const drawingApi = baseApi.injectEndpoints({
         };
       },
       invalidatesTags: (result, error, { id }) => [
+        ...documentUploadTags,
         { type: "Drawing", id },
         { type: "Drawing", id: "LIST" },
         { type: "DrawingRevision", id: `DRAWING-${id}` },
@@ -183,6 +190,7 @@ export const drawingApi = baseApi.injectEndpoints({
 });
 
 export const {
+  useApproveDrawingMutation,
   useGetDrawingsQuery,
   useGetDrawingByIdQuery,
   useCreateDrawingMutation,

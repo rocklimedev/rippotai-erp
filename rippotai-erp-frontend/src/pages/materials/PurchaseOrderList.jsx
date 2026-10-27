@@ -165,12 +165,6 @@ export default function PurchaseOrderList() {
     return !["CANCELLED", "RECEIVED", "CLOSED"].includes(status);
   };
 
-  const canDelete = (purchaseOrder) => {
-    const status = getUpperStatus(purchaseOrder?.status);
-
-    return status === "DRAFT";
-  };
-
   // ============================================================
   // DELIVERY CHALLAN
   // ============================================================
@@ -510,7 +504,7 @@ export default function PurchaseOrderList() {
 
                               {/* Delete */}
                               <DropdownMenuItem
-                                disabled={!canDelete(r) || isDeleting}
+                                disabled={isDeleting}
                                 onSelect={() => handleDelete(r)}
                                 className="gap-2.5 text-[#A33A3A] focus:text-[#A33A3A] focus:bg-[#FDECEC]"
                               >

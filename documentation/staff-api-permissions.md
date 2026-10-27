@@ -11,7 +11,7 @@ Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before
 
 Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.
 
-There are 986 routes, 955 staff routes and 405 assignable staff capabilities.
+There are 992 routes, 961 staff routes and 409 assignable staff capabilities.
 
 ## Catalogue by module
 
@@ -29,12 +29,12 @@ There are 986 routes, 955 staff routes and 405 assignable staff capabilities.
 | client-portal | `client-portal:create`, `client-portal:deliver`, `client-portal:prepare`, `client-portal:read`, `client-portal:revoke` |
 | clients | `clients:create`, `clients:delete`, `clients:read`, `clients:restore`, `clients:update` |
 | dashboard | `dashboards:read`, `dashboards:reset`, `dashboards:update` |
-| documents | `document-requirements:create`, `document-requirements:delete`, `document-requirements:read`, `document-requirements:update`, `document-types:create`, `document-types:delete`, `document-types:read`, `document-types:update`, `documents:create`, `documents:delete`, `documents:deliver`, `documents:read`, `documents:update`, `drawings:create`, `drawings:delete`, `drawings:read`, `drawings:update`, `projects:read` |
+| documents | `document-requirements:create`, `document-requirements:delete`, `document-requirements:read`, `document-requirements:update`, `document-types:create`, `document-types:delete`, `document-types:read`, `document-types:update`, `documents:approve`, `documents:create`, `documents:delete`, `documents:deliver`, `documents:read`, `documents:update`, `drawings:create`, `drawings:delete`, `drawings:read`, `drawings:update`, `projects:read` |
 | engagement | `activity-logs:create`, `activity-logs:read`, `notifications:delete`, `notifications:read`, `notifications:update` |
 | gates | `gates:clear`, `gates:read`, `gates:reopen`, `phase-definitions:read` |
 | google | `google-calendar:create`, `google-calendar:delete`, `google-calendar:read`, `google-calendar:update`, `google-tasks:complete`, `google-tasks:create`, `google-tasks:delete`, `google-tasks:read`, `google-tasks:update` |
 | leads | `leads:create`, `leads:delete`, `leads:read`, `leads:sync`, `leads:update` |
-| material-procurement | `delivery-challans:create`, `delivery-challans:delete`, `delivery-challans:read`, `delivery-challans:receive`, `delivery-challans:update`, `inventory:adjust`, `inventory:create`, `inventory:deliver`, `inventory:issue`, `inventory:read`, `inventory:return`, `inventory:transfer`, `material-procurement:create`, `material-procurement:delete`, `material-procurement:read`, `material-procurement:submit`, `material-procurement:update`, `materials:create`, `materials:delete`, `materials:read`, `materials:update`, `procurement-estimates:approve`, `procurement-estimates:create`, `procurement-estimates:read`, `procurement-estimates:reject`, `procurement-quotations:accept`, `procurement-quotations:create`, `procurement-quotations:read`, `procurement-quotations:reject`, `procurement-quotations:send`, `procurement-rate-sheets:approve`, `procurement-rate-sheets:create`, `procurement-rate-sheets:delete`, `procurement-rate-sheets:read`, `procurement-rate-sheets:reject`, `procurement-requirements:create`, `procurement-requirements:delete`, `procurement-requirements:read`, `procurement-requirements:update`, `procurement-sample-boards:approve`, `procurement-sample-boards:create`, `procurement-sample-boards:delete`, `procurement-sample-boards:read`, `procurement-sample-boards:reject`, `purchase-orders:approve`, `purchase-orders:cancel`, `purchase-orders:create`, `purchase-orders:delete`, `purchase-orders:read`, `purchase-orders:update`, `vendor-rate-comparisons:create`, `vendor-rate-comparisons:read`, `vendor-rate-comparisons:update`, `work-orders:approve`, `work-orders:create`, `work-orders:delete`, `work-orders:read`, `work-orders:reject`, `work-orders:update` |
+| material-procurement | `delivery-challans:create`, `delivery-challans:delete`, `delivery-challans:read`, `delivery-challans:receive`, `delivery-challans:update`, `inventory:adjust`, `inventory:create`, `inventory:deliver`, `inventory:issue`, `inventory:read`, `inventory:return`, `inventory:transfer`, `material-procurement:create`, `material-procurement:delete`, `material-procurement:read`, `material-procurement:submit`, `material-procurement:update`, `materials:create`, `materials:delete`, `materials:read`, `materials:update`, `procurement-estimates:approve`, `procurement-estimates:create`, `procurement-estimates:read`, `procurement-estimates:reject`, `procurement-quotations:accept`, `procurement-quotations:create`, `procurement-quotations:read`, `procurement-quotations:reject`, `procurement-quotations:send`, `procurement-rate-sheets:approve`, `procurement-rate-sheets:create`, `procurement-rate-sheets:delete`, `procurement-rate-sheets:read`, `procurement-rate-sheets:reject`, `procurement-requirements:create`, `procurement-requirements:delete`, `procurement-requirements:read`, `procurement-requirements:update`, `procurement-sample-boards:approve`, `procurement-sample-boards:create`, `procurement-sample-boards:delete`, `procurement-sample-boards:read`, `procurement-sample-boards:reject`, `purchase-orders:approve`, `purchase-orders:cancel`, `purchase-orders:create`, `purchase-orders:delete`, `purchase-orders:read`, `purchase-orders:update`, `vendor-rate-comparisons:create`, `vendor-rate-comparisons:delete`, `vendor-rate-comparisons:read`, `vendor-rate-comparisons:update`, `work-orders:approve`, `work-orders:create`, `work-orders:delete`, `work-orders:read`, `work-orders:reject`, `work-orders:update` |
 | metas | `terms-templates:create`, `terms-templates:delete`, `terms-templates:read`, `terms-templates:update`, `units:create`, `units:delete`, `units:read`, `units:update` |
 | microsoft | `onedrive:create`, `onedrive:delete`, `onedrive:read`, `onedrive:update`, `onedrive:upload` |
 | payments | `payment-schedules:create`, `payment-schedules:delete`, `payment-schedules:read`, `payment-schedules:update` |
@@ -48,7 +48,7 @@ There are 986 routes, 955 staff routes and 405 assignable staff capabilities.
 | scope-of-work | `scope-of-work:create`, `scope-of-work:delete`, `scope-of-work:read`, `scope-of-work:update` |
 | search | `search:read`, `search:reindex` |
 | settings | `settings:create`, `settings:delete`, `settings:read`, `settings:update` |
-| site-operations | `architect-quality:create`, `architect-quality:delete`, `architect-quality:read`, `architect-quality:update`, `architect-snags:create`, `architect-snags:delete`, `architect-snags:read`, `architect-snags:update`, `architect-visit-stages:create`, `architect-visit-stages:delete`, `architect-visit-stages:read`, `architect-visit-stages:update`, `dpr-admin-documents:create`, `dpr-admin-documents:export`, `dpr-admin-documents:read`, `dpr-admin-logs:create`, `dpr-admin-logs:delete`, `dpr-admin-logs:read`, `dpr-admin-logs:update`, `dpr-admin-reports:create`, `dpr-admin-reports:delete`, `dpr-admin-reports:export`, `dpr-admin-reports:read`, `dpr-admin-reports:update`, `quality-checklists:create`, `quality-checklists:delete`, `quality-checklists:export`, `quality-checklists:read`, `quality-checklists:update`, `site-ops-checklists:create`, `site-ops-checklists:read`, `site-ops-daily-reports:create`, `site-ops-daily-reports:delete`, `site-ops-daily-reports:read`, `site-ops-daily-reports:share`, `site-ops-daily-reports:update`, `site-ops-daily-reports:upload`, `site-ops-mockups:create`, `site-ops-mockups:read`, `site-ops-mockups:update`, `site-ops-qc:read`, `site-ops-qc:sign-off`, `site-ops-rfis:create`, `site-ops-rfis:read`, `site-ops-rfis:update`, `site-ops-snag-lists:create`, `site-ops-snag-lists:export`, `site-ops-snag-lists:read`, `site-ops-snag-lists:update`, `site-ops-snag-lists:upload`, `site-ops-visits:assign`, `site-ops-visits:check-in`, `site-ops-visits:create`, `site-ops-visits:read`, `site-ops-visits:update`, `site-ops:read` |
+| site-operations | `architect-quality:create`, `architect-quality:delete`, `architect-quality:read`, `architect-quality:update`, `architect-snags:create`, `architect-snags:delete`, `architect-snags:read`, `architect-snags:update`, `architect-visit-stages:create`, `architect-visit-stages:delete`, `architect-visit-stages:read`, `architect-visit-stages:update`, `dpr-admin-documents:create`, `dpr-admin-documents:delete`, `dpr-admin-documents:export`, `dpr-admin-documents:read`, `dpr-admin-logs:create`, `dpr-admin-logs:delete`, `dpr-admin-logs:read`, `dpr-admin-logs:update`, `dpr-admin-reports:create`, `dpr-admin-reports:delete`, `dpr-admin-reports:export`, `dpr-admin-reports:read`, `dpr-admin-reports:update`, `quality-checklists:create`, `quality-checklists:delete`, `quality-checklists:export`, `quality-checklists:read`, `quality-checklists:update`, `site-ops-checklists:create`, `site-ops-checklists:read`, `site-ops-daily-reports:create`, `site-ops-daily-reports:delete`, `site-ops-daily-reports:read`, `site-ops-daily-reports:share`, `site-ops-daily-reports:update`, `site-ops-daily-reports:upload`, `site-ops-mockups:create`, `site-ops-mockups:read`, `site-ops-mockups:update`, `site-ops-qc:read`, `site-ops-qc:sign-off`, `site-ops-rfis:create`, `site-ops-rfis:read`, `site-ops-rfis:update`, `site-ops-snag-lists:create`, `site-ops-snag-lists:delete`, `site-ops-snag-lists:export`, `site-ops-snag-lists:read`, `site-ops-snag-lists:update`, `site-ops-snag-lists:upload`, `site-ops-visits:assign`, `site-ops-visits:check-in`, `site-ops-visits:create`, `site-ops-visits:read`, `site-ops-visits:update`, `site-ops:read` |
 | sync | `calendar-events:read`, `calendar-events:update`, `sync:read`, `sync:sync`, `sync:update`, `tasks:read`, `tasks:update` |
 | system | `system:read` |
 | tasks | `tasks:create`, `tasks:delete`, `tasks:read`, `tasks:update` |
@@ -241,6 +241,7 @@ There are 986 routes, 955 staff routes and 405 assignable staff capabilities.
 | documents | `PATCH /document-requirements/:id` | DocumentRequirementsController.update | `document-requirements:update` | staff |
 | documents | `POST /documents/:id/attachments` | DocumentsController.addAttachment | `documents:create` | staff |
 | documents | `POST /documents/:id/versions` | DocumentsController.addVersion | `documents:create` | staff |
+| documents | `POST /documents/:id/approve` | DocumentsController.approve | `documents:approve` | staff |
 | documents | `POST /documents` | DocumentsController.create | `documents:create` | staff |
 | documents | `GET /documents/:id/download` | DocumentsController.download | `documents:read` | staff |
 | documents | `GET /documents` | DocumentsController.findAll | `documents:read` | staff |
@@ -269,6 +270,7 @@ There are 986 routes, 955 staff routes and 405 assignable staff capabilities.
 | documents | `DELETE /document-types/:id` | DocumentTypesController.remove | `document-types:delete` | staff |
 | documents | `PATCH /document-types/:id` | DocumentTypesController.update | `document-types:update` | staff |
 | documents | `POST /drawings/:id/revisions` | DrawingsController.addRevision | `drawings:create` | staff |
+| documents | `POST /drawings/:id/approve` | DrawingsController.approve | `documents:approve` | staff |
 | documents | `POST /drawings` | DrawingsController.create | `drawings:create` | staff |
 | documents | `GET /drawings/:id/revisions/:revisionId/download` | DrawingsController.downloadRevision | `drawings:read` | staff |
 | documents | `GET /drawings` | DrawingsController.findAll | `drawings:read` | staff |
@@ -350,6 +352,7 @@ There are 986 routes, 955 staff routes and 405 assignable staff capabilities.
 | material-procurement | `GET /inventory/stock/:projectId` | InventoryController.getProjectStock | `inventory:read` | staff |
 | material-procurement | `GET /inventory/summary/:projectId` | InventoryController.getSummary | `inventory:read` | staff |
 | material-procurement | `POST /inventory/issue` | InventoryController.issue | `inventory:issue` | staff |
+| material-procurement | `POST /inventory/receive` | InventoryController.receive | `inventory:create` | staff |
 | material-procurement | `POST /inventory/receive-delivery` | InventoryController.receiveFromDelivery | `inventory:deliver` | staff |
 | material-procurement | `POST /inventory/return` | InventoryController.returnMaterial | `inventory:return` | staff |
 | material-procurement | `POST /inventory/transfer` | InventoryController.transfer | `inventory:transfer` | staff |
@@ -410,6 +413,7 @@ There are 986 routes, 955 staff routes and 405 assignable staff capabilities.
 | material-procurement | `POST /vendor-rate-comparisons` | VendorRateComparisonController.create | `vendor-rate-comparisons:create` | staff |
 | material-procurement | `GET /vendor-rate-comparisons/:id` | VendorRateComparisonController.get | `vendor-rate-comparisons:read` | staff |
 | material-procurement | `GET /vendor-rate-comparisons` | VendorRateComparisonController.list | `vendor-rate-comparisons:read` | staff |
+| material-procurement | `DELETE /vendor-rate-comparisons/:id` | VendorRateComparisonController.remove | `vendor-rate-comparisons:delete` | staff |
 | material-procurement | `PUT /vendor-rate-comparisons/:id` | VendorRateComparisonController.update | `vendor-rate-comparisons:update` | staff |
 | material-procurement | `PATCH /work-orders/:id/approve` | WorkOrdersController.approve | `work-orders:approve` | staff |
 | material-procurement | `POST /work-orders` | WorkOrdersController.create | `work-orders:create` | staff |
@@ -718,6 +722,7 @@ There are 986 routes, 955 staff routes and 405 assignable staff capabilities.
 | site-operations | `GET /dpr/admin-documents/:id/export` | AdminDprDocumentController.download | `dpr-admin-documents:export` | staff |
 | site-operations | `GET /dpr/admin-documents/:id` | AdminDprDocumentController.findOne | `dpr-admin-documents:read` | staff |
 | site-operations | `GET /dpr/admin-documents` | AdminDprDocumentController.list | `dpr-admin-documents:read` | staff |
+| site-operations | `DELETE /dpr/admin-documents/:id` | AdminDprDocumentController.remove | `dpr-admin-documents:delete` | staff |
 | site-operations | `POST /site-ops/checklists/items` | ChecklistController.addItem | `site-ops-checklists:create` | staff |
 | site-operations | `POST /site-ops/checklists/templates` | ChecklistController.createTemplate | `site-ops-checklists:create` | staff |
 | site-operations | `GET /site-ops/checklists/templates/:id` | ChecklistController.getTemplate | `site-ops-checklists:read` | staff |
@@ -798,6 +803,7 @@ There are 986 routes, 955 staff routes and 405 assignable staff capabilities.
 | site-operations | `GET /site-ops/snag-lists/:id/export` | SnagListController.download | `site-ops-snag-lists:export` | staff |
 | site-operations | `GET /site-ops/snag-lists/:id` | SnagListController.findOne | `site-ops-snag-lists:read` | staff |
 | site-operations | `GET /site-ops/snag-lists` | SnagListController.list | `site-ops-snag-lists:read` | staff |
+| site-operations | `DELETE /site-ops/snag-lists/:id` | SnagListController.remove | `site-ops-snag-lists:delete` | staff |
 | site-operations | `PATCH /site-ops/snag-lists/:id` | SnagListController.update | `site-ops-snag-lists:update` | staff |
 | site-operations | `POST /site-ops/snag-lists/photos` | SnagListController.uploadPhoto | `site-ops-snag-lists:upload` | staff |
 | site-operations | `POST /architect/visit-stages` | VisitStageController.create | `architect-visit-stages:create` | staff |

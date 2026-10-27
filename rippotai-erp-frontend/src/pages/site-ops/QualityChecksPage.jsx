@@ -1,4 +1,5 @@
 import { Fragment, useState, useEffect, useMemo } from "react";
+import DeleteChecklist from "./DeleteChecklist";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useGetProjectsQuery } from "../../api/projects/project.api";
@@ -14,7 +15,6 @@ import {
   useUpdateQualityChecklistItemMutation,
   useAddQualityChecklistItemMutation,
   useCompleteQualityChecklistMutation,
-  useDeleteQualityChecklistMutation,
   useLazyExportQualityChecklistJsonQuery,
   useLazyExportProjectQualityWorkbookJsonQuery,
 } from "../../api/site-ops/site-ops.api";
@@ -603,7 +603,6 @@ function ChecklistDetail({ id, projectId, onBack }) {
     refetch,
   } = useGetQualityChecklistByIdQuery(id);
   const [complete, completeState] = useCompleteQualityChecklistMutation();
-  const [remove, removeState] = useDeleteQualityChecklistMutation();
   const [exportJson, exportState] = useLazyExportQualityChecklistJsonQuery();
   const [showAdd, setShowAdd] = useState(false);
   const [updateItem, updateState] = useUpdateQualityChecklistItemMutation();
@@ -769,22 +768,7 @@ function ChecklistDetail({ id, projectId, onBack }) {
           >
             Mark passed
           </button>
-          <button
-            className="bc-btn-secondary"
-            disabled={removeState.isLoading}
-            onClick={async () => {
-              if (!window.confirm("Delete this project checklist?")) return;
-              try {
-                await remove(id).unwrap();
-                onBack();
-                toast.success("Checklist deleted");
-              } catch (error) {
-                toast.error(message(error));
-              }
-            }}
-          >
-            Delete
-          </button>
+          <DeleteChecklist checklist={checklist} onDeleted={onBack} />
         </div>
       </div>
       {showAdd && (

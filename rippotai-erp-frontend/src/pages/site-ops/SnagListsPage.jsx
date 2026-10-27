@@ -1,4 +1,5 @@
 import { useState } from "react";
+import DeleteSnagList from "./DeleteSnagList";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -133,6 +134,7 @@ export default function SnagListsPage() {
                       >
                         Download Excel
                       </Button>
+                      <DeleteSnagList document={d} onDeleted={() => { if (data.data.length === 1 && page > 1) setPage(page - 1); }} />
                     </td>
                   </tr>
                 ))}

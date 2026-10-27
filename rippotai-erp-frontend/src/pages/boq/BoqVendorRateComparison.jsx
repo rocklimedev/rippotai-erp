@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import DeleteRateComparison from "@/components/materials/DeleteRateComparison";
 import { useGetProjectsQuery } from "../../api/projects/project.api";
 import {
   useGetRateComparisonQuery,
@@ -1096,6 +1097,7 @@ function ComparisonWorkspace({ initialSheet }) {
             >
               All sheets
             </button>
+            {initialSheet && <DeleteRateComparison sheet={initialSheet} disabled={saving} onDeleted={() => navigate(comparisonPath)} />}
             <button
               type="button"
               disabled={

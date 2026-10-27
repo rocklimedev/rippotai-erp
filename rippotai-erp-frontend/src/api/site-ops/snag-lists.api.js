@@ -1,6 +1,10 @@
 import { baseApi } from "@/store/baseApi";
 export const snagListsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    deleteSnagDocument: builder.mutation({
+      query: (id) => ({ url: `/site-ops/snag-lists/${id}`, method: "DELETE" }),
+      invalidatesTags: ["SnagLists"],
+    }),
     listSnagDocuments: builder.query({
       query: (params) => ({ url: "/site-ops/snag-lists", params }),
       providesTags: ["SnagLists"],
@@ -48,6 +52,7 @@ export const snagListsApi = baseApi.injectEndpoints({
 });
 export const {
   useListSnagDocumentsQuery,
+  useDeleteSnagDocumentMutation,
   useGetSnagDocumentQuery,
   useSaveSnagDocumentMutation,
   useUploadSnagPhotoMutation,

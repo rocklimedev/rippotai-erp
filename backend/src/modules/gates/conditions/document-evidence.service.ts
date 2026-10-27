@@ -5,6 +5,7 @@ import {
 } from './native-evidence.service';
 import { Injectable, Optional } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 import { Document } from '@/modules/documents/models/document.model';
 import { Drawing } from '@/modules/documents/models/drawing.model';
 import { DocumentType } from '@/modules/documents/models/document-type.model';
@@ -31,6 +32,53 @@ export class DocumentEvidenceService {
 
   isNative(type: DocumentType): boolean {
     return !!NATIVE_EVIDENCE[type.code];
+  }
+
+  /** Read only evidence metadata, once per source, rather than once per type. */
+  async resolveMany(projectId: string, types: DocumentType[]): Promise<Map<string, EvidenceResult>> {
+    const uploads = types.filter((type) => !this.isNative(type) && type.targetType !== 'DRAWING');
+    const drawingTypes = types.filter((type) => !this.isNative(type) && type.targetType === 'DRAWING');
+    const [documents, drawings] = await Promise.all([
+      uploads.length ? this.documents.findAll({
+        where: { projectId, documentTypeId: { [Op.in]: uploads.map((type) => type.id) } },
+        attributes: ['id', 'documentTypeId', 'status'],
+        order: [['created_at', 'DESC'], ['id', 'DESC']],
+        raw: true,
+      }) : [],
+      drawingTypes.length ? this.drawings.findAll({
+        where: { projectId, documentTypeId: { [Op.in]: drawingTypes.map((type) => type.id) } },
+        attributes: ['documentTypeId', 'status'],
+        raw: true,
+      }) : [],
+    ]);
+    const latestByType = new Map<string, Document>();
+    for (const document of documents) {
+      if (!document.documentTypeId) continue;
+      if (!latestByType.has(document.documentTypeId)) latestByType.set(document.documentTypeId, document);
+    }
+    const drawingsByType = new Map<string, Drawing[]>();
+    for (const drawing of drawings) {
+      if (!drawing.documentTypeId) continue;
+      const group = drawingsByType.get(drawing.documentTypeId) ?? [];
+      group.push(drawing);
+      drawingsByType.set(drawing.documentTypeId, group);
+    }
+    // Reuse the authoritative single-type rules against the preloaded metadata.
+    const snapshot = new DocumentEvidenceService(
+      { findOne: async ({ where }) => latestByType.get(where.documentTypeId) ?? null } as any,
+      { findAll: async ({ where }) => drawingsByType.get(where.documentTypeId) ?? [] } as any,
+      this.native,
+    );
+    const results = new Map<string, EvidenceResult>();
+    let next = 0;
+    // Bound native-source SQL concurrency so large catalogues do not flood the pool.
+    await Promise.all(Array.from({ length: Math.min(4, types.length) }, async () => {
+      while (next < types.length) {
+        const type = types[next++];
+        results.set(type.id, await snapshot.resolve(projectId, type));
+      }
+    }));
+    return results;
   }
 
   async resolve(

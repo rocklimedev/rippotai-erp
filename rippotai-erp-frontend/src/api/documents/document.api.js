@@ -1,7 +1,19 @@
 import { baseApi } from "../../store/baseApi";
 
-export const documentApi = baseApi.injectEndpoints({
+export const documentUploadTags = [
+  "Document", "DocumentRequirement", "DocumentDashboard", "ProjectDocumentPhase",
+  "CommandCenterKpis", "CommandCenterPortfolio", "CommandCenterProjectPhases",
+  "CommandCenterActions", "CommandCenterDocuments", "CommandCenterTasks",
+  "CommandCenterCommercial", "CommandCenterTeamWorkload", "CommandCenterActivity",
+  "CommandCenterGates",
+];
+
+export const documentApi = baseApi.enhanceEndpoints({ addTagTypes: documentUploadTags }).injectEndpoints({
   endpoints: (builder) => ({
+    approveDocument: builder.mutation({
+      query: (id) => ({ url: `/documents/${id}/approve`, method: "POST" }),
+      invalidatesTags: (result, error) => error ? [] : documentUploadTags,
+    }),
     // ============================================================
     // DOCUMENTS
     // ============================================================
@@ -111,7 +123,7 @@ export const documentApi = baseApi.injectEndpoints({
         };
       },
 
-      invalidatesTags: ["Document", "ProjectDocumentPhase"],
+      invalidatesTags: (result, error) => error ? [] : documentUploadTags,
     }),
 
     /**
@@ -125,6 +137,7 @@ export const documentApi = baseApi.injectEndpoints({
       }),
 
       invalidatesTags: (result, error, { id }) => [
+        ...documentUploadTags,
         "Document",
         {
           type: "Document",
@@ -153,6 +166,7 @@ export const documentApi = baseApi.injectEndpoints({
       },
 
       invalidatesTags: (result, error, { id }) => [
+        ...documentUploadTags,
         "Document",
         {
           type: "Document",
@@ -843,6 +857,7 @@ export const documentApi = baseApi.injectEndpoints({
 // ================================================================
 
 export const {
+  useApproveDocumentMutation,
   // ------------------------------------------------------------
   // Documents
   // ------------------------------------------------------------

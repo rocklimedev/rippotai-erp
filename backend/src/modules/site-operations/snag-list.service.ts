@@ -165,4 +165,18 @@ export class SnagListService {
     if (!row) throw new NotFoundException('Snag list not found');
     return row;
   }
+
+  async remove(id: string) {
+    await this.model.sequelize!.transaction(async (transaction) => {
+      const row = await this.model.findByPk(id, {
+        attributes: ['id'],
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!row) throw new NotFoundException('Snag list not found');
+      await this.revisions.destroy({ where: { snag_list_id: id }, transaction });
+      await row.destroy({ transaction });
+    });
+    return { id, deleted: true };
+  }
 }

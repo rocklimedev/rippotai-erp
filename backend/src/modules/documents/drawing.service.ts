@@ -14,6 +14,7 @@ import { CreateDrawingDto } from './dto/create-drawing.dto';
 import { UpdateDrawingDto } from './dto/update-drawing.dto';
 import { CreateDrawingRevisionDto } from './dto/create-drawing-revision.dto';
 import { CdnService } from '../cdn/cdn.service';
+import { GateEngineService } from '../gates/gate-engine.service';
 
 const DRAWING_INCLUDES = [
   { model: DocumentType },
@@ -29,11 +30,32 @@ export class DrawingsService {
     @InjectModel(DrawingRevision)
     private readonly revisionModel: typeof DrawingRevision,
     private readonly cdnService: CdnService,
+    @InjectModel(DocumentType)
+    private readonly documentTypeModel: typeof DocumentType,
+    @InjectModel(DocumentRequirement)
+    private readonly requirementModel: typeof DocumentRequirement,
+    private readonly gateEngine: GateEngineService,
   ) {}
 
   async create(dto: CreateDrawingDto): Promise<Drawing> {
+    let requirementId = dto.requirementId;
+    if (dto.documentTypeId) {
+      const type = await this.documentTypeModel.findByPk(dto.documentTypeId);
+      if (!type) throw new NotFoundException('Drawing document type not found');
+      if (type.targetType !== 'DRAWING') {
+        throw new BadRequestException('Select a drawing checklist type');
+      }
+      const [requirement] = await this.requirementModel.findOrCreate({
+        where: { projectId: dto.projectId, documentTypeId: dto.documentTypeId },
+        defaults: { projectId: dto.projectId, documentTypeId: dto.documentTypeId, requirementType: type.requirementType } as any,
+      });
+      if (requirementId && requirementId !== requirement.id) {
+        throw new BadRequestException('Requirement does not match the selected project and drawing type');
+      }
+      requirementId = requirement.id;
+    }
     try {
-      return await this.drawingModel.create({ ...dto } as any);
+      return await this.drawingModel.create({ ...dto, requirementId } as any);
     } catch (error) {
       if (error instanceof UniqueConstraintError) {
         throw new ConflictException(
@@ -90,6 +112,33 @@ export class DrawingsService {
       }
       throw error;
     }
+  }
+
+  async approveUploaded(id: string, approvedBy: string): Promise<Drawing> {
+    const drawing = await this.findOne(id);
+    if (drawing.status === 'Superseded') {
+      throw new BadRequestException('Superseded drawings cannot be approved');
+    }
+    const revision = await this.revisionModel.findOne({
+      where: { drawingId: id }, order: [['created_at', 'DESC'], ['id', 'DESC']],
+    });
+    if (!revision || (!revision.storageFilename && !revision.url)) {
+      throw new BadRequestException('Upload a revision file before approving this drawing');
+    }
+    await revision.update({ status: 'Approved' });
+    await drawing.update({ status: 'Approved', approvedBy });
+    if (drawing.requirementId && drawing.documentTypeId) {
+      const sheets = await this.drawingModel.findAll({
+        where: { projectId: drawing.projectId, documentTypeId: drawing.documentTypeId },
+        attributes: ['status'],
+      });
+      const current = sheets.filter((sheet) => sheet.status !== 'Superseded');
+      const completed = current.length > 0 && current.every((sheet) => sheet.status === 'Approved');
+      const requirement = await this.requirementModel.findByPk(drawing.requirementId);
+      await requirement?.update({ isCompleted: completed, completedAt: completed ? new Date() : null });
+    }
+    await this.gateEngine.invalidateReadinessCache(drawing.projectId);
+    return drawing;
   }
 
   async remove(id: string): Promise<void> {
@@ -157,9 +206,15 @@ export class DrawingsService {
 
     // Keep the drawing's headline status/purpose in sync with its latest revision.
     await drawing.update({
-      status: dto.status ?? drawing.status,
+      status: dto.status ?? 'Draft',
+      approvedBy: null,
       issuePurpose: dto.issuePurpose ?? drawing.issuePurpose,
     } as any);
+    if (drawing.requirementId && dto.status !== 'Approved') {
+      const requirement = await this.requirementModel.findByPk(drawing.requirementId);
+      await requirement?.update({ isCompleted: false, completedAt: null });
+    }
+    await this.gateEngine.invalidateReadinessCache(drawing.projectId);
 
     return revision;
   }

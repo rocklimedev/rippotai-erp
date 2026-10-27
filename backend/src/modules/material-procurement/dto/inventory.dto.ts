@@ -81,7 +81,7 @@ export class CreateInventoryTransactionDto {
   transaction_type: InventoryTransactionType;
 
   @IsNumber()
-  @Min(0.001)
+  @Min(0)
   quantity: number;
 
   // ============================================================
@@ -210,7 +210,7 @@ export class IssueMaterialDto {
   transaction_date: string;
 
   @IsNumber()
-  @Min(0.001)
+  @Min(0)
   quantity: number;
 
   // ============================================================
@@ -295,7 +295,7 @@ export class AddInventoryDto {
   transaction_date: string;
 
   @IsNumber()
-  @Min(0.001)
+  @Min(0)
   quantity: number;
 
   // ============================================================
@@ -399,7 +399,7 @@ export class AdjustInventoryDto {
   transaction_date: string;
 
   @IsNumber()
-  @Min(0.001)
+  @Min(0)
   quantity: number;
 
   @IsEnum(InventoryDirection)
@@ -484,7 +484,7 @@ export class OpeningStockDto {
   transaction_date: string;
 
   @IsNumber()
-  @Min(0.001)
+  @Min(0)
   quantity: number;
 
   // ============================================================
@@ -572,7 +572,7 @@ export class TransferInventoryDto {
   transaction_date: string;
 
   @IsNumber()
-  @Min(0.001)
+  @Min(0)
   quantity: number;
 
   // ============================================================
@@ -680,7 +680,7 @@ export class ReturnInventoryDto {
   transaction_date: string;
 
   @IsNumber()
-  @Min(0.001)
+  @Min(0)
   quantity: number;
 
   @IsEnum([
@@ -824,7 +824,7 @@ export class ReceiveDeliveryInventoryDto {
   transaction_date: string;
 
   @IsNumber()
-  @Min(0.001)
+  @Min(0)
   quantity: number;
 
   /**

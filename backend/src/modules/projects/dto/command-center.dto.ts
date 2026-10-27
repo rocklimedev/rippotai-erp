@@ -70,6 +70,10 @@ export class ActivityQueryDto {
 }
 
 export class UploadDocumentDto {
+  @IsOptional()
+  @IsIn(['internal', 'external', 'public'])
+  visibility?: string;
+
   @ApiProperty({
     example: '550e8400-e29b-41d4-a716-446655440000',
   })

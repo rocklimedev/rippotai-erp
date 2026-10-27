@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import DeleteMaterialProcurement from "@/components/materials/DeleteMaterialProcurement";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Eye,
@@ -385,6 +386,7 @@ export default function MaterialProcurementSheetList() {
 
                         <td className="px-5 py-4">
                           <div className="flex justify-end gap-1">
+                            <DeleteMaterialProcurement procurement={procurement} iconOnly />
                             <Button
                               variant="ghost"
                               size="icon"

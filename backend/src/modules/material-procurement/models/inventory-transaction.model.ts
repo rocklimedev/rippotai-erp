@@ -233,7 +233,7 @@ export class InventoryTransaction extends Model<
   // ============================================================
 
   /**
-   * Always store quantity as a positive number.
+   * Store quantity as a non-negative number. Zero is allowed by business requirement.
    *
    * Direction determines whether it increases or decreases stock.
    *

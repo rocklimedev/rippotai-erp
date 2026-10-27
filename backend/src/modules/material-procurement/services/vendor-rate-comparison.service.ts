@@ -43,6 +43,13 @@ export class VendorRateComparisonService {
     return sheet;
   }
 
+  async remove(id: string) {
+    const sheet = await this.sheets.findByPk(id);
+    if (!sheet) throw new NotFoundException('Rate comparison sheet not found');
+    await sheet.destroy();
+    return { success: true, message: 'Rate comparison sheet deleted successfully', id };
+  }
+
   private validateSnapshot(dto: SaveVendorRateComparisonDto) {
     const s = dto.snapshot;
     if (!dto.title.trim())

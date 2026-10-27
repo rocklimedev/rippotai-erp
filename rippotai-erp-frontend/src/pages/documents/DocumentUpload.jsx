@@ -26,12 +26,13 @@ import {
 } from "../../api/documents/document.api";
 
 import { useGetProjectsQuery } from "../../api/projects/project.api";
+import { useUploadCommandCenterDocumentMutation } from "../../api/projects/command-center.api";
 
 /* ============================================================
    Upload Document
    ============================================================ */
 
-export function DocumentUpload() {
+export function DocumentUpload({ embedded = false, target, onCancel, onUploaded } = {}) {
   const nav = useNavigate();
   const location = useLocation();
 
@@ -42,6 +43,7 @@ export function DocumentUpload() {
   const searchParams = new URLSearchParams(location.search);
   const sequenceId = searchParams.get("sequence");
   const requestedName =
+    target?.name ||
     DOCUMENT_SEQUENCE.find(
       (item) => item.id === sequenceId && item.action === "upload",
     )?.name ||
@@ -49,10 +51,10 @@ export function DocumentUpload() {
     "";
 
   const initialProjectId =
-    searchParams.get("projectId") || searchParams.get("project_id") || "";
+    target?.projectId || target?.projectCode || searchParams.get("projectId") || searchParams.get("project_id") || "";
 
   const initialDocumentTypeId =
-    searchParams.get("documentTypeId") ||
+    target?.documentTypeId || searchParams.get("documentTypeId") ||
     searchParams.get("document_type_id") ||
     "";
 
@@ -76,8 +78,11 @@ export function DocumentUpload() {
      API
      ------------------------------------------------------------ */
 
-  const [createDocument, { isLoading: uploading }] =
+  const [createDocument, { isLoading: creating }] =
     useCreateDocumentMutation();
+  const [uploadCommandCenterDocument, { isLoading: uploadingFromCommandCenter }] =
+    useUploadCommandCenterDocumentMutation();
+  const uploading = creating || uploadingFromCommandCenter;
 
   const { data: projectsResponse, isLoading: projectsLoading } =
     useGetProjectsQuery({});
@@ -140,22 +145,28 @@ export function DocumentUpload() {
 
   useEffect(() => {
     if (!requestedName) return;
-    const matched = documentTypes.find(
-      (type) =>
-        normalizeDocumentName(type.name) ===
-          normalizeDocumentName(requestedName) ||
-        normalizeDocumentName(type.code) ===
-          normalizeDocumentName(requestedName),
-    );
     setForm((current) => ({
       ...current,
       projectId: initialProjectId,
       title: requestedName,
-      documentTypeId: initialDocumentTypeId || matched?.id || "",
+      documentTypeId: initialDocumentTypeId,
     }));
     setDocumentTypeSearch(requestedName);
     setFile(null);
-  }, [requestedName, initialProjectId, initialDocumentTypeId, documentTypes]);
+  }, [requestedName, initialProjectId, initialDocumentTypeId]);
+
+  useEffect(() => {
+    if (!requestedName || initialDocumentTypeId) return;
+    const matched = documentTypes.find((type) =>
+      normalizeDocumentName(type.name) === normalizeDocumentName(requestedName) ||
+      normalizeDocumentName(type.code) === normalizeDocumentName(requestedName),
+    );
+    if (matched) {
+      setForm((current) => current.documentTypeId ? current : {
+        ...current, documentTypeId: matched.id,
+      });
+    }
+  }, [requestedName, initialDocumentTypeId, documentTypes]);
 
   /* ------------------------------------------------------------
      Selected document type
@@ -316,7 +327,16 @@ export function DocumentUpload() {
         selectedDocumentType?.group ||
         "";
 
-      await createDocument({
+      if (target) {
+        const body = new FormData();
+        body.append("file", file);
+        body.append("documentTypeId", form.documentTypeId);
+        body.append("title", form.title.trim());
+        body.append("visibility", form.visibility);
+        body.append("remarks", form.remarks.trim());
+        await uploadCommandCenterDocument({ projectId: form.projectId, body }).unwrap();
+      } else {
+        await createDocument({
         data: {
           projectId: form.projectId,
 
@@ -344,12 +364,19 @@ export function DocumentUpload() {
           visibility: form.visibility,
 
           remarks: form.remarks.trim(),
+          docType: "upload",
         },
 
         file,
       }).unwrap();
+      }
 
       toast.success("Document uploaded successfully");
+
+      if (onUploaded) {
+        onUploaded();
+        return;
+      }
 
       const nextParams = new URLSearchParams();
       if (sequenceId) nextParams.set("sequence", sequenceId);
@@ -391,10 +418,11 @@ export function DocumentUpload() {
   const selectedProject = projects.find(
     (project) => String(project.id) === String(form.projectId),
   );
+  const Container = embedded ? React.Fragment : Page;
 
   return (
-    <Page width="form">
-      <PageHeader
+    <Container {...(embedded ? {} : { width: "form" })}>
+      {!embedded && <PageHeader
         crumbs={[
           { label: "Projects", to: "/projects" },
           { label: "Documents", to: "/projects/documents/all" },
@@ -402,7 +430,7 @@ export function DocumentUpload() {
         ]}
         title={requestedName ? `Upload ${requestedName}` : "Upload document"}
         subtitle="Attach a file to a project checklist — PDF, Excel, images or any other file up to 500 MB."
-      />
+      />}
 
       <form onSubmit={submit} className="inos-form">
         <FormSection
@@ -413,7 +441,7 @@ export function DocumentUpload() {
           <Field label="Project" required full>
             <SelectInput
               required
-              disabled={projectsLoading || uploading}
+              disabled={!!target || projectsLoading || uploading}
               value={form.projectId}
               onChange={(event) => updateField("projectId", event.target.value)}
             >
@@ -427,6 +455,9 @@ export function DocumentUpload() {
                     `Project ${project.id}`}
                 </option>
               ))}
+              {target && !selectedProject && (
+                <option value={form.projectId}>{target.projectName || form.projectId}</option>
+              )}
             </SelectInput>
           </Field>
 
@@ -447,7 +478,7 @@ export function DocumentUpload() {
             <div className="pj-combo">
               <TextInput
                 required
-                disabled={loadingDocumentTypes || uploading}
+                disabled={!!target || loadingDocumentTypes || uploading}
                 value={selectedDocumentType?.name || documentTypeSearch}
                 placeholder={
                   loadingDocumentTypes
@@ -526,6 +557,7 @@ export function DocumentUpload() {
             <TextInput
               required
               disabled={uploading}
+              maxLength={255}
               value={form.title}
               placeholder={
                 selectedDocumentType
@@ -578,7 +610,7 @@ export function DocumentUpload() {
               onChange={(value) => updateField("visibility", value)}
               options={[
                 { value: "internal", label: "Internal only", icon: Lock },
-                { value: "client", label: "Visible to client", icon: Eye },
+                { value: "external", label: "Visible to client", icon: Eye },
               ]}
             />
           </Field>
@@ -604,7 +636,7 @@ export function DocumentUpload() {
             <Button
               variant="ghost"
               disabled={uploading}
-              onClick={() => nav("/projects/documents/all")}
+              onClick={() => onCancel ? onCancel() : nav("/projects/documents/all")}
             >
               Cancel
             </Button>
@@ -626,6 +658,6 @@ export function DocumentUpload() {
           </div>
         </div>
       </form>
-    </Page>
+    </Container>
   );
 }

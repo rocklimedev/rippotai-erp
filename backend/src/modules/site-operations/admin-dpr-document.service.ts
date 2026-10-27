@@ -117,4 +117,11 @@ export class AdminDprDocumentService {
     if (!row) throw new NotFoundException('Saved DPR not found');
     return row;
   }
+
+  async remove(id: string) {
+    const row = await this.model.findByPk(id, { attributes: ['id'] });
+    if (!row) throw new NotFoundException('Saved DPR not found');
+    await row.destroy();
+    return { id, deleted: true };
+  }
 }

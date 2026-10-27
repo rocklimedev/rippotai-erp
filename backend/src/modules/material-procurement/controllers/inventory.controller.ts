@@ -15,6 +15,7 @@ import { InventoryService } from '../services/inventory.service';
 
 import {
   CreateInventoryTransactionDto,
+  AddInventoryDto,
   IssueMaterialDto,
   AdjustInventoryDto,
   TransferInventoryDto,
@@ -34,6 +35,12 @@ export class InventoryController {
   @Post('transactions')
   create(@Body() dto: CreateInventoryTransactionDto, @Req() req: any) {
     return this.inventoryService.create(dto, req.user?.id);
+  }
+
+  @RequirePermission('inventory:create')
+  @Post('receive')
+  receive(@Body() dto: AddInventoryDto, @Req() req: any) {
+    return this.inventoryService.receive(dto, req.user?.id);
   }
 
   // ============================================================

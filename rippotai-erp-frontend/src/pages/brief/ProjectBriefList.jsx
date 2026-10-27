@@ -211,7 +211,7 @@ export default function ProjectBriefList() {
     const projectName = getProjectName(brief);
 
     const confirmed = window.confirm(
-      `Are you sure you want to delete "${projectName}"?\n\nThis action cannot be undone.`,
+      `Delete the client brief for "${projectName}"?\n\nIt will be removed from active briefs. Its stored data and related records will be retained.`,
     );
 
     if (!confirmed) return;
@@ -444,7 +444,7 @@ export default function ProjectBriefList() {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDelete(brief)}
-                              disabled={isDeleting || currentStatus !== "DRAFT"}
+                              disabled={isDeleting || !["DRAFT", "READY_FOR_DESIGN"].includes(currentStatus)}
                               className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                               title="Delete"
                               data-testid={`project-brief-delete-${brief.id}`}

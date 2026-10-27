@@ -303,34 +303,18 @@ export class PurchaseOrderService {
     }
 
     // ----------------------------------------------------------
-    // Only draft POs can be permanently deleted.
-    // Approved/sent/received/cancelled POs should remain
-    // in the system for procurement/audit history.
-    // ----------------------------------------------------------
-
-    if (po.status !== PurchaseOrderStatus.DRAFT) {
-      throw new BadRequestException(
-        `Only draft purchase orders can be deleted. Current status is ${po.status}`,
-      );
-    }
-
-    // ----------------------------------------------------------
     // Delete child items first.
     // This prevents FK constraint errors when the database
     // relationship does not use ON DELETE CASCADE.
     // ----------------------------------------------------------
 
-    await this.purchaseOrderItemModel.destroy({
-      where: {
-        purchase_order_id: id,
-      },
+    await this.purchaseOrderModel.sequelize!.transaction(async (transaction) => {
+      await this.purchaseOrderItemModel.destroy({
+        where: { purchase_order_id: id },
+        transaction,
+      });
+      await po.destroy({ transaction });
     });
-
-    // ----------------------------------------------------------
-    // Delete purchase order
-    // ----------------------------------------------------------
-
-    await po.destroy();
 
     return {
       success: true,

@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
+import DeleteAdminDpr from "./DeleteAdminDpr";
 import { toast } from "sonner";
 import { Page, PageHeader, Card, Button } from "@/components/inos";
 import {
@@ -99,6 +100,7 @@ export default function AdminDprDetailPage() {
         subtitle={`Saved ${new Date(data.created_at).toLocaleString("en-IN")}${data.created_by_name ? ` by ${data.created_by_name}` : ""}`}
         actions={
           <div style={{ display: "flex", gap: 12 }}>
+            <DeleteAdminDpr document={data} onDeleted={() => navigate("/site-operations/admin-dpr")} />
             <Button onClick={() => navigate("/site-operations/admin-dpr")}>
               Back to records
             </Button>

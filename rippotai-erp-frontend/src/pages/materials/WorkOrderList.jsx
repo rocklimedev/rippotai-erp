@@ -217,9 +217,6 @@ const getTotalAmount = (workOrder) =>
 
 const canEdit = (status) => status !== "CLOSED" && status !== "CANCELLED";
 
-const canDelete = (status) =>
-  status === "DRAFT" || status === "PENDING_APPROVAL" || status === "APPROVED";
-
 export default function WorkOrderList() {
   const navigate = useNavigate();
 
@@ -896,19 +893,14 @@ export default function WorkOrderList() {
 
                                   {/* DELETE */}
 
-                                  {canDelete(currentStatus) && (
-                                    <>
-                                      <DropdownMenuSeparator />
-
-                                      <DropdownMenuItem
-                                        className="text-red-600 focus:text-red-600"
-                                        onClick={() => setDeleteId(id)}
-                                      >
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete
-                                      </DropdownMenuItem>
-                                    </>
-                                  )}
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="text-red-600 focus:text-red-600"
+                                    onClick={() => setDeleteId(id)}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>

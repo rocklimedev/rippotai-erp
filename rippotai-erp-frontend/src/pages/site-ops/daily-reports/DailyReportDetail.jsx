@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import {
   Pencil,
   Download,
-  Trash2,
   Share2,
   FileText,
   Users,
@@ -22,9 +21,9 @@ import { waitForPages } from "@/components/print-document/commerce";
 import {
   useGetDailySiteReportQuery,
   useShareDailySiteReportMutation,
-  useDeleteDailySiteReportMutation,
 } from "@/api/procuerment/site-ops.api";
 import DailyReportDocument, { reportRef } from "./DailyReportDocument";
+import DeleteDailyReport from "./DeleteDailyReport";
 import {
   weatherLabel,
   weatherIcon,
@@ -67,7 +66,6 @@ export default function DailyReportDetail() {
 
   const { data: r, isFetching, isError } = useGetDailySiteReportQuery(id, { skip: !id });
   const [share, { isLoading: sharing }] = useShareDailySiteReportMutation();
-  const [remove, { isLoading: deleting }] = useDeleteDailySiteReportMutation();
 
   const crumbs = [
     { label: "Site Operations", to: "/site-operations" },
@@ -123,17 +121,6 @@ export default function DailyReportDetail() {
     }
   };
 
-  const doDelete = async () => {
-    if (!window.confirm("Delete this daily report? This cannot be undone.")) return;
-    try {
-      await remove(r.id).unwrap();
-      toast.success("Report deleted");
-      nav(BASE);
-    } catch {
-      toast.error("Could not delete the report");
-    }
-  };
-
   return (
     <Page className="dsr-page">
       <PageHeader
@@ -149,7 +136,7 @@ export default function DailyReportDetail() {
         }
         actions={
           <>
-            <Button variant="ghost" icon={Trash2} onClick={doDelete} disabled={deleting} aria-label="Delete report" />
+            <DeleteDailyReport report={r} onDeleted={() => nav(BASE)} />
             {!r.isShared && r.status === "SUBMITTED" && (
               <Button variant="secondary" icon={Share2} onClick={doShare} loading={sharing}>Share with client</Button>
             )}

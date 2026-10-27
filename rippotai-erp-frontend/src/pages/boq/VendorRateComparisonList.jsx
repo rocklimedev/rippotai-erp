@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import DeleteRateComparison from "@/components/materials/DeleteRateComparison";
 import { Link } from "react-router-dom";
 import { Plus, FileSpreadsheet } from "lucide-react";
 import { Shell, Card } from "../../hooks/shared";
@@ -134,6 +135,7 @@ export default function VendorRateComparisonList() {
                       >
                         Open sheet
                       </Link>
+                      <DeleteRateComparison sheet={sheet} />
                     </td>
                   </tr>
                 ))}

@@ -214,6 +214,14 @@ export class CommandCenterService {
     );
   }
 
+  private async getProjectEvidence(projectId: string) {
+    const entries = await this.cache.getOrLoad('project-evidence:v1:' + projectId, async () => {
+      const types = await this.docTypeModel.findAll({ where: { isActive: true } });
+      return [...(await this.evidence.resolveMany(projectId, types)).entries()];
+    });
+    return new Map(entries);
+  }
+
   private async buildPortfolioReadModel() {
     const projects = await this.projectModel.findAll({
       include: [{ model: ProjectType, as: 'project_type' }],
@@ -294,7 +302,14 @@ export class CommandCenterService {
     );
   }
 
-  private async buildPhaseDetail(projectId: string, phaseId: string) {
+  private getPhaseSummary(projectId: string, phaseId: string) {
+    return this.cache.getOrLoad(
+      'phase-summary:' + JSON.stringify([projectId, phaseId]),
+      () => this.buildPhaseDetail(projectId, phaseId, false),
+    );
+  }
+
+  private async buildPhaseDetail(projectId: string, phaseId: string, includeGates = true) {
     const project = await this.mustFindProject(projectId);
     const phase = await this.phaseModel.findByPk(phaseId);
     if (!phase || phase.module !== this.getProjectModule(project))
@@ -320,14 +335,7 @@ export class CommandCenterService {
         })
       : [];
 
-    const evidenceByType = new Map(
-      await Promise.all(
-        docTypes.map(
-          async (type) =>
-            [type.id, await this.evidence.resolve(project.id, type)] as const,
-        ),
-      ),
-    );
+    const evidenceByType = await this.getProjectEvidence(project.id);
     const reqByTypeId = new Map(requirements.map((r) => [r.documentTypeId, r]));
     await Promise.all(
       docTypes.map(async (dt) => {
@@ -342,7 +350,7 @@ export class CommandCenterService {
       taskExecs.map((t) => [t.task_definition_id, t]),
     );
 
-    const gates = (await this.gateEngine.listProjectGates(project.id)).filter(
+    const gates = (includeGates ? await this.gateEngine.listProjectGates(project.id) : []).filter(
       (g) => g.phaseCode === phase.phase_code,
     );
     return {
@@ -453,6 +461,7 @@ export class CommandCenterService {
 
     const documents = await this.docModel.findAll({
       where: { projectId: project.id },
+      attributes: ['updatedAt'],
     });
 
     const taskExecs = await this.taskExecModel.findAll({
@@ -460,11 +469,12 @@ export class CommandCenterService {
     });
 
     const reqByTypeId = new Map(requirements.map((r) => [r.documentTypeId, r]));
+    const evidenceByType = await this.getProjectEvidence(project.id);
     for (const dt of docTypes) {
       const requirement = reqByTypeId.get(dt.id);
       reqByTypeId.set(dt.id, {
         ...(requirement?.get({ plain: true }) ?? {}),
-        isCompleted: await this.evidence.satisfied(project.id, dt),
+        isCompleted: evidenceByType.get(dt.id)?.satisfied ?? false,
       } as DocumentRequirement);
     }
 
@@ -701,7 +711,7 @@ export class CommandCenterService {
       );
       if (!currentPhase) continue;
 
-      const detail = await this.getPhaseDetail(row.id, currentPhase.id);
+      const detail = await this.getPhaseSummary(row.id, currentPhase.id);
       detail.docs
         .filter((d) => d.mandatory && d.status === 'MISSING')
         .forEach((d) =>
@@ -763,6 +773,7 @@ export class CommandCenterService {
       project: string;
       code: string;
       phase: string;
+      phaseCode: string;
       role: string;
     }> = [];
 
@@ -774,7 +785,7 @@ export class CommandCenterService {
       required += currentPhase.docsTotal;
       uploaded += currentPhase.docsDone;
 
-      const detail = await this.getPhaseDetail(row.id, currentPhase.id);
+      const detail = await this.getPhaseSummary(row.id, currentPhase.id);
       detail.docs
         .filter((d) => d.mandatory && d.status === 'MISSING')
         .forEach((d) =>
@@ -787,6 +798,7 @@ export class CommandCenterService {
             project: row.name,
             code: row.code,
             phase: currentPhase.name,
+            phaseCode: currentPhase.code,
             role: d.role,
           }),
         );
@@ -821,7 +833,7 @@ export class CommandCenterService {
         (p) => p.phaseNumber === row.currentPhaseSeq,
       );
       if (!currentPhase) continue;
-      const detail = await this.getPhaseDetail(row.id, currentPhase.id);
+      const detail = await this.getPhaseSummary(row.id, currentPhase.id);
       detail.tasks
         .filter((t) => t.mandatory && t.status !== TaskExecutionStatus.DONE)
         .forEach((t) =>
@@ -977,6 +989,7 @@ export class CommandCenterService {
       documentTypeId: docType.id,
       requirementId: requirement.id,
       title: dto.title ?? docType.name,
+      visibility: dto.visibility ?? 'internal',
       filename: file.originalname,
       storageFilename: upload.filename,
       url: upload.url,

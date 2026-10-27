@@ -2,6 +2,7 @@ import { RequirePermission } from '@/common/decorator/require-permission.decorat
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -19,6 +20,11 @@ import { SaveVendorRateComparisonDto } from '../dto/vendor-rate-comparison.dto';
 @UseGuards(JwtAuthGuard)
 export class VendorRateComparisonController {
   constructor(private readonly service: VendorRateComparisonService) {}
+  @RequirePermission('vendor-rate-comparisons:delete')
+  @Delete(':id')
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.remove(id);
+  }
   @RequirePermission('vendor-rate-comparisons:read')
   @Get()
   list(

@@ -4,6 +4,10 @@ export const vendorRateComparisonApi = baseApi
   .enhanceEndpoints({ addTagTypes: ["RateComparison"] })
   .injectEndpoints({
     endpoints: (builder) => ({
+      deleteRateComparison: builder.mutation({
+        query: (id) => ({ url: `/vendor-rate-comparisons/${id}`, method: "DELETE" }),
+        invalidatesTags: (r, e, id) => ["RateComparison", { type: "RateComparison", id }],
+      }),
       getRateComparisons: builder.query({
         query: (project_id) => ({
           url: "/vendor-rate-comparisons",
@@ -41,4 +45,5 @@ export const {
   useGetRateComparisonQuery,
   useCreateRateComparisonMutation,
   useUpdateRateComparisonMutation,
+  useDeleteRateComparisonMutation,
 } = vendorRateComparisonApi;

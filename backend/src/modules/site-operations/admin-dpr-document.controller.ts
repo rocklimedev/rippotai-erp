@@ -3,6 +3,7 @@ import { RequirePermission } from '@/common/decorator/require-permission.decorat
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -21,6 +22,11 @@ import { AdminDprDocumentService } from './admin-dpr-document.service';
 @Controller('dpr/admin-documents')
 export class AdminDprDocumentController {
   constructor(private readonly service: AdminDprDocumentService) {}
+  @RequirePermission('dpr-admin-documents:delete')
+  @Delete(':id')
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.remove(id);
+  }
   @AsyncExport('admin-dpr-save')
   @RequirePermission('dpr-admin-documents:create')
   @Post()

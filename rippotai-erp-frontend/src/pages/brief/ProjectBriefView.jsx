@@ -69,7 +69,7 @@ export function ProjectBriefView() {
     useDeleteProjectBriefMutation();
 
   const removeBrief = async () => {
-    if (!window.confirm("Delete this project brief? This cannot be undone."))
+    if (!window.confirm("Delete this client brief? It will be removed from active briefs. Its stored data and related records will be retained."))
       return;
     try {
       await deleteProjectBrief(id).unwrap();
@@ -178,7 +178,7 @@ export function ProjectBriefView() {
               variant="ghost"
               icon={Trash2}
               onClick={removeBrief}
-              disabled={deleting || brief.status !== "DRAFT"}
+              disabled={deleting || !["DRAFT", "READY_FOR_DESIGN"].includes(brief.status)}
             >
               Delete
             </Button>

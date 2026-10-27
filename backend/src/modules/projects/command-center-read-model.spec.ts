@@ -80,6 +80,40 @@ describe('Shared portfolio read model', () => {
     expect(service.projectModel.findAll).toHaveBeenCalledTimes(2);
   });
 
+  it('shares one evidence snapshot across concurrent views and rebuilds after writes', async () => {
+    const { service, cache } = setup();
+    service.docTypeModel = { findAll: jest.fn(async () => [{ id: 'type' }]) };
+    service.evidence = { resolveMany: jest.fn(async () => new Map([['type', { satisfied: true }]])) };
+    const [portfolio, phase] = await Promise.all([
+      service.getProjectEvidence('project'), service.getProjectEvidence('project'),
+    ]);
+    expect(portfolio.get('type').satisfied).toBe(true);
+    expect(phase.get('type').satisfied).toBe(true);
+    expect(service.evidence.resolveMany).toHaveBeenCalledTimes(1);
+    await service.getProjectEvidence('project');
+    expect(service.evidence.resolveMany).toHaveBeenCalledTimes(1);
+    await cache.invalidate();
+    await service.getProjectEvidence('project');
+    expect(service.evidence.resolveMany).toHaveBeenCalledTimes(2);
+    await service.getProjectEvidence('other-project');
+    expect(service.evidence.resolveMany).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not evaluate gates for summary panels, but does for expanded phase detail', async () => {
+    const { service } = setup();
+    service.mustFindProject = jest.fn(async () => ({ id: 'project' }));
+    service.phaseModel = { findByPk: jest.fn(async () => ({ id: 'phase', module: 'DOCUMENTS' })) };
+    service.docTypeModel = { findAll: jest.fn(async () => []) };
+    service.taskDefModel = { findAll: jest.fn(async () => []) };
+    service.taskExecModel = { findAll: jest.fn(async () => []) };
+    service.getProjectEvidence = jest.fn(async () => new Map());
+    service.gateEngine = { listProjectGates: jest.fn(async () => []) };
+    await service.getPhaseSummary('project', 'phase');
+    expect(service.gateEngine.listProjectGates).not.toHaveBeenCalled();
+    await service.getPhaseDetail('project', 'phase');
+    expect(service.gateEngine.listProjectGates).toHaveBeenCalledTimes(1);
+  });
+
   it('finishes one project before starting the next portfolio rollup', async () => {
     const { service } = setup();
     service.projectModel.findAll.mockResolvedValue([{ id: 'a' }, { id: 'b' }]);

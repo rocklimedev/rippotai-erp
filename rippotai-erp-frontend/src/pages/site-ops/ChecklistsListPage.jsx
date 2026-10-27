@@ -1,4 +1,5 @@
 import { useState } from "react";
+import DeleteChecklist from "./DeleteChecklist";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useGetProjectsQuery } from "../../api/projects/project.api";
@@ -167,6 +168,7 @@ export default function ChecklistsListPage() {
                       >
                         Download Excel
                       </button>
+                      <DeleteChecklist checklist={row} onDeleted={() => { if (list.data.length === 1 && page > 1) setPage(page - 1); }} />
                     </div>
                   </td>
                 </tr>

@@ -11,7 +11,7 @@ describe('Session lifetimes', () => {
     expires_at: new Date(now + 1140_000),
     last_used_at: new Date(now - 1000),
   };
-  it('accepts a recently used short-lived session', () => {
+  it('accepts a recently used session', () => {
     expect(() => assertSessionLifetime(payload, session, now)).not.toThrow();
   });
   it('rejects legacy week-long JWTs even if their database session is active', () => {
@@ -23,7 +23,14 @@ describe('Session lifetimes', () => {
       ),
     ).toThrow('Session expired');
   });
-  it('expires an idle session at ten minutes', () => {
+  it('accepts a day-long session after hours of inactivity', () => {
+    expect(() => assertSessionLifetime(
+      { iat: now / 1000 - 12 * 3600, exp: now / 1000 + 12 * 3600 },
+      { expires_at: new Date(now + 12 * 3600_000), last_used_at: new Date(now - 12 * 3600_000) },
+      now,
+    )).not.toThrow();
+  });
+  it('expires an idle session at one day', () => {
     expect(() =>
       assertSessionLifetime(
         payload,
@@ -50,6 +57,6 @@ describe('Session lifetimes', () => {
     expect(() =>
       assertSessionLifetime(payload, session, payload.exp * 1000),
     ).toThrow();
-    expect(ACCESS_TOKEN_SECONDS).toBe(1200);
+    expect(ACCESS_TOKEN_SECONDS).toBe(86400);
   });
 });

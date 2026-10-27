@@ -65,6 +65,8 @@ import {
 } from "../../api/documents/document.api";
 
 import { useGetProjectsQuery } from "../../api/projects/project.api";
+import { useAuth } from "@/context/AuthContext";
+import { useApproveDocumentMutation } from "../../api/documents/document.api";
 
 const ALL_PROJECTS = "__all__";
 
@@ -177,6 +179,8 @@ function Stat({ label, value, warn }) {
 ============================================================ */
 
 function DocumentTypeRow({ documentType, projectId, onUpload, onDownload }) {
+  const { user } = useAuth();
+  const [approveDocument, { isLoading: approving }] = useApproveDocumentMutation();
   const uploadCount = getUploadCount(documentType);
   const documentIds = getDocumentIds(documentType);
   const evidence = documentType?.evidence;
@@ -186,6 +190,15 @@ function DocumentTypeRow({ documentType, projectId, onUpload, onDownload }) {
   const isRequired = isRequiredDocument(documentType);
   const allowsMultiple = Boolean(documentType?.allowsMultiple);
   const latestDocumentId = getLatestDocumentId(documentType);
+  const canApprove = user?.permissions?.includes("documents:approve");
+  const approve = async () => {
+    try {
+      await approveDocument(latestDocumentId).unwrap();
+      toast.success("Document approved. Command Center checks updated.");
+    } catch (error) {
+      toast.error(error?.data?.message || "Could not approve document");
+    }
+  };
 
   return (
     <>
@@ -226,6 +239,12 @@ function DocumentTypeRow({ documentType, projectId, onUpload, onDownload }) {
         </div>
 
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+          {canApprove && !isNative && !isDrawing && latestDocumentId &&
+            !["approved", "archived"].includes(documentType.latestDocumentStatus) && (
+              <InosButton size="sm" variant="primary" icon={CheckCircle2} disabled={approving} onClick={approve}>
+                {approving ? "Approving…" : "Approve document"}
+              </InosButton>
+            )}
           {isNative || isDrawing ? (
             <InosButton size="sm" variant={isUploaded ? "secondary" : "primary"} icon={ArrowRight} onClick={() => onUpload(documentType, projectId)}>
               {isNative ? (evidence.recordId ? "Open source" : "Create") : "Open drawings"}
