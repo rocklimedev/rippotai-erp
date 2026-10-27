@@ -6,6 +6,7 @@ import { validateStorageKey } from './file-access';
 import { createReadStream } from 'fs';
 import { pipeline } from 'stream/promises';
 import type { Writable } from 'stream';
+import { streamSftpFile } from './sftp-stream';
 
 @Injectable()
 export class NasService {
@@ -79,7 +80,7 @@ export class NasService {
           const sourceHash = createHash('sha256');
           await pipeline(createReadStream(buffer), sourceHash);
           const remoteHash = createHash('sha256');
-          await pipeline(client.createReadStream(temporary), remoteHash);
+          await streamSftpFile(client, temporary, remoteHash);
           if (sourceHash.digest('hex') !== remoteHash.digest('hex'))
             throw new Error('NAS copy verification failed');
         } else {
@@ -113,7 +114,7 @@ export class NasService {
     validateStorageKey(key);
     await this.withClient(async (client, root) => {
       await client.stat(`${root}/${key}`);
-      await pipeline(client.createReadStream(`${root}/${key}`), destination);
+      await streamSftpFile(client, `${root}/${key}`, destination);
     });
   }
 
