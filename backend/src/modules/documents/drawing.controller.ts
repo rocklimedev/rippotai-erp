@@ -109,13 +109,29 @@ export class DrawingsController {
       return res.status(404).send({ message: 'Revision file not found' });
     }
 
+    if (res.destroyed || res.writableEnded) return;
     res.setHeader(
       'Content-Disposition',
       `attachment; filename="${(revision.filename ?? revision.storageFilename).replace(/["\r\n\\]/g, '_')}"`,
     );
     res.setHeader('Cache-Control', 'private, no-store, max-age=0');
     res.setHeader('Content-Type', revision.mime ?? 'application/octet-stream');
-    await this.drawingsService.streamFile(revision.storageFilename, res);
+    try {
+      await this.drawingsService.streamFile(revision.storageFilename, res);
+    } catch (error) {
+      // An aborted preview has no response left to send an exception to.
+      if (res.destroyed || res.writableEnded) return;
+      if (res.headersSent) {
+        res.destroy();
+        return;
+      }
+      res.removeHeader('Content-Type');
+      res.removeHeader('Content-Disposition');
+      if (['ENOENT', 2].includes((error as { code?: string | number }).code!)) {
+        return res.status(404).json({ message: 'Revision file not found' });
+      }
+      throw error;
+    }
   }
 
   @RequirePermission('drawings:delete')

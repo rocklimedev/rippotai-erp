@@ -10,6 +10,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { pipeline } from 'stream/promises';
 import type { Writable } from 'stream';
+import { streamSftpFile } from './sftp-stream';
 import { fileScope, validateStorageKey } from './file-access';
 
 const missingFile = (error: unknown) => {
@@ -186,10 +187,7 @@ export class NasStagingService {
             if (missingFile(error)) return false;
             throw error;
           }
-          await pipeline(
-            client.createReadStream(`${root}/${name}`),
-            destination,
-          );
+          await streamSftpFile(client, `${root}/${name}`, destination);
           return true;
         },
         read: async (name) => {

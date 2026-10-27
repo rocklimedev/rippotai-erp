@@ -11,6 +11,7 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { pipeline } from 'stream/promises';
 import type { Writable } from 'stream';
+import { streamSftpFile } from './sftp-stream';
 import { MAX_UPLOAD_BYTES, validateUploadType } from './upload-security';
 import { NasService } from './nas.service';
 import { NasStagingService } from './nas-staging.service';
@@ -164,10 +165,7 @@ export class CdnService {
     const sftp = await this.connect();
     try {
       await sftp.stat(`${root}/${storageFilename}`);
-      await pipeline(
-        sftp.createReadStream(`${root}/${storageFilename}`),
-        destination,
-      );
+      await streamSftpFile(sftp, `${root}/${storageFilename}`, destination);
     } finally {
       await sftp.end().catch(() => undefined);
     }

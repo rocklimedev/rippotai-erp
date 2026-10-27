@@ -9,6 +9,7 @@ import { useGetDrawingByIdQuery, useUpdateDrawingMutation } from "../../api/docu
 import { useGetProjectsQuery } from "../../api/projects/project.api";
 import { useGetUsersQuery } from "../../api/users/user.api";
 import { FileThumb, Chips } from "../design-studio/DrawingBits";
+import DrawingPreview from "../design-studio/DrawingPreview";
 import {
   STATUSES,
   errMessage,
@@ -70,6 +71,7 @@ export default function DrawingsView() {
   }
 
   const fileUrl = latest?.url || null;
+  const hasFile = !!(latest?.storageFilename || fileUrl);
   const kind = fileKind({ name: latest?.filename, mime: latest?.mime });
 
   const setStatus = async (status) => {
@@ -132,12 +134,10 @@ export default function DrawingsView() {
       <div className="ds-view">
         <Card flush>
           <div className="ds-preview">
-            {!fileUrl ? (
+            {!hasFile ? (
               <EmptyState icon={ImageOff} title="No file yet" text="Upload a revision to see the drawing here." />
-            ) : kind === "image" ? (
-              <img src={fileUrl} alt={drawing.title} />
-            ) : kind === "pdf" ? (
-              <iframe title="Drawing preview" src={fileUrl} />
+            ) : kind === "image" || kind === "pdf" ? (
+              <DrawingPreview key={`${drawing.id}:${latest.id}:${latest.storageFilename || latest.updatedAt || ""}`} drawingId={drawing.id} revision={latest} kind={kind} title={drawing.title} />
             ) : (
               <div style={{ display: "grid", justifyItems: "center", gap: 12, padding: 32, width: 260 }}>
                 <FileThumb name={latest?.filename} mime={latest?.mime} size="lg" />
