@@ -1,3 +1,6 @@
+import { DocumentUpload } from "./documents/DocumentUpload";
+import DrawingUploadPage from "./design-studio/DrawingUploadPage";
+import EvidenceDrawer from "@/components/command-center/EvidenceDrawer";
 import { useDispatch } from "react-redux";
 import "./CommandCenter.css";
 import { downloadDocument } from "../hooks/shared";
@@ -44,8 +47,6 @@ import {
   Pill,
   EmptyState,
   Progress,
-  Field,
-  TextArea,
 } from "@/components/inos";
 import {
   Dialog,
@@ -66,7 +67,6 @@ import {
   useGetProjectPhaseDetailQuery,
   useGetCommandCenterActionsQuery,
   useGetCommandCenterDocumentsQuery,
-  useUploadCommandCenterDocumentMutation,
   useCompleteCommandCenterTaskMutation,
   useGetCommandCenterCommercialQuery,
   useGetCommandCenterTeamWorkloadQuery,
@@ -403,6 +403,15 @@ export function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlas
                       )}
                     </span>
                     {d.evidence?.source === "UPLOAD" && d.evidence.recordId && (
+                      <Button variant="ghost" size="sm" onClick={() => onOpen?.viewEvidence?.({
+                        targetType: d.targetType, documentTypeId: d.id, name: d.name,
+                        projectId: project.id, projectName: project.name, projectCode: project.code,
+                        phaseCode: phase.code, phaseName: phaseTitle(phase.name), role: d.role,
+                      })}>
+                        {d.evidence.status?.toLowerCase() === "approved" ? "View" : "View & approve"}
+                      </Button>
+                    )}
+                    {d.evidence?.source === "UPLOAD" && d.evidence.recordId && (
                       <Button variant="ghost" size="sm" onClick={() => downloadDocument(d.evidence.recordId)}>
                         Download
                       </Button>
@@ -431,11 +440,13 @@ export function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlas
                         icon={UploadCloud}
                         title={
                           d.targetType === "DRAWING"
-                            ? "Submit and review this item through the drawings workflow"
+                            ? "Upload drawings for this checklist item"
                             : undefined
                         }
                         onClick={() =>
-                          d.targetType === "DRAWING" ? onOpen?.navigate(`/design-studio/all?project=${encodeURIComponent(project.id)}`) : onOpen?.uploadDoc?.({
+                          onOpen?.uploadDoc?.({
+                            targetType: d.targetType,
+                            phaseCode: phase.code,
                             documentTypeId: d.id,
                             name: d.name,
                             role: d.role,
@@ -446,7 +457,7 @@ export function PhaseDetailCard({ project, phase, canUpdateTasks, onOpen, onFlas
                           })
                         }
                       >
-                        {d.targetType === "DRAWING" ? "Open drawings" : d.evidence?.recordId ? "Replace upload" : "Upload"}
+                        {d.targetType === "DRAWING" ? "Upload drawing" : d.evidence?.recordId ? "Replace upload" : "Upload"}
                       </Button>
                     ) : (
                       <Pill tone="ok" size="sm">{sentence(d.status)}</Pill>
@@ -734,7 +745,7 @@ function ActionRequired({ onOpen }) {
 // POST /command-center/projects/:id/documents/upload
 // ------------------------------------------------------------
 
-function DocumentControl({ onOpen, onUploadDoc }) {
+function DocumentControl({ onOpen, onUploadDoc, onViewEvidence }) {
   const { data, isLoading, isError, error, refetch } =
     useGetCommandCenterDocumentsQuery(undefined, { refetchOnMountOrArgChange: 60 });
   const docStats = data?.stats || { required: 0, uploaded: 0, missing: 0 };
@@ -771,7 +782,13 @@ function DocumentControl({ onOpen, onUploadDoc }) {
               <button
                 type="button"
                 className="cc-row__text cc-row__text--link"
-                onClick={() => onOpen(ROUTES.documentsProject(doc.projectId))}
+                onClick={() => doc.evidence?.source === "DATABASE"
+                  ? onOpen(doc.evidence.actionUrl || ROUTES.documentsProject(doc.projectId))
+                  : onViewEvidence({
+                    targetType: doc.targetType, documentTypeId: doc.id, name: doc.name,
+                    projectId: doc.projectId, projectName: doc.project, projectCode: doc.code,
+                    phaseCode: doc.phaseCode, phaseName: doc.phase, role: doc.role,
+                  })}
               >
                 <span className="cc-row__title">
                   <span className="cc-truncate">{doc.name}</span>
@@ -781,20 +798,26 @@ function DocumentControl({ onOpen, onUploadDoc }) {
                 </span>
               </button>
               <Pill tone="bad" size="sm">Missing</Pill>
+              {doc.evidence?.source === "UPLOAD" && doc.evidence.recordId && <Button variant="ghost" size="sm" onClick={() => onViewEvidence({
+                targetType: doc.targetType, documentTypeId: doc.id, name: doc.name,
+                projectId: doc.projectId, projectName: doc.project, projectCode: doc.code,
+                phaseCode: doc.phaseCode, phaseName: doc.phase, role: doc.role,
+              })}>{doc.evidence.status?.toLowerCase() === "approved" ? "View" : "View & approve"}</Button>}
               <Button
                 variant="soft"
                 size="sm"
                 icon={doc.evidence?.source === "DATABASE" ? ArrowRight : UploadCloud}
-                disabled={doc.evidence?.source !== "DATABASE" && doc.targetType === "DRAWING"}
                 title={
                   doc.targetType === "DRAWING"
-                    ? "Submit and review this item through the drawings workflow"
+                    ? "Upload drawings for this checklist item"
                     : undefined
                 }
                 onClick={() =>
                   doc.evidence?.source === "DATABASE"
                     ? onOpen(doc.evidence.actionUrl)
                     : onUploadDoc({
+                        targetType: doc.targetType,
+                        phaseCode: doc.phaseCode,
                         projectId: doc.projectId,
                         documentTypeId: doc.id,
                         name: doc.name,
@@ -808,7 +831,7 @@ function DocumentControl({ onOpen, onUploadDoc }) {
                 {doc.evidence?.source === "DATABASE"
                   ? "Open source"
                   : doc.targetType === "DRAWING"
-                    ? "Drawing required"
+                    ? "Upload drawing"
                     : "Upload"}
               </Button>
             </div>
@@ -1130,117 +1153,31 @@ function ActivityTimeline() {
 // UPLOAD DOCUMENT MODAL — POST /command-center/projects/:id/documents/upload
 // ------------------------------------------------------------
 
-export function UploadDocumentModal({ target, onClose, onUploaded, onFlash }) {
-  const [file, setFile] = useState(null);
-  const [dragOver, setDragOver] = useState(false);
-  const [notes, setNotes] = useState("");
-  const [uploadDocument, { isLoading: submitting }] =
-    useUploadCommandCenterDocumentMutation();
-
+export function UploadDocumentModal({ target, onClose, onUploaded }) {
+  const [busy, setBusy] = useState(false);
   if (!target) return null;
-
-  const handleFiles = (fileList) => {
-    if (fileList && fileList[0]) setFile(fileList[0]);
-  };
-
-  const handleSubmit = async () => {
-    if (!file || submitting) return;
-    const body = new FormData();
-    body.append("file", file);
-    body.append("documentTypeId", target.documentTypeId);
-    if (notes) body.append("remarks", notes);
-
-    try {
-      await uploadDocument({
-        projectId: target.projectId ?? target.projectCode,
-        body,
-      }).unwrap();
-      onUploaded(target, file.name);
-      setFile(null);
-      setNotes("");
-    } catch (e) {
-      onFlash?.(e?.data?.message || "Upload failed. Please try again.");
-    }
-  };
-
+  const isDrawing = target.targetType === "DRAWING";
+  const UploadForm = isDrawing ? DrawingUploadPage : DocumentUpload;
   return (
-    <Dialog open={!!target} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="cc-upload-modal sm:max-w-lg p-0 gap-0 overflow-hidden">
+    <Dialog open onOpenChange={(open) => !open && !busy && onClose()}>
+      <DialogContent className={`cc-upload-modal ${isDrawing ? "sm:max-w-6xl" : "sm:max-w-3xl"} p-0 gap-0 max-h-[90vh] overflow-y-auto`}>
         <DialogHeader className="cc-upload-modal__head">
-          <DialogTitle className="inos-section-title">Upload document</DialogTitle>
+          <DialogTitle className="inos-section-title">{isDrawing ? "Upload drawings" : "Upload document"}</DialogTitle>
         </DialogHeader>
         <div className="cc-upload-modal__body inos-modal-body">
-          <div className="cc-upload-target">
-            <span className="inos-icon-tile">
-              <FileText aria-hidden />
-            </span>
-            <div style={{ minWidth: 0 }}>
-              <p className="cc-row__title">{target.name}</p>
-              <p className="cc-row__meta">
-                {target.projectName} · {target.phaseName} · Owner {target.role}
-              </p>
-            </div>
-          </div>
-
-          <Field label="File" required hint="PDF, image or Office document">
-            <label
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragOver(true);
-              }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragOver(false);
-                handleFiles(e.dataTransfer.files);
-              }}
-              className={cn("cc-drop", dragOver && "is-over", file && "has-file")}
-            >
-              <span className="inos-icon-tile">
-                <UploadCloud aria-hidden />
-              </span>
-              {file ? (
-                <span className="cc-row__title">{file.name}</span>
-              ) : (
-                <span className="cc-drop__text">
-                  Drag a file here, or <u>browse</u>
-                </span>
-              )}
-              <input
-                type="file"
-                className="sr-only"
-                onChange={(e) => handleFiles(e.target.files)}
-              />
-            </label>
-          </Field>
-
-          <Field label="Notes" optional>
-            <TextArea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              placeholder="Anything the reviewer should know about this file"
-            />
-          </Field>
-        </div>
-        <div className="cc-upload-modal__foot">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            icon={submitting ? undefined : UploadCloud}
-            disabled={!file || submitting}
-            onClick={handleSubmit}
-          >
-            {submitting ? "Uploading…" : "Upload document"}
-          </Button>
+          <UploadForm
+            key={`${target.projectId ?? target.projectCode}:${target.documentTypeId}`}
+            embedded
+            target={target}
+            onCancel={onClose}
+            onBusyChange={setBusy}
+            onUploaded={() => { setBusy(false); onUploaded(target); }}
+          />
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-
 // ------------------------------------------------------------
 // TAB NAVIGATION
 // ------------------------------------------------------------
@@ -1300,6 +1237,7 @@ export default function CommandCenter() {
   const navigate = useNavigate();
   const [toast, setToast] = useState("");
   const [uploadTarget, setUploadTarget] = useState(null);
+  const [evidenceTarget, setEvidenceTarget] = useState(null);
   const [activeTab, setActiveTab] = useState("portfolio");
   const pollingInterval = usePollingInterval(60_000, live);
 
@@ -1410,6 +1348,7 @@ export default function CommandCenter() {
             <Button icon={RefreshCw} onClick={handleRescan} disabled={kpiLoading || refreshState.isLoading} className={kpiLoading || refreshState.isLoading ? "cc-refreshing" : undefined}>
               {kpiLoading ? "Refreshing" : "Rescan"}
             </Button>
+            <Button icon={FileText} onClick={() => setEvidenceTarget({})}>Documents & drawings</Button>
             {user?.permissions?.includes("projects:create") && (
               <Button variant="primary" icon={Plus} onClick={() => navigate("/projects/new")}>
                 New project
@@ -1516,7 +1455,7 @@ export default function CommandCenter() {
                 }
                 onOpenProject={(code) => navigate(ROUTES.project(code))}
                 canUpdateTasks={canUpdateTasks}
-                onOpen={{ navigate, uploadDoc: setUploadTarget }}
+                onOpen={{ navigate, uploadDoc: setUploadTarget, viewEvidence: setEvidenceTarget }}
                 onFlash={flashToast}
                 onClearFilters={
                   healthFilter !== "all" || search
@@ -1536,7 +1475,7 @@ export default function CommandCenter() {
 
         {/* DOCUMENT CONTROL TAB */}
         {activeTab === "documents" && (
-          <DocumentControl onOpen={navigate} onUploadDoc={setUploadTarget} />
+          <DocumentControl onOpen={navigate} onUploadDoc={setUploadTarget} onViewEvidence={setEvidenceTarget} />
         )}
 
         {/* SITE EXECUTION TAB */}
@@ -1566,6 +1505,11 @@ export default function CommandCenter() {
         />
       )}
 
+      {evidenceTarget && <EvidenceDrawer
+        key={`${evidenceTarget.projectId || "browse"}:${evidenceTarget.documentTypeId || "all"}`}
+        target={evidenceTarget}
+        onClose={() => setEvidenceTarget(null)}
+      />}
       <Toast message={toast} />
     </Page>
   );

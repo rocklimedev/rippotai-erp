@@ -240,21 +240,21 @@ describe('Closed signup and verified email onboarding', () => {
     expect(sessions.create).not.toHaveBeenCalled();
   });
 
-  it('issues a twenty-minute token and rejects server-side idle expiry', async () => {
+  it('issues a one-day token and rejects server-side idle expiry', async () => {
     user.email_verified_at = new Date();
     user.email_verified_address = user.email;
     const result = await auth.login(user.email, password);
     const payload = decode(result.token) as any;
-    expect(payload.exp - payload.iat).toBe(1200);
+    expect(payload.exp - payload.iat).toBe(86400);
     const created = sessions.create.mock.calls[0][0];
     expect(
       created.expires_at.getTime() - created.last_used_at.getTime(),
-    ).toBeLessThanOrEqual(1200_000);
+    ).toBeLessThanOrEqual(86400_000);
     sessions.findByHash.mockResolvedValueOnce({
       id: 'idle-session',
       user,
       expires_at: new Date(Date.now() + 60_000),
-      last_used_at: new Date(Date.now() - 600_000),
+      last_used_at: new Date(Date.now() - 86400_000),
       revoked_at: null,
     });
     await expect(auth.getCurrentUserFromPayload(payload)).rejects.toThrow(

@@ -1,7 +1,7 @@
 // Design Studio → Upload drawings.
 // Full-width batch uploader: drop zone + queue (left), details for the selected file(s) (right),
 // recent drawings of the chosen project underneath the queue so the page never sits empty.
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -39,6 +39,7 @@ import {
 } from "@/api/documents/drawing.api";
 import { useGetProjectsQuery } from "@/api/projects/project.api";
 import { useGetUsersQuery } from "@/api/users/user.api";
+import { useGetDocumentTypesQuery } from "@/api/documents/document.api";
 
 import { FileThumb, ProjectPicker } from "./DrawingBits";
 import {
@@ -69,17 +70,18 @@ const MAX_BYTES = 500 * 1024 * 1024;
 const today = () => new Date().toISOString().slice(0, 10);
 let keySeq = 0;
 
-export default function DrawingUploadPage() {
+export default function DrawingUploadPage({ embedded = false, target, onCancel, onUploaded, onBusyChange } = {}) {
   const nav = useNavigate();
   const dispatch = useDispatch();
   const [params] = useSearchParams();
   const { user } = useAuth();
 
-  const presetDrawingId = params.get("drawing") || "";
-  const [projectId, setProjectId] = useState(params.get("project") || "");
+  const presetDrawingId = target ? "" : params.get("drawing") || "";
+  const [projectId, setProjectId] = useState(target?.projectId || params.get("project") || "");
   const [defaults, setDefaults] = useState(() => ({
-    title: "",
-    phaseCode: "05_DESIGN",
+    title: target?.name || "",
+    documentTypeId: target?.documentTypeId || params.get("documentTypeId") || "",
+    phaseCode: target?.phaseCode || "05_DESIGN",
     revision: "",
     issueDate: today(),
     sheetNumber: "",
@@ -91,19 +93,23 @@ export default function DrawingUploadPage() {
   const [selected, setSelected] = useState([]);
   const [over, setOver] = useState(false);
   const [busy, setBusy] = useState(false);
+  useEffect(() => { onBusyChange?.(busy); }, [busy, onBusyChange]);
   const [triedSubmit, setTriedSubmit] = useState(false);
   const inputRef = useRef(null);
   const presetUsed = useRef(false);
 
   const { data: projects = [] } = useGetProjectsQuery({});
   const { data: users = [] } = useGetUsersQuery({});
+  const { data: typesResponse = [] } = useGetDocumentTypesQuery({ isActive: true });
+  const drawingTypes = (Array.isArray(typesResponse) ? typesResponse : typesResponse.items || typesResponse.data || [])
+    .filter((type) => type.targetType === "DRAWING");
   const { data: projectDrawings = [], isFetching: drawingsLoading } = useGetDrawingsQuery(
     projectId ? { projectId } : {},
   );
   const { data: presetDrawing } = useGetDrawingByIdQuery(presetDrawingId, { skip: !presetDrawingId });
   const [createDrawing] = useCreateDrawingMutation();
 
-  const project = projects.find((p) => p.id === projectId);
+  const project = projects.find((p) => p.id === projectId) || (target ? { id: projectId, name: target.projectName } : null);
   const userList = Array.isArray(users) ? users : users?.data || [];
 
   // current user = default "drawn by"
@@ -321,11 +327,15 @@ export default function DrawingUploadPage() {
       patch(it.key, { state: "uploading", progress: 0, error: null });
       try {
         const existing = existingByNumber.get(String(it.drawingNumber).toUpperCase());
+        if (it.documentTypeId && existing && existing.documentTypeId !== it.documentTypeId) {
+          throw new Error("This drawing number belongs to a different checklist item. Choose a different drawing number.");
+        }
         let drawingId = it.drawingId || existing?.id;
         if (!drawingId) {
           const created = await createDrawing(
             clean({
               projectId,
+              documentTypeId: it.documentTypeId,
               title: it.title.trim(),
               drawingNumber: it.drawingNumber.trim(),
               phaseCode: it.phaseCode,
@@ -359,10 +369,16 @@ export default function DrawingUploadPage() {
     setBusy(false);
     setSelected([]);
     setTriedSubmit(false);
-    dispatch(drawingApi.util.invalidateTags([{ type: "Drawing", id: "LIST" }]));
+    dispatch(drawingApi.util.invalidateTags([
+      "Drawing", "DrawingRevision", "DocumentRequirement", "ProjectDocumentPhase", "DocumentDashboard",
+      "CommandCenterKpis", "CommandCenterPortfolio", "CommandCenterProjectPhases",
+      "CommandCenterActions", "CommandCenterDocuments", "CommandCenterTasks",
+      "CommandCenterCommercial", "CommandCenterTeamWorkload", "CommandCenterActivity", "CommandCenterGates",
+    ]));
     const failed = snapshot.length - ok;
     if (ok) toast.success(`${ok} drawing${ok > 1 ? "s" : ""} uploaded to ${project?.name || "the project"}`);
     if (failed) toast.error(`${failed} upload${failed > 1 ? "s" : ""} failed — see the queue`);
+    if (ok && !failed) onUploaded?.();
   };
 
   /* ------------------------------------------------ recent panel data */
@@ -404,9 +420,10 @@ export default function DrawingUploadPage() {
   );
 
 
+  const Container = embedded ? Fragment : Page;
   return (
-    <Page>
-      <PageHeader
+    <Container>
+      {!embedded && <PageHeader
         crumbs={[{ label: "Design Studio", to: "/design-studio" }, { label: "Drawings", to: "/design-studio/all" }, { label: "Upload" }]}
         title={presetDrawing ? `New revision · ${presetDrawing.drawingNumber}` : "Upload drawings"}
         subtitle="Drop in PDFs, CAD files or images, tag them once, and they land in the project's drawing register with revision history."
@@ -420,7 +437,7 @@ export default function DrawingUploadPage() {
             </Button>
           </>
         }
-      />
+      />}
 
       <div className="ds-upload">
         {/* ============================== LEFT: drop + queue + recent */}
@@ -722,11 +739,20 @@ export default function DrawingUploadPage() {
                 <h3 className="ds-group__title">Project</h3>
               </div>
               <Field label="Project" required error={triedSubmit && !projectId ? "Choose a project" : null} hint="Applies to the whole batch">
-                <ProjectPicker id="ds-project" projects={projects} value={projectId} onChange={setProjectId} invalid={triedSubmit && !projectId} />
+                {target ? <TextInput value={target.projectName || projectId} disabled /> : <ProjectPicker id="ds-project" projects={projects} value={projectId} onChange={setProjectId} invalid={triedSubmit && !projectId} />}
+              </Field>
+              <Field label="Checklist drawing type" required={!!target} optional={!target}>
+                {target ? <TextInput value={target.name} disabled /> : (
+                  <SelectInput {...bindText("documentTypeId")}>
+                    <option value="">No checklist item</option>
+                    {drawingTypes.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}
+                  </SelectInput>
+                )}
               </Field>
               <div className="ds-grid2">
                 <Field label="Phase" htmlFor="ds-phase">
                   <SelectInput id="ds-phase" {...bindText("phaseCode")} placeholder={valueOf("phaseCode") === MIXED ? "Mixed" : undefined}>
+                    {target?.phaseCode && !PHASES.some((phase) => phase.value === target.phaseCode) && <option value={target.phaseCode}>{target.phaseName || target.phaseCode}</option>}
                     {PHASES.map((p) => (
                       <option key={p.value} value={p.value}>
                         {p.label}
@@ -845,6 +871,7 @@ export default function DrawingUploadPage() {
         </aside>
       </div>
 
+      {embedded && <Button variant="ghost" disabled={busy} onClick={onCancel}>Cancel</Button>}
       <div className="ds-actionbar">
         <FormActions
           note={
@@ -869,6 +896,6 @@ export default function DrawingUploadPage() {
           onSubmit={uploadAll}
         />
       </div>
-    </Page>
+    </Container>
   );
 }

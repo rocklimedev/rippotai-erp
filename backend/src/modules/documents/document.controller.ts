@@ -153,6 +153,12 @@ export class DocumentsController {
     return this.documentsService.findOne(id);
   }
 
+  @RequirePermission('documents:approve')
+  @Post(':id/approve')
+  approve(@Param('id', ParseUUIDPipe) id: string) {
+    return this.documentsService.approveUploaded(id);
+  }
+
   /**
    * PATCH /documents/:id
    */

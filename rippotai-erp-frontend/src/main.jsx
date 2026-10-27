@@ -8,8 +8,7 @@ import App from "./App.jsx";
 import { store } from "./store"; // adjust path to wherever this store file lives
 import { initializeSession } from './lib/session';
 
-initializeSession();
-
+Promise.resolve(initializeSession()).then(() => {
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <Provider store={store}>
@@ -17,3 +16,4 @@ createRoot(document.getElementById("root")).render(
     </Provider>
   </StrictMode>,
 );
+});

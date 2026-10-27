@@ -21,6 +21,27 @@ Registered Sequelize hooks invalidate the shared version on saves, destroys and 
 
 ## Evaluation and next step
 
+### Batched evidence reads
+
+Command Center loads upload and drawing status metadata with at most two queries
+per project evidence build, instead of a query per catalogue type. It selects
+only IDs, type IDs and statuses; it does not download or parse file contents.
+The latest document still supersedes older approvals, all current drawing sheets
+must satisfy the review policy, and superseded drawings are ignored. Native
+source checks retain their existing rules and run with at most four concurrent
+queries per evidence build.
+
+Portfolio rollups and phase panels share a cached per-project evidence snapshot.
+Document, drawing, source-record and catalogue changes invalidate it through the
+existing versioned cache hooks. Concurrent requests coalesce into one build.
+Summary panels for actions, documents and task QC omit gate readiness evaluation;
+expanded phase details still load it. Activity detection reads document update
+timestamps rather than complete document records.
+
+Regression tests assert query counts and evidence correctness. Production latency
+has not been benchmarked; total time still depends on project counts, native
+source queries, database performance and cold-cache builds.
+
 The current approach removes duplicate full-project and site QC reads across the shared projection consumers and avoids repeating covered aggregate queries on cache hits. Cold builds still perform per-project phase/evidence work; invalidation is broad, and multiple API processes may rebuild simultaneously. Under heavy write load these costs may dominate.
 
 Before adding durable projections, measure database query count and duration, cache hit ratio, refresh failures, cold-build duration, concurrent builders, and endpoint p95/p99 with realistic project counts and read/write traffic. If cold builds or broad invalidation remain the bottleneck, introduce a transactional outbox, per-project durable projections, idempotent workers, explicit projection versions and lag monitoring, then derive portfolio totals from those projections. That architecture is evaluated here but is not implemented.

@@ -42,6 +42,23 @@ describe('Saved vendor rate comparison sheets', () => {
     service = new VendorRateComparisonService(sheets, projects, boqs);
   });
 
+  it('deletes a saved comparison sheet', async () => {
+    const destroy = jest.fn().mockResolvedValue(undefined);
+    sheets.findByPk.mockResolvedValue({ id: 'sheet-1', destroy });
+    await expect(service.remove('sheet-1')).resolves.toMatchObject({ success: true, id: 'sheet-1' });
+    expect(destroy).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns not found when deleting a missing sheet', async () => {
+    sheets.findByPk.mockResolvedValue(null);
+    await expect(service.remove('missing')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('reports a failed deletion', async () => {
+    sheets.findByPk.mockResolvedValue({ destroy: jest.fn().mockRejectedValue(new Error('Delete failed')) });
+    await expect(service.remove('sheet-1')).rejects.toThrow('Delete failed');
+  });
+
   it('persists a named project/BOQ snapshot and restores it by ID', async () => {
     const saved = await service.create(body(), 'user-1');
     expect(saved.title).toBe('Finishes comparison');

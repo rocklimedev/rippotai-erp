@@ -680,8 +680,11 @@ export class ProjectBriefsService {
       throw new NotFoundException('Project brief not found');
     }
 
-    this.assertEditable(brief);
-    await brief.destroy();
+    if (![ProjectBriefStatus.DRAFT, ProjectBriefStatus.READY_FOR_DESIGN].includes(brief.status)) {
+      throw new BadRequestException('Only draft or ready-for-design briefs can be deleted');
+    }
+    // ProjectBrief is paranoid: retain the brief and all related records.
+    await brief.destroy({ force: false });
 
     return {
       success: true,

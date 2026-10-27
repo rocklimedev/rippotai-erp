@@ -1,7 +1,7 @@
 import { UnauthorizedException } from '@nestjs/common';
 
-export const ACCESS_TOKEN_SECONDS = 20 * 60;
-export const SESSION_IDLE_MS = 10 * 60 * 1000;
+export const ACCESS_TOKEN_SECONDS = 24 * 60 * 60;
+export const SESSION_IDLE_MS = ACCESS_TOKEN_SECONDS * 1000;
 
 export function assertSessionLifetime(
   payload: { iat?: number; exp?: number },

@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -34,6 +35,11 @@ export class SnagListController {
     private readonly service: SnagListService,
     private readonly cdn: CdnService,
   ) {}
+  @RequirePermission('site-ops-snag-lists:delete')
+  @Delete(':id')
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.remove(id);
+  }
   @AsyncExport('snag-create')
   @RequirePermission('site-ops-snag-lists:create')
   @Post()

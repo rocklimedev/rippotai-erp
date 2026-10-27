@@ -4,12 +4,38 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle2, CloudUpload, Eye, FileStack, HardHat, LayoutGrid, List, Layers } from "lucide-react";
 
 import { Page, PageHeader, Card, Button, Stats, StatTile, SearchInput, Segmented, Pill, EmptyState, SelectInput } from "@/components/inos";
-import { useGetDrawingsQuery } from "@/api/documents/drawing.api";
+import { useGetDrawingsQuery, useApproveDrawingMutation } from "@/api/documents/drawing.api";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 import { useGetProjectsQuery } from "@/api/projects/project.api";
 
 import { FileThumb } from "./DrawingBits";
 import { DISCIPLINES, STATUSES, formatBytes, formatDate, latestRevision, phaseLabel, statusTone, updatedAt } from "./drawingUtils";
 import "./drawings.css";
+
+function ApproveDrawingButton({ drawing }) {
+  const { user } = useAuth();
+  const [approveDrawing, { isLoading }] = useApproveDrawingMutation();
+  const revision = latestRevision(drawing);
+  if (!user?.permissions?.includes("documents:approve") ||
+      ["Approved", "Superseded"].includes(drawing.status) ||
+      (!revision?.url && !revision?.storageFilename)) return null;
+  return (
+    <Button size="sm" variant="primary" icon={CheckCircle2} disabled={isLoading}
+      onKeyDown={(event) => event.stopPropagation()}
+      onClick={async (event) => {
+        event.stopPropagation();
+        try {
+          await approveDrawing(drawing.id).unwrap();
+          toast.success("Drawing approved. Command Center checks updated.");
+        } catch (error) {
+          toast.error(error?.data?.message || "Could not approve drawing");
+        }
+      }}>
+      {isLoading ? "Approving…" : "Approve drawing"}
+    </Button>
+  );
+}
 
 export default function DrawingsRegister() {
   const nav = useNavigate();
@@ -144,7 +170,7 @@ export default function DrawingsRegister() {
           {filtered.slice(0, shown).map((d) => {
             const rev = latestRevision(d);
             return (
-              <button type="button" key={d.id} className="ds-dcard" onClick={() => nav(`/design-studio/${d.id}`)} data-testid={`drawing-card-${d.id}`}>
+              <div role="link" tabIndex={0} key={d.id} className="ds-dcard" onClick={() => nav(`/design-studio/${d.id}`)} onKeyDown={(event) => { if (event.key === "Enter") nav(`/design-studio/${d.id}`); }} data-testid={`drawing-card-${d.id}`}>
                 <FileThumb name={rev?.filename || d.drawingNumber} mime={rev?.mime} src={rev?.url} size="lg" />
                 <div className="ds-dcard__body">
                   <span className="ds-dcard__num">{d.drawingNumber}</span>
@@ -162,7 +188,8 @@ export default function DrawingsRegister() {
                     </Pill>
                   </div>
                 </div>
-              </button>
+                <ApproveDrawingButton drawing={d} />
+              </div>
             );
           })}
         </div>
@@ -182,6 +209,7 @@ export default function DrawingsRegister() {
                   <th>Sheet</th>
                   <th className="num">Size</th>
                   <th>Updated</th>
+                  <th>Approval</th>
                 </tr>
               </thead>
               <tbody>
@@ -209,6 +237,7 @@ export default function DrawingsRegister() {
                       <td className="muted">{[d.sheetSize, d.scale].filter(Boolean).join(" · ") || "—"}</td>
                       <td className="num muted">{formatBytes(rev?.size)}</td>
                       <td className="muted">{formatDate(updatedAt(d))}</td>
+                      <td><ApproveDrawingButton drawing={d} /></td>
                     </tr>
                   );
                 })}

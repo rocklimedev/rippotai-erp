@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
+import DeleteSnagList from "./DeleteSnagList";
 import { toast } from "sonner";
 import { Page, PageHeader, Card, Button } from "@/components/inos";
 import {
@@ -34,6 +35,7 @@ export default function SnagListDetailPage() {
         subtitle={`${data.project_name} · ${data.document_date} · Revision ${data.revision}`}
         actions={
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <DeleteSnagList document={data} onDeleted={() => navigate("/site-operations/snag-lists")} />
             <Button onClick={() => navigate("/site-operations/snag-lists")}>
               Back to list
             </Button>

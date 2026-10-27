@@ -1802,6 +1802,16 @@
   {
     "module": "documents",
     "controller": "DocumentsController",
+    "handler": "approve",
+    "method": "POST",
+    "path": "/documents/:id/approve",
+    "permission": "documents:approve",
+    "public": false,
+    "file": "src/modules/documents/document.controller.ts"
+  },
+  {
+    "module": "documents",
+    "controller": "DocumentsController",
     "handler": "create",
     "method": "POST",
     "path": "/documents",
@@ -2076,6 +2086,16 @@
     "method": "POST",
     "path": "/drawings/:id/revisions",
     "permission": "drawings:create",
+    "public": false,
+    "file": "src/modules/documents/drawing.controller.ts"
+  },
+  {
+    "module": "documents",
+    "controller": "DrawingsController",
+    "handler": "approve",
+    "method": "POST",
+    "path": "/drawings/:id/approve",
+    "permission": "documents:approve",
     "public": false,
     "file": "src/modules/documents/drawing.controller.ts"
   },
@@ -2892,6 +2912,16 @@
   {
     "module": "material-procurement",
     "controller": "InventoryController",
+    "handler": "receive",
+    "method": "POST",
+    "path": "/inventory/receive",
+    "permission": "inventory:create",
+    "public": false,
+    "file": "src/modules/material-procurement/controllers/inventory.controller.ts"
+  },
+  {
+    "module": "material-procurement",
+    "controller": "InventoryController",
     "handler": "receiveFromDelivery",
     "method": "POST",
     "path": "/inventory/receive-delivery",
@@ -3486,6 +3516,16 @@
     "method": "GET",
     "path": "/vendor-rate-comparisons",
     "permission": "vendor-rate-comparisons:read",
+    "public": false,
+    "file": "src/modules/material-procurement/controllers/vendor-rate-comparison.controller.ts"
+  },
+  {
+    "module": "material-procurement",
+    "controller": "VendorRateComparisonController",
+    "handler": "remove",
+    "method": "DELETE",
+    "path": "/vendor-rate-comparisons/:id",
+    "permission": "vendor-rate-comparisons:delete",
     "public": false,
     "file": "src/modules/material-procurement/controllers/vendor-rate-comparison.controller.ts"
   },
@@ -6571,6 +6611,16 @@
   },
   {
     "module": "site-operations",
+    "controller": "AdminDprDocumentController",
+    "handler": "remove",
+    "method": "DELETE",
+    "path": "/dpr/admin-documents/:id",
+    "permission": "dpr-admin-documents:delete",
+    "public": false,
+    "file": "src/modules/site-operations/admin-dpr-document.controller.ts"
+  },
+  {
+    "module": "site-operations",
     "controller": "ChecklistController",
     "handler": "addItem",
     "method": "POST",
@@ -7366,6 +7416,16 @@
     "method": "GET",
     "path": "/site-ops/snag-lists",
     "permission": "site-ops-snag-lists:read",
+    "public": false,
+    "file": "src/modules/site-operations/snag-list.controller.ts"
+  },
+  {
+    "module": "site-operations",
+    "controller": "SnagListController",
+    "handler": "remove",
+    "method": "DELETE",
+    "path": "/site-ops/snag-lists/:id",
+    "permission": "site-ops-snag-lists:delete",
     "public": false,
     "file": "src/modules/site-operations/snag-list.controller.ts"
   },

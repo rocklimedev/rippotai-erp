@@ -1,5 +1,67 @@
 # Shared project data
 
+## Connected document uploads
+
+The Command Center upload modal embeds the same `DocumentUpload` form as the
+document upload page. Project, document type, title and file are required;
+visibility and remarks are shared as well. Command Center fixes the project and
+document type to the selected checklist item. Both flows enforce the 500 MB
+file limit. Client visibility is sent as the API value `external`.
+
+The modal retains the Command Center upload endpoint and permission, including
+its activity log, uploader attribution, review policy and source-module checks.
+The full page uses the documents endpoint. Both persist to the document register
+with the project, document type and checklist requirement linked. Documents
+requiring approval remain submitted; uploads without required approval are
+approved. Successful uploads refresh the document register, requirements,
+document dashboard, project phases and Command Center views.
+
+Drawing checklist items open the same modal using the shared Design Studio
+`DrawingUploadPage`. The selected project and drawing type are fixed in the
+modal. Title, drawing number, revision, issue date, sheet number, drawn by,
+checked by and notes use the register's existing batch/revision workflow.
+The regular upload page also offers a drawing checklist type selector.
+Creation validates that the type targets drawings and links the corresponding
+project requirement. Uploading does not bypass drawing review or approval.
+Successful revision uploads refresh the drawing register and Command Center.
+
+## Uploaded evidence approval
+
+All Documents shows **Approve document** for the latest uploaded document that
+has not been approved or archived. The drawing register shows **Approve drawing**
+in grid and table views when a current drawing has an uploaded revision awaiting
+approval. These actions use the existing `documents:approve` grant; the API
+enforces it on `POST /documents/:id/approve` and `POST /drawings/:id/approve`.
+Native module records retain their source-module approval workflow.
+
+Document approval completes its linked requirement. Drawing approval marks the
+latest revision and drawing approved, records `approvedBy`, and completes the
+requirement only when every non-superseded drawing sheet for that type is approved.
+Approval refreshes document/phase and Command Center caches and invalidates the
+project's gate-readiness cache. It does not automatically clear a gate.
+
+Replacing an approved document file sends it back for review when its type needs
+approval. Uploading a new drawing revision resets the drawing to Draft by default
+and clears its previous reviewer. Command Center therefore checks the new upload
+rather than retaining approval from the old file. Locked/archived documents,
+older document uploads and drawings without an uploaded revision cannot be
+approved through these actions.
+
+### Command Center evidence drawer
+
+The **Documents & drawings** action opens a project browser inside Command Center.
+Phase checklist and Document Control **View & approve** actions open the same
+drawer scoped to the selected project and checklist type. Native records keep
+their source-module actions. Metadata loads only when the drawer is open; file
+contents load only on Preview or Download.
+
+The drawer lists uploaded document records and drawing sheets/revision history.
+PDFs and supported raster images up to 25 MB can be previewed through authenticated
+download endpoints and temporary object URLs. Other files are downloadable.
+Older uploads remain inspectable, but approval is offered only for the current
+upload, with the same `documents:approve` permission and approval endpoints as the
+registers. Approval refreshes Command Center's evidence and final checks.
+
 The project, project brief, site recce, budget estimate, work order and delivery
 challan reuse matching shared fields. The explicit field map lives in
 `backend/src/modules/documents/shared-project-data.ts`; document-specific dates,

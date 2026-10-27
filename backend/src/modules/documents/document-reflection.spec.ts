@@ -4,6 +4,26 @@ import { DocumentsService } from './document.service';
 import { belongsToDocumentPhase } from './document-phase';
 
 describe('project upload reflection', () => {
+  it.each([true, false])('links project uploads to their checklist (requiresApproval=%s)', async (requiresApproval) => {
+    const requirement = { id: 'requirement', update: jest.fn() };
+    const requirements = { findOrCreate: jest.fn(async () => [requirement]) };
+    const model = { create: jest.fn(async (record) => record) };
+    const service = new DocumentsService(
+      model as any, {} as any, {} as any,
+      { uploadFile: async () => ({ filename: 'stored', url: '/file' }) } as any,
+      { findByPk: async () => ({ requiresApproval, requirementType: 'REQUIRED' }) } as any,
+      requirements as any,
+      { invalidateReadinessCache: jest.fn() } as any,
+    );
+    const document = await service.create(
+      { title: 'Evidence', projectId: 'project', documentTypeId: 'type', visibility: 'external' },
+      { originalname: 'evidence.pdf', mimetype: 'application/pdf', size: 10 } as any,
+    );
+    expect(document).toMatchObject({ requirementId: 'requirement', projectId: 'project', documentTypeId: 'type', visibility: 'external', status: requiresApproval ? 'submitted' : 'approved' });
+    expect(requirements.findOrCreate).toHaveBeenCalledWith(expect.objectContaining({ where: { projectId: 'project', documentTypeId: 'type' } }));
+    expect(requirement.update).toHaveBeenCalledTimes(requiresApproval ? 0 : 1);
+  });
+
   it.each([true, false])(
     'applies the review policy (requiresApproval=%s)',
     async (requiresApproval) => {
@@ -16,6 +36,8 @@ describe('project upload reflection', () => {
           uploadFile: async () => ({ filename: 'stored', url: '/file' }),
         } as any,
         { findByPk: async () => ({ requiresApproval }) } as any,
+        {} as any,
+        { invalidateReadinessCache: jest.fn() } as any,
       );
       const document = await service.create(
         { title: 'Evidence', documentTypeId: 'type' },
@@ -38,6 +60,8 @@ describe('project upload reflection', () => {
       {} as any,
       { uploadFile: async () => ({ filename: 'stored', url: '/file' }) } as any,
       {} as any,
+      {} as any,
+      { invalidateReadinessCache: jest.fn() } as any,
     );
     expect(
       (await service.create({ title: 'Draft', status: 'draft' }, {} as any))

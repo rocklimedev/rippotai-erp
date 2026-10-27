@@ -1,4 +1,5 @@
 import { useState } from "react";
+import DeleteAdminDpr from "./DeleteAdminDpr";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -151,6 +152,7 @@ export default function AdminDprPage() {
                       >
                         Download Excel
                       </Button>
+                      <DeleteAdminDpr document={row} onDeleted={() => { if (data.data.length === 1 && page > 1) setPage(page - 1); }} />
                     </td>
                   </tr>
                 ))}

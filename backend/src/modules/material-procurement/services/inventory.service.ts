@@ -24,6 +24,7 @@ import { MaterialMaster } from '../models/material-master.model';
 
 import {
   CreateInventoryTransactionDto,
+  AddInventoryDto,
   IssueMaterialDto,
   AdjustInventoryDto,
   TransferInventoryDto,
@@ -72,13 +73,13 @@ export class InventoryService {
   }
 
   /**
-   * Validates quantity.
+   * Zero quantity is an explicit business requirement; see documentation/inventory.md.
    */
   private validateQuantity(quantity: number | string) {
     const value = Number(quantity);
 
-    if (!Number.isFinite(value) || value <= 0) {
-      throw new BadRequestException('Quantity must be greater than zero');
+    if (!Number.isFinite(value) || value < 0) {
+      throw new BadRequestException('Quantity must be zero or greater');
     }
 
     return value;
@@ -204,10 +205,14 @@ export class InventoryService {
     const direction = this.getDirection(dto.transaction_type);
 
     // ----------------------------------------------------------
-    // Validate stock for OUT transactions
+    // Issues may exceed available stock by business requirement.
+    // Other OUT transactions still require sufficient stock.
     // ----------------------------------------------------------
 
-    if (direction === InventoryDirection.OUT) {
+    if (
+      direction === InventoryDirection.OUT &&
+      dto.transaction_type !== InventoryTransactionType.ISSUE
+    ) {
       await this.validateAvailableStock(
         dto.project_id,
         dto.site_location,
@@ -286,7 +291,7 @@ export class InventoryService {
    * Used when material enters project inventory without
    * necessarily coming through a Delivery Challan.
    */
-  async receive(dto: CreateInventoryTransactionDto, userId?: string) {
+  async receive(dto: AddInventoryDto, userId?: string) {
     return this.create(
       {
         ...dto,
@@ -305,13 +310,6 @@ export class InventoryService {
 
   async issue(dto: IssueMaterialDto, userId?: string) {
     const quantity = this.validateQuantity(dto.quantity);
-
-    await this.validateAvailableStock(
-      dto.project_id,
-      dto.site_location,
-      dto.material_id,
-      quantity,
-    );
 
     return this.create(
       {

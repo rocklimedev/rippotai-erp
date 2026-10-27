@@ -18,6 +18,7 @@ import { CreateDocumentVersionDto } from './dto/create-document-version.dto';
 import { CreateDocumentAttachmentDto } from './dto/create-document-attachment.dto';
 
 import { CdnService } from '../cdn/cdn.service';
+import { GateEngineService } from '../gates/gate-engine.service';
 
 const DOCUMENT_INCLUDES = [
   { model: DocumentType },
@@ -41,6 +42,9 @@ export class DocumentsService {
     private readonly cdnService: CdnService,
     @InjectModel(DocumentType)
     private readonly documentTypeModel: typeof DocumentType,
+    @InjectModel(DocumentRequirement)
+    private readonly requirementModel: typeof DocumentRequirement,
+    private readonly gateEngine: GateEngineService,
   ) {}
 
   // ============================================================
@@ -120,6 +124,22 @@ export class DocumentsService {
     file?: Express.Multer.File,
   ): Promise<Document> {
     let fileFields: Partial<Document> = {};
+    let requirement: DocumentRequirement | undefined;
+    if (file && dto.projectId && dto.documentTypeId) {
+      const documentType = await this.documentTypeModel.findByPk(dto.documentTypeId);
+      if (!documentType) throw new NotFoundException('Document type not found');
+      [requirement] = await this.requirementModel.findOrCreate({
+        where: { projectId: dto.projectId, documentTypeId: dto.documentTypeId },
+        defaults: {
+          projectId: dto.projectId,
+          documentTypeId: dto.documentTypeId,
+          requirementType: documentType.requirementType,
+        } as any,
+      });
+      if (dto.requirementId && dto.requirementId !== requirement.id) {
+        throw new BadRequestException('Requirement does not match the selected project and document type');
+      }
+    }
     let status = dto.status;
     if (file && !status) {
       const documentType = dto.documentTypeId
@@ -146,11 +166,17 @@ export class DocumentsService {
       };
     }
 
-    return this.documentModel.create({
+    const document = await this.documentModel.create({
       ...dto,
       ...fileFields,
       ...(status ? { status } : {}),
+      ...(requirement ? { requirementId: requirement.id } : {}),
     } as any);
+    if (requirement && document.status === 'approved') {
+      await requirement.update({ isCompleted: true, completedAt: new Date() });
+    }
+    if (document.projectId) await this.gateEngine.invalidateReadinessCache(document.projectId);
+    return document;
   }
 
   // ============================================================
@@ -169,6 +195,33 @@ export class DocumentsService {
     return this.findOne(id);
   }
 
+  async approveUploaded(id: string): Promise<Document> {
+    const document = await this.findOne(id);
+    this.assertNotLocked(document);
+    if (!document.storageFilename && !document.url) {
+      throw new BadRequestException('Upload a file before approving this document');
+    }
+    if (document.status === 'archived') {
+      throw new BadRequestException('Archived documents cannot be approved');
+    }
+    if (document.projectId && document.documentTypeId) {
+      const latest = await this.documentModel.findOne({
+        where: { projectId: document.projectId, documentTypeId: document.documentTypeId },
+        order: [['created_at', 'DESC'], ['id', 'DESC']],
+      });
+      if (latest?.id !== document.id) {
+        throw new BadRequestException('Approve the latest uploaded document');
+      }
+    }
+    await document.update({ status: 'approved' });
+    if (document.requirementId) {
+      const requirement = await this.requirementModel.findByPk(document.requirementId);
+      await requirement?.update({ isCompleted: true, completedAt: new Date() });
+    }
+    if (document.projectId) await this.gateEngine.invalidateReadinessCache(document.projectId);
+    return document;
+  }
+
   // ============================================================
   // REPLACE FILE
   // ============================================================
@@ -183,10 +236,14 @@ export class DocumentsService {
     this.assertNotLocked(document);
 
     const previousStorageFilename = document.storageFilename;
+    const type = document.documentTypeId
+      ? await this.documentTypeModel.findByPk(document.documentTypeId) : null;
+    const status = type && !type.requiresApproval ? 'approved' : 'submitted';
 
     const { filename, url } = await this.cdnService.uploadFile(file);
 
     const updated = await document.update({
+      status,
       filename: file.originalname,
       storageFilename: filename,
       url,
@@ -194,9 +251,16 @@ export class DocumentsService {
       size: file.size,
     });
 
+    if (document.requirementId) {
+      const requirement = await this.requirementModel.findByPk(document.requirementId);
+      await requirement?.update({ isCompleted: status === 'approved', completedAt: status === 'approved' ? new Date() : null });
+    }
+
     if (previousStorageFilename) {
       await this.cdnService.deleteFile(previousStorageFilename);
     }
+
+    if (document.projectId) await this.gateEngine.invalidateReadinessCache(document.projectId);
 
     return updated;
   }

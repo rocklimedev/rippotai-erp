@@ -6,12 +6,14 @@ import { DrawingsService } from './drawing.service';
 import { DrawingsController } from './drawing.controller';
 import { CdnModule } from '../cdn/cdn.module';
 import { DocumentsModule } from './document.module';
+import { GateEngineModule } from '../gates/gate-engine.module';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([Drawing, DrawingRevision]),
     CdnModule,
     DocumentsModule, // reuses DocumentType / DocumentRequirement models & services
+    GateEngineModule,
   ],
   controllers: [DrawingsController],
   providers: [DrawingsService],

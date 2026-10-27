@@ -1,27 +1,22 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-} from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   useLoginMutation,
   useSignupMutation,
   useLogoutMutation,
   useLazyMeQuery,
-} from "../api/auth/auth.api";
-import { useUpdateUserMutation } from "../api/users/user.api";
+} from '../api/auth/auth.api';
+import { useUpdateUserMutation } from '../api/users/user.api';
 
-import { useDispatch } from "react-redux";
-import { baseApi } from "../store/baseApi";
+import { useDispatch } from 'react-redux';
+import { baseApi } from '../store/baseApi';
 import {
   getSessionToken,
   persistSession as saveSession,
   persistIdentity,
   clearStoredSession,
-} from "../lib/session";
-import { clearLocalDrafts } from "../lib/draft-storage";
+  recordSessionActivity,
+} from '../lib/session';
+import { clearLocalDrafts } from '../lib/draft-storage';
 
 const AuthContext = createContext(null);
 
@@ -48,41 +43,46 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, [dispatch]);
 
-  const refresh = useCallback(async ({ throwOnError = false } = {}) => {
-    const token = getSessionToken();
+  const refresh = useCallback(
+    async ({ throwOnError = false } = {}) => {
+      const token = getSessionToken();
 
-    if (!token) {
-      clearSession();
-      setReady(true);
-      if (throwOnError) throw new Error("Your session could not be established. Please sign in again.");
-      return;
-    }
-
-    try {
-      const response = await triggerMe().unwrap();
-      if (getSessionToken() !== token) {
-        if (throwOnError) throw new Error("Your session expired while signing in. Please try again.");
+      if (!token) {
+        clearSession();
+        setReady(true);
+        if (throwOnError)
+          throw new Error('Your session could not be established. Please sign in again.');
         return;
       }
 
-      // Backend returns either { user } or user directly
-      const userData = response.user ?? response;
+      try {
+        const response = await triggerMe().unwrap();
+        if (getSessionToken() !== token) {
+          if (throwOnError)
+            throw new Error('Your session expired while signing in. Please try again.');
+          return;
+        }
 
-      persistIdentity(userData);
-      setUser(userData);
-      return userData;
-    } catch (err) {
-      if (getSessionToken() !== token) {
+        // Backend returns either { user } or user directly
+        const userData = response.user ?? response;
+
+        persistIdentity(userData);
+        setUser(userData);
+        return userData;
+      } catch (err) {
+        if (getSessionToken() !== token) {
+          if (throwOnError) throw err;
+          return;
+        }
+        console.error(err);
+        clearSession();
         if (throwOnError) throw err;
-        return;
+      } finally {
+        setReady(true);
       }
-      console.error(err);
-      clearSession();
-      if (throwOnError) throw err;
-    } finally {
-      setReady(true);
-    }
-  }, [triggerMe, clearSession]);
+    },
+    [triggerMe, clearSession],
+  );
 
   useEffect(() => {
     refresh();
@@ -93,28 +93,23 @@ export function AuthProvider({ children }) {
       setUser(null);
       dispatch(baseApi.util.resetApiState());
     };
-    window.addEventListener("bc:session-ended", ended);
-    return () => window.removeEventListener("bc:session-ended", ended);
+    window.addEventListener('bc:session-ended', ended);
+    return () => window.removeEventListener('bc:session-ended', ended);
   }, [dispatch]);
 
   useEffect(() => {
     if (!user?.id) return;
-    const activity = () => {
-      if (getSessionToken())
-        sessionStorage.setItem("bc_activity", String(Date.now()));
-    };
-    const events = ["pointerdown", "keydown", "touchstart", "scroll"];
-    events.forEach((event) =>
-      window.addEventListener(event, activity, { passive: true }),
-    );
+    const activity = recordSessionActivity;
+    const events = ['pointerdown', 'keydown', 'touchstart', 'scroll'];
+    events.forEach((event) => window.addEventListener(event, activity, { passive: true }));
     const timer = setInterval(() => getSessionToken(), 15_000);
     const visible = () => {
       if (!document.hidden) getSessionToken();
     };
-    document.addEventListener("visibilitychange", visible);
+    document.addEventListener('visibilitychange', visible);
     return () => {
       events.forEach((event) => window.removeEventListener(event, activity));
-      document.removeEventListener("visibilitychange", visible);
+      document.removeEventListener('visibilitychange', visible);
       clearInterval(timer);
     };
   }, [user?.id]);
@@ -166,7 +161,7 @@ export function AuthProvider({ children }) {
   const updateUser = useCallback(
     async (payload) => {
       if (!user?.id) {
-        throw new Error("No authenticated user.");
+        throw new Error('No authenticated user.');
       }
 
       const result = await updateUserMutation({
@@ -212,7 +207,7 @@ export const useAuth = () => {
   const context = useContext(AuthContext);
 
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
 
   return context;

@@ -29,7 +29,7 @@ export class RecordInventoryTransactionDto {
   type: InventoryTransactionType;
 
   @IsNumber()
-  @Min(0.001)
+  @Min(0)
   quantity: number;
 
   @IsOptional()

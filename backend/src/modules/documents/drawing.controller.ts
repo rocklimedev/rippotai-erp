@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   Res,
   UploadedFile,
   UseInterceptors,
@@ -51,6 +52,12 @@ export class DrawingsController {
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.drawingsService.findOne(id);
+  }
+
+  @RequirePermission('documents:approve')
+  @Post(':id/approve')
+  approve(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
+    return this.drawingsService.approveUploaded(id, req.user.id);
   }
 
   @RequirePermission('drawings:update')

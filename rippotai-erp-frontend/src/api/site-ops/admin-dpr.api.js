@@ -19,6 +19,10 @@ const downloadResponse = async (response) => {
 
 export const adminDprApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    deleteAdminDprDocument: builder.mutation({
+      query: (id) => ({ url: `/dpr/admin-documents/${id}`, method: "DELETE" }),
+      invalidatesTags: ["AdminDpr"],
+    }),
     listAdminDprDocuments: builder.query({
       query: (params) => ({ url: "/dpr/admin-documents", params }),
       providesTags: ["AdminDpr"],
@@ -82,6 +86,7 @@ export const adminDprApi = baseApi.injectEndpoints({
 
 export const {
   useListAdminDprQuery,
+  useDeleteAdminDprDocumentMutation,
   useSaveAdminDprMutation,
   useDeleteAdminDprMutation,
   useDownloadAdminDprMutation,

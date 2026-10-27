@@ -98,12 +98,14 @@ INSERT IGNORE INTO permissions (id, name, resource, action, description, created
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'document-types:delete', 'document-types', 'delete', 'Staff API capability: document-types:delete', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'document-types:read', 'document-types', 'read', 'Staff API capability: document-types:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'document-types:update', 'document-types', 'update', 'Staff API capability: document-types:update', NOW());
+INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'documents:approve', 'documents', 'approve', 'Staff API capability: documents:approve', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'documents:create', 'documents', 'create', 'Staff API capability: documents:create', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'documents:delete', 'documents', 'delete', 'Staff API capability: documents:delete', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'documents:deliver', 'documents', 'deliver', 'Staff API capability: documents:deliver', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'documents:read', 'documents', 'read', 'Staff API capability: documents:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'documents:update', 'documents', 'update', 'Staff API capability: documents:update', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'dpr-admin-documents:create', 'dpr-admin-documents', 'create', 'Staff API capability: dpr-admin-documents:create', NOW());
+INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'dpr-admin-documents:delete', 'dpr-admin-documents', 'delete', 'Staff API capability: dpr-admin-documents:delete', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'dpr-admin-documents:export', 'dpr-admin-documents', 'export', 'Staff API capability: dpr-admin-documents:export', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'dpr-admin-documents:read', 'dpr-admin-documents', 'read', 'Staff API capability: dpr-admin-documents:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'dpr-admin-logs:create', 'dpr-admin-logs', 'create', 'Staff API capability: dpr-admin-logs:create', NOW());
@@ -311,6 +313,7 @@ INSERT IGNORE INTO permissions (id, name, resource, action, description, created
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'site-ops-rfis:read', 'site-ops-rfis', 'read', 'Staff API capability: site-ops-rfis:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'site-ops-rfis:update', 'site-ops-rfis', 'update', 'Staff API capability: site-ops-rfis:update', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'site-ops-snag-lists:create', 'site-ops-snag-lists', 'create', 'Staff API capability: site-ops-snag-lists:create', NOW());
+INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'site-ops-snag-lists:delete', 'site-ops-snag-lists', 'delete', 'Staff API capability: site-ops-snag-lists:delete', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'site-ops-snag-lists:export', 'site-ops-snag-lists', 'export', 'Staff API capability: site-ops-snag-lists:export', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'site-ops-snag-lists:read', 'site-ops-snag-lists', 'read', 'Staff API capability: site-ops-snag-lists:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'site-ops-snag-lists:update', 'site-ops-snag-lists', 'update', 'Staff API capability: site-ops-snag-lists:update', NOW());
@@ -358,6 +361,7 @@ INSERT IGNORE INTO permissions (id, name, resource, action, description, created
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'vendor-business-types:read', 'vendor-business-types', 'read', 'Staff API capability: vendor-business-types:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'vendor-categories:read', 'vendor-categories', 'read', 'Staff API capability: vendor-categories:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'vendor-rate-comparisons:create', 'vendor-rate-comparisons', 'create', 'Staff API capability: vendor-rate-comparisons:create', NOW());
+INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'vendor-rate-comparisons:delete', 'vendor-rate-comparisons', 'delete', 'Staff API capability: vendor-rate-comparisons:delete', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'vendor-rate-comparisons:read', 'vendor-rate-comparisons', 'read', 'Staff API capability: vendor-rate-comparisons:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'vendor-rate-comparisons:update', 'vendor-rate-comparisons', 'update', 'Staff API capability: vendor-rate-comparisons:update', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'vendors-saved-searches:create', 'vendors-saved-searches', 'create', 'Staff API capability: vendors-saved-searches:create', NOW());
@@ -506,12 +510,14 @@ WHERE r.name IN ('ADMIN', 'SUPERADMIN') AND CONCAT(p.resource, ':', p.action) IN
   'document-types:delete',
   'document-types:read',
   'document-types:update',
+  'documents:approve',
   'documents:create',
   'documents:delete',
   'documents:deliver',
   'documents:read',
   'documents:update',
   'dpr-admin-documents:create',
+  'dpr-admin-documents:delete',
   'dpr-admin-documents:export',
   'dpr-admin-documents:read',
   'dpr-admin-logs:create',
@@ -719,6 +725,7 @@ WHERE r.name IN ('ADMIN', 'SUPERADMIN') AND CONCAT(p.resource, ':', p.action) IN
   'site-ops-rfis:read',
   'site-ops-rfis:update',
   'site-ops-snag-lists:create',
+  'site-ops-snag-lists:delete',
   'site-ops-snag-lists:export',
   'site-ops-snag-lists:read',
   'site-ops-snag-lists:update',
@@ -766,6 +773,7 @@ WHERE r.name IN ('ADMIN', 'SUPERADMIN') AND CONCAT(p.resource, ':', p.action) IN
   'vendor-business-types:read',
   'vendor-categories:read',
   'vendor-rate-comparisons:create',
+  'vendor-rate-comparisons:delete',
   'vendor-rate-comparisons:read',
   'vendor-rate-comparisons:update',
   'vendors-saved-searches:create',

@@ -157,7 +157,7 @@ describe('Authenticated request database cost', () => {
       if (state === 'disabled') session.user.is_active = false;
       if (state === 'unverified') session.user.email_verified_at = null;
       if (state === 'idle')
-        session.last_used_at = new Date(Date.now() - 600_000);
+        session.last_used_at = new Date(Date.now() - 86400_000);
       if (state === 'expired') session.expires_at = new Date(Date.now() - 1);
       await expect(auth.getCurrentUserFromPayload(payload)).rejects.toThrow();
       expect(model.findOne).toHaveBeenCalledTimes(1);
