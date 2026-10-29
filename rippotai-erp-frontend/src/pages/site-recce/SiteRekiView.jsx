@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 // Site Recce Report — what we found on site, as a clean A4 document for the client and the team.
 // Built on the shared print kit: fixed Rippotai cover, then only the filled fields as plain text.
 import React, { useMemo, useRef } from "react";
@@ -211,7 +212,7 @@ export function SiteRekiView() {
   const crumbs = [{ label: "CRM", to: "/crm" }, { label: "Site recces", to: "/crm/recce/all" }, { label: "Recce" }];
 
   const removeRecce = async () => {
-    if (!window.confirm("Delete this site recce? This cannot be undone.")) return;
+    if (!(await appConfirm("Delete this site recce? This cannot be undone."))) return;
     try {
       await deleteSiteRecce(id).unwrap();
       toast.success("Site recce deleted");

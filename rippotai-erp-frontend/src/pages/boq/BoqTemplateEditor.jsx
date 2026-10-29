@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useEffect, useRef, useState } from "react";
 import BoqDocument, { boqFileName } from "@/components/commerce-documents/BoqDocument";
 import { downloadWhenReady, OFFSCREEN_STYLE } from "@/components/print-document/commerce";
@@ -201,7 +202,7 @@ export default function BoqTemplateEditor() {
   };
 
   const handleDeleteCategory = async (cid) => {
-    if (!confirm("Delete this category and all its items?")) return;
+    if (!(await appConfirm("Delete this category and all its items?"))) return;
     try {
       await deleteCategory({ templateId: id, categoryId: cid }).unwrap();
       toast.success("Category removed");

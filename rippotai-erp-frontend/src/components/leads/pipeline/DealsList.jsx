@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Trash2, ChevronUp, ChevronDown } from "lucide-react";
@@ -66,7 +67,7 @@ export default function DealsList({ deals, meta, onOpen, onMove, onCreate }) {
   };
 
   const bulkDelete = async () => {
-    if (!window.confirm(`Delete ${ids.length} deal${ids.length === 1 ? "" : "s"}? This can't be undone.`)) return;
+    if (!(await appConfirm(`Delete ${ids.length} deal${ids.length === 1 ? "" : "s"}? This can't be undone.`))) return;
     try {
       await Promise.all(ids.map((id) => deleteLead(id).unwrap()));
       toast.success("Deleted");

@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import BoqDocument, { BOQ_VARIANTS, boqFileName } from "@/components/commerce-documents/BoqDocument";
 import { downloadWhenReady, OFFSCREEN_STYLE } from "@/components/print-document/commerce";
@@ -306,7 +307,7 @@ export default function BoqWorkspace() {
   };
 
   const handleDeleteCategory = async (cid) => {
-    if (!confirm("Delete this category and all its items?")) return;
+    if (!(await appConfirm("Delete this category and all its items?"))) return;
     try {
       await deleteCategory({ boqId: id, categoryId: cid }).unwrap();
       toast.success("Category removed");
@@ -619,7 +620,7 @@ export default function BoqWorkspace() {
                 <DropdownMenuItem
                   className="text-[#333333]"
                   onClick={async () => {
-                    if (confirm("Archive this BOQ?")) {
+                    if ((await appConfirm("Archive this BOQ?"))) {
                       await deleteBoq(id).unwrap();
                       toast.success("Archived");
                       nav("/boq");

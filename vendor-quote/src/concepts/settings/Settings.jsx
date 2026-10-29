@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useState, useEffect, useRef } from "react";
 import api, { formatApiError } from "../../utils/api";
 import {
@@ -167,7 +168,7 @@ export default function Settings() {
   // Delete Signature
   const handleDeleteSignature = async () => {
     if (!userId) return;
-    if (!window.confirm("Remove the signature?")) return;
+    if (!(await appConfirm("Remove the signature?"))) return;
 
     setSaving(true);
     try {

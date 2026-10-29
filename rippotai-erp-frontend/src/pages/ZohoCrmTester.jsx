@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 "use client";
 
 import React, { useMemo, useState } from "react";
@@ -354,7 +355,7 @@ export default function ZohoBiginTestConsole() {
       return;
     }
 
-    const confirmed = window.confirm(`Delete ${module} record ${recordId}?`);
+    const confirmed = (await appConfirm(`Delete ${module} record ${recordId}?`));
 
     if (!confirmed) return;
 

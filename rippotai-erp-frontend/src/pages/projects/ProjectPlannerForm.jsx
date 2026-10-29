@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -130,9 +131,9 @@ export function ProjectPlannerForm() {
 
   const handleRemoveFloor = async (floor) => {
     if (
-      !window.confirm(
+      !(await appConfirm(
         `Remove "${floor.floor_name}"? Any recorded progress for this floor will be lost.`,
-      )
+      ))
     ) {
       return;
     }

@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { formatCurrency } from "../../utils/helpers";
@@ -421,7 +422,7 @@ export default function CreateQuotation() {
       setError(err);
       return;
     }
-    if (!window.confirm("Submit this quotation for admin approval?")) return;
+    if (!(await appConfirm("Submit this quotation for admin approval?"))) return;
     setLoading(true);
     setError("");
     try {
@@ -486,8 +487,8 @@ export default function CreateQuotation() {
           )}
         </div>
         <button
-          onClick={() => {
-            if (unsavedChanges && !window.confirm("Discard unsaved changes?"))
+          onClick={async () => {
+            if (unsavedChanges && !(await appConfirm("Discard unsaved changes?")))
               return;
             navigate("/quotations");
           }}

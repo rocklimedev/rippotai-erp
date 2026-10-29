@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import { useAuth } from "@/context/AuthContext";
 import { BRIEF_STATUS_LABELS, briefTransitions } from "./brief-status";
 import React, { useRef } from "react";
@@ -37,9 +38,9 @@ export function ProjectBriefView() {
   const updateStatus = async (status) => {
     if (
       status === "SIGNED_OFF" &&
-      !window.confirm(
+      !(await appConfirm(
         "Sign off this client brief? Changes will require a new draft version.",
-      )
+      ))
     )
       return;
     try {
@@ -69,7 +70,7 @@ export function ProjectBriefView() {
     useDeleteProjectBriefMutation();
 
   const removeBrief = async () => {
-    if (!window.confirm("Delete this client brief? It will be removed from active briefs. Its stored data and related records will be retained."))
+    if (!(await appConfirm("Delete this client brief? It will be removed from active briefs. Its stored data and related records will be retained.")))
       return;
     try {
       await deleteProjectBrief(id).unwrap();

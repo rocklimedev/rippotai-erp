@@ -22,7 +22,7 @@ export const REKI_SECTIONS = [
       {
         key: "accompanied_by",
         label: "Accompanied By",
-        type: "text",
+        type: "accompanied-by",
       },
     ],
   },

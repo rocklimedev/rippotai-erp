@@ -1,3 +1,4 @@
+import { appAlert } from "@/lib/app-dialog";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -486,12 +487,12 @@ export default function ProjectVendorShortlistView({
           return saved;
         } catch (err) {
           console.error("Update entry failed", err);
-          alert(
+          (await appAlert(
             err?.data?.message ||
               err?.error ||
               err?.message ||
               "Failed to update shortlist entry",
-          );
+          ));
         }
       });
     },
@@ -545,7 +546,7 @@ export default function ProjectVendorShortlistView({
       await refetch();
     } catch (err) {
       console.error("Lock update failed", err);
-      alert(err?.data?.message || "Failed to update shortlist lock");
+      (await appAlert(err?.data?.message || "Failed to update shortlist lock"));
     }
   };
 
@@ -575,7 +576,7 @@ export default function ProjectVendorShortlistView({
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Export failed", err);
-      alert("Export failed");
+      (await appAlert("Export failed"));
     }
   };
 

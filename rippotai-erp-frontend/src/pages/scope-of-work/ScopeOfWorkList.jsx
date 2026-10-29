@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -276,9 +277,9 @@ export default function ScopeOfWorkList() {
       row.project?.name ||
       "this Scope of Work";
 
-    const confirmed = window.confirm(
+    const confirmed = (await appConfirm(
       `Are you sure you want to delete the Scope of Work for "${projectName}"?\n\nThis action cannot be undone.`,
-    );
+    ));
 
     if (!confirmed) {
       return;

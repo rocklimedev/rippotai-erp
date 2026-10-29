@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, FileText, RefreshCw, SearchX, PenTool } from "lucide-react";
@@ -207,9 +208,9 @@ const DocumentTypes = () => {
   };
 
   const handleDelete = async (item) => {
-    const confirmed = window.confirm(
+    const confirmed = (await appConfirm(
       `Delete document type "${item.name}"? This action cannot be undone.`,
-    );
+    ));
 
     if (!confirmed) return;
 

@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useState } from "react";
 import { formatINR } from "@/lib/format";
 import { toast } from "sonner";
@@ -30,7 +31,7 @@ export function BoqLibraryPage() {
   const [updateLibraryItem] = useUpdateLibraryItemMutation();
 
   const del = async (it) => {
-    if (!confirm(`Delete "${it.name}" from the library?`)) return;
+    if (!(await appConfirm(`Delete "${it.name}" from the library?`))) return;
 
     try {
       const { data } = await deleteLibraryItem(it.id).unwrap();

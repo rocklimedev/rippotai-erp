@@ -1,8 +1,9 @@
+import { appConfirm } from "@/lib/app-dialog";
 // Calendar: month / week / agenda over INOS events + task due dates, milestones, payment dues,
 // quotation expiries and site visits. /calendar (team), /calendar/mine, /calendar/team
 import React, { useMemo, useState } from "react";
 import ZohoSyncControl, { ZohoSyncBadge } from "./ZohoSyncControl";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   ChevronLeft,
@@ -368,7 +369,7 @@ function ItemModal({ it, onClose, onEdit }) {
             ? `/projects/${it.project_id}`
             : null;
   const remove = async () => {
-    if (!window.confirm("Delete this event?")) return;
+    if (!(await appConfirm("Delete this event?"))) return;
     try {
       await del(it.id).unwrap();
       toast.success("Event deleted");
@@ -495,9 +496,18 @@ function ItemModal({ it, onClose, onEdit }) {
 }
 
 export default function CalendarView({ scope = "team" }) {
+  const [params] = useSearchParams();
+  return <CalendarWorkspace key={`${scope}:${params.get("date") || ""}`} scope={scope} />;
+}
+
+function CalendarWorkspace({ scope }) {
+  const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const [mode, setMode] = useState("month");
-  const [cursor, setCursor] = useState(() => new Date());
+  const [cursor, setCursor] = useState(() => {
+    const date = new Date(`${params.get("date")}T12:00:00`);
+    return Number.isNaN(date.getTime()) ? new Date() : date;
+  });
   const [hidden, setHidden] = useState(() => new Set());
   const [creating, setCreating] = useState(null);
   const [viewing, setViewing] = useState(null);
@@ -545,6 +555,13 @@ export default function CalendarView({ scope = "team" }) {
     () => (data?.items || []).filter((it) => !hidden.has(it.source)),
     [data, hidden],
   );
+  const linkedEvent = items.find((item) => item.source === "event" && String(item.id) === params.get("eventId"));
+  const activeItem = viewing || linkedEvent;
+  const clearLinkedEvent = () => {
+    const next = new URLSearchParams(params);
+    next.delete("eventId");
+    setParams(next, { replace: true });
+  };
   const byDay = useMemo(() => {
     const m = {};
     for (const it of items) (m[ymd(it.date)] ||= []).push(it);
@@ -869,11 +886,12 @@ export default function CalendarView({ scope = "team" }) {
       {creating && (
         <EventModal initial={creating} onClose={() => setCreating(null)} />
       )}
-      {viewing && (
+      {activeItem && (
         <ItemModal
-          it={viewing}
-          onClose={() => setViewing(null)}
+          it={activeItem}
+          onClose={() => { setViewing(null); if (linkedEvent) clearLinkedEvent(); }}
           onEdit={(it) => {
+            if (linkedEvent) clearLinkedEvent();
             setViewing(null);
             setCreating(it);
           }}

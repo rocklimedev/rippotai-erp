@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getStatusConfig } from "../../utils/helpers";
@@ -92,7 +93,7 @@ export default function VendorsList() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Archive this vendor?")) return;
+    if (!(await appConfirm("Archive this vendor?"))) return;
     try {
       await deleteVendor(id).unwrap();
       await refetch();

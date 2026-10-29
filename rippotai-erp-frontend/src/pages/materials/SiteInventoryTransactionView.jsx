@@ -1,3 +1,4 @@
+import { appPrompt } from "@/lib/app-dialog";
 import React from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
@@ -45,7 +46,7 @@ export default function SiteInventoryTransactionView() {
   const unit = transaction.unit || material.unit || {};
 
   const reverse = async () => {
-    const reason = window.prompt("Why are you reversing this transaction?");
+    const reason = (await appPrompt("Why are you reversing this transaction?"));
 
     if (!reason?.trim()) {
       return;

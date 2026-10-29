@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import {
@@ -73,7 +74,7 @@ export default function SnagDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!id || !confirm("Delete this snag?")) return;
+    if (!id || !(await appConfirm("Delete this snag?"))) return;
     try {
       await deleteSnag(id).unwrap();
       toast.success("Snag deleted");

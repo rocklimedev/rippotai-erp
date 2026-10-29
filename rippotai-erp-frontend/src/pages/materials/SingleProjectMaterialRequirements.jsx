@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import {
   Plus,
@@ -185,6 +185,8 @@ export default function SingleProjectMaterialRequirements() {
   const nav = useNavigate();
 
   const { projectId } = useParams();
+  const [params] = useSearchParams();
+  const requirementId = params.get("requirementId");
 
   const [q, setQ] = useState("");
 
@@ -208,8 +210,8 @@ export default function SingleProjectMaterialRequirements() {
   ========================================================== */
 
   const rows = useMemo(() => {
-    return normalizeArrayResponse(response);
-  }, [response]);
+    return normalizeArrayResponse(response).filter((row) => !requirementId || String(getRequirementId(row)) === requirementId);
+  }, [response, requirementId]);
 
   /* ==========================================================
      FILTER

@@ -110,7 +110,7 @@ export class ShortlistPackageService {
       ]);
     const names = [
       ...categories.map((row) => row.scopeCategory.name),
-      ...categories.map((row) => row.scopeCategory.slug),
+      ...categories.map((row) => row.scopeCategory.slug).filter((slug): slug is string => slug !== null),
       ...briefCategories.map((row) => row.category),
     ];
     const materialIds = new Set(

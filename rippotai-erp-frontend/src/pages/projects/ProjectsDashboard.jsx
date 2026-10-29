@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import ProjectDocumentsBoard from "../../components/projects/ProjectDocumentsBoard";
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -564,7 +565,7 @@ export default function ProjectsDashboard() {
   };
 
   const handleArchive = async (id, name) => {
-    if (!window.confirm(`Archive project "${name}"?`)) return;
+    if (!(await appConfirm(`Archive project "${name}"?`))) return;
     try {
       await archiveProject({ id, archived_by: "current_user" }).unwrap();
       toast.success(`"${name}" has been archived.`);
@@ -574,7 +575,7 @@ export default function ProjectsDashboard() {
   };
 
   const handleRestore = async (id, name) => {
-    if (!window.confirm(`Restore project "${name}"?`)) return;
+    if (!(await appConfirm(`Restore project "${name}"?`))) return;
     try {
       await restoreProject(id).unwrap();
       toast.success(`"${name}" has been restored.`);
@@ -584,7 +585,7 @@ export default function ProjectsDashboard() {
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Permanently delete "${name}"?\n\nThis action cannot be undone.`)) return;
+    if (!(await appConfirm(`Permanently delete "${name}"?\n\nThis action cannot be undone.`))) return;
     try {
       await deleteProject(id).unwrap();
       toast.success(`"${name}" was deleted.`);

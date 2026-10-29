@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from "react";
+import { appAlert, appConfirm } from "@/lib/app-dialog";
+import React, { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Image as ImageIcon, Pencil, Ruler, Upload, X, ShieldCheck } from "lucide-react";
-import { commitRoomDraft, changeRoomField } from "@/hooks/site-recce-form-helpers";
+import { commitRoomDraft, changeRoomField, parseFeetInches, formatFeetInches, roomFeetInchesDraft } from "@/hooks/site-recce-form-helpers";
 
 import { Button, Field, TextInput, TextArea, FormActions } from "@/components/inos";
 import {
@@ -49,13 +50,6 @@ const ROOM_TYPE_OPTIONS = [
   { value: "OTHER", label: "Other" },
 ];
 
-const MEASUREMENT_UNIT_OPTIONS = [
-  { value: "FT", label: "Feet" },
-  { value: "M", label: "Metres" },
-  { value: "IN", label: "Inches" },
-  { value: "CM", label: "Centimetres" },
-];
-
 const getRoomTypeLabel = (type) => {
   const found = ROOM_TYPE_OPTIONS.find((o) => o.value === type);
   return found ? found.label : type || "Other";
@@ -84,7 +78,7 @@ const isEmpty = (value) => {
 };
 
 const withUnit = (value, unit) =>
-  isEmpty(value) ? "" : `${value}${unit ? ` ${String(unit).toLowerCase()}` : ""}`;
+  isEmpty(value) ? "" : unit === "FT" ? formatFeetInches(value) : `${value}${unit ? ` ${String(unit).toLowerCase()}` : ""}`;
 
 // ============================================================
 // PREVIEW
@@ -136,9 +130,33 @@ function UploadButton({ label, busy, disabled, accept, onFile }) {
   );
 }
 
+function AccompaniedByInput({ value, options, onChange }) {
+  const [otherSelected, setOtherSelected] = useState(false);
+  const knownValue = value === "Self" || options.some((option) => option.value === value);
+  const isOther = otherSelected || Boolean(value && !knownValue);
+  return (
+    <div style={{ display: "grid", gap: 8 }}>
+      <OptionSelect
+        value={isOther ? "__other__" : value}
+        options={[{ value: "Self", label: "Self" }, ...options, { value: "__other__", label: "Other" }]}
+        placeholder="Select accompanying person"
+        onChange={(selected) => {
+          setOtherSelected(selected === "__other__");
+          onChange(selected === "__other__" ? "" : selected);
+        }}
+      />
+      {isOther && <TextInput aria-label="Other accompanying person" placeholder="Enter accompanying person's name" value={value} onChange={(event) => onChange(event.target.value)} />}
+    </div>
+  );
+}
+
 function ExistingSiteLayouts({ images, onChange, onFileUpload, busy, onBusyChange }) {
+  const [dragging, setDragging] = useState(false);
+  const uploadInProgress = useRef(false);
+  const disabled = busy || !onFileUpload;
   const uploadFiles = async (files) => {
-    if (!files.length || !onFileUpload) return;
+    if (!files.length || disabled || uploadInProgress.current) return;
+    uploadInProgress.current = true;
     onBusyChange(true);
     const uploaded = [];
     try {
@@ -149,21 +167,51 @@ function ExistingSiteLayouts({ images, onChange, onFileUpload, busy, onBusyChang
         uploaded.push(url);
       }
     } catch (error) {
-      window.alert(error.message || "Could not upload the site layouts. Please try again.");
+      (await appAlert(error.message || "Could not upload the site layouts. Please try again."));
     } finally {
       if (uploaded.length) onChange([...images, ...uploaded]);
       onBusyChange(false);
+      uploadInProgress.current = false;
     }
   };
 
   return (
     <div>
+      <div
+        onDragOver={(event) => {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = disabled ? "none" : "copy";
+          if (!disabled) setDragging(true);
+        }}
+        onDragLeave={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false);
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          setDragging(false);
+          uploadFiles(Array.from(event.dataTransfer.files || []));
+        }}
+        aria-busy={busy}
+        style={{
+          border: `2px dashed ${dragging && !disabled ? "var(--primary, #2563eb)" : "var(--border, #cbd5e1)"}`,
+          borderRadius: 8,
+          padding: 24,
+          textAlign: "center",
+          background: dragging && !disabled ? "var(--surface-2, #f1f5f9)" : undefined,
+          opacity: disabled ? 0.6 : 1,
+        }}
+      >
+      <p style={{ marginBottom: 12 }} role="status">
+        {busy ? "Uploading layouts…" : "Drag and drop layout images here, or browse files."}
+      </p>
       <label className="inos-btn inos-btn--secondary" style={{ width: "fit-content" }}>
         <Upload aria-hidden />
         {busy ? "Uploading..." : "Upload layouts"}
-        <input type="file" accept="image/*" multiple hidden disabled={busy || !onFileUpload}
+        <input type="file" accept="image/*" multiple className="sr-only" aria-label="Upload existing site layout images" disabled={disabled}
           onChange={(event) => { const files = Array.from(event.target.files || []); event.target.value = ""; uploadFiles(files); }} />
       </label>
+      <p className="inos-hint" style={{ marginTop: 8 }}>You can add multiple layout images at once.</p>
+      </div>
       <div className="inos-form-grid" style={{ marginTop: 16 }}>
         {images.map((url, index) => (
           <div key={`${url}-${index}`}>
@@ -223,13 +271,6 @@ function RoomEditor({ room, onChange, onCancel, onSave, onFileUpload }) {
           <TextInput value={room.room_type_other || ""} placeholder="e.g. Study or prayer room" onChange={(e) => update("room_type_other", e.target.value)} />
         </Field>}
 
-        <Field label="Measurement unit" full>
-          <OptionSelect
-            value={room.measurement_unit || "FT"}
-            options={MEASUREMENT_UNIT_OPTIONS}
-            onChange={(value) => update("measurement_unit", value)}
-          />
-        </Field>
       </div>
 
       <div className="inos-form-grid inos-form-grid--3">
@@ -237,20 +278,25 @@ function RoomEditor({ room, onChange, onCancel, onSave, onFileUpload }) {
           ["length", "Length", "e.g. 14"],
           ["width", "Width", "e.g. 12"],
           ["height", "Height", "e.g. 10"],
-          ["area", "Area", "e.g. 168"],
-        ].map(([key, label, ph]) => (
-          <Field key={key} label={label} hint={key === "area" ? `Length × width, in square ${(MEASUREMENT_UNIT_OPTIONS.find((o) => o.value === (room.measurement_unit || "FT"))?.label || "feet").toLowerCase()}. Adjust if needed.` : `In ${(MEASUREMENT_UNIT_OPTIONS.find((o) => o.value === (room.measurement_unit || "FT"))?.label || "feet").toLowerCase()}`}>
+        ].map(([key, label]) => (
+          <Field key={key} label={label} hint={'Feet and inches, e.g. 7\'-6" or 7i-6ii. 12 inches = 1 foot.'}>
             <TextInput
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              min="0"
+              type="text"
               value={room[key] ?? ""}
-              placeholder={ph}
+              placeholder={'e.g. 7\'-6"'}
+              aria-label={`${label} in feet and inches`}
+              invalid={Boolean(String(room[key] ?? "").trim()) && !Number.isFinite(parseFeetInches(room[key]))}
               onChange={(e) => update(key, e.target.value)}
             />
           </Field>
         ))}
+        <Field label="Area (sq ft)" hint="Calculated from length × width.">
+          <label className="crmf-check">
+            <input type="checkbox" checked={Boolean(room._manualArea)} onChange={(event) => update("_manualArea", event.target.checked)} />
+            Enter area manually
+          </label>
+          <TextInput type="number" min="0" step="0.01" aria-label="Room area in square feet" value={room.area ?? ""} readOnly={!room._manualArea} onChange={(event) => update("area", event.target.value)} />
+        </Field>
       </div>
 
       <div className="inos-form-grid">
@@ -295,7 +341,7 @@ function RoomEditor({ room, onChange, onCancel, onSave, onFileUpload }) {
         <Button variant="ghost" onClick={onCancel} disabled={pendingUploads > 0}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={onSave} disabled={pendingUploads > 0 || !room?.room_name?.trim() || (room.room_type === "OTHER" && !room.room_type_other?.trim()) || (room._photos || []).some((photo) => !photo.shot_number || (!photo.photo_url && !photo.layout_image_url))}>
+        <Button variant="primary" onClick={onSave} disabled={pendingUploads > 0 || ["length", "width", "height"].some((key) => String(room[key] ?? "").trim() && !Number.isFinite(parseFeetInches(room[key]))) || (room.area !== "" && room.area != null && (!Number.isFinite(Number(room.area)) || Number(room.area) < 0)) || !room?.room_name?.trim() || (room.room_type === "OTHER" && !room.room_type_other?.trim()) || (room._photos || []).some((photo) => !photo.shot_number || (!photo.photo_url && !photo.layout_image_url))}>
           {room?.id ? "Update room" : "Add room"}
         </Button>
       </div>
@@ -359,9 +405,9 @@ function PhotoEditor({
     } catch (error) {
       console.error(`Failed to upload ${type}:`, error);
 
-      window.alert(
+      (await appAlert(
         `Failed to upload ${isPhoto ? "photo" : "layout"}. Please try again.`,
-      );
+      ));
     } finally {
       if (isPhoto) {
         setUploadingPhoto(false);
@@ -532,20 +578,20 @@ export function SiteRecceSectionForm({
 
   const handleEditRoom = (room) => {
     setEditingRoom({
-      ...room,
+      ...roomFeetInchesDraft(room),
       _photos: photos.filter((photo) => String(photo.room_id) === String(room.id)).map((photo) => ({ ...photo })),
     });
   };
 
-  const handleDeleteRoom = (roomId) => {
+  const handleDeleteRoom = async (roomId) => {
     const hasPhotos = photos.some(
       (photo) => String(photo.room_id) === String(roomId),
     );
 
     if (hasPhotos) {
-      const confirmed = window.confirm(
+      const confirmed = (await appConfirm(
         "This room has photos/layout shots attached to it. Delete the room and its photos?",
-      );
+      ));
 
       if (!confirmed) return;
 
@@ -601,10 +647,10 @@ export function SiteRecceSectionForm({
     });
   };
 
-  const handleDeletePhoto = (photoId) => {
-    const confirmed = window.confirm(
+  const handleDeletePhoto = async (photoId) => {
+    const confirmed = (await appConfirm(
       "Are you sure you want to delete this photo/layout record?",
-    );
+    ));
 
     if (!confirmed) return;
 
@@ -959,7 +1005,9 @@ export function SiteRecceSectionForm({
                 : field.hint
             }
           >
-            {field.type === "textarea" ? (
+            {field.type === "accompanied-by" ? (
+              <AccompaniedByInput value={fieldValue} options={options} onChange={set} />
+            ) : field.type === "textarea" ? (
               <TextArea
                 rows={Math.min(field.rows || 3, 4)}
                 value={fieldValue}

@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
@@ -83,9 +84,9 @@ export function BusinessProposalAll() {
 
   const deleteDoc = async (r) => {
     if (
-      !window.confirm(
+      !(await appConfirm(
         `Delete "${r.title?.trim() || r.filename || "Untitled"}"?`,
-      )
+      ))
     )
       return;
     try {

@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -23,7 +24,7 @@ import {
   useGetRoleAppsQuery,
   useSetRoleAppsMutation,
 } from "../../api/users/rbac.api";
-import { useGetAppsQuery } from "../../api/meta/app.api";
+import { APP_META, LANDING_ORDER } from "@/config/appNav";
 import {
   Page,
   PageHeader,
@@ -53,12 +54,10 @@ export default function RolesPermissions() {
   );
   const { data: allPermissions = [], isFetching: loadingAllPermissions } =
     useGetPermissionsQuery(undefined, { skip: !isAdmin });
-  const { data: allApps = [], isFetching: loadingAllApps } = useGetAppsQuery(
-    undefined,
-    { skip: !isAdmin },
-  );
 
   const [selectedRoleId, setSelectedRoleId] = useState(null);
+  const [roleSearch, setRoleSearch] = useState("");
+  const [permissionSearch, setPermissionSearch] = useState("");
   const [packageId, setPackageId] = useState('');
   const { data: permissionPackages = [], isFetching: loadingPackages, isError: packagesError } =
     useGetPermissionPackagesQuery(undefined, { skip: !isAdmin });
@@ -134,6 +133,19 @@ export default function RolesPermissions() {
     return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
   }, [allPermissions, rolePermissions]);
 
+  const searchText = (value) => String(value ?? "").toLowerCase().replace(/[_:\-]+/g, " ").trim();
+  const roleQuery = searchText(roleSearch);
+  const filteredRoles = roles.filter((role) =>
+    searchText(`${role.name} ${role.description || ""}`).includes(roleQuery));
+  const permissionQuery = searchText(permissionSearch);
+  const filteredPermissionGroups = permissionGroups.flatMap(([resource, permissions]) => {
+    const matches = searchText(resource).includes(permissionQuery)
+      ? permissions
+      : permissions.filter((permission) =>
+        searchText(`${resource} ${permission.name || ""} ${permission._action || ""} ${permission.description || ""}`).includes(permissionQuery));
+    return matches.length ? [[resource, matches]] : [];
+  });
+
   const handleCreateRole = async (e) => {
     e.preventDefault();
     if (!newRoleName.trim()) {
@@ -143,6 +155,7 @@ export default function RolesPermissions() {
     try {
       const data = await createRole({ name: newRoleName.trim() }).unwrap();
       toast.success(`Role "${data.name || newRoleName}" created`);
+      setRoleSearch("");
       setNewRoleName("");
       setNewRoleOpen(false);
       setSelectedRoleId(data.id);
@@ -152,7 +165,7 @@ export default function RolesPermissions() {
   };
 
   const handleDeleteRole = async (role) => {
-    if (!window.confirm(`Delete role "${role.name}"?`)) return;
+    if (!(await appConfirm(`Delete role "${role.name}"?`))) return;
     try {
       await deleteRole(role.id).unwrap();
       toast.success(`Role "${role.name}" deleted`);
@@ -220,7 +233,7 @@ export default function RolesPermissions() {
     return <AdminAccessDenied crumb="Roles & permissions" />;
   }
 
-  const appList = Array.isArray(allApps) ? allApps : [];
+  const appList = LANDING_ORDER.map((code) => ({ code, name: APP_META[code].name }));
   const permBusy = granting || revoking || applyingPackage;
 
   return (
@@ -247,8 +260,13 @@ export default function RolesPermissions() {
           title="Roles"
           subtitle={roles.length ? plural(roles.length, "role") : undefined}
           flush
-          className="adm-sticky"
+          className="adm-sticky adm-roles-sidebar"
         >
+          <div className="adm-roles-search">
+            <Field label="Search roles" htmlFor="roles-search">
+              <TextInput id="roles-search" type="search" placeholder="Search roles…" value={roleSearch} onChange={(event) => setRoleSearch(event.target.value)} />
+            </Field>
+          </div>
           {loadingRoles && roles.length === 0 ? (
             <div className="adm-list">
               {[1, 2, 3].map((i) => (
@@ -264,8 +282,9 @@ export default function RolesPermissions() {
               text="Create a role to start granting access."
             />
           ) : (
-            <div className="adm-list" role="listbox" aria-label="Roles">
-              {roles.map((r) => (
+            <div className="adm-list adm-roles-list" role="listbox" aria-label="Roles">
+              {filteredRoles.length === 0 && <p className="adm-section__desc" role="status" style={{ padding: 16 }}>No roles match your search.</p>}
+              {filteredRoles.map((r) => (
                 <button
                   key={r.id}
                   type="button"
@@ -394,11 +413,11 @@ export default function RolesPermissions() {
                   </p>
                 </div>
                 <Pill tone="brand" dot={false}>
-                  {pendingAppCodes.size} of {appList.length} apps
+                  {appList.filter((app) => pendingAppCodes.has(app.code)).length} of {appList.length} apps
                 </Pill>
               </div>
 
-              {loadingAllApps || loadingRoleApps ? (
+              {loadingRoleApps ? (
                 <div className="adm-chips">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <div
@@ -485,6 +504,23 @@ export default function RolesPermissions() {
                 </Pill>
               </div>
 
+              <Field label="Search modules or permissions" htmlFor="permissions-search" hint="Choose a module from the dropdown or type a module, action or permission name.">
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16 }}>
+                  <TextInput
+                    id="permissions-search"
+                    list="permission-module-options"
+                    autoComplete="off"
+                    placeholder="Choose or type a module or permission…"
+                    value={permissionSearch}
+                    onChange={(event) => setPermissionSearch(event.target.value)}
+                  />
+                  {permissionSearch && <Button variant="ghost" size="sm" onClick={() => setPermissionSearch("")}>Clear</Button>}
+                </div>
+                <datalist id="permission-module-options">
+                  {permissionGroups.map(([resource]) => <option key={resource} value={humanize(resource)} />)}
+                </datalist>
+              </Field>
+
               {loadingAllPermissions ||
               (loadingRolePermissions && rolePermissions.length === 0) ? (
                 <div className="adm-chips">
@@ -502,9 +538,11 @@ export default function RolesPermissions() {
                   title="No permissions defined"
                   text="Permissions appear here once they're registered by the platform."
                 />
+              ) : filteredPermissionGroups.length === 0 ? (
+                <EmptyState icon={KeyRound} title="No matching permissions" text="Try another module, action or permission name." />
               ) : (
                 <div>
-                  {permissionGroups.map(([resource, perms]) => (
+                  {filteredPermissionGroups.map(([resource, perms]) => (
                     <div key={resource} className="adm-perm-group">
                       <div className="adm-perm-group__name">
                         {humanize(resource)}

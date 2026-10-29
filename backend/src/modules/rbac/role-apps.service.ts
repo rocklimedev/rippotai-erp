@@ -11,6 +11,7 @@ import { RoleApp } from './models/role-app.model';
 import { Role } from './models/role.model';
 import { App } from './models/app.model';
 import { CreateRoleAppDto, BulkAssignAppsDto } from './dto/role-app.dto';
+import { APP_CATALOGUE } from './app-catalogue';
 
 @Injectable()
 export class RoleAppsService {
@@ -85,6 +86,15 @@ export class RoleAppsService {
     granted_by?: string,
   ): Promise<RoleApp[]> {
     return this.roleAppModel.sequelize!.transaction(async (t) => {
+      // Older installations may not yet have rows for the current launcher apps.
+      // Register selected current apps before writing their foreign-key grants.
+      const currentApps = APP_CATALOGUE.filter((app) => app_codes.includes(app.code));
+      if (currentApps.length) {
+        await this.appModel.bulkCreate(
+          currentApps.map((app) => ({ ...app, is_active: true })) as any,
+          { ignoreDuplicates: true, transaction: t },
+        );
+      }
       await this.roleAppModel.destroy({ where: { role_id }, transaction: t });
 
       if (app_codes.length === 0) return [];

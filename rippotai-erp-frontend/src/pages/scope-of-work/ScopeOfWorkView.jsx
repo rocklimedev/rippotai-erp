@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 // Scope of Work — what we will (and won't) do, trade by trade and space by space.
 // Clean A4 document on the shared print kit: fixed Rippotai cover, then only what was filled in.
 import React, { useMemo, useRef } from "react";
@@ -108,7 +109,7 @@ export function ScopeOfWorkView() {
   const crumbs = [{ label: "CRM", to: "/crm" }, { label: "Scopes of work", to: "/crm/scope-of-work/all" }, { label: "Scope" }];
 
   const remove = async () => {
-    if (!window.confirm("Delete this scope of work? This cannot be undone.")) return;
+    if (!(await appConfirm("Delete this scope of work? This cannot be undone."))) return;
     try {
       await deleteScopeOfWork(id).unwrap();
       toast.success("Scope of work deleted");

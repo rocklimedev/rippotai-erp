@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -174,7 +175,7 @@ export default function DealDrawer({ dealId, open, onOpenChange, meta, onMove, o
   };
 
   const remove = async () => {
-    if (!window.confirm(`Delete “${deal.title}”? Notes, tasks and history go with it.`)) return;
+    if (!(await appConfirm(`Delete “${deal.title}”? Notes, tasks and history go with it.`))) return;
     try {
       await deleteLead(dealId).unwrap();
       toast.success("Deal deleted");

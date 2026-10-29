@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 // Automation — rule registry: search/filter, run now, test, edit, duplicate, enable/disable, delete.
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -164,7 +165,7 @@ export default function AutomationRules() {
                             label: "Delete",
                             icon: Trash2,
                             danger: true,
-                            onClick: () => window.confirm(`Delete “${r.name}”? Its run history is kept.`) && act(r.id, () => remove(r.id).unwrap(), "Rule deleted"),
+                            onClick: async () => (await appConfirm(`Delete “${r.name}”? Its run history is kept.`)) && act(r.id, () => remove(r.id).unwrap(), "Rule deleted"),
                           },
                         ]}
                       />

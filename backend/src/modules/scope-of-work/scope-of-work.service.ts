@@ -140,7 +140,7 @@ export class ScopeOfWorkService {
   // ============================================================
 
   async createCategory(dto: CreateScopeCategoryDto) {
-    return this.scopeCategoryModel.create(dto as any);
+    return this.scopeCategoryModel.create({ ...dto, slug: dto.slug?.trim() || null } as any);
   }
 
   async findAllCategories() {
@@ -165,7 +165,10 @@ export class ScopeOfWorkService {
   async updateCategory(id: string, dto: UpdateScopeCategoryDto) {
     const category = await this.findCategoryById(id);
 
-    await category.update(dto);
+    await category.update({
+      ...dto,
+      ...(dto.slug !== undefined ? { slug: dto.slug?.trim() || null } : {}),
+    });
 
     return category;
   }

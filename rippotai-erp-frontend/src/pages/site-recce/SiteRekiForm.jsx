@@ -10,7 +10,7 @@ import { Page, EmptyState } from "@/components/inos";
 import { todayISODate } from "@/components/forms/crm-form-ui";
 
 import { useGetProjectsQuery } from "../../api/projects/project.api";
-import { useGetUsersByRoleNameQuery } from "../../api/users/user.api";
+import { useGetUsersByRoleNameQuery, useGetUsersQuery } from "../../api/users/user.api";
 
 import {
   useCreateSiteRecceMutation,
@@ -494,6 +494,7 @@ export function SiteRekiForm() {
 
   const { data: siteEngineers = [] } =
     useGetUsersByRoleNameQuery("SITE_ENGINEER");
+  const { data: users = [] } = useGetUsersQuery();
 
   // ==========================================================
   // CREATE
@@ -549,7 +550,7 @@ export function SiteRekiForm() {
     project_name: "",
     client_name: "",
     site_address: "",
-    recce_date: "",
+    recce_date: todayISODate(),
 
     site_engineer_id: "",
     accompanied_by: "",
@@ -615,7 +616,7 @@ export function SiteRekiForm() {
     if (values.recce_date) return;
     setValues((prev) => ({ ...prev, recce_date: prev.recce_date || todayISODate() }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditMode]);
+  }, [isEditMode, values.recce_date]);
 
   // Preselect project from ?project_id= when opened from a project
   useEffect(() => {
@@ -656,6 +657,10 @@ export function SiteRekiForm() {
 
       value: user.id,
     }));
+    const userOptions = (Array.isArray(users) ? users : users.data || []).map((user) => ({
+      label: user.name || user.full_name || user.email,
+      value: user.name || user.full_name || user.email,
+    })).filter((option) => option.value);
 
     return SITE_RECCE_FORM_SECTIONS.map((section) => {
       if (!section.fields?.some((field) => field.key === "site_engineer_id")) {
@@ -671,11 +676,11 @@ export function SiteRekiForm() {
                 ...field,
                 options: engineerOptions,
               }
-            : field,
+            : field.key === "accompanied_by" ? { ...field, options: userOptions } : field,
         ),
       };
     });
-  }, [siteEngineers]);
+  }, [siteEngineers, users]);
 
   // ==========================================================
   // FIELD CHANGE

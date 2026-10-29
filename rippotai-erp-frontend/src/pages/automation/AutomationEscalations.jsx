@@ -1,3 +1,4 @@
+import { appPrompt } from "@/lib/app-dialog";
 // Automation — escalations opened by rules; acknowledge or resolve them.
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -20,7 +21,7 @@ export default function AutomationEscalations() {
   const set = async (e, next) => {
     let notes;
     if (next === "RESOLVED") {
-      notes = window.prompt("How was it resolved? (optional)") ?? undefined;
+      notes = (await appPrompt("How was it resolved? (optional)")) ?? undefined;
       if (notes === undefined) return;
     }
     setBusy(e.id);
