@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import {
   Search,
@@ -6,14 +6,10 @@ import {
   ChevronDown,
   LogOut,
   Settings,
-  FolderKanban,
-  Users,
-  FileSpreadsheet,
-  Truck,
-  FolderOpen,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import api from "@/lib/api";
+import { useGlobalSearchQuery } from "@/api/meta/search.api";
+import { pathForEntity } from "@/components/search/search-routes";
 import {
   useGetUserNotificationsQuery,
   useMarkAsReadMutation,
@@ -39,126 +35,33 @@ import {
 
 function GlobalSearch({ open, setOpen }) {
   const [q, setQ] = useState("");
-  const [results, setResults] = useState(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!open) {
-      setQ("");
-      setResults(null);
-      return;
-    }
-  }, [open]);
-
-  useEffect(() => {
-    if (!q || q.length < 2) {
-      setResults(null);
-      return;
-    }
-    const t = setTimeout(async () => {
-      try {
-        const { data } = await api.get(`/search?q=${encodeURIComponent(q)}`);
-        setResults(data);
-      } catch {
-        /* ignore */
-      }
-    }, 200);
-    return () => clearTimeout(t);
-  }, [q]);
-
-  const go = (path) => {
-    setOpen(false);
-    navigate(path);
-  };
-
+  const { currentData, isFetching, isError } = useGlobalSearchQuery(
+    { q: q.trim(), pageSize: 20 },
+    { skip: !open || q.trim().length < 2 },
+  );
+  const hits = (currentData?.results || []).filter((hit) => pathForEntity(hit));
   return (
-    <CommandDialog open={open} onOpenChange={setOpen}>
-      <Command>
-        <CommandInput
-          placeholder="Search projects, clients, BOQs, vendors or documents…"
-          value={q}
-          onValueChange={setQ}
-        />
+    <CommandDialog open={open} onOpenChange={(value) => { setOpen(value); if (!value) setQ(""); }}>
+      <Command shouldFilter={false}>
+        <CommandInput placeholder="Search projects, clients, drawings or documents…" value={q} onValueChange={setQ} />
         <CommandList>
-          {!results && <CommandEmpty>Type at least 2 characters…</CommandEmpty>}
-          {results && (
-            <>
-              {results.projects?.length > 0 && (
-                <CommandGroup heading="Projects">
-                  {results.projects.map((p) => (
-                    <CommandItem key={p.id} onSelect={() => go("/projects")}>
-                      <FolderKanban size={14} className="mr-2 text-[#333333]" />
-                      <span className="flex-1">{p.name}</span>
-                      <span className="text-xs text-[#B5C4B6]">
-                        {p.location}
-                      </span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-              {results.clients?.length > 0 && (
-                <CommandGroup heading="Clients">
-                  {results.clients.map((c) => (
-                    <CommandItem key={c.id} onSelect={() => go("/clients")}>
-                      <Users size={14} className="mr-2 text-[#333333]" />
-                      <span className="flex-1">{c.name}</span>
-                      <span className="text-xs text-[#B5C4B6]">{c.email}</span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-              {results.boqs?.length > 0 && (
-                <CommandGroup heading="BOQs">
-                  {results.boqs.map((b) => (
-                    <CommandItem key={b.id} onSelect={() => go("/boq")}>
-                      <FileSpreadsheet
-                        size={14}
-                        className="mr-2 text-[#333333]"
-                      />
-                      <span className="flex-1">
-                        {b.project_name} · {b.version}
-                      </span>
-                      <span className="text-xs text-[#B5C4B6] capitalize">
-                        {b.status}
-                      </span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-              {results.vendors?.length > 0 && (
-                <CommandGroup heading="Vendors">
-                  {results.vendors.map((v) => (
-                    <CommandItem key={v.id} onSelect={() => go("/vendors")}>
-                      <Truck size={14} className="mr-2 text-[#333333]" />
-                      <span className="flex-1">{v.name}</span>
-                      <span className="text-xs text-[#B5C4B6]">
-                        {v.category}
-                      </span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-              {results.documents?.length > 0 && (
-                <CommandGroup heading="Documents">
-                  {results.documents.map((d) => (
-                    <CommandItem key={d.id} onSelect={() => go("/documents")}>
-                      <FolderOpen size={14} className="mr-2 text-[#333333]" />
-                      <span className="flex-1">{d.name}</span>
-                      <span className="text-xs text-[#B5C4B6]">
-                        {d.project_name}
-                      </span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-            </>
-          )}
+          {q.trim().length < 2 ? <CommandEmpty>Type at least 2 characters…</CommandEmpty>
+            : isFetching ? <CommandEmpty>Searching…</CommandEmpty>
+            : isError ? <CommandEmpty>Could not load search results. Try again.</CommandEmpty>
+            : !hits.length ? <CommandEmpty>No results found.</CommandEmpty>
+            : <CommandGroup heading="Search results">
+              {hits.map((hit) => <CommandItem key={`${hit.entity_type}:${hit.id}`} value={`${hit.entity_type}:${hit.id}`} onSelect={() => { setOpen(false); setQ(""); navigate(pathForEntity(hit)); }}>
+                <Search size={14} className="mr-2" />
+                <span className="flex-1">{hit.title}</span>
+                <span className="text-xs text-muted-foreground">{hit.subtitle || hit.entity_type.replaceAll("_", " ")}</span>
+              </CommandItem>)}
+            </CommandGroup>}
         </CommandList>
       </Command>
     </CommandDialog>
   );
 }
-
 export default function LandingShell() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();

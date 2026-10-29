@@ -1,8 +1,9 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { UserPlus, Users, SearchX, RefreshCw, Mail } from "lucide-react";
+import { UserPlus, Users, SearchX, RefreshCw } from "lucide-react";
 import { useRequestEmailVerificationMutation } from "@/api/auth/auth.api";
 import {
   Page,
@@ -53,9 +54,9 @@ export default function UsersSettings() {
   const [updateVerification, { isLoading: updatingVerification }] = useUpdateEmailVerificationMutation();
   const [manualId, setManualId] = useState(null);
   const manuallyVerify = async (person, verified) => {
-    if (!window.confirm(verified
+    if (!(await appConfirm(verified
       ? `Mark ${person.email} as verified without sending an email? Existing sessions will be revoked.`
-      : `Mark ${person.email} as unverified? They must verify before signing in again. Existing sessions will be revoked.`)) return;
+      : `Mark ${person.email} as unverified? They must verify before signing in again. Existing sessions will be revoked.`))) return;
     setManualId(person.id);
     try {
       const result = await updateVerification({ id: person.id, verified }).unwrap();
@@ -117,7 +118,7 @@ export default function UsersSettings() {
   };
 
   const deleteUser = async (u) => {
-    if (!window.confirm(`Delete ${u.name}? This can't be undone.`)) return;
+    if (!(await appConfirm(`Delete ${u.name}? This can't be undone.`))) return;
 
     setSavingId(u.id);
     try {
@@ -137,6 +138,7 @@ export default function UsersSettings() {
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
     return list.filter((u) => {
+      if (params.get("userId") && String(u.id) !== params.get("userId")) return false;
       const active = u.is_active !== false;
       if (statusFilter === "active" && !active) return false;
       if (statusFilter === "inactive" && active) return false;
@@ -146,7 +148,7 @@ export default function UsersSettings() {
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(q));
     });
-  }, [list, search, statusFilter]);
+  }, [list, search, statusFilter, params]);
 
   if (!isAdmin) {
     return <AdminAccessDenied crumb="Users" />;
@@ -176,6 +178,11 @@ export default function UsersSettings() {
       />
 
       <Toolbar>
+        {params.get("userId") && <Button variant="secondary" onClick={() => {
+          const next = new URLSearchParams(params);
+          next.delete("userId");
+          setParams(next, { replace: true });
+        }}>Show all users</Button>}
         <SearchInput
           value={search}
           onChange={setSearch}
@@ -304,26 +311,9 @@ export default function UsersSettings() {
                           <Pill tone={verified ? "ok" : "mute"}>
                             {verified ? "Verified" : "Unverified"}
                           </Pill>
-                          {verified ? (
+                          {verified && (
                             <span className="adm-cell-sub">{fmtDate(u.email_verified_at)}</span>
-                          ) : (
-                            <Button
-                              variant="secondary"
-                              icon={Mail}
-                              disabled={!active || sendingVerification || updatingVerification}
-                              title={!active ? "Activate this account before sending a verification email" : `Send a verification link to ${u.email}`}
-                              onClick={() => requestVerification(u)}
-                            >
-                              {sendingId === u.id ? "Sending…" : "Send verification"}
-                            </Button>
                           )}
-                          <Button
-                            variant="secondary"
-                            disabled={updatingVerification || sendingVerification}
-                            onClick={() => manuallyVerify(u, !verified)}
-                          >
-                            {manualId === u.id ? "Updating…" : verified ? "Mark unverified" : "Mark verified manually"}
-                          </Button>
                         </div>
                       </td>
                       <td className="actions">
@@ -331,6 +321,13 @@ export default function UsersSettings() {
                           isSelf={isSelf}
                           isActive={active}
                           saving={savingId === u.id}
+                          isVerified={verified}
+                          sendingVerification={sendingVerification}
+                          updatingVerification={updatingVerification}
+                          sending={sendingId === u.id}
+                          updating={manualId === u.id}
+                          onSendVerification={() => requestVerification(u)}
+                          onToggleVerification={() => manuallyVerify(u, !verified)}
                           onEdit={() => setModalUser(u)}
                           onToggleActive={() => toggleActive(u)}
                           onDelete={() => deleteUser(u)}

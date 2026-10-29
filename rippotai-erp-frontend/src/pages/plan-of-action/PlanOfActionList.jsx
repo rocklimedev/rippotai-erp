@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -229,9 +230,9 @@ export default function PlanOfActionList() {
 
     const title = row.title || "Untitled Plan";
 
-    const confirmed = window.confirm(
+    const confirmed = (await appConfirm(
       `Are you sure you want to delete "${title}"?\n\nThis action cannot be undone.`,
-    );
+    ));
 
     if (!confirmed) return;
 
@@ -261,9 +262,9 @@ export default function PlanOfActionList() {
   const handlePublish = async (row) => {
     if (!row?.id) return;
 
-    const confirmed = window.confirm(
+    const confirmed = (await appConfirm(
       `Publish "${row.title || "Untitled Plan"}"?`,
-    );
+    ));
 
     if (!confirmed) return;
 

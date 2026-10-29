@@ -175,6 +175,47 @@ export function BriefSectionForm({
                     <tr key={idx}>
                       {columns.map((col) => (
                         <td key={col.key}>
+                          {col.type === "points" ? (
+                            <div style={{ display: "grid", gap: 8, minWidth: 220 }}>
+                              {String(row[col.key] ?? "").split(/\r?\n/).map((point, pointIndex, points) => (
+                                <div key={pointIndex} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <span aria-hidden="true">{pointIndex + 1}.</span>
+                                  <TextInput
+                                    value={point}
+                                    placeholder="Enter requirement"
+                                    aria-label={`Space ${idx + 1} requirement ${pointIndex + 1}`}
+                                    onChange={(event) => updateTableRow(field.key, idx, col.key,
+                                      points.map((value, index) => index === pointIndex ? event.target.value : value).join("\n"))}
+                                  />
+                                  <IconButton
+                                    danger
+                                    label={`Remove requirement ${pointIndex + 1} from space ${idx + 1}`}
+                                    onClick={() => updateTableRow(field.key, idx, col.key,
+                                      points.filter((_, index) => index !== pointIndex).join("\n"))}
+                                  >
+                                    <Trash2 />
+                                  </IconButton>
+                                </div>
+                              ))}
+                              <AddRowButton onClick={() => updateTableRow(field.key, idx, col.key, `${row[col.key] ?? ""}\n`)}>
+                                Add requirement
+                              </AddRowButton>
+                            </div>
+                          ) : col.type === "select" ? (
+                            <SelectInput
+                              value={row[col.key] ?? ""}
+                              placeholder={col.placeholder || `Select ${col.label.toLowerCase()}`}
+                              aria-label={col.label}
+                              onChange={(e) => updateTableRow(field.key, idx, col.key, e.target.value)}
+                            >
+                              {row[col.key] && !(col.options || []).some((option) => option.value === row[col.key]) && (
+                                <option value={row[col.key]}>{row[col.key]}</option>
+                              )}
+                              {(col.options || []).map((option) => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                              ))}
+                            </SelectInput>
+                          ) : (
                           <TextInput
                             type={col.type === "date" ? "date" : "text"}
                             value={row[col.key] ?? ""}
@@ -182,6 +223,7 @@ export function BriefSectionForm({
                             aria-label={col.label}
                             onChange={(e) => updateTableRow(field.key, idx, col.key, e.target.value)}
                           />
+                          )}
                         </td>
                       ))}
                       <td className="actions">
@@ -287,7 +329,7 @@ export function BriefSectionForm({
       const options = field.options || [];
       const selectedValue = field.arrayValue ? (Array.isArray(fieldValue) ? fieldValue[0] || "" : fieldValue) : fieldValue;
       const setSelected = (value) => set(field.arrayValue ? (value ? [String(value)] : []) : String(value));
-      const small = options.length > 0 && options.length <= 4;
+      const small = !field.dropdown && options.length > 0 && options.length <= 4;
       return (
         <Field key={field.key} label={field.label} required={field.required} hint={field.description} full={field.fullWidth}>
           {small ? (

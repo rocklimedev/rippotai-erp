@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Eye, Edit3, CreditCard, Trash2, RefreshCw } from "lucide-react";
@@ -142,11 +143,11 @@ export default function PaymentScheduleList() {
   // ------------------------------------------------------------
 
   const handleDelete = async (id, title) => {
-    const confirmed = window.confirm(
+    const confirmed = (await appConfirm(
       `Are you sure you want to delete "${
         title || "this payment schedule"
       }"?\n\nThis action cannot be undone.`,
-    );
+    ));
 
     if (!confirmed) {
       return;

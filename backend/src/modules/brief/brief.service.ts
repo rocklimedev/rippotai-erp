@@ -641,6 +641,7 @@ export class ProjectBriefsService {
           budgetFlexibility: current.budgetFlexibility,
 
           desiredStartDate: current.desiredStartDate,
+          expectedTimeline: current.expectedTimeline,
           siteHandoverDate: current.siteHandoverDate,
           targetCompletionDate: current.targetCompletionDate,
           deadlineReason: current.deadlineReason,

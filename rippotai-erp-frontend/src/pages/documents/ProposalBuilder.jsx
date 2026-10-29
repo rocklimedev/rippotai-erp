@@ -1,3 +1,4 @@
+import { appAlert } from "@/lib/app-dialog";
 import { useCreateBusinessProposalMutation, useUpdateBusinessProposalMutation } from "@/api/documents/business-proposals.api";
 import { toast } from "sonner";
 import React, { useEffect, useRef, useState } from "react";
@@ -741,7 +742,7 @@ export default function ProposalBuilder({
     if (missing.length > 0) {
       console.error("Proposal is incomplete:", missing);
 
-      alert(`The proposal is missing: ${missing.join(", ")}`);
+      (await appAlert(`The proposal is missing: ${missing.join(", ")}`));
 
       return;
     }
@@ -782,7 +783,7 @@ export default function ProposalBuilder({
     } catch (error) {
       console.error("Proposal PDF generation failed:", error);
 
-      alert("Could not generate the PDF. Check the console for details.");
+      (await appAlert("Could not generate the PDF. Check the console for details."));
     } finally {
       setExporting(false);
     }

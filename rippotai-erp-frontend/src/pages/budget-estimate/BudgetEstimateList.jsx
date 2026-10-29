@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useMemo, useState } from "react";
 import {
   Eye,
@@ -193,9 +194,9 @@ const BudgetEstimateList = ({ projectId }) => {
   // ============================================================
 
   const handleDelete = async (estimate) => {
-    const confirmed = window.confirm(
+    const confirmed = (await appConfirm(
       `Are you sure you want to delete "${estimate.title}"?`,
-    );
+    ));
 
     if (!confirmed) {
       return;

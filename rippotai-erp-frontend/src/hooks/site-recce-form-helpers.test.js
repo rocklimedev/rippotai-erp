@@ -7,8 +7,35 @@ import {
   commitRoomDraft,
   changeRoomField,
   SITE_UTILITY_FIELDS,
+  parseFeetInches,
+  roomFeetInchesDraft,
 } from "./site-recce-form-helpers.js";
 import { SITE_RECCE_FORM_SECTIONS } from "./reki-sections.js";
+
+test("feet and inches calculate and save decimal feet for one room", () => {
+  assert.equal(parseFeetInches("7i-12ii"), 8);
+  assert.equal(parseFeetInches("7'-6\""), 7.5);
+  assert.ok(Number.isNaN(parseFeetInches("-2i-3ii")));
+  let room = changeRoomField({ width: "12i-0ii", measurement_unit: "FT" }, "length", "7i-6ii");
+  assert.equal(room.area, 90);
+  room = changeRoomField(room, "area", "85");
+  room = changeRoomField(room, "length", "8i-0ii");
+  assert.equal(room.area, "85");
+  room = changeRoomField(room, "_manualArea", false);
+  assert.equal(room.area, 96);
+  const saved = commitRoomDraft([], [], { ...room, _draftId: "room", height: "9i-6ii" }).rooms[0];
+  assert.equal(saved.length, 8);
+  assert.equal(saved.height, 9.5);
+});
+
+test("existing metric rooms convert to feet with manual area preserved", () => {
+  const room = roomFeetInchesDraft({ length: 3.048, width: 3.048, height: 2.4384, area: 8, measurement_unit: "M" });
+  assert.equal(room.length, "10'-0\"");
+  assert.equal(room.height, "8'-0\"");
+  assert.equal(room.measurement_unit, "FT");
+  assert.equal(room._manualArea, true);
+  assert.equal(changeRoomField(room, "length", "11i-0ii").area, room.area);
+});
 test("room area updates from length and width with decimal rounding", () => {
   const room = changeRoomField({ width: "12", area: 50 }, "length", "14");
   assert.equal(room.area, 168);

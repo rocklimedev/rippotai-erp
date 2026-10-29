@@ -328,7 +328,18 @@ export const BRIEF_SECTIONS = [
         type: "table",
         columns: [
           { key: "name", label: "Name", type: "text" },
-          { key: "relation", label: "Relation", type: "text" },
+          {
+            key: "relation",
+            label: "Relation",
+            type: "select",
+            placeholder: "Select relation",
+            options: [
+              "Self", "Spouse", "Partner", "Father", "Mother", "Son", "Daughter",
+              "Brother", "Sister", "Grandfather", "Grandmother", "Grandson",
+              "Granddaughter", "Father-in-law", "Mother-in-law", "Son-in-law",
+              "Daughter-in-law", "Relative", "Friend", "Roommate", "Staff", "Other",
+            ].map((relation) => ({ value: relation, label: relation })),
+          },
           {
             key: "specificNeeds",
             label: "Specific Needs / Preferences",
@@ -366,7 +377,7 @@ export const BRIEF_SECTIONS = [
         showWhen: { field: "hasSpaceRequirements", value: "Yes" },
         columns: [
           { key: "spaceName", label: "Space / Room", type: "text" },
-          { key: "requirements", label: "Requirements", type: "text" },
+          { key: "requirements", label: "Requirements", type: "points" },
         ],
         addLabel: "Add Space",
       },
@@ -540,15 +551,24 @@ export const BRIEF_SECTIONS = [
     key: "timeline",
     fields: [
       {
+        key: "expectedTimeline",
+        label: "Expected Timeline",
+        type: "select",
+        dropdown: true,
+        options: ["3-6 months", "6-12 months", "12-18 months", "Flexible"].map((value) => ({ value, label: value })),
+      },
+      {
         key: "desiredStartDate",
         label: "Desired Start Date",
         type: "date",
+        showWhen: { field: "expectedTimeline", value: "Flexible" },
       },
       // startDateStatus REMOVED
       {
         key: "siteHandoverDate",
         label: "Site Handover Date",
         type: "date",
+        showWhen: { field: "expectedTimeline", value: "Flexible" },
       },
 
       {

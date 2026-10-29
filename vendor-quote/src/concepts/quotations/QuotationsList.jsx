@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -131,9 +132,9 @@ export default function QuotationsList() {
 
   const handleDelete = async (id, quotationNumber) => {
     if (
-      !window.confirm(
+      !(await appConfirm(
         `Delete quotation ${quotationNumber}? This cannot be undone.`,
-      )
+      ))
     ) {
       return;
     }

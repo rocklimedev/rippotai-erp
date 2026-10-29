@@ -1,3 +1,4 @@
+import { appConfirm, appAlert } from "@/lib/app-dialog";
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -186,9 +187,9 @@ export default function PurchaseOrderList() {
   const handleApprove = async (purchaseOrder) => {
     if (!purchaseOrder?.id) return;
 
-    const confirmed = window.confirm(
+    const confirmed = (await appConfirm(
       `Approve purchase order ${purchaseOrder.po_number || ""}?`,
-    );
+    ));
 
     if (!confirmed) return;
 
@@ -197,10 +198,10 @@ export default function PurchaseOrderList() {
     } catch (error) {
       console.error("Failed to approve purchase order:", error);
 
-      window.alert(
+      (await appAlert(
         error?.data?.message ||
           "Failed to approve purchase order. Please try again.",
-      );
+      ));
     }
   };
 
@@ -211,11 +212,11 @@ export default function PurchaseOrderList() {
   const handleCancel = async (purchaseOrder) => {
     if (!purchaseOrder?.id) return;
 
-    const confirmed = window.confirm(
+    const confirmed = (await appConfirm(
       `Cancel purchase order ${
         purchaseOrder.po_number || ""
       }?\n\nThis action may not be reversible.`,
-    );
+    ));
 
     if (!confirmed) return;
 
@@ -224,10 +225,10 @@ export default function PurchaseOrderList() {
     } catch (error) {
       console.error("Failed to cancel purchase order:", error);
 
-      window.alert(
+      (await appAlert(
         error?.data?.message ||
           "Failed to cancel purchase order. Please try again.",
-      );
+      ));
     }
   };
 
@@ -238,11 +239,11 @@ export default function PurchaseOrderList() {
   const handleDelete = async (purchaseOrder) => {
     if (!purchaseOrder?.id) return;
 
-    const confirmed = window.confirm(
+    const confirmed = (await appConfirm(
       `Delete purchase order ${
         purchaseOrder.po_number || ""
       }?\n\nThis will permanently remove the purchase order.`,
-    );
+    ));
 
     if (!confirmed) return;
 
@@ -255,10 +256,10 @@ export default function PurchaseOrderList() {
     } catch (error) {
       console.error("Failed to delete purchase order:", error);
 
-      window.alert(
+      (await appAlert(
         error?.data?.message ||
           "Failed to delete purchase order. Please try again.",
-      );
+      ));
     }
   };
 

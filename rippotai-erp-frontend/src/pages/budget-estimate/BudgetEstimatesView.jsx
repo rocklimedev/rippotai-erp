@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 // Budget Estimate — trade-wise costs and the commercial summary, as a clean A4 document on the shared print kit.
 import React, { useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -137,7 +138,7 @@ export default function BudgetEstimateView() {
   const crumbs = [{ label: "Ledger", to: "/ledger" }, { label: "Budget estimates", to: "/ledger/budget-estimates/all" }, { label: "Estimate" }];
 
   const act = async (fn, ok, confirmText) => {
-    if (confirmText && !window.confirm(confirmText)) return false;
+    if (confirmText && !(await appConfirm(confirmText))) return false;
     try {
       await fn(id).unwrap();
       toast.success(ok);

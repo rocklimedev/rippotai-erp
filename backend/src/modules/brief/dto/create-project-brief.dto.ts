@@ -4,6 +4,7 @@ import {
   IsBoolean,
   IsDateString,
   IsEnum,
+  IsIn,
   IsNumber,
   IsOptional,
   IsString,
@@ -401,6 +402,10 @@ export class CreateProjectBriefDto {
   budgetFlexibility?: string;
 
   // Timeline
+
+  @IsOptional()
+  @IsIn(['3-6 months', '6-12 months', '12-18 months', 'Flexible'])
+  expectedTimeline?: string;
 
   @IsOptional()
   @IsDateString()

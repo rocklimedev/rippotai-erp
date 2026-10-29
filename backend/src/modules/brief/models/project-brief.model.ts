@@ -211,6 +211,9 @@ export class ProjectBrief extends Model<ProjectBrief> {
   @Column(DataType.DATEONLY)
   declare desiredStartDate: string | null;
 
+  @Column(DataType.STRING(32))
+  declare expectedTimeline: string | null;
+
   @Column(DataType.DATEONLY)
   declare siteHandoverDate: string | null;
 

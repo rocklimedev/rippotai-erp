@@ -1,3 +1,4 @@
+import { appPrompt, appConfirm } from "@/lib/app-dialog";
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -291,10 +292,10 @@ export default function BoqDashboard() {
       return;
     }
 
-    const title = window.prompt(
+    const title = (await appPrompt(
       "Enter a name for the combined BOQ:",
       `Combined BOQ - ${new Date().toLocaleDateString()}`,
-    );
+    ));
 
     if (title === null) return;
 
@@ -349,10 +350,10 @@ export default function BoqDashboard() {
   // ============================================================
 
   const duplicate = async (id) => {
-    const reason = window.prompt(
+    const reason = (await appPrompt(
       "Reason for duplicating this version (optional):",
       "",
-    );
+    ));
 
     if (reason === null) return;
 
@@ -448,10 +449,10 @@ export default function BoqDashboard() {
 
     const label = b.boq_number || b.title || "this BOQ";
 
-    const confirmed = window.confirm(
+    const confirmed = (await appConfirm(
       `Convert ${label} into a Budget Estimate?\n\n` +
         `The BOQ categories, items, quantities, rates and project information will be copied into a new Budget Estimate.`,
-    );
+    ));
 
     if (!confirmed) {
       return;
@@ -511,9 +512,9 @@ export default function BoqDashboard() {
   const handleDelete = async (b) => {
     const label = b.boq_number || b.title || "this BOQ";
 
-    const confirmed = window.confirm(
+    const confirmed = (await appConfirm(
       `Delete ${label}? This action cannot be undone.`,
-    );
+    ));
 
     if (!confirmed) return;
 

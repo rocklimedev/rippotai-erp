@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -174,9 +175,9 @@ export default function SiteRecceList() {
   const removeRecce = async (recce) => {
     const projectName = getProjectName(recce);
 
-    const confirmed = window.confirm(
+    const confirmed = (await appConfirm(
       `Delete site recce for "${projectName}"?\n\nThis will remove the site recce and its rooms/photos.`,
-    );
+    ));
 
     if (!confirmed) return;
 

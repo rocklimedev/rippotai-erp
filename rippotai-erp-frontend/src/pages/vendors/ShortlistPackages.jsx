@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import { useState } from 'react';
 import {
   useGetProjectShortlistsQuery, useGetShortlistPackagesQuery,
@@ -62,8 +63,8 @@ export default function ShortlistPackages({ projectId, readOnly }) {
           setPlan({ applicable: [], skipped: result.skipped });
           setMessage(`Applied ${result.applied} entries; skipped ${result.skipped.length}.`);
         })}>Apply package</button>
-        <button className="bc-btn" disabled={busy || !packageId} onClick={() => {
-          if (window.confirm(`Delete package "${selected?.name}"?`)) run(async () => {
+        <button className="bc-btn" disabled={busy || !packageId} onClick={async () => {
+          if ((await appConfirm(`Delete package "${selected?.name}"?`))) run(async () => {
             await remove(packageId).unwrap(); setPackageId(''); setPlan(null); setMessage('Package deleted.');
           });
         }}>Delete package</button>

@@ -10,6 +10,7 @@ import ProjectPlannerList from "../../pages/projects/ProjectPlannerList";
 import ProjectPlannerView from "../../pages/projects/ProjectPlannerView";
 import ProjectPlannerWorkspace from "../../pages/projects/ProjectPlannerWorkspace";
 import { DocumentsAll } from "@/pages/documents/DocumentsAll";
+import DocumentView from "@/pages/documents/DocumentView";
 import { DocumentUpload } from "@/pages/documents/DocumentUpload";
 import { DocumentReference } from "@/components/documents/DocumentSequenceNavigation";
 
@@ -47,6 +48,7 @@ export const projectsRoutes = [
       { path: ":id", element: <ProjectWorkspace /> },
       { path: "documents/all", element: <DocumentsAll /> },
       { path: "documents/upload", element: <DocumentUpload /> },
+      { path: "documents/:id", element: <DocumentView /> },
     ],
   },
 ];

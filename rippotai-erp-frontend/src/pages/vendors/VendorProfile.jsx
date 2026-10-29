@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useGetVendorByIdQuery } from "../../api/vendors/vendor.api"; // Adjust path based on your RTK Query exports
@@ -106,7 +107,7 @@ export default function VendorProfile() {
   };
 
   const block = async () => {
-    if (!confirm("Block this vendor?")) return;
+    if (!(await appConfirm("Block this vendor?"))) return;
     await api.post(`/vendors/${id}/block`);
     toast.success("Blocked");
     load();

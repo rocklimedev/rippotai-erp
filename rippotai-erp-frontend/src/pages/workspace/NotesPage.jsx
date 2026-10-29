@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 // Notes: quick shared / private notes, optionally linked to a project or client.
 import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -164,7 +165,7 @@ export default function NotesPage() {
     try { await updateNote({ id: n.id, pinned: !n.pinned }).unwrap(); } catch { toast.error("Couldn't update"); }
   };
   const remove = async (n) => {
-    if (!window.confirm(`Delete “${n.title}”?`)) return;
+    if (!(await appConfirm(`Delete “${n.title}”?`))) return;
     try { await deleteNote(n.id).unwrap(); toast.success("Note deleted"); } catch { toast.error("Couldn't delete"); }
   };
 

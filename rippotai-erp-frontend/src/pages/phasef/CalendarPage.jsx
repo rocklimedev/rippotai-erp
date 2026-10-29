@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -733,9 +734,9 @@ function CreateEventModal({
       return;
     }
 
-    const confirmed = window.confirm(
+    const confirmed = (await appConfirm(
       `Delete "${existingEvent.title}"? This action cannot be undone.`,
-    );
+    ));
 
     if (!confirmed) return;
 

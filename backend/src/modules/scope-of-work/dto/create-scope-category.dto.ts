@@ -12,9 +12,10 @@ export class CreateScopeCategoryDto {
   @MaxLength(255)
   name: string;
 
+  @IsOptional()
   @IsString()
   @MaxLength(255)
-  slug: string;
+  slug?: string | null;
 
   @IsOptional()
   @IsString()

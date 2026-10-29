@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Plus, Trash2, FileText, Pencil } from "lucide-react";
@@ -183,9 +184,9 @@ export default function BudgetGuideList() {
                                 aria-label={`Delete ${row.title}`}
                                 onClick={async () => {
                                   if (
-                                    !window.confirm(
+                                    !(await appConfirm(
                                       `Delete "${row.title}"? Project copies will remain.`,
-                                    )
+                                    ))
                                   )
                                     return;
                                   try {

@@ -1,3 +1,4 @@
+import { appAlert, appConfirm } from "@/lib/app-dialog";
 import React, { useMemo, useState } from "react";
 import {
   useGetProjectShortlistsQuery,
@@ -62,18 +63,18 @@ export default function ListShortlist({
       if (onOpenShortlist) onOpenShortlist(result);
     } catch (err) {
       console.error("Create shortlist failed", err);
-      alert(err?.data?.message || "Failed to create shortlist");
+      (await appAlert(err?.data?.message || "Failed to create shortlist"));
     }
   };
 
   const handleDelete = async (id, type) => {
-    if (!window.confirm(`Delete the ${type} shortlist? This cannot be undone.`))
+    if (!(await appConfirm(`Delete the ${type} shortlist? This cannot be undone.`)))
       return;
     try {
       await deleteShortlist(id).unwrap();
     } catch (err) {
       console.error("Delete failed", err);
-      alert(err?.data?.message || "Failed to delete shortlist");
+      (await appAlert(err?.data?.message || "Failed to delete shortlist"));
     }
   };
 
@@ -89,7 +90,7 @@ export default function ListShortlist({
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Export failed", err);
-      alert("Failed to export shortlists");
+      (await appAlert("Failed to export shortlists"));
     }
   };
 

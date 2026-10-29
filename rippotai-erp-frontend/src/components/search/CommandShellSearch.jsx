@@ -24,6 +24,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 import { APP_META, APP_MENUS } from "@/config/appNav";
 import { useGlobalSearchQuery } from "@/api/meta/search.api";
+import { pathForEntity } from "./search-routes";
 
 // ============================================================
 // Resolve a slug against the app's base route.
@@ -90,64 +91,6 @@ const ENTITY_LABEL = {
   budget_estimate: "Budget Estimate",
 };
 
-/** Map entity_type + id → app route. Adjust paths to match your router. */
-function pathForEntity(hit) {
-  const type = hit.entity_type;
-  const id = hit.id;
-  const projectId = hit.meta?.project_id ?? hit.meta?.projectId;
-
-  switch (type) {
-    case "project":
-      return `/projects/${id}`;
-    case "client":
-      return `/clients/${id}`;
-    case "user":
-      return `/users/${id}`;
-    case "lead":
-      return `/leads/${id}`;
-    case "vendor":
-      return `/vendors/${id}`;
-    case "boq":
-      return projectId ? `/projects/${projectId}/boqs/${id}` : `/boqs/${id}`;
-    case "project_brief":
-      return projectId
-        ? `/projects/${projectId}/briefs/${id}`
-        : `/briefs/${id}`;
-    case "quotation":
-      return projectId
-        ? `/projects/${projectId}/quotations/${id}`
-        : `/quotations/${id}`;
-    case "site_recce":
-      return projectId
-        ? `/projects/${projectId}/site-recce/${id}`
-        : `/site-recce/${id}`;
-    case "task":
-      return projectId ? `/projects/${projectId}/tasks/${id}` : `/tasks/${id}`;
-    case "calendar_event":
-      return `/calendar`;
-    case "document":
-      return projectId
-        ? `/projects/${projectId}/documents/${id}`
-        : `/documents/${id}`;
-    case "drawing":
-      return projectId
-        ? `/projects/${projectId}/drawings/${id}`
-        : `/drawings/${id}`;
-    case "work_order":
-      return projectId
-        ? `/projects/${projectId}/work-orders/${id}`
-        : `/work-orders/${id}`;
-    case "delivery_challan":
-      return `/delivery-challans/${id}`;
-    case "budget_estimate":
-      return projectId
-        ? `/projects/${projectId}/budget-estimates/${id}`
-        : `/budget-estimates/${id}`;
-    default:
-      return null;
-  }
-}
-
 // ============================================================
 // Command Shell Search
 // ============================================================
@@ -169,7 +112,7 @@ export default function CommandShellSearch({ currentApp }) {
   // GLOBAL SEARCH (v2 – object arg + unified results)
   // ============================================================
 
-  const { data: searchData, isFetching } = useGlobalSearchQuery(
+  const { currentData: searchData, isFetching } = useGlobalSearchQuery(
     {
       q: trimmedQuery,
       page: 1,
@@ -183,7 +126,7 @@ export default function CommandShellSearch({ currentApp }) {
   /** Unified hits from Search v2 */
   const searchResults = useMemo(() => {
     const hits = searchData?.results ?? [];
-    return hits.map((hit) => ({
+    return hits.filter((hit) => pathForEntity(hit)).map((hit) => ({
       id: `search-${hit.entity_type}-${hit.id}`,
       entityId: hit.id,
       entity_type: hit.entity_type,

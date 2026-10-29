@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -48,9 +49,9 @@ export default function ProjectsList() {
 
   const handleDelete = async (id) => {
     if (
-      !window.confirm(
+      !(await appConfirm(
         "Archive this project? It will no longer appear in new quotations.",
-      )
+      ))
     )
       return;
     try {

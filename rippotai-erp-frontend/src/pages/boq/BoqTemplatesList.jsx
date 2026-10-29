@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { formatINR, relativeTime } from "@/lib/format";
@@ -23,7 +24,7 @@ export function BoqTemplatesList() {
   const [deleteTemplate] = useDeleteTemplateMutation();
 
   const handleDelete = async (t) => {
-    if (!confirm(`Delete template "${t.name}"?`)) return;
+    if (!(await appConfirm(`Delete template "${t.name}"?`))) return;
     try {
       await deleteTemplate(t.id).unwrap();
       toast.success("Deleted");

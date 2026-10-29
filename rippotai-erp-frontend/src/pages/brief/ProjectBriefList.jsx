@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import { useAuth } from "@/context/AuthContext";
 import { BRIEF_STATUS_LABELS, briefTransitions } from "./brief-status";
 import React, { useMemo, useState } from "react";
@@ -175,9 +176,9 @@ export default function ProjectBriefList() {
 
     if (
       status === "SIGNED_OFF" &&
-      !window.confirm(
+      !(await appConfirm(
         "Sign off this client brief? Changes will require a new draft version.",
-      )
+      ))
     )
       return;
     try {
@@ -210,9 +211,9 @@ export default function ProjectBriefList() {
 
     const projectName = getProjectName(brief);
 
-    const confirmed = window.confirm(
+    const confirmed = (await appConfirm(
       `Delete the client brief for "${projectName}"?\n\nIt will be removed from active briefs. Its stored data and related records will be retained.`,
-    );
+    ));
 
     if (!confirmed) return;
 

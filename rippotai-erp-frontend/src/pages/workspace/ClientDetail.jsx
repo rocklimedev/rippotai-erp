@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 // Client detail: /clients/:id — contact card, projects, payments, quotations, documents, notes.
 import React, { useMemo, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
@@ -45,7 +46,7 @@ export default function ClientDetail() {
   const c = data.client;
   const remove = async () => {
     if (data.projects.length) return toast.error("This client has projects. Archive or reassign them first.");
-    if (!window.confirm(`Remove ${c.name}? You can restore them from the Admin Console.`)) return;
+    if (!(await appConfirm(`Remove ${c.name}? You can restore them from the Admin Console.`))) return;
     try { await del(id).unwrap(); toast.success("Client removed"); navigate("/clients"); } catch (e) { toast.error(e?.data?.message || "Couldn't remove"); }
   };
 

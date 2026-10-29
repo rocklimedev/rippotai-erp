@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Plus, Save, Trash2, FileText } from "lucide-react";
@@ -300,9 +301,9 @@ export default function BudgetGuideEditor() {
           <Button
             onClick={async () => {
               if (
-                !window.confirm(
+                !(await appConfirm(
                   "Reload the latest guide and discard your unsaved edits?",
-                )
+                ))
               )
                 return;
               try {
@@ -332,9 +333,9 @@ export default function BudgetGuideEditor() {
                   onClick={async () => {
                     if (
                       dirty &&
-                      !window.confirm(
+                      !(await appConfirm(
                         "Replace this draft with the construction reference template?",
-                      )
+                      ))
                     )
                       return;
                     try {
@@ -777,10 +778,10 @@ export default function BudgetGuideEditor() {
                   <Button
                     size="sm"
                     icon={Trash2}
-                    onClick={() => {
+                    onClick={async () => {
                       if (
                         head.items.length &&
-                        !window.confirm("Remove this cost head and its items?")
+                        !(await appConfirm("Remove this cost head and its items?"))
                       )
                         return;
                       patchPlan({
@@ -960,8 +961,8 @@ export default function BudgetGuideEditor() {
               Save guide
             </Button>
             <Button
-              onClick={() => {
-                if (dirty && !window.confirm("Leave without saving changes?"))
+              onClick={async () => {
+                if (dirty && !(await appConfirm("Leave without saving changes?")))
                   return;
                 navigate("/ledger/budget-guides/all");
               }}

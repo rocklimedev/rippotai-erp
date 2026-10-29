@@ -114,6 +114,12 @@
 .adm-split--wide { grid-template-columns: 340px minmax(0, 1fr); }
 @media (max-width: 900px) { .adm-split, .adm-split--wide { grid-template-columns: 1fr; } }
 .adm-sticky { position: sticky; top: 76px; }
+.adm-roles-sidebar { max-height: calc(100dvh - 100px); display: flex; flex-direction: column; }
+.adm-roles-sidebar > .inos-card__header { flex-shrink: 0; }
+.adm-roles-sidebar > .inos-card__body { min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.adm-roles-search { padding: 16px; flex-shrink: 0; }
+.adm-roles-list { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+@media (max-width: 900px) { .adm-roles-sidebar { max-height: 420px; } }
 @media (max-width: 900px) { .adm-sticky { position: static; } }
 
 .adm-list { display: flex; flex-direction: column; gap: 2px; padding: 8px; }

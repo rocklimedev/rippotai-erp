@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Building2, SearchX, UserPlus } from "lucide-react";
@@ -102,9 +103,9 @@ export default function ClientSettings() {
    */
   const deleteClient = async (client) => {
     if (
-      !window.confirm(
+      !(await appConfirm(
         `Delete ${client.name}? This client will be moved to deleted clients.`,
-      )
+      ))
     ) {
       return;
     }

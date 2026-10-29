@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Layers3, RefreshCw, SearchX } from "lucide-react";
@@ -191,9 +192,9 @@ const ProjectPhases = () => {
   };
 
   const handleDelete = async (item) => {
-    const confirmed = window.confirm(
+    const confirmed = (await appConfirm(
       `Delete project phase "${item.title}"? This action cannot be undone.`,
-    );
+    ));
 
     if (!confirmed) return;
 

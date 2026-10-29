@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import { termsToText, textToTermsHtml } from "@/lib/terms";
 import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -218,7 +219,7 @@ export default function TermsSettings() {
   };
 
   const handleDelete = async (template) => {
-    if (!confirm(`Delete "${template.name}"? This can't be undone.`)) return;
+    if (!(await appConfirm(`Delete "${template.name}"? This can't be undone.`))) return;
     try {
       await deleteTemplate(template.id).unwrap();
       toast.success("Template deleted");
@@ -235,7 +236,7 @@ export default function TermsSettings() {
 
   const visibleScopes =
     scopeFilter === "ALL"
-      ? SCOPES.filter((s) => templatesByScope(s.value).length > 0)
+      ? [{ value: "ALL", label: "All terms & conditions", icon: ScrollText, description: "All saved templates, including inactive templates." }]
       : SCOPES.filter((s) => s.value === scopeFilter);
 
   const renderRow = (template) => (
@@ -284,7 +285,7 @@ export default function TermsSettings() {
           v{template.current_version} · updated{" "}
           {formatDate(template.updated_at)}
         </div>
-        <TermsPreview htmlContent={template.content_html} maxPreview={2} />
+        <TermsPreview htmlContent={template.content_html} />
       </div>
 
       <div
@@ -413,7 +414,7 @@ export default function TermsSettings() {
         </Card>
       ) : (
         visibleScopes.map(({ value, label, icon: Icon, description }) => {
-          const scoped = templatesByScope(value);
+          const scoped = value === "ALL" ? all : templatesByScope(value);
           return (
             <section key={value} className="inos-card">
               <div className="inos-card__header">

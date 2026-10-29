@@ -96,19 +96,19 @@ export class SiteRecceRoom extends Model<SiteRecceRoom> {
   // ============================================================
 
   @Column({
-    type: DataType.DECIMAL(10, 2),
+    type: DataType.DECIMAL(14, 6),
     allowNull: true,
   })
   declare length: number | null;
 
   @Column({
-    type: DataType.DECIMAL(10, 2),
+    type: DataType.DECIMAL(14, 6),
     allowNull: true,
   })
   declare width: number | null;
 
   @Column({
-    type: DataType.DECIMAL(10, 2),
+    type: DataType.DECIMAL(14, 6),
     allowNull: true,
   })
   declare height: number | null;

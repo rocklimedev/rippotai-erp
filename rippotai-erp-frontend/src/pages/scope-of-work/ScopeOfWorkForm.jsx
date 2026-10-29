@@ -21,6 +21,7 @@ import {
   Callout,
 } from "@/components/forms/crm-form-ui";
 import { useAutoSave } from "../../hooks/use-autosave";
+import { mergeScopeSpaces, scopeItemsForSpace } from "./scope-space-groups";
 import { useSharedProjectData } from "../../hooks/use-shared-project-data";
 import { useGetProjectsQuery } from "../../api/projects/project.api";
 
@@ -46,8 +47,7 @@ const NEW_CATEGORY_VALUE = "__new_category__";
 
 const SCOPE_OF_WORK_SECTIONS = [
   { title: "Overview", type: "overview" },
-  { title: "Scope Items", type: "items" },
-  { title: "Spaces", type: "spaces" },
+  { title: "Spaces & Scope of Work", type: "spaces" },
 ];
 
 const PROJECT_MODE_OPTIONS = [
@@ -340,6 +340,7 @@ export function ScopeOfWorkForm() {
   const categories = values.Categories || [];
 
   const items = values.Items || [];
+  const allSpaces = mergeScopeSpaces(projectSpaces, spaces);
 
   const summaryError = submitAttempted && !overview.scope_summary?.trim();
   const spacesTouched = submitAttempted;
@@ -507,37 +508,32 @@ export function ScopeOfWorkForm() {
         ...prev,
 
         Spaces: (prev.Spaces || []).filter((_, i) => i !== index),
+        Items: (prev.Items || []).filter((item) => item.project_space_id !== prev.Spaces[index]?.id),
       }));
     };
 
     return (
       <>
-        {projectSpaces.length > 0 && (
-          <Callout
-            title={`${projectSpaces.length} space${projectSpaces.length > 1 ? "s" : ""} already on this project`}
-          >
-            {projectSpaces.map((space) => space.name).join(", ")}. These are
-            available for scope items without adding them again.
-          </Callout>
-        )}
-
-        {spaces.length === 0 ? (
+        {allSpaces.length === 0 ? (
           <EmptyRows
             icon={Folder}
-            title="No new spaces added"
+            title="No spaces yet"
             text="Add spaces such as Living room, Kitchen, Master bedroom or Bathroom."
           />
         ) : (
           <div className="crmf-rows">
-            {spaces.map((space, index) => {
+            {allSpaces.map((space, index) => {
+              const draftIndex = spaces.findIndex((draft) => draft.id === space.id);
+              const savedSpace = projectSpaces.some((saved) => saved.id === space.id);
+              const spaceItemCount = items.filter((item) => item.project_space_id === space.id).length;
               const missingName = spacesTouched && !space.name?.trim();
               return (
                 <RowCard
                   key={space.id}
                   index={index + 1}
                   title={space.name?.trim() || `Space ${index + 1}`}
-                  meta={space.slug ? `/${space.slug}` : undefined}
-                  onRemove={() => removeSpace(index)}
+                  meta={spaceItemCount ? `${spaceItemCount} scope item${spaceItemCount === 1 ? "" : "s"}` : "Unused — no scope items added"}
+                  onRemove={!savedSpace && draftIndex >= 0 ? () => removeSpace(draftIndex) : undefined}
                   removeLabel="Remove space"
                 >
                   <div className="inos-form-grid">
@@ -548,10 +544,11 @@ export function ScopeOfWorkForm() {
                     >
                       <TextInput
                         value={space.name || ""}
+                        readOnly={savedSpace}
                         invalid={missingName}
                         autoFocus={!space.name}
                         onChange={(e) =>
-                          updateSpace(index, "name", e.target.value)
+                          updateSpace(draftIndex, "name", e.target.value)
                         }
                         placeholder="e.g. Living room"
                       />
@@ -560,13 +557,15 @@ export function ScopeOfWorkForm() {
                     <Field label="Description" optional>
                       <TextInput
                         value={space.description || ""}
+                        readOnly={savedSpace}
                         onChange={(e) =>
-                          updateSpace(index, "description", e.target.value)
+                          updateSpace(draftIndex, "description", e.target.value)
                         }
                         placeholder="e.g. Double-height living with balcony"
                       />
                     </Field>
                   </div>
+                  <div style={{ marginTop: 16 }}>{renderItemsSection(space.id)}</div>
                 </RowCard>
               );
             })}
@@ -574,8 +573,14 @@ export function ScopeOfWorkForm() {
         )}
 
         <AddRowButton onClick={addSpace}>
-          {spaces.length ? "Add space" : "Add first space"}
+          {allSpaces.length ? "Add space" : "Add first space"}
         </AddRowButton>
+        {scopeItemsForSpace(items, null, allSpaces).length > 0 && (
+          <div style={{ marginTop: 24 }}>
+            <Callout title="Items needing a space">Choose a space for these existing items.</Callout>
+            {renderItemsSection(null)}
+          </div>
+        )}
       </>
     );
   };
@@ -584,7 +589,7 @@ export function ScopeOfWorkForm() {
   // ITEMS SECTION
   // ============================================================
 
-  const renderItemsSection = () => {
+  const renderItemsSection = (spaceId) => {
     const addItem = () => {
       setValues((prev) => ({
         ...prev,
@@ -595,7 +600,7 @@ export function ScopeOfWorkForm() {
           {
             id: crypto.randomUUID(),
 
-            project_space_id: "",
+            project_space_id: spaceId || "",
 
             scope_category_id: "",
 
@@ -704,24 +709,20 @@ export function ScopeOfWorkForm() {
       }
     };
 
-    const spaceOptions = [
-      ...projectSpaces,
-      ...spaces.filter(
-        (space) => !projectSpaces.some((existing) => existing.id === space.id),
-      ),
-    ];
+    const spaceOptions = allSpaces;
+    const groupedItems = scopeItemsForSpace(items, spaceId, allSpaces);
 
     return (
       <>
-        {items.length === 0 ? (
+        {groupedItems.length === 0 ? (
           <EmptyRows
             icon={ListChecks}
             title="No scope items yet"
-            text="Add the detailed work for each space — what is included and what is excluded."
+            text="Add a category and describe the work for this space."
           />
         ) : (
           <div className="crmf-rows">
-            {items.map((item, index) => {
+            {groupedItems.map(({ item, index }) => {
               const spaceName = spaceOptions.find(
                 (s) => s.id === item.project_space_id,
               )?.name;
@@ -744,7 +745,7 @@ export function ScopeOfWorkForm() {
                   removeLabel="Remove scope item"
                 >
                   <div className="inos-form-grid">
-                    <Field
+                    {spaceId === null && <Field
                       label="Space"
                       required
                       error={
@@ -772,7 +773,7 @@ export function ScopeOfWorkForm() {
                           </option>
                         ))}
                       </SelectInput>
-                    </Field>
+                    </Field>}
 
                     <Field
                       label="Category"
@@ -1279,17 +1280,11 @@ export function ScopeOfWorkForm() {
           description: "Project mode, summary and what is excluded.",
           done: Boolean(overview.scope_summary?.trim()),
         },
-        Spaces: {
+        "Spaces & Scope of Work": {
           description:
-            "Rooms or areas this scope covers. Existing project spaces are reused.",
-          done: spaces.length > 0 || projectSpaces.length > 0,
-          count: spaces.length,
-        },
-        "Scope Items": {
-          description:
-            "Each piece of work, tied to a space and category, marked included or excluded.",
+            "All project spaces, including unused spaces. Add categories and scope of work within each space.",
           done: items.length > 0,
-          count: items.length,
+          count: allSpaces.length,
         },
       }}
       onSaveDraft={() => {

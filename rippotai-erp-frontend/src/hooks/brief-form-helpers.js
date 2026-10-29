@@ -186,6 +186,7 @@ export const normalizeProjectBrief = (brief) => {
     // ========================================================
     // TIMELINE
     // ========================================================
+    expectedTimeline: brief.expectedTimeline ?? ((brief.desiredStartDate || brief.siteHandoverDate) ? "Flexible" : ""),
     desiredStartDate: brief.desiredStartDate ?? "",
     siteHandoverDate: brief.siteHandoverDate ?? "",
     targetCompletionDate: brief.targetCompletionDate ?? "",
@@ -327,8 +328,9 @@ export const buildProjectBriefPayload = (projectId, values) => {
     budgetFlexibility: values.budgetFlexibility || null,
 
     // TIMELINE
-    desiredStartDate: values.desiredStartDate || null,
-    siteHandoverDate: values.siteHandoverDate || null,
+    expectedTimeline: values.expectedTimeline || null,
+    desiredStartDate: values.expectedTimeline && values.expectedTimeline !== "Flexible" ? null : values.desiredStartDate || null,
+    siteHandoverDate: values.expectedTimeline && values.expectedTimeline !== "Flexible" ? null : values.siteHandoverDate || null,
     targetCompletionDate: values.targetCompletionDate || null,
     deadlineReason: values.deadlineReason || null,
     phasingRequired: parseBoolean(values.phasingRequired),

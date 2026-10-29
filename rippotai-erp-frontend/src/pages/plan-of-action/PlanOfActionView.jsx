@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 // Plan of Action — how execution runs, phase by phase. Clean A4 document on the shared print kit.
 import React, { useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -233,7 +234,7 @@ export function PlanOfActionView() {
   ];
 
   const removePlan = async () => {
-    if (!window.confirm("Delete this Plan of Action? This cannot be undone."))
+    if (!(await appConfirm("Delete this Plan of Action? This cannot be undone.")))
       return;
     try {
       await deletePlanOfAction(id).unwrap();
@@ -245,9 +246,9 @@ export function PlanOfActionView() {
   };
   const publishPlan = async () => {
     if (
-      !window.confirm(
+      !(await appConfirm(
         "Publish this Plan of Action? The client will be able to view it.",
-      )
+      ))
     )
       return;
     try {

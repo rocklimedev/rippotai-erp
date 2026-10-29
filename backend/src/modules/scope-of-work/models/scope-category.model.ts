@@ -34,10 +34,10 @@ export class ScopeCategory extends Model<ScopeCategory> {
 
   @Column({
     type: DataType.STRING(255),
-    allowNull: false,
+    allowNull: true,
     unique: true,
   })
-  declare slug: string;
+  declare slug: string | null;
 
   @Column({
     type: DataType.TEXT,

@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -356,7 +357,7 @@ export default function AdminDprWorkspacePage() {
                       <Button
                         disabled={removing.isLoading}
                         onClick={async () => {
-                          if (!window.confirm("Delete this entry?")) return;
+                          if (!(await appConfirm("Delete this entry?"))) return;
                           try {
                             await remove({ kind, id: row.id }).unwrap();
                             if (form?.id === row.id) setForm(null);

@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useCallback, useMemo, useState } from "react";
 
 import {
@@ -578,9 +579,9 @@ const ProjectPlannerList = () => {
 
     const projectName = instance?.project?.name || "this project";
 
-    const confirmed = window.confirm(
+    const confirmed = (await appConfirm(
       `Delete ${plannerName} from ${projectName}?\n\nThis action cannot be undone.`,
-    );
+    ));
 
     if (!confirmed) {
       return;

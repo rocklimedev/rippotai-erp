@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -287,11 +288,11 @@ export default function DeliveryChallanList() {
       return;
     }
 
-    const confirmed = window.confirm(
+    const confirmed = (await appConfirm(
       `Delete delivery challan ${
         challanNumber || id.slice(0, 8)
       }?\n\nThis action cannot be undone.`,
-    );
+    ));
 
     if (!confirmed) {
       return;

@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import DeleteRateComparison from "@/components/materials/DeleteRateComparison";
@@ -996,10 +997,10 @@ function ComparisonWorkspace({ initialSheet }) {
   // RESET
   // ==========================================================
 
-  const resetRates = () => {
+  const resetRates = async () => {
     if (
       Object.keys(vendorRates).length &&
-      !window.confirm("Clear all entered vendor rates?")
+      !(await appConfirm("Clear all entered vendor rates?"))
     )
       return;
     setVendorRates({});
@@ -1016,7 +1017,7 @@ function ComparisonWorkspace({ initialSheet }) {
       if (
         !initialSheet &&
         Object.keys(vendorRates).length &&
-        !window.confirm("Refresh the source BOQ and clear entered rates?")
+        !(await appConfirm("Refresh the source BOQ and clear entered rates?"))
       )
         return;
       if (!initialSheet) setVendorRates({});
@@ -1085,12 +1086,12 @@ function ComparisonWorkspace({ initialSheet }) {
             <button
               type="button"
               className="rounded-lg border px-3 py-2 text-sm"
-              onClick={() => {
+              onClick={async () => {
                 if (
                   !dirty ||
-                  window.confirm(
+                  (await appConfirm(
                     "Leave this sheet and discard unsaved changes?",
-                  )
+                  ))
                 )
                   navigate(comparisonPath);
               }}
@@ -1171,12 +1172,12 @@ function ComparisonWorkspace({ initialSheet }) {
                 className="inos-input mt-1 w-full"
                 disabled={Boolean(initialSheet) || projectsQuery.isLoading}
                 value={projectId}
-                onChange={(event) => {
+                onChange={async (event) => {
                   if (
                     Object.keys(vendorRates).length &&
-                    !window.confirm(
+                    !(await appConfirm(
                       "Changing project clears the BOQ and entered rates. Continue?",
-                    )
+                    ))
                   )
                     return;
                   setProjectId(event.target.value);
@@ -1258,12 +1259,12 @@ function ComparisonWorkspace({ initialSheet }) {
                 <select
                   value={selectedBoqId}
                   disabled={!projectId || Boolean(initialSheet) || boqLoading}
-                  onChange={(event) => {
+                  onChange={async (event) => {
                     if (
                       Object.keys(vendorRates).length &&
-                      !window.confirm(
+                      !(await appConfirm(
                         "Changing BOQ clears entered rates. Continue?",
-                      )
+                      ))
                     )
                       return;
                     setSelectedBoqId(event.target.value);

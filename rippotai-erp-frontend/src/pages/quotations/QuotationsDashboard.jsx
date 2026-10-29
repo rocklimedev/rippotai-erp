@@ -1,3 +1,4 @@
+import { appConfirm } from "@/lib/app-dialog";
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -218,7 +219,7 @@ export default function QuotationsDashboard() {
   const loading = isLoading || isFetching;
 
   const handleSoftDelete = async (id, number) => {
-    if (!window.confirm(`Move quotation ${number} to trash?`)) return;
+    if (!(await appConfirm(`Move quotation ${number} to trash?`))) return;
     try {
       await softDeleteQuotation({ id, deleted_by: "current_user" }).unwrap();
       toast.success(`Quotation ${number} moved to trash`);
@@ -233,7 +234,7 @@ export default function QuotationsDashboard() {
   };
 
   const handleRestore = async (id, number) => {
-    if (!window.confirm(`Restore quotation ${number}?`)) return;
+    if (!(await appConfirm(`Restore quotation ${number}?`))) return;
     try {
       await restoreQuotation(id).unwrap();
       toast.success(`Quotation ${number} restored`);
@@ -244,9 +245,9 @@ export default function QuotationsDashboard() {
 
   const handlePermanentDelete = async (id, number) => {
     if (
-      !window.confirm(
+      !(await appConfirm(
         `PERMANENTLY DELETE quotation ${number}?\n\nThis cannot be undone.`,
-      )
+      ))
     )
       return;
     try {
