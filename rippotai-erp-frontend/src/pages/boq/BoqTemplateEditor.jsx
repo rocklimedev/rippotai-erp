@@ -1,18 +1,11 @@
-import { appConfirm } from "@/lib/app-dialog";
-import React, { useEffect, useRef, useState } from "react";
-import BoqDocument, { boqFileName } from "@/components/commerce-documents/BoqDocument";
-import { downloadWhenReady, OFFSCREEN_STYLE } from "@/components/print-document/commerce";
-import { useParams, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
-import {
-  ArrowLeft,
-  Plus,
-  Loader2,
-  MoreHorizontal,
-  Sparkles,
-  AlertCircle,
-} from "lucide-react";
+import { appConfirm } from '@/lib/app-dialog';
+import React, { useEffect, useRef, useState } from 'react';
+import BoqDocument, { boqFileName } from '@/components/commerce-documents/BoqDocument';
+import { downloadWhenReady, OFFSCREEN_STYLE } from '@/components/print-document/commerce';
+import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
+import { ArrowLeft, Plus, Loader2, MoreHorizontal, Sparkles, AlertCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -20,14 +13,14 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { formatINR } from "@/lib/format";
+} from '@/components/ui/dropdown-menu';
+import { formatINR } from '@/lib/format';
 import {
   useGetTemplateByIdQuery,
   useUpdateTemplateMutation,
@@ -37,18 +30,18 @@ import {
   useUpdateTemplateItemMutation,
   useDeleteTemplateItemMutation,
   useReorderTemplateItemsMutation,
-} from "../../api/boq/boq.api";
-import { SaveChip } from "../../components/boqs/StatusIndicators";
-import { AddItemPicker } from "../../components/boqs/AddItemPicker";
-import { AddCategoryPanel } from "../../components/boqs/AddCategoryPanel";
-import { ItemDetailDrawer } from "../../components/boqs/ItemDetailDrawer";
-import { CategoryBlock } from "../../components/boqs/CategoryBlock";
-import { BulkActionBar } from "../../components/boqs/BulkActionBar";
+} from '../../api/boq/boq.api';
+import { SaveChip } from '../../components/boqs/StatusIndicators';
+import { AddItemPicker } from '../../components/boqs/AddItemPicker';
+import { AddCategoryPanel } from '../../components/boqs/AddCategoryPanel';
+import { ItemDetailDrawer } from '../../components/boqs/ItemDetailDrawer';
+import { CategoryBlock } from '../../components/boqs/CategoryBlock';
+import { BulkActionBar } from '../../components/boqs/BulkActionBar';
 
 const TIERS = [
-  { value: "essential", label: "Essential" },
-  { value: "premium", label: "Premium" },
-  { value: "luxury", label: "Luxury" },
+  { value: 'essential', label: 'Essential' },
+  { value: 'premium', label: 'Premium' },
+  { value: 'luxury', label: 'Luxury' },
 ];
 
 export default function BoqTemplateEditor() {
@@ -64,10 +57,10 @@ export default function BoqTemplateEditor() {
   const [deleteItem] = useDeleteTemplateItemMutation();
   const [reorderItems] = useReorderTemplateItemsMutation();
 
-  const [saveState, setSaveState] = useState("idle");
+  const [saveState, setSaveState] = useState('idle');
   const [addCatOpen, setAddCatOpen] = useState(false);
   const [customCatOpen, setCustomCatOpen] = useState(false);
-  const [customCatName, setCustomCatName] = useState("");
+  const [customCatName, setCustomCatName] = useState('');
   const [detailItem, setDetailItem] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [pickerFor, setPickerFor] = useState(null);
@@ -76,14 +69,14 @@ export default function BoqTemplateEditor() {
   const [pdfBusy, setPdfBusy] = useState(false);
 
   const withSaveChip = async (promise) => {
-    setSaveState("saving");
+    setSaveState('saving');
     try {
       await promise;
-      setSaveState("saved");
-      setTimeout(() => setSaveState((s) => (s === "saved" ? "idle" : s)), 1200);
+      setSaveState('saved');
+      setTimeout(() => setSaveState((s) => (s === 'saved' ? 'idle' : s)), 1200);
     } catch {
-      toast.error("Save failed");
-      setSaveState("error");
+      toast.error('Save failed');
+      setSaveState('error');
     }
   };
 
@@ -97,11 +90,7 @@ export default function BoqTemplateEditor() {
 
   const handleAddItem = (cid) => setPickerFor({ cid });
 
-  const addItemFromPicker = async ({
-    payload,
-    targetCategoryId,
-    newCategoryName,
-  }) => {
+  const addItemFromPicker = async ({ payload, targetCategoryId, newCategoryName }) => {
     if (!pickerFor) return;
     try {
       let cid = targetCategoryId || pickerFor.cid;
@@ -110,27 +99,25 @@ export default function BoqTemplateEditor() {
           templateId: id,
           name: newCategoryName,
         }).unwrap();
-        const cat = (created.categories || []).find(
-          (c) => c.name === newCategoryName,
-        );
-        if (!cat) throw new Error("Category creation failed");
+        const cat = (created.categories || []).find((c) => c.name === newCategoryName);
+        if (!cat) throw new Error('Category creation failed');
         cid = cat.id;
       }
       await addItem({
         templateId: id,
         categoryId: cid,
         name: payload.name,
-        unit: payload.unit || "Nos.",
+        unit: payload.unit || 'Nos.',
         quantity: payload.quantity || 1,
         rate: payload.rate || 0,
         library_item_id: payload.library_item_id,
-        notes: payload.notes || "",
+        notes: payload.notes || '',
       }).unwrap();
-      toast.success("Item added");
+      toast.success('Item added');
       setPickerFor(null);
       refetch();
     } catch {
-      toast.error("Failed to add item");
+      toast.error('Failed to add item');
     }
   };
 
@@ -138,9 +125,9 @@ export default function BoqTemplateEditor() {
     const item = (cat?.items || []).find((i) => i.id === itemId);
     try {
       await deleteItem({ templateId: id, itemId }).unwrap();
-      toast("Item deleted", {
+      toast('Item deleted', {
         action: item && {
-          label: "Undo",
+          label: 'Undo',
           onClick: async () => {
             try {
               await addItem({
@@ -153,10 +140,10 @@ export default function BoqTemplateEditor() {
                 library_item_id: item.library_item_id,
                 notes: item.notes,
               }).unwrap();
-              toast.success("Restored");
+              toast.success('Restored');
               refetch();
             } catch {
-              toast.error("Undo failed");
+              toast.error('Undo failed');
             }
           },
         },
@@ -164,7 +151,7 @@ export default function BoqTemplateEditor() {
       });
       refetch();
     } catch {
-      toast.error("Delete failed");
+      toast.error('Delete failed');
     }
   };
 
@@ -175,7 +162,7 @@ export default function BoqTemplateEditor() {
       await addItem({
         templateId: id,
         categoryId: item.category_id || cat.id,
-        name: item.name + " (copy)",
+        name: item.name + ' (copy)',
         unit: item.unit,
         quantity: item.quantity,
         rate: item.rate,
@@ -184,7 +171,7 @@ export default function BoqTemplateEditor() {
       }).unwrap();
       refetch();
     } catch {
-      toast.error("Duplicate failed");
+      toast.error('Duplicate failed');
     }
   };
 
@@ -197,18 +184,18 @@ export default function BoqTemplateEditor() {
       }).unwrap();
       refetch();
     } catch {
-      toast.error("Reorder failed");
+      toast.error('Reorder failed');
     }
   };
 
   const handleDeleteCategory = async (cid) => {
-    if (!(await appConfirm("Delete this category and all its items?"))) return;
+    if (!(await appConfirm('Delete this category and all its items?'))) return;
     try {
       await deleteCategory({ templateId: id, categoryId: cid }).unwrap();
-      toast.success("Category removed");
+      toast.success('Category removed');
       refetch();
     } catch {
-      toast.error("Delete failed");
+      toast.error('Delete failed');
     }
   };
 
@@ -216,12 +203,12 @@ export default function BoqTemplateEditor() {
     if (!customCatName.trim()) return;
     try {
       await addCategory({ templateId: id, name: customCatName }).unwrap();
-      toast.success("Category added");
+      toast.success('Category added');
       setCustomCatOpen(false);
-      setCustomCatName("");
+      setCustomCatName('');
       refetch();
     } catch {
-      toast.error("Failed");
+      toast.error('Failed');
     }
   };
 
@@ -230,35 +217,29 @@ export default function BoqTemplateEditor() {
     if (selectedIds.size === 0) return;
     const ids = [...selectedIds];
     try {
-      if (op === "delete") {
+      if (op === 'delete') {
+        await Promise.all(ids.map((itemId) => deleteItem({ templateId: id, itemId }).unwrap()));
+      } else if (op === 'change_unit') {
         await Promise.all(
-          ids.map((itemId) => deleteItem({ templateId: id, itemId }).unwrap()),
-        );
-      } else if (op === "change_unit") {
-        await Promise.all(
-          ids.map((itemId) =>
-            updateItem({ templateId: id, itemId, unit: value }).unwrap(),
-          ),
+          ids.map((itemId) => updateItem({ templateId: id, itemId, unit: value }).unwrap()),
         );
       }
       setSelectedIds(new Set());
-      toast.success(op === "delete" ? "Deleted" : "Updated");
+      toast.success(op === 'delete' ? 'Deleted' : 'Updated');
       refetch();
     } catch {
-      toast.error("Bulk action failed");
+      toast.error('Bulk action failed');
     }
   };
 
   useEffect(() => {
     const onKey = (e) => {
-      const isInput = ["INPUT", "TEXTAREA", "SELECT"].includes(
-        document.activeElement?.tagName,
-      );
-      if (e.key === "Delete" && !isInput && selectedIds.size > 0) {
+      const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
+      if (e.key === 'Delete' && !isInput && selectedIds.size > 0) {
         e.preventDefault();
-        handleBulkAction("delete");
+        handleBulkAction('delete');
       }
-      if (e.key === "Escape" && selectedIds.size > 0) {
+      if (e.key === 'Escape' && selectedIds.size > 0) {
         e.preventDefault();
         setSelectedIds(new Set());
       }
@@ -271,16 +252,16 @@ export default function BoqTemplateEditor() {
         t.closest('[data-testid="template-main-table"]') ||
         t.closest('[data-testid="bulk-action-bar"]') ||
         t.closest('[role="menu"]') ||
-        t.closest("[data-radix-popper-content-wrapper]")
+        t.closest('[data-radix-popper-content-wrapper]')
       )
         return;
       setSelectedIds(new Set());
     };
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("click", onClick);
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('click', onClick);
     return () => {
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("click", onClick);
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('click', onClick);
     };
     // eslint-disable-next-line
   }, [selectedIds]);
@@ -300,24 +281,22 @@ export default function BoqTemplateEditor() {
   const downloadTemplatePdf = async () => {
     const tid = `tpl-pdf-${Date.now()}`;
     setPdfBusy(true);
-    toast.loading("Preparing the template PDF…", { id: tid });
+    toast.loading('Preparing the template PDF…', { id: tid });
     try {
-      await downloadWhenReady(() => pdfRef.current, boqFileName(template, "client", true), { title: `BOQ Template — ${template.name}` });
-      toast.success("Template PDF downloaded", { id: tid });
+      await downloadWhenReady(() => pdfRef.current, boqFileName(template, 'client', true), {
+        title: `BOQ Template — ${template.name}`,
+      });
+      toast.success('Template PDF downloaded', { id: tid });
     } catch (e) {
-      console.error("Template PDF failed", e);
+      console.error('Template PDF failed', e);
       toast.error("Couldn't create the PDF. Try again.", { id: tid });
     } finally {
       setPdfBusy(false);
     }
   };
   const allItems = categories.flatMap((c) => c.items || []);
-  const existingCategories = new Set(
-    categories.map((c) => c.name.toLowerCase().trim()),
-  );
-  const attentionCount = allItems.filter(
-    (i) => !i.unit || !i.quantity || !i.rate,
-  ).length;
+  const existingCategories = new Set(categories.map((c) => c.name.toLowerCase().trim()));
+  const attentionCount = allItems.filter((i) => !i.unit || !i.quantity || !i.rate).length;
 
   const itemsByCat = (cid) => categories.find((c) => c.id === cid)?.items || [];
 
@@ -339,7 +318,7 @@ export default function BoqTemplateEditor() {
       <header className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-[#B5C4B6]">
         <div className="h-14 px-4 lg:px-8 flex items-center gap-3">
           <button
-            onClick={() => nav("/boq/templates")}
+            onClick={() => nav('/boq/templates')}
             className="flex items-center gap-2 text-[13px] text-[#6B7B7C] hover:text-[#333333]"
           >
             <ArrowLeft size={15} /> Templates
@@ -364,7 +343,7 @@ export default function BoqTemplateEditor() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuItem disabled={pdfBusy} onClick={downloadTemplatePdf}>
-                  {pdfBusy ? "Preparing PDF…" : "Download PDF"}
+                  {pdfBusy ? 'Preparing PDF…' : 'Download PDF'}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -376,24 +355,18 @@ export default function BoqTemplateEditor() {
         <section className="bc-card p-6 space-y-4">
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[12px] font-medium text-[#6B7B7C] mb-1.5">
-                Name
-              </label>
+              <label className="block text-[12px] font-medium text-[#6B7B7C] mb-1.5">Name</label>
               <input
                 className="bc-input"
                 defaultValue={template.name}
-                onChange={(e) =>
-                  debouncedUpdateTemplate({ name: e.target.value })
-                }
+                onChange={(e) => debouncedUpdateTemplate({ name: e.target.value })}
               />
             </div>
             <div>
-              <label className="block text-[12px] font-medium text-[#6B7B7C] mb-1.5">
-                Tier
-              </label>
+              <label className="block text-[12px] font-medium text-[#6B7B7C] mb-1.5">Tier</label>
               <select
                 className="bc-input"
-                defaultValue={template.template_tier || ""}
+                defaultValue={template.template_tier || ''}
                 onChange={(e) =>
                   debouncedUpdateTemplate({
                     template_tier: e.target.value || null,
@@ -415,10 +388,8 @@ export default function BoqTemplateEditor() {
             </label>
             <textarea
               className="bc-input min-h-[80px]"
-              defaultValue={template.description || ""}
-              onChange={(e) =>
-                debouncedUpdateTemplate({ description: e.target.value })
-              }
+              defaultValue={template.description || ''}
+              onChange={(e) => debouncedUpdateTemplate({ description: e.target.value })}
             />
           </div>
         </section>
@@ -439,8 +410,7 @@ export default function BoqTemplateEditor() {
             <Plus size={14} /> Custom Category
           </button>
           <div className="text-[12px] text-[#B5C4B6] hidden md:block">
-            Pick a category — its standard items, units and rates are added
-            automatically.
+            Pick a category — its standard items, units and rates are added automatically.
           </div>
           <div className="ml-auto flex items-center gap-3">
             {attentionCount > 0 && (
@@ -462,12 +432,9 @@ export default function BoqTemplateEditor() {
             <div className="w-14 h-14 rounded-2xl bg-[#EAEEF0] flex items-center justify-center mx-auto mb-4">
               <Sparkles size={22} className="text-[#333333]" />
             </div>
-            <h2 className="text-[18px] font-bold text-[#333333]">
-              Start building this template
-            </h2>
+            <h2 className="text-[18px] font-bold text-[#333333]">Start building this template</h2>
             <p className="text-[13px] text-[#6B7B7C] mt-1 mb-5">
-              Choose a predefined category to automatically add its standard
-              items, units and rates.
+              Choose a predefined category to automatically add its standard items, units and rates.
             </p>
             <div className="flex items-center justify-center gap-2">
               <button
@@ -486,18 +453,13 @@ export default function BoqTemplateEditor() {
             </div>
           </section>
         ) : (
-          <section
-            className="bc-card overflow-hidden"
-            data-testid="template-main-table"
-          >
+          <section className="bc-card overflow-hidden" data-testid="template-main-table">
             <div className="overflow-x-auto">
               <table className="w-full text-[13px]">
                 <thead className="text-[10.5px] uppercase tracking-widest text-[#B5C4B6] bg-[#EAEEF0] border-b border-[#B5C4B6] sticky top-0">
                   <tr>
                     <th className="p-2 w-11"></th>
-                    <th className="p-2 text-center w-11 whitespace-nowrap">
-                      S. No.
-                    </th>
+                    <th className="p-2 text-center w-11 whitespace-nowrap">S. No.</th>
                     <th className="p-2 text-left">Item</th>
                     <th className="p-2 text-left w-[92px]">Location</th>
                     <th className="p-2 text-left w-[92px]">Unit</th>
@@ -513,14 +475,12 @@ export default function BoqTemplateEditor() {
                       key={cat.id}
                       cat={{
                         ...cat,
-                        code: cat.code || String(index + 1).padStart(2, "0"),
+                        code: cat.code || String(index + 1).padStart(2, '0'),
                         subtotal:
                           cat.subtotal ??
                           (cat.items || []).reduce(
                             (sum, item) =>
-                              sum +
-                              Number(item.quantity || 0) *
-                                Number(item.rate || 0),
+                              sum + Number(item.quantity || 0) * Number(item.rate || 0),
                             0,
                           ),
                       }}
@@ -531,9 +491,7 @@ export default function BoqTemplateEditor() {
                       onSelectCategory={onSelectCategory}
                       onPatchItem={patchItem}
                       onDeleteItem={(itemId) => handleDeleteItem(itemId, cat)}
-                      onDuplicateItem={(itemId) =>
-                        handleDuplicateItem(itemId, cat)
-                      }
+                      onDuplicateItem={(itemId) => handleDuplicateItem(itemId, cat)}
                       onOpenDetail={setDetailItem}
                       onAddItem={handleAddItem}
                       onDeleteCat={handleDeleteCategory}
@@ -550,8 +508,8 @@ export default function BoqTemplateEditor() {
 
         <BulkActionBar
           count={selectedIds.size}
-          onChangeUnit={(unit) => handleBulkAction("change_unit", unit)}
-          onDelete={() => handleBulkAction("delete")}
+          onChangeUnit={(unit) => handleBulkAction('change_unit', unit)}
+          onDelete={() => handleBulkAction('delete')}
           onDeselectAll={() => setSelectedIds(new Set())}
         />
       </main>
@@ -573,8 +531,7 @@ export default function BoqTemplateEditor() {
           <DialogHeader>
             <DialogTitle>Custom Category</DialogTitle>
             <DialogDescription>
-              Add a category not in the catalog. You can add items to it
-              afterwards.
+              Add a category not in the catalog. You can add items to it afterwards.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">

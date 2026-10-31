@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import AppLayout from "@/layouts/AppLayout";
+import { AUTOMATION_APP_ENABLED } from "@/config/appNav";
 
 import AutomationOverview from "@/pages/automation/AutomationOverview";
 import AutomationRules from "@/pages/automation/AutomationRules";
@@ -9,7 +10,7 @@ import AutomationRunDetails from "@/pages/automation/AutomationRunDetails";
 import AutomationEscalations from "@/pages/automation/AutomationEscalations";
 import AutomationAudit from "@/pages/automation/AutomationAudit";
 
-export const automationRoutes = [
+export const automationRoutes = AUTOMATION_APP_ENABLED ? [
   {
     type: "layout",
     path: "/automation",
@@ -92,5 +93,10 @@ export const automationRoutes = [
         element: <AutomationAudit />,
       },
     ],
+  },
+] : [
+  {
+    path: "/automation/*",
+    element: <Navigate to="/dashboard" replace />,
   },
 ];

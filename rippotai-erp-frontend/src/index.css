@@ -386,7 +386,7 @@ header,
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
-  line-height: 1;
+  line-height: 1.25;
 }
 
 /* 6) Toast body — clamp long messages */

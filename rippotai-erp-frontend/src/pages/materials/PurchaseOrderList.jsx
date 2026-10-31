@@ -278,6 +278,7 @@ export default function PurchaseOrderList() {
           <Button
             type="button"
             onClick={() => nav("/procurement/purchase-orders/new")}
+            data-testid="purchase-order-new-btn"
             className="h-10 px-4 rounded-lg bg-[#1F453B] text-white text-[14px] font-semibold hover:bg-[#17382F]"
           >
             <Plus size={14} />

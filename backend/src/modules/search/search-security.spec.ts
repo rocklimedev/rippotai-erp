@@ -10,6 +10,7 @@ import { GlobalSearchService } from './global-search.service';
 import { AutocompleteService } from './autocomplete.service';
 import { SearchScopeService } from './search-scope.service';
 import { SearchService } from './search.service';
+import { SqlSearchFallbackService } from './sql-search-fallback.service';
 import { searchScopeFilter } from './search-access';
 import { Project } from '../projects/models/projects.model';
 import { TeamMember } from '../users/models/team-member.model';
@@ -125,6 +126,10 @@ describe('Search authentication and project visibility', () => {
         AutocompleteService,
         SearchScopeService,
         { provide: SearchService, useValue: es },
+        {
+          provide: SqlSearchFallbackService,
+          useValue: { search: jest.fn().mockResolvedValue([]) },
+        },
         { provide: getModelToken(Project), useValue: projects },
         { provide: getModelToken(TeamMember), useValue: members },
       ],

@@ -34,6 +34,9 @@ export const baseApi = createApi({
   baseQuery: baseQueryWithReauth,
   tagTypes: [
     "AdminDpr",
+    "MaterialProcurement",
+    "VisitStages",
+    "QualityChecklists",
     "SnagLists",
     // auth
     "AuthUser",

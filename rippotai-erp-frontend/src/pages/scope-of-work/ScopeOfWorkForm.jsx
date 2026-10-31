@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { PrefillNotice } from "@/components/PrefillNotice";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Folder, ListChecks, Loader2, FileSearch } from "lucide-react";
@@ -142,7 +143,7 @@ export function ScopeOfWorkForm() {
 
     Items: [],
   });
-  useSharedProjectData(projectId, "scope", values, setValues, !scopeOfWorkId);
+  const prefill = useSharedProjectData(projectId, "scope", values, setValues, !scopeOfWorkId);
 
   // ============================================================
   // LOAD EXISTING SCOPE OF WORK
@@ -1263,11 +1264,10 @@ export function ScopeOfWorkForm() {
   return (
     <PlanOfActionSectionForm
       title={isEditMode ? "Edit scope of work" : "Scope of work"}
-      subtitle={
+      subtitle={<>{
         isEditMode
           ? "Update what is included, the spaces covered and each work item."
-          : "Define what is included, the spaces covered and each work item. Produces the scope of work document."
-      }
+          : "Define what is included, the spaces covered and each work item. Produces the scope of work document."}<PrefillNotice prefill={prefill} /></>}
       crumbs={[
         { label: "CRM", to: "/crm" },
         { label: "Forms" },

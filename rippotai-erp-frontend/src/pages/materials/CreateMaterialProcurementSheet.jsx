@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { PrefillNotice } from "@/components/PrefillNotice";
 import { useSharedProjectData } from '../../hooks/use-shared-project-data';
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Plus, Trash2, Save, Send, Calculator } from "lucide-react";
 import { toast } from "sonner";
 
@@ -92,7 +93,8 @@ export default function CreateMaterialProcurementSheet() {
   const projectIdFromUrl =
     searchParams.get("projectId") || searchParams.get("project_id");
 
-  const editId = searchParams.get("id");
+  const { id: routeId } = useParams();
+  const editId = routeId || searchParams.get("id");
 
   const isEdit = Boolean(editId);
 
@@ -171,7 +173,7 @@ export default function CreateMaterialProcurementSheet() {
   const [items, setItems] = useState([createEmptyItem(1)]);
   const procurementValues = useMemo(() => ({ items }), [items]);
   const setProcurementValues = useCallback(updater => setItems(current => updater({ items: current }).items), []);
-  useSharedProjectData(projectId, 'procurement', procurementValues, setProcurementValues, !isEdit && !materialsLoading, materials);
+  const prefill = useSharedProjectData(projectId, 'procurement', procurementValues, setProcurementValues, !isEdit && !materialsLoading, materials);
 
   const [initialized, setInitialized] = useState(false);
 
@@ -383,7 +385,7 @@ export default function CreateMaterialProcurementSheet() {
 
         toast.success("Material procurement updated.");
 
-        navigate(`/material-procurement/${editId}`);
+        navigate(`/procurement/material-procurement/${editId}`);
       } else {
         const response = await createMaterialProcurement(payload).unwrap();
 
@@ -392,9 +394,9 @@ export default function CreateMaterialProcurementSheet() {
         toast.success("Material procurement created.");
 
         if (created?.id) {
-          navigate(`/material-procurement/${created.id}`);
+          navigate(`/procurement/material-procurement/${created.id}`);
         } else {
-          navigate("/material-procurement");
+          navigate("/procurement/material-procurement/list");
         }
       }
     } catch (error) {
@@ -441,7 +443,7 @@ export default function CreateMaterialProcurementSheet() {
 
       toast.success("Material procurement submitted.");
 
-      navigate(`/material-procurement/${procurementId}`);
+      navigate(`/procurement/material-procurement/${procurementId}`);
     } catch (error) {
       toast.error(
         error?.data?.message ||
@@ -489,11 +491,10 @@ export default function CreateMaterialProcurementSheet() {
         title={
           isEdit ? "Edit Material Procurement" : "Create Material Procurement"
         }
-        description={
+        description={<>{
           isEdit
             ? "Update the material procurement sheet."
-            : "Create a digital material procurement sheet for a project."
-        }
+            : "Create a digital material procurement sheet for a project."}<PrefillNotice prefill={prefill} /></>}
       />
 
       {/* ========================================================
@@ -503,7 +504,7 @@ export default function CreateMaterialProcurementSheet() {
       <div className="flex items-center justify-between gap-3">
         <Button
           variant="outline"
-          onClick={() => navigate("/material-procurement")}
+          onClick={() => navigate("/procurement/material-procurement/list")}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
@@ -902,7 +903,7 @@ export default function CreateMaterialProcurementSheet() {
         <Button
           variant="outline"
           disabled={busy}
-          onClick={() => navigate("/material-procurement")}
+          onClick={() => navigate("/procurement/material-procurement/list")}
         >
           Cancel
         </Button>

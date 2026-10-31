@@ -18,12 +18,18 @@ export function buildSowSections(sow) {
   const project = sow.project || {};
   const client = project.client || {};
   const sections = [];
+  // Canonical project site area (autofill), converted to sq ft for the document.
+  const areaSqft = has(project.total_area_sqft)
+    ? project.total_area_sqft
+    : has(project.site_area) && { SQ_FT: 1, GAJ: 9 }[project.site_area_unit || "SQ_FT"]
+      ? Number(project.site_area) * { SQ_FT: 1, GAJ: 9 }[project.site_area_unit || "SQ_FT"]
+      : null;
 
   const details = [
     { label: "Client", value: client.name, strong: true, sub: [client.contact_person !== client.name && client.contact_person, client.phone].filter(has).join(" · ") },
     { label: "Project", value: project.name },
-    { label: "Site", value: project.site_location, wide: !has(project.total_area_sqft) },
-    { label: "Total area", value: has(project.total_area_sqft) ? `${Number(project.total_area_sqft).toLocaleString("en-IN")} sq ft` : "" },
+    { label: "Site", value: project.site_location, wide: !has(areaSqft) },
+    { label: "Total area", value: has(areaSqft) ? `${Number(areaSqft).toLocaleString("en-IN")} sq ft` : "" },
     { label: "Engagement", value: labelOf(MODE, sow.projectMode) },
     { label: "Project type", value: project.project_type?.name || project.type },
     { label: "Prepared by", value: sow.preparedByUser?.name },

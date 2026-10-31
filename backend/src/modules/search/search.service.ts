@@ -5,6 +5,7 @@ import { INDEX_MAPPINGS, SearchIndexName } from './mappings/index-templates';
 @Injectable()
 export class SearchService {
   private readonly logger = new Logger(SearchService.name);
+  private unavailableUntil = 0;
 
   constructor(private readonly es: ElasticsearchService) {}
 
@@ -116,15 +117,35 @@ export class SearchService {
   async search(index: string | string[], body: Record<string, any>) {
     const indices = Array.isArray(index) ? index : [index];
 
+    // Circuit breaker: when ES is unreachable, fail fast for a minute so
+    // callers can use their SQL fallback without waiting on retries.
+    if (Date.now() < this.unavailableUntil) {
+      throw new Error('Elasticsearch unavailable');
+    }
+
     // Filter to indices that actually exist to avoid index_not_found
     const existing: string[] = [];
-    for (const idx of indices) {
-      const ok = await this.es.indices.exists({ index: idx });
-      if (ok) existing.push(idx);
+    try {
+      for (const idx of indices) {
+        const ok = await this.es.indices.exists(
+          { index: idx },
+          { maxRetries: 0, requestTimeout: 3000 },
+        );
+        if (ok) existing.push(idx);
+      }
+    } catch (err: any) {
+      if (err?.name === 'ConnectionError' || err?.name === 'TimeoutError') {
+        this.unavailableUntil = Date.now() + 60_000;
+      }
+      throw err;
     }
 
     if (!existing.length) {
-      return { hits: { hits: [], total: { value: 0 } }, took: 0 };
+      return {
+        hits: { hits: [], total: { value: 0 } },
+        took: 0,
+        noIndices: true,
+      };
     }
 
     return this.es.search({

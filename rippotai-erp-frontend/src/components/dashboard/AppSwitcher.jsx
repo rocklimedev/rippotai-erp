@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { LayoutGrid, ArrowLeft } from "lucide-react";
 import { MODULE_ICONS } from "@/components/icons/ModuleIcons";
 import { APP_META, LANDING_ORDER } from "@/config/appNav";
+import { useAccess } from "@/hooks/use-permission";
 import {
   Popover,
   PopoverContent,
@@ -12,6 +13,7 @@ import {
 export default function AppSwitcher({ currentApp }) {
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
+  const access = useAccess();
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -27,7 +29,7 @@ export default function AppSwitcher({ currentApp }) {
       <PopoverContent align="start" sideOffset={8} className="w-[420px] inos-menu" style={{ padding: 10 }}>
         <div className="inos-menu__label">Apps</div>
         <div className="grid grid-cols-4 gap-1">
-          {LANDING_ORDER.map((k) => {
+          {LANDING_ORDER.filter((k) => access.canOpenApp(k)).map((k) => {
             const Icon = MODULE_ICONS[k];
             const meta = APP_META[k];
             const active = k === currentApp;

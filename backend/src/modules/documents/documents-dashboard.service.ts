@@ -2,7 +2,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, fn, col, literal } from 'sequelize';
+import { Op } from 'sequelize';
 import { Document } from './models/document.model';
 import { Drawing } from './models/drawing.model';
 
@@ -83,15 +83,14 @@ export class DocumentsDashboardService {
       this.drawingModel.findAll({
         limit: 3,
 
-        order: [['createdAt', 'DESC']],
+        order: [['created_at', 'DESC']],
 
         attributes: [
           'id',
           'title',
           'drawingNumber',
-          'revision',
           'status',
-          'createdAt',
+          ['created_at', 'createdAt'],
         ],
       }),
 
@@ -112,7 +111,7 @@ export class DocumentsDashboardService {
       this.siteRecceModel.findAll({
         limit: 2,
 
-        order: [['createdAt', 'DESC']],
+        order: [['created_at', 'DESC']],
 
         attributes: [
           'id',
@@ -124,7 +123,7 @@ export class DocumentsDashboardService {
           'site_engineer_id',
           'accompanied_by',
           'site_type',
-          'createdAt',
+          ['created_at', 'createdAt'],
         ],
 
         include: [
@@ -292,49 +291,23 @@ export class DocumentsDashboardService {
   // ============================================================
 
   async getBoqVariance() {
-    const result = await this.boqModel.findAll({
-      attributes: [
-        [
-          fn(
-            'AVG',
-            literal(`
-                (
-                  SELECT AVG(
-                    (
-                      (q.total_amount - b.total_value)
-                      / NULLIF(b.total_value, 0)
-                    ) * 100
-                  )
-                  FROM quotations q
-                  WHERE q.project_id = "Boq"."project_id"
-                  AND q.status IN ('approved', 'submitted')
-                )
-              `),
-          ),
-
-          'avg_variation_pct',
-        ],
-      ],
-
-      include: [
-        {
-          model: this.quotationModel,
-          attributes: [],
-          required: false,
-        },
-      ],
-
-      group: ['Boq.project_id'],
-
-      raw: true,
-    });
-
-    const avg = result[0]?.avg_variation_pct
-      ? parseFloat(result[0].avg_variation_pct as string)
-      : null;
+    // Per-project % variance of approved/submitted quotations vs the BOQ value,
+    // averaged across projects.
+    const [rows] = (await this.boqModel.sequelize!.query(`
+      SELECT AVG(v.pct) AS avg_variation_pct FROM (
+        SELECT AVG(((q.total_amount - b.total_value) / NULLIF(b.total_value, 0)) * 100) AS pct
+        FROM boqs b
+        JOIN quotations q ON q.project_id = b.project_id
+          AND q.status IN ('approved', 'submitted') AND q.deleted_at IS NULL
+        WHERE b.deleted_at IS NULL
+        GROUP BY b.project_id
+      ) v`)) as [Array<{ avg_variation_pct: string | number | null }>, unknown];
+    const raw = rows[0]?.avg_variation_pct;
+    const avg = raw !== null && raw !== undefined ? Number(raw) : null;
 
     return {
-      avg_variation_pct: avg !== null ? Math.round(avg * 10) / 10 : null,
+      avg_variation_pct:
+        avg !== null && Number.isFinite(avg) ? Math.round(avg * 10) / 10 : null,
     };
   }
 
@@ -449,43 +422,24 @@ export class DocumentsDashboardService {
   // ============================================================
 
   async getProjectWiseDocuments(limit: number = 5) {
-    return this.projectModel.findAll({
-      attributes: [
-        'id',
-        'name',
-
-        [fn('COUNT', col('documents.id')), 'document_count'],
-
-        [fn('COUNT', col('drawings.id')), 'drawing_count'],
-
-        [fn('COUNT', col('quotations.id')), 'quotation_count'],
-      ],
-
-      include: [
-        {
-          model: Document,
-          attributes: [],
-          required: false,
-        },
-
-        {
-          model: Drawing,
-          attributes: [],
-          required: false,
-        },
-
-        {
-          model: Quotation,
-          attributes: [],
-          required: false,
-        },
-      ],
-
-      group: ['Project.id', 'Project.name'],
-
-      order: [[literal('quotation_count'), 'DESC']],
-
-      limit,
-    });
+    const safeLimit = Math.min(Math.max(Number(limit) || 5, 1), 50);
+    const [rows] = await this.projectModel.sequelize!.query(
+      `
+      SELECT p.id, p.name,
+        (SELECT COUNT(*) FROM documents d WHERE d.project_id = p.id) AS document_count,
+        (SELECT COUNT(*) FROM drawings dr WHERE dr.project_id = p.id) AS drawing_count,
+        (SELECT COUNT(*) FROM quotations q WHERE q.project_id = p.id AND q.deleted_at IS NULL) AS quotation_count
+      FROM projects p
+      WHERE p.deleted_at IS NULL
+      ORDER BY quotation_count DESC, document_count DESC
+      LIMIT :limit`,
+      { replacements: { limit: safeLimit } },
+    );
+    return (rows as Array<Record<string, unknown>>).map((r) => ({
+      ...r,
+      document_count: Number(r.document_count),
+      drawing_count: Number(r.drawing_count),
+      quotation_count: Number(r.quotation_count),
+    }));
   }
 }

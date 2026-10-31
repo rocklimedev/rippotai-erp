@@ -87,7 +87,11 @@ export function MaterialRequirementForm() {
 
   // Preselect the project when arriving from a project page (?projectId=…).
   const [projectId, setProjectId] = React.useState(
-    () => searchParams.get("projectId") || searchParams.get("project") || "",
+    () =>
+      searchParams.get("projectId") ||
+      searchParams.get("project_id") ||
+      searchParams.get("project") ||
+      "",
   );
 
   const [values, setValues, draftStorage] = useAutoSave(SAVE_KEY, {

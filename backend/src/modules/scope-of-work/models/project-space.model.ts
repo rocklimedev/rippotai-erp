@@ -70,6 +70,25 @@ export class ProjectSpace extends Model<ProjectSpace> {
   })
   declare isActive: boolean;
 
+  // Size details shared with every document that lists rooms (autofill).
+  @Column({ type: DataType.DECIMAL(12, 2), allowNull: true })
+  declare area: number | null;
+
+  @Column({ type: DataType.DECIMAL(14, 6), allowNull: true })
+  declare length: number | null;
+
+  @Column({ type: DataType.DECIMAL(14, 6), allowNull: true })
+  declare width: number | null;
+
+  @Column({ type: DataType.DECIMAL(14, 6), allowNull: true })
+  declare height: number | null;
+
+  @Column({ type: DataType.STRING(8), allowNull: true })
+  declare measurementUnit: string | null;
+
+  @Column({ type: DataType.STRING(64), allowNull: true })
+  declare sourceDocument: string | null;
+
   @CreatedAt
   @Column
   declare createdAt: Date;

@@ -136,27 +136,49 @@ function widgetKind(meta, key = "") {
   return "list";
 }
 
+/**
+ * Resize limits per widget (12-col grid, 62px rows). Derived from the
+ * widget's kind and its allowed library sizes so content never crops:
+ *  - stat tiles:            2x2 … 6x3   (number scales with the tile)
+ *  - lists:                 3x3 minimum (rows scroll, labels ellipsis)
+ *  - charts / donuts:       4x3 minimum
+ *  - wide-only (tables, hero trends — no "medium" size): 6x4 minimum
+ */
 function constraintsFor(meta, key) {
   const kind = widgetKind(meta, key);
-  if (kind === "stat") return { minW: 2, minH: 2, maxH: 4 };
+  if (kind === "stat") return { minW: 2, minH: 2, maxW: 6, maxH: 3 };
+  const sizes = meta?.sizes || [];
+  if (sizes.length && !sizes.includes("medium") && !sizes.includes("small"))
+    return { minW: 6, minH: 4 };
+  if (kind === "chart" || kind === "donut") return { minW: 4, minH: 3 };
   return { minW: 3, minH: 3 };
 }
 
 /** Derive the tablet / phone layouts from the saved desktop layout. */
 function deriveLayouts(layout, libraryByKey) {
-  const ordered = compact(layout);
-  const lg = ordered.map((i) => ({
+  // Older saved layouts may hold sizes below today's minimums — show them
+  // at the minimum instead of cropping the widget's content, then re-pack
+  // so the grown tiles don't overlap.
+  const cons = {};
+  const clamped = clean(layout).map((i) => {
+    const c = constraintsFor(libraryByKey[i.key], i.key);
+    cons[i.key] = c;
+    const w = Math.min(COLS.lg, Math.max(i.w, c.minW), c.maxW || COLS.lg);
+    const h = Math.min(Math.max(i.h, c.minH), c.maxH || Infinity);
+    return { ...i, x: Math.min(i.x, COLS.lg - w), w, h };
+  });
+  const lg = compact(clamped).map((i) => ({
     i: i.key,
     x: i.x,
     y: i.y,
     w: i.w,
     h: i.h,
-    ...constraintsFor(libraryByKey[i.key], i.key),
+    ...cons[i.key],
   }));
-  const md = ordered.map((i) => {
+  const md = lg.map((i) => {
     const w = i.w >= 5 ? 6 : 3;
     return {
-      i: i.key,
+      i: i.i,
       x: w === 6 ? 0 : i.x >= 6 ? 3 : 0,
       y: i.y,
       w,
@@ -164,8 +186,8 @@ function deriveLayouts(layout, libraryByKey) {
     };
   });
   let y = 0;
-  const sm = ordered.map((i) => {
-    const out = { i: i.key, x: 0, y, w: 1, h: i.h };
+  const sm = lg.map((i) => {
+    const out = { i: i.i, x: 0, y, w: 1, h: i.h };
     y += i.h;
     return out;
   });
@@ -840,10 +862,13 @@ export default function AppDashboard({ appKey }) {
           {title}
         </h1>
         {!editing && (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 flex-wrap min-w-0 max-w-full">
             {["siteOperations", "build"].includes(appKey) && (
               // Site Operations widgets follow ?project= (widgets/siteops useDash)
-              <div style={{ width: 240 }} data-testid="dashboard-project-filter">
+              <div
+                style={{ width: 240, maxWidth: "calc(100vw - 150px)" }}
+                data-testid="dashboard-project-filter"
+              >
                 <ProjectPicker
                   value={sp.get("project") || ""}
                   onChange={(v) =>

@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   Req,
@@ -20,7 +21,9 @@ import {
   AdjustInventoryDto,
   TransferInventoryDto,
   ReturnInventoryDto,
+  OpeningStockDto,
 } from '../dto/inventory.dto';
+import { InventoryDirection } from '../models/inventory-transaction.model';
 
 @UseGuards(JwtAuthGuard)
 @Controller('inventory')
@@ -66,6 +69,30 @@ export class InventoryController {
   // ============================================================
   // TRANSFER BETWEEN SITES
   // ============================================================
+
+  @RequirePermission('inventory:adjust')
+  @Post('opening-stock')
+  openingStock(@Body() dto: OpeningStockDto, @Req() req: any) {
+    return this.inventoryService.addOpeningStock(
+      { ...dto, direction: InventoryDirection.IN } as AdjustInventoryDto,
+      req.user?.id,
+    );
+  }
+
+  @RequirePermission('inventory:adjust')
+  @Post('reverse/:id')
+  reverse(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { reason?: string; quantity?: number },
+    @Req() req: any,
+  ) {
+    return this.inventoryService.reverse(
+      id,
+      body?.reason,
+      body?.quantity,
+      req.user?.id,
+    );
+  }
 
   @RequirePermission('inventory:transfer')
   @Post('transfer')

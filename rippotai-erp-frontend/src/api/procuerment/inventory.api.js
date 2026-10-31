@@ -333,7 +333,7 @@ export const inventoryApi = baseApi.injectEndpoints({
      */
     getMaterialInventoryHistory: builder.query({
       query: ({ projectId, materialId, siteId }) => ({
-        url: `/inventory/material-history/${projectId}/${materialId}`,
+        url: `/inventory/material/${projectId}/${materialId}/history`,
         method: "GET",
         params: {
           ...(siteId && { siteId }),

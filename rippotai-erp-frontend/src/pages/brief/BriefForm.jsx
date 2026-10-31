@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { PrefillNotice } from "@/components/PrefillNotice";
 import { useSharedProjectData } from "../../hooks/use-shared-project-data";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -202,7 +203,7 @@ export function BriefForm() {
   // FIELD CHANGE
   // ==========================================================
 
-  useSharedProjectData(
+  const prefill = useSharedProjectData(
     projectId,
     "brief",
     values,
@@ -410,7 +411,8 @@ export function BriefForm() {
     <>
       <BriefSectionForm
         title={title}
-        subtitle={subtitle}
+        subtitle={<>{subtitle}<PrefillNotice prefill={prefill} /></>}
+        prefill={prefill}
         sections={sectionsWithProjectTypes}
         values={values}
         onFieldChange={handleFieldChange}

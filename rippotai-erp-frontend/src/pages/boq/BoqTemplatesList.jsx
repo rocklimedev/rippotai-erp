@@ -1,18 +1,15 @@
-import { appConfirm } from "@/lib/app-dialog";
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import { formatINR, relativeTime } from "@/lib/format";
-import { toast } from "sonner";
-import { Plus } from "lucide-react";
-import {
-  useGetTemplatesQuery,
-  useDeleteTemplateMutation,
-} from "../../api/boq/boq.api"; // adjust path to wherever boqApi is exported from
+import { appConfirm } from '@/lib/app-dialog';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { formatINR, relativeTime } from '@/lib/format';
+import { toast } from 'sonner';
+import { Plus } from 'lucide-react';
+import { useGetTemplatesQuery, useDeleteTemplateMutation } from '../../api/boq/boq.api'; // adjust path to wherever boqApi is exported from
 
 const TIER_META = {
-  essential: { label: "Essential", bg: "#EAEEF0", fg: "#1F453B" },
-  premium: { label: "Premium", bg: "#D8E0DA", fg: "#1F453B" },
-  luxury: { label: "Luxury", bg: "#D9AF61", fg: "#1F453B" },
+  essential: { label: 'Essential', bg: '#EAEEF0', fg: '#1F453B' },
+  premium: { label: 'Premium', bg: '#D8E0DA', fg: '#1F453B' },
+  luxury: { label: 'Luxury', bg: '#D9AF61', fg: '#1F453B' },
 };
 
 /* ============ Templates List ============ */
@@ -27,9 +24,9 @@ export function BoqTemplatesList() {
     if (!(await appConfirm(`Delete template "${t.name}"?`))) return;
     try {
       await deleteTemplate(t.id).unwrap();
-      toast.success("Deleted");
+      toast.success('Deleted');
     } catch {
-      toast.error("Delete failed");
+      toast.error('Delete failed');
     }
   };
 
@@ -40,16 +37,14 @@ export function BoqTemplatesList() {
           <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6] mb-1.5">
             BOQ · Management
           </div>
-          <h1 className="text-[34px] font-bold text-[#333333]">
-            BOQ Templates
-          </h1>
+          <h1 className="text-[34px] font-bold text-[#333333]">BOQ Templates</h1>
           <p className="text-[13.5px] text-[#6B7B7C] mt-1">
-            Reusable BOQ blueprints. Create a new BOQ from a template to
-            pre-fill categories, items and rates.
+            Reusable BOQ blueprints. Create a new BOQ from a template to pre-fill categories, items
+            and rates.
           </p>
         </div>
         <button
-          onClick={() => nav("/ledger/boq/template/new")}
+          onClick={() => nav('/ledger/boq/template/new')}
           className="h-10 px-4 rounded-xl bg-[#1F453B] text-white text-[13px] font-semibold flex items-center gap-2"
           data-testid="template-create-btn"
         >
@@ -65,9 +60,7 @@ export function BoqTemplatesList() {
               <th className="px-3 py-3 font-semibold">Tier</th>
               <th className="px-3 py-3 font-semibold text-right">Categories</th>
               <th className="px-3 py-3 font-semibold text-right">Items</th>
-              <th className="px-3 py-3 font-semibold text-right">
-                Total value
-              </th>
+              <th className="px-3 py-3 font-semibold text-right">Total value</th>
               <th className="px-3 py-3 font-semibold">Updated</th>
               <th className="px-3 py-3 font-semibold w-32">Actions</th>
             </tr>
@@ -75,20 +68,14 @@ export function BoqTemplatesList() {
           <tbody>
             {isLoading && (
               <tr>
-                <td
-                  colSpan={7}
-                  className="px-4 py-10 text-center text-[#6B7B7C] text-[13px]"
-                >
+                <td colSpan={7} className="px-4 py-10 text-center text-[#6B7B7C] text-[13px]">
                   Loading templates…
                 </td>
               </tr>
             )}
             {!isLoading && rows && rows.length === 0 && (
               <tr>
-                <td
-                  colSpan={7}
-                  className="px-4 py-10 text-center text-[#6B7B7C] text-[13px]"
-                >
+                <td colSpan={7} className="px-4 py-10 text-center text-[#6B7B7C] text-[13px]">
                   No templates yet. Create your first template above.
                 </td>
               </tr>
@@ -104,12 +91,8 @@ export function BoqTemplatesList() {
                     data-testid={`template-row-${t.id}`}
                   >
                     <td className="px-4 py-3">
-                      <div className="text-[13.5px] font-semibold text-[#333333]">
-                        {t.name}
-                      </div>
-                      <div className="text-[11.5px] text-[#B5C4B6]">
-                        by {t.created_by || "—"}
-                      </div>
+                      <div className="text-[13.5px] font-semibold text-[#333333]">{t.name}</div>
+                      <div className="text-[11.5px] text-[#B5C4B6]">by {t.created_by || '—'}</div>
                     </td>
                     <td className="px-3 py-3">
                       {tier ? (

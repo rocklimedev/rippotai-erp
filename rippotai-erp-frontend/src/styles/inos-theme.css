@@ -1607,3 +1607,134 @@ textarea.bc-input {
     display: none;
   }
 }
+
+/* =====================================================================
+   Dashboard widgets — size-aware content (container queries)
+   Every WidgetShell is a size container, so its content adapts to the
+   tile it is resized into instead of being cropped:
+   · key numbers scale with the tile width (and height)
+   · secondary bits (deltas' "vs prev", donut %s) drop out when narrow
+   · lists/tables scroll; table cells never wrap or get cut
+   ===================================================================== */
+.bc-widget {
+  container: widget / size;
+  padding: 18px 20px;
+}
+.bc-widget__head {
+  padding-bottom: 10px;
+  min-height: 0;
+}
+.bc-fit-number {
+  font-size: clamp(22px, 14cqi, 34px);
+}
+.bc-hero-value {
+  font-size: clamp(24px, 10cqi, 40px);
+  line-height: 1.15;
+}
+.bc-donut {
+  width: clamp(88px, min(38cqi, calc(100cqb - 64px)), 168px);
+  aspect-ratio: 1;
+}
+.bc-donut__total {
+  font-size: clamp(16px, 7cqi, 30px);
+}
+.bc-widget .overflow-y-auto:has(> table) {
+  overflow-x: auto;
+}
+.bc-widget table th,
+.bc-widget table td {
+  white-space: nowrap;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.bc-widget table th:first-child,
+.bc-widget table td:first-child {
+  padding-left: 0;
+}
+.bc-widget table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+@container widget (max-width: 380px) {
+  .bc-hide-narrow {
+    display: none !important;
+  }
+}
+@container widget (max-width: 240px) {
+  .bc-hide-tiny {
+    display: none !important;
+  }
+}
+@container widget (max-height: 150px) {
+  .bc-stat-delta {
+    margin-top: 2px;
+  }
+}
+@container widget (max-height: 240px) {
+  .bc-hero-value {
+    font-size: clamp(22px, 8cqi, 30px);
+  }
+}
+
+/* ---------- Declutter pass (UI audit, Oct 2026) ----------------------
+   One accent colour: stat-tile icons are quiet glyphs, not coloured
+   chips — colour is kept for status pills where it carries meaning. */
+.inos-stat .inos-icon-tile {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: transparent !important;
+  color: var(--text-3) !important;
+}
+.inos-stat .inos-icon-tile svg {
+  width: 16px;
+  height: 16px;
+}
+.inos-stat__value {
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.inos-stat__label,
+.inos-stat__meta {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Phones: header actions take the full row and never push the page wide */
+@media (max-width: 640px) {
+  .inos-page-header {
+    align-items: flex-start;
+  }
+  .inos-page-header__actions {
+    width: 100%;
+  }
+  .inos-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* Card headers wrap their actions on narrow screens; segmented controls
+   scroll inside their own box instead of widening the page. */
+.inos-card__header {
+  flex-wrap: wrap;
+}
+.inos-card__header > div:last-child {
+  max-width: 100%;
+  min-width: 0;
+}
+.inos-segmented {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.inos-segmented::-webkit-scrollbar,
+.inos-tabs::-webkit-scrollbar {
+  display: none;
+}
+.inos-card__header > div:last-child > * {
+  min-width: 0;
+  max-width: 100%;
+}

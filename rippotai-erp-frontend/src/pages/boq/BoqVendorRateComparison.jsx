@@ -1,13 +1,13 @@
-import { appConfirm } from "@/lib/app-dialog";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import DeleteRateComparison from "@/components/materials/DeleteRateComparison";
-import { useGetProjectsQuery } from "../../api/projects/project.api";
+import { appConfirm } from '@/lib/app-dialog';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import DeleteRateComparison from '@/components/materials/DeleteRateComparison';
+import { useGetProjectsQuery } from '../../api/projects/project.api';
 import {
   useGetRateComparisonQuery,
   useCreateRateComparisonMutation,
   useUpdateRateComparisonMutation,
-} from "../../api/procuerment/vendor-rate-comparison.api";
+} from '../../api/procuerment/vendor-rate-comparison.api';
 import {
   Calculator,
   ChevronDown,
@@ -23,14 +23,14 @@ import {
   Users,
   X,
   AlertCircle,
-} from "lucide-react";
-import { toast } from "sonner";
+} from 'lucide-react';
+import { toast } from 'sonner';
 
-import { Shell, Card } from "../../hooks/shared";
+import { Shell, Card } from '../../hooks/shared';
 
-import { useGetBoqsQuery, useGetBoqByIdQuery } from "../../api/boq/boq.api";
+import { useGetBoqsQuery, useGetBoqByIdQuery } from '../../api/boq/boq.api';
 
-import { useGetVendorsQuery } from "../../api/vendors/vendor.api";
+import { useGetVendorsQuery } from '../../api/vendors/vendor.api';
 
 // ============================================================
 // Helpers
@@ -39,9 +39,9 @@ import { useGetVendorsQuery } from "../../api/vendors/vendor.api";
 const money = (value) => {
   const n = Number(value || 0);
 
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
     maximumFractionDigits: 2,
   }).format(n);
 };
@@ -49,7 +49,7 @@ const money = (value) => {
 const number = (value) => {
   const n = Number(value || 0);
 
-  return new Intl.NumberFormat("en-IN", {
+  return new Intl.NumberFormat('en-IN', {
     maximumFractionDigits: 2,
   }).format(n);
 };
@@ -103,8 +103,7 @@ function normalizeCategories(boq) {
       category?.title ||
       `Category ${categoryIndex + 1}`;
 
-    const items =
-      category?.items || category?.boq_items || category?.line_items || [];
+    const items = category?.items || category?.boq_items || category?.line_items || [];
 
     return {
       ...category,
@@ -134,60 +133,35 @@ const getItemDescription = (item) =>
   item?.item_name ||
   item?.material_name ||
   item?.title ||
-  "-";
+  '-';
 
 const getItemSpecification = (item) =>
-  item?.specification ||
-  item?.spec ||
-  item?.make ||
-  item?.brand ||
-  item?.model ||
-  "-";
+  item?.specification || item?.spec || item?.make || item?.brand || item?.model || '-';
 
-const getItemUnit = (item) =>
-  item?.unit || item?.uom || item?.measurement_unit || "-";
+const getItemUnit = (item) => item?.unit || item?.uom || item?.measurement_unit || '-';
 
 const getItemQty = (item) =>
-  Number(
-    item?.quantity ??
-      item?.qty ??
-      item?.estimated_quantity ??
-      item?.required_quantity ??
-      0,
-  );
+  Number(item?.quantity ?? item?.qty ?? item?.estimated_quantity ?? item?.required_quantity ?? 0);
 
 const getBoqRate = (item) =>
   Number(
-    item?.rate ??
-      item?.boq_rate ??
-      item?.boqRate ??
-      item?.unit_rate ??
-      item?.estimated_rate ??
-      0,
+    item?.rate ?? item?.boq_rate ?? item?.boqRate ?? item?.unit_rate ?? item?.estimated_rate ?? 0,
   );
 
 const getBoqAmount = (item) => {
-  if (
-    item?.amount !== undefined &&
-    item?.amount !== null &&
-    item?.amount !== ""
-  ) {
+  if (item?.amount !== undefined && item?.amount !== null && item?.amount !== '') {
     return Number(item.amount);
   }
 
   if (
     item?.total_amount !== undefined &&
     item?.total_amount !== null &&
-    item?.total_amount !== ""
+    item?.total_amount !== ''
   ) {
     return Number(item.total_amount);
   }
 
-  if (
-    item?.line_total !== undefined &&
-    item?.line_total !== null &&
-    item?.line_total !== ""
-  ) {
+  if (item?.line_total !== undefined && item?.line_total !== null && item?.line_total !== '') {
     return Number(item.line_total);
   }
 
@@ -198,27 +172,26 @@ const getBoqAmount = (item) => {
 // Vendor helpers
 // ============================================================
 
-const getVendorId = (vendor) =>
-  vendor?.id || vendor?._id || vendor?.vendor_id || vendor?.uuid;
+const getVendorId = (vendor) => vendor?.id || vendor?._id || vendor?.vendor_id || vendor?.uuid;
 
 const getVendorName = (vendor) =>
   vendor?.name ||
   vendor?.company_name ||
   vendor?.business_name ||
   vendor?.vendor_name ||
-  "Unnamed Vendor";
+  'Unnamed Vendor';
 
 // ============================================================
 // Main Component
 // ============================================================
 
 const getRateKey = (itemId, vendorId) => `${itemId}__${vendorId}`;
-const comparisonPath = "/procurement/vendors/rate-comparison";
+const comparisonPath = '/procurement/vendors/rate-comparison';
 const apiError = (error) => {
   const message = error?.data?.message;
   return Array.isArray(message)
-    ? message.join(". ")
-    : message || "Could not save rate comparison sheet";
+    ? message.join('. ')
+    : message || 'Could not save rate comparison sheet';
 };
 const asList = (response) => {
   const data = response?.data?.data ?? response?.data ?? response;
@@ -246,25 +219,20 @@ export default function BoqVendorRateComparison() {
     return (
       <Shell>
         <p role="alert">
-          Could not load this comparison sheet.{" "}
-          <button onClick={refetch}>Retry</button>
+          Could not load this comparison sheet. <button onClick={refetch}>Retry</button>
         </p>
       </Shell>
     );
-  return (
-    <ComparisonWorkspace key={id || "new"} initialSheet={id ? data : null} />
-  );
+  return <ComparisonWorkspace key={id || 'new'} initialSheet={id ? data : null} />;
 }
 
 function ComparisonWorkspace({ initialSheet }) {
   const navigate = useNavigate();
-  const [title, setTitle] = useState(initialSheet?.title || "");
-  const [notes, setNotes] = useState(initialSheet?.notes || "");
-  const [projectId, setProjectId] = useState(initialSheet?.project_id || "");
+  const [title, setTitle] = useState(initialSheet?.title || '');
+  const [notes, setNotes] = useState(initialSheet?.notes || '');
+  const [projectId, setProjectId] = useState(initialSheet?.project_id || '');
   const [revision, setRevision] = useState(initialSheet?.revision || 1);
-  const [vendorSnapshots, setVendorSnapshots] = useState(
-    initialSheet?.snapshot?.vendors || [],
-  );
+  const [vendorSnapshots, setVendorSnapshots] = useState(initialSheet?.snapshot?.vendors || []);
   const [createSheet, creating] = useCreateRateComparisonMutation();
   const [updateSheet, updating] = useUpdateRateComparisonMutation();
   const saving = creating.isLoading || updating.isLoading;
@@ -304,9 +272,7 @@ function ComparisonWorkspace({ initialSheet }) {
     );
   }, [boqResponse]);
 
-  const [selectedBoqId, setSelectedBoqId] = useState(
-    initialSheet?.boq_id || "",
-  );
+  const [selectedBoqId, setSelectedBoqId] = useState(initialSheet?.boq_id || '');
 
   const {
     currentData: boqDetailResponse,
@@ -327,30 +293,24 @@ function ComparisonWorkspace({ initialSheet }) {
   // VENDORS
   // ==========================================================
 
-  const { data: vendorResponse, isLoading: vendorsLoading } =
-    useGetVendorsQuery(
-      {
-        status: "ACTIVE",
-      },
-      {
-        refetchOnMountOrArgChange: true,
-        keepUnusedDataFor: 0,
-      },
-    );
+  const { data: vendorResponse, isLoading: vendorsLoading } = useGetVendorsQuery(
+    {
+      status: 'ACTIVE',
+    },
+    {
+      refetchOnMountOrArgChange: true,
+      keepUnusedDataFor: 0,
+    },
+  );
 
   const vendors = useMemo(() => {
-    const data =
-      vendorResponse?.data?.data ?? vendorResponse?.data ?? vendorResponse;
-    const live = Array.isArray(data)
-      ? data
-      : data?.items || data?.vendors || [];
+    const data = vendorResponse?.data?.data ?? vendorResponse?.data ?? vendorResponse;
+    const live = Array.isArray(data) ? data : data?.items || data?.vendors || [];
     return [
       ...vendorSnapshots,
       ...live.filter(
         (vendor) =>
-          !vendorSnapshots.some(
-            (saved) => String(saved.id) === String(getVendorId(vendor)),
-          ),
+          !vendorSnapshots.some((saved) => String(saved.id) === String(getVendorId(vendor))),
       ),
     ];
   }, [vendorResponse, vendorSnapshots]);
@@ -359,21 +319,17 @@ function ComparisonWorkspace({ initialSheet }) {
   // STATE
   // ==========================================================
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
 
-  const [selectedCategoryId, setSelectedCategoryId] = useState("ALL");
+  const [selectedCategoryId, setSelectedCategoryId] = useState('ALL');
 
   const [selectedVendorIds, setSelectedVendorIds] = useState(
     initialSheet?.snapshot?.selected_vendor_ids || [],
   );
 
-  const [vendorNames, setVendorNames] = useState(
-    initialSheet?.snapshot?.vendor_names || {},
-  );
+  const [vendorNames, setVendorNames] = useState(initialSheet?.snapshot?.vendor_names || {});
 
-  const [vendorRates, setVendorRates] = useState(
-    initialSheet?.snapshot?.vendor_rates || {},
-  );
+  const [vendorRates, setVendorRates] = useState(initialSheet?.snapshot?.vendor_rates || {});
 
   const [expandedCategories, setExpandedCategories] = useState({});
 
@@ -395,9 +351,7 @@ function ComparisonWorkspace({ initialSheet }) {
     return selectedVendorIds
       .map(
         (id) =>
-          vendorSnapshots.find(
-            (vendor) => String(getVendorId(vendor)) === String(id),
-          ) ||
+          vendorSnapshots.find((vendor) => String(getVendorId(vendor)) === String(id)) ||
           vendors.find((vendor) => String(getVendorId(vendor)) === String(id)),
       )
       .filter(Boolean);
@@ -430,7 +384,7 @@ function ComparisonWorkspace({ initialSheet }) {
       }
 
       if (previous.length >= 4) {
-        toast.error("Maximum 4 vendors can be compared.");
+        toast.error('Maximum 4 vendors can be compared.');
         return previous;
       }
 
@@ -470,7 +424,7 @@ function ComparisonWorkspace({ initialSheet }) {
 
       const stored = vendorRates[key];
 
-      if (stored !== undefined && stored !== null && stored !== "") {
+      if (stored !== undefined && stored !== null && stored !== '') {
         return Number(stored);
       }
 
@@ -487,10 +441,7 @@ function ComparisonWorkspace({ initialSheet }) {
     const result = [];
 
     categories.forEach((category) => {
-      if (
-        selectedCategoryId !== "ALL" &&
-        String(category.id) !== String(selectedCategoryId)
-      ) {
+      if (selectedCategoryId !== 'ALL' && String(category.id) !== String(selectedCategoryId)) {
         return;
       }
 
@@ -531,7 +482,7 @@ function ComparisonWorkspace({ initialSheet }) {
         getItemSpecification(row.item),
         getItemUnit(row.item),
       ]
-        .join(" ")
+        .join(' ')
         .toLowerCase();
 
       return searchable.includes(query);
@@ -577,8 +528,7 @@ function ComparisonWorkspace({ initialSheet }) {
 
       const varianceAmount = l1 ? l1.amount - boqAmount : 0;
 
-      const variancePercent =
-        boqAmount > 0 ? (varianceAmount / boqAmount) * 100 : 0;
+      const variancePercent = boqAmount > 0 ? (varianceAmount / boqAmount) * 100 : 0;
 
       return {
         ...row,
@@ -634,9 +584,7 @@ function ComparisonWorkspace({ initialSheet }) {
   // ==========================================================
 
   const boqProjectTotal = Number(
-    boq?.project_total ??
-      boq?.projectTotal ??
-      allRows.reduce((sum, row) => sum + row.boqAmount, 0),
+    boq?.project_total ?? boq?.projectTotal ?? allRows.reduce((sum, row) => sum + row.boqAmount, 0),
   );
 
   const boqMiscAmount = Number(boq?.misc_amount ?? boq?.miscAmount ?? 0);
@@ -663,9 +611,7 @@ function ComparisonWorkspace({ initialSheet }) {
         return sum + rate * row.qty;
       }, 0);
 
-      const quotedItems = allRows.filter(
-        (row) => getVendorRate(row.itemId, vendorId) > 0,
-      ).length;
+      const quotedItems = allRows.filter((row) => getVendorRate(row.itemId, vendorId) > 0).length;
 
       const variance = total - boq;
 
@@ -679,10 +625,7 @@ function ComparisonWorkspace({ initialSheet }) {
       };
     });
 
-    const l1Total = allRows.reduce(
-      (sum, row) => sum + (row.l1?.amount || 0),
-      0,
-    );
+    const l1Total = allRows.reduce((sum, row) => sum + (row.l1?.amount || 0), 0);
 
     const quotedItems = allRows.filter((row) => row.l1).length;
 
@@ -716,33 +659,24 @@ function ComparisonWorkspace({ initialSheet }) {
     const warn = (event) => {
       if (dirty) {
         event.preventDefault();
-        event.returnValue = "";
+        event.returnValue = '';
       }
     };
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
   }, [dirty]);
 
   const saveSheet = async () => {
-    if (
-      !title.trim() ||
-      !projectId ||
-      !selectedBoqId ||
-      !boq ||
-      boqDetailLoading
-    ) {
-      toast.error(
-        "Enter a sheet name and select a project and its BOQ before saving.",
-      );
+    if (!title.trim() || !projectId || !selectedBoqId || !boq || boqDetailLoading) {
+      toast.error('Enter a sheet name and select a project and its BOQ before saving.');
       return;
     }
     if (
       Object.values(vendorRates).some(
-        (rate) =>
-          rate !== "" && (!Number.isFinite(Number(rate)) || Number(rate) < 0),
+        (rate) => rate !== '' && (!Number.isFinite(Number(rate)) || Number(rate) < 0),
       )
     ) {
-      toast.error("Vendor rates must be non-negative numbers.");
+      toast.error('Vendor rates must be non-negative numbers.');
       return;
     }
     const snapshot = {
@@ -819,16 +753,13 @@ function ComparisonWorkspace({ initialSheet }) {
     };
     try {
       const sheet = await (
-        initialSheet
-          ? updateSheet({ id: initialSheet.id, revision, ...body })
-          : createSheet(body)
+        initialSheet ? updateSheet({ id: initialSheet.id, revision, ...body }) : createSheet(body)
       ).unwrap();
       setRevision(sheet.revision);
       setSavedState(editState);
       setVendorSnapshots(snapshot.vendors);
-      toast.success("Rate comparison sheet saved");
-      if (!initialSheet)
-        navigate(comparisonPath + "/" + sheet.id + "/edit", { replace: true });
+      toast.success('Rate comparison sheet saved');
+      if (!initialSheet) navigate(comparisonPath + '/' + sheet.id + '/edit', { replace: true });
     } catch (error) {
       toast.error(apiError(error));
     }
@@ -842,14 +773,9 @@ function ComparisonWorkspace({ initialSheet }) {
     return categories.map((category) => {
       const items = Array.isArray(category.items) ? category.items : [];
 
-      const categoryRows = allRows.filter(
-        (row) => String(row.categoryId) === String(category.id),
-      );
+      const categoryRows = allRows.filter((row) => String(row.categoryId) === String(category.id));
 
-      const calculatedBoq = categoryRows.reduce(
-        (sum, row) => sum + row.boqAmount,
-        0,
-      );
+      const calculatedBoq = categoryRows.reduce((sum, row) => sum + row.boqAmount, 0);
 
       const apiSubtotal = Number(
         category?.subtotal ?? category?.total ?? category?.category_total ?? 0,
@@ -857,10 +783,7 @@ function ComparisonWorkspace({ initialSheet }) {
 
       const boqTotal = apiSubtotal > 0 ? apiSubtotal : calculatedBoq;
 
-      const l1 = categoryRows.reduce(
-        (sum, row) => sum + (row.l1?.amount || 0),
-        0,
-      );
+      const l1 = categoryRows.reduce((sum, row) => sum + (row.l1?.amount || 0), 0);
 
       return {
         id: category.id,
@@ -880,10 +803,7 @@ function ComparisonWorkspace({ initialSheet }) {
   const visibleSummary = useMemo(() => {
     const boq = calculatedRows.reduce((sum, row) => sum + row.boqAmount, 0);
 
-    const l1 = calculatedRows.reduce(
-      (sum, row) => sum + (row.l1?.amount || 0),
-      0,
-    );
+    const l1 = calculatedRows.reduce((sum, row) => sum + (row.l1?.amount || 0), 0);
 
     const quoted = calculatedRows.filter((row) => row.l1).length;
 
@@ -901,20 +821,20 @@ function ComparisonWorkspace({ initialSheet }) {
 
   const exportCsv = () => {
     if (!allRows.length) {
-      toast.error("No BOQ items available to export.");
+      toast.error('No BOQ items available to export.');
 
       return;
     }
 
     const headers = [
-      "BOQ Category",
-      "S.No",
-      "Item Description",
-      "Specification / Make",
-      "Unit",
-      "Qty",
-      "BOQ Rate",
-      "BOQ Amount",
+      'BOQ Category',
+      'S.No',
+      'Item Description',
+      'Specification / Make',
+      'Unit',
+      'Qty',
+      'BOQ Rate',
+      'BOQ Amount',
     ];
 
     selectedVendors.forEach((vendor, index) => {
@@ -923,7 +843,7 @@ function ComparisonWorkspace({ initialSheet }) {
       headers.push(`${name} Rate`, `${name} Amount`);
     });
 
-    headers.push("L1 Rate", "L1 Vendor", "L1 Amount", "L1 vs BOQ %");
+    headers.push('L1 Rate', 'L1 Vendor', 'L1 Amount', 'L1 vs BOQ %');
 
     const data = allRows.map((row, index) => {
       const values = [
@@ -942,16 +862,14 @@ function ComparisonWorkspace({ initialSheet }) {
 
         const rate = getVendorRate(row.itemId, vendorId);
 
-        values.push(rate || "", rate ? rate * row.qty : "");
+        values.push(rate || '', rate ? rate * row.qty : '');
       });
 
       values.push(
-        row.l1?.rate || "",
-        row.l1
-          ? getComparisonVendorName(row.l1.vendor, row.l1.vendorIndex)
-          : "",
-        row.l1?.amount || "",
-        row.l1 ? row.variancePercent / 100 : "",
+        row.l1?.rate || '',
+        row.l1 ? getComparisonVendorName(row.l1.vendor, row.l1.vendorIndex) : '',
+        row.l1?.amount || '',
+        row.l1 ? row.variancePercent / 100 : '',
       );
 
       return values;
@@ -961,22 +879,21 @@ function ComparisonWorkspace({ initialSheet }) {
       .map((row) =>
         row
           .map((value) => {
-            const stringValue =
-              value === null || value === undefined ? "" : String(value);
+            const stringValue = value === null || value === undefined ? '' : String(value);
 
             return `"${stringValue.replace(/"/g, '""')}"`;
           })
-          .join(","),
+          .join(','),
       )
-      .join("\n");
+      .join('\n');
 
     const blob = new Blob([csv], {
-      type: "text/csv;charset=utf-8;",
+      type: 'text/csv;charset=utf-8;',
     });
 
     const url = URL.createObjectURL(blob);
 
-    const anchor = document.createElement("a");
+    const anchor = document.createElement('a');
 
     anchor.href = url;
 
@@ -990,7 +907,7 @@ function ComparisonWorkspace({ initialSheet }) {
 
     URL.revokeObjectURL(url);
 
-    toast.success("Vendor comparison exported.");
+    toast.success('Vendor comparison exported.');
   };
 
   // ==========================================================
@@ -998,14 +915,11 @@ function ComparisonWorkspace({ initialSheet }) {
   // ==========================================================
 
   const resetRates = async () => {
-    if (
-      Object.keys(vendorRates).length &&
-      !(await appConfirm("Clear all entered vendor rates?"))
-    )
+    if (Object.keys(vendorRates).length && !(await appConfirm('Clear all entered vendor rates?')))
       return;
     setVendorRates({});
 
-    toast.success("Rates cleared. Save the sheet to keep this change.");
+    toast.success('Rates cleared. Save the sheet to keep this change.');
   };
 
   // ==========================================================
@@ -1017,7 +931,7 @@ function ComparisonWorkspace({ initialSheet }) {
       if (
         !initialSheet &&
         Object.keys(vendorRates).length &&
-        !(await appConfirm("Refresh the source BOQ and clear entered rates?"))
+        !(await appConfirm('Refresh the source BOQ and clear entered rates?'))
       )
         return;
       if (!initialSheet) setVendorRates({});
@@ -1028,12 +942,10 @@ function ComparisonWorkspace({ initialSheet }) {
       }
 
       toast.success(
-        initialSheet
-          ? "This sheet uses its saved BOQ snapshot."
-          : "BOQ data refreshed.",
+        initialSheet ? 'This sheet uses its saved BOQ snapshot.' : 'BOQ data refreshed.',
       );
     } catch {
-      toast.error("Unable to refresh BOQ data.");
+      toast.error('Unable to refresh BOQ data.');
     }
   };
 
@@ -1072,13 +984,10 @@ function ComparisonWorkspace({ initialSheet }) {
               Vendor Rate Comparison
             </div>
 
-            <h1 className="text-2xl font-bold text-[#1F453B]">
-              Vendor Rate Comparison Sheet
-            </h1>
+            <h1 className="text-2xl font-bold text-[#1F453B]">Vendor Rate Comparison Sheet</h1>
 
             <p className="mt-1 text-sm text-gray-500">
-              Compare vendor quotations against the actual BOQ rate category by
-              category.
+              Compare vendor quotations against the actual BOQ rate category by category.
             </p>
           </div>
 
@@ -1087,39 +996,35 @@ function ComparisonWorkspace({ initialSheet }) {
               type="button"
               className="rounded-lg border px-3 py-2 text-sm"
               onClick={async () => {
-                if (
-                  !dirty ||
-                  (await appConfirm(
-                    "Leave this sheet and discard unsaved changes?",
-                  ))
-                )
+                if (!dirty || (await appConfirm('Leave this sheet and discard unsaved changes?')))
                   navigate(comparisonPath);
               }}
             >
               All sheets
             </button>
-            {initialSheet && <DeleteRateComparison sheet={initialSheet} disabled={saving} onDeleted={() => navigate(comparisonPath)} />}
+            {initialSheet && (
+              <DeleteRateComparison
+                sheet={initialSheet}
+                disabled={saving}
+                onDeleted={() => navigate(comparisonPath)}
+              />
+            )}
             <button
               type="button"
               disabled={
-                saving ||
-                !title.trim() ||
-                !projectId ||
-                !selectedBoqId ||
-                !boq ||
-                boqDetailLoading
+                saving || !title.trim() || !projectId || !selectedBoqId || !boq || boqDetailLoading
               }
               onClick={saveSheet}
               className="rounded-lg bg-[#1F453B] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
-              {saving ? "Saving..." : "Save sheet"}
+              {saving ? 'Saving...' : 'Save sheet'}
             </button>
             <span className="text-xs text-gray-500">
               {dirty
-                ? "Unsaved changes"
+                ? 'Unsaved changes'
                 : initialSheet
-                  ? "Saved · Revision " + revision
-                  : "New sheet"}
+                  ? 'Saved · Revision ' + revision
+                  : 'New sheet'}
             </span>
             <button
               type="button"
@@ -1176,24 +1081,21 @@ function ComparisonWorkspace({ initialSheet }) {
                   if (
                     Object.keys(vendorRates).length &&
                     !(await appConfirm(
-                      "Changing project clears the BOQ and entered rates. Continue?",
+                      'Changing project clears the BOQ and entered rates. Continue?',
                     ))
                   )
                     return;
                   setProjectId(event.target.value);
-                  setSelectedBoqId("");
+                  setSelectedBoqId('');
                   setVendorRates({});
-                  setSelectedCategoryId("ALL");
-                  setSearch("");
+                  setSelectedCategoryId('ALL');
+                  setSearch('');
                 }}
               >
                 <option value="">Select project</option>
-                {initialSheet &&
-                  !projects.some((project) => project.id === projectId) && (
-                    <option value={projectId}>
-                      {initialSheet.project?.name || projectId}
-                    </option>
-                  )}
+                {initialSheet && !projects.some((project) => project.id === projectId) && (
+                  <option value={projectId}>{initialSheet.project?.name || projectId}</option>
+                )}
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.name}
@@ -1215,36 +1117,26 @@ function ComparisonWorkspace({ initialSheet }) {
           </div>
           {projectsQuery.isError && (
             <p role="alert">
-              Could not load projects.{" "}
-              <button onClick={projectsQuery.refetch}>Retry</button>
+              Could not load projects. <button onClick={projectsQuery.refetch}>Retry</button>
             </p>
           )}
           {boqListError && (
             <p role="alert">
-              Could not load project BOQs.{" "}
-              <button onClick={refetchBoqs}>Retry</button>
+              Could not load project BOQs. <button onClick={refetchBoqs}>Retry</button>
             </p>
           )}
           {boqDetailError && (
             <p role="alert">
-              Could not load the selected BOQ.{" "}
-              <button onClick={refetchBoq}>Retry</button>
+              Could not load the selected BOQ. <button onClick={refetchBoq}>Retry</button>
             </p>
           )}
-          {projectId &&
-            !initialSheet &&
-            !boqLoading &&
-            !boqListError &&
-            boqs.length === 0 && (
-              <p>
-                No BOQs found for this project. Create a BOQ before comparing
-                rates.
-              </p>
-            )}
+          {projectId && !initialSheet && !boqLoading && !boqListError && boqs.length === 0 && (
+            <p>No BOQs found for this project. Create a BOQ before comparing rates.</p>
+          )}
           {initialSheet && (
             <p className="mb-4 text-xs text-gray-500">
-              This sheet uses the saved BOQ snapshot. Create a new sheet to
-              compare a different project or BOQ.
+              This sheet uses the saved BOQ snapshot. Create a new sheet to compare a different
+              project or BOQ.
             </p>
           )}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
@@ -1262,21 +1154,17 @@ function ComparisonWorkspace({ initialSheet }) {
                   onChange={async (event) => {
                     if (
                       Object.keys(vendorRates).length &&
-                      !(await appConfirm(
-                        "Changing BOQ clears entered rates. Continue?",
-                      ))
+                      !(await appConfirm('Changing BOQ clears entered rates. Continue?'))
                     )
                       return;
                     setSelectedBoqId(event.target.value);
                     setVendorRates({});
-                    setSelectedCategoryId("ALL");
-                    setSearch("");
+                    setSelectedCategoryId('ALL');
+                    setSearch('');
                   }}
                   className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 py-2.5 pr-9 text-sm font-medium text-gray-800 outline-none focus:border-[#1F453B]"
                 >
-                  <option value="">
-                    {boqLoading ? "Loading project BOQs..." : "Select BOQ"}
-                  </option>
+                  <option value="">{boqLoading ? 'Loading project BOQs...' : 'Select BOQ'}</option>
                   {initialSheet && (
                     <option value={selectedBoqId}>
                       {boq?.title || initialSheet.boq?.title || selectedBoqId}
@@ -1284,15 +1172,10 @@ function ComparisonWorkspace({ initialSheet }) {
                   )}
 
                   {boqs.map((item) => {
-                    const id =
-                      item?.id || item?._id || item?.boq_id || item?.uuid;
+                    const id = item?.id || item?._id || item?.boq_id || item?.uuid;
 
                     const name =
-                      item?.title ||
-                      item?.name ||
-                      item?.boq_name ||
-                      item?.code ||
-                      `BOQ ${id}`;
+                      item?.title || item?.name || item?.boq_name || item?.code || `BOQ ${id}`;
 
                     return (
                       <option key={id} value={id}>
@@ -1317,10 +1200,7 @@ function ComparisonWorkspace({ initialSheet }) {
               </label>
 
               <div className="relative">
-                <Search
-                  size={17}
-                  className="absolute left-3 top-3 text-gray-400"
-                />
+                <Search size={17} className="absolute left-3 top-3 text-gray-400" />
 
                 <input
                   value={search}
@@ -1349,9 +1229,9 @@ function ComparisonWorkspace({ initialSheet }) {
                   <span className="text-sm font-medium text-gray-700">
                     {selectedVendors.length
                       ? `${selectedVendors.length} vendor${
-                          selectedVendors.length > 1 ? "s" : ""
+                          selectedVendors.length > 1 ? 's' : ''
                         } selected`
-                      : "Select up to 4 vendors"}
+                      : 'Select up to 4 vendors'}
                   </span>
                 </div>
 
@@ -1384,11 +1264,7 @@ function ComparisonWorkspace({ initialSheet }) {
             value={money(boqMiscAmount)}
           />
 
-          <SummaryCard
-            icon={<ShoppingCart size={18} />}
-            label="BOQ Items"
-            value={allRows.length}
-          />
+          <SummaryCard icon={<ShoppingCart size={18} />} label="BOQ Items" value={allRows.length} />
 
           <SummaryCard
             icon={<Users size={18} />}
@@ -1399,7 +1275,7 @@ function ComparisonWorkspace({ initialSheet }) {
           <SummaryCard
             icon={<Trophy size={18} />}
             label="L1 Total"
-            value={summary.l1Total ? money(summary.l1Total) : "—"}
+            value={summary.l1Total ? money(summary.l1Total) : '—'}
           />
         </div>
 
@@ -1412,18 +1288,14 @@ function ComparisonWorkspace({ initialSheet }) {
             <AlertCircle size={18} className="mt-0.5 shrink-0 text-amber-600" />
 
             <div>
-              <div className="text-sm font-semibold text-amber-900">
-                Additional Miscellaneous
-              </div>
+              <div className="text-sm font-semibold text-amber-900">Additional Miscellaneous</div>
 
               <div className="mt-0.5 text-xs text-amber-700">
-                BOQ contains an additional miscellaneous amount of{" "}
+                BOQ contains an additional miscellaneous amount of{' '}
                 <strong>{money(boqMiscAmount)}</strong>
-                {boqMiscPercentage
-                  ? ` with misc % field ${boqMiscPercentage}%`
-                  : ""}
-                . The calculator preserves the API-provided amount and does not
-                recalculate it from the percentage.
+                {boqMiscPercentage ? ` with misc % field ${boqMiscPercentage}%` : ''}. The
+                calculator preserves the API-provided amount and does not recalculate it from the
+                percentage.
               </div>
             </div>
           </div>
@@ -1437,28 +1309,19 @@ function ComparisonWorkspace({ initialSheet }) {
           <Card>
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h2 className="font-semibold text-gray-900">
-                  Vendor Commercial Summary
-                </h2>
+                <h2 className="font-semibold text-gray-900">Vendor Commercial Summary</h2>
 
                 <p className="text-xs text-gray-500">
-                  Vendor totals are calculated from all BOQ categories and
-                  entered vendor rates.
+                  Vendor totals are calculated from all BOQ categories and entered vendor rates.
                 </p>
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <StatBadge
-                  label="Quoted"
-                  value={`${summary.quotedItems}/${allRows.length}`}
-                />
+                <StatBadge label="Quoted" value={`${summary.quotedItems}/${allRows.length}`} />
 
                 <StatBadge label="Pending" value={summary.pendingItems} />
 
-                <StatBadge
-                  label="L1"
-                  value={summary.l1Total ? money(summary.l1Total) : "—"}
-                />
+                <StatBadge label="L1" value={summary.l1Total ? money(summary.l1Total) : '—'} />
               </div>
             </div>
 
@@ -1487,20 +1350,13 @@ function ComparisonWorkspace({ initialSheet }) {
 
                 <tbody>
                   <tr className="border-b border-gray-50">
-                    <td className="px-3 py-3 font-semibold text-gray-700">
-                      Total
-                    </td>
+                    <td className="px-3 py-3 font-semibold text-gray-700">Total</td>
 
-                    <td className="px-3 py-3 text-right font-semibold">
-                      {money(boqProjectTotal)}
-                    </td>
+                    <td className="px-3 py-3 text-right font-semibold">{money(boqProjectTotal)}</td>
 
                     {summary.vendorTotals.map((vendor) => (
-                      <td
-                        key={vendor.vendorId}
-                        className="px-3 py-3 text-right font-semibold"
-                      >
-                        {vendor.total ? money(vendor.total) : "—"}
+                      <td key={vendor.vendorId} className="px-3 py-3 text-right font-semibold">
+                        {vendor.total ? money(vendor.total) : '—'}
                       </td>
                     ))}
                   </tr>
@@ -1514,12 +1370,10 @@ function ComparisonWorkspace({ initialSheet }) {
                       <td
                         key={vendor.vendorId}
                         className={`px-3 py-3 text-right font-medium ${
-                          vendor.variance <= 0
-                            ? "text-emerald-600"
-                            : "text-red-600"
+                          vendor.variance <= 0 ? 'text-emerald-600' : 'text-red-600'
                         }`}
                       >
-                        {vendor.total ? money(vendor.variance) : "—"}
+                        {vendor.total ? money(vendor.variance) : '—'}
                       </td>
                     ))}
                   </tr>
@@ -1533,14 +1387,10 @@ function ComparisonWorkspace({ initialSheet }) {
                       <td
                         key={vendor.vendorId}
                         className={`px-3 py-3 text-right font-medium ${
-                          vendor.variance <= 0
-                            ? "text-emerald-600"
-                            : "text-red-600"
+                          vendor.variance <= 0 ? 'text-emerald-600' : 'text-red-600'
                         }`}
                       >
-                        {vendor.total
-                          ? percentage(vendor.variancePercent)
-                          : "—"}
+                        {vendor.total ? percentage(vendor.variancePercent) : '—'}
                       </td>
                     ))}
                   </tr>
@@ -1571,8 +1421,8 @@ function ComparisonWorkspace({ initialSheet }) {
 
           <div className="flex gap-2 overflow-x-auto pb-1">
             <CategoryPill
-              active={selectedCategoryId === "ALL"}
-              onClick={() => setSelectedCategoryId("ALL")}
+              active={selectedCategoryId === 'ALL'}
+              onClick={() => setSelectedCategoryId('ALL')}
               label="All Categories"
             />
 
@@ -1594,13 +1444,11 @@ function ComparisonWorkspace({ initialSheet }) {
         {categorySummaries.length > 0 && (
           <Card>
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-semibold text-gray-900">
-                BOQ Category Summary
-              </h2>
+              <h2 className="font-semibold text-gray-900">BOQ Category Summary</h2>
 
               <span className="text-xs text-gray-400">
                 {categorySummaries.length} trade
-                {categorySummaries.length !== 1 ? "s" : ""}
+                {categorySummaries.length !== 1 ? 's' : ''}
               </span>
             </div>
 
@@ -1612,14 +1460,12 @@ function ComparisonWorkspace({ initialSheet }) {
                   onClick={() => setSelectedCategoryId(category.id)}
                   className={`rounded-xl border p-3 text-left transition ${
                     String(selectedCategoryId) === String(category.id)
-                      ? "border-[#1F453B] bg-[#f2f7f4]"
-                      : "border-gray-100 bg-gray-50 hover:border-[#1F453B]/30 hover:bg-white"
+                      ? 'border-[#1F453B] bg-[#f2f7f4]'
+                      : 'border-gray-100 bg-gray-50 hover:border-[#1F453B]/30 hover:bg-white'
                   }`}
                 >
                   <div className="mb-3 flex items-start justify-between gap-2">
-                    <div className="text-sm font-semibold text-gray-800">
-                      {category.name}
-                    </div>
+                    <div className="text-sm font-semibold text-gray-800">{category.name}</div>
 
                     <span className="rounded-full bg-white px-2 py-0.5 text-[10px] text-gray-500">
                       {category.items} items
@@ -1628,22 +1474,16 @@ function ComparisonWorkspace({ initialSheet }) {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <div className="text-[10px] uppercase tracking-wide text-gray-400">
-                        BOQ
-                      </div>
+                      <div className="text-[10px] uppercase tracking-wide text-gray-400">BOQ</div>
 
-                      <div className="text-sm font-bold text-gray-900">
-                        {money(category.boq)}
-                      </div>
+                      <div className="text-sm font-bold text-gray-900">{money(category.boq)}</div>
                     </div>
 
                     <div>
-                      <div className="text-[10px] uppercase tracking-wide text-gray-400">
-                        L1
-                      </div>
+                      <div className="text-[10px] uppercase tracking-wide text-gray-400">L1</div>
 
                       <div className="text-sm font-bold text-[#1F453B]">
-                        {category.l1 ? money(category.l1) : "—"}
+                        {category.l1 ? money(category.l1) : '—'}
                       </div>
                     </div>
                   </div>
@@ -1660,13 +1500,10 @@ function ComparisonWorkspace({ initialSheet }) {
         <Card className="overflow-hidden p-0">
           <div className="flex flex-col gap-3 border-b border-gray-100 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h2 className="font-semibold text-gray-900">
-                Vendor Rate Calculator
-              </h2>
+              <h2 className="font-semibold text-gray-900">Vendor Rate Calculator</h2>
 
               <p className="text-xs text-gray-500">
-                Enter vendor unit rates against the actual BOQ rate. L1 is
-                calculated automatically.
+                Enter vendor unit rates against the actual BOQ rate. L1 is calculated automatically.
               </p>
             </div>
 
@@ -1795,19 +1632,14 @@ function ComparisonWorkspace({ initialSheet }) {
 
                     const expanded = expandedCategories[category.id] ?? true;
 
-                    const categoryBoq = categoryRows.reduce(
-                      (sum, row) => sum + row.boqAmount,
-                      0,
-                    );
+                    const categoryBoq = categoryRows.reduce((sum, row) => sum + row.boqAmount, 0);
 
                     const categoryL1 = categoryRows.reduce(
                       (sum, row) => sum + (row.l1?.amount || 0),
                       0,
                     );
 
-                    const categoryQuoted = categoryRows.filter(
-                      (row) => row.l1,
-                    ).length;
+                    const categoryQuoted = categoryRows.filter((row) => row.l1).length;
 
                     return (
                       <React.Fragment key={category.id}>
@@ -1817,27 +1649,16 @@ function ComparisonWorkspace({ initialSheet }) {
                           className="cursor-pointer border-b border-gray-200 bg-[#eef3f0]"
                           onClick={() => toggleCategory(category.id)}
                         >
-                          <td
-                            colSpan={7 + selectedVendors.length + 4}
-                            className="px-3 py-3"
-                          >
+                          <td colSpan={7 + selectedVendors.length + 4} className="px-3 py-3">
                             <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                               <div className="flex items-center gap-2">
                                 {expanded ? (
-                                  <ChevronDown
-                                    size={16}
-                                    className="text-[#1F453B]"
-                                  />
+                                  <ChevronDown size={16} className="text-[#1F453B]" />
                                 ) : (
-                                  <ChevronRight
-                                    size={16}
-                                    className="text-[#1F453B]"
-                                  />
+                                  <ChevronRight size={16} className="text-[#1F453B]" />
                                 )}
 
-                                <span className="font-bold text-[#1F453B]">
-                                  {category.name}
-                                </span>
+                                <span className="font-bold text-[#1F453B]">{category.name}</span>
 
                                 <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-gray-500">
                                   {categoryRows.length} items
@@ -1854,9 +1675,9 @@ function ComparisonWorkspace({ initialSheet }) {
                                 </span>
 
                                 <span>
-                                  L1:{" "}
+                                  L1:{' '}
                                   <strong className="text-[#1F453B]">
-                                    {categoryL1 ? money(categoryL1) : "—"}
+                                    {categoryL1 ? money(categoryL1) : '—'}
                                   </strong>
                                 </span>
                               </div>
@@ -1905,25 +1726,19 @@ function ComparisonWorkspace({ initialSheet }) {
 
                     <td className="px-3 py-4 text-right">—</td>
 
-                    <td className="px-3 py-4 text-right font-bold">
-                      {money(visibleSummary.boq)}
-                    </td>
+                    <td className="px-3 py-4 text-right font-bold">{money(visibleSummary.boq)}</td>
 
                     {selectedVendors.map((vendor) => {
                       const vendorId = getVendorId(vendor);
 
                       const total = calculatedRows.reduce(
-                        (sum, row) =>
-                          sum + getVendorRate(row.itemId, vendorId) * row.qty,
+                        (sum, row) => sum + getVendorRate(row.itemId, vendorId) * row.qty,
                         0,
                       );
 
                       return (
-                        <td
-                          key={vendorId}
-                          className="px-3 py-4 text-right font-bold"
-                        >
-                          {total ? money(total) : "—"}
+                        <td key={vendorId} className="px-3 py-4 text-right font-bold">
+                          {total ? money(total) : '—'}
                         </td>
                       );
                     })}
@@ -1931,26 +1746,23 @@ function ComparisonWorkspace({ initialSheet }) {
                     <td className="px-3 py-4 text-right font-bold">
                       {visibleSummary.l1
                         ? money(
-                            calculatedRows.reduce(
-                              (sum, row) => sum + (row.l1?.rate || 0),
-                              0,
-                            ) / Math.max(1, visibleSummary.quoted),
+                            calculatedRows.reduce((sum, row) => sum + (row.l1?.rate || 0), 0) /
+                              Math.max(1, visibleSummary.quoted),
                           )
-                        : "—"}
+                        : '—'}
                     </td>
 
                     <td className="px-3 py-4 font-bold">L1</td>
 
                     <td className="px-3 py-4 text-right font-bold">
-                      {visibleSummary.l1 ? money(visibleSummary.l1) : "—"}
+                      {visibleSummary.l1 ? money(visibleSummary.l1) : '—'}
                     </td>
 
                     <td
                       className={`px-3 py-4 text-right font-bold ${
-                        visibleSummary.l1 &&
-                        visibleSummary.l1 <= visibleSummary.boq
-                          ? "text-emerald-200"
-                          : "text-red-200"
+                        visibleSummary.l1 && visibleSummary.l1 <= visibleSummary.boq
+                          ? 'text-emerald-200'
+                          : 'text-red-200'
                       }`}
                     >
                       {visibleSummary.l1
@@ -1959,7 +1771,7 @@ function ComparisonWorkspace({ initialSheet }) {
                               Math.max(1, visibleSummary.boq)) *
                               100,
                           )
-                        : "—"}
+                        : '—'}
                     </td>
                   </tr>
                 </tfoot>
@@ -2015,9 +1827,7 @@ function ComparisonRow({
 
       <td className="sticky left-[70px] z-10 bg-white px-3 py-3">
         <div className="max-w-[280px]">
-          <div className="font-medium text-gray-800">
-            {getItemDescription(row.item)}
-          </div>
+          <div className="font-medium text-gray-800">{getItemDescription(row.item)}</div>
 
           <div className="mt-1 text-[10px] font-medium uppercase tracking-wide text-[#1F453B]">
             {row.categoryName}
@@ -2027,33 +1837,25 @@ function ComparisonRow({
 
       {/* SPEC */}
 
-      <td className="px-3 py-3 text-xs text-gray-500">
-        {getItemSpecification(row.item)}
-      </td>
+      <td className="px-3 py-3 text-xs text-gray-500">{getItemSpecification(row.item)}</td>
 
       {/* UNIT */}
 
-      <td className="px-3 py-3 text-center text-xs text-gray-500">
-        {getItemUnit(row.item)}
-      </td>
+      <td className="px-3 py-3 text-center text-xs text-gray-500">{getItemUnit(row.item)}</td>
 
       {/* QTY */}
 
-      <td className="px-3 py-3 text-right font-medium text-gray-700">
-        {number(row.qty)}
-      </td>
+      <td className="px-3 py-3 text-right font-medium text-gray-700">{number(row.qty)}</td>
 
       {/* BOQ RATE */}
 
       <td className="px-3 py-3 text-right font-semibold text-[#1F453B]">
-        {row.boqRate ? money(row.boqRate) : "—"}
+        {row.boqRate ? money(row.boqRate) : '—'}
       </td>
 
       {/* BOQ AMOUNT */}
 
-      <td className="px-3 py-3 text-right font-medium text-gray-700">
-        {money(row.boqAmount)}
-      </td>
+      <td className="px-3 py-3 text-right font-medium text-gray-700">{money(row.boqAmount)}</td>
 
       {/* VENDORS */}
 
@@ -2069,10 +1871,7 @@ function ComparisonRow({
         const isAboveBoq = rate > row.boqRate && row.boqRate > 0;
 
         return (
-          <td
-            key={vendorId}
-            className={`px-3 py-2 ${isL1 ? "bg-emerald-50" : ""}`}
-          >
+          <td key={vendorId} className={`px-3 py-2 ${isL1 ? 'bg-emerald-50' : ''}`}>
             <div className="flex items-center gap-2">
               <div className="relative min-w-[105px]">
                 <span className="pointer-events-none absolute left-2 top-2 text-xs text-gray-400">
@@ -2083,30 +1882,28 @@ function ComparisonRow({
                   type="number"
                   min="0"
                   step="0.01"
-                  value={rate || ""}
-                  onChange={(event) =>
-                    updateVendorRate(row.itemId, vendorId, event.target.value)
-                  }
+                  value={rate || ''}
+                  onChange={(event) => updateVendorRate(row.itemId, vendorId, event.target.value)}
                   placeholder="Rate"
                   className={`w-full rounded-md border px-2 py-1.5 pl-6 text-right text-xs outline-none ${
                     isL1
-                      ? "border-emerald-300 bg-white"
+                      ? 'border-emerald-300 bg-white'
                       : isAboveBoq
-                        ? "border-red-200 bg-red-50"
-                        : "border-gray-200 bg-white"
+                        ? 'border-red-200 bg-red-50'
+                        : 'border-gray-200 bg-white'
                   }`}
                 />
               </div>
 
               <div className="min-w-[85px] text-right">
                 <div className="text-xs font-semibold text-gray-700">
-                  {rate ? money(amount) : "—"}
+                  {rate ? money(amount) : '—'}
                 </div>
 
                 {rate > 0 && row.boqAmount > 0 && (
                   <div
                     className={`text-[10px] ${
-                      rate <= row.boqRate ? "text-emerald-600" : "text-red-600"
+                      rate <= row.boqRate ? 'text-emerald-600' : 'text-red-600'
                     }`}
                   >
                     {percentage(((rate - row.boqRate) / row.boqRate) * 100)}
@@ -2128,7 +1925,7 @@ function ComparisonRow({
       {/* L1 RATE */}
 
       <td className="bg-emerald-50 px-3 py-3 text-right font-bold text-[#1F453B]">
-        {row.l1 ? money(row.l1.rate) : "—"}
+        {row.l1 ? money(row.l1.rate) : '—'}
       </td>
 
       {/* L1 VENDOR */}
@@ -2148,21 +1945,17 @@ function ComparisonRow({
       {/* L1 AMOUNT */}
 
       <td className="bg-emerald-50 px-3 py-3 text-right font-bold text-[#1F453B]">
-        {row.l1 ? money(row.l1.amount) : "—"}
+        {row.l1 ? money(row.l1.amount) : '—'}
       </td>
 
       {/* VARIANCE */}
 
       <td
         className={`px-3 py-3 text-right font-semibold ${
-          !row.l1
-            ? "text-gray-400"
-            : row.variancePercent <= 0
-              ? "text-emerald-600"
-              : "text-red-600"
+          !row.l1 ? 'text-gray-400' : row.variancePercent <= 0 ? 'text-emerald-600' : 'text-red-600'
         }`}
       >
-        {row.l1 ? percentage(row.variancePercent) : "—"}
+        {row.l1 ? percentage(row.variancePercent) : '—'}
       </td>
     </tr>
   );
@@ -2172,12 +1965,7 @@ function ComparisonRow({
 // CATEGORY SUBTOTAL
 // ============================================================
 
-function CategorySubtotal({
-  rows,
-  selectedVendors,
-  getVendorId,
-  getVendorRate,
-}) {
+function CategorySubtotal({ rows, selectedVendors, getVendorId, getVendorRate }) {
   const boq = rows.reduce((sum, row) => sum + row.boqAmount, 0);
 
   const l1 = rows.reduce((sum, row) => sum + (row.l1?.amount || 0), 0);
@@ -2191,9 +1979,7 @@ function CategorySubtotal({
         Category Subtotal
       </td>
 
-      <td className="px-3 py-2 text-right text-xs font-bold text-gray-700">
-        {money(boq)}
-      </td>
+      <td className="px-3 py-2 text-right text-xs font-bold text-gray-700">{money(boq)}</td>
 
       {selectedVendors.map((vendor) => {
         const vendorId = getVendorId(vendor);
@@ -2204,11 +1990,8 @@ function CategorySubtotal({
         );
 
         return (
-          <td
-            key={vendorId}
-            className="px-3 py-2 text-right text-xs font-bold text-gray-700"
-          >
-            {total ? money(total) : "—"}
+          <td key={vendorId} className="px-3 py-2 text-right text-xs font-bold text-gray-700">
+            {total ? money(total) : '—'}
           </td>
         );
       })}
@@ -2218,15 +2001,15 @@ function CategorySubtotal({
       <td className="px-3 py-2 text-xs font-bold text-[#1F453B]">L1</td>
 
       <td className="px-3 py-2 text-right text-xs font-bold text-[#1F453B]">
-        {l1 ? money(l1) : "—"}
+        {l1 ? money(l1) : '—'}
       </td>
 
       <td
         className={`px-3 py-2 text-right text-xs font-bold ${
-          l1 > boq ? "text-red-600" : "text-emerald-600"
+          l1 > boq ? 'text-red-600' : 'text-emerald-600'
         }`}
       >
-        {l1 ? percentage(((l1 - boq) / Math.max(1, boq)) * 100) : "—"}
+        {l1 ? percentage(((l1 - boq) / Math.max(1, boq)) * 100) : '—'}
       </td>
     </tr>
   );
@@ -2247,7 +2030,7 @@ function VendorSelectionModal({
   onClose,
   loading,
 }) {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
 
   const filteredVendors = vendors.filter((vendor) =>
     getVendorName(vendor).toLowerCase().includes(search.toLowerCase().trim()),
@@ -2299,9 +2082,7 @@ function VendorSelectionModal({
               Loading vendors...
             </div>
           ) : !filteredVendors.length ? (
-            <div className="py-10 text-center text-sm text-gray-500">
-              No active vendors found.
-            </div>
+            <div className="py-10 text-center text-sm text-gray-500">No active vendors found.</div>
           ) : (
             <div className="space-y-2">
               {filteredVendors.map((vendor) => {
@@ -2316,8 +2097,8 @@ function VendorSelectionModal({
                     key={id}
                     className={`rounded-xl border p-3 transition ${
                       selected
-                        ? "border-[#1F453B] bg-[#f2f7f4]"
-                        : "border-gray-100 bg-white hover:border-gray-200"
+                        ? 'border-[#1F453B] bg-[#f2f7f4]'
+                        : 'border-gray-100 bg-white hover:border-gray-200'
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -2326,22 +2107,18 @@ function VendorSelectionModal({
                         onClick={() => toggleVendor(vendor)}
                         className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
                           selected
-                            ? "border-[#1F453B] bg-[#1F453B] text-white"
-                            : "border-gray-300 bg-white"
+                            ? 'border-[#1F453B] bg-[#1F453B] text-white'
+                            : 'border-gray-300 bg-white'
                         }`}
                       >
                         {selected && <span className="text-xs">✓</span>}
                       </button>
 
                       <div className="min-w-0 flex-1">
-                        <div className="font-medium text-gray-800">
-                          {getVendorName(vendor)}
-                        </div>
+                        <div className="font-medium text-gray-800">{getVendorName(vendor)}</div>
 
                         {vendor?.vendor_code && (
-                          <div className="text-xs text-gray-400">
-                            {vendor.vendor_code}
-                          </div>
+                          <div className="text-xs text-gray-400">{vendor.vendor_code}</div>
                         )}
 
                         {vendor?.vendor_category?.name && (
@@ -2414,9 +2191,7 @@ function SummaryCard({ icon, label, value }) {
         {label}
       </div>
 
-      <div className="mt-1 truncate text-lg font-bold text-gray-900">
-        {value}
-      </div>
+      <div className="mt-1 truncate text-lg font-bold text-gray-900">{value}</div>
     </div>
   );
 }
@@ -2447,9 +2222,7 @@ function CategoryPill({ active, label, onClick }) {
       type="button"
       onClick={onClick}
       className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition ${
-        active
-          ? "bg-[#1F453B] text-white"
-          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+        active ? 'bg-[#1F453B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
       }`}
     >
       {label}

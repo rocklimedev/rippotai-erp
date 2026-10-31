@@ -210,6 +210,15 @@ export class InventoryTransaction extends Model<
   })
   declare unit?: Unit;
 
+  /** Legacy snapshot column `unit` (unit code at the time of movement). */
+  @Column({
+    field: 'unit',
+    type: DataType.STRING(30),
+    allowNull: false,
+    defaultValue: '',
+  })
+  declare unit_code: string;
+
   // ============================================================
   // TRANSACTION DATE
   // ============================================================

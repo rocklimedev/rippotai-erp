@@ -120,7 +120,7 @@ export default function DailySiteReportsPage() {
         crumbs={[{ label: "Site Operations", to: "/site-operations" }, { label: "Daily reports" }]}
         title="Daily site reports"
         subtitle="One report per project per day — manpower, work done, materials, issues and photos."
-        actions={<Button variant="primary" icon={Plus} onClick={() => nav(newHref)}>New report</Button>}
+        actions={<Button variant="primary" icon={Plus} onClick={() => nav(newHref)} data-testid="daily-report-new-btn">New report</Button>}
       />
 
       <Stats>
@@ -183,7 +183,7 @@ export default function DailySiteReportsPage() {
             icon={FileText}
             title={isFetching ? "Loading reports…" : "No reports in this range"}
             text={isFetching ? undefined : "Widen the date range, switch project, or file today's report."}
-            action={!isFetching && <Button variant="primary" icon={Plus} onClick={() => nav(newHref)}>New report</Button>}
+            action={!isFetching && <Button variant="primary" icon={Plus} onClick={() => nav(newHref)} data-testid="daily-report-empty-new-btn">New report</Button>}
           />
         ) : (
           <>

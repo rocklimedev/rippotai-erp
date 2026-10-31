@@ -17,6 +17,8 @@ import { RoleAppsService } from './role-apps.service';
 import { App } from './models/app.model';
 import { ActivityLog } from '../engagement/models/activity-log.model';
 import { RolePermissionsCacheModule } from './role-permissions-cache';
+import { AccessMatrixController } from './access-matrix.controller';
+import { AccessMatrixService } from './access-matrix.service';
 
 @Module({
   imports: [
@@ -35,12 +37,14 @@ import { RolePermissionsCacheModule } from './role-permissions-cache';
     PermissionsController,
     RolePermissionsController,
     RoleAppsController,
+    AccessMatrixController,
   ],
   providers: [
     RolesService,
     PermissionsService,
     RolePermissionsService,
     RoleAppsService,
+    AccessMatrixService,
   ],
   exports: [
     RolesService,

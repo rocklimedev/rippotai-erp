@@ -13,6 +13,7 @@ export const commandCenterApi = baseApi
       "CommandCenterTeamWorkload",
       "CommandCenterActivity",
       "CommandCenterGates",
+      "CommandCenterAuthority",
     ],
   })
   .injectEndpoints({
@@ -432,12 +433,20 @@ export const commandCenterApi = baseApi
           "CommandCenterActivity",
         ],
       }),
+
+      // Super-authority dashboard (ADMIN / SUPERADMIN only — enforced by the API)
+      getCommandCenterAuthority: builder.query({
+        query: () => ({ url: "/command-center/authority/overview" }),
+        providesTags: ["CommandCenterAuthority"],
+        keepUnusedDataFor: 60,
+      }),
     }),
 
     overrideExisting: false,
   });
 
 export const {
+  useGetCommandCenterAuthorityQuery,
   useRefreshCommandCenterMutation,
   useGetCommandCenterGateReadinessQuery,
   useClearCommandCenterGateMutation,

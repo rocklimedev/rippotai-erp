@@ -188,6 +188,30 @@ export const rbacApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["RoleApps"],
     }),
+
+    // =========================
+    // NAMED ACCESS LEVELS (/role-access)
+    // =========================
+    getRoleAccessCatalogue: builder.query({
+      query: () => "/role-access/catalogue",
+      providesTags: ["RolePermissions"],
+    }),
+    getRoleAccess: builder.query({
+      query: (roleId) => `/role-access/${roleId}`,
+      providesTags: (_r, _e, roleId) => [{ type: "RolePermissions", id: roleId }, "RolePermissions"],
+    }),
+    getAppRoleAccess: builder.query({
+      query: (code) => `/role-access/app/${code}`,
+      providesTags: ["RolePermissions"],
+    }),
+    setRoleAccess: builder.mutation({
+      query: ({ roleId, apps, parts }) => ({
+        url: `/role-access/${roleId}`,
+        method: "PUT",
+        body: { apps, parts },
+      }),
+      invalidatesTags: ["RolePermissions", "RoleApps", "Roles"],
+    }),
   }),
   overrideExisting: false,
 });
@@ -228,4 +252,10 @@ export const {
   useGetRoleAppsQuery,
   useGetRoleAppMatrixQuery,
   useRevokeRoleAppMutation,
+
+  // access levels
+  useGetRoleAccessCatalogueQuery,
+  useGetRoleAccessQuery,
+  useGetAppRoleAccessQuery,
+  useSetRoleAccessMutation,
 } = rbacApi;

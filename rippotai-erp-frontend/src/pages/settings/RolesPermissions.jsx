@@ -1,157 +1,118 @@
+// Roles & permissions: one role at a time, apps as collapsible rows, each
+// with a named access level; expand an app to set each document / part.
 import { appConfirm } from "@/lib/app-dialog";
-import React, { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { ChevronRight, Lock, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import {
-  Check,
-  KeyRound,
-  LayoutGrid,
-  Plus,
-  RotateCcw,
-  ShieldCheck,
-  Trash2,
-} from "lucide-react";
-import {
   useGetRolesQuery,
-  useGetPermissionPackagesQuery,
-  useApplyPermissionPackageMutation,
   useCreateRoleMutation,
   useDeleteRoleMutation,
-  useGetPermissionsQuery,
-  useGetRolePermissionsQuery,
-  useGrantPermissionToRoleMutation,
-  useRevokeRolePermissionMutation,
-  useGetRoleAppsQuery,
-  useSetRoleAppsMutation,
+  useGetRoleAccessCatalogueQuery,
+  useGetRoleAccessQuery,
+  useSetRoleAccessMutation,
 } from "../../api/users/rbac.api";
-import { APP_META, LANDING_ORDER } from "@/config/appNav";
-import {
-  Page,
-  PageHeader,
-  Card,
-  Button,
-  EmptyState,
-  Field,
-  TextInput,
-  Pill,
-} from "@/components/inos";
-import {
-  AdminAccessDenied,
-  AdminModal,
-  ModalActions,
-  adminCrumbs,
-  humanize,
-  plural,
-} from "./_admin-ui";
+import { Page, PageHeader, Card, Button, EmptyState, Field, TextInput, Pill } from "@/components/inos";
+import { ACCESS_LEVELS, hasPermission } from "@/lib/permissions";
+import { AdminAccessDenied, AdminModal, ModalActions, adminCrumbs, humanize, plural } from "./_admin-ui";
+
+const LEVEL_TONE = { none: "mute", view: "info", edit: "lilac", create: "brand", full: "ok", mixed: "warn" };
+const LEVEL_LABEL = Object.fromEntries(ACCESS_LEVELS.map((l) => [l.key, l.label]));
+
+function LevelSelect({ value, onChange, available, disabled, label, testId }) {
+  const options = ACCESS_LEVELS.filter((l) => !available || available.includes(l.key));
+  return (
+    <select
+      className="inos-select rp-level"
+      aria-label={label}
+      data-testid={testId}
+      data-level={value}
+      value={value}
+      disabled={disabled}
+      onChange={(e) => onChange(e.target.value)}
+    >
+      {value === "mixed" && (
+        <option value="mixed" disabled>
+          Custom mix
+        </option>
+      )}
+      {options.map((l) => (
+        <option key={l.key} value={l.key}>
+          {l.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function Legend() {
+  return (
+    <div className="rp-legend" aria-label="Access levels">
+      {ACCESS_LEVELS.filter((l) => l.key !== "none").map((l, i) => (
+        <div key={l.key} className="rp-legend__item">
+          <Pill tone={LEVEL_TONE[l.key]} size="sm">
+            {i + 1}. {l.label}
+          </Pill>
+          <span>{l.description}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function RolesPermissions() {
   const { user } = useAuth();
-  const isAdmin = ["ADMIN", "SUPERADMIN"].includes(user?.role);
+  const canRead = hasPermission(user, "role-permissions", "read");
+  const canAssign = hasPermission(user, "role-permissions", "assign");
 
-  const { data: roles = [], isFetching: loadingRoles } = useGetRolesQuery(
-    undefined,
-    { skip: !isAdmin },
-  );
-  const { data: allPermissions = [], isFetching: loadingAllPermissions } =
-    useGetPermissionsQuery(undefined, { skip: !isAdmin });
-
-  const [selectedRoleId, setSelectedRoleId] = useState(null);
+  const { data: roles = [], isFetching: loadingRoles } = useGetRolesQuery(undefined, { skip: !canRead });
+  const { data: catalogue } = useGetRoleAccessCatalogueQuery(undefined, { skip: !canRead });
+  const [pickedRoleId, setSelectedRoleId] = useState(null);
   const [roleSearch, setRoleSearch] = useState("");
-  const [permissionSearch, setPermissionSearch] = useState("");
-  const [packageId, setPackageId] = useState('');
-  const { data: permissionPackages = [], isFetching: loadingPackages, isError: packagesError } =
-    useGetPermissionPackagesQuery(undefined, { skip: !isAdmin });
-  const [applyPackage, { isLoading: applyingPackage }] = useApplyPermissionPackageMutation();
-  const selectedPackage = permissionPackages.find((p) => p.id === packageId);
+  const [open, setOpen] = useState({});
+  const [busyKey, setBusyKey] = useState(null);
 
-  useEffect(() => {
-    if (isAdmin && !selectedRoleId && roles.length > 0) {
-      setSelectedRoleId(roles[0].id);
-    }
-  }, [isAdmin, roles, selectedRoleId]);
+  const selectedRoleId = roles.some((r) => r.id === pickedRoleId) ? pickedRoleId : roles[0]?.id ?? null;
 
-  const { data: rolePermissions = [], isFetching: loadingRolePermissions } =
-    useGetRolePermissionsQuery(selectedRoleId, {
-      skip: !isAdmin || !selectedRoleId,
-    });
-  const { data: roleApps = [], isFetching: loadingRoleApps } =
-    useGetRoleAppsQuery(selectedRoleId, {
-      skip: !isAdmin || !selectedRoleId,
-    });
-
+  const { data: access, isFetching: loadingAccess } = useGetRoleAccessQuery(selectedRoleId, {
+    skip: !canRead || !selectedRoleId,
+  });
+  const [setRoleAccess] = useSetRoleAccessMutation();
   const [createRole, { isLoading: creatingRole }] = useCreateRoleMutation();
   const [deleteRole] = useDeleteRoleMutation();
-  const [grantPermissionToRole, { isLoading: granting }] =
-    useGrantPermissionToRoleMutation();
-  const [revokeRolePermission, { isLoading: revoking }] =
-    useRevokeRolePermissionMutation();
-  const [setRoleApps, { isLoading: savingApps }] = useSetRoleAppsMutation();
-
   const [newRoleName, setNewRoleName] = useState("");
   const [newRoleOpen, setNewRoleOpen] = useState(false);
   const [newRoleError, setNewRoleError] = useState("");
 
-  // Local toggle state for the apps panel, seeded from the server and
-  // re-synced whenever the selected role (or its fetched grants) change.
-  const [pendingAppCodes, setPendingAppCodes] = useState(new Set());
+  const accessByApp = useMemo(() => Object.fromEntries((access?.apps || []).map((a) => [a.code, a])), [access]);
 
-  useEffect(() => {
-    setPendingAppCodes(
-      new Set(roleApps.map((ra) => ra.app_code ?? ra.app?.code)),
-    );
-  }, [roleApps, selectedRoleId]);
+  const q = roleSearch.toLowerCase().replace(/[_:-]+/g, " ").trim();
+  const filteredRoles = roles.filter((r) => `${r.name} ${r.description || ""}`.toLowerCase().replace(/[_:-]+/g, " ").includes(q));
+  const selectedRole = roles.find((r) => r.id === selectedRoleId);
+  const isProtected = Boolean(access?.protected);
 
-  const grantedPermissionIds = new Set(
-    rolePermissions.map((rp) => rp.permission_id ?? rp.permission?.id),
-  );
+  const save = async (key, body, label) => {
+    setBusyKey(key);
+    try {
+      const res = await setRoleAccess({ roleId: selectedRoleId, ...body }).unwrap();
+      const changed = (res?.added || 0) + (res?.removed || 0);
+      toast.success(changed ? label : "Already set — nothing changed");
+    } catch (e) {
+      const d = e?.data;
+      toast.error(d?.message?.message || d?.message || d?.detail || "Couldn't update access");
+    } finally {
+      setBusyKey(null);
+    }
+  };
 
-  const savedAppCodes = new Set(
-    roleApps.map((ra) => ra.app_code ?? ra.app?.code),
-  );
-  const appsDirty =
-    pendingAppCodes.size !== savedAppCodes.size ||
-    [...pendingAppCodes].some((c) => !savedAppCodes.has(c));
-
-  // Group permissions by resource ("gates:read" -> gates / read)
-  const permissionGroups = useMemo(() => {
-    const groups = {};
-    (Array.isArray(allPermissions) ? allPermissions : []).forEach((p) => {
-      const [res, act] = String(p.name || `${p.resource}:${p.action}`).split(
-        ":",
-      );
-      const key = p.resource || res || "other";
-      (groups[key] ||= []).push({ ...p, _action: p.action || act || p.name });
-    });
-    // Also surface granted permissions the catalogue didn't return
-    rolePermissions.forEach((rp) => {
-      const id = rp.permission_id ?? rp.permission?.id;
-      if ((allPermissions || []).some((p) => p.id === id)) return;
-      const name = rp.permission?.name || String(id);
-      const [res, act] = name.split(":");
-      (groups[res || "other"] ||= []).push({ id, name, _action: act || name });
-    });
-    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
-  }, [allPermissions, rolePermissions]);
-
-  const searchText = (value) => String(value ?? "").toLowerCase().replace(/[_:\-]+/g, " ").trim();
-  const roleQuery = searchText(roleSearch);
-  const filteredRoles = roles.filter((role) =>
-    searchText(`${role.name} ${role.description || ""}`).includes(roleQuery));
-  const permissionQuery = searchText(permissionSearch);
-  const filteredPermissionGroups = permissionGroups.flatMap(([resource, permissions]) => {
-    const matches = searchText(resource).includes(permissionQuery)
-      ? permissions
-      : permissions.filter((permission) =>
-        searchText(`${resource} ${permission.name || ""} ${permission._action || ""} ${permission.description || ""}`).includes(permissionQuery));
-    return matches.length ? [[resource, matches]] : [];
-  });
+  const setApp = (app, level) =>
+    save(app.code, { apps: { [app.code]: level } }, `${app.name}: ${LEVEL_LABEL[level]} for every document`);
+  const setPart = (part, level) => save(part.key, { parts: { [part.key]: level } }, `${part.name}: ${LEVEL_LABEL[level]}`);
 
   const handleCreateRole = async (e) => {
     e.preventDefault();
-    if (!newRoleName.trim()) {
-      setNewRoleError("Give the role a name.");
-      return;
-    }
+    if (!newRoleName.trim()) return setNewRoleError("Give the role a name.");
     try {
       const data = await createRole({ name: newRoleName.trim() }).unwrap();
       toast.success(`Role "${data.name || newRoleName}" created`);
@@ -159,112 +120,45 @@ export default function RolesPermissions() {
       setNewRoleName("");
       setNewRoleOpen(false);
       setSelectedRoleId(data.id);
-    } catch (e) {
-      toast.error(e?.data?.detail || "Failed to create role");
+    } catch (err) {
+      toast.error(err?.data?.message || err?.data?.detail || "Failed to create role");
     }
   };
 
   const handleDeleteRole = async (role) => {
-    if (!(await appConfirm(`Delete role "${role.name}"?`))) return;
+    if (!(await appConfirm(`Delete role "${humanize(role.name)}"? People in it lose all access.`))) return;
     try {
       await deleteRole(role.id).unwrap();
-      toast.success(`Role "${role.name}" deleted`);
-      if (selectedRoleId === role.id) setSelectedRoleId(null);
-    } catch (e) {
-      toast.error(e?.data?.detail || "Failed to delete role");
+      toast.success(`Role "${humanize(role.name)}" deleted`);
+      setSelectedRoleId(null);
+    } catch (err) {
+      toast.error(err?.data?.message || err?.data?.detail || "Failed to delete role");
     }
   };
 
-  const handleGrantPermission = async (permissionId) => {
-    if (!permissionId || !selectedRoleId) return;
-    try {
-      await grantPermissionToRole({
-        role_id: selectedRoleId,
-        permission_id: permissionId,
-      }).unwrap();
-      toast.success("Permission granted");
-    } catch (e) {
-      toast.error(e?.data?.detail || "Failed to grant permission");
-    }
-  };
-
-  const handleRevokePermission = async (permissionId) => {
-    try {
-      await revokeRolePermission({
-        roleId: selectedRoleId,
-        permissionId,
-      }).unwrap();
-      toast.success("Permission revoked");
-    } catch (e) {
-      toast.error(e?.data?.detail || "Failed to revoke permission");
-    }
-  };
-
-  const togglePermission = (permissionId) =>
-    grantedPermissionIds.has(permissionId)
-      ? handleRevokePermission(permissionId)
-      : handleGrantPermission(permissionId);
-
-  const toggleAppCode = (code) => {
-    setPendingAppCodes((prev) => {
-      const next = new Set(prev);
-      if (next.has(code)) next.delete(code);
-      else next.add(code);
-      return next;
-    });
-  };
-
-  const handleSaveApps = async () => {
-    if (!selectedRoleId) return;
-    try {
-      await setRoleApps({
-        roleId: selectedRoleId,
-        app_codes: [...pendingAppCodes],
-      }).unwrap();
-      toast.success("App access updated");
-    } catch (e) {
-      toast.error(e?.data?.detail || "Failed to update app access");
-    }
-  };
-
-  const selectedRole = roles.find((r) => r.id === selectedRoleId);
-
-  if (!isAdmin) {
-    return <AdminAccessDenied crumb="Roles & permissions" />;
-  }
-
-  const appList = LANDING_ORDER.map((code) => ({ code, name: APP_META[code].name }));
-  const permBusy = granting || revoking || applyingPackage;
+  if (!canRead) return <AdminAccessDenied crumb="Roles & permissions" />;
 
   return (
     <Page>
+      <style>{CSS}</style>
       <PageHeader
         crumbs={adminCrumbs("Roles & permissions")}
         title="Roles & permissions"
-        subtitle="Choose which apps each role can open, then fine-tune what it's allowed to do inside them."
+        subtitle="For each role, choose how much it can do in every app — and, if needed, in each document inside it."
         actions={
-          <Button
-            variant="primary"
-            icon={Plus}
-            onClick={() => setNewRoleOpen(true)}
-            data-testid="new-role-btn"
-          >
-            New role
-          </Button>
+          canAssign && (
+            <Button variant="primary" icon={Plus} onClick={() => setNewRoleOpen(true)} data-testid="new-role-btn">
+              New role
+            </Button>
+          )
         }
       />
 
       <div className="adm-split">
-        {/* Roles list */}
-        <Card
-          title="Roles"
-          subtitle={roles.length ? plural(roles.length, "role") : undefined}
-          flush
-          className="adm-sticky adm-roles-sidebar"
-        >
+        <Card title="Roles" subtitle={roles.length ? plural(roles.length, "role") : undefined} flush className="adm-sticky adm-roles-sidebar">
           <div className="adm-roles-search">
             <Field label="Search roles" htmlFor="roles-search">
-              <TextInput id="roles-search" type="search" placeholder="Search roles…" value={roleSearch} onChange={(event) => setRoleSearch(event.target.value)} />
+              <TextInput id="roles-search" type="search" placeholder="Search roles…" value={roleSearch} onChange={(e) => setRoleSearch(e.target.value)} />
             </Field>
           </div>
           {loadingRoles && roles.length === 0 ? (
@@ -276,14 +170,14 @@ export default function RolesPermissions() {
               ))}
             </div>
           ) : roles.length === 0 ? (
-            <EmptyState
-              icon={ShieldCheck}
-              title="No roles yet"
-              text="Create a role to start granting access."
-            />
+            <EmptyState icon={ShieldCheck} title="No roles yet" text="Create a role to start granting access." />
           ) : (
             <div className="adm-list adm-roles-list" role="listbox" aria-label="Roles">
-              {filteredRoles.length === 0 && <p className="adm-section__desc" role="status" style={{ padding: 16 }}>No roles match your search.</p>}
+              {filteredRoles.length === 0 && (
+                <p className="adm-section__desc" role="status" style={{ padding: 16 }}>
+                  No roles match your search.
+                </p>
+              )}
               {filteredRoles.map((r) => (
                 <button
                   key={r.id}
@@ -292,23 +186,18 @@ export default function RolesPermissions() {
                   aria-selected={selectedRoleId === r.id}
                   aria-current={selectedRoleId === r.id}
                   className="adm-list__item"
+                  data-testid={`role-item-${r.name}`}
                   onClick={() => setSelectedRoleId(r.id)}
                 >
                   <span className="inos-icon-tile inos-icon-tile--sm">
                     <ShieldCheck aria-hidden />
                   </span>
                   <span style={{ minWidth: 0, flex: 1 }}>
-                    <span
-                      className="adm-list__name"
-                      style={{ display: "block" }}
-                    >
+                    <span className="adm-list__name" style={{ display: "block" }}>
                       {humanize(r.name)}
                     </span>
-                    <span
-                      className="adm-list__sub"
-                      style={{ display: "block" }}
-                    >
-                      {r.description || "Custom role"}
+                    <span className="adm-list__sub" style={{ display: "block" }}>
+                      {r.description || (r.scope === "PROJECT" ? "Project role" : "Custom role")}
                     </span>
                   </span>
                 </button>
@@ -317,263 +206,108 @@ export default function RolesPermissions() {
           )}
         </Card>
 
-        {/* Apps + Permissions for selected role */}
         {!selectedRole ? (
           <Card>
-            <EmptyState
-              icon={ShieldCheck}
-              title="Select a role"
-              text="Pick a role on the left to manage its app access and permissions."
-            />
+            <EmptyState icon={ShieldCheck} title="Select a role" text="Pick a role on the left to set what it can do." />
           </Card>
         ) : (
-          <section className="inos-card">
-            <div className="inos-card__header">
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  minWidth: 0,
-                }}
-              >
-                <span className="inos-icon-tile">
-                  <ShieldCheck aria-hidden />
-                </span>
-                <div style={{ minWidth: 0 }}>
-                  <h2 className="inos-section-title">
-                    {humanize(selectedRole.name)}
-                  </h2>
-                  <p className="inos-section-sub">
-                    {selectedRole.description ||
-                      "No description added for this role."}
-                  </p>
+          <div style={{ display: "grid", gap: 16, minWidth: 0 }}>
+            <Card
+              title={humanize(selectedRole.name)}
+              subtitle={selectedRole.description || "Set an access level per app. Expand an app to fine-tune individual documents."}
+              actions={
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  {isProtected && (
+                    <Pill tone="brand" title="Administrators always keep full access to users, roles and permissions">
+                      <Lock size={12} aria-hidden /> Administrator
+                    </Pill>
+                  )}
+                  {canAssign && !isProtected && (
+                    <Button size="sm" variant="ghost" icon={Trash2} onClick={() => handleDeleteRole(selectedRole)} data-testid="delete-role-btn">
+                      Delete role
+                    </Button>
+                  )}
                 </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={Trash2}
-                onClick={() => handleDeleteRole(selectedRole)}
-              >
-                Delete role
-              </Button>
-            </div>
+              }
+            >
+              <Legend />
+            </Card>
 
-            <div className="adm-section">
-              <h3 className="adm-section__title">Permission packages</h3>
-              <p className="adm-section__desc">
-                Add a reusable package to {humanize(selectedRole.name)}. Existing permissions are preserved.
-                App access is managed separately below.
-              </p>
-              <Field label="Package" htmlFor="permission-package">
-                <select id="permission-package" className="inos-input" value={packageId}
-                  disabled={loadingPackages || permBusy} onChange={(e) => setPackageId(e.target.value)}>
-                  <option value="">Choose a package</option>
-                  {permissionPackages.map((p) => <option key={p.id} value={p.id}>
-                    {humanize(p.name)} ({p.permissions.length} permissions)
-                  </option>)}
-                </select>
-              </Field>
-              {packagesError && <p role="alert">Unable to load permission packages.</p>}
-              {selectedPackage && <>
-                <p className="adm-section__desc">{selectedPackage.description}</p>
-                <details>
-                  <summary>Preview {selectedPackage.permissions.length} permissions</summary>
-                  <div className="adm-chips">{selectedPackage.permissions.map((permission) =>
-                    <span className="adm-chip" key={permission}>{permission}</span>)}</div>
-                </details>
-              </>}
-              <Button variant="primary" disabled={!selectedPackage || permBusy || loadingRolePermissions}
-                onClick={async () => {
-                  try {
-                    await applyPackage({ role_id: selectedRoleId, package_id: packageId }).unwrap();
-                    toast.success('Permission package applied');
-                  } catch (e) {
-                    toast.error(e?.data?.message || 'Failed to apply permission package');
-                  }
-                }}>
-                {applyingPackage ? 'Applying…' : 'Apply package'}
-              </Button>
-            </div>
-
-            {/* App access */}
-            <div className="adm-section">
-              <div className="adm-section__head">
-                <div>
-                  <h3
-                    className="adm-section__title"
-                    style={{ display: "flex", alignItems: "center", gap: 8 }}
-                  >
-                    <LayoutGrid size={16} aria-hidden /> App access
-                  </h3>
-                  <p className="adm-section__desc">
-                    Tap an app to switch it on or off. This decides whether the
-                    role can open the app at all.
-                  </p>
+            <Card flush>
+              <div className="rp-matrix" aria-label="App access" aria-busy={loadingAccess || undefined}>
+                <div className="rp-head">
+                  <span>App / document</span>
+                  <span>Access level</span>
                 </div>
-                <Pill tone="brand" dot={false}>
-                  {appList.filter((app) => pendingAppCodes.has(app.code)).length} of {appList.length} apps
-                </Pill>
-              </div>
-
-              {loadingRoleApps ? (
-                <div className="adm-chips">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div
-                      key={i}
-                      className="adm-skel"
-                      style={{ width: 110, height: 34, borderRadius: 999 }}
-                    />
-                  ))}
-                </div>
-              ) : appList.length === 0 ? (
-                <p className="adm-section__desc">No apps are registered yet.</p>
-              ) : (
-                <div className="adm-chips">
-                  {appList.map((app) => {
-                    const checked = pendingAppCodes.has(app.code);
-                    return (
-                      <button
-                        key={app.code}
-                        type="button"
-                        className="adm-chip"
-                        aria-pressed={checked}
-                        onClick={() => toggleAppCode(app.code)}
-                      >
-                        <span className="adm-chip__mark">
-                          <Check aria-hidden strokeWidth={3} />
-                        </span>
-                        {app.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {appsDirty && (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    gap: 8,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    icon={RotateCcw}
-                    onClick={() => setPendingAppCodes(new Set(savedAppCodes))}
-                    disabled={savingApps}
-                  >
-                    Undo changes
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={handleSaveApps}
-                    disabled={!appsDirty || savingApps}
-                  >
-                    {savingApps ? "Saving…" : "Save app access"}
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            {/* Permissions */}
-            <div className="adm-section">
-              <div className="adm-section__head">
-                <div>
-                  <h3
-                    className="adm-section__title"
-                    style={{ display: "flex", alignItems: "center", gap: 8 }}
-                  >
-                    <KeyRound size={16} aria-hidden /> Permissions
-                  </h3>
-                  <p className="adm-section__desc">
-                    Actions this role may take inside its apps. Changes save
-                    instantly.
-                  </p>
-                </div>
-                <Pill
-                  tone={grantedPermissionIds.size ? "ok" : "mute"}
-                  dot={false}
-                >
-                  {plural(grantedPermissionIds.size, "permission")} granted
-                </Pill>
-              </div>
-
-              <Field label="Search modules or permissions" htmlFor="permissions-search" hint="Choose a module from the dropdown or type a module, action or permission name.">
-                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16 }}>
-                  <TextInput
-                    id="permissions-search"
-                    list="permission-module-options"
-                    autoComplete="off"
-                    placeholder="Choose or type a module or permission…"
-                    value={permissionSearch}
-                    onChange={(event) => setPermissionSearch(event.target.value)}
-                  />
-                  {permissionSearch && <Button variant="ghost" size="sm" onClick={() => setPermissionSearch("")}>Clear</Button>}
-                </div>
-                <datalist id="permission-module-options">
-                  {permissionGroups.map(([resource]) => <option key={resource} value={humanize(resource)} />)}
-                </datalist>
-              </Field>
-
-              {loadingAllPermissions ||
-              (loadingRolePermissions && rolePermissions.length === 0) ? (
-                <div className="adm-chips">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className="adm-skel"
-                      style={{ width: 96, height: 34, borderRadius: 999 }}
-                    />
-                  ))}
-                </div>
-              ) : permissionGroups.length === 0 ? (
-                <EmptyState
-                  icon={KeyRound}
-                  title="No permissions defined"
-                  text="Permissions appear here once they're registered by the platform."
-                />
-              ) : filteredPermissionGroups.length === 0 ? (
-                <EmptyState icon={KeyRound} title="No matching permissions" text="Try another module, action or permission name." />
-              ) : (
-                <div>
-                  {filteredPermissionGroups.map(([resource, perms]) => (
-                    <div key={resource} className="adm-perm-group">
-                      <div className="adm-perm-group__name">
-                        {humanize(resource)}
+                {(catalogue?.apps || []).map((app) => {
+                  const a = accessByApp[app.code];
+                  const expanded = Boolean(open[app.code]);
+                  const meaningful = app.parts.filter((p) => p.permissions.length);
+                  return (
+                    <div key={app.code} className="rp-app" data-testid={`rp-app-${app.code}`}>
+                      <div className="rp-row rp-row--app">
+                        <button
+                          type="button"
+                          className="rp-toggle"
+                          aria-expanded={expanded}
+                          onClick={() => setOpen((o) => ({ ...o, [app.code]: !expanded }))}
+                          data-testid={`rp-toggle-${app.code}`}
+                        >
+                          <ChevronRight size={16} className={expanded ? "rp-chev rp-chev--open" : "rp-chev"} aria-hidden />
+                          <span className="rp-name">
+                            <strong>{app.name}</strong>
+                            <span className="rp-sub">
+                              {app.description} · {plural(meaningful.length, "document/part", "documents/parts")}
+                            </span>
+                          </span>
+                        </button>
+                        <LevelSelect
+                          label={`${app.name} access level`}
+                          testId={`rp-level-${app.code}`}
+                          value={a?.level || "none"}
+                          disabled={!canAssign || !a || busyKey === app.code}
+                          onChange={(lvl) => setApp(app, lvl)}
+                        />
                       </div>
-                      <div className="adm-chips">
-                        {perms.map((p) => {
-                          const on = grantedPermissionIds.has(p.id);
-                          return (
-                            <button
-                              key={p.id}
-                              type="button"
-                              className="adm-chip"
-                              aria-pressed={on}
-                              title={p.description || p.name}
-                              disabled={permBusy}
-                              onClick={() => togglePermission(p.id)}
-                            >
-                              <span className="adm-chip__mark">
-                                <Check aria-hidden strokeWidth={3} />
-                              </span>
-                              {humanize(p._action)}
-                            </button>
-                          );
-                        })}
-                      </div>
+                      {expanded && (
+                        <div role="group" aria-label={`${app.name} documents`}>
+                          {meaningful.map((part) => {
+                            const pa = a?.parts.find((x) => x.key === part.key);
+                            return (
+                              <div key={part.key} className="rp-row rp-row--part" data-testid={`rp-part-${part.key}`}>
+                                <span className="rp-name">
+                                  <span>
+                                    {part.name}
+                                    {part.kind === "document" && <span className="rp-tag">Document</span>}
+                                    {pa?.custom && (
+                                      <span className="rp-tag rp-tag--warn" title={`Granted individually: ${(pa?.granted || []).join(", ")}`}>
+                                        Custom
+                                      </span>
+                                    )}
+                                  </span>
+                                  <span className="rp-sub" title={part.permissions.map((p) => p.name).join(", ")}>
+                                    {part.description || plural(part.permissions.length, "permission")}
+                                  </span>
+                                </span>
+                                <LevelSelect
+                                  label={`${part.name} access level`}
+                                  testId={`rp-level-${part.key}`}
+                                  value={pa?.level || "none"}
+                                  available={pa?.available}
+                                  disabled={!canAssign || !pa || busyKey === part.key || busyKey === app.code}
+                                  onChange={(lvl) => setPart(part, lvl)}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
+                  );
+                })}
+              </div>
+            </Card>
+          </div>
         )}
       </div>
 
@@ -588,37 +322,44 @@ export default function RolesPermissions() {
         busy={creatingRole}
         icon={ShieldCheck}
         title="New role"
-        subtitle="Create the role first — you'll choose its apps and permissions next."
+        subtitle="Create the role first — then choose its access levels."
         width={460}
-        footer={
-          <ModalActions
-            onCancel={() => setNewRoleOpen(false)}
-            submitting={creatingRole}
-            submittingLabel="Creating…"
-            submitLabel="Create role"
-          />
-        }
+        footer={<ModalActions onCancel={() => setNewRoleOpen(false)} submitting={creatingRole} submittingLabel="Creating…" submitLabel="Create role" />}
       >
-        <Field
-          label="Role name"
-          required
-          htmlFor="nr-name"
-          error={newRoleError}
-          hint="Short and descriptive, e.g. the job people in it do."
-        >
+        <Field label="Role name" required htmlFor="nr-name" error={newRoleError} hint="Short and descriptive, e.g. the job people in it do.">
           <TextInput
             id="nr-name"
             autoFocus
             value={newRoleName}
-            invalid={!!newRoleError}
-            placeholder="e.g. Site engineer"
             onChange={(e) => {
               setNewRoleName(e.target.value);
               setNewRoleError("");
             }}
+            placeholder="e.g. Site Supervisor"
           />
         </Field>
       </AdminModal>
     </Page>
   );
 }
+
+const CSS = `
+.rp-legend { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.rp-legend__item { display: grid; gap: 6px; align-content: start; font-size: 13px; color: var(--text-2); line-height: 1.45; }
+.rp-legend__item .inos-pill { justify-self: start; }
+.rp-head { display: flex; justify-content: space-between; padding: 12px 20px; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); }
+.rp-app + .rp-app { border-top: 1px solid var(--line); }
+.rp-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 20px; }
+.rp-row--part { padding-left: 52px; background: var(--sage-50, #f6f8f7); border-top: 1px solid var(--line); }
+.rp-toggle { display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; min-width: 0; flex: 1; color: inherit; font: inherit; }
+.rp-chev { flex-shrink: 0; color: var(--muted); transition: transform .15s; }
+.rp-chev--open { transform: rotate(90deg); }
+.rp-name { display: grid; gap: 2px; min-width: 0; }
+.rp-sub { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rp-level { width: 230px; flex-shrink: 0; }
+.rp-level[data-level="none"] { color: var(--muted); }
+.rp-level[data-level="mixed"] { border-color: #d9a441; }
+.rp-tag { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--mist-soft, #eef2f1); color: var(--text-2); vertical-align: 1px; }
+.rp-tag--warn { background: #fdf3df; color: #8a5a00; cursor: help; }
+@media (max-width: 720px) { .rp-row { flex-wrap: wrap; } .rp-level { width: 100%; } .rp-row--part { padding-left: 20px; } }
+`;

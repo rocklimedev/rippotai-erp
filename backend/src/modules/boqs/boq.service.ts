@@ -354,7 +354,10 @@ export class BoqService {
           'boq',
           t,
         );
-        const groups = boqCategoriesFromPrefill(context.documents);
+        const groups = boqCategoriesFromPrefill(
+          context.documents,
+          (context.shared?.rooms as { name?: string }[]) || [],
+        );
         for (const [categoryIndex, group] of groups.entries()) {
           const category = await this.categoryModel.create(
             {

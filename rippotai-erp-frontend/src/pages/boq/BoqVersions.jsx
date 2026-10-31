@@ -1,16 +1,16 @@
-import React, { useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   useGetBoqVersionHistoryQuery,
   useLazyCompareBoqVersionsQuery,
-} from "../../api/boq/boq.api"; // ← adjust import path
-import { formatINR, formatDate, relativeTime } from "@/lib/format";
-import { ArrowLeft, GitBranch, ArrowLeftRight, Lock } from "lucide-react";
+} from '../../api/boq/boq.api'; // ← adjust import path
+import { formatINR, formatDate, relativeTime } from '@/lib/format';
+import { ArrowLeft, GitBranch, ArrowLeftRight, Lock } from 'lucide-react';
 
 export default function BoqVersions() {
   const { id } = useParams();
   const nav = useNavigate();
-  const [compareId, setCompareId] = useState("");
+  const [compareId, setCompareId] = useState('');
 
   const {
     data: versions = [],
@@ -36,12 +36,8 @@ export default function BoqVersions() {
           >
             <ArrowLeft size={14} /> Back to editor
           </button>
-          <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6] mb-1">
-            Versions
-          </div>
-          <h1 className="text-[32px] font-bold tracking-tight text-[#333333]">
-            Version History
-          </h1>
+          <div className="text-[11px] uppercase tracking-widest text-[#B5C4B6] mb-1">Versions</div>
+          <h1 className="text-[32px] font-bold tracking-tight text-[#333333]">Version History</h1>
         </div>
       </div>
 
@@ -54,9 +50,7 @@ export default function BoqVersions() {
               <th className="px-3 py-3 font-semibold">Created By</th>
               <th className="px-3 py-3 font-semibold">Created</th>
               <th className="px-3 py-3 font-semibold">Change Note</th>
-              <th className="px-3 py-3 font-semibold text-right">
-                Final Total
-              </th>
+              <th className="px-3 py-3 font-semibold text-right">Final Total</th>
               <th className="px-3 py-3 font-semibold"></th>
             </tr>
           </thead>
@@ -76,27 +70,19 @@ export default function BoqVersions() {
 
             {!isVersionsLoading && isVersionsError && (
               <tr>
-                <td
-                  colSpan={7}
-                  className="px-4 py-10 text-center text-[13px] text-[#6B7B7C]"
-                >
+                <td colSpan={7} className="px-4 py-10 text-center text-[13px] text-[#6B7B7C]">
                   Couldn't load version history.
                 </td>
               </tr>
             )}
 
-            {!isVersionsLoading &&
-              !isVersionsError &&
-              versions.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="px-4 py-10 text-center text-[13px] text-[#6B7B7C]"
-                  >
-                    No versions yet.
-                  </td>
-                </tr>
-              )}
+            {!isVersionsLoading && !isVersionsError && versions.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-4 py-10 text-center text-[13px] text-[#6B7B7C]">
+                  No versions yet.
+                </td>
+              </tr>
+            )}
 
             {!isVersionsLoading &&
               versions.map((v) => (
@@ -114,25 +100,23 @@ export default function BoqVersions() {
                     )}
                   </td>
                   <td className="px-3 py-3 text-[12.5px] text-[#6B7B7C] capitalize">
-                    {v.status?.replace("_", " ")}
+                    {v.status?.replace('_', ' ')}
                   </td>
                   <td className="px-3 py-3 text-[12.5px] text-[#6B7B7C]">
-                    {v.created_by || v.prepared_by || "—"}
+                    {v.created_by || v.prepared_by || '—'}
                   </td>
                   <td className="px-3 py-3 text-[11.5px] text-[#B5C4B6]">
                     {formatDate(v.created_at)} · {relativeTime(v.created_at)}
                   </td>
                   <td className="px-3 py-3 text-[12px] text-[#6B7B7C] max-w-[280px] truncate">
-                    {v.revision_note || "—"}
+                    {v.revision_note || '—'}
                   </td>
                   <td className="px-3 py-3 text-[13px] font-semibold text-[#333333] text-right">
                     {formatINR(v.final_total || 0)}
                   </td>
                   <td className="px-3 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      {v.locked && (
-                        <Lock size={12} className="text-[#333333]" />
-                      )}
+                      {v.locked && <Lock size={12} className="text-[#333333]" />}
                       <Link
                         to={`/boq/${v.id}`}
                         className="text-[12px] text-[#333333] font-semibold hover:underline"
@@ -149,9 +133,7 @@ export default function BoqVersions() {
 
       <section className="bc-card p-6">
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="text-[13px] font-semibold text-[#333333]">
-            Compare current with…
-          </div>
+          <div className="text-[13px] font-semibold text-[#333333]">Compare current with…</div>
           <select
             className="bc-input max-w-xs"
             value={compareId}
@@ -173,8 +155,7 @@ export default function BoqVersions() {
             className="h-10 px-4 rounded-xl bg-[#1F453B] hover:bg-[#1F453B] text-white text-[13px] font-semibold flex items-center gap-2 disabled:opacity-60"
             data-testid="compare-btn"
           >
-            <ArrowLeftRight size={14} />{" "}
-            {isComparing ? "Comparing…" : "Compare"}
+            <ArrowLeftRight size={14} /> {isComparing ? 'Comparing…' : 'Compare'}
           </button>
         </div>
 
@@ -198,15 +179,15 @@ export default function BoqVersions() {
                 </div>
               </div>
               <div
-                className={`p-3 rounded-xl border ${diff.delta >= 0 ? "bg-[#EAEEF0] border-[#EAEEF0]" : "bg-[#EAEEF0] border-[#EAEEF0]"}`}
+                className={`p-3 rounded-xl border ${diff.delta >= 0 ? 'bg-[#EAEEF0] border-[#EAEEF0]' : 'bg-[#EAEEF0] border-[#EAEEF0]'}`}
               >
                 <div className="text-[10.5px] uppercase tracking-widest text-[#B5C4B6]">
                   Δ Delta
                 </div>
                 <div
-                  className={`text-[16px] font-bold ${diff.delta >= 0 ? "text-[#333333]" : "text-[#333333]"}`}
+                  className={`text-[16px] font-bold ${diff.delta >= 0 ? 'text-[#333333]' : 'text-[#333333]'}`}
                 >
-                  {diff.delta >= 0 ? "+" : ""}
+                  {diff.delta >= 0 ? '+' : ''}
                   {formatINR(diff.delta)}
                 </div>
               </div>
@@ -218,10 +199,7 @@ export default function BoqVersions() {
                 </div>
                 <ul className="text-[12px] space-y-1 max-h-[280px] overflow-y-auto">
                   {diff.added.map((r, i) => (
-                    <li
-                      key={i}
-                      className="p-2 rounded bg-[#EAEEF0] text-[#333333]"
-                    >
+                    <li key={i} className="p-2 rounded bg-[#EAEEF0] text-[#333333]">
                       {r.description} · {formatINR(r.amount)}
                     </li>
                   ))}
@@ -233,10 +211,7 @@ export default function BoqVersions() {
                 </div>
                 <ul className="text-[12px] space-y-1 max-h-[280px] overflow-y-auto">
                   {diff.removed.map((r, i) => (
-                    <li
-                      key={i}
-                      className="p-2 rounded bg-[#EAEEF0] text-[#333333]"
-                    >
+                    <li key={i} className="p-2 rounded bg-[#EAEEF0] text-[#333333]">
                       {r.description} · {formatINR(r.amount)}
                     </li>
                   ))}
@@ -248,11 +223,8 @@ export default function BoqVersions() {
                 </div>
                 <ul className="text-[12px] space-y-1 max-h-[280px] overflow-y-auto">
                   {diff.updated.map((r, i) => (
-                    <li
-                      key={i}
-                      className="p-2 rounded bg-[#EAEEF0] text-[#333333]"
-                    >
-                      {r.after.description}: {formatINR(r.before.amount)} →{" "}
+                    <li key={i} className="p-2 rounded bg-[#EAEEF0] text-[#333333]">
+                      {r.after.description}: {formatINR(r.before.amount)} →{' '}
                       {formatINR(r.after.amount)}
                     </li>
                   ))}

@@ -435,6 +435,7 @@ export default function WorkOrderList() {
 
               <Button
                 onClick={() => navigate("/procurement/work-order/new")}
+                data-testid="work-order-new-btn"
                 className="bg-[#1F453B] hover:bg-[#17382f]"
               >
                 <Plus className="mr-2 h-4 w-4" />
@@ -572,6 +573,7 @@ export default function WorkOrderList() {
               ) : (
                 <Button
                   onClick={() => navigate("/procurement/work-order/new")}
+                data-testid="work-order-new-btn"
                   className="bg-[#1F453B] hover:bg-[#17382f]"
                 >
                   <Plus className="mr-2 h-4 w-4" />

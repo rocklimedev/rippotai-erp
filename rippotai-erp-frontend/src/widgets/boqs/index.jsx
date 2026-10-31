@@ -318,7 +318,7 @@ export const BoqVersionActivity = () => {
                 <div
                   style={{
                     height: `${Math.max(6, height)}%`,
-                    background: isCurrent ? "#1F453B" : "#000",
+                    background: isCurrent ? "var(--brand)" : "var(--sage)",
                   }}
                   className="w-full max-w-[24px] rounded-t"
                 />

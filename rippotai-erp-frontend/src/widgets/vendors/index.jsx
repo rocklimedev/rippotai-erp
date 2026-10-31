@@ -97,7 +97,7 @@ export const VendorsByCategory = () => {
             </div>
             <div className="h-1.5 rounded-full bg-[#1F453B]/8 overflow-hidden">
               <div
-                style={{ width: `${(c / max) * 100}%`, background: "#000" }}
+                style={{ width: `${(c / max) * 100}%`, background: "var(--brand)" }}
                 className="h-full"
               />
             </div>

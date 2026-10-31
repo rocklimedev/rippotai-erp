@@ -188,7 +188,7 @@ export const ProjTimelineVariance = () => {
                 <div
                   style={{
                     width: `${w}%`,
-                    background: isNeg ? "#1F453B" : "#000",
+                    background: isNeg ? "var(--bad-dot)" : "var(--brand)",
                   }}
                   className="h-full"
                 />

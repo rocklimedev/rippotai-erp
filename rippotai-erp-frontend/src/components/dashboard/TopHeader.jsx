@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { MODULE_ICONS } from "@/components/icons/ModuleIcons";
 import { APP_META, APP_MENUS, navigationPath } from "@/config/appNav";
+import { filterMenus } from "@/lib/permissions";
+import { useAuth } from "@/context/AuthContext";
 import CommandShellSearch from "../search/CommandShellSearch";
 import AppSwitcher from "./AppSwitcher";
 import MenuDropdown from "./MenuDropdown";
@@ -20,7 +22,8 @@ export default function TopHeader({ app }) {
 
   const Icon = MODULE_ICONS[app];
   const meta = APP_META[app];
-  const menus = APP_MENUS[app] || [];
+  const { user } = useAuth();
+  const menus = filterMenus(APP_MENUS[app] || [], app, user, navigationPath);
 
   const { open, cliqConnected, toggleChat } = useCliqChat();
 

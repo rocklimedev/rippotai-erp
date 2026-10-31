@@ -88,6 +88,10 @@ export class InventoryService {
   /**
    * Validate material and load its configured unit.
    */
+  private unitCode(material: MaterialMaster): string {
+    return (material.unit?.code || material.unit?.name || '').slice(0, 30);
+  }
+
   private async getValidMaterial(materialId: string): Promise<MaterialMaster> {
     if (!materialId) {
       throw new BadRequestException('Material is required');
@@ -239,6 +243,7 @@ export class InventoryService {
          * Never trust a frontend supplied unit_id.
          */
         unit_id: material.unit_id,
+        unit_code: this.unitCode(material),
 
         direction,
 
@@ -404,6 +409,66 @@ export class InventoryService {
   }
 
   // ============================================================
+  // REVERSAL
+  // ============================================================
+
+  /**
+   * Corrects a posted transaction with an opposite ADJUSTMENT entry that
+   * points back to it (reversal_of_id). The original row is never edited.
+   */
+  async reverse(
+    id: string,
+    reason: string | undefined,
+    quantity: number | undefined,
+    userId?: string,
+  ) {
+    if (!reason?.trim()) {
+      throw new BadRequestException('A reason is required to reverse');
+    }
+    const original = await this.inventoryModel.findByPk(id);
+    if (!original) throw new NotFoundException('Transaction not found');
+    if (original.reversal_of_id) {
+      throw new BadRequestException('A reversal entry cannot be reversed');
+    }
+    const existing = await this.inventoryModel.findOne({
+      where: { reversal_of_id: id },
+    });
+    if (existing) {
+      throw new BadRequestException('This transaction is already reversed');
+    }
+    const qty = this.validateQuantity(
+      quantity !== undefined && quantity !== null
+        ? quantity
+        : Number(original.quantity),
+    );
+    if (qty > Number(original.quantity)) {
+      throw new BadRequestException(
+        'Reversal quantity cannot exceed the original quantity',
+      );
+    }
+    const transactionType =
+      original.direction === InventoryDirection.IN
+        ? InventoryTransactionType.ADJUSTMENT_OUT
+        : InventoryTransactionType.ADJUSTMENT_IN;
+
+    return this.create(
+      {
+        project_id: original.project_id,
+        site_location: original.site_location ?? undefined,
+        material_id: original.material_id,
+        transaction_date: new Date().toISOString().slice(0, 10),
+        quantity: qty,
+        transaction_type: transactionType,
+        reference_type: InventoryReferenceType.ADJUSTMENT,
+        remarks: `Reversal: ${reason.trim()}`,
+        reversal_of_id: original.id,
+        reversal_reason: reason.trim(),
+      } as unknown as CreateInventoryTransactionDto,
+      userId,
+    );
+  }
+
+  // ============================================================
   // TRANSFER INVENTORY
   // ============================================================
 
@@ -477,6 +542,8 @@ export class InventoryService {
 
           unit_id: material.unit_id,
 
+          unit_code: this.unitCode(material),
+
           direction: InventoryDirection.OUT,
 
           reference_type: InventoryReferenceType.TRANSFER,
@@ -533,6 +600,8 @@ export class InventoryService {
           quantity,
 
           unit_id: material.unit_id,
+
+          unit_code: this.unitCode(material),
 
           direction: InventoryDirection.IN,
 

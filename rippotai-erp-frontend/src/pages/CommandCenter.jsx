@@ -8,6 +8,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { usePollingInterval, canBackgroundPoll } from '@/hooks/use-polling-interval';
 import GateChecklist from "@/components/command-center/GateChecklist";
+import AuthorityPanel from "@/components/command-center/AuthorityPanel";
+import { isSuperAuthority } from "@/components/command-center/authority";
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
@@ -1193,13 +1195,17 @@ const TABS = [
   { id: "activity", label: "Live activity", icon: History },
 ];
 
-function TabNav({ active, onChange, counts }) {
+// Shown only to the super authority (ADMIN / SUPERADMIN); the API enforces it too.
+const AUTHORITY_TAB = { id: "authority", label: "Authority", icon: ShieldCheck };
+
+function TabNav({ active, onChange, counts, showAuthority }) {
+  const tabs = showAuthority ? [AUTHORITY_TAB, ...TABS] : TABS;
   return (
     <div className="cc-tabs">
       <Tabs
         value={active}
         onChange={onChange}
-        options={TABS.map((tab) => {
+        options={tabs.map((tab) => {
           const count = counts?.[tab.id];
           return {
             value: tab.id,
@@ -1238,7 +1244,11 @@ export default function CommandCenter() {
   const [toast, setToast] = useState("");
   const [uploadTarget, setUploadTarget] = useState(null);
   const [evidenceTarget, setEvidenceTarget] = useState(null);
-  const [activeTab, setActiveTab] = useState("portfolio");
+  const showAuthority = isSuperAuthority(user);
+  // Super authority lands on their own dashboard; ?tab=<id> deep-links any tab.
+  const [chosenTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get("tab"));
+  const activeTab =
+    chosenTab && (chosenTab !== "authority" || showAuthority) ? chosenTab : showAuthority ? "authority" : "portfolio";
   const pollingInterval = usePollingInterval(60_000, live);
 
   const flashToast = (msg) => {
@@ -1266,6 +1276,7 @@ export default function CommandCenter() {
     isLoading: portfolioLoading,
     isError: portfolioError,
     error: portfolioErrorObj,
+    refetch: refetchPortfolio,
   } = useGetCommandCenterPortfolioQuery({
     health: healthFilter === "all" ? undefined : healthFilter,
     search: debouncedSearch || undefined,
@@ -1422,7 +1433,10 @@ export default function CommandCenter() {
 
       <div className="cc-main">
         {/* TABS */}
-        <TabNav active={activeTab} onChange={setActiveTab} counts={tabCounts} />
+        <TabNav active={activeTab} onChange={setActiveTab} counts={tabCounts} showAuthority={showAuthority} />
+
+        {/* SUPER AUTHORITY TAB */}
+        {activeTab === "authority" && showAuthority && <AuthorityPanel onOpen={navigate} />}
 
         {/* PORTFOLIO TAB */}
         {activeTab === "portfolio" && (

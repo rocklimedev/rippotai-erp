@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { PrefillNotice } from "@/components/PrefillNotice";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useSharedProjectData } from '../../hooks/use-shared-project-data';
 import api from "@/lib/api";
@@ -280,7 +281,7 @@ export default function EstimateForm() {
   const [items, setItems] = useState([emptyItem()]);
   const quoteValues = useMemo(() => ({ items }), [items]);
   const setQuoteValues = useCallback(updater => setItems(current => updater({ items: current }).items), []);
-  useSharedProjectData(project?.id, 'quotation', quoteValues, setQuoteValues, !isEdit);
+  const prefill = useSharedProjectData(project?.id, 'quotation', quoteValues, setQuoteValues, !isEdit);
   // Totals
   const [addlAmt, setAddlAmt] = useState(0);
   const [addlIsPct, setAddlIsPct] = useState(false);
@@ -597,7 +598,7 @@ export default function EstimateForm() {
             { label: isEdit ? "Edit" : "New" },
           ]}
           title={isEdit ? `Edit estimate${estimateNumber ? ` ${estimateNumber}` : ""}` : "New estimate"}
-          subtitle="Choose the project and vendor, list the items, then save a draft or submit for approval."
+          subtitle={<>Choose the project and vendor, list the items, then save a draft or submit for approval.<PrefillNotice prefill={prefill} /></>}
           actions={
             <Button variant="ghost" icon={ArrowLeft} onClick={cancel} data-testid="cancel-btn">
               Cancel

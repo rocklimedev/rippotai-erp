@@ -1,4 +1,5 @@
 import { termsToText, textToTermsHtml } from "@/lib/terms";
+import { PrefillNotice } from "@/components/PrefillNotice";
 import { TermsFullDisplay } from "@/components/settings/TermsDisplay";
 import React, { useEffect, useMemo, useState } from "react";
 import { useSharedProjectData } from "../../hooks/use-shared-project-data";
@@ -267,7 +268,7 @@ export default function WorkOrderForm() {
   const [form, setForm] = useState(getInitialForm);
 
   const [isFormLoaded, setIsFormLoaded] = useState(!isEditMode);
-  useSharedProjectData(
+  const prefill = useSharedProjectData(
     form.project_id,
     "workOrder",
     form,
@@ -813,9 +814,9 @@ export default function WorkOrderForm() {
       );
 
       if (createdId) {
-        navigate(`/work-orders/${createdId}`);
+        navigate(`/procurement/work-order/${createdId}`);
       } else {
-        navigate("/work-orders");
+        navigate("/procurement/work-order/all");
       }
     } catch (error) {
       console.error("Work order save error:", error);
@@ -865,7 +866,7 @@ export default function WorkOrderForm() {
 
           <button
             type="button"
-            onClick={() => navigate("/work-orders")}
+            onClick={() => navigate("/procurement/work-order/all")}
             className="mt-5 rounded-xl bg-[#1F453B] px-5 py-2.5 text-sm font-medium text-white"
           >
             Back to Work Orders
@@ -891,7 +892,7 @@ export default function WorkOrderForm() {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => navigate("/work-orders")}
+                onClick={() => navigate("/procurement/work-order/all")}
                 className="rounded-xl border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"
               >
                 <ArrowLeft size={19} />
@@ -910,6 +911,7 @@ export default function WorkOrderForm() {
                   {isEditMode
                     ? "Update the vendor work order details."
                     : "Create a vendor work order for a project."}
+                  <PrefillNotice prefill={prefill} />
                 </p>
               </div>
             </div>
@@ -917,7 +919,7 @@ export default function WorkOrderForm() {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => navigate("/work-orders")}
+                onClick={() => navigate("/procurement/work-order/all")}
                 className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
                 Cancel
@@ -1653,7 +1655,7 @@ export default function WorkOrderForm() {
           <div className="flex justify-end gap-3 pb-6">
             <button
               type="button"
-              onClick={() => navigate("/work-orders")}
+              onClick={() => navigate("/procurement/work-order/all")}
               className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               Cancel

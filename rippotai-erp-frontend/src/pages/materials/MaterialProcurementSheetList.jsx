@@ -280,7 +280,7 @@ export default function MaterialProcurementSheetList() {
                 </p>
               </div>
 
-              <Button onClick={() => navigate("/material-procurement/new")}>
+              <Button onClick={() => navigate("/procurement/material-procurement/new")}>
                 <Plus className="mr-2 h-4 w-4" />
                 New Procurement
               </Button>
@@ -331,7 +331,7 @@ export default function MaterialProcurementSheetList() {
                       >
                         <td className="px-5 py-4">
                           <Link
-                            to={`/material-procurement/${procurement.id}`}
+                            to={`/procurement/material-procurement/${procurement.id}`}
                             className="font-medium hover:underline"
                           >
                             {procurement.procurementNo || procurement.id}
@@ -408,7 +408,7 @@ export default function MaterialProcurementSheetList() {
                                 asChild
                               >
                                 <Link
-                                  to={`/material-procurement/new?id=${procurement.id}`}
+                                  to={`/procurement/material-procurement/${procurement.id}/edit`}
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </Link>

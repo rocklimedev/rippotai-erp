@@ -1,5 +1,6 @@
 import { Route, Navigate } from "react-router-dom";
 import { Protected, PublicOnly, sectionRoutes } from "../lib/route.helpers";
+import RouteAccessGate from "@/components/permissions/RouteAccessGate";
 
 function resolveChildren(children = [], dynamicSections, basePath) {
   const rendered = children.map((child) => (
@@ -7,7 +8,7 @@ function resolveChildren(children = [], dynamicSections, basePath) {
       key={child.path ?? "index"}
       index={child.index}
       path={child.path}
-      element={child.element}
+      element={<RouteAccessGate>{child.element}</RouteAccessGate>}
     />
   ));
 
@@ -34,7 +35,11 @@ function resolveChildren(children = [], dynamicSections, basePath) {
 
     rendered.push(
       ...extra.map((r) => (
-        <Route key={r.path} path={r.path} element={r.element} />
+        <Route
+          key={r.path}
+          path={r.path}
+          element={<RouteAccessGate>{r.element}</RouteAccessGate>}
+        />
       )),
     );
   }
@@ -117,7 +122,7 @@ export function generateRoutes(routes) {
             path={route.path}
             element={
               <Protected blockRoles={route.blockRoles}>
-                {route.element}
+                <RouteAccessGate>{route.element}</RouteAccessGate>
               </Protected>
             }
           />

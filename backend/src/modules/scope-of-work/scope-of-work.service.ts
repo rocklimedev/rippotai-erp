@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
-import { Includeable } from 'sequelize';
+import { Includeable, Op } from 'sequelize';
 import { ScopeCategory } from './models/scope-category.model';
 import { ProjectSpace } from './models/project-space.model';
 import { ProjectScopeCategory } from './models/project-scope-category.model';
@@ -140,7 +140,10 @@ export class ScopeOfWorkService {
   // ============================================================
 
   async createCategory(dto: CreateScopeCategoryDto) {
-    return this.scopeCategoryModel.create({ ...dto, slug: dto.slug?.trim() || null } as any);
+    return this.scopeCategoryModel.create({
+      ...dto,
+      slug: dto.slug?.trim() || null,
+    } as any);
   }
 
   async findAllCategories() {
@@ -599,6 +602,30 @@ export class ScopeOfWorkService {
               .replace(/[^a-z0-9]+/g, '-')
               .replace(/(^-|-$)/g, '');
 
+          // Reuse the canonical project space (from brief / recce) instead of duplicating it.
+          const existingSpace = await this.projectSpaceModel.findOne({
+            where: {
+              projectId,
+              [Op.or]: [
+                { slug },
+                Sequelize.where(
+                  Sequelize.fn('LOWER', Sequelize.col('name')),
+                  space.name.trim().toLowerCase(),
+                ),
+              ],
+            },
+            transaction,
+          });
+          if (existingSpace) {
+            if (!existingSpace.description && space.description?.trim())
+              await existingSpace.update(
+                { description: space.description.trim() },
+                { transaction },
+              );
+            spaceIdMap.set(space.clientId, existingSpace.id);
+            continue;
+          }
+
           const createdSpace = await this.projectSpaceModel.create(
             {
               projectId,
@@ -612,6 +639,8 @@ export class ScopeOfWorkService {
               sortOrder: space.sortOrder ?? index + 1,
 
               isActive: true,
+
+              sourceDocument: 'scope-of-work',
             } as any,
             {
               transaction,
