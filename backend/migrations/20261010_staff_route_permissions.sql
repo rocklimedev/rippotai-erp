@@ -76,6 +76,7 @@ INSERT IGNORE INTO permissions (id, name, resource, action, description, created
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'clients:restore', 'clients', 'restore', 'Staff API capability: clients:restore', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'clients:update', 'clients', 'update', 'Staff API capability: clients:update', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'command-center:approve', 'command-center', 'approve', 'Staff API capability: command-center:approve', NOW());
+INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'command-center:authority', 'command-center', 'authority', 'Staff API capability: command-center:authority', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'command-center:complete', 'command-center', 'complete', 'Staff API capability: command-center:complete', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'command-center:read', 'command-center', 'read', 'Staff API capability: command-center:read', NOW());
 INSERT IGNORE INTO permissions (id, name, resource, action, description, created_at) VALUES (UUID(), 'command-center:refresh', 'command-center', 'refresh', 'Staff API capability: command-center:refresh', NOW());
@@ -488,6 +489,7 @@ WHERE r.name IN ('ADMIN', 'SUPERADMIN') AND CONCAT(p.resource, ':', p.action) IN
   'clients:restore',
   'clients:update',
   'command-center:approve',
+  'command-center:authority',
   'command-center:complete',
   'command-center:read',
   'command-center:refresh',
