@@ -78,6 +78,42 @@ describe('Absolute CDN URLs and original remote directory', () => {
     );
   });
 
+  it('retries a dropped handshake with cleanup before serving the file', async () => {
+    mockSftp.connect.mockRejectedValueOnce(
+      new Error('getConnection: Connection lost before handshake'),
+    );
+    await expect(new CdnService().downloadFile(key)).resolves.toEqual(
+      Buffer.from('private'),
+    );
+    expect(mockSftp.connect).toHaveBeenCalledTimes(2);
+    expect(mockSftp.end).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns storage unavailable after bounded handshake retries', async () => {
+    for (let i = 0; i < 3; i++) {
+      mockSftp.connect.mockRejectedValueOnce(
+        new Error('getConnection: Connection lost before handshake'),
+      );
+    }
+    await expect(new CdnService().downloadFile(key)).rejects.toMatchObject({
+      status: 503,
+    });
+    expect(mockSftp.connect).toHaveBeenCalledTimes(3);
+    expect(mockSftp.end).toHaveBeenCalledTimes(3);
+    expect(mockSftp.get).not.toHaveBeenCalled();
+  });
+
+  it('does not retry authentication errors', async () => {
+    mockSftp.connect.mockRejectedValueOnce(
+      new Error('All configured authentication methods failed'),
+    );
+    await expect(new CdnService().downloadFile(key)).rejects.toThrow(
+      'authentication methods failed',
+    );
+    expect(mockSftp.connect).toHaveBeenCalledTimes(1);
+    expect(mockSftp.end).toHaveBeenCalledTimes(1);
+  });
+
   it('streams remote downloads and closes SFTP after completion or disconnect', async () => {
     const storage = new CdnService();
     const chunks: Buffer[] = [];
@@ -183,6 +219,7 @@ describe('Absolute CDN URLs and original remote directory', () => {
     } as unknown as CdnService;
     const response: any = {
       setHeader: jest.fn(),
+      removeHeader: jest.fn(),
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
       type: jest.fn().mockReturnThis(),

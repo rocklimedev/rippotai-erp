@@ -2,6 +2,8 @@ import { appConfirm } from "@/lib/app-dialog";
 // Site Recce Report — what we found on site, as a clean A4 document for the client and the team.
 // Built on the shared print kit: fixed Rippotai cover, then only the filled fields as plain text.
 import React, { useMemo, useRef } from "react";
+import PrivateImage from "@/components/PrivateImage";
+import { roomFeetInchesDraft } from "@/hooks/site-recce-form-helpers";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Edit3, Trash2, Download, FileText } from "lucide-react";
@@ -22,10 +24,8 @@ const ROOM_TYPE = {
   BALCONY: "Balcony",
   OTHER: "Other",
 };
-const UNIT = { FT: "ft", M: "m", IN: "in", CM: "cm" };
 
 const area = (v) => (has(v) && Number(v) > 0 ? `${num(v, 0)} sq ft` : "");
-const dim = (v, unit) => (has(v) && Number(v) > 0 ? `${num(v)} ${unit}` : "");
 
 function ShotPair({ photo, index }) {
   const n = photo.shot_number ?? index + 1;
@@ -36,13 +36,13 @@ function ShotPair({ photo, index }) {
       <div className={`pd-shot ${hasLayout && has(photo.photo_url) ? "" : "pd-shot--single"}`}>
         {hasLayout && (
           <figure className="pd-shot__layout">
-            <img src={photo.layout_image_url} alt="" crossOrigin="anonymous" />
+            <PrivateImage src={photo.layout_image_url} alt="" />
             <figcaption>Shot {n} · where it was taken</figcaption>
           </figure>
         )}
         {has(photo.photo_url) && (
           <figure>
-            <img src={photo.photo_url} alt="" crossOrigin="anonymous" />
+            <PrivateImage src={photo.photo_url} alt="" />
             <figcaption>Photo {n}</figcaption>
           </figure>
         )}
@@ -138,7 +138,7 @@ export function buildRecceSections(recce) {
   if (recce.existing_site_layouts?.length) {
     sections.push({ title: "Existing Site Layout", blocks: recce.existing_site_layouts.map((url, index) => (
       <figure key={`${url}-${index}`} className="pd-shot pd-shot--single">
-        <img src={url} alt={`Existing site layout ${index + 1}`} crossOrigin="anonymous" />
+        <PrivateImage src={url} alt={`Existing site layout ${index + 1}`} />
         <figcaption>Layout {index + 1}</figcaption>
       </figure>
     )) });
@@ -152,15 +152,15 @@ export function buildRecceSections(recce) {
         cols: ["Room", "#Length", "#Width", "#Height", "#Area", "Existing finishes & notes"],
         template: "24% 15mm 15mm 15mm 20mm 1fr",
         items: measured.map((r) => {
-          const u = UNIT[r.measurement_unit] || (r.measurement_unit || "ft").toLowerCase();
+          const dimensions = roomFeetInchesDraft(r);
           return {
             key: r.id,
             cells: [
               { text: r.room_name, sub: [r.room_type === "OTHER" ? r.room_type_other || "Other" : labelOf(ROOM_TYPE, r.room_type), has(r.room_number) && `No. ${r.room_number}`].filter(Boolean).join(" · ") },
-              dim(r.length, u),
-              dim(r.width, u),
-              dim(r.height, u),
-              has(r.area) ? `${num(r.area, 2)} sq ${u}` : "—",
+              dimensions.length,
+              dimensions.width,
+              dimensions.height,
+              has(dimensions.area) ? `${num(dimensions.area, 2)} sq ft` : "—",
               [r.existing_flooring && `Flooring: ${r.existing_flooring}`, r.existing_ceiling && `Ceiling: ${r.existing_ceiling}`, r.notes]
                 .filter(has)
                 .join("\n"),

@@ -1,10 +1,11 @@
-import React, { useEffect } from "react";
-import { PrefillNotice } from "@/components/PrefillNotice";
-import { useNavigate, useSearchParams, useParams } from "react-router-dom";
-import { toast } from "sonner";
-import { Folder, ListChecks, Loader2, FileSearch } from "lucide-react";
+import React, { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { PrefillNotice } from '@/components/PrefillNotice';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { Folder, ListChecks, Loader2, FileSearch } from 'lucide-react';
 
-import { PlanOfActionSectionForm } from "../../components/plan-of-action/PlanOfActionSectionForm";
+import { PlanOfActionSectionForm } from '../../components/plan-of-action/PlanOfActionSectionForm';
 import {
   Page,
   EmptyState,
@@ -13,20 +14,15 @@ import {
   TextInput,
   TextArea,
   SelectInput,
-} from "@/components/inos";
-import {
-  Choices,
-  RowCard,
-  AddRowButton,
-  EmptyRows,
-  Callout,
-} from "@/components/forms/crm-form-ui";
-import { useAutoSave } from "../../hooks/use-autosave";
-import { mergeScopeSpaces, scopeItemsForSpace } from "./scope-space-groups";
-import { useSharedProjectData } from "../../hooks/use-shared-project-data";
-import { useGetProjectsQuery } from "../../api/projects/project.api";
+} from '@/components/inos';
+import { Choices, RowCard, AddRowButton, EmptyRows, Callout } from '@/components/forms/crm-form-ui';
+import { useAutoSave } from '../../hooks/use-autosave';
+import { mergeScopeSpaces, scopeItemsForSpace } from './scope-space-groups';
+import { useSharedProjectData } from '../../hooks/use-shared-project-data';
+import { useGetProjectsQuery } from '../../api/projects/project.api';
 
 import {
+  scopeOfWorkApi,
   useCreateScopeOfWorkMutation,
   useUpdateScopeOfWorkMutation,
   useGetScopeOfWorkByIdQuery,
@@ -39,29 +35,29 @@ import {
   useGetProjectCategoriesQuery,
   useGetScopeCategoriesQuery,
   useCreateScopeCategoryMutation,
-} from "../../api/documents/scope-of-work.api";
+} from '../../api/documents/scope-of-work.api';
 
-const SAVE_KEY = "bc.scope-of-work";
+const SAVE_KEY = 'bc.scope-of-work';
 
 // Sentinel value for the "+ Add new category…" option in the dropdown
-const NEW_CATEGORY_VALUE = "__new_category__";
+const NEW_CATEGORY_VALUE = '__new_category__';
 
 const SCOPE_OF_WORK_SECTIONS = [
-  { title: "Overview", type: "overview" },
-  { title: "Spaces & Scope of Work", type: "spaces" },
+  { title: 'Overview', type: 'overview' },
+  { title: 'Spaces & Scope of Work', type: 'spaces' },
 ];
 
 const PROJECT_MODE_OPTIONS = [
-  { value: "DESIGN_BUILD", label: "Design & Build" },
-  { value: "DESIGN_ONLY", label: "Design" },
-  { value: "BUILD_ONLY", label: "Build" },
+  { value: 'DESIGN_BUILD', label: 'Design & Build' },
+  { value: 'DESIGN_ONLY', label: 'Design' },
+  { value: 'BUILD_ONLY', label: 'Build' },
 ];
 
 const STATUS_OPTIONS = [
-  { value: "DRAFT", label: "Draft" },
-  { value: "REVIEW", label: "Under review" },
-  { value: "APPROVED", label: "Approved" },
-  { value: "ACCEPTED", label: "Accepted" },
+  { value: 'DRAFT', label: 'Draft' },
+  { value: 'REVIEW', label: 'Under review' },
+  { value: 'APPROVED', label: 'Approved' },
+  { value: 'ACCEPTED', label: 'Accepted' },
 ];
 
 // ============================================================
@@ -69,15 +65,15 @@ const STATUS_OPTIONS = [
 // ============================================================
 
 const slugify = (text) =>
-  (text || "")
+  (text || '')
     .toString()
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 
 const generateUniqueSlug = (name, existingSlugs) => {
-  const base = slugify(name) || "space";
+  const base = slugify(name) || 'space';
   let slug = base;
   let counter = 2;
 
@@ -90,11 +86,15 @@ const generateUniqueSlug = (name, existingSlugs) => {
 };
 
 export function ScopeOfWorkForm() {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { id: scopeOfWorkId } = useParams();
 
   const isEditMode = Boolean(scopeOfWorkId);
+  const hydratedScopeId = React.useRef(null);
+  const savingRef = React.useRef(false);
+  const [isSaving, setIsSaving] = React.useState(false);
 
   // ============================================================
   // PROJECTS
@@ -106,8 +106,7 @@ export function ScopeOfWorkForm() {
   // PROJECT
   // ============================================================
 
-  const initialProjectId =
-    searchParams.get("project_id") || searchParams.get("projectId") || "";
+  const initialProjectId = searchParams.get('project_id') || searchParams.get('projectId') || '';
 
   const [projectId, setProjectId] = React.useState(initialProjectId);
 
@@ -120,21 +119,21 @@ export function ScopeOfWorkForm() {
 
   // Which scope item row currently has the "new category" input open
   const [newCategoryRowId, setNewCategoryRowId] = React.useState(null);
-  const [newCategoryName, setNewCategoryName] = React.useState("");
+  const [newCategoryName, setNewCategoryName] = React.useState('');
 
   // ============================================================
   // FORM STATE
   // ============================================================
 
-  const draftKey = `${SAVE_KEY}.${scopeOfWorkId || projectId || "new"}`;
+  const draftKey = `${SAVE_KEY}.${scopeOfWorkId || projectId || 'new'}`;
   const [values, setValues, draftStorage] = useAutoSave(draftKey, {
     Overview: {
-      scope_summary: "",
-      specific_exclusions: "",
-      notes: "",
-      project_mode: "",
+      scope_summary: '',
+      specific_exclusions: '',
+      notes: '',
+      project_mode: '',
 
-      status: "DRAFT",
+      status: 'DRAFT',
     },
 
     Spaces: [],
@@ -143,14 +142,14 @@ export function ScopeOfWorkForm() {
 
     Items: [],
   });
-  const prefill = useSharedProjectData(projectId, "scope", values, setValues, !scopeOfWorkId);
+  const prefill = useSharedProjectData(projectId, 'scope', values, setValues, !scopeOfWorkId);
 
   // ============================================================
   // LOAD EXISTING SCOPE OF WORK
   // ============================================================
 
   const {
-    data: existingScopeOfWork,
+    currentData: existingScopeOfWork,
     isLoading: isLoadingScopeOfWork,
     isFetching: isFetchingScopeOfWork,
   } = useGetScopeOfWorkByIdQuery(scopeOfWorkId, {
@@ -161,29 +160,21 @@ export function ScopeOfWorkForm() {
   // API MUTATIONS
   // ============================================================
 
-  const [createScopeOfWork, { isLoading: isCreating }] =
-    useCreateScopeOfWorkMutation();
+  const [createScopeOfWork, { isLoading: isCreating }] = useCreateScopeOfWorkMutation();
 
-  const [updateScopeOfWork, { isLoading: isUpdating }] =
-    useUpdateScopeOfWorkMutation();
+  const [updateScopeOfWork, { isLoading: isUpdating }] = useUpdateScopeOfWorkMutation();
 
-  const [createProjectSpace, { isLoading: isCreatingSpace }] =
-    useCreateProjectSpaceMutation();
+  const [createProjectSpace, { isLoading: isCreatingSpace }] = useCreateProjectSpaceMutation();
 
-  const [createScopeItem, { isLoading: isCreatingItem }] =
-    useCreateScopeItemMutation();
+  const [createScopeItem, { isLoading: isCreatingItem }] = useCreateScopeItemMutation();
 
-  const [updateScopeItem, { isLoading: isUpdatingItem }] =
-    useUpdateScopeItemMutation();
+  const [updateScopeItem, { isLoading: isUpdatingItem }] = useUpdateScopeItemMutation();
 
-  const [deleteScopeItem, { isLoading: isDeletingItem }] =
-    useDeleteScopeItemMutation();
+  const [deleteScopeItem, { isLoading: isDeletingItem }] = useDeleteScopeItemMutation();
 
-  const [addCategoryToProject, { isLoading: isAddingCategory }] =
-    useAddCategoryToProjectMutation();
+  const [addCategoryToProject, { isLoading: isAddingCategory }] = useAddCategoryToProjectMutation();
 
-  const [createScopeCategory, { isLoading: isCreatingCategory }] =
-    useCreateScopeCategoryMutation();
+  const [createScopeCategory, { isLoading: isCreatingCategory }] = useCreateScopeCategoryMutation();
 
   // ============================================================
   // PROJECT DATA
@@ -193,12 +184,9 @@ export function ScopeOfWorkForm() {
     skip: !projectId,
   });
 
-  const { data: projectCategories = [] } = useGetProjectCategoriesQuery(
-    projectId,
-    {
-      skip: !projectId,
-    },
-  );
+  const { data: projectCategories = [] } = useGetProjectCategoriesQuery(projectId, {
+    skip: !projectId,
+  });
 
   const { data: scopeCategories = [] } = useGetScopeCategoriesQuery();
 
@@ -207,7 +195,11 @@ export function ScopeOfWorkForm() {
   // ============================================================
 
   useEffect(() => {
-    if (!existingScopeOfWork) return;
+    if (!scopeOfWorkId) {
+      hydratedScopeId.current = null;
+      return;
+    }
+    if (!existingScopeOfWork || hydratedScopeId.current === scopeOfWorkId) return;
 
     // ----------------------------------------------------------
     // PROJECT
@@ -237,13 +229,13 @@ export function ScopeOfWorkForm() {
         uniqueSpaces.set(space.id, {
           id: space.id,
 
-          name: space.name || "",
+          name: space.name || '',
 
-          description: space.description || "",
+          description: space.description || '',
 
           sort_order: space.sortOrder || 1,
 
-          slug: space.slug || "",
+          slug: space.slug || '',
         });
       }
     });
@@ -263,9 +255,9 @@ export function ScopeOfWorkForm() {
         uniqueCategories.set(category.id, {
           id: category.id,
 
-          name: category.name || "",
+          name: category.name || '',
 
-          description: category.description || "",
+          description: category.description || '',
 
           sort_order: category.sortOrder || 1,
         });
@@ -278,15 +270,15 @@ export function ScopeOfWorkForm() {
 
     const mappedValues = {
       Overview: {
-        scope_summary: existingScopeOfWork.scopeSummary || "",
+        scope_summary: existingScopeOfWork.scopeSummary || '',
 
-        specific_exclusions: existingScopeOfWork.specificExclusions || "",
+        specific_exclusions: existingScopeOfWork.specificExclusions || '',
 
-        notes: existingScopeOfWork.notes || "",
+        notes: existingScopeOfWork.notes || '',
 
-        project_mode: existingScopeOfWork.projectMode || "",
+        project_mode: existingScopeOfWork.projectMode || '',
 
-        status: existingScopeOfWork.status || "DRAFT",
+        status: existingScopeOfWork.status || 'DRAFT',
       },
 
       Spaces: Array.from(uniqueSpaces.values()),
@@ -296,24 +288,25 @@ export function ScopeOfWorkForm() {
       Items: (existingScopeOfWork.items || []).map((item) => ({
         id: item.id,
 
-        project_space_id: item.projectSpaceId || "",
+        project_space_id: item.projectSpaceId || '',
 
-        scope_category_id: item.scopeCategoryId || "",
+        scope_category_id: item.scopeCategoryId || '',
 
-        scope_of_work: item.scopeOfWork || "",
+        scope_of_work: item.scopeOfWork || '',
 
         is_included: item.isIncluded !== false,
 
         is_excluded: item.isExcluded === true,
 
-        notes: item.notes || "",
+        notes: item.notes || '',
 
         sort_order: item.sortOrder || 1,
       })),
     };
 
     setValues(mappedValues);
-  }, [existingScopeOfWork, setValues]);
+    hydratedScopeId.current = scopeOfWorkId;
+  }, [scopeOfWorkId, existingScopeOfWork, setValues]);
 
   // ============================================================
   // GENERIC FIELD CHANGE
@@ -356,26 +349,20 @@ export function ScopeOfWorkForm() {
       <Field label="Project mode" full>
         <Choices
           name="Project mode"
-          value={overview.project_mode || ""}
+          value={overview.project_mode || ''}
           options={PROJECT_MODE_OPTIONS}
           columns={3}
-          onChange={(value) =>
-            handleFieldChange("Overview", "project_mode", value)
-          }
+          onChange={(value) => handleFieldChange('Overview', 'project_mode', value)}
         />
       </Field>
 
-      <Field
-        label="Status"
-        full
-        hint="Keep as draft until the client has reviewed it."
-      >
+      <Field label="Status" full hint="Keep as draft until the client has reviewed it.">
         <Choices
           name="Status"
-          value={overview.status || "DRAFT"}
+          value={overview.status || 'DRAFT'}
           options={STATUS_OPTIONS}
           columns={4}
-          onChange={(value) => handleFieldChange("Overview", "status", value)}
+          onChange={(value) => handleFieldChange('Overview', 'status', value)}
         />
       </Field>
 
@@ -383,15 +370,13 @@ export function ScopeOfWorkForm() {
         label="Scope summary"
         required
         full
-        error={summaryError ? "Enter the scope summary." : undefined}
+        error={summaryError ? 'Enter the scope summary.' : undefined}
       >
         <TextArea
           rows={5}
-          value={overview.scope_summary || ""}
+          value={overview.scope_summary || ''}
           invalid={summaryError}
-          onChange={(e) =>
-            handleFieldChange("Overview", "scope_summary", e.target.value)
-          }
+          onChange={(e) => handleFieldChange('Overview', 'scope_summary', e.target.value)}
           placeholder="e.g. Complete interior fit-out of a 3BHK apartment including civil, electrical, plumbing and furniture."
         />
       </Field>
@@ -403,10 +388,8 @@ export function ScopeOfWorkForm() {
       >
         <TextArea
           rows={4}
-          value={overview.specific_exclusions || ""}
-          onChange={(e) =>
-            handleFieldChange("Overview", "specific_exclusions", e.target.value)
-          }
+          value={overview.specific_exclusions || ''}
+          onChange={(e) => handleFieldChange('Overview', 'specific_exclusions', e.target.value)}
           placeholder="e.g. Loose furniture, appliances, structural changes"
         />
       </Field>
@@ -414,10 +397,8 @@ export function ScopeOfWorkForm() {
       <Field label="Notes" optional full>
         <TextArea
           rows={3}
-          value={overview.notes || ""}
-          onChange={(e) =>
-            handleFieldChange("Overview", "notes", e.target.value)
-          }
+          value={overview.notes || ''}
+          onChange={(e) => handleFieldChange('Overview', 'notes', e.target.value)}
           placeholder="Anything else the team should know"
         />
       </Field>
@@ -439,11 +420,11 @@ export function ScopeOfWorkForm() {
           {
             id: crypto.randomUUID(),
 
-            name: "",
+            name: '',
 
-            description: "",
+            description: '',
 
-            slug: "",
+            slug: '',
 
             sort_order: (prev.Spaces || []).length + 1,
           },
@@ -462,7 +443,7 @@ export function ScopeOfWorkForm() {
         // project spaces and the other spaces in this form.
         // ------------------------------------------------------
 
-        if (field === "name") {
+        if (field === 'name') {
           const existingSlugs = new Set([
             ...projectSpaces.map((space) => space.slug).filter(Boolean),
 
@@ -509,7 +490,9 @@ export function ScopeOfWorkForm() {
         ...prev,
 
         Spaces: (prev.Spaces || []).filter((_, i) => i !== index),
-        Items: (prev.Items || []).filter((item) => item.project_space_id !== prev.Spaces[index]?.id),
+        Items: (prev.Items || []).filter(
+          (item) => item.project_space_id !== prev.Spaces[index]?.id,
+        ),
       }));
     };
 
@@ -526,42 +509,46 @@ export function ScopeOfWorkForm() {
             {allSpaces.map((space, index) => {
               const draftIndex = spaces.findIndex((draft) => draft.id === space.id);
               const savedSpace = projectSpaces.some((saved) => saved.id === space.id);
-              const spaceItemCount = items.filter((item) => item.project_space_id === space.id).length;
+              const spaceItemCount = items.filter(
+                (item) => item.project_space_id === space.id,
+              ).length;
               const missingName = spacesTouched && !space.name?.trim();
               return (
                 <RowCard
                   key={space.id}
                   index={index + 1}
                   title={space.name?.trim() || `Space ${index + 1}`}
-                  meta={spaceItemCount ? `${spaceItemCount} scope item${spaceItemCount === 1 ? "" : "s"}` : "Unused — no scope items added"}
-                  onRemove={!savedSpace && draftIndex >= 0 ? () => removeSpace(draftIndex) : undefined}
+                  meta={
+                    spaceItemCount
+                      ? `${spaceItemCount} scope item${spaceItemCount === 1 ? '' : 's'}`
+                      : 'Unused — no scope items added'
+                  }
+                  onRemove={
+                    !savedSpace && draftIndex >= 0 ? () => removeSpace(draftIndex) : undefined
+                  }
                   removeLabel="Remove space"
                 >
                   <div className="inos-form-grid">
                     <Field
                       label="Space name"
                       required
-                      error={missingName ? "Name this space." : undefined}
+                      error={missingName ? 'Name this space.' : undefined}
                     >
                       <TextInput
-                        value={space.name || ""}
+                        value={space.name || ''}
                         readOnly={savedSpace}
                         invalid={missingName}
                         autoFocus={!space.name}
-                        onChange={(e) =>
-                          updateSpace(draftIndex, "name", e.target.value)
-                        }
+                        onChange={(e) => updateSpace(draftIndex, 'name', e.target.value)}
                         placeholder="e.g. Living room"
                       />
                     </Field>
 
                     <Field label="Description" optional>
                       <TextInput
-                        value={space.description || ""}
+                        value={space.description || ''}
                         readOnly={savedSpace}
-                        onChange={(e) =>
-                          updateSpace(draftIndex, "description", e.target.value)
-                        }
+                        onChange={(e) => updateSpace(draftIndex, 'description', e.target.value)}
                         placeholder="e.g. Double-height living with balcony"
                       />
                     </Field>
@@ -574,11 +561,13 @@ export function ScopeOfWorkForm() {
         )}
 
         <AddRowButton onClick={addSpace}>
-          {allSpaces.length ? "Add space" : "Add first space"}
+          {allSpaces.length ? 'Add space' : 'Add first space'}
         </AddRowButton>
         {scopeItemsForSpace(items, null, allSpaces).length > 0 && (
           <div style={{ marginTop: 24 }}>
-            <Callout title="Items needing a space">Choose a space for these existing items.</Callout>
+            <Callout title="Items needing a space">
+              Choose a space for these existing items.
+            </Callout>
             {renderItemsSection(null)}
           </div>
         )}
@@ -601,17 +590,17 @@ export function ScopeOfWorkForm() {
           {
             id: crypto.randomUUID(),
 
-            project_space_id: spaceId || "",
+            project_space_id: spaceId || '',
 
-            scope_category_id: "",
+            scope_category_id: '',
 
-            scope_of_work: "",
+            scope_of_work: '',
 
             is_included: true,
 
             is_excluded: false,
 
-            notes: "",
+            notes: '',
 
             sort_order: (prev.Items || []).length + 1,
           },
@@ -648,25 +637,25 @@ export function ScopeOfWorkForm() {
 
     const cancelNewCategory = () => {
       setNewCategoryRowId(null);
-      setNewCategoryName("");
+      setNewCategoryName('');
     };
 
     const handleCategorySelect = (index, item, value) => {
       if (value === NEW_CATEGORY_VALUE) {
         setNewCategoryRowId(item.id);
-        setNewCategoryName("");
+        setNewCategoryName('');
         return;
       }
 
       setNewCategoryRowId(null);
-      updateItem(index, "scope_category_id", value);
+      updateItem(index, 'scope_category_id', value);
     };
 
     const handleCreateCategory = async (index) => {
       const name = newCategoryName.trim();
 
       if (!name) {
-        return toast.error("Enter a category name.");
+        return toast.error('Enter a category name.');
       }
 
       // Reuse an existing category instead of creating a duplicate
@@ -675,7 +664,7 @@ export function ScopeOfWorkForm() {
       );
 
       if (existing) {
-        updateItem(index, "scope_category_id", existing.id);
+        updateItem(index, 'scope_category_id', existing.id);
         cancelNewCategory();
         return toast.info(`"${existing.name}" already exists, selected it.`);
       }
@@ -698,15 +687,15 @@ export function ScopeOfWorkForm() {
               },
             }).unwrap();
           } catch (linkError) {
-            console.warn("Could not link category to project:", linkError);
+            console.warn('Could not link category to project:', linkError);
           }
         }
 
-        updateItem(index, "scope_category_id", created.id);
+        updateItem(index, 'scope_category_id', created.id);
         cancelNewCategory();
         toast.success(`Category "${created.name || name}" added.`);
       } catch (error) {
-        toast.error(error?.data?.message || "Failed to add category.");
+        toast.error(error?.data?.message || 'Failed to add category.');
       }
     };
 
@@ -724,9 +713,7 @@ export function ScopeOfWorkForm() {
         ) : (
           <div className="crmf-rows">
             {groupedItems.map(({ item, index }) => {
-              const spaceName = spaceOptions.find(
-                (s) => s.id === item.project_space_id,
-              )?.name;
+              const spaceName = spaceOptions.find((s) => s.id === item.project_space_id)?.name;
               const categoryName = scopeCategories.find(
                 (c) => c.id === item.scope_category_id,
               )?.name;
@@ -738,69 +725,55 @@ export function ScopeOfWorkForm() {
                   key={item.id}
                   index={index + 1}
                   title={
-                    [spaceName, categoryName].filter(Boolean).join(" · ") ||
+                    [spaceName, categoryName].filter(Boolean).join(' · ') ||
                     `Scope item ${index + 1}`
                   }
-                  meta={item.is_excluded ? "Excluded" : "Included"}
+                  meta={item.is_excluded ? 'Excluded' : 'Included'}
                   onRemove={() => removeItem(index)}
                   removeLabel="Remove scope item"
                 >
                   <div className="inos-form-grid">
-                    {spaceId === null && <Field
-                      label="Space"
-                      required
-                      error={
-                        showErrors && !item.project_space_id
-                          ? "Pick a space."
-                          : undefined
-                      }
-                      hint={
-                        spaceOptions.length
-                          ? undefined
-                          : "Add a space in the section above first."
-                      }
-                    >
-                      <SelectInput
-                        value={item.project_space_id || ""}
-                        invalid={showErrors && !item.project_space_id}
-                        onChange={(e) =>
-                          updateItem(index, "project_space_id", e.target.value)
+                    {spaceId === null && (
+                      <Field
+                        label="Space"
+                        required
+                        error={showErrors && !item.project_space_id ? 'Pick a space.' : undefined}
+                        hint={
+                          spaceOptions.length
+                            ? undefined
+                            : 'Add a space in the section above first.'
                         }
-                        placeholder="Select space"
                       >
-                        {spaceOptions.map((space) => (
-                          <option key={space.id} value={space.id}>
-                            {space.name || "(unnamed space)"}
-                          </option>
-                        ))}
-                      </SelectInput>
-                    </Field>}
+                        <SelectInput
+                          value={item.project_space_id || ''}
+                          invalid={showErrors && !item.project_space_id}
+                          onChange={(e) => updateItem(index, 'project_space_id', e.target.value)}
+                          placeholder="Select space"
+                        >
+                          {spaceOptions.map((space) => (
+                            <option key={space.id} value={space.id}>
+                              {space.name || '(unnamed space)'}
+                            </option>
+                          ))}
+                        </SelectInput>
+                      </Field>
+                    )}
 
                     <Field
                       label="Category"
                       required
                       error={
-                        showErrors &&
-                        !item.scope_category_id &&
-                        !isAddingNewCategory
-                          ? "Pick a category."
+                        showErrors && !item.scope_category_id && !isAddingNewCategory
+                          ? 'Pick a category.'
                           : undefined
                       }
                     >
                       <SelectInput
                         value={
-                          isAddingNewCategory
-                            ? NEW_CATEGORY_VALUE
-                            : item.scope_category_id || ""
+                          isAddingNewCategory ? NEW_CATEGORY_VALUE : item.scope_category_id || ''
                         }
-                        invalid={
-                          showErrors &&
-                          !item.scope_category_id &&
-                          !isAddingNewCategory
-                        }
-                        onChange={(e) =>
-                          handleCategorySelect(index, item, e.target.value)
-                        }
+                        invalid={showErrors && !item.scope_category_id && !isAddingNewCategory}
+                        onChange={(e) => handleCategorySelect(index, item, e.target.value)}
                         placeholder="Select category"
                       >
                         {scopeCategories.map((category) => (
@@ -808,24 +781,22 @@ export function ScopeOfWorkForm() {
                             {category.name}
                           </option>
                         ))}
-                        <option value={NEW_CATEGORY_VALUE}>
-                          + Add new category…
-                        </option>
+                        <option value={NEW_CATEGORY_VALUE}>+ Add new category…</option>
                       </SelectInput>
 
                       {isAddingNewCategory && (
-                        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                           <TextInput
                             autoFocus
                             value={newCategoryName}
                             placeholder="New category name, e.g. Civil work"
                             onChange={(e) => setNewCategoryName(e.target.value)}
                             onKeyDown={(e) => {
-                              if (e.key === "Enter") {
+                              if (e.key === 'Enter') {
                                 e.preventDefault();
                                 handleCreateCategory(index);
                               }
-                              if (e.key === "Escape") {
+                              if (e.key === 'Escape') {
                                 cancelNewCategory();
                               }
                             }}
@@ -835,9 +806,7 @@ export function ScopeOfWorkForm() {
                             onClick={() => handleCreateCategory(index)}
                             disabled={isCreatingCategory || isAddingCategory}
                           >
-                            {isCreatingCategory || isAddingCategory
-                              ? "Adding…"
-                              : "Add"}
+                            {isCreatingCategory || isAddingCategory ? 'Adding…' : 'Add'}
                           </Button>
                           <Button type="button" onClick={cancelNewCategory}>
                             Cancel
@@ -851,18 +820,14 @@ export function ScopeOfWorkForm() {
                       required
                       full
                       error={
-                        showErrors && !item.scope_of_work?.trim()
-                          ? "Describe the work."
-                          : undefined
+                        showErrors && !item.scope_of_work?.trim() ? 'Describe the work.' : undefined
                       }
                     >
                       <TextArea
                         rows={3}
-                        value={item.scope_of_work || ""}
+                        value={item.scope_of_work || ''}
                         invalid={showErrors && !item.scope_of_work?.trim()}
-                        onChange={(e) =>
-                          updateItem(index, "scope_of_work", e.target.value)
-                        }
+                        onChange={(e) => updateItem(index, 'scope_of_work', e.target.value)}
                         placeholder="e.g. Supply and install 600×1200 vitrified tiles with skirting"
                       />
                     </Field>
@@ -874,7 +839,7 @@ export function ScopeOfWorkForm() {
         )}
 
         <AddRowButton onClick={addItem}>
-          {items.length ? "Add scope item" : "Add first scope item"}
+          {items.length ? 'Add scope item' : 'Add first scope item'}
         </AddRowButton>
       </>
     );
@@ -885,15 +850,15 @@ export function ScopeOfWorkForm() {
   // ============================================================
 
   const renderSection = (section) => {
-    if (section.type === "overview") {
+    if (section.type === 'overview') {
       return renderOverviewSection();
     }
 
-    if (section.type === "spaces") {
+    if (section.type === 'spaces') {
       return renderSpacesSection();
     }
 
-    if (section.type === "items") {
+    if (section.type === 'items') {
       return renderItemsSection();
     }
 
@@ -905,17 +870,18 @@ export function ScopeOfWorkForm() {
   // ============================================================
 
   const handleSubmit = async () => {
+    if (savingRef.current) return;
     setSubmitAttempted(true);
     // ----------------------------------------------------------
     // VALIDATION
     // ----------------------------------------------------------
 
     if (!projectId) {
-      return toast.error("Please select a project.");
+      return toast.error('Please select a project.');
     }
 
     if (!overview.scope_summary?.trim()) {
-      return toast.error("Please enter the scope summary.");
+      return toast.error('Please enter the scope summary.');
     }
 
     // ----------------------------------------------------------
@@ -927,7 +893,7 @@ export function ScopeOfWorkForm() {
     if (incompleteSpaces.length > 0) {
       return toast.error(
         `${incompleteSpaces.length} space${
-          incompleteSpaces.length > 1 ? "s are" : " is"
+          incompleteSpaces.length > 1 ? 's are' : ' is'
         } missing a name.`,
       );
     }
@@ -937,20 +903,19 @@ export function ScopeOfWorkForm() {
     // ----------------------------------------------------------
 
     const incompleteItems = items.filter(
-      (item) =>
-        !item.project_space_id ||
-        !item.scope_category_id ||
-        !item.scope_of_work?.trim(),
+      (item) => !item.project_space_id || !item.scope_category_id || !item.scope_of_work?.trim(),
     );
 
     if (incompleteItems.length > 0) {
       return toast.error(
         `${incompleteItems.length} scope item${
-          incompleteItems.length > 1 ? "s are" : " is"
+          incompleteItems.length > 1 ? 's are' : ' is'
         } incomplete.`,
       );
     }
 
+    savingRef.current = true;
+    setIsSaving(true);
     try {
       // ========================================================
       // 1. CREATE OR UPDATE SCOPE OF WORK
@@ -969,14 +934,13 @@ export function ScopeOfWorkForm() {
           body: {
             scopeSummary: overview.scope_summary?.trim() || undefined,
 
-            specificExclusions:
-              overview.specific_exclusions?.trim() || undefined,
+            specificExclusions: overview.specific_exclusions?.trim() || undefined,
 
             notes: overview.notes?.trim() || undefined,
 
             projectMode: overview.project_mode || undefined,
 
-            status: overview.status || "DRAFT",
+            status: overview.status || 'DRAFT',
           },
         }).unwrap();
       } else {
@@ -990,14 +954,13 @@ export function ScopeOfWorkForm() {
           body: {
             scopeSummary: overview.scope_summary?.trim() || undefined,
 
-            specificExclusions:
-              overview.specific_exclusions?.trim() || undefined,
+            specificExclusions: overview.specific_exclusions?.trim() || undefined,
 
             notes: overview.notes?.trim() || undefined,
 
             projectMode: overview.project_mode || undefined,
 
-            status: overview.status || "DRAFT",
+            status: overview.status || 'DRAFT',
           },
         }).unwrap();
       }
@@ -1006,8 +969,7 @@ export function ScopeOfWorkForm() {
       // Determine final SOW ID
       // --------------------------------------------------------
 
-      const finalScopeOfWorkId =
-        scopeOfWork?.id || existingScopeOfWork?.id || scopeOfWorkId;
+      const finalScopeOfWorkId = scopeOfWork?.id || existingScopeOfWork?.id || scopeOfWorkId;
 
       // ========================================================
       // 2. BUILD SPACE ID MAP
@@ -1035,9 +997,7 @@ export function ScopeOfWorkForm() {
       // so two new spaces can never collide with each other.
       // ========================================================
 
-      const usedSlugs = new Set(
-        projectSpaces.map((space) => space.slug).filter(Boolean),
-      );
+      const usedSlugs = new Set(projectSpaces.map((space) => space.slug).filter(Boolean));
 
       for (let index = 0; index < spaces.length; index++) {
         const space = spaces[index];
@@ -1046,9 +1006,7 @@ export function ScopeOfWorkForm() {
         // Check if this space already exists
         // ------------------------------------------------------
 
-        const existingSpace = projectSpaces.find(
-          (projectSpace) => projectSpace.id === space.id,
-        );
+        const existingSpace = projectSpaces.find((projectSpace) => projectSpace.id === space.id);
 
         if (existingSpace) {
           // Existing DB space
@@ -1100,13 +1058,9 @@ export function ScopeOfWorkForm() {
       // ========================================================
 
       if (isEditMode && existingScopeOfWork?.items) {
-        const originalItemIds = new Set(
-          existingScopeOfWork.items.map((item) => item.id),
-        );
+        const originalItemIds = new Set(existingScopeOfWork.items.map((item) => item.id));
 
-        const currentItemIds = new Set(
-          items.filter((item) => item.id).map((item) => item.id),
-        );
+        const currentItemIds = new Set(items.filter((item) => item.id).map((item) => item.id));
 
         for (const originalItemId of originalItemIds) {
           if (!currentItemIds.has(originalItemId)) {
@@ -1164,9 +1118,7 @@ export function ScopeOfWorkForm() {
         if (
           isEditMode &&
           item.id &&
-          existingScopeOfWork?.items?.some(
-            (existingItem) => existingItem.id === item.id,
-          )
+          existingScopeOfWork?.items?.some((existingItem) => existingItem.id === item.id)
         ) {
           await updateScopeItem({
             id: item.id,
@@ -1196,10 +1148,13 @@ export function ScopeOfWorkForm() {
       // SUCCESS
       // ========================================================
 
+      // The overview mutation invalidates before the item requests finish.
+      // Refresh once more after the complete batch so the document shows the
+      // final items rather than the intermediate overview-only response.
+      dispatch(scopeOfWorkApi.util.invalidateTags(['ScopeOfWork', 'ScopeItems', 'ProjectSpaces']));
+
       toast.success(
-        isEditMode
-          ? "Scope of Work updated successfully."
-          : "Scope of Work created successfully.",
+        isEditMode ? 'Scope of Work updated successfully.' : 'Scope of Work created successfully.',
       );
 
       // --------------------------------------------------------
@@ -1212,15 +1167,14 @@ export function ScopeOfWorkForm() {
       // Navigate to document
       // --------------------------------------------------------
 
-      navigate(`/documents/scope-of-work/${finalScopeOfWorkId}`);
+      navigate(`/crm/scope-of-work/${finalScopeOfWorkId}`);
     } catch (error) {
-      console.error("Scope of Work save failed:", error);
+      console.error('Scope of Work save failed:', error);
 
-      toast.error(
-        error?.data?.message ||
-          error?.message ||
-          "Failed to save Scope of Work.",
-      );
+      toast.error(error?.data?.message || error?.message || 'Failed to save Scope of Work.');
+    } finally {
+      savingRef.current = false;
+      setIsSaving(false);
     }
   };
 
@@ -1228,7 +1182,7 @@ export function ScopeOfWorkForm() {
   // LOADING STATE
   // ============================================================
 
-  if (isEditMode && (isLoadingScopeOfWork || isFetchingScopeOfWork)) {
+  if (isEditMode && !existingScopeOfWork && (isLoadingScopeOfWork || isFetchingScopeOfWork)) {
     return (
       <Page width="form">
         <EmptyState icon={Loader2} title="Loading scope of work…" />
@@ -1248,7 +1202,7 @@ export function ScopeOfWorkForm() {
           title="Scope of work not found"
           text="The requested scope of work could not be loaded."
           action={
-            <Button onClick={() => navigate("/documents/scope-of-work")}>
+            <Button onClick={() => navigate('/crm/scope-of-work/all')}>
               Back to scope of work
             </Button>
           }
@@ -1263,26 +1217,30 @@ export function ScopeOfWorkForm() {
 
   return (
     <PlanOfActionSectionForm
-      title={isEditMode ? "Edit scope of work" : "Scope of work"}
-      subtitle={<>{
-        isEditMode
-          ? "Update what is included, the spaces covered and each work item."
-          : "Define what is included, the spaces covered and each work item. Produces the scope of work document."}<PrefillNotice prefill={prefill} /></>}
+      title={isEditMode ? 'Edit scope of work' : 'Scope of work'}
+      subtitle={
+        <>
+          {isEditMode
+            ? 'Update what is included, the spaces covered and each work item.'
+            : 'Define what is included, the spaces covered and each work item. Produces the scope of work document.'}
+          <PrefillNotice prefill={prefill} />
+        </>
+      }
       crumbs={[
-        { label: "CRM", to: "/crm" },
-        { label: "Forms" },
-        { label: isEditMode ? "Edit scope of work" : "Scope of work" },
+        { label: 'CRM', to: '/crm' },
+        { label: 'Forms' },
+        { label: isEditMode ? 'Edit scope of work' : 'Scope of work' },
       ]}
-      submitLabel={isEditMode ? "Update scope of work" : "Save scope of work"}
+      submitLabel={isEditMode ? 'Update scope of work' : 'Save scope of work'}
       sections={SCOPE_OF_WORK_SECTIONS}
       sectionMeta={{
         Overview: {
-          description: "Project mode, summary and what is excluded.",
+          description: 'Project mode, summary and what is excluded.',
           done: Boolean(overview.scope_summary?.trim()),
         },
-        "Spaces & Scope of Work": {
+        'Spaces & Scope of Work': {
           description:
-            "All project spaces, including unused spaces. Add categories and scope of work within each space.",
+            'All project spaces, including unused spaces. Add categories and scope of work within each space.',
           done: items.length > 0,
           count: allSpaces.length,
         },
@@ -1290,9 +1248,9 @@ export function ScopeOfWorkForm() {
       onSaveDraft={() => {
         try {
           draftStorage.setItem(draftKey, JSON.stringify(values));
-          toast.success("Draft saved on this device.");
+          toast.success('Draft saved on this device.');
         } catch {
-          toast.error("Could not save the draft.");
+          toast.error('Could not save the draft.');
         }
       }}
       values={values}
@@ -1302,6 +1260,7 @@ export function ScopeOfWorkForm() {
       onProjectChange={setProjectId}
       onSubmit={handleSubmit}
       isSubmitting={
+        isSaving ||
         isCreating ||
         isUpdating ||
         isCreatingSpace ||

@@ -21,6 +21,12 @@ export function localPrivateCdn(storage: CdnService): RequestHandler {
       res.type(key);
       await storage.streamFile(key, res);
     } catch (error) {
+      if (res.headersSent || res.destroyed) {
+        if (!res.destroyed) res.destroy();
+        return;
+      }
+      res.removeHeader('Content-Type');
+      res.removeHeader('Content-Disposition');
       if (error instanceof HttpException)
         return void res
           .status(error.getStatus())

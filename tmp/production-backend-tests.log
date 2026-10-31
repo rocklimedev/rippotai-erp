@@ -1,0 +1,23 @@
+
+> backend@0.0.1 test
+> jest --runInBand
+
+[Nest] 9076  - 10/31/2026, 12:34:18 PM   ERROR [ExceptionsHandler] Error: Persistence failed
+    at UploadController.fail (C:\rocklime_projects\rippotai_erp\backend\src\modules\cdn\upload-security.spec.ts:43:13)
+    at C:\rocklime_projects\rippotai_erp\backend\node_modules\@nestjs\core\router\router-execution-context.js:38:29
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+[Nest] 9076  - 10/31/2026, 12:34:23 PM   ERROR [FrontendNotificationsInterceptor] Notification failed for PurchaseOrderController.approve: offline
+[Nest] 9076  - 10/31/2026, 12:34:28 PM    WARN [ForgotPasswordService] Password reset email delivery failed
+[Nest] 9076  - 10/31/2026, 12:34:33 PM    WARN [NotificationsService] Notification cache unavailable; database remains authoritative
+[Nest] 9076  - 10/31/2026, 12:34:33 PM    WARN [NotificationsGateway] Rejected unauthenticated notification connection (undefined)
+[Nest] 9076  - 10/31/2026, 12:34:33 PM    WARN [NotificationsGateway] Rejected unauthenticated notification connection (undefined)
+[Nest] 9076  - 10/31/2026, 12:34:39 PM    WARN [CdnService] NAS upload staged on CDN for later transfer
+[Nest] 9076  - 10/31/2026, 12:34:39 PM    WARN [NasTransferService] NAS transfer deferred; staging or NAS is unavailable
+[Nest] 9076  - 10/31/2026, 12:34:39 PM    WARN [NasTransferService] NAS transfer deferred; staging or NAS is unavailable
+[Nest] 9076  - 10/31/2026, 12:34:39 PM    WARN [NasTransferService] NAS transfer deferred; staging or NAS is unavailable
+
+Test Suites: 1 skipped, 86 passed, 86 of 87 total
+Tests:       5 skipped, 1618 passed, 1623 total
+Snapshots:   0 total
+Time:        53.42 s
+Ran all test suites.

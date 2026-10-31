@@ -40,6 +40,12 @@ export class CdnController {
       res.type(key);
       await this.cdnService.streamFile(key, res);
     } catch (error) {
+      if (res.headersSent || res.destroyed) {
+        if (!res.destroyed) res.destroy();
+        return;
+      }
+      res.removeHeader('Content-Type');
+      res.removeHeader('Content-Disposition');
       if (
         (error as NodeJS.ErrnoException).code === 'ENOENT' ||
         (error as { code?: number }).code === 2
