@@ -11,7 +11,7 @@ Deployment: apply backend/migrations/20261010_staff_route_permissions.sql before
 
 Maintenance: add an explicit @RequirePermission(resource:action) to each new HTTP method, review the action and module, then run `node scripts/catalogue-routes.cjs`. Run `node scripts/catalogue-routes.cjs --check` in CI. Generation never assigns permissions. The unit audit rejects missing/invalid annotations and stale catalogue/docs/migration. Public and account capabilities are descriptive policies, not staff grants. No changes here add project/entity ownership checks beyond the existing service checks and the profile ownership fix; module RBAC is distinct from row visibility.
 
-There are 992 routes, 961 staff routes and 409 assignable staff capabilities.
+There are 999 routes, 968 staff routes and 410 assignable staff capabilities.
 
 ## Catalogue by module
 
@@ -40,7 +40,7 @@ There are 992 routes, 961 staff routes and 409 assignable staff capabilities.
 | payments | `payment-schedules:create`, `payment-schedules:delete`, `payment-schedules:read`, `payment-schedules:update` |
 | plan-of-action | `plan-of-actions:create`, `plan-of-actions:delete`, `plan-of-actions:publish`, `plan-of-actions:read`, `plan-of-actions:update` |
 | process-workflow | `gates:create`, `gates:read`, `workflow-library:assign`, `workflow-library:create`, `workflow-library:delete`, `workflow-library:deliver`, `workflow-library:read`, `workflow-library:update`, `workflow-progress:create`, `workflow-progress:read`, `workflow-progress:sign-off`, `workflow-progress:update`, `workflow-timeline:read`, `workflow:create`, `workflow:read`, `workflow:update` |
-| projects | `command-center:approve`, `command-center:complete`, `command-center:read`, `command-center:refresh`, `command-center:review`, `command-center:upload`, `dashboard:read`, `project-dashboard:read`, `project-planners:create`, `project-planners:delete`, `project-planners:generate`, `project-planners:read`, `project-planners:update`, `project-types:create`, `project-types:delete`, `project-types:read`, `project-types:update`, `projects-phases:create`, `projects-phases:delete`, `projects-phases:read`, `projects-phases:update`, `projects:create`, `projects:delete`, `projects:read`, `projects:restore`, `projects:update` |
+| projects | `command-center:approve`, `command-center:authority`, `command-center:complete`, `command-center:read`, `command-center:refresh`, `command-center:review`, `command-center:upload`, `dashboard:read`, `project-dashboard:read`, `project-planners:create`, `project-planners:delete`, `project-planners:generate`, `project-planners:read`, `project-planners:update`, `project-types:create`, `project-types:delete`, `project-types:read`, `project-types:update`, `projects-phases:create`, `projects-phases:delete`, `projects-phases:read`, `projects-phases:update`, `projects:create`, `projects:delete`, `projects:read`, `projects:restore`, `projects:update` |
 | quotations | `quotation-items:create`, `quotation-items:delete`, `quotation-items:read`, `quotation-items:update`, `quotations:approve`, `quotations:create`, `quotations:delete`, `quotations:export`, `quotations:read`, `quotations:restore`, `quotations:select`, `quotations:submit`, `quotations:update` |
 | rbac | `apps:create`, `apps:delete`, `apps:read`, `apps:update`, `permissions:create`, `permissions:delete`, `permissions:read`, `permissions:update`, `rbac:create`, `rbac:delete`, `rbac:read`, `rbac:update`, `role-apps:assign`, `role-apps:grant`, `role-apps:read`, `role-apps:revoke`, `role-apps:update`, `role-permissions:assign`, `role-permissions:grant`, `role-permissions:read`, `role-permissions:revoke` |
 | reki | `site-recces:create`, `site-recces:delete`, `site-recces:read`, `site-recces:restore`, `site-recces:update`, `site-recces:upload` |
@@ -352,9 +352,11 @@ There are 992 routes, 961 staff routes and 409 assignable staff capabilities.
 | material-procurement | `GET /inventory/stock/:projectId` | InventoryController.getProjectStock | `inventory:read` | staff |
 | material-procurement | `GET /inventory/summary/:projectId` | InventoryController.getSummary | `inventory:read` | staff |
 | material-procurement | `POST /inventory/issue` | InventoryController.issue | `inventory:issue` | staff |
+| material-procurement | `POST /inventory/opening-stock` | InventoryController.openingStock | `inventory:adjust` | staff |
 | material-procurement | `POST /inventory/receive` | InventoryController.receive | `inventory:create` | staff |
 | material-procurement | `POST /inventory/receive-delivery` | InventoryController.receiveFromDelivery | `inventory:deliver` | staff |
 | material-procurement | `POST /inventory/return` | InventoryController.returnMaterial | `inventory:return` | staff |
+| material-procurement | `POST /inventory/reverse/:id` | InventoryController.reverse | `inventory:adjust` | staff |
 | material-procurement | `POST /inventory/transfer` | InventoryController.transfer | `inventory:transfer` | staff |
 | material-procurement | `POST /procurement/estimates/:id/approve` | MaterialEstimateController.approve | `procurement-estimates:approve` | staff |
 | material-procurement | `POST /procurement/estimates` | MaterialEstimateController.create | `procurement-estimates:create` | staff |
@@ -492,6 +494,7 @@ There are 992 routes, 961 staff routes and 409 assignable staff capabilities.
 | process-workflow | `PATCH /:projectId/progress/steps/:stepId` | ProgressController.updateStepProgress | `workflow-progress:update` | staff |
 | process-workflow | `GET /:projectId/timeline` | TimelineController.getTimeline | `workflow-timeline:read` | staff |
 | projects | `GET /dashboard/app-badges` | AppBadgesController.appBadges | `dashboard:read` | staff |
+| projects | `GET /command-center/authority/overview` | AuthorityController.overview | `command-center:authority` | staff |
 | projects | `POST /command-center/projects/:projectId/phases/:phaseId/approve-gate` | CommandCenterController.approveGate | `command-center:approve` | staff |
 | projects | `POST /command-center/projects/:projectId/tasks/:taskDefinitionId/complete` | CommandCenterController.completeTask | `command-center:complete` | staff |
 | projects | `GET /command-center/actions` | CommandCenterController.getActionRequired | `command-center:read` | staff |
@@ -607,6 +610,10 @@ There are 992 routes, 961 staff routes and 409 assignable staff capabilities.
 | quotations | `GET /quotations/versions/:id` | QuotationVersionsController.get | `quotations:read` | staff |
 | quotations | `GET /quotations/:quotationId/versions` | QuotationVersionsController.list | `quotations:read` | staff |
 | quotations | `POST /quotations/versions/:id/restore` | QuotationVersionsController.restore | `quotations:restore` | staff |
+| rbac | `GET /role-access/catalogue` | AccessMatrixController.catalogue | `role-permissions:read` | staff |
+| rbac | `GET /role-access/app/:code` | AccessMatrixController.getAppAcrossRoles | `role-permissions:read` | staff |
+| rbac | `GET /role-access/:role_id` | AccessMatrixController.getForRole | `role-permissions:read` | staff |
+| rbac | `PUT /role-access/:role_id` | AccessMatrixController.setForRole | `role-permissions:assign` | staff |
 | rbac | `POST /apps` | AppsController.create | `apps:create` | staff |
 | rbac | `GET /apps` | AppsController.findAll | `apps:read` | staff |
 | rbac | `GET /apps/:code` | AppsController.findOne | `apps:read` | staff |
